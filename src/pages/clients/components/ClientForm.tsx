@@ -38,7 +38,6 @@ interface ClientFormProps {
 
     isLoading?: boolean;
     isHost?: boolean;
-    settings?: any;
     nonHostPlan?: any;
     onRefresh?: () => void;
 }
@@ -59,7 +58,6 @@ export default function ClientForm({
     cities,
     isLoading,
     isHost,
-    settings,
     nonHostPlan,
     onRefresh
 }: ClientFormProps) {
@@ -88,7 +86,6 @@ export default function ClientForm({
                             states={states}
                             cities={cities}
                             isHost={isHost}
-                            settings={settings}
                             nonHostPlan={nonHostPlan}
                             isLoading={isLoading}
                         />

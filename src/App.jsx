@@ -49,6 +49,7 @@ import InvoiceDetails from './pages/invoices/InvoiceDetails.jsx';
 import Payments from './pages/payments/Payments.jsx';
 import PaymentDetails from './pages/payments/PaymentDetails.jsx';
 import Subscriptions from './pages/subscriptions/Subscriptions.jsx';
+import SubscriptionDetails from './pages/subscriptions/SubscriptionDetails.tsx';
 import Billing from './pages/billing/Billing.jsx';
 import BillingDetails from './pages/billing/BillingDetails.jsx';
 import Profile from './pages/auth-profile/Profile';
@@ -371,6 +372,7 @@ export default function App() {
             <Route element={<HostRoute />}>
               <Route element={<PermissionRoute permission="view subscriptions" />}>
                 <Route path="subscriptions" element={<Subscriptions />} />
+                <Route path="subscriptions/:id" element={<SubscriptionDetails />} />
                 <Route path="billing" element={<Billing />} />
                 <Route path="billing/:id" element={<BillingDetails />} />
               </Route>

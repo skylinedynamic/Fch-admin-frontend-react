@@ -19,10 +19,9 @@ import {
     updateClient,
     DEFAULT_CLIENT_STATE,
     ENROLLMENT_TABS,
-    mapClientPayload
+    mapClientPayload,
+    fetchBorrowerPlans
 } from '../../modules/client';
-import { fetchSettings } from '../../modules/settings/services';
-import { fetchNonHostBorrowerPlans } from '../../modules/partner/services';
 import { apiClient } from '../../lib/http/apiClient';
 import type { Client, ClientProfileStats } from '../../modules/client/types';
 import { locationData } from '../../config';
@@ -67,7 +66,6 @@ export default function ClientDetails() {
         total_documents: 0
     });
     // const [statsLoading, setStatsLoading] = useState(false); // Managed by Query
-    const [settings, setSettings] = useState<any>(null);
     const [nonHostPlan, setNonHostPlan] = useState<any>(null);
     const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState<number>(0);
 
@@ -152,30 +150,15 @@ export default function ClientDetails() {
         };
 
         const loadInitialData = async () => {
-            // ... kept same ...
+            if (isHost) return;
             try {
-                const settingPromise = fetchSettings();
-                const promises = [settingPromise];
-
-                if (!isHost) {
-                    promises.push(fetchNonHostBorrowerPlans());
-                }
-
-                const results = await Promise.all(promises);
-                const settingsRes = results[0];
-                const plansRes = !isHost ? results[1] : null;
-
-                if (settingsRes.status) {
-                    setSettings(settingsRes.data);
-                }
-
-                // @ts-ignore
-                if (plansRes && plansRes.status && plansRes.data && plansRes.data.length > 0) {
+                const response = await fetchBorrowerPlans();
+                if (response.status && response.data && response.data.length > 0) {
                     // @ts-ignore
-                    setNonHostPlan(plansRes.data[0]);
+                    setNonHostPlan(response.data[0]);
                 }
             } catch (err) {
-                console.error('Failed to fetch settings:', err);
+                console.error('Failed to fetch non-host plans:', err);
             }
         };
         loadInitialData();
@@ -605,8 +588,6 @@ export default function ClientDetails() {
                                     cities={cities}
                                     isLoading={isLoading}
                                     isHost={isHost}
-                                    // @ts-ignore
-                                    settings={settings}
                                     nonHostPlan={nonHostPlan}
                                     onRefresh={handleRefresh}
                                 />

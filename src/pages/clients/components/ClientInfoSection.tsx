@@ -10,7 +10,6 @@ import {
     useClient,
     useUpdateClient,
     useBorrowerPlans,
-    useNonHostBorrowerPlans,
     DEFAULT_CLIENT_STATE,
     DATE_PICKER_OPTIONS,
     mapClientUpdatePayload,
@@ -24,6 +23,7 @@ import { locationData, getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { ENROLLMENT_TYPE_INSTALLMENT } from '../../../config/subscriptionConfig';
 import { PARTNER_TYPES, CLIENT_TYPE_LABELS, STRIPE_BILLING_LABELS, ENROLLMENT_INSTALLMENTS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
 import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
@@ -42,7 +42,6 @@ interface ClientInfoSectionProps {
     cities: { label: string; value: string }[];
     handleLocationChange?: (name: string, value: any) => void; // Parent handles cascading location options for now
     isHost?: boolean;
-    settings?: any;
     nonHostPlan?: any;
     onSaveSuccess?: () => void;
     isLoading?: boolean;
@@ -70,7 +69,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     cities,
     handleLocationChange,
     isHost = false,
-    settings = null,
     nonHostPlan = null,
     onSaveSuccess,
     isLoading: parentLoading = false
@@ -101,8 +99,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const [showInstallmentModal, setShowInstallmentModal] = useState(false);
 
     // Fetch Plans
-    const { data: borrowerPlans = [] } = useBorrowerPlans(isHost);
-    const { data: nonHostPlans = [] } = useNonHostBorrowerPlans(!isHost);
+    const { data: borrowerPlans = [] } = useBorrowerPlans();
     const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState<number>(0);
 
     useEffect(() => {
@@ -120,7 +117,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     }, []);
 
     const enrollmentOptions = React.useMemo(() => {
-        const plans = isHost ? borrowerPlans : nonHostPlans;
+        const plans = borrowerPlans;
         const options = plans.map((plan: BorrowerPlan) => ({
             ...plan,
             label: `${plan.enrollment_type}`,
@@ -163,7 +160,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
 
         return options;
-    }, [isHost, borrowerPlans, nonHostPlans, formData.plan_id, formData.enrollment_type, formData.payment_amount, formData.amount]);
+    }, [isHost, borrowerPlans, formData.plan_id, formData.enrollment_type, formData.payment_amount, formData.amount]);
 
     // 3. Sync Fetch to Local State - Use ref to prevent infinite loops
     const hasSyncedData = React.useRef(false);
@@ -491,7 +488,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         opt.enrollment_type === formData.enrollment_type
     );
 
-    const isInstallmentPlan = (selectedOption?.enrollment_type || formData.enrollment_type || '').toString().toLowerCase() === 'installment';
+    const isInstallmentPlan = (selectedOption?.enrollment_type || formData.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
 
     const partnerName = formData.partner_name || 'N/A';
     const partnerCompanyName = formData.partner_company || 'N/A';
@@ -1220,7 +1217,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                          const selectedVal = e.value;
                                          const selectedOption = enrollmentOptions.find((opt: any) => String(opt.value) === String(selectedVal));
 
-                                         const isInstallmentSelected = (selectedOption?.enrollment_type || '').toString().toLowerCase() === 'installment';
+                                         const isInstallmentSelected = (selectedOption?.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
 
                                          const updates: any = {
                                              plan_id: selectedVal,

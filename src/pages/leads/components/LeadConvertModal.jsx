@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
 import { fetchPartnerPlans } from '../../../modules/partner/services';
-import { fetchBorrowerPlans, fetchNonHostBorrowerPlans } from '../../../modules/client/services';
+import { fetchBorrowerPlans } from '../../../modules/client/services';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../../config/appConfig';
 import LeadConvertSkeleton from '../../../components/Loader/LeadConvertSkeleton';
 import { apiClient } from '../../../lib/http/apiClient';
 import { useAuthStore } from '../../../store/auth/authStore';
+import InstallmentDetailsModal from '../../../components/Common/Payment/InstallmentDetailsModal';
+import { ENROLLMENT_TYPE_INSTALLMENT } from '../../../config/subscriptionConfig';
 
 export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = ENTITY_TYPE_BORROWER, loading, isHost, backendErrors = {}, onFieldChange }) {
     const [planId, setPlanId] = useState(null);
@@ -29,6 +31,18 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
     const [isFreeTrail, setIsFreeTrail] = useState(false);
 
+    // Installment configuration state
+    const [showInstallmentModal, setShowInstallmentModal] = useState(false);
+    const [installmentApplied, setInstallmentApplied] = useState(false);
+    const [installmentDownPayment, setInstallmentDownPayment] = useState(0);
+    const [installmentMonths, setInstallmentMonths] = useState(12);
+    const [installmentMonthlyAmount, setInstallmentMonthlyAmount] = useState(0);
+    const [enrollmentAmount, setEnrollmentAmount] = useState(0);
+
+    // Transitions & Modal synchronizations
+    const pendingOpenInstallmentRef = useRef(false);
+    const ignoreShowRef = useRef(false);
+
     useEffect(() => {
         if (show) {
             if (isPartnerOnFreeTrial && targetType === ENTITY_TYPE_BORROWER) {
@@ -42,12 +56,45 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
 
+    // Hide main modal and set pending flag to open calculator once main modal has fully hidden
+    const openInstallmentCalculator = () => {
+        const modal = modalInstanceRef.current;
+        if (modal) {
+            pendingOpenInstallmentRef.current = true;
+            modal.hide();
+        }
+    };
+
+    // When calculator finishes hiding, re-show the main convert modal
+    const handleInstallmentHidden = () => {
+        if (show) {
+            ignoreShowRef.current = true;
+            const modal = modalInstanceRef.current;
+            if (modal) {
+                modal.show();
+            }
+        }
+    };
+
     useEffect(() => {
         if (!modalRef.current) return;
         if (!modalInstanceRef.current) {
             modalInstanceRef.current = new Modal(modalRef.current, {
                 backdrop: 'static',
                 keyboard: false,
+            });
+
+            // Listen to hidden event to show calculator cleanly
+            modalRef.current.addEventListener('hidden.bs.modal', () => {
+                if (pendingOpenInstallmentRef.current) {
+                    pendingOpenInstallmentRef.current = false;
+                    setShowInstallmentModal(true);
+                }
+            });
+
+            // Listen to shown event to reset ignoring show flag
+            modalRef.current.addEventListener('shown.bs.modal', () => {
+                ignoreShowRef.current = false;
             });
         }
 
@@ -81,52 +128,57 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 console.error('Failed to fetch fixed enrollment plan:', error);
             }
         };
+
+        const loadPlans = async () => {
+            setFetching(true);
+            try {
+                const [partnerPlansRes, borrowerPlansRes] = await Promise.all([
+                    fetchPartnerPlans(),
+                    fetchBorrowerPlans(),
+                ]);
+
+                if (partnerPlansRes?.status) setPartnerPlans(partnerPlansRes.data || []);
+                if (borrowerPlansRes?.status) setBorrowerPlans(borrowerPlansRes.data || []);
+            } catch (err) {
+                console.error('Failed to fetch plan data:', err);
+            } finally {
+                setFetching(false);
+            }
+        };
+
         fetchFixedPlan();
+        loadPlans();
     }, []);
 
     useEffect(() => {
         const modal = modalInstanceRef.current;
         if (!modal) return;
         if (show) {
-            setFetching(true);
+            if (ignoreShowRef.current) {
+                return;
+            }
             modal.show();
-            const loadData = async () => {
-                try {
-                    const promises = [fetchPartnerPlans()];
 
-                    if (targetType == ENTITY_TYPE_BORROWER) {
-                        if (isHost) {
-                            promises.push(fetchBorrowerPlans());
-                        } else {
-                            promises.push(fetchNonHostBorrowerPlans());
-                        }
-                    }
+            if (borrowerPlans.length > 0 && targetType === ENTITY_TYPE_BORROWER) {
+                setPlanId(borrowerPlans[0].id);
+                setEnrollmentType(borrowerPlans[0].enrollment_type);
+                setCustomEnrollmentAmount(borrowerPlans[0].payment_amount || '');
+                setCustomPlatformFee(borrowerPlans[0].platform_fee || 0);
 
-                    const results = await Promise.all([
-                        ...promises,
-                        new Promise(resolve => setTimeout(resolve, 500))
-                    ]);
-                    const partnerPlansRes = results[0];
-                    const borrowerPlansRes = results[1];
-
-                    if (partnerPlansRes.status) setPartnerPlans(partnerPlansRes.data || []);
-                    if (borrowerPlansRes && borrowerPlansRes.status) {
-                        const plans = borrowerPlansRes.data || [];
-                        setBorrowerPlans(plans);
-                        if (plans.length > 0) {
-                            setPlanId(plans[0].id);
-                            setEnrollmentType(plans[0].enrollment_type);
-                            setCustomEnrollmentAmount(plans[0].payment_amount || '');
-                            setCustomPlatformFee(plans[0].platform_fee || 0);
-                        }
-                    }
-                } catch (err) {
-                    console.error('Failed to fetch lead conversion data:', err);
-                } finally {
-                    setFetching(false);
+                // Setup defaults if it's installment plan type
+                const isInst = borrowerPlans[0].enrollment_type?.toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (borrowerPlans[0].total_installments_count > 1);
+                if (isInst) {
+                    const totalVal = Number(borrowerPlans[0].total_amount || borrowerPlans[0].payment_amount || 0);
+                    setEnrollmentAmount(totalVal);
+                    setInstallmentDownPayment(0);
+                    setInstallmentMonths(12);
+                    setInstallmentMonthlyAmount(totalVal > 0 ? Number((totalVal / 12).toFixed(2)) : 0);
+                    setInstallmentApplied(true);
+                    openInstallmentCalculator();
+                } else {
+                    setInstallmentApplied(false);
                 }
-            };
-            loadData();
+            }
         } else {
             const modalElement = modalRef.current;
             if (modalElement && modalElement.classList.contains('show')) {
@@ -139,8 +191,13 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             setCustomEnrollmentAmount('');
             setCustomPlatformFee('');
             setValidationErrors({});
+            setInstallmentApplied(false);
+            setInstallmentDownPayment(0);
+            setInstallmentMonths(12);
+            setInstallmentMonthlyAmount(0);
+            setEnrollmentAmount(0);
         }
-    }, [show, isHost, targetType]);
+    }, [show, borrowerPlans, targetType, isHost]);
 
     const enrollmentOptions = useMemo(() => {
         return borrowerPlans.map(plan => ({
@@ -151,42 +208,48 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         }));
     }, [borrowerPlans]);
 
+    const selectedBorrowerPlan = borrowerPlans.find(p => p.id === planId);
+
+    const selectedPartnerPlan = useMemo(() => {
+        if (targetType != ENTITY_TYPE_PARTNER) return null;
+        return partnerPlans.find(plan =>
+            (plan.partner_type === partnerType || (!partnerType && !plan.partner_type)) &&
+            plan.enrollment_type === partnerEnrollmentType
+        );
+    }, [partnerPlans, partnerType, partnerEnrollmentType, targetType]);
+
+    const isBorrowerInstallmentPlan = enrollmentType?.toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (selectedBorrowerPlan?.total_installments_count > 1);
+    const isPartnerInstallmentPlan = partnerEnrollmentType?.toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (selectedPartnerPlan?.total_installments_count > 1);
+
     const handleConfirm = () => {
         setValidationErrors({});
 
         const payload = {
             is_free_trail: isFreeTrail,
-            free_trail_end_date: null
         };
 
         if (targetType == ENTITY_TYPE_BORROWER) {
-            if (isFreeTrail) {
-                payload.plan_id = null;
-                payload.enrollment_type = null;
-                payload.enrollment_amount = null;
-                payload.amount = null;
-            } else {
+            if (!isFreeTrail) {
                 payload.plan_id = planId;
                 payload.enrollment_type = enrollmentType;
 
                 const selectedPlan = borrowerPlans.find(plan => plan.id === planId);
                 if (selectedPlan) {
                     payload.enrollment_amount = customEnrollmentAmount;
-                    payload.amount = customEnrollmentAmount;
                     if (isHost) {
                         payload.monthly_platform_fee = customPlatformFee;
+                    }
+                    if (isBorrowerInstallmentPlan && installmentApplied) {
+                        payload.installment_down_payment = installmentDownPayment;
+                        payload.installment_months = installmentMonths;
+                        payload.installment_monthly_amount = installmentMonthlyAmount;
+                        payload.installment_remaining_balance = Math.max(0, Number(enrollmentAmount || 0) - Number(installmentDownPayment || 0));
                     }
                 }
             }
         } else if (targetType == ENTITY_TYPE_PARTNER) {
             payload.partner_type = partnerType;
-            if (isFreeTrail) {
-                payload.plan_id = null;
-                payload.enrollment_type = null;
-                payload.enrollment_amount = null;
-                payload.amount = null;
-                payload.monthly_platform_fee = null;
-            } else {
+            if (!isFreeTrail) {
                 payload.enrollment_type = partnerEnrollmentType;
 
                 const selectedPlan = partnerPlans.find(plan =>
@@ -197,9 +260,14 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 if (selectedPlan) {
                     payload.plan_id = selectedPlan.id;
                     payload.enrollment_amount = customEnrollmentAmount;
-                    payload.amount = customEnrollmentAmount;
                     if (isHost) {
                         payload.monthly_platform_fee = customPlatformFee;
+                    }
+                    if (isPartnerInstallmentPlan && installmentApplied) {
+                        payload.installment_down_payment = installmentDownPayment;
+                        payload.installment_months = installmentMonths;
+                        payload.installment_monthly_amount = installmentMonthlyAmount;
+                        payload.installment_remaining_balance = Math.max(0, Number(enrollmentAmount || 0) - Number(installmentDownPayment || 0));
                     }
                 }
             }
@@ -217,39 +285,29 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const confirmBtnText = `Convert to ${targetType}`;
     const icon = targetType == ENTITY_TYPE_PARTNER ? 'ri-shake-hands-line text-success' : 'ri-user-received-2-line text-primary';
 
-    const selectedBorrowerPlan = borrowerPlans.find(p => p.id === planId);
-
-    const selectedPartnerPlan = useMemo(() => {
-        if (targetType != ENTITY_TYPE_PARTNER) return null;
-        return partnerPlans.find(plan =>
-            (plan.partner_type === partnerType || (!partnerType && !plan.partner_type)) &&
-            plan.enrollment_type === partnerEnrollmentType
-        );
-    }, [partnerPlans, partnerType, partnerEnrollmentType, targetType]);
-
     // The displayed enrollment amount — live for both host (editable) and non-host (DB value)
     const displayBorrowerAmount = Number(customEnrollmentAmount || 0);
 
     return (
         <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
-            <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-dialog modal-dialog-centered modal-lg">
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-body p-4 text-center">
                         {fetching ? (
                             <LeadConvertSkeleton targetType={targetType} isHost={isHost} />
                         ) : (
                             <>
-                                <i className={`${icon} display-4 mb-3 d-block`}></i>
-                                <h4 className="mb-2">{title}</h4>
-                                <p className="text-muted mb-4">
-                                    Are you sure you want to convert <strong>{lead?.contact_person || lead?.contact_name || lead?.company_name || 'this lead'}</strong> to a <strong>{targetType}</strong>?
-                                    This action will create a new {targetType.toLowerCase()} profile and cannot be undone.
-                                </p>
+                                <div className="d-flex align-items-center justify-content-between border-bottom pb-3 mb-4 text-start">
+                                    <h5 className="modal-title fw-bold text-dark fs-16 d-flex align-items-center gap-2">
+                                        <i className={`${icon} fs-20`}></i>
+                                        {title}
+                                    </h5>
+                                    <button type="button" className="btn-close" onClick={handleClose} aria-label="Close"></button>
+                                </div>
 
                                 {/* ── Borrower Conversion ── */}
                                 {targetType == ENTITY_TYPE_BORROWER && (
                                     <div className="mb-4 text-start">
-
                                         {/* Borrower Free Trial Switch */}
                                         {!isHost && isPartnerOnFreeTrial ? (
                                             <div className="trial-switch-container animate__animated animate__fadeIn">
@@ -292,7 +350,6 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
                                         {!isFreeTrail && (
                                             <>
-                                                {/* Enrollment dropdown — visible for BOTH host and non-host */}
                                                 <div className="mb-3">
                                                     <label className="form-label fw-semibold">Select Enrollment Type <span className="text-danger">*</span></label>
                                                     <Dropdown
@@ -301,33 +358,41 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         onChange={(e) => {
                                                             setPlanId(e.value);
                                                             const opt = enrollmentOptions.find(o => o.value === e.value);
-                                                            setEnrollmentType(opt ? opt.enrollment_type : '');
-                                                            if (onFieldChange) onFieldChange(['plan_id', 'enrollment_type']);
-                                                            const originalPlan = borrowerPlans.find(plan => plan.id === e.value);
-                                                            if (originalPlan) {
-                                                                setCustomEnrollmentAmount(originalPlan.payment_amount || '');
-                                                                setCustomPlatformFee(originalPlan.platform_fee || 0);
-                                                                if (onFieldChange) onFieldChange(['enrollment_amount', 'amount', 'monthly_platform_fee', 'platform_fee']);
+                                                            if (opt) {
+                                                                setEnrollmentType(opt.enrollment_type);
+                                                                setCustomEnrollmentAmount(opt.price || '');
+                                                                const matchingPlan = borrowerPlans.find(p => p.id === e.value);
+                                                                setCustomPlatformFee(matchingPlan?.platform_fee || 0);
+
+                                                                // Set default installment details if clicked/switched to installment option
+                                                                const isInst = opt.enrollment_type?.toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (matchingPlan?.total_installments_count > 1);
+                                                                if (isInst) {
+                                                                    const totalVal = Number(matchingPlan?.total_amount || matchingPlan?.payment_amount || 0);
+                                                                    setEnrollmentAmount(totalVal);
+                                                                    setInstallmentDownPayment(0);
+                                                                    setInstallmentMonths(12);
+                                                                    setInstallmentMonthlyAmount(totalVal > 0 ? Number((totalVal / 12).toFixed(2)) : 0);
+                                                                    setInstallmentApplied(true);
+                                                                    openInstallmentCalculator();
+                                                                } else {
+                                                                    setInstallmentApplied(false);
+                                                                }
                                                             }
+                                                            if (onFieldChange) onFieldChange(['plan_id', 'enrollment_type', 'amount', 'enrollment_amount']);
                                                         }}
                                                         optionLabel="label"
                                                         optionValue="value"
                                                         placeholder="Select Enrollment Type"
-                                                        className={`w-100 ${(validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type) ? 'p-invalid' : ''}`}
+                                                        className="w-100"
                                                         appendTo="self"
                                                     />
-                                                    {(validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type) && (
-                                                        <div className="invalid-feedback d-block">
-                                                            {validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type}
-                                                        </div>
-                                                    )}
                                                 </div>
 
                                                 {/* Enrollment Payment — editable for host, editable (DB pre-filled) for non-host */}
-                                                {planId && (
+                                                {planId && !isBorrowerInstallmentPlan && !installmentApplied && (
                                                     <div className="row g-3 mb-3 animate__animated animate__fadeIn">
                                                         <div className="col-lg-12">
-                                                            <label className="form-label fw-semibold">Enrollment Payment ($) <span className="text-danger">*</span></label>
+                                                            <label className="form-label fw-semibold">Enrollment Payment <span className="text-danger">*</span></label>
                                                             <input
                                                                 type="number"
                                                                 className={`form-control ${(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) ? 'is-invalid' : ''}`}
@@ -349,45 +414,134 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
                                                 {/* Fee Summary Card */}
                                                 {selectedBorrowerPlan && (
-                                                    <div className="border rounded-3 px-4 py-3 animate__animated animate__fadeInUp">
+                                                    <div className="bg-success-subtle border border-success-subtle rounded-3 px-4 py-3 animate__animated animate__fadeInUp">
+                                                        {isBorrowerInstallmentPlan ? (
+                                                            <>
+                                                                {installmentApplied ? (
+                                                                    <>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-hand-coin-line text-primary me-1"></i> Total Enrollment Amount:
+                                                                            </span>
+                                                                            <span className="info-value fw-semibold text-dark">
+                                                                                ${Number(enrollmentAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-wallet-3-line text-primary me-1"></i> Down Payment (Upfront):
+                                                                            </span>
+                                                                            <span className="info-value text-success fw-semibold">
+                                                                                ${Number(installmentDownPayment || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-calendar-line text-primary me-1"></i> Installment Duration:
+                                                                            </span>
+                                                                            <span className="info-value fw-semibold text-dark">
+                                                                                {installmentMonths || 12} Months
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-money-dollar-circle-line text-primary me-1"></i> Monthly Installment Amount:
+                                                                            </span>
+                                                                            <span className="amount-value text-success fw-semibold">
+                                                                                ${Number(installmentMonthlyAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="d-flex gap-2 mt-3 mb-2 justify-content-start">
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-sm btn-outline-primary"
+                                                                                onClick={openInstallmentCalculator}
+                                                                            >
+                                                                                <i className="ri-edit-line me-1"></i> Adjust Plan
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-sm btn-outline-secondary"
+                                                                                onClick={() => {
+                                                                                    const initialVal = Number(selectedBorrowerPlan?.total_amount || selectedBorrowerPlan?.payment_amount || 0);
+                                                                                    setEnrollmentAmount(initialVal);
+                                                                                    setInstallmentDownPayment(0);
+                                                                                    setInstallmentMonths(12);
+                                                                                    setInstallmentMonthlyAmount(initialVal > 0 ? Number((initialVal / 12).toFixed(2)) : 0);
+                                                                                    setInstallmentApplied(true);
+                                                                                }}
+                                                                            >
+                                                                                <i className="ri-restart-line me-1"></i> Reset
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-hand-coin-line text-primary me-1"></i> Total Enrollment Cost:
+                                                                            </span>
+                                                                            <span className="amount-value text-success fw-semibold">
+                                                                                ${Number(selectedBorrowerPlan?.total_amount || selectedBorrowerPlan?.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="custom-notice mb-2">
+                                                                            <i className="ri-information-line"></i>
+                                                                            <p className="custom-notice-text">
+                                                                                Flexible installment plan. Choose a down payment and duration to calculate the monthly amount.
+                                                                            </p>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-sm installment-trigger-btn mt-2"
+                                                                            onClick={openInstallmentCalculator}
+                                                                        >
+                                                                            <i className="ri-calculator-line me-1"></i> View Installment Details
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                {/* Borrower Invoice row */}
+                                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                        <i className="ri-user-line me-1 text-primary"></i> Borrower Invoice:
+                                                                    </span>
+                                                                    <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                                        ${displayBorrowerAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                    <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
+                                                                        Charged to the borrower upon enrollment.
+                                                                    </span>
+                                                                </div>
 
-                                                        {/* Borrower Invoice row */}
-                                                        <div className="d-flex justify-content-between align-items-center mb-1">
-                                                            <span style={{ fontWeight: 600 }} className="text-dark">
-                                                                <i className="ri-user-line me-1 text-primary"></i> Borrower Invoice:
-                                                            </span>
-                                                            <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
-                                                                ${displayBorrowerAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                            </span>
-                                                        </div>
-                                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                                            <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
-                                                                Charged to the borrower upon enrollment.
-                                                            </span>
-                                                        </div>
+                                                                {/* Duration row — shown for multi-installment plans */}
+                                                                {selectedBorrowerPlan.total_installments_count > 1 && (
+                                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                        <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                            <i className="ri-calendar-line me-1 text-primary"></i> Duration:
+                                                                        </span>
+                                                                        <span className="text-muted" style={{ fontSize: '0.95rem' }}>
+                                                                            {selectedBorrowerPlan.total_installments_count} months
+                                                                        </span>
+                                                                    </div>
+                                                                )}
 
-                                                        {/* Duration row — shown for multi-installment plans */}
-                                                        {selectedBorrowerPlan.total_installments_count > 1 && (
-                                                            <div className="d-flex justify-content-between align-items-center mb-1">
-                                                                <span style={{ fontWeight: 600 }} className="text-dark">
-                                                                    <i className="ri-calendar-line me-1 text-primary"></i> Duration:
-                                                                </span>
-                                                                <span className="text-muted" style={{ fontSize: '0.95rem' }}>
-                                                                    {selectedBorrowerPlan.total_installments_count} months
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Total Amount row — shown for multi-installment plans */}
-                                                        {selectedBorrowerPlan.total_installments_count > 1 && (
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <span style={{ fontWeight: 600 }} className="text-dark">
-                                                                    <i className="ri-calculator-line me-1 text-primary"></i> Total Amount:
-                                                                </span>
-                                                                <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
-                                                                    ${(displayBorrowerAmount * selectedBorrowerPlan.total_installments_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                </span>
-                                                            </div>
+                                                                {/* Total Amount row — shown for multi-installment plans */}
+                                                                {selectedBorrowerPlan.total_installments_count > 1 && (
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                            <i className="ri-calculator-line me-1 text-primary"></i> Total Amount:
+                                                                        </span>
+                                                                        <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                                            ${(displayBorrowerAmount * selectedBorrowerPlan.total_installments_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </>
                                                         )}
 
                                                         {/* Partner Invoice row — shown when fixedEnrollmentAmount exists */}
@@ -411,7 +565,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                 <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                     <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                         <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                        Two completely separate invoices are created. The Borrower pays <strong>${displayBorrowerAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>, and upon successful payment, <strong>${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> is automatically charged to the Partner account immediately.
+                                                                        Two separate invoices are created. The Borrower pays <strong>${Number(isBorrowerInstallmentPlan ? (installmentApplied ? installmentDownPayment : (selectedBorrowerPlan?.total_amount || selectedBorrowerPlan?.payment_amount || 0)) : customEnrollmentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>, and <strong>${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> is automatically charged to the Partner.
                                                                     </p>
                                                                 </div>
                                                             </>
@@ -422,11 +576,9 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                         )}
                                     </div>
                                 )}
-
                                 {/* ── Partner Conversion ── */}
                                 {targetType == ENTITY_TYPE_PARTNER && (
                                     <div className="mb-4 text-start">
-
                                         {/* Partner Free Trial Switch (only for host) */}
                                         {isHost && (
                                             <div className="trial-switch-container animate__animated animate__fadeIn">
@@ -436,7 +588,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                     </div>
                                                     <div>
                                                         <h6 className="mb-0 fw-semibold text-dark">Activate 30 Days Free Trial</h6>
-                                                        <small className="text-muted trial-subtext">Converts lead as a partner free trial account.</small>
+                                                        <small className="text-muted trial-subtext">Convert lead as a partner free trial account.</small>
                                                     </div>
                                                 </div>
                                                 <div className="form-check form-switch form-switch-md me-1">
@@ -506,6 +658,21 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                             if (selectedPlan) {
                                                                 setCustomEnrollmentAmount(selectedPlan.payment_amount || '');
                                                                 setCustomPlatformFee(selectedPlan.platform_fee || 0);
+
+                                                                // Set default installment details if clicked/switched to installment option
+                                                                const isInst = e.value?.toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (selectedPlan?.total_installments_count > 1);
+                                                                if (isInst) {
+                                                                    const totalVal = Number(selectedPlan.total_amount || selectedPlan.payment_amount || 0);
+                                                                    setEnrollmentAmount(totalVal);
+                                                                    setInstallmentDownPayment(0);
+                                                                    setInstallmentMonths(12);
+                                                                    setInstallmentMonthlyAmount(totalVal > 0 ? Number((totalVal / 12).toFixed(2)) : 0);
+                                                                    setInstallmentApplied(true);
+                                                                    openInstallmentCalculator();
+                                                                } else {
+                                                                    setInstallmentApplied(false);
+                                                                }
+
                                                                 if (onFieldChange) onFieldChange(['enrollment_amount', 'amount', 'monthly_platform_fee', 'platform_fee']);
                                                             }
                                                         }}
@@ -526,87 +693,200 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 {/* Editable amount inputs — only for isHost */}
                                                 {isHost && partnerEnrollmentType && (
                                                     <div className="row g-3 mb-3 animate__animated animate__fadeInUp">
-                                                        <div className="col-lg-6">
-                                                            <label className="form-label fw-semibold">Enrollment Payment ($) <span className="text-danger">*</span></label>
-                                                            <input
-                                                                type="number"
-                                                                className={`form-control ${(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) ? 'is-invalid' : ''}`}
-                                                                value={customEnrollmentAmount}
-                                                                onChange={(e) => {
-                                                                    setCustomEnrollmentAmount(e.target.value);
-                                                                    setValidationErrors(prev => ({ ...prev, customEnrollmentAmount: '' }));
-                                                                }}
-                                                                placeholder="Enter amount"
-                                                            />
-                                                            {(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) && (
-                                                                <div className="invalid-feedback">
-                                                                    {validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount}
+                                                        {!(isPartnerInstallmentPlan || installmentApplied) ? (
+                                                            <>
+                                                                <div className="col-lg-6">
+                                                                    <label className="form-label fw-semibold">Enrollment Payment <span className="text-danger">*</span></label>
+                                                                    <input
+                                                                        type="number"
+                                                                        className={`form-control ${(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) ? 'is-invalid' : ''}`}
+                                                                        value={customEnrollmentAmount}
+                                                                        onChange={(e) => {
+                                                                            setCustomEnrollmentAmount(e.target.value);
+                                                                            setValidationErrors(prev => ({ ...prev, customEnrollmentAmount: '' }));
+                                                                        }}
+                                                                        placeholder="Enter amount"
+                                                                    />
+                                                                    {(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) && (
+                                                                        <div className="invalid-feedback">
+                                                                            {validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <label className="form-label fw-semibold">Platform Fee Payment ($) <span className="text-danger">*</span></label>
-                                                            <input
-                                                                type="number"
-                                                                className={`form-control ${(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) ? 'is-invalid' : ''}`}
-                                                                value={customPlatformFee}
-                                                                onChange={(e) => {
-                                                                    setCustomPlatformFee(e.target.value);
-                                                                    setValidationErrors(prev => ({ ...prev, customPlatformFee: '' }));
-                                                                    if (onFieldChange) onFieldChange(['monthly_platform_fee', 'platform_fee']);
-                                                                }}
-                                                                placeholder="Enter amount"
-                                                            />
-                                                            {(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) && (
-                                                                <div className="invalid-feedback d-block">
-                                                                    {validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee}
+                                                                <div className="col-lg-6">
+                                                                    <label className="form-label fw-semibold">Platform Fee Payment <span className="text-danger">*</span></label>
+                                                                    <input
+                                                                        type="number"
+                                                                        className={`form-control ${(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) ? 'is-invalid' : ''}`}
+                                                                        value={customPlatformFee}
+                                                                        onChange={(e) => {
+                                                                            setCustomPlatformFee(e.target.value);
+                                                                            setValidationErrors(prev => ({ ...prev, customPlatformFee: '' }));
+                                                                            if (onFieldChange) onFieldChange(['monthly_platform_fee', 'platform_fee']);
+                                                                        }}
+                                                                        placeholder="Enter amount"
+                                                                    />
+                                                                    {(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) && (
+                                                                        <div className="invalid-feedback d-block">
+                                                                            {validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            )}
-                                                        </div>
+                                                            </>
+                                                        ) : (
+                                                            <div className="col-lg-12 col-12 animate__animated animate__fadeInUp">
+                                                                <label className="form-label fw-semibold">Platform Fee Payment <span className="text-danger">*</span></label>
+                                                                <input
+                                                                    type="number"
+                                                                    className={`form-control ${(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) ? 'is-invalid' : ''}`}
+                                                                    value={customPlatformFee}
+                                                                    onChange={(e) => {
+                                                                        setCustomPlatformFee(e.target.value);
+                                                                        setValidationErrors(prev => ({ ...prev, customPlatformFee: '' }));
+                                                                        if (onFieldChange) onFieldChange(['monthly_platform_fee', 'platform_fee']);
+                                                                    }}
+                                                                    placeholder="Enter amount"
+                                                                />
+                                                                {(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) && (
+                                                                    <div className="invalid-feedback d-block">
+                                                                        {validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
 
                                                 {/* Partner Fee Summary Card */}
-                                                {!isHost && selectedPartnerPlan && (
-                                                    <div className="border rounded-3 px-4 py-3 animate__animated animate__fadeInUp">
+                                                {selectedPartnerPlan && (
+                                                    <div className="bg-success-subtle border border-success-subtle rounded-3 px-4 py-3 animate__animated animate__fadeInUp">
+                                                        {isPartnerInstallmentPlan ? (
+                                                            <>
+                                                                {installmentApplied ? (
+                                                                    <>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-hand-coin-line text-success me-1"></i> Total Enrollment Amount:
+                                                                            </span>
+                                                                            <span className="info-value fw-semibold text-dark">
+                                                                                ${Number(enrollmentAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-wallet-3-line text-success me-1"></i> Down Payment (Upfront):
+                                                                            </span>
+                                                                            <span className="info-value text-success fw-semibold">
+                                                                                ${Number(installmentDownPayment || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-calendar-line text-success me-1"></i> Installment Duration:
+                                                                            </span>
+                                                                            <span className="info-value fw-semibold text-dark">
+                                                                                {installmentMonths || 12} Months
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-money-dollar-circle-line text-success me-1"></i> Monthly Installment Amount:
+                                                                            </span>
+                                                                            <span className="amount-value text-success fw-semibold">
+                                                                                ${Number(installmentMonthlyAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="d-flex gap-2 mt-3 mb-2 justify-content-start">
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-sm btn-outline-success"
+                                                                                onClick={openInstallmentCalculator}
+                                                                            >
+                                                                                <i className="ri-edit-line me-1"></i> Adjust Plan
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-sm btn-outline-secondary"
+                                                                                onClick={() => {
+                                                                                    const initialVal = Number(selectedPartnerPlan?.total_amount || selectedPartnerPlan?.payment_amount || 0);
+                                                                                    setEnrollmentAmount(initialVal);
+                                                                                    setInstallmentDownPayment(0);
+                                                                                    setInstallmentMonths(12);
+                                                                                    setInstallmentMonthlyAmount(initialVal > 0 ? Number((initialVal / 12).toFixed(2)) : 0);
+                                                                                    setInstallmentApplied(true);
+                                                                                }}
+                                                                            >
+                                                                                <i className="ri-restart-line me-1"></i> Reset
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                            <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                                <i className="ri-hand-coin-line text-success me-1"></i> Total Enrollment Cost:
+                                                                            </span>
+                                                                            <span className="amount-value text-success fw-semibold">
+                                                                                ${Number(selectedPartnerPlan?.total_amount || selectedPartnerPlan?.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="custom-notice mb-2">
+                                                                            <i className="ri-information-line"></i>
+                                                                            <p className="custom-notice-text">
+                                                                                Flexible installment plan. Choose a down payment and duration to calculate the monthly amount.
+                                                                            </p>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-sm installment-trigger-btn mt-2"
+                                                                            onClick={openInstallmentCalculator}
+                                                                        >
+                                                                            <i className="ri-calculator-line me-1"></i> View Installment Details
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                {/* Partner Invoice row */}
+                                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                        <i className="ri-shield-user-line me-1 text-success"></i> Partner Invoice:
+                                                                    </span>
+                                                                    <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                                        ${Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                    <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
+                                                                        Charged to the partner upon enrollment.
+                                                                    </span>
+                                                                </div>
 
-                                                        {/* Partner Invoice row */}
-                                                        <div className="d-flex justify-content-between align-items-center mb-1">
-                                                            <span style={{ fontWeight: 600 }} className="text-dark">
-                                                                <i className="ri-shield-user-line me-1 text-success"></i> Partner Invoice:
-                                                            </span>
-                                                            <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
-                                                                ${Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                            </span>
-                                                        </div>
-                                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                                            <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
-                                                                Charged to the partner upon enrollment.
-                                                            </span>
-                                                        </div>
+                                                                {/* Duration row — shown for multi-installment plans */}
+                                                                {selectedPartnerPlan.total_installments_count > 1 && (
+                                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                        <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                            <i className="ri-calendar-line me-1 text-success"></i> Duration:
+                                                                        </span>
+                                                                        <span className="text-muted" style={{ fontSize: '0.95rem' }}>
+                                                                            {selectedPartnerPlan.total_installments_count} months
+                                                                        </span>
+                                                                    </div>
+                                                                )}
 
-                                                        {/* Duration row — shown for multi-installment plans */}
-                                                        {selectedPartnerPlan.total_installments_count > 1 && (
-                                                            <div className="d-flex justify-content-between align-items-center mb-1">
-                                                                <span style={{ fontWeight: 600 }} className="text-dark">
-                                                                    <i className="ri-calendar-line me-1 text-success"></i> Duration:
-                                                                </span>
-                                                                <span className="text-muted" style={{ fontSize: '0.95rem' }}>
-                                                                    {selectedPartnerPlan.total_installments_count} months
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Total Amount row — shown for multi-installment plans */}
-                                                        {selectedPartnerPlan.total_installments_count > 1 && (
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <span style={{ fontWeight: 600 }} className="text-dark">
-                                                                    <i className="ri-calculator-line me-1 text-success"></i> Total Amount:
-                                                                </span>
-                                                                <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
-                                                                    ${(Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount) * selectedPartnerPlan.total_installments_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                </span>
-                                                            </div>
+                                                                {/* Total Amount row — shown for multi-installment plans */}
+                                                                {selectedPartnerPlan.total_installments_count > 1 && (
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span style={{ fontWeight: 600 }} className="text-dark">
+                                                                            <i className="ri-calculator-line me-1 text-success"></i> Total Amount:
+                                                                        </span>
+                                                                        <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                                            ${(Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount) * selectedPartnerPlan.total_installments_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </>
                                                         )}
 
                                                         {/* Platform Fee row */}
@@ -634,7 +914,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                     </div>
                                 )}
 
-                                <div className="hstack gap-2 justify-content-center">
+                                <div className="hstack gap-2 justify-content-end">
                                     <button
                                         type="button"
                                         className="btn btn-light"
@@ -662,6 +942,33 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                     </div>
                 </div>
             </div>
+            <InstallmentDetailsModal
+                show={showInstallmentModal}
+                onHide={() => setShowInstallmentModal(false)}
+                onHidden={handleInstallmentHidden}
+                defaultMonths={
+                    targetType === ENTITY_TYPE_BORROWER
+                        ? (selectedBorrowerPlan?.total_installments_count || 12)
+                        : (selectedPartnerPlan?.total_installments_count || 12)
+                }
+                totalAmount={
+                    targetType === ENTITY_TYPE_BORROWER
+                        ? Number(selectedBorrowerPlan?.total_amount || selectedBorrowerPlan?.payment_amount || 0)
+                        : Number(selectedPartnerPlan?.total_amount || selectedPartnerPlan?.payment_amount || 0)
+                }
+                appliedTotalAmount={enrollmentAmount}
+                appliedDownPayment={installmentDownPayment}
+                appliedMonths={installmentMonths}
+                appliedApplied={installmentApplied}
+                onApply={(data) => {
+                    setInstallmentDownPayment(data.downPayment);
+                    setInstallmentMonths(data.months);
+                    setInstallmentMonthlyAmount(data.monthlyPayment);
+                    setEnrollmentAmount(data.totalAmount);
+                    setCustomEnrollmentAmount(data.totalAmount);
+                    setInstallmentApplied(true);
+                }}
+            />
         </div>
     );
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -9,6 +10,7 @@ export default function SubscriptionTable({
     onPage, onSort, onFilter, filters, 
     sortField, sortOrder 
 }) {
+    const navigate = useNavigate();
     const statusBodyTemplate = (rowData) => {
         const status = rowData.status || 'N/A';
         const color = SUBSCRIPTION_STATUS_COLORS[status] || 'secondary';
@@ -29,8 +31,7 @@ export default function SubscriptionTable({
     };
 
     const amountBodyTemplate = (field) => (rowData) => {
-        const value = rowData[field];
-        return value ? `$${parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-';
+        return rowData[field] || '-';
     };
 
     const nameBodyTemplate = (rowData) => (
@@ -78,6 +79,8 @@ export default function SubscriptionTable({
                 responsiveLayout="scroll"
                 className="p-datatable-sm"
                 emptyMessage="No subscriptions found"
+                onRowClick={(e) => navigate(`/subscriptions/${e.data.id}`)}
+                rowClassName={() => 'cursor-pointer'}
             >
                 <Column field="partner_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by Name" style={{ minWidth: '200px' }} />
                 <Column field="enrollment_type" header="Enrollment Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '180px' }} />

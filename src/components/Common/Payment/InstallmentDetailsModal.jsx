@@ -32,14 +32,21 @@ export default function InstallmentDetailsModal({
     appliedDownPayment,
     appliedMonths,
     appliedApplied,
+    onHidden,
 }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
+
+    const onHiddenRef = useRef(onHidden);
+    useEffect(() => {
+        onHiddenRef.current = onHidden;
+    }, [onHidden]);
 
     const [totalAmountInput, setTotalAmountInput] = useState(totalAmount || 0);
     const [includeDownPayment, setIncludeDownPayment] = useState(false);
     const [downPayment, setDownPayment] = useState(0);
     const [months, setMonths] = useState(clampMonths(12));
+    const [validationError, setValidationError] = useState('');
 
     useEffect(() => {
         if (!modalRef.current) return;
@@ -61,6 +68,9 @@ export default function InstallmentDetailsModal({
             document.body.style.paddingRight = '';
             // Remove any leftover backdrop
             document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            if (onHiddenRef.current) {
+                onHiddenRef.current();
+            }
         };
 
         el.addEventListener('hidden.bs.modal', handleHidden);
@@ -94,6 +104,7 @@ export default function InstallmentDetailsModal({
                 setDownPayment(0);
                 setMonths(clampMonths(12));
             }
+            setValidationError('');
             modal.show();
         } else {
             modal.hide();
@@ -115,10 +126,34 @@ export default function InstallmentDetailsModal({
     const perMonthAmount = months > 0 ? remainingBalance / months : 0;
     const totalPayable = numericDown + perMonthAmount * months;
 
+    const handleApply = () => {
+        if (includeDownPayment) {
+            const downVal = parseFloat(downPayment);
+            if (isNaN(downVal) || downVal <= 0 || downPayment === '') {
+                setValidationError('Down payment is required and must be greater than 0.');
+                return;
+            }
+            if (downVal > numericTotal) {
+                setValidationError('Down payment cannot exceed the total amount.');
+                return;
+            }
+        }
+        setValidationError('');
+        if (onApply) {
+            onApply({
+                totalAmount: numericTotal,
+                downPayment: numericDown,
+                months,
+                monthlyPayment: perMonthAmount,
+            });
+        }
+        onHide();
+    };
+
     return createPortal(
         <div className="modal fade flip installment-details-modal" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content idm-content">
+                <form onSubmit={(e) => { e.preventDefault(); handleApply(); }} className="modal-content idm-content">
 
                     {/* Header */}
                     <div className="idm-header">
@@ -153,7 +188,10 @@ export default function InstallmentDetailsModal({
                                             step="0.01"
                                             className="idm-input"
                                             value={totalAmountInput}
-                                            onChange={(e) => setTotalAmountInput(e.target.value)}
+                                            onChange={(e) => {
+                                                setTotalAmountInput(e.target.value);
+                                                setValidationError('');
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -186,6 +224,7 @@ export default function InstallmentDetailsModal({
                                                 onChange={(e) => {
                                                     const checked = e.target.checked;
                                                     setIncludeDownPayment(checked);
+                                                    setValidationError('');
                                                     if (checked) {
                                                         setDownPayment('');
                                                     } else {
@@ -199,7 +238,7 @@ export default function InstallmentDetailsModal({
                                     {includeDownPayment && (
                                         <div className="idm-down-payment-field">
                                             <label className="idm-label">Down Payment Amount</label>
-                                            <div className={`idm-input-wrap${downExceedsTotal ? ' idm-input-wrap--error' : ''}`}>
+                                            <div className={`idm-input-wrap${(downExceedsTotal || validationError) ? ' idm-input-wrap--error' : ''}`}>
                                                 <span className="idm-prefix">$</span>
                                                 <input
                                                     type="number"
@@ -207,14 +246,17 @@ export default function InstallmentDetailsModal({
                                                     step="0.01"
                                                     className="idm-input"
                                                     value={downPayment}
-                                                    onChange={(e) => setDownPayment(e.target.value)}
+                                                    onChange={(e) => {
+                                                        setDownPayment(e.target.value);
+                                                        setValidationError('');
+                                                    }}
                                                     autoFocus
                                                 />
                                             </div>
-                                            {downExceedsTotal && (
+                                            {(downExceedsTotal || validationError) && (
                                                 <p className="idm-error-text">
                                                     <i className="ri-error-warning-line"></i>
-                                                    Down payment cannot exceed the total amount.
+                                                    {validationError || 'Down payment cannot exceed the total amount.'}
                                                 </p>
                                             )}
                                         </div>
@@ -257,19 +299,8 @@ export default function InstallmentDetailsModal({
                                 Close
                             </button>
                             <button
-                                type="button"
+                                type="submit"
                                 className="btn btn-sm idm-apply-btn"
-                                onClick={() => {
-                                    if (onApply) {
-                                        onApply({
-                                            totalAmount: numericTotal,
-                                            downPayment: numericDown,
-                                            months,
-                                            monthlyPayment: perMonthAmount,
-                                        });
-                                    }
-                                    onHide();
-                                }}
                             >
                                 <i className="ri-check-line me-1"></i>
                                 Apply
@@ -277,7 +308,7 @@ export default function InstallmentDetailsModal({
                         </div>
                     </div>
 
-                </div>
+                </form>
             </div>
         </div>,
         document.body

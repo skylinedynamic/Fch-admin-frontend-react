@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     sendTestMail,
     fetchGlobalConfigurations,
-    fetchSettings,
-    updateSettings,
     fetchEmailConfigurations,
     saveEmailConfiguration,
     toggleEmailConfigStatus,
@@ -14,7 +12,7 @@ import {
     fetchTimeSettings,
     updateTimeSettings,
 } from './services';
-import type { SendTestMailPayload, SendTestMailResponse, SettingsResponse, SettingsData, UpdateSettingsPayload, ScoreConfigurationResponse } from './types';
+import type { SendTestMailPayload, SendTestMailResponse, ScoreConfigurationResponse } from './types';
 
 /**
  * Hook to send a test notification/system email.
@@ -34,30 +32,6 @@ export const useGlobalConfigurations = (enabled = true) => {
         queryFn: fetchGlobalConfigurations,
         enabled,
         staleTime: 1000 * 60 * 30, // 30 minutes
-    });
-};
-
-/**
- * Hook to fetch settings (e.g. payment methods).
- */
-export const useSettings = (enabled = true) => {
-    return useQuery({
-        queryKey: ['settings'],
-        queryFn: fetchSettings,
-        enabled,
-    });
-};
-
-/**
- * Hook to save or update settings (e.g. payment methods).
- */
-export const useUpdateSettings = () => {
-    const qc = useQueryClient();
-    return useMutation<SettingsData, Error, UpdateSettingsPayload>({
-        mutationFn: updateSettings,
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['settings'] });
-        },
     });
 };
 

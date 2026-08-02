@@ -12,7 +12,6 @@ import {
     fetchBorrowerProfileStats,
     fetchBorrowerTiers,
     fetchBorrowerPlans,
-    fetchNonHostBorrowerPlans,
     fetchBorrowerTierWiseTaskList,
     fetchBorrowerProgress,
     updateTaskVerificationStatus,
@@ -224,17 +223,6 @@ export const useBorrowerPlans = (enabled: boolean = true) => {
     });
 };
 
-export const useNonHostBorrowerPlans = (enabled: boolean = true) => {
-    return useQuery({
-        queryKey: clientKeys.nonHostPlans(),
-        queryFn: async () => {
-            const result = await fetchNonHostBorrowerPlans();
-            return (result.status && result.data) ? result.data : [];
-        },
-        staleTime: 5 * 60 * 1000,
-        enabled
-    });
-};
 
 export const useBorrowerTierWiseTaskList = (borrowerId: string | number, enabled: boolean = true) => {
     return useQuery<BorrowerTier[]>({

@@ -141,11 +141,7 @@ export const fetchBorrowerPlans = async (): Promise<any> => {
     return data;
 };
 
-// Fetch non-host borrower plans (for partner clients)
-export const fetchNonHostBorrowerPlans = async (): Promise<any> => {
-    const { data } = await apiClient.get('/common/non-host-borrower-plans');
-    return data;
-};
+
 
 // Fetch borrower tier-wise task list
 export const fetchBorrowerTierWiseTaskList = async (borrowerId: string | number): Promise<{ status: boolean, data: BorrowerTier[] }> => {
@@ -160,11 +156,11 @@ export const fetchBorrowerProgress = async (borrowerId: string | number): Promis
 };
 
 // Update task verification status
-export const updateTaskVerificationStatus = async (payload: { 
-    tasks: { task_id: string | number, migrated_task_id?: string | number | null }[], 
-    borrower_id: string | number, 
+export const updateTaskVerificationStatus = async (payload: {
+    tasks: { task_id: string | number, migrated_task_id?: string | number | null }[],
+    borrower_id: string | number,
     tier_id: string | number,
-    status: string, 
+    status: string,
     note?: string
 }) => {
     const { data } = await apiClient.post(`/admin/credit-builder/tasks/update-status`, payload);

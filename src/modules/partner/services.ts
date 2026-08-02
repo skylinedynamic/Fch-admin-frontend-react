@@ -139,11 +139,6 @@ export const fetchPartnerPlans = async () => {
   return data;
 };
 
-export const fetchNonHostBorrowerPlans = async () => {
-  const { data } = await apiClient.get('/common/non-host-borrower-plans');
-  return data;
-};
-
 export const getTenantConfig = async (id: string | number): Promise<TenantConfig> => {
   const { data } = await apiClient.get(`/admin/partners/tenant-config/${id}`);
   return data;
@@ -162,5 +157,10 @@ export const getMyTenantConfig = async (): Promise<TenantConfig> => {
 
 export const updateMyTenantConfig = async (payload: Partial<TenantConfig>): Promise<Partner> => {
   const { data } = await apiClient.post('/common/partner/tenant-config', payload);
+  return data;
+};
+
+export const getSubscriptionDetails = async (id: string | number) => {
+  const { data } = await apiClient.get(`/admin/partners/subscription/${id}`);
   return data;
 };

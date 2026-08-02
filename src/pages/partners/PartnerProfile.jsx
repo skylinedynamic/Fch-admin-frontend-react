@@ -16,6 +16,7 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { refreshUserData } from '../../lib/auth/auth';
+import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -549,7 +550,7 @@ export default function PartnerProfile() {
                 fees.monthly_platform_fee = (selectedPlan.platform_fee || 0).toString();
                 fees.recurring_amount = (selectedPlan.platform_fee || 0).toString();
 
-                if ((currentEnrollmentType || '').toString().toLowerCase() === 'installment') {
+                if ((currentEnrollmentType || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase()) {
                     fees.installment_applied = true;
                     fees.enrollment_amount = selectedPlan.total_amount || 0;
                     fees.installment_down_payment = 0;
@@ -679,7 +680,7 @@ export default function PartnerProfile() {
 
                 // Determine whether this is an installment enrollment to decide
                 // whether to send installment payment data OR regular payment data.
-                const isInstallmentEnrollment = (formData.enrollment_type || '').toString().toLowerCase() === 'installment';
+                const isInstallmentEnrollment = (formData.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
 
                 // Obsolete payment fields — never sent to backend
                 const obsoletePaymentFields = [

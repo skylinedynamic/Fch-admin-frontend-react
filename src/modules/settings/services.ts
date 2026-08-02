@@ -1,30 +1,8 @@
 import axios from 'axios';
 import { apiClient } from '../../lib/http/apiClient';
-import type { SettingsData, UpdateSettingsPayload, SettingsResponse, SendTestMailPayload, SendTestMailResponse, AppConfigResponse, ThemeConfigurations, ScoreConfigurationResponse } from './types';
+import type { SendTestMailPayload, SendTestMailResponse, AppConfigResponse, ThemeConfigurations, ScoreConfigurationResponse } from './types';
 
 // Base API path
-
-
-export const fetchSettings = async (): Promise<SettingsResponse> => {
-    const { data } = await apiClient.get('/common/payment-methods');
-    return data;
-};
-
-
-export const fetchSettingsPaymentIntegration = async (): Promise<SettingsResponse> => {
-    const { data } = await apiClient.get('/common/payment-methods-fetch');
-    return data;
-};
-
-export const updateSettings = async (payload: UpdateSettingsPayload): Promise<SettingsData> => {
-    const { data } = await apiClient.post('/common/payment-methods', payload);
-    return data;
-};
-
-export const updateSettingsPaymentIntegration = async (payload: UpdateSettingsPayload): Promise<SettingsData> => {
-    const { data } = await apiClient.post('/common/payment-methods-update', payload);
-    return data;
-};
 
 
 export const sendTestMail = async (payload: SendTestMailPayload): Promise<SendTestMailResponse> => {

@@ -13,6 +13,7 @@ import InstallmentDetailsModal from '../../../components/Common/Payment/Installm
 import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
+import { ENROLLMENT_TYPE_INSTALLMENT } from '../../../config/subscriptionConfig';
 
 
 export default function PartnerInformationSection({
@@ -58,7 +59,7 @@ export default function PartnerInformationSection({
     const partnerTypeName = selectedPlan?.partner_type || formData.partner_type;
     const enrollmentTypeName = selectedPlan?.enrollment_type || formData.enrollment_type;
     const enrollmentTypeSlug = (selectedPlan?.enrollment_type_slug || formData.enrollment_type_slug || '').toString().toLowerCase();
-    const isInstallmentPlan = enrollmentTypeSlug === 'installment' || (formData.enrollment_type || '').toString().toLowerCase() === 'installment';
+    const isInstallmentPlan = enrollmentTypeSlug === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (formData.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
 
     const totalInvestment = formData.total_subscription_amount || (Number(currentPaymentAmount) * (selectedPlan?.total_installments_count || 11));
 
@@ -646,7 +647,7 @@ export default function PartnerInformationSection({
                                     })()}
                                     onChange={(e) => {
                                         handleInputChange({ target: { name: 'enrollment_type', value: e.value } });
-                                        if ((e.value || '').toString().toLowerCase() === 'installment') {
+                                        if ((e.value || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase()) {
                                             setShowInstallmentModal(true);
                                         }
                                     }}
