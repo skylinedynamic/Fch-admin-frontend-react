@@ -22,7 +22,10 @@ export default function EmployeeForm({
     isEditMode,
     onOpenFileManager,
     employeeId,
-    loadingLimitCheck
+    loadingLimitCheck,
+    isPurchaseFlow = false,
+    purchaseMonths = 1,
+    purchasePrice = 0
 }) {
     return (
         <form onSubmit={(e) => e.preventDefault()}>
@@ -60,6 +63,9 @@ export default function EmployeeForm({
                     isEditMode={isEditMode}
                     errors={errors}
                     loadingLimitCheck={loadingLimitCheck}
+                    isPurchaseFlow={isPurchaseFlow}
+                    purchaseMonths={purchaseMonths}
+                    purchasePrice={purchasePrice}
                 />
 
                 <EmergencyContactSection employee={employee} onChange={onChange} errors={errors} />

@@ -164,3 +164,5 @@ export const getSubscriptionDetails = async (id: string | number) => {
   const { data } = await apiClient.get(`/admin/partners/subscription/${id}`);
   return data;
 };
+
+

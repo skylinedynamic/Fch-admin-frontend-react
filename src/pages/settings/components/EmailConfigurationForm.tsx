@@ -489,8 +489,8 @@ const EmailConfigurationForm: React.FC = () => {
                                 </div> */}
                                 </div>
 
-                                <div className="col-12 mt-5 pt-3 border-top">
-                                    <div className="d-flex justify-content-end footer-actions">
+                                <div className="col-12 text-end mt-5 pt-3 border-top">
+                                    <div className="d-flex justify-content-end">
                                         <button
                                             type="submit"
                                             className="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow-sm"

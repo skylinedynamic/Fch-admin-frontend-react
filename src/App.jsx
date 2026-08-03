@@ -50,6 +50,7 @@ import Payments from './pages/payments/Payments.jsx';
 import PaymentDetails from './pages/payments/PaymentDetails.jsx';
 import Subscriptions from './pages/subscriptions/Subscriptions.jsx';
 import SubscriptionDetails from './pages/subscriptions/SubscriptionDetails.tsx';
+import PlanFee from './pages/plan-fee/PlanFee.tsx';
 import Billing from './pages/billing/Billing.jsx';
 import BillingDetails from './pages/billing/BillingDetails.jsx';
 import Profile from './pages/auth-profile/Profile';
@@ -299,6 +300,7 @@ export default function App() {
             {/* Payment Method Routes - Host Partner Only */}
             <Route element={<PartnerHostRoute />}>
               <Route path="payment-methods" element={<PaymentMethods />} />
+              <Route path="plan-fee" element={<PlanFee />} />
             </Route>
 
             {/* Appointments Routes - requires 'view appointments' permission */}

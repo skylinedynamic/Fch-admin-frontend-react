@@ -6,6 +6,7 @@ import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
 import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers, getUserCount, purchaseUserSeats } from '../../modules/user/services';
+import { fetchInvoiceDetails } from '../../modules/invoice/services';
 import { getUserDetails } from '../../lib/auth/authApi';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
@@ -17,7 +18,7 @@ import FilterLoader from '../../components/Loader/FilterLoader';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import { useAuthStore } from '../../store/auth/authStore';
 import UserLimitModal from './components/UserLimitModal';
-import UserPaymentModal from './components/UserPaymentModal';
+import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
 import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
 
 export default function Users() {
@@ -82,7 +83,7 @@ export default function Users() {
       const currentCount = data.data.count || 0;
       const freeLimit = freshUser?.total_free_users || 0;
       const paidLimit = freshUser?.total_paid_users || 0;
-      const totalAllowed = freeLimit + paidLimit;
+      const totalAllowed = 3 + paidLimit;
 
       if (currentCount < totalAllowed) {
         setShowAddUser(true);
@@ -402,11 +403,19 @@ export default function Users() {
           const invoiceId = res.data?.invoice_id;
           const userId = res.data?.id;
           setLimitData(prev => ({ ...prev, invoiceId, userId }));
+          if (invoiceId) {
+            try {
+              const invoiceRes = await fetchInvoiceDetails(invoiceId);
+              if (invoiceRes.status) {
+                setLimitData(prev => ({ ...prev, invoice: invoiceRes.data }));
+              }
+            } catch (error) {
+              console.error('Failed to fetch invoice details:', error);
+            }
+          }
           // User created, now proceed to payment
           setShowAddUser(false);
           setShowPaymentModal(true);
-          // Do NOT clear editingUserId or newUser yet if we might need them? 
-          // Actually, user is created. We move to payment.
         } else {
           setShowAddUser(false)
           setEditingUserId(null)
@@ -750,6 +759,9 @@ export default function Users() {
           showPasswordFields={showPasswordFields}
           onPasswordFieldsToggle={setShowPasswordFields}
           backendErrors={backendErrors}
+          isPurchaseFlow={isPurchaseFlow}
+          purchaseMonths={limitData.months}
+          purchasePrice={limitData.totalPrice}
         />
 
         <DeleteConfirmationModal
@@ -775,15 +787,11 @@ export default function Users() {
           perUserPrice={limitData.price}
         />
 
-        <UserPaymentModal
+        <InvoicePaymentModal
           show={showPaymentModal}
           onHide={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
-          amount={limitData.totalPrice}
-          quantity={limitData.quantity}
-          months={limitData.months}
-          invoiceId={limitData.invoiceId}
-          userId={limitData.userId}
+          invoice={limitData.invoice}
         />
 
         <PaidVersionOnlyModal

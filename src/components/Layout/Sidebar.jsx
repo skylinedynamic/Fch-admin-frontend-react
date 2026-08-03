@@ -153,6 +153,13 @@ const menuItems = [
     isPartnerOnly: true,
   },
   {
+    to: "/plan-fee",
+    icon: "ri-bank-card-line",
+    label: "Plan & Fee",
+    isHostOnly: true,
+    isPartnerOnly: true,
+  },
+  {
     to: "/subscriptions",
     icon: "bx bx-sync",
     label: "Subscriptions",

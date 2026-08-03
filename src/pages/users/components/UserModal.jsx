@@ -14,6 +14,9 @@ const UserModal = ({
   showPasswordFields,
   onPasswordFieldsToggle,
   backendErrors = {},
+  isPurchaseFlow = false,
+  purchaseMonths = 1,
+  purchasePrice = 0,
 }) => {
   const { hasPermission } = usePermissions();
   const [errors, setErrors] = React.useState({});
@@ -102,57 +105,67 @@ const UserModal = ({
     <>
       <div className="modal fade flip show d-block" tabIndex="-1" role="dialog">
         <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">
-                {isEdit ? "Update User" : "Add User"}
-              </h5>
+          <div className="modal-content border-0 shadow-lg custom-user-modal">
+            <div className="modal-header border-0 bg-light p-3 custom-user-modal-header">
+              <div className="d-flex align-items-center gap-2">
+                <div className="avatar-xs flex-shrink-0">
+                  <div className="avatar-title bg-primary bg-opacity-10 text-primary rounded-circle custom-avatar-icon">
+                    <i className={isEdit ? "ri-user-settings-line fs-18" : "ri-user-add-line fs-18"}></i>
+                  </div>
+                </div>
+                <h5 className="modal-title fw-semibold text-dark fs-16">
+                  {isEdit ? "Update User Account" : "Add User Account"}
+                </h5>
+              </div>
               <button
                 type="button"
                 className="btn-close"
                 onClick={onHide}
+                aria-label="Close"
               ></button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body p-4">
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label">
+                  <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
                     Name <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
                     name="name"
-                    className={`form-control ${allErrors.name ? "is-invalid" : ""}`}
+                    className={`form-control form-control-lg fs-14 custom-modal-input ${allErrors.name ? "is-invalid" : ""}`}
                     value={user.name}
                     onChange={onChange}
+                    placeholder="Enter full name"
                   />
                   {allErrors.name && (
                     <div className="invalid-feedback">{allErrors.name}</div>
                   )}
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">
-                    Email <span className="text-danger">*</span>
+                  <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
+                    Email Address <span className="text-danger">*</span>
                   </label>
                   <input
                     type="email"
                     name="email"
-                    className={`form-control ${allErrors.email ? "is-invalid" : ""}`}
+                    className={`form-control form-control-lg fs-14 custom-modal-input ${allErrors.email ? "is-invalid" : ""}`}
                     value={user.email}
                     onChange={onChange}
+                    placeholder="Enter email address"
                   />
                   {allErrors.email && (
                     <div className="invalid-feedback">{allErrors.email}</div>
                   )}
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">
-                    Phone <span className="text-danger">*</span>
+                  <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
+                    Phone Number <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
                     name="phone_number"
-                    className={`form-control ${allErrors.phone_number ? "is-invalid" : ""}`}
+                    className={`form-control form-control-lg fs-14 custom-modal-input ${allErrors.phone_number ? "is-invalid" : ""}`}
                     value={user.phone_number}
                     onChange={onChange}
                     placeholder="Enter phone number"
@@ -165,8 +178,8 @@ const UserModal = ({
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label">
-                    Role <span className="text-danger">*</span>
+                  <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
+                    User Role <span className="text-danger">*</span>
                   </label>
                   <Dropdown
                     value={String(user.role_id || "")}
@@ -178,7 +191,7 @@ const UserModal = ({
                       value: String(role.id),
                     }))}
                     placeholder="Select Role"
-                    className={`w-100 ${allErrors.role_id ? "p-invalid" : ""}`}
+                    className={`w-100 fs-14 custom-modal-input ${allErrors.role_id ? "p-invalid" : ""}`}
                     appendTo="self"
                   />
                   {allErrors.role_id && (
@@ -189,9 +202,8 @@ const UserModal = ({
                 </div>
                 {isEdit && (
                   <div className="mb-3">
-                    <label className="form-label">
-                      {" "}
-                      Status <span className="text-danger">*</span>
+                    <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
+                      Account Status <span className="text-danger">*</span>
                     </label>
                     <Dropdown
                       value={user.status}
@@ -204,7 +216,7 @@ const UserModal = ({
                       ]}
                       optionLabel="label"
                       optionValue="value"
-                      className={`w-100 ${allErrors.status ? "p-invalid" : ""}`}
+                      className={`w-100 fs-14 custom-modal-input ${allErrors.status ? "p-invalid" : ""}`}
                       appendTo="self"
                     />
                     {allErrors.status && (
@@ -216,16 +228,17 @@ const UserModal = ({
                 )}
                 {/* ADD MODE – Password Required */}
                 {!isEdit && (
-                  <div className="mb-3">
-                    <label className="form-label">
+                  <div className="mb-4">
+                    <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
                       Password <span className="text-danger">*</span>
                     </label>
                     <input
                       type="password"
                       name="password"
-                      className={`form-control ${allErrors.password ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg fs-14 custom-modal-input ${allErrors.password ? "is-invalid" : ""}`}
                       value={user.password}
                       onChange={onChange}
+                      placeholder="Enter password"
                     />
                     {allErrors.password && (
                       <div className="invalid-feedback">{allErrors.password}</div>
@@ -235,35 +248,34 @@ const UserModal = ({
 
                 {/* EDIT MODE – Password Update Checkbox */}
                 {isEdit && (
-                  <div className="form-check mb-3">
+                  <div className="form-check form-check-flat mb-3">
                     <input
                       type="checkbox"
-                      className="form-check-input"
+                      className="form-check-input cursor-pointer"
                       id="changePasswordCheck"
                       checked={showPasswordFields}
                       onChange={(e) => onPasswordFieldsToggle(e.target.checked)}
                     />
                     <label
-                      className="form-check-label"
+                      className="form-check-label cursor-pointer text-muted fs-13"
                       htmlFor="changePasswordCheck"
                     >
-                      Change Password
+                      Change Account Password
                     </label>
                   </div>
                 )}
 
                 {/* EDIT MODE – Show Inputs Only When Checkbox Checked */}
                 {isEdit && showPasswordFields && (
-                  <>
+                  <div className="border border-dashed custom-modal-change-password p-3 bg-light bg-opacity-50 mb-4 animate__animated animate__fadeIn">
                     <div className="mb-3">
-                      <label className="form-label">
+                      <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
                         New Password <span className="text-danger">*</span>
                       </label>
                       <input
                         type="password"
                         name="new_password"
-                        className={`form-control ${allErrors.new_password ? "is-invalid" : ""
-                          }`}
+                        className={`form-control form-control-lg fs-14 custom-modal-input ${allErrors.new_password ? "is-invalid" : ""}`}
                         value={user.new_password}
                         onChange={onChange}
                         placeholder="Enter new password"
@@ -275,14 +287,14 @@ const UserModal = ({
                       )}
                     </div>
 
-                    <div className="mb-3">
-                      <label className="form-label">
+                    <div className="mb-0">
+                      <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
                         Confirm Password <span className="text-danger">*</span>
                       </label>
                       <input
                         type="password"
                         name="confirm_password"
-                        className={`form-control ${allErrors.confirm_password ? "is-invalid" : ""}`}
+                        className={`form-control form-control-lg fs-14 custom-modal-input ${allErrors.confirm_password ? "is-invalid" : ""}`}
                         value={user.confirm_password}
                         onChange={onChange}
                         placeholder="Re-enter new password"
@@ -293,13 +305,32 @@ const UserModal = ({
                         </div>
                       )}
                     </div>
-                  </>
+                  </div>
                 )}
-                <div className="d-flex justify-content-end">
+                {isPurchaseFlow && (
+                  <div className="p-3 bg-success bg-opacity-10 text-success mb-4 custom-payment-details animate__animated animate__fadeIn">
+                    <div className="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom border-success border-opacity-10">
+                      <i className="ri-checkbox-circle-fill fs-18"></i>
+                      <h6 className="mb-0 fw-semibold text-success fs-14">Seat Purchase Pending Activation</h6>
+                    </div>
+                    <div className="row g-2 fs-13">
+                      <div className="col-6 text-success opacity-75">Additional Seat Quantity:</div>
+                      <div className="col-6 text-end fw-semibold text-success">1 Seat</div>
+                      
+                      <div className="col-6 text-success opacity-75">Subscription Duration:</div>
+                      <div className="col-6 text-end fw-semibold text-success">{purchaseMonths} Month{purchaseMonths > 1 ? 's' : ''}</div>
+                      
+                      <div className="col-6 text-success fw-bold">Total Amount Due:</div>
+                      <div className="col-6 text-end fw-bold text-success fs-15">${parseFloat(purchasePrice || 0).toFixed(2)}</div>
+                    </div>
+                  </div>
+                )}
+                <div className="d-flex justify-content-end gap-2 border-top pt-3 mt-4">
                   <button
                     type="button"
-                    className="btn btn-light me-2"
+                    className="btn btn-light btn-lg fs-14 px-4 custom-modal-btn fw-medium"
                     onClick={onHide}
+                    disabled={loadingSave}
                   >
                     Cancel
                   </button>
@@ -307,7 +338,7 @@ const UserModal = ({
                     (!isEdit && hasPermission("create users"))) && (
                       <button
                         type="submit"
-                        className="btn btn-primary"
+                        className="btn btn-primary btn-lg fs-14 px-4 custom-modal-btn fw-medium"
                         disabled={loadingSave}
                       >
                         {/* Loading Spinner */}
@@ -321,12 +352,11 @@ const UserModal = ({
 
                         {/* Dynamic Icon */}
                         <i
-                          className={`me-1 align-bottom ${isEdit ? "ri-edit-2-fill" : "ri-save-3-fill"
-                            }`}
+                          className={`me-1 align-bottom ${isEdit ? "ri-edit-2-fill" : "ri-save-3-fill"}`}
                         ></i>
 
                         {/* Dynamic Text */}
-                        {isEdit ? "Update" : "Submit"}
+                        {isEdit ? "Update Account" : "Save Account"}
                       </button>
                     )}
                 </div>

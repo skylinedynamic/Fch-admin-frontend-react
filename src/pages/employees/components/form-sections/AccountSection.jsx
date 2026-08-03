@@ -8,7 +8,17 @@ const jobStatusOptions = [
     ...STATUS
 ];
 
-export default function AccountSection({ employee, roles, onChange, isEditMode, errors = {}, loadingLimitCheck }) {
+export default function AccountSection({
+    employee,
+    roles,
+    onChange,
+    isEditMode,
+    errors = {},
+    loadingLimitCheck,
+    isPurchaseFlow = false,
+    purchaseMonths = 1,
+    purchasePrice = 0
+}) {
     // Transform roles to dropdown options
     const roleOptions = [
         { label: 'Select role', value: '' },
@@ -89,6 +99,27 @@ export default function AccountSection({ employee, roles, onChange, isEditMode, 
                     </div>
                 )}
             </div>
+
+            {isPurchaseFlow && employee.create_account && (
+                <div className="col-12">
+                    <div className="p-3 bg-success bg-opacity-10 text-success mb-4 custom-payment-details animate__animated animate__fadeIn">
+                        <div className="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom border-success border-opacity-10">
+                            <i className="ri-checkbox-circle-fill fs-18"></i>
+                            <h6 className="mb-0 fw-semibold text-success fs-14">Seat Purchase Pending Activation</h6>
+                        </div>
+                        <div className="row g-2 fs-13">
+                            <div className="col-6 text-success opacity-75">Additional Seat Quantity:</div>
+                            <div className="col-6 text-end fw-semibold text-success">1 Seat</div>
+                            
+                            <div className="col-6 text-success opacity-75">Subscription Duration:</div>
+                            <div className="col-6 text-end fw-semibold text-success">{purchaseMonths} Month{purchaseMonths > 1 ? 's' : ''}</div>
+                            
+                            <div className="col-6 text-success fw-bold">Total Amount Due:</div>
+                            <div className="col-6 text-end fw-bold text-success fs-15">${parseFloat(purchasePrice || 0).toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

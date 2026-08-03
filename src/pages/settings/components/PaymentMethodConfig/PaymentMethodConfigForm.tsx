@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { fetchPartnerPaymentProviderConfig, updatePartnerPaymentProviderConfig } from '../../../../modules/settings/services';
+import { fetchPartnerPaymentProviderConfig, updatePartnerPaymentProviderConfig, updatePartnerPaymentProviderStatus } from '../../../../modules/settings/services';
 import type { PartnerPaymentProvider } from '../../../../modules/settings/services';
 import { StripeConfigSkeleton } from '../../../../components/Loader/SpecificSkeletons';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../../components/Common/Modals/DynamicActionModal';
+import PaymentMethodStatusModal from '../../../../components/Common/Modals/PaymentMethodStatusModal';
 import { useAuthStore } from '../../../../store/auth/authStore';
 import { apiClient } from '../../../../lib/http/apiClient';
 import { PAYMENT_METHOD_PROVIDER, PAYMENT_ENVIRONMENT_LABELS } from '../../../../config/paymentConfig';
@@ -18,12 +19,6 @@ const PROVIDER_SQUARE = PAYMENT_METHOD_PROVIDER[2].toLowerCase();
 const PROVIDER_ECRYPT = PAYMENT_METHOD_PROVIDER[3].toLowerCase();
 const PROVIDER_AUTHORIZE = PAYMENT_METHOD_PROVIDER[4].toLowerCase().replace(/[\s\.]/g, '');
 
-// Static logo imports
-import stripeLogo from "../../../../../assets/images/payment_provider/stripe_logo.png";
-import squareLogo from "../../../../../assets/images/payment_provider/square.png";
-import ecryptLogo from "../../../../../assets/images/payment_provider/ecrypt.png";
-import authorizeLogo from "../../../../../assets/images/payment_provider/authorization.png";
-
 interface PaymentMethodConfigFormProps {
     provider: PartnerPaymentProvider;
     onBack: () => void;
@@ -32,23 +27,6 @@ interface PaymentMethodConfigFormProps {
 interface FormErrors {
     [key: string]: string | null;
 }
-
-const getProviderLogo = (name: string, slug?: string): string => {
-    const key = (slug || name || '').toLowerCase().replace(/[\s\.]/g, '');
-    switch (key) {
-        case PROVIDER_STRIPE:
-            return stripeLogo;
-        case PROVIDER_SQUARE:
-            return squareLogo;
-        case PROVIDER_ECRYPT:
-            return ecryptLogo;
-        case PROVIDER_AUTHORIZE:
-        case 'authorize':
-            return authorizeLogo;
-        default:
-            return '';
-    }
-};
 
 export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMethodConfigFormProps): React.JSX.Element {
     const user = useAuthStore((state: any) => state.user);
@@ -59,6 +37,29 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
     const [pendingMode, setPendingMode] = useState<string | null>(null);
     const [isDefault, setIsDefault] = useState<boolean>(false);
     const [linkageId, setLinkageId] = useState<number | null>(null);
+    const [status, setStatus] = useState<boolean>(false);
+    const [toggling, setToggling] = useState<boolean>(false);
+    const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+
+    const handleStatusToggleConfirm = async () => {
+        const newStatus = !status;
+        setToggling(true);
+        try {
+            await updatePartnerPaymentProviderStatus({
+                payment_provider_id: provider.id,
+                status: newStatus
+            });
+            setStatus(newStatus);
+            toast.success(`${provider.name} status updated successfully.`);
+            queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
+            setShowConfirmModal(false);
+        } catch (error) {
+            console.error('Error updating provider status:', error);
+            toast.error(`Failed to update ${provider.name} status.`);
+        } finally {
+            setToggling(false);
+        }
+    };
 
     // Dynamic config form state containing keys for whichever provider is configured
     const [formData, setFormData] = useState<Record<string, any>>({
@@ -88,6 +89,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 const linkage = response.data;
                 setLinkageId(linkage.id || null);
                 setIsDefault(!!linkage.is_default);
+                setStatus(!!linkage.status);
                 const config = linkage.configuration || {};
                 const paymentMode = linkage.payment_mode || config.payment_mode || MODE_SANDBOX;
 
@@ -143,11 +145,6 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
-    };
-
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, checked } = e.target;
-        setFormData(prev => ({ ...prev, [name]: checked ? 1 : 0 }));
     };
 
     const handleModeChangeRequest = (newMode: string) => {
@@ -271,7 +268,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 id: linkageId,
                 payment_provider_id: provider.id,
                 payment_mode: formData.payment_mode || MODE_SANDBOX,
-                status: true,
+                status: status,
                 is_default: isDefault,
                 configuration: configuration
             });
@@ -287,7 +284,6 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
     const isSandbox = formData.payment_mode !== MODE_PRODUCTION;
     const suffix = `_${isSandbox ? MODE_SANDBOX : MODE_PRODUCTION}`;
-    const providerLogo = getProviderLogo(provider.name, provider.slug);
 
     return (
         <div className="card shadow-sm border-0 payment-method-card animate__animated animate__fadeIn">
@@ -304,7 +300,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                     <>
                         <div className="d-flex align-items-center bg-info-subtle rounded-3 p-3 mb-4">
                             <div className="flex-shrink-0 me-4">
-                                <img src={providerLogo} alt={`${provider.name} Logo`} style={{ height: '35px' }} />
+                                <img src={provider.logo || ''} alt={`${provider.name} Logo`} style={{ height: '35px' }} />
                             </div>
                             <div className="flex-grow-1">
                                 <h6 className="mb-1 text-dark fw-semibold fs-14">{provider.name} Settings</h6>
@@ -314,8 +310,42 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                             </div>
                         </div>
 
+                        {/* Active Status Toggle Section */}
+                        <div className={`mb-4 rounded-3 p-3 animate__animated animate__fadeIn transition-all ${status ? 'bg-success-subtle border-success-subtle' : 'bg-danger-subtle border-danger-subtle'}`}>
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 className={`mb-1 fw-bold fs-14 ${status ? 'text-success' : 'text-danger'}`}>Active Status</h6>
+                                    <p className="text-muted mb-0 fs-13">
+                                        Enable or disable this payment method for checkout integration.
+                                    </p>
+                                </div>
+                                <div className="form-check form-switch form-switch-lg custom-switch-primary m-0 d-flex align-items-center gap-2">
+                                    <input
+                                        className="form-check-input cursor-pointer payment-method-switch"
+                                        type="checkbox"
+                                        role="switch"
+                                        id={`provider-form-status-${provider.id}`}
+                                        checked={status}
+                                        onChange={() => setShowConfirmModal(true)}
+                                        disabled={toggling || loading}
+                                    />
+                                    <label className={`form-check-label fs-13 fw-semibold ${status ? 'text-success' : 'text-danger'}`} htmlFor={`provider-form-status-${provider.id}`}>
+                                        {status ? 'Active' : 'Inactive'}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <form onSubmit={handleSubmit}>
-                            <div>
+                            <div
+                                className={`rounded-3 transition-all`}
+                            >
+                                {!status && (
+                                    <div className="alert alert-secondary border-0 d-flex align-items-center gap-2 mb-4 animate__animated animate__fadeIn" style={{ background: 'rgba(0,0,0,0.05)' }}>
+                                        <i className="ri-information-line fs-18 text-secondary"></i>
+                                        <span className="fs-13 text-secondary">This integration is currently inactive. Toggle <strong>Active Status</strong> above to enable editing.</span>
+                                    </div>
+                                )}
                                 {/* Environment Toggle */}
                                 <div className="mb-4 bg-primary-subtle rounded-3 p-3">
                                     <div className="d-flex align-items-center justify-content-between">
@@ -335,7 +365,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                 onChange={(e: DropdownChangeEvent) => handleModeChangeRequest(e.value)}
                                                 placeholder="Select Environment"
                                                 className="w-100"
-                                                disabled={loading}
+                                                disabled={loading || toggling || !status}
                                             />
                                         </div>
                                     </div>
@@ -359,6 +389,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         placeholder={isSandbox ? "pk_test_..." : "pk_live_..."}
                                                         style={{ boxShadow: 'none' }}
                                                         autoComplete="new-password"
+                                                        disabled={loading || toggling || !status}
                                                     />
                                                     {errors[`stripe_key${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -383,6 +414,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         placeholder={isSandbox ? "sk_test_..." : "sk_live_..."}
                                                         style={{ boxShadow: 'none' }}
                                                         autoComplete="new-password"
+                                                        disabled={loading || toggling || !status}
                                                     />
                                                     {errors[`stripe_secret${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -391,8 +423,6 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                     )}
                                                 </div>
                                             </div>
-
-
                                         </>
                                     )}
 
@@ -413,6 +443,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         placeholder={isSandbox ? "sandbox-sq-app-id-..." : "sq-app-id-..."}
                                                         style={{ boxShadow: 'none' }}
                                                         autoComplete="new-password"
+                                                        disabled={loading || toggling || !status}
                                                     />
                                                     {errors[`square_app_id${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -437,6 +468,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         placeholder={isSandbox ? "EAAAEO..." : "EAAAE..."}
                                                         style={{ boxShadow: 'none' }}
                                                         autoComplete="new-password"
+                                                        disabled={loading || toggling || !status}
                                                     />
                                                     {errors[`square_token${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -465,6 +497,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         placeholder="Enter API Login ID"
                                                         style={{ boxShadow: 'none' }}
                                                         autoComplete="new-password"
+                                                        disabled={loading || toggling || !status}
                                                     />
                                                     {errors[`authorize_login_id${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -489,6 +522,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         placeholder="Enter Transaction Key"
                                                         style={{ boxShadow: 'none' }}
                                                         autoComplete="new-password"
+                                                        disabled={loading || toggling || !status}
                                                     />
                                                     {errors[`authorize_transaction_key${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -517,6 +551,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         placeholder="Enter Client Key"
                                                         style={{ boxShadow: 'none' }}
                                                         autoComplete="new-password"
+                                                        disabled={loading || toggling || !status}
                                                     />
                                                     {errors[`client_key${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -541,6 +576,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         placeholder="Enter Client Secret"
                                                         style={{ boxShadow: 'none' }}
                                                         autoComplete="new-password"
+                                                        disabled={loading || toggling || !status}
                                                     />
                                                     {errors[`client_secret${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -566,7 +602,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                         <button
                                             type="submit"
                                             className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center gap-2 payment-method-btn-round"
-                                            disabled={loading}
+                                            disabled={loading || toggling || !status}
                                         >
                                             {loading ? (
                                                 <>
@@ -601,11 +637,20 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                     ? 'bg-danger-subtle border-start border-3 border-danger'
                     : 'bg-info-subtle border-start border-3 border-info'
                 }
-                imgSrc={providerLogo}
+                imgSrc={provider.logo || ''}
                 confirmText={`Yes, Change to ${pendingMode === MODE_PRODUCTION ? PAYMENT_ENVIRONMENT_LABELS[1] : PAYMENT_ENVIRONMENT_LABELS[0]}`}
                 confirmBtnClass={pendingMode === MODE_PRODUCTION ? 'btn-danger' : 'btn-primary'}
                 onClose={cancelModeChange}
                 onConfirm={confirmModeChange}
+            />
+
+            {/* Status Change Confirmation Modal */}
+            <PaymentMethodStatusModal
+                show={showConfirmModal}
+                targetProvider={{ id: provider.id, name: provider.name, status: status }}
+                updating={toggling}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={handleStatusToggleConfirm}
             />
         </div>
     );

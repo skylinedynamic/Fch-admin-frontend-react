@@ -4369,7 +4369,7 @@ File: Custom Css File
 }
 
 .status-dot-inactive {
-  background-color: #878a99;
+  background-color: #f26548;
 }
 
 .payment-method-switch {
@@ -4906,6 +4906,7 @@ File: Custom Css File
     text-align: center;
   }
 }
+
 /* ============================================================
    Payment Modal — ppm (wrapper) + pps (provider selector)
    ============================================================ */
@@ -5073,8 +5074,13 @@ File: Custom Css File
 }
 
 @keyframes pps-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* ── Provider Selector: empty / error ── */
@@ -5123,7 +5129,7 @@ File: Custom Css File
   gap: 0.75rem;
 }
 
-.card-detail-row > div {
+.card-detail-row>div {
   flex: 1;
 }
 
@@ -5210,4 +5216,39 @@ File: Custom Css File
   background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
   background-size: 200% 100%;
   animation: pps-shimmer 1.5s infinite ease-in-out;
+}
+
+/* Custom premium Add User modal styling (4px border-radius) */
+.custom-user-modal {
+  border-radius: 4px !important;
+}
+
+.custom-user-modal-header {
+  border-top-left-radius: 4px !important;
+  border-top-right-radius: 4px !important;
+}
+
+.custom-payment-details {
+  border-radius: 4px !important;
+  border: none !important;
+}
+
+.custom-modal-input {
+  border-radius: 4px !important;
+}
+
+.custom-modal-btn {
+  border-radius: 4px !important;
+}
+
+.custom-modal-change-password {
+  border-radius: 4px !important;
+}
+
+.custom-avatar-icon {
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }

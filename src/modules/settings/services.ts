@@ -76,6 +76,7 @@ export interface PartnerPaymentProvider {
     status: boolean;
     is_default: boolean;
     is_configured: boolean;
+    payment_mode?: string;
 }
 
 export interface PartnerPaymentProviderConfig {

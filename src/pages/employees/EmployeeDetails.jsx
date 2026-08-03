@@ -11,9 +11,10 @@ import {
   getNextEmployeeId
 } from '../../modules/employee';
 import { fetchRoles, getUserCount, purchaseUserSeats } from '../../modules/user/services';
+import { fetchInvoiceDetails } from '../../modules/invoice/services';
 import { getUserDetails } from '../../lib/auth/authApi';
 import UserLimitModal from '../users/components/UserLimitModal';
-import UserPaymentModal from '../users/components/UserPaymentModal';
+import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
 import { useAuthStore } from '../../store/auth/authStore';
 import { locationData } from '../../config';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
@@ -338,7 +339,7 @@ export default function EmployeeDetails() {
               const currentCount = parseInt(data?.data?.count || 0);
               const freeLimit = parseInt(freshUser?.total_free_users || 0);
               const paidLimit = parseInt(freshUser?.total_paid_users || 0);
-              const totalAllowed = freeLimit + paidLimit;
+              const totalAllowed = 3 + paidLimit;
 
               if (currentCount >= totalAllowed) {
                 // Limit reached! Uncheck the box and show modal
@@ -584,6 +585,16 @@ export default function EmployeeDetails() {
           const entityId = res.data?.user?.entity_id;
           const entityType = res.data?.user?.entity_type;
           setLimitData(prev => ({ ...prev, invoiceId, userId, entityId, entityType }));
+          if (invoiceId) {
+            try {
+              const invoiceRes = await fetchInvoiceDetails(invoiceId);
+              if (invoiceRes.status) {
+                setLimitData(prev => ({ ...prev, invoice: invoiceRes.data }));
+              }
+            } catch (error) {
+              console.error('Failed to fetch invoice details:', error);
+            }
+          }
           setIsSaving(false);
           setShowPaymentModal(true);
           return;
@@ -707,6 +718,9 @@ export default function EmployeeDetails() {
                         isEditMode={!!id}
                         employeeId={id || employee.employee_code}
                         loadingLimitCheck={loadingLimitCheck}
+                        isPurchaseFlow={isPurchaseFlow}
+                        purchaseMonths={limitData.months}
+                        purchasePrice={limitData.totalPrice}
                       />
                     )}
                   </div>
@@ -798,15 +812,11 @@ export default function EmployeeDetails() {
           perUserPrice={limitData.price}
         />
 
-        <UserPaymentModal
+        <InvoicePaymentModal
           show={showPaymentModal}
           onHide={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
-          amount={limitData.totalPrice}
-          quantity={limitData.quantity}
-          months={limitData.months}
-          invoiceId={limitData.invoiceId}
-          userId={limitData.userId}
+          invoice={limitData.invoice}
         />
 
         <EmailComposeModal />
