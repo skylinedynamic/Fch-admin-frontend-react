@@ -5252,3 +5252,93 @@ File: Custom Css File
   align-items: center !important;
   justify-content: center !important;
 }
+
+/* ============================================================
+   Plan & Fee Configurator Redesign Styles
+   ============================================================ */
+.plan-fee-main-card {
+  border-radius: 4px !important;
+}
+
+.plan-fee-avatar-square {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 4px !important;
+}
+
+.plan-fee-input-width {
+  width: 120px !important;
+}
+
+.plan-fee-input-group {
+  gap: 0px !important;
+}
+
+.plan-fee-input-group .input-group-text {
+  border-top-left-radius: 4px !important;
+  border-bottom-left-radius: 4px !important;
+  border-top-right-radius: 0px !important;
+  border-bottom-right-radius: 0px !important;
+  border-right: 0px !important;
+}
+
+.plan-fee-input-group .form-control {
+  border-top-left-radius: 0px !important;
+  border-bottom-left-radius: 0px !important;
+  border-top-right-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+  height: 31px !important;
+}
+
+.plan-fee-input-group-limit {
+  gap: 0px !important;
+}
+
+.plan-fee-input-group-limit .form-control {
+  border-top-left-radius: 4px !important;
+  border-bottom-left-radius: 4px !important;
+  border-top-right-radius: 0px !important;
+  border-bottom-right-radius: 0px !important;
+  border-right: 0px !important;
+  height: 31px !important;
+}
+
+.plan-fee-input-group-limit .input-group-text {
+  border-top-left-radius: 0px !important;
+  border-bottom-left-radius: 0px !important;
+  border-top-right-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+}
+
+.plan-fee-save-btn {
+  height: 31px !important;
+  background: var(--primary-color, var(--vz-primary, #405189)) !important;
+  border-color: var(--primary-color, var(--vz-primary, #405189)) !important;
+  color: #ffffff !important;
+}
+
+/* Modal and related elements spacing overrides */
+.plan-fee-confirm-modal .modal-dialog {
+  max-width: 420px !important;
+}
+
+.plan-fee-confirm-modal .modal-content {
+  border-radius: 4px !important;
+}
+
+.plan-fee-confirm-modal-body {
+  border-radius: 4px !important;
+  overflow: hidden !important;
+}
+
+.plan-fee-changed-items-box {
+  border-radius: 4px !important;
+}
+
+.plan-fee-alert-note {
+  border-radius: 0 4px 4px 0 !important;
+}
+
+.plan-fee-modal-btn {
+  border-radius: 4px !important;
+}

@@ -2,50 +2,123 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchPlanFeeSubscriptions, updatePlanFeeSubscription } from '../../modules/subscription-plan';
 import { toast } from 'react-toastify';
+import { Modal, ModalHeader, ModalBody } from 'reactstrap';
+import {
+    PLAN_GROUP_PARTNER_ENROLLMENT,
+    PLAN_GROUP_BORROWER_ENROLLMENT,
+    PLAN_GROUP_BORROWER_FEE,
+    PLAN_GROUP_USER_SEAT,
+    PLAN_GROUP_UNASSIGNED
+} from '../../config/subscriptionConfig';
 
 interface Plan {
     id: number;
     partner_type: string;
-    partner_type_slug: string;
+    partner_type_slug: string | null;
     enrollment_type: string;
-    enrollment_type_slug: string;
+    enrollment_type_slug: string | null;
     entity_type: string;
     is_partner_paying: boolean | number;
     total_installments_count: number | null;
     subscription_period_month: number | null;
     total_amount: string | number;
     platform_fee: string | number;
+    total_installment_count_upto?: number | null;
     currency: string;
     currency_symbol: string;
     status: boolean | number;
+    is_installment?: boolean;
 }
 
 interface EditState {
     total_amount: string;
     platform_fee: string;
+    total_installment_count_upto: string;
 }
 
+const groupMeta: Record<string, { title: string; icon: string; bg: string; text: string; desc: string }> = {
+    [PLAN_GROUP_PARTNER_ENROLLMENT]: {
+        title: 'Partner Enrollment Plans',
+        icon: 'ri-handshake-line',
+        bg: 'bg-primary-subtle',
+        text: 'text-primary',
+        desc: 'Pricing structures applicable to partner entities'
+    },
+    [PLAN_GROUP_BORROWER_ENROLLMENT]: {
+        title: 'Borrower Enrollment Plans',
+        icon: 'ri-user-follow-line',
+        bg: 'bg-success-subtle',
+        text: 'text-success',
+        desc: 'Direct borrower signup rates'
+    },
+    [PLAN_GROUP_BORROWER_FEE]: {
+        title: 'Borrower Fee Plans',
+        icon: 'ri-bank-card-line',
+        bg: 'bg-warning-subtle',
+        text: 'text-warning',
+        desc: 'Additional fee structures for borrowers'
+    },
+    [PLAN_GROUP_USER_SEAT]: {
+        title: 'User Seat Plans',
+        icon: 'ri-group-line',
+        bg: 'bg-info-subtle',
+        text: 'text-info',
+        desc: 'Pricing for additional user/employee seats'
+    },
+    [PLAN_GROUP_UNASSIGNED]: {
+        title: 'Other Plans',
+        icon: 'ri-price-tag-3-line',
+        bg: 'bg-secondary-subtle',
+        text: 'text-secondary',
+        desc: 'Uncategorized subscription plans'
+    }
+};
+
+const groupOrder = [
+    PLAN_GROUP_PARTNER_ENROLLMENT,
+    PLAN_GROUP_BORROWER_ENROLLMENT,
+    PLAN_GROUP_BORROWER_FEE,
+    PLAN_GROUP_USER_SEAT,
+    PLAN_GROUP_UNASSIGNED
+];
+
 export default function PlanFee() {
-    const [plans, setPlans] = useState<Plan[]>([]);
+    const [plans, setPlans] = useState<Record<string, Plan[]>>({});
     const [loading, setLoading] = useState<boolean>(true);
     const [editedValues, setEditedValues] = useState<Record<number, EditState>>({});
     const [updatingId, setUpdatingId] = useState<number | null>(null);
+    const [activeTab, setActiveTab] = useState<string>(PLAN_GROUP_PARTNER_ENROLLMENT);
+
+    // Modal states
+    const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+    const [selectedPlanForUpdate, setSelectedPlanForUpdate] = useState<Plan | null>(null);
 
     const loadPlans = async () => {
         setLoading(true);
         try {
             const response = await fetchPlanFeeSubscriptions();
             if (response.status) {
-                const plansList = response.data || [];
-                setPlans(plansList);
-                
+                const plansGrouped = response.data || {};
+                setPlans(plansGrouped);
+
+                // Set default active tab
+                const available = groupOrder.filter(groupKey => (plansGrouped[groupKey] || []).length > 0);
+                if (available.length > 0) {
+                    setActiveTab(prev => available.includes(prev) ? prev : available[0]);
+                }
+
                 // Initialize edited values
                 const initialEdits: Record<number, EditState> = {};
-                plansList.forEach((plan: Plan) => {
-                    initialEdits[plan.id] = {
-                        total_amount: String(plan.total_amount ?? '0.00'),
-                        platform_fee: String(plan.platform_fee ?? '0.00'),
-                    };
+                Object.values(plansGrouped).forEach((plansList: any) => {
+                    if (Array.isArray(plansList)) {
+                        plansList.forEach((plan: Plan) => {
+                            initialEdits[plan.id] = {
+                                total_amount: String(plan.total_amount ?? '0.00'),
+                                platform_fee: String(plan.platform_fee ?? '0.00'),
+                                total_installment_count_upto: String(plan.total_installment_count_upto ?? ''),
+                            };
+                        });
+                    }
                 });
                 setEditedValues(initialEdits);
             } else {
@@ -62,32 +135,6 @@ export default function PlanFee() {
     useEffect(() => {
         loadPlans();
     }, []);
-
-    // Handle single plan update
-    const handleUpdate = async (id: number) => {
-        const edits = editedValues[id];
-        if (!edits) return;
-
-        setUpdatingId(id);
-        try {
-            const response = await updatePlanFeeSubscription(id, {
-                total_amount: parseFloat(edits.total_amount) || 0,
-                platform_fee: parseFloat(edits.platform_fee) || 0,
-            });
-
-            if (response.status) {
-                toast.success(response.message || 'Plan updated successfully');
-                loadPlans(); // Reload to refresh table
-            } else {
-                toast.error(response.message || 'Failed to update plan');
-            }
-        } catch (error) {
-            console.error('Error updating plan:', error);
-            toast.error('Failed to update plan');
-        } finally {
-            setUpdatingId(null);
-        }
-    };
 
     // Handle input changes
     const handleInputChange = (id: number, field: keyof EditState, value: string) => {
@@ -106,275 +153,414 @@ export default function PlanFee() {
         return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     };
 
-    // Filter plans into partner and client
-    const partnerPlans = plans.filter(plan => plan.entity_type ? plan.entity_type.includes('Partner') : false);
-    const clientPlans = plans.filter(plan => plan.entity_type ? plan.entity_type.includes('Borrower') : false);
-
     const getEnrollmentBadge = (type: string) => {
         const lower = (type || '').toLowerCase();
-        if (lower.includes('monthly')) return 'bg-info-subtle text-info border border-info-subtle';
-        if (lower.includes('annual') || lower.includes('year')) return 'bg-purple-subtle text-purple border border-purple-subtle';
-        if (lower.includes('installment')) return 'bg-warning-subtle text-warning border border-warning-subtle';
-        return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+        if (lower.includes('installment')) {
+            return 'bg-warning-subtle text-warning';
+        }
+        return 'bg-secondary-subtle text-secondary';
     };
 
-    const renderPlansTable = (plansList: Plan[], showPartnerType: boolean = true) => {
-        if (plansList.length === 0) {
-            return (
-                <div className="text-center py-5">
-                    <div className="avatar-md mx-auto mb-3">
-                        <div className="avatar-title bg-light text-muted rounded-circle fs-24">
-                            <i className="ri-inbox-archive-line"></i>
-                        </div>
-                    </div>
-                    <h6 className="text-muted fw-normal">No active plans configured for this tier.</h6>
-                </div>
-            );
+    const getPlanAvatarStyle = (index: number) => {
+        const styles = [
+            { bg: 'bg-primary-subtle', text: 'text-primary', icon: 'ri-vip-diamond-line' },
+            { bg: 'bg-success-subtle', text: 'text-success', icon: 'ri-shield-flash-line' },
+            { bg: 'bg-warning-subtle', text: 'text-warning', icon: 'ri-award-line' },
+            { bg: 'bg-info-subtle', text: 'text-info', icon: 'ri-medal-line' },
+        ];
+        return styles[index % styles.length];
+    };
+
+    const isInstallmentPlan = (plan: Plan) => {
+        const slug = (plan.enrollment_type_slug || '').toLowerCase();
+        const name = (plan.enrollment_type || '').toLowerCase();
+        return !!plan.is_installment
+            || slug === 'installment'
+            || slug === 'payment-plan-11-month-plan'
+            || slug === '6-month-payment'
+            || name === 'installment'
+            || name.includes('installment');
+    };
+
+    // Initiate update modal confirmation
+    const handleInitiateUpdate = (plan: Plan) => {
+        const edits = editedValues[plan.id];
+        if (!edits) return;
+
+        const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
+
+        const originalAmount = parseFloat(String(plan.total_amount || 0));
+        const editedAmount = parseFloat(edits.total_amount || '0');
+        const amountChanged = originalAmount !== editedAmount;
+
+        const originalFee = parseFloat(String(plan.platform_fee || 0));
+        const editedFee = parseFloat(edits.platform_fee || '0');
+        const platformFeeChanged = showPlatformFee && (originalFee !== editedFee);
+
+        const originalLimit = plan.total_installment_count_upto;
+        const editedLimit = edits.total_installment_count_upto ? parseInt(edits.total_installment_count_upto) : null;
+        const limitChanged = isInstallmentPlan(plan) && (originalLimit !== editedLimit);
+
+        if (!amountChanged && !platformFeeChanged && !limitChanged) {
+            toast.info('No changes detected for this plan.');
+            return;
         }
 
-        return (
-            <div className="table-responsive">
-                <table className="table table-hover align-middle table-nowrap mb-0">
-                    <thead className="table-light text-muted fs-11 text-uppercase fw-semibold" style={{ letterSpacing: '0.5px' }}>
-                        <tr>
-                            {showPartnerType && <th scope="col" style={{ width: '24%' }} className="ps-3">Partner Type</th>}
-                            <th scope="col" style={{ width: showPartnerType ? '24%' : '48%' }} className={!showPartnerType ? "ps-3" : ""}>Enrollment Type</th>
-                            <th scope="col" style={{ width: '22%' }}>Total Amount</th>
-                            <th scope="col" style={{ width: '22%' }}>Platform Fee</th>
-                            <th scope="col" style={{ width: '12%' }} className="text-end pe-3">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody className="fs-13">
-                        {plansList.map((plan) => {
-                            const isInstallment = plan.total_installments_count && plan.total_installments_count > 0;
-                            const edits = editedValues[plan.id] || { total_amount: '0', platform_fee: '0' };
-                            const isUpdating = updatingId === plan.id;
-
-                            return (
-                                <tr key={plan.id} className="transition-all">
-                                    {showPartnerType && (
-                                        <td className="ps-3">
-                                            <span className="badge bg-primary-subtle text-primary fs-12 px-2.5 py-1.5 rounded-2 fw-semibold">
-                                                {formatSlug(plan.partner_type)}
-                                            </span>
-                                        </td>
-                                    )}
-                                    <td className={!showPartnerType ? "ps-3" : ""}>
-                                        <div className="d-flex align-items-center gap-2">
-                                            <span className={`badge ${getEnrollmentBadge(plan.enrollment_type)} fs-11 px-2.5 py-1 rounded-pill`}>
-                                                {formatSlug(plan.enrollment_type)}
-                                            </span>
-                                            {isInstallment && (
-                                                <span className="badge bg-light text-dark border fs-10 px-2 py-0.5 rounded-pill">
-                                                    <i className="ri-calendar-event-line me-1 text-muted"></i>
-                                                    {plan.total_installments_count} Installments
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="input-group input-group-sm shadow-none" style={{ maxWidth: '200px' }}>
-                                            <span className="input-group-text bg-light text-muted fw-bold border-end-0 fs-12 px-2.5">
-                                                {plan.currency_symbol || '$'}
-                                            </span>
-                                            <input 
-                                                type="number" 
-                                                className="form-control border-start-0 ps-1 fw-semibold text-dark fs-13" 
-                                                value={edits.total_amount}
-                                                onChange={(e) => handleInputChange(plan.id, 'total_amount', e.target.value)}
-                                                min="0"
-                                                step="0.01"
-                                                disabled={isUpdating}
-                                            />
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="input-group input-group-sm shadow-none" style={{ maxWidth: '200px' }}>
-                                            <span className="input-group-text bg-light text-muted fw-bold border-end-0 fs-12 px-2.5">
-                                                {plan.currency_symbol || '$'}
-                                            </span>
-                                            <input 
-                                                type="number" 
-                                                className="form-control border-start-0 ps-1 fw-semibold text-dark fs-13" 
-                                                value={edits.platform_fee}
-                                                onChange={(e) => handleInputChange(plan.id, 'platform_fee', e.target.value)}
-                                                min="0"
-                                                step="0.01"
-                                                disabled={isUpdating}
-                                            />
-                                        </div>
-                                    </td>
-                                    <td className="text-end pe-3">
-                                        <button 
-                                            type="button" 
-                                            className="btn btn-sm btn-success shadow-sm px-3 rounded-2 fw-medium d-inline-flex align-items-center gap-1" 
-                                            onClick={() => handleUpdate(plan.id)}
-                                            disabled={isUpdating}
-                                        >
-                                            {isUpdating ? (
-                                                <>
-                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                    <span>Saving...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className="ri-check-double-line fs-14"></i>
-                                                    <span>Save Changes</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-        );
+        setSelectedPlanForUpdate(plan);
+        setShowConfirmModal(true);
     };
+
+    const handleExecuteUpdate = async () => {
+        if (!selectedPlanForUpdate) return;
+        const id = selectedPlanForUpdate.id;
+        const edits = editedValues[id];
+        if (!edits) return;
+
+        setShowConfirmModal(false);
+        setUpdatingId(id);
+
+        try {
+            const isInstallment = isInstallmentPlan(selectedPlanForUpdate);
+            const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
+
+            const payload: any = {
+                total_amount: parseFloat(edits.total_amount) || 0,
+            };
+
+            if (showPlatformFee) {
+                payload.platform_fee = parseFloat(edits.platform_fee) || 0;
+            }
+
+            if (isInstallment) {
+                payload.total_installment_count_upto = edits.total_installment_count_upto ? parseInt(edits.total_installment_count_upto) : null;
+            }
+
+            const response = await updatePlanFeeSubscription(id, payload);
+
+            if (response.status) {
+                toast.success(response.message || 'Plan updated successfully');
+                loadPlans(); // Reload to refresh
+            } else {
+                toast.error(response.message || 'Failed to update plan');
+            }
+        } catch (error) {
+            console.error('Error updating plan:', error);
+            toast.error('Failed to update plan');
+        } finally {
+            setUpdatingId(null);
+            setSelectedPlanForUpdate(null);
+        }
+    };
+
+    const availableGroups = groupOrder.filter(groupKey => (plans[groupKey] || []).length > 0);
+    const activePlansList = plans[activeTab] || [];
+    const showPartnerType = activeTab === PLAN_GROUP_PARTNER_ENROLLMENT || activeTab === PLAN_GROUP_USER_SEAT || activeTab === PLAN_GROUP_UNASSIGNED;
+    const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
 
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                
-                {/* Header Section */}
-                <div className="row pb-3 mobile-sticky-header">
+                {/* Standard Sticky Subheader */}
+                <div className="row page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
-                            <div>
-                                <div className="d-flex align-items-center gap-2">
-                                    <div className="avatar-xs flex-shrink-0">
-                                        <div className="avatar-title bg-primary text-white rounded-2 fs-16 shadow-sm">
-                                            <i className="ri-price-tag-3-line"></i>
-                                        </div>
-                                    </div>
-                                    <h4 className="fs-20 fw-bold text-dark mb-0">Plan & Fee Management</h4>
-                                </div>
-                                <nav aria-label="breadcrumb" className="mt-1">
-                                    <ol className="breadcrumb m-0 fs-12 text-muted">
-                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active text-primary fw-semibold" aria-current="page">Plan & Fee</li>
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                            <div className="flex-grow-1">
+                                <h4 className="fs-20 mb-1">Plan & Fee</h4>
+                                <nav aria-label="breadcrumb" className="d-block">
+                                    <ol className="breadcrumb m-0">
+                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
+                                        <li className="breadcrumb-item active fw-medium" aria-current="page">Plan & Fee</li>
                                     </ol>
                                 </nav>
                             </div>
-
-                            {/* Summary Pills */}
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="badge bg-white text-dark border shadow-sm px-3 py-2 rounded-3 d-flex align-items-center gap-2 fs-12">
-                                    <span className="w-2 h-2 rounded-circle bg-primary d-inline-block"></span>
-                                    <span>Partner Plans: <strong>{partnerPlans.length}</strong></span>
-                                </span>
-                                <span className="badge bg-white text-dark border shadow-sm px-3 py-2 rounded-3 d-flex align-items-center gap-2 fs-12">
-                                    <span className="w-2 h-2 rounded-circle bg-success d-inline-block"></span>
-                                    <span>Client Plans: <strong>{clientPlans.length}</strong></span>
-                                </span>
-                                <button 
-                                    onClick={loadPlans} 
-                                    className="btn btn-sm btn-light border shadow-sm px-2.5 py-1.5 rounded-3 text-muted hover-dark"
-                                    title="Reload Plans"
-                                    disabled={loading}
-                                >
-                                    <i className={`ri-refresh-line fs-14 ${loading ? 'spin' : ''}`}></i>
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Info Card */}
-                <div className="row mb-4">
-                    <div className="col-12">
-                        <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-primary-subtle text-primary-emphasis">
-                            <div className="card-body p-3.5 d-flex align-items-center gap-3">
-                                <div className="avatar-sm flex-shrink-0">
-                                    <div className="avatar-title bg-primary text-white rounded-circle fs-18 shadow-sm">
-                                        <i className="ri-information-line"></i>
-                                    </div>
-                                </div>
-                                <div className="flex-grow-1">
-                                    <h6 className="fw-bold mb-0.5 text-primary">Subscription Rates & Fee Engine</h6>
-                                    <p className="fs-12 text-muted mb-0">Configure default enrollment pricing and recurring platform fees for Partner and Client accounts. Updates take effect immediately for upcoming billing cycles.</p>
-                                </div>
-                            </div>
+                {loading && Object.keys(plans).length === 0 ? (
+                    <div className="card shadow-sm border-0 p-4" style={{ borderRadius: '4px' }}>
+                        <div className="placeholder-glow">
+                            <div className="placeholder col-4 mb-4 rounded" style={{ height: '30px' }}></div>
+                            <div className="placeholder col-12 mb-2 rounded" style={{ height: '44px' }}></div>
+                            <div className="placeholder col-12 mb-2 rounded" style={{ height: '44px' }}></div>
+                            <div className="placeholder col-12 mb-2 rounded" style={{ height: '44px' }}></div>
                         </div>
-                    </div>
-                </div>
-
-                {loading && plans.length === 0 ? (
-                    <div className="row">
-                        {[1, 2].map((n) => (
-                            <div key={n} className="col-12 mb-4">
-                                <div className="card border-0 shadow-sm rounded-3 p-4">
-                                    <div className="placeholder-glow">
-                                        <div className="placeholder col-3 mb-3 rounded" style={{ height: '24px' }}></div>
-                                        <div className="placeholder col-12 mb-2 rounded" style={{ height: '44px' }}></div>
-                                        <div className="placeholder col-12 mb-2 rounded" style={{ height: '44px' }}></div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
                     </div>
                 ) : (
-                    <div className="row">
-                        
-                        {/* Partner Plans Card */}
-                        <div className="col-12 mb-4">
-                            <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
-                                <div className="card-header bg-white border-bottom py-3 px-4">
-                                    <div className="d-flex align-items-center justify-content-between">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <div className="avatar-xs flex-shrink-0">
-                                                <div className="avatar-title bg-primary-subtle text-primary rounded-2 fs-15">
-                                                    <i className="ri-handshake-line"></i>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h5 className="card-title mb-0 fw-bold fs-15 text-dark">Partner Subscription Tiers</h5>
-                                                <span className="fs-11 text-muted">Pricing structures applicable to partner entities</span>
-                                            </div>
-                                        </div>
-                                        <span className="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 fs-11 fw-semibold">
-                                            {partnerPlans.length} Configured
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="card-body p-0">
-                                    {renderPlansTable(partnerPlans, true)}
-                                </div>
+                    <div>
+                        {/* Info Banner */}
+                        <div className="alert alert-info bg-info-subtle border-0 text-dark d-flex align-items-center gap-2.5 p-3 rounded-3 mb-4 fs-13 shadow-xs">
+                            <i className="ri-information-line fs-20 text-info flex-shrink-0"></i>
+                            <div>
+                                <strong className="text-dark">You control what your clients pay.</strong>{' '}
+                                <span className="text-muted">Create and manage the subscription plan rates. Only active plans will be shown to your clients.</span>
                             </div>
                         </div>
 
-                        {/* Client Plans Card */}
-                        <div className="col-12 mb-4">
-                            <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
-                                <div className="card-header bg-white border-bottom py-3 px-4">
-                                    <div className="d-flex align-items-center justify-content-between">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <div className="avatar-xs flex-shrink-0">
-                                                <div className="avatar-title bg-success-subtle text-success rounded-2 fs-15">
-                                                    <i className="ri-user-follow-line"></i>
+                        {/* Combined Navigation Tabs & Configurator Card */}
+                        <div className="card border-0 shadow-sm bg-white overflow-hidden plan-fee-main-card">
+                            <div className="card-header border-0 bg-light bg-opacity-25 pb-0 pt-3">
+                                <ul className="nav nav-tabs nav-tabs-custom nav-primary border-bottom-0" role="tablist">
+                                    {availableGroups.map((groupKey) => {
+                                        const meta = groupMeta[groupKey] || groupMeta.unassigned;
+                                        const isActive = activeTab === groupKey;
+                                        return (
+                                            <li className="nav-item" key={groupKey}>
+                                                <button
+                                                    className={`nav-link py-3 px-3.5 fw-medium border-0 fs-13 d-flex align-items-center gap-2 ${isActive ? 'active text-primary fw-bold' : 'text-muted'}`}
+                                                    onClick={() => setActiveTab(groupKey)}
+                                                    type="button"
+                                                >
+                                                    <i className={`${meta.icon} fs-16 ${isActive ? 'text-primary' : 'text-muted'}`}></i>
+                                                    <span>{meta.title.replace(' Plans', '')}</span>
+                                                    <span className={`badge ${isActive ? 'bg-primary text-white' : 'bg-light text-dark'} rounded-pill px-2.5 py-0.5 fs-10 fw-semibold`}>
+                                                        {(plans[groupKey] || []).length}
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+
+                            <div className="card-body p-4 pt-3">
+                                {activePlansList.length > 0 ? (
+                                    <div className="d-flex flex-column gap-3">
+                                        {activePlansList.map((plan, index) => {
+                                            const isInstallment = isInstallmentPlan(plan);
+                                            const edits = editedValues[plan.id] || { total_amount: '0', platform_fee: '0', total_installment_count_upto: '' };
+                                            const isUpdating = updatingId === plan.id;
+                                            const currency = plan.currency_symbol || plan.currency || '$';
+                                            const partnerName = formatSlug(plan.partner_type || plan.partner_type_slug || '');
+                                            const enrollmentName = formatSlug(plan.enrollment_type || plan.enrollment_type_slug || '');
+                                            const avatarStyle = getPlanAvatarStyle(index);
+
+                                            return (
+                                                <div key={plan.id} className="p-3 bg-light bg-opacity-40 rounded mb-2 transition-all hover-shadow-sm">
+                                                    <div className="row align-items-center g-3">
+                                                        {/* Left Details Column */}
+                                                        <div className="col-12 col-md-5 d-flex align-items-center gap-3">
+                                                            <div className={`avatar-md flex-shrink-0 d-flex align-items-center justify-content-center plan-fee-avatar-square ${avatarStyle.bg}`}>
+                                                                <span className={`${avatarStyle.text} fs-18 fw-bold`}>
+                                                                    <i className={avatarStyle.icon}></i>
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="mb-1 fw-bold text-dark fs-14">
+                                                                    {partnerName ? `${partnerName} - ${enrollmentName}` : enrollmentName}
+                                                                </h5>
+                                                                <p className="text-muted mb-0 fs-12 lh-base">
+                                                                    {isInstallment
+                                                                        ? 'Installment billing parameters and payment counts.'
+                                                                        : 'Standard single transaction payment rate.'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Right Inputs Column */}
+                                                        <div className="col-12 col-md-7">
+                                                            <div className="d-flex align-items-center justify-content-md-end flex-wrap gap-3">
+                                                                {/* Total Amount */}
+                                                                <div className="plan-fee-input-width">
+                                                                    <label className="form-label text-muted small mb-1">Total Amount</label>
+                                                                    <div className="input-group input-group-sm plan-fee-input-group">
+                                                                        <span className="input-group-text bg-light text-muted">{currency}</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="form-control form-control-sm bg-white"
+                                                                            value={edits.total_amount}
+                                                                            onChange={(e) => handleInputChange(plan.id, 'total_amount', e.target.value)}
+                                                                            min="0"
+                                                                            step="0.01"
+                                                                            disabled={isUpdating}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Platform Fee */}
+                                                                {showPlatformFee && (
+                                                                    <div className="plan-fee-input-width">
+                                                                        <label className="form-label text-muted small mb-1">Platform Fee</label>
+                                                                        <div className="input-group input-group-sm plan-fee-input-group">
+                                                                            <span className="input-group-text bg-light text-muted">{currency}</span>
+                                                                            <input
+                                                                                type="number"
+                                                                                className="form-control form-control-sm bg-white"
+                                                                                value={edits.platform_fee}
+                                                                                onChange={(e) => handleInputChange(plan.id, 'platform_fee', e.target.value)}
+                                                                                min="0"
+                                                                                step="0.01"
+                                                                                disabled={isUpdating}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Installment Limit */}
+                                                                {isInstallment && (
+                                                                    <div className="plan-fee-input-width">
+                                                                        <label className="form-label text-muted small mb-1">Installment Upto</label>
+                                                                        <div className="input-group input-group-sm plan-fee-input-group-limit">
+                                                                            <input
+                                                                                type="number"
+                                                                                className="form-control form-control-sm bg-white text-center"
+                                                                                value={edits.total_installment_count_upto ?? ''}
+                                                                                onChange={(e) => handleInputChange(plan.id, 'total_installment_count_upto', e.target.value)}
+                                                                                min="1"
+                                                                                step="1"
+                                                                                disabled={isUpdating}
+                                                                            />
+                                                                            <span className="input-group-text bg-light text-muted">months</span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Save Action */}
+                                                                <div className="align-self-end">
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-sm waves-effect waves-light d-flex align-items-center plan-fee-save-btn"
+                                                                        onClick={() => handleInitiateUpdate(plan)}
+                                                                        disabled={isUpdating}
+                                                                    >
+                                                                        {isUpdating ? (
+                                                                            <>
+                                                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                                <span>Saving</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <i className="ri-save-line fs-13 me-2"></i>
+                                                                                <span>Save</span>
+                                                                            </>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div>
-                                                <h5 className="card-title mb-0 fw-bold fs-15 text-dark">Client Subscription Tiers</h5>
-                                                <span className="fs-11 text-muted">Direct borrower and client subscription rates</span>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="p-5 text-center bg-white">
+                                        <div className="avatar-md mx-auto mb-3">
+                                            <div className="avatar-title bg-light text-muted rounded-circle fs-24">
+                                                <i className="ri-inbox-archive-line"></i>
                                             </div>
                                         </div>
-                                        <span className="badge bg-success-subtle text-success rounded-pill px-2.5 py-1 fs-11 fw-semibold">
-                                            {clientPlans.length} Configured
-                                        </span>
+                                        <h6 className="text-muted fw-normal m-0">No active plans configured for this tier.</h6>
                                     </div>
-                                </div>
-                                <div className="card-body p-0">
-                                    {renderPlansTable(clientPlans, false)}
-                                </div>
+                                )}
                             </div>
                         </div>
-
                     </div>
                 )}
 
             </div>
+
+            {/* Confirmation Modal */}
+            <Modal
+                isOpen={showConfirmModal}
+                toggle={() => setShowConfirmModal(false)}
+                centered
+                modalClassName="flip plan-fee-confirm-modal"
+                contentClassName="border-0 shadow-lg"
+            >
+                <ModalHeader toggle={() => setShowConfirmModal(false)} className="bg-light border-bottom py-3">
+                    <span className="fs-15 fw-bold text-dark mb-0">
+                        <i className="ri-shield-check-line text-primary me-2 align-middle fs-18"></i>
+                        Confirm Rate Changes
+                    </span>
+                </ModalHeader>
+                <ModalBody className="p-4 bg-white plan-fee-confirm-modal-body">
+                    {selectedPlanForUpdate && (() => {
+                        const edits = editedValues[selectedPlanForUpdate.id] || { total_amount: '0', platform_fee: '0', total_installment_count_upto: '' };
+                        const currency = selectedPlanForUpdate.currency_symbol || selectedPlanForUpdate.currency || '$';
+                        const isInstallment = isInstallmentPlan(selectedPlanForUpdate);
+                        const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
+                        const partnerName = formatSlug(selectedPlanForUpdate.partner_type || selectedPlanForUpdate.partner_type_slug || '');
+                        const enrollmentName = formatSlug(selectedPlanForUpdate.enrollment_type || selectedPlanForUpdate.enrollment_type_slug || '');
+
+                        const originalAmount = parseFloat(String(selectedPlanForUpdate.total_amount || 0));
+                        const editedAmount = parseFloat(edits.total_amount || '0');
+                        const amountChanged = originalAmount !== editedAmount;
+
+                        const originalFee = parseFloat(String(selectedPlanForUpdate.platform_fee || 0));
+                        const editedFee = parseFloat(edits.platform_fee || '0');
+                        const platformFeeChanged = showPlatformFee && (originalFee !== editedFee);
+
+                        const originalLimit = selectedPlanForUpdate.total_installment_count_upto;
+                        const editedLimit = edits.total_installment_count_upto ? parseInt(edits.total_installment_count_upto) : null;
+                        const limitChanged = isInstallment && (originalLimit !== editedLimit);
+
+                        const changedItems = [];
+                        if (amountChanged) {
+                            changedItems.push({
+                                label: 'Total Amount',
+                                oldVal: `${currency}${originalAmount.toFixed(2)}`,
+                                newVal: `${currency}${editedAmount.toFixed(2)}`
+                            });
+                        }
+                        if (platformFeeChanged) {
+                            changedItems.push({
+                                label: 'Platform Fee',
+                                oldVal: `${currency}${originalFee.toFixed(2)}`,
+                                newVal: `${currency}${editedFee.toFixed(2)}`
+                            });
+                        }
+                        if (limitChanged) {
+                            changedItems.push({
+                                label: 'Installment Upto',
+                                oldVal: originalLimit ? `${originalLimit} months` : 'Unlimited',
+                                newVal: editedLimit ? `${editedLimit} months` : 'Unlimited'
+                            });
+                        }
+
+                        return (
+                            <div>
+                                <p className="text-muted mb-4 fs-13">
+                                    Please review and confirm the rate modifications for <strong className="text-dark">{partnerName ? `${partnerName} - ${enrollmentName}` : enrollmentName}</strong>:
+                                </p>
+
+                                <div className="bg-info-subtle p-3 mb-4 plan-fee-changed-items-box">
+                                    <div className="d-flex flex-column gap-3 fs-13">
+                                        {changedItems.map((item) => (
+                                            <div key={item.label} className="d-flex align-items-center justify-content-between">
+                                                <span className="text-muted fw-semibold">{item.label}</span>
+                                                <div className="d-flex align-items-center gap-2 font-monospace">
+                                                    <span className="text-muted text-decoration-line-through">{item.oldVal}</span>
+                                                    <i className="ri-arrow-right-line text-muted"></i>
+                                                    <span className="text-success fw-bold">{item.newVal}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="alert alert-warning border-0 border-start border-3 border-warning bg-warning-subtle text-dark p-3 rounded-0 mb-4 fs-12 plan-fee-alert-note">
+                                    <div className="d-flex gap-2">
+                                        <div>
+                                            <strong className="text-dark">Please note:</strong> This rate modification will apply immediately to new registrations. Existing users' plans will remain unchanged.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="hstack gap-2 justify-content-end mt-4">
+                                    <button type="button" className="btn btn-light px-4 py-2 border fw-semibold fs-13 plan-fee-modal-btn" onClick={() => setShowConfirmModal(false)}>
+                                        Cancel
+                                    </button>
+                                    <button type="button" className="btn btn-primary px-4 py-2 fw-semibold fs-13 d-flex align-items-center gap-2 plan-fee-modal-btn" onClick={handleExecuteUpdate}>
+                                        <i className="ri-check-line fs-15"></i>
+                                        Confirm & Save
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </ModalBody>
+            </Modal>
         </div>
     );
 }

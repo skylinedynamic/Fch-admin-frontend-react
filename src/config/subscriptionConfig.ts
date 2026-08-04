@@ -22,3 +22,9 @@ export const ENROLLMENT_TYPE_OPTIONS = [
     { label: ENROLLMENT_TYPE_ONE_TIME, value: ENROLLMENT_TYPE_ONE_TIME },
     { label: ENROLLMENT_TYPE_INSTALLMENT, value: ENROLLMENT_TYPE_INSTALLMENT }
 ];
+
+export const PLAN_GROUP_PARTNER_ENROLLMENT = 'partner_enrollment';
+export const PLAN_GROUP_BORROWER_ENROLLMENT = 'borrower_enrollment';
+export const PLAN_GROUP_BORROWER_FEE = 'borrower_fee';
+export const PLAN_GROUP_USER_SEAT = 'user_seat';
+export const PLAN_GROUP_UNASSIGNED = 'unassigned';
