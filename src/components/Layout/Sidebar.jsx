@@ -153,13 +153,6 @@ const menuItems = [
     isPartnerOnly: true,
   },
   {
-    to: "/plan-fee",
-    icon: "ri-bank-card-line",
-    label: "Plan & Fee",
-    isHostOnly: true,
-    isPartnerOnly: true,
-  },
-  {
     to: "/subscriptions",
     icon: "bx bx-sync",
     label: "Subscriptions",
@@ -201,6 +194,13 @@ const menuItems = [
     icon: "ri-user-3-fill",
     label: "Users",
     permission: "view users",
+  },
+  {
+    to: "/plan-and-fee",
+    icon: "ri-bank-card-line",
+    label: "Plan & Fee",
+    isHostOnly: true,
+    isPartnerOnly: true,
   },
   {
     to: "/roles-permissions",

@@ -960,6 +960,21 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 appliedDownPayment={installmentDownPayment}
                 appliedMonths={installmentMonths}
                 appliedApplied={installmentApplied}
+                installmentMinMonths={
+                    targetType === ENTITY_TYPE_BORROWER
+                        ? selectedBorrowerPlan?.installment_min_months
+                        : selectedPartnerPlan?.installment_min_months
+                }
+                installmentMaxMonths={
+                    targetType === ENTITY_TYPE_BORROWER
+                        ? selectedBorrowerPlan?.installment_max_months
+                        : selectedPartnerPlan?.installment_max_months
+                }
+                installmentDefaultMonths={
+                    targetType === ENTITY_TYPE_BORROWER
+                        ? selectedBorrowerPlan?.installment_default_months
+                        : selectedPartnerPlan?.installment_default_months
+                }
                 onApply={(data) => {
                     setInstallmentDownPayment(data.downPayment);
                     setInstallmentMonths(data.months);

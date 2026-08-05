@@ -965,6 +965,9 @@ export default function PartnerInformationSection({
                 appliedDownPayment={formData.installment_down_payment}
                 appliedMonths={formData.installment_months}
                 appliedApplied={formData.installment_applied}
+                installmentMinMonths={selectedPlan?.installment_min_months}
+                installmentMaxMonths={selectedPlan?.installment_max_months}
+                installmentDefaultMonths={selectedPlan?.installment_default_months}
                 onApply={(data) => {
                     handleInputChange({ target: { name: 'enrollment_amount', value: data.totalAmount } });
                     handleInputChange({ target: { name: 'installment_down_payment', value: data.downPayment } });

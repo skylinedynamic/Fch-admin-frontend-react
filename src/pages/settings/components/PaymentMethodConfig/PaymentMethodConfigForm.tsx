@@ -14,10 +14,12 @@ import { PAYMENT_METHOD_PROVIDER, PAYMENT_ENVIRONMENT_LABELS } from '../../../..
 const MODE_SANDBOX = PAYMENT_ENVIRONMENT_LABELS[0].toLowerCase();
 const MODE_PRODUCTION = PAYMENT_ENVIRONMENT_LABELS[1].toLowerCase();
 
-const PROVIDER_STRIPE = PAYMENT_METHOD_PROVIDER[1].toLowerCase();
-const PROVIDER_SQUARE = PAYMENT_METHOD_PROVIDER[2].toLowerCase();
-const PROVIDER_ECRYPT = PAYMENT_METHOD_PROVIDER[3].toLowerCase();
-const PROVIDER_AUTHORIZE = PAYMENT_METHOD_PROVIDER[4].toLowerCase().replace(/[\s\.]/g, '');
+const PROVIDER_STRIPE = PAYMENT_METHOD_PROVIDER[1];
+const PROVIDER_SQUARE = PAYMENT_METHOD_PROVIDER[2];
+const PROVIDER_ECRYPT = PAYMENT_METHOD_PROVIDER[3];
+const PROVIDER_AUTHORIZE = PAYMENT_METHOD_PROVIDER[4];
+const PROVIDER_CASH = PAYMENT_METHOD_PROVIDER[5];
+const PROVIDER_BANK = PAYMENT_METHOD_PROVIDER[6];
 
 interface PaymentMethodConfigFormProps {
     provider: PartnerPaymentProvider;
@@ -68,13 +70,15 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
     const [errors, setErrors] = useState<FormErrors>({});
 
-    const slug = provider.slug || provider.name.toLowerCase().replace(/[\s\.]/g, '');
+    const name = provider.name;
 
-    const isStripe = slug === PROVIDER_STRIPE;
-    const isSquare = slug === PROVIDER_SQUARE;
-    const isAuthorize = slug === PROVIDER_AUTHORIZE;
-    const isEcrypt = slug === PROVIDER_ECRYPT;
-    const isFallback = !isStripe && !isSquare && !isAuthorize && !isEcrypt;
+    const isStripe = name === PROVIDER_STRIPE;
+    const isSquare = name === PROVIDER_SQUARE;
+    const isAuthorize = name === PROVIDER_AUTHORIZE;
+    const isEcrypt = name === PROVIDER_ECRYPT;
+    const isCash = name === PROVIDER_CASH;
+    const isBank = name === PROVIDER_BANK;
+    const isFallback = !isStripe && !isSquare && !isAuthorize && !isEcrypt && !isCash && !isBank;
 
     useEffect(() => {
         loadConfig();
@@ -127,6 +131,56 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                         client_secret_sandbox: config.sandbox?.client_secret || config.client_secret_sandbox || '',
                         client_key_production: config.production?.client_key || config.client_key_production || '',
                         client_secret_production: config.production?.client_secret || config.client_secret_production || '',
+                        payment_mode: paymentMode
+                    });
+                }
+                if (isCash) {
+                    setFormData({
+                        payment_mode: paymentMode
+                    });
+                }
+                if (isBank) {
+                    const sandboxBank1 = config.sandbox?.bank_1 || {};
+                    const sandboxBank2 = config.sandbox?.bank_2 || {};
+                    const sBank1Name = sandboxBank1.bank_name || config.sandbox?.bank_name || '';
+                    const sBank1AccName = sandboxBank1.account_name || config.sandbox?.account_name || '';
+                    const sBank1Route = sandboxBank1.routing_number || config.sandbox?.routing_number || '';
+                    const sBank1AccNum = sandboxBank1.account_number || config.sandbox?.account_number || '';
+                    const sBank1Instr = sandboxBank1.instructions || config.sandbox?.instructions || '';
+
+                    const productionBank1 = config.production?.bank_1 || {};
+                    const productionBank2 = config.production?.bank_2 || {};
+                    const pBank1Name = productionBank1.bank_name || config.production?.bank_name || '';
+                    const pBank1AccName = productionBank1.account_name || config.production?.account_name || '';
+                    const pBank1Route = productionBank1.routing_number || config.production?.routing_number || '';
+                    const pBank1AccNum = productionBank1.account_number || config.production?.account_number || '';
+                    const pBank1Instr = productionBank1.instructions || config.production?.instructions || '';
+
+                    setFormData({
+                        bank_name_1_sandbox: sBank1Name,
+                        account_name_1_sandbox: sBank1AccName,
+                        routing_number_1_sandbox: sBank1Route,
+                        account_number_1_sandbox: sBank1AccNum,
+                        instructions_1_sandbox: sBank1Instr,
+
+                        bank_name_2_sandbox: sandboxBank2.bank_name || '',
+                        account_name_2_sandbox: sandboxBank2.account_name || '',
+                        routing_number_2_sandbox: sandboxBank2.routing_number || '',
+                        account_number_2_sandbox: sandboxBank2.account_number || '',
+                        instructions_2_sandbox: sandboxBank2.instructions || '',
+
+                        bank_name_1_production: pBank1Name,
+                        account_name_1_production: pBank1AccName,
+                        routing_number_1_production: pBank1Route,
+                        account_number_1_production: pBank1AccNum,
+                        instructions_1_production: pBank1Instr,
+
+                        bank_name_2_production: productionBank2.bank_name || '',
+                        account_name_2_production: productionBank2.account_name || '',
+                        routing_number_2_production: productionBank2.routing_number || '',
+                        account_number_2_production: productionBank2.account_number || '',
+                        instructions_2_production: productionBank2.instructions || '',
+
                         payment_mode: paymentMode
                     });
                 }
@@ -205,6 +259,36 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 newErrors[`client_secret${suffix}`] = 'Client Secret is required.';
             }
         }
+        if (isBank) {
+            if (!formData[`bank_name_1${suffix}`]) {
+                newErrors[`bank_name_1${suffix}`] = 'Bank Name is required.';
+            }
+            if (!formData[`account_name_1${suffix}`]) {
+                newErrors[`account_name_1${suffix}`] = 'Account Holder Name is required.';
+            }
+            if (!formData[`account_number_1${suffix}`]) {
+                newErrors[`account_number_1${suffix}`] = 'Account Number is required.';
+            }
+
+            const hasAnyBank2Field =
+                formData[`bank_name_2${suffix}`] ||
+                formData[`account_name_2${suffix}`] ||
+                formData[`account_number_2${suffix}`] ||
+                formData[`routing_number_2${suffix}`] ||
+                formData[`instructions_2${suffix}`];
+
+            if (hasAnyBank2Field) {
+                if (!formData[`bank_name_2${suffix}`]) {
+                    newErrors[`bank_name_2${suffix}`] = 'Bank Name is required.';
+                }
+                if (!formData[`account_name_2${suffix}`]) {
+                    newErrors[`account_name_2${suffix}`] = 'Account Holder Name is required.';
+                }
+                if (!formData[`account_number_2${suffix}`]) {
+                    newErrors[`account_number_2${suffix}`] = 'Account Number is required.';
+                }
+            }
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -251,6 +335,43 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                         transaction_key: formData.authorize_transaction_key_production || null
                     }
                 };
+            } else if (isCash) {
+                configuration = {};
+            } else if (isBank) {
+                configuration = {
+                    sandbox: {
+                        bank_1: {
+                            bank_name: formData.bank_name_1_sandbox || null,
+                            account_name: formData.account_name_1_sandbox || null,
+                            routing_number: formData.routing_number_1_sandbox || null,
+                            account_number: formData.account_number_1_sandbox || null,
+                            instructions: formData.instructions_1_sandbox || null
+                        },
+                        bank_2: {
+                            bank_name: formData.bank_name_2_sandbox || null,
+                            account_name: formData.account_name_2_sandbox || null,
+                            routing_number: formData.routing_number_2_sandbox || null,
+                            account_number: formData.account_number_2_sandbox || null,
+                            instructions: formData.instructions_2_sandbox || null
+                        }
+                    },
+                    production: {
+                        bank_1: {
+                            bank_name: formData.bank_name_1_production || null,
+                            account_name: formData.account_name_1_production || null,
+                            routing_number: formData.routing_number_1_production || null,
+                            account_number: formData.account_number_1_production || null,
+                            instructions: formData.instructions_1_production || null
+                        },
+                        bank_2: {
+                            bank_name: formData.bank_name_2_production || null,
+                            account_name: formData.account_name_2_production || null,
+                            routing_number: formData.routing_number_2_production || null,
+                            account_number: formData.account_number_2_production || null,
+                            instructions: formData.instructions_2_production || null
+                        }
+                    }
+                };
             } else {
                 configuration = {
                     sandbox: {
@@ -293,14 +414,14 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                     <p className="text-muted mb-0 fs-13">Securely configure your {provider.name} payment credentials</p>
                 </div>
             </div>
-            <div className="card-body p-4">
+            <div className="card-body p-3 p-sm-4">
                 {fetching ? (
                     <StripeConfigSkeleton />
                 ) : (
                     <>
-                        <div className="d-flex align-items-center bg-info-subtle rounded-3 p-3 mb-4">
-                            <div className="flex-shrink-0 me-4">
-                                <img src={provider.logo || ''} alt={`${provider.name} Logo`} style={{ height: '35px' }} />
+                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center bg-info-subtle rounded-3 p-3 mb-4 gap-3">
+                            <div className="flex-shrink-0">
+                                <img src={provider.logo || ''} alt={`${provider.name} Logo`} style={{ height: '35px', maxWidth: '80px', objectFit: 'contain' }} />
                             </div>
                             <div className="flex-grow-1">
                                 <h6 className="mb-1 text-dark fw-semibold fs-14">{provider.name} Settings</h6>
@@ -312,14 +433,14 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
                         {/* Active Status Toggle Section */}
                         <div className={`mb-4 rounded-3 p-3 animate__animated animate__fadeIn transition-all ${status ? 'bg-success-subtle border-success-subtle' : 'bg-danger-subtle border-danger-subtle'}`}>
-                            <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
                                 <div>
                                     <h6 className={`mb-1 fw-bold fs-14 ${status ? 'text-success' : 'text-danger'}`}>Active Status</h6>
                                     <p className="text-muted mb-0 fs-13">
                                         Enable or disable this payment method for checkout integration.
                                     </p>
                                 </div>
-                                <div className="form-check form-switch form-switch-lg custom-switch-primary m-0 d-flex align-items-center gap-2">
+                                <div className="form-check form-switch form-switch-lg custom-switch-primary m-0 d-flex align-items-center gap-2 flex-shrink-0">
                                     <input
                                         className="form-check-input cursor-pointer payment-method-switch"
                                         type="checkbox"
@@ -348,14 +469,14 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                 )}
                                 {/* Environment Toggle */}
                                 <div className="mb-4 bg-primary-subtle rounded-3 p-3">
-                                    <div className="d-flex align-items-center justify-content-between">
+                                    <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
                                         <div>
                                             <h6 className="mb-1 fw-bold fs-14">Operating Environment</h6>
                                             <p className="text-muted mb-0 fs-13">
                                                 Currently configuring the <strong>{isSandbox ? PAYMENT_ENVIRONMENT_LABELS[0] : PAYMENT_ENVIRONMENT_LABELS[1]}</strong> API credentials.
                                             </p>
                                         </div>
-                                        <div>
+                                        <div className="flex-shrink-0" style={{ minWidth: '170px', width: '100%', maxWidth: '220px' }}>
                                             <Dropdown
                                                 value={formData.payment_mode}
                                                 options={[
@@ -587,35 +708,300 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                             </div>
                                         </>
                                     )}
+
+                                    {isCash && (
+                                        <div className="col-12 animate__animated animate__fadeIn">
+                                            <div className="alert alert-info bg-info-subtle border-0 text-dark p-3.5 rounded-3 d-flex align-items-start gap-3 shadow-xs">
+                                                <i className="ri-information-fill fs-20 text-info mt-0.5"></i>
+                                                <div>
+                                                    <h6 className="fw-semibold text-dark fs-14 mb-1">Cash Payment Integration</h6>
+                                                    <p className="text-muted mb-0 fs-13 lh-base">
+                                                        No API credentials or external keys are required. Toggle the <strong>Active Status</strong> above to make this payment method available for customers during checkout.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isBank && (
+                                        <div className="col-12 animate__animated animate__fadeIn">
+                                            <div className="row g-4">
+                                                {/* Bank Account 1 */}
+                                                <div className="col-12 col-lg-6">
+                                                    <div className="payment-config-card">
+                                                        <div className="payment-config-card-header d-flex align-items-center gap-2">
+                                                            <div className="payment-config-icon-wrapper primary">
+                                                                <i className="ri-bank-line fs-14"></i>
+                                                            </div>
+                                                            <span className="payment-config-card-title">Bank Account 1 (Primary)</span>
+                                                        </div>
+                                                        <div className="payment-config-card-body">
+                                                            <div className="row g-3">
+                                                                {/* Bank Name 1 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className={`input-group-text ${errors[`bank_name_1${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                                                            Bank Name
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control fs-14 ${errors[`bank_name_1${suffix}`] ? 'is-invalid border-danger' : ''}`}
+                                                                            name={`bank_name_1${suffix}`}
+                                                                            value={formData[`bank_name_1${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="e.g. Chase Bank"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                        {errors[`bank_name_1${suffix}`] && (
+                                                                            <div className="invalid-feedback ps-3 pb-2">
+                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`bank_name_1${suffix}`]}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Account Name 1 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className={`input-group-text ${errors[`account_name_1${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                                                            Account Name
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control fs-14 ${errors[`account_name_1${suffix}`] ? 'is-invalid border-danger' : ''}`}
+                                                                            name={`account_name_1${suffix}`}
+                                                                            value={formData[`account_name_1${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Account Holder Name"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                        {errors[`account_name_1${suffix}`] && (
+                                                                            <div className="invalid-feedback ps-3 pb-2">
+                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`account_name_1${suffix}`]}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Account Number 1 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className={`input-group-text ${errors[`account_number_1${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                                                            Account Number
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control fs-14 ${errors[`account_number_1${suffix}`] ? 'is-invalid border-danger' : ''}`}
+                                                                            name={`account_number_1${suffix}`}
+                                                                            value={formData[`account_number_1${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Bank Account Number"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                        {errors[`account_number_1${suffix}`] && (
+                                                                            <div className="invalid-feedback ps-3 pb-2">
+                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`account_number_1${suffix}`]}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Routing Number 1 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className="input-group-text bg-light text-muted">
+                                                                            Routing Number
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="form-control fs-14"
+                                                                            name={`routing_number_1${suffix}`}
+                                                                            value={formData[`routing_number_1${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Routing / ABA Number"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Instructions 1 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className="input-group-text bg-light text-muted">
+                                                                            Instructions
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="form-control fs-14"
+                                                                            name={`instructions_1${suffix}`}
+                                                                            value={formData[`instructions_1${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Instructions or Swift/BIC codes for Account 1"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Bank Account 2 */}
+                                                <div className="col-12 col-lg-6">
+                                                    <div className="payment-config-card">
+                                                        <div className="payment-config-card-header d-flex align-items-center justify-content-between">
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <div className="payment-config-icon-wrapper secondary">
+                                                                    <i className="ri-bank-line fs-14"></i>
+                                                                </div>
+                                                                <span className="payment-config-card-title">Bank Account 2 (Optional)</span>
+                                                            </div>
+                                                            <span className="badge bg-light text-muted border rounded-pill px-2.5 py-0.5 fs-10 fw-normal">Optional</span>
+                                                        </div>
+                                                        <div className="payment-config-card-body">
+                                                            <div className="row g-3">
+                                                                {/* Bank Name 2 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className={`input-group-text ${errors[`bank_name_2${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                                                            Bank Name
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control fs-14 ${errors[`bank_name_2${suffix}`] ? 'is-invalid border-danger' : ''}`}
+                                                                            name={`bank_name_2${suffix}`}
+                                                                            value={formData[`bank_name_2${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="e.g. Wells Fargo"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                        {errors[`bank_name_2${suffix}`] && (
+                                                                            <div className="invalid-feedback ps-3 pb-2">
+                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`bank_name_2${suffix}`]}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Account Name 2 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className={`input-group-text ${errors[`account_name_2${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                                                            Account Name
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control fs-14 ${errors[`account_name_2${suffix}`] ? 'is-invalid border-danger' : ''}`}
+                                                                            name={`account_name_2${suffix}`}
+                                                                            value={formData[`account_name_2${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Account Holder Name"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                        {errors[`account_name_2${suffix}`] && (
+                                                                            <div className="invalid-feedback ps-3 pb-2">
+                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`account_name_2${suffix}`]}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Account Number 2 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className={`input-group-text ${errors[`account_number_2${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                                                            Account Number
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control fs-14 ${errors[`account_number_2${suffix}`] ? 'is-invalid border-danger' : ''}`}
+                                                                            name={`account_number_2${suffix}`}
+                                                                            value={formData[`account_number_2${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Bank Account Number"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                        {errors[`account_number_2${suffix}`] && (
+                                                                            <div className="invalid-feedback ps-3 pb-2">
+                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`account_number_2${suffix}`]}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Routing Number 2 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className="input-group-text bg-light text-muted">
+                                                                            Routing Number
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="form-control fs-14"
+                                                                            name={`routing_number_2${suffix}`}
+                                                                            value={formData[`routing_number_2${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Routing / ABA Number"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Instructions 2 */}
+                                                                <div className="col-12">
+                                                                    <div className="input-group payment-config-input-group">
+                                                                        <span className="input-group-text bg-light text-muted">
+                                                                            Instructions
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="form-control fs-14"
+                                                                            name={`instructions_2${suffix}`}
+                                                                            value={formData[`instructions_2${suffix}`] || ''}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Instructions or Swift/BIC codes for Account 2"
+                                                                            disabled={loading || toggling || !status}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="col-12 mt-5 pt-3 border-top">
-                                    <div className="d-flex justify-content-end gap-2">
-                                        <button
-                                            type="button"
-                                            className="btn btn-light px-4 py-2 fw-medium payment-method-btn-round"
-                                            onClick={onBack}
-                                            disabled={loading}
-                                        >
-                                            Back
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center gap-2 payment-method-btn-round"
-                                            disabled={loading || toggling || !status}
-                                        >
-                                            {loading ? (
-                                                <>
-                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                    <span>Saving Configuration...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className="ri-checkbox-circle-line fs-16"></i>
-                                                    <span>Save Configuration</span>
-                                                </>
-                                            )}
-                                        </button>
+                                <div className="row mt-5 pt-3 border-top">
+                                    <div className="col-12">
+                                        <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                                            <button
+                                                type="button"
+                                                className="btn btn-light px-4 py-2 fw-medium payment-method-btn-round w-100 w-sm-auto d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-1"
+                                                onClick={onBack}
+                                                disabled={loading}
+                                            >
+                                                <i className="ri-arrow-left-line"></i> Back
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 payment-method-btn-round w-100 w-sm-auto"
+                                                disabled={loading || toggling || !status}
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                        <span>Saving...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="ri-checkbox-circle-line fs-16"></i>
+                                                        <span>Save Configuration</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

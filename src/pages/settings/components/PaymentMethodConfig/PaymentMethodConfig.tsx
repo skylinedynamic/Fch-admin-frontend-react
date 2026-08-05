@@ -72,41 +72,41 @@ export default function PaymentMethodConfig(): React.JSX.Element {
                                 </div>
                             ) : (
                                 providers.map((provider) => (
-                                    <div 
-                                        className="payment-method-row cursor-pointer hover-bg-light position-relative" 
+                                    <div
+                                        className="payment-method-row cursor-pointer position-relative"
                                         key={provider.id}
                                         onClick={() => setSelectedProvider(provider)}
                                     >
-                                        {/* Left side: Logo & Description */}
-                                        <div className="d-flex align-items-center gap-4 flex-wrap">
-                                            <div className="payment-method-logo-box">
-                                                <img 
-                                                    src={provider.logo || ''} 
-                                                    alt={`${provider.name} Logo`} 
+                                        {/* Logo + Info (full-width flex row) */}
+                                        <div className="d-flex align-items-center gap-3" style={{ paddingRight: '2rem' }}>
+                                            <div className="payment-method-logo-box flex-shrink-0">
+                                                <img
+                                                    src={provider.logo || ''}
+                                                    alt={`${provider.name} Logo`}
                                                     className="payment-method-logo-img"
                                                 />
                                             </div>
-                                            <div>
-                                                <div className="d-flex align-items-center gap-2 mb-1.5">
-                                                    <h6 className="fs-15 fw-semibold mb-0 text-dark">{provider.name}</h6>
-                                                    <span className={`badge d-inline-flex align-items-center gap-1.5 px-2.5 py-0.5 fs-11 ${provider.status ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>
+                                            <div className="flex-grow-1 min-w-0">
+                                                <div className="d-flex align-items-center flex-wrap gap-1 mb-1">
+                                                    <h6 className="fs-15 fw-semibold mb-0 text-dark me-1">{provider.name}</h6>
+                                                    <span className={`badge d-inline-flex align-items-center gap-1 px-2 py-1 fs-11 ${provider.status ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>
                                                         <span className={`status-dot ${provider.status ? 'status-dot-active' : 'status-dot-inactive'}`} />
                                                         {provider.status ? 'Active' : 'Inactive'}
                                                     </span>
                                                     {provider.status && provider.payment_mode && (
-                                                        <span className={`badge d-inline-flex align-items-center gap-1.5 px-2.5 py-0.5 fs-11 ${provider.payment_mode === 'production' ? 'bg-warning-subtle text-warning' : 'bg-info-subtle text-info'}`}>
+                                                        <span className={`badge d-inline-flex align-items-center px-2 py-1 fs-11 ${provider.payment_mode === 'production' ? 'bg-warning-subtle text-warning' : 'bg-info-subtle text-info'}`}>
                                                             {provider.payment_mode === 'production' ? '🚀 Production' : '🧪 Sandbox'}
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-muted mb-0 fs-13 lh-base max-w-500">
+                                                <p className="text-muted mb-0 fs-13 lh-base" style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                                                     {getProviderDesc(provider.name, 'Configure merchant credentials and parameters for checkout integrations.')}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        {/* Right side: Chevron */}
-                                        <div className="text-muted fs-16 ps-3">
+                                        {/* Chevron — absolute right */}
+                                        <div className="text-muted fs-18 position-absolute" style={{ right: '1rem', top: '50%', transform: 'translateY(-50%)' }}>
                                             <i className="ri-arrow-right-s-line"></i>
                                         </div>
                                     </div>

@@ -4303,6 +4303,12 @@ File: Custom Css File
 }
 
 /* Payment Method Settings page scoped styles */
+
+/* Responsive button width utility: full-width on mobile, auto on sm+ */
+@media (min-width: 576px) {
+  .w-sm-auto { width: auto !important; }
+}
+
 .payment-method-card {
   border-radius: 4px !important;
   overflow: hidden;
@@ -4320,12 +4326,10 @@ File: Custom Css File
 .payment-method-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1.5rem;
+  padding: 1.25rem 1.5rem;
   position: relative;
   transition: background-color 0.2s ease;
+  cursor: pointer;
 }
 
 .payment-method-row:not(:last-child) {
@@ -5270,6 +5274,10 @@ File: Custom Css File
   width: 120px !important;
 }
 
+.plan-fee-input-width-lg {
+  width: 185px !important;
+}
+
 .plan-fee-input-group {
   gap: 0px !important;
 }
@@ -5308,6 +5316,7 @@ File: Custom Css File
   border-bottom-left-radius: 0px !important;
   border-top-right-radius: 4px !important;
   border-bottom-right-radius: 4px !important;
+  border-left: 2px solid #ced4da !important;
 }
 
 .plan-fee-save-btn {
@@ -5341,4 +5350,103 @@ File: Custom Css File
 
 .plan-fee-modal-btn {
   border-radius: 4px !important;
+}
+
+/* ============================================================
+   Settings Page — Sticky Sidebar (Bootstrap Grid)
+   ============================================================ */
+
+/* Sidebar card sticks on desktop inside col-lg-3 */
+@media (min-width: 992px) {
+  .settings-menu-card {
+    position: sticky;
+    top: 133px;
+    z-index: 5;
+    transition: top 0.2s ease;
+  }
+}
+
+/* ============================================================
+   Payment Gateway Configuration Premium Redesign
+   ============================================================ */
+.payment-config-card {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  height: 100%;
+}
+
+.payment-config-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+}
+
+.payment-config-card-header {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 16px 24px !important;
+  border-top-left-radius: 4px !important;
+  border-top-right-radius: 4px !important;
+}
+
+.payment-config-icon-wrapper {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-config-icon-wrapper.primary {
+  background-color: rgba(64, 81, 137, 0.08) !important;
+  color: var(--vz-primary, #405189) !important;
+}
+
+.payment-config-icon-wrapper.secondary {
+  background-color: rgba(148, 163, 184, 0.12) !important;
+  color: #475569 !important;
+}
+
+.payment-config-card-title {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #1e293b !important;
+}
+
+.payment-config-card-body {
+  padding: 24px !important;
+}
+
+.payment-config-input-group {
+  margin-bottom: 0 !important;
+}
+
+.payment-config-input-group .input-group-text {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  min-width: 140px;
+  justify-content: center;
+  border-top-left-radius: 6px !important;
+  border-bottom-left-radius: 6px !important;
+  height: 37.5px !important;
+}
+
+.payment-config-input-group .form-control {
+  border-color: #e2e8f0 !important;
+  font-size: 13px !important;
+  border-top-right-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+  padding: 8px 14px !important;
+  height: 37.5px !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.payment-config-input-group .form-control:focus {
+  background-color: #ffffff !important;
 }

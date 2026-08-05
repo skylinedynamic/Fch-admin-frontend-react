@@ -37,10 +37,6 @@ export const CLIENT_TYPE_LABELS = {
   WHITE_LABEL: "White-Label Partner Client",
 };
 
-export const STRIPE_BILLING_LABELS = {
-  CERTIFIED: "Billed directly to borrower's card via Stripe",
-  WHITE_LABEL: "Billed directly to borrower's card via WL Stripe",
-};
 
 export const SUBSCRIPTION_STATUS_TYPES = {
   ACTIVE: "Active",

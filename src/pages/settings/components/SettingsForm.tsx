@@ -92,9 +92,9 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
     }, [fetching, activeSection, sections.length]);
 
     if (fetching) return (
-        <div className="row g-4 animate__animated animate__fadeIn">
-            <div className="col-lg-3">
-                <div className="card">
+        <div className="row g-3 animate__animated animate__fadeIn">
+            <div className="col-12 col-lg-3">
+                <div className="card settings-menu-card">
                     <div className="card-header placeholder-glow">
                         <span className="placeholder col-7"></span>
                     </div>
@@ -110,7 +110,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     </div>
                 </div>
             </div>
-            <div className="col-lg-9">
+            <div className="col-12 col-lg-9">
                 <div className="card">
                     <div className="card-header placeholder-glow">
                         <span className="placeholder col-4"></span>
@@ -126,15 +126,16 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
     // Removed renderPaymentSettings as it is now in StripeConfigForm
 
     return (
-        <div className="row g-3 g-lg-2 align-items-start">
-            {/* Sidebar */}
-            <div className="col-lg-3">
+        <div className="row g-3">
+            {/* Sidebar — col-12 on mobile/tablet, col-lg-3 on desktop */}
+            <div className="col-12 col-lg-3">
                 <div className="card settings-menu-card">
                     <div className="card-header">
-                        <h5 className="card-title mb-0 fs-14">
+                        <h5 className="card-title mb-0 fs-16">
                             <i className="ri-list-settings-line me-2 align-middle text-muted"></i>
                             Settings Menu
                         </h5>
+                        <p className="text-muted mb-0 mt-1 fs-11">Configure your application</p>
                     </div>
                     <div className="list-group list-group-flush p-2">
                         {sections.map(section => (
@@ -161,8 +162,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="col-lg-9">
+            {/* Content — col-12 on mobile/tablet, col-lg-9 on desktop */}
+            <div className="col-12 col-lg-9">
                 {activeSection === 'agreement' ? (
                     <div className="card p-0 overflow-hidden">
                         <AgreementBuilder key={agreementKey} />

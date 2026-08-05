@@ -169,53 +169,6 @@ const EmailConfigurationForm: React.FC = () => {
 
     return (
         <>
-            <style>{`
-                @media (max-width: 576px) {
-                    .email-config-form .input-group {
-                        flex-direction: column !important;
-                    }
-                    .email-config-form .input-group-text {
-                        width: 100% !important;
-                        min-width: unset !important;
-                        border-radius: 8px 8px 0 0 !important;
-                        justify-content: flex-start !important;
-                        padding: 10px 15px !important;
-                        border-bottom: none !important;
-                        font-size: 12px !important;
-                    }
-                    .email-config-form .form-control, 
-                    .email-config-form .p-dropdown {
-                        width: 100% !important;
-                        border-radius: 0 0 8px 8px !important;
-                    }
-                    .email-config-form .p-dropdown .p-dropdown-label {
-                        padding: 10px 15px !important;
-                    }
-                    .email-config-form .card-header {
-                        flex-direction: column;
-                        align-items: flex-start !important;
-                        gap: 15px !important;
-                    }
-                    .email-config-form .banner-box {
-                        flex-direction: column;
-                        text-align: center;
-                    }
-                    .email-config-form .banner-box .me-4 {
-                        margin-right: 0 !important;
-                        margin-bottom: 15px;
-                    }
-                    .email-config-form .footer-actions {
-                        width: 100% !important;
-                    }
-                    .email-config-form .footer-actions button {
-                        width: 100% !important;
-                        justify-content: center;
-                    }
-                    .email-config-form .card-body {
-                        padding-bottom: 4rem !important;
-                    }
-                }
-            `}</style>
             <div className="card email-config-form">
                 <div className="card-header d-flex align-items-center gap-3 bg-white border-bottom py-3">
                     <div className="avatar-sm flex-shrink-0">
@@ -229,35 +182,36 @@ const EmailConfigurationForm: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="card-body p-4">
+                <div className="card-body p-3 p-sm-4">
                     {fetching ? (
                         <EmailConfigSkeleton />
                     ) : (
                         <>
-                            <div className="d-flex align-items-center bg-info-subtle rounded-3 p-3 mb-4">
-                                <div className="flex-shrink-0 me-4">
-                                    <img src={emailConfigLogo} alt="Email Config Logo" style={{ height: '55px', objectFit: 'contain' }} />
+                            {/* Info Banner */}
+                            <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center bg-info-subtle rounded-3 p-3 mb-4 gap-3">
+                                <div className="flex-shrink-0">
+                                    <img src={emailConfigLogo} alt="Email Config Logo" style={{ height: '55px', objectFit: 'contain', maxWidth: '80px' }} />
                                 </div>
                                 <div className="flex-grow-1">
                                     <h6 className="mb-1 text-dark fw-semibold fs-14">Transactional Email Service</h6>
                                     <p className="text-muted mb-0 fs-13">
-                                        Configure your system's outbound mail server. Connect via SMTP or AWS SES to ensure reliable delivery of receipts, notifications, and system alerts directly to your clients.
+                                        Configure your system's outbound mail server. Connect via SMTP or AWS SES to ensure reliable delivery of receipts, notifications, and system alerts.
                                     </p>
                                 </div>
                             </div>
 
                             <form onSubmit={handleSaveEmail}>
                                 <div className="animate__animated animate__fadeIn">
-                                    {/* PROVIDER SELECTION BOX (MICROBILT STYLE) */}
+                                    {/* EMAIL PROVIDER SELECTOR — matches Operating Environment panel design */}
                                     <div className="mb-4 bg-primary-subtle rounded-3 p-3">
-                                        <div className="d-flex align-items-center justify-content-between">
+                                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
                                             <div>
                                                 <h6 className="mb-1 fw-bold fs-14 text-dark">Email Provider</h6>
                                                 <p className="text-muted mb-0 fs-13">
                                                     Currently configuring <strong>{provider === 'aws_ses' ? 'AWS SES' : 'SMTP'}</strong> configuration.
                                                 </p>
                                             </div>
-                                            <div style={{ minWidth: '180px' }}>
+                                            <div className="flex-shrink-0" style={{ minWidth: '170px', width: '100%', maxWidth: '220px' }}>
                                                 <Dropdown
                                                     value={provider}
                                                     options={[
@@ -489,25 +443,27 @@ const EmailConfigurationForm: React.FC = () => {
                                 </div> */}
                                 </div>
 
-                                <div className="col-12 text-end mt-5 pt-3 border-top">
-                                    <div className="d-flex justify-content-end">
-                                        <button
-                                            type="submit"
-                                            className="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow-sm"
-                                            disabled={saving}
-                                        >
-                                            {saving ? (
-                                                <>
-                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                    <span>Saving Configuration...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className="ri-save-2-line fs-18"></i>
-                                                    <span>Save Configuration</span>
-                                                </>
-                                            )}
-                                        </button>
+                                <div className="row mt-5 pt-3 border-top">
+                                    <div className="col-12">
+                                        <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                                            <button
+                                                type="submit"
+                                                className="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 shadow-sm w-100 w-sm-auto"
+                                                disabled={saving}
+                                            >
+                                                {saving ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                        <span>Saving...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="ri-save-2-line fs-18"></i>
+                                                        <span>Save Configuration</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </form>

@@ -93,24 +93,27 @@ const TestMailForm: React.FC = () => {
                             {errors.body && <div className="invalid-feedback">{errors.body}</div>}
                         </div>
 
-                        <div className="col-12 mt-4 pt-2 border-top">
-                            <div className="d-flex justify-content-end">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary px-4 d-flex align-items-center"
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Sending...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-send-plane-fill me-2"></i> Send Test Email
-                                        </>
-                                    )}
-                                </button>
+                        <div className="row mt-5 pt-3 border-top">
+                            <div className="col-12">
+                                <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 w-100 w-sm-auto"
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                <span>Sending...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-send-plane-fill fs-16"></i>
+                                                <span>Send Test Email</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

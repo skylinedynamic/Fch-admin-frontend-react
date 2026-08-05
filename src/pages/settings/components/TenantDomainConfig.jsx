@@ -262,26 +262,29 @@ export default function TenantDomainConfig() {
                                 </>
                             )}
 
-                            {/* Submit Button inside body */}
-                            <div className="col-lg-12 pt-2">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary d-flex align-items-center gap-2 px-4"
-                                    disabled={saving}
-                                    style={{ transition: 'all 0.3s ease' }}
-                                >
-                                    {saving ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                            <span>Saving Changes...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-save-3-line fs-18"></i>
-                                            <span className="fw-semibold">Update Configuration</span>
-                                        </>
-                                    )}
-                                </button>
+                            <div className="row mt-5 pt-3 border-top w-100 mx-0 px-0">
+                                <div className="col-12 px-0">
+                                    <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 w-100 w-sm-auto"
+                                            disabled={saving}
+                                            style={{ transition: 'all 0.3s ease' }}
+                                        >
+                                            {saving ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                    <span>Saving Changes...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="ri-save-3-line fs-16"></i>
+                                                    <span>Update Configuration</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>

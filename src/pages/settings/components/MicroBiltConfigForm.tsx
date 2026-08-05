@@ -289,25 +289,27 @@ const MicroBiltConfigForm: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="col-12 mt-5 pt-3 border-top">
-                                        <div className="d-flex justify-content-end">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center gap-2"
-                                                disabled={loading}
-                                            >
-                                                {loading ? (
-                                                    <>
-                                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                        <span>Saving Configuration...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <i className="ri-checkbox-circle-line fs-16"></i>
-                                                        <span>Save Configuration</span>
-                                                    </>
-                                                )}
-                                            </button>
+                                    <div className="row mt-5 pt-3 border-top w-100 mx-0 px-0">
+                                        <div className="col-12 px-0">
+                                            <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                                                <button
+                                                    type="submit"
+                                                    className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 w-100 w-sm-auto"
+                                                    disabled={loading}
+                                                >
+                                                    {loading ? (
+                                                        <>
+                                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                            <span>Saving...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="ri-checkbox-circle-line fs-16"></i>
+                                                            <span>Save Configuration</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

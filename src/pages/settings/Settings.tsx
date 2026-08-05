@@ -27,14 +27,14 @@ const Settings: React.FC = () => {
     return (
         <div className="page-content settings-page-wrapper">
             <div className="container-fluid">
-                {/* Header */}
-                <div className="row page-subheader-sticky bg-body">
+                {/* Header — Breadcrumb row */}
+                <div className="row page-subheader-sticky bg-body settings-breadcrumb-row">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
-                                <h4 className="fs-18 mb-1">Settings</h4>
+                                <h4 className="fs-18 mb-1 settings-page-title">Settings</h4>
                                 <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0 fs-12">
+                                    <ol className="breadcrumb m-0 fs-12 settings-breadcrumb">
                                         <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
                                         <li className="breadcrumb-item">
                                             <span
@@ -55,7 +55,8 @@ const Settings: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="row">
+                {/* Body section */}
+                <div className="row settings-body-section">
                     <div className="col-12">
                         <SettingsForm
                             fetching={fetching}

@@ -300,7 +300,7 @@ export default function App() {
             {/* Payment Method Routes - Host Partner Only */}
             <Route element={<PartnerHostRoute />}>
               <Route path="payment-methods" element={<PaymentMethods />} />
-              <Route path="plan-fee" element={<PlanFee />} />
+              <Route path="plan-and-fee" element={<PlanFee />} />
             </Route>
 
             {/* Appointments Routes - requires 'view appointments' permission */}

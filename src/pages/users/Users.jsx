@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/auth/authStore';
 import UserLimitModal from './components/UserLimitModal';
 import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
 import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
+import { ENTITY_TYPE_PARTNER } from '../../config/appConfig';
 
 export default function Users() {
   const [filters, setFilters] = useState({})
@@ -92,7 +93,7 @@ export default function Users() {
         setBackendErrors({});
         setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
       } else {
-        const isPartner = user?.entity_type === 'Partner';
+        const isPartner = user?.entity_type === ENTITY_TYPE_PARTNER;
         const isFreeTrial = !!userSubscription?.is_free_trail;
 
         if (isPartner && isFreeTrial) {
@@ -673,7 +674,7 @@ export default function Users() {
                       responsiveLayout="scroll"
                       className="p-datatable-sm"
                       emptyMessage="No Users found"
-                      isDataSelectable={(e) => e.data.entity_type !== 'Partner'}
+                      isDataSelectable={(e) => e.data.entity_type !== ENTITY_TYPE_PARTNER}
                     >
                       {hasPermission('delete users') && (
                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
@@ -714,7 +715,7 @@ export default function Users() {
                                   <span className="d-none d-sm-inline ms-1">Edit</span>
                                 </button>
                               )}
-                              {hasPermission('delete users') && rowData.entity_type !== 'Partner' && (
+                              {hasPermission('delete users') && rowData.entity_type !== ENTITY_TYPE_PARTNER && (
                                 <button
                                   className="btn btn-sm btn-danger"
                                   aria-label="Delete user"

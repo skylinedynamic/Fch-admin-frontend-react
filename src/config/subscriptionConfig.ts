@@ -28,3 +28,16 @@ export const PLAN_GROUP_BORROWER_ENROLLMENT = 'borrower_enrollment';
 export const PLAN_GROUP_BORROWER_FEE = 'borrower_fee';
 export const PLAN_GROUP_USER_SEAT = 'user_seat';
 export const PLAN_GROUP_UNASSIGNED = 'unassigned';
+
+// Helper for identifying installment plans
+export const checkIsInstallmentPlan = (plan: {
+    is_installment?: boolean | number;
+    enrollment_type_slug?: string | null;
+    enrollment_type?: string | null;
+}) => {
+    if (!!plan.is_installment) return true;
+    const target = ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
+    const slug = (plan.enrollment_type_slug || '').toLowerCase();
+    const name = (plan.enrollment_type || '').toLowerCase();
+    return slug === target || name === target;
+};

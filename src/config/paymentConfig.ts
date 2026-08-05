@@ -44,4 +44,6 @@ export const PAYMENT_METHOD_PROVIDER = {
     [2]: 'Square',
     [3]: 'Ecrypt',
     [4]: 'Authorize.Net',
+    [5]: 'Cash Payment',
+    [6]: 'Bank Transfer',
 };

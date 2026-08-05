@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { fetchPlanFeeSubscriptions, updatePlanFeeSubscription } from '../../modules/subscription-plan';
 import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody } from 'reactstrap';
+import PlanFeeSkeletonLoader from '../../components/Loader/PlanFeeSkeletonLoader';
 import {
     PLAN_GROUP_PARTNER_ENROLLMENT,
     PLAN_GROUP_BORROWER_ENROLLMENT,
     PLAN_GROUP_BORROWER_FEE,
     PLAN_GROUP_USER_SEAT,
-    PLAN_GROUP_UNASSIGNED
+    PLAN_GROUP_UNASSIGNED,
+    checkIsInstallmentPlan
 } from '../../config/subscriptionConfig';
 
 interface Plan {
@@ -24,6 +26,7 @@ interface Plan {
     total_amount: string | number;
     platform_fee: string | number;
     total_installment_count_upto?: number | null;
+    total_seat_count?: number | null;
     currency: string;
     currency_symbol: string;
     status: boolean | number;
@@ -34,9 +37,10 @@ interface EditState {
     total_amount: string;
     platform_fee: string;
     total_installment_count_upto: string;
+    total_seat_count: string;
 }
 
-const groupMeta: Record<string, { title: string; icon: string; bg: string; text: string; desc: string }> = {
+const groupMeta: Record<string, { title: string; icon: string; bg: string; text: string; desc: string; note?: string }> = {
     [PLAN_GROUP_PARTNER_ENROLLMENT]: {
         title: 'Partner Enrollment Plans',
         icon: 'ri-handshake-line',
@@ -56,14 +60,16 @@ const groupMeta: Record<string, { title: string; icon: string; bg: string; text:
         icon: 'ri-bank-card-line',
         bg: 'bg-warning-subtle',
         text: 'text-warning',
-        desc: 'Additional fee structures for borrowers'
+        desc: 'Additional fee structures for borrowers',
+        note: 'For each borrower, partner has to pay $800 during enrollment.'
     },
     [PLAN_GROUP_USER_SEAT]: {
         title: 'User Seat Plans',
         icon: 'ri-group-line',
         bg: 'bg-info-subtle',
         text: 'text-info',
-        desc: 'Pricing for additional user/employee seats'
+        desc: 'Pricing for additional user/employee seats',
+        note: '3 users are available for free (including partner); after that, each additional user costs $49.'
     },
     [PLAN_GROUP_UNASSIGNED]: {
         title: 'Other Plans',
@@ -116,6 +122,7 @@ export default function PlanFee() {
                                 total_amount: String(plan.total_amount ?? '0.00'),
                                 platform_fee: String(plan.platform_fee ?? '0.00'),
                                 total_installment_count_upto: String(plan.total_installment_count_upto ?? ''),
+                                total_seat_count: String(plan.total_seat_count ?? '0'),
                             };
                         });
                     }
@@ -153,14 +160,6 @@ export default function PlanFee() {
         return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     };
 
-    const getEnrollmentBadge = (type: string) => {
-        const lower = (type || '').toLowerCase();
-        if (lower.includes('installment')) {
-            return 'bg-warning-subtle text-warning';
-        }
-        return 'bg-secondary-subtle text-secondary';
-    };
-
     const getPlanAvatarStyle = (index: number) => {
         const styles = [
             { bg: 'bg-primary-subtle', text: 'text-primary', icon: 'ri-vip-diamond-line' },
@@ -172,14 +171,7 @@ export default function PlanFee() {
     };
 
     const isInstallmentPlan = (plan: Plan) => {
-        const slug = (plan.enrollment_type_slug || '').toLowerCase();
-        const name = (plan.enrollment_type || '').toLowerCase();
-        return !!plan.is_installment
-            || slug === 'installment'
-            || slug === 'payment-plan-11-month-plan'
-            || slug === '6-month-payment'
-            || name === 'installment'
-            || name.includes('installment');
+        return checkIsInstallmentPlan(plan);
     };
 
     // Initiate update modal confirmation
@@ -201,7 +193,12 @@ export default function PlanFee() {
         const editedLimit = edits.total_installment_count_upto ? parseInt(edits.total_installment_count_upto) : null;
         const limitChanged = isInstallmentPlan(plan) && (originalLimit !== editedLimit);
 
-        if (!amountChanged && !platformFeeChanged && !limitChanged) {
+        const isUserSeat = activeTab === PLAN_GROUP_USER_SEAT;
+        const originalSeat = plan.total_seat_count ?? 0;
+        const editedSeat = edits.total_seat_count ? parseInt(edits.total_seat_count) : 0;
+        const seatChanged = isUserSeat && (originalSeat !== editedSeat);
+
+        if (!amountChanged && !platformFeeChanged && !limitChanged && !seatChanged) {
             toast.info('No changes detected for this plan.');
             return;
         }
@@ -235,6 +232,10 @@ export default function PlanFee() {
                 payload.total_installment_count_upto = edits.total_installment_count_upto ? parseInt(edits.total_installment_count_upto) : null;
             }
 
+            if (activeTab === PLAN_GROUP_USER_SEAT) {
+                payload.total_seat_count = edits.total_seat_count ? parseInt(edits.total_seat_count) : 0;
+            }
+
             const response = await updatePlanFeeSubscription(id, payload);
 
             if (response.status) {
@@ -258,10 +259,10 @@ export default function PlanFee() {
     const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
 
     return (
-        <div className="page-content page-content-fit">
+        <div className="page-content">
             <div className="container-fluid">
-                {/* Standard Sticky Subheader */}
-                <div className="row page-subheader-sticky bg-body">
+                {/* Header mirrored from Partners.jsx */}
+                <div className="row pb-1 mobile-sticky-header">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -269,7 +270,7 @@ export default function PlanFee() {
                                 <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active fw-medium" aria-current="page">Plan & Fee</li>
+                                        <li className="breadcrumb-item active" aria-current="page">Plan & Fee</li>
                                     </ol>
                                 </nav>
                             </div>
@@ -278,25 +279,9 @@ export default function PlanFee() {
                 </div>
 
                 {loading && Object.keys(plans).length === 0 ? (
-                    <div className="card shadow-sm border-0 p-4" style={{ borderRadius: '4px' }}>
-                        <div className="placeholder-glow">
-                            <div className="placeholder col-4 mb-4 rounded" style={{ height: '30px' }}></div>
-                            <div className="placeholder col-12 mb-2 rounded" style={{ height: '44px' }}></div>
-                            <div className="placeholder col-12 mb-2 rounded" style={{ height: '44px' }}></div>
-                            <div className="placeholder col-12 mb-2 rounded" style={{ height: '44px' }}></div>
-                        </div>
-                    </div>
+                    <PlanFeeSkeletonLoader />
                 ) : (
                     <div>
-                        {/* Info Banner */}
-                        <div className="alert alert-info bg-info-subtle border-0 text-dark d-flex align-items-center gap-2.5 p-3 rounded-3 mb-4 fs-13 shadow-xs">
-                            <i className="ri-information-line fs-20 text-info flex-shrink-0"></i>
-                            <div>
-                                <strong className="text-dark">You control what your clients pay.</strong>{' '}
-                                <span className="text-muted">Create and manage the subscription plan rates. Only active plans will be shown to your clients.</span>
-                            </div>
-                        </div>
-
                         {/* Combined Navigation Tabs & Configurator Card */}
                         <div className="card border-0 shadow-sm bg-white overflow-hidden plan-fee-main-card">
                             <div className="card-header border-0 bg-light bg-opacity-25 pb-0 pt-3">
@@ -307,7 +292,7 @@ export default function PlanFee() {
                                         return (
                                             <li className="nav-item" key={groupKey}>
                                                 <button
-                                                    className={`nav-link py-3 px-3.5 fw-medium border-0 fs-13 d-flex align-items-center gap-2 ${isActive ? 'active text-primary fw-bold' : 'text-muted'}`}
+                                                    className={`nav-link py-3 px-3.5 fw-medium border-0 fs-13 d-flex align-items-center gap-2 ${isActive ? 'active text-primary' : 'text-muted'}`}
                                                     onClick={() => setActiveTab(groupKey)}
                                                     type="button"
                                                 >
@@ -324,6 +309,69 @@ export default function PlanFee() {
                             </div>
 
                             <div className="card-body p-4 pt-3">
+                                {/* Polished Alert Note Banner for Borrower Fee */}
+                                {activeTab === PLAN_GROUP_BORROWER_FEE && (
+                                    <div className="alert alert-warning bg-warning-subtle border-0 text-dark p-3 rounded-3 mb-3 fs-13 shadow-xs">
+                                        <div className="d-flex align-items-center gap-2 mb-1.5">
+                                            <i className="ri-information-fill fs-18 text-warning flex-shrink-0"></i>
+                                            <strong className="text-dark fw-bold">Borrower Fee Policy:</strong>
+                                        </div>
+                                        <div className="ms-4 text-muted">
+                                            <span>For each borrower, partner has to pay the enrollment fee:</span>
+                                            {activePlansList.length > 0 && (
+                                                <ul className="mb-0 mt-1.5 ps-3 text-dark">
+                                                    {activePlansList.map(p => {
+                                                        const pName = formatSlug(p.partner_type || p.partner_type_slug || '');
+                                                        const amount = editedValues[p.id]?.total_amount ?? p.total_amount ?? '0';
+                                                        const curr = p.currency_symbol || p.currency || '$';
+                                                        return (
+                                                            <li key={p.id} className="mb-1">
+                                                                <strong className="text-dark">{pName || 'All Partners'}:</strong> Partner has to pay <span className="fw-bold text-primary">{curr}{amount}</span> for each borrower during enrollment.
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Polished Alert Note Banner for User Seat */}
+                                {activeTab === PLAN_GROUP_USER_SEAT && (
+                                    <div className="alert alert-info bg-info-subtle border-0 text-dark p-3 rounded-3 mb-3 fs-13 shadow-xs">
+                                        <div className="d-flex align-items-center gap-2 mb-1.5">
+                                            <i className="ri-group-fill fs-18 text-info flex-shrink-0"></i>
+                                            <strong className="text-dark fw-bold">User Seat Policy (Partner Wise):</strong>
+                                        </div>
+                                        <div className="ms-4 text-muted">
+                                            <span>Free user seats and the cost for each additional user seat configured partner-wise:</span>
+                                            {activePlansList.length > 0 && (
+                                                <ul className="mb-0 mt-1.5 ps-3 text-dark">
+                                                    {activePlansList.map(p => {
+                                                        const pName = formatSlug(p.partner_type || p.partner_type_slug || '');
+                                                        const amount = editedValues[p.id]?.total_amount ?? p.total_amount ?? '0';
+                                                        const curr = p.currency_symbol || p.currency || '$';
+                                                        return (
+                                                            <li key={p.id} className="mb-1">
+                                                                <strong className="text-dark">{pName || 'All Partners'}:</strong> {p.total_seat_count ?? 0} free users (including partner), then <span className="fw-bold text-primary">{curr}{amount}</span> per additional user.
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && groupMeta[activeTab]?.note && (
+                                    <div className="alert alert-warning bg-warning-subtle border-0 text-dark d-flex align-items-center gap-2.5 p-3 rounded-3 mb-3 fs-13 shadow-xs">
+                                        <i className="ri-information-fill fs-18 text-warning flex-shrink-0"></i>
+                                        <div>
+                                            <strong className="text-dark">Note:</strong> {groupMeta[activeTab].note}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {activePlansList.length > 0 ? (
                                     <div className="d-flex flex-column gap-3">
                                         {activePlansList.map((plan, index) => {
@@ -346,13 +394,17 @@ export default function PlanFee() {
                                                                 </span>
                                                             </div>
                                                             <div>
-                                                                <h5 className="mb-1 fw-bold text-dark fs-14">
+                                                                <h5 className="mb-1 text-dark fs-15">
                                                                     {partnerName ? `${partnerName} - ${enrollmentName}` : enrollmentName}
                                                                 </h5>
                                                                 <p className="text-muted mb-0 fs-12 lh-base">
-                                                                    {isInstallment
-                                                                        ? 'Installment billing parameters and payment counts.'
-                                                                        : 'Standard single transaction payment rate.'}
+                                                                    {activeTab === PLAN_GROUP_BORROWER_FEE
+                                                                        ? `For each borrower, partner has to pay ${currency}${edits.total_amount || '0'} during enrollment.`
+                                                                        : activeTab === PLAN_GROUP_USER_SEAT
+                                                                            ? `${plan.total_seat_count || 0} users are available for free (including partner); after that, each additional user has to pay ${currency}${edits.total_amount || '0'}.`
+                                                                            : isInstallment
+                                                                                ? 'Installment billing parameters and payment counts.'
+                                                                                : 'Standard single transaction payment rate.'}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -360,9 +412,28 @@ export default function PlanFee() {
                                                         {/* Right Inputs Column */}
                                                         <div className="col-12 col-md-7">
                                                             <div className="d-flex align-items-center justify-content-md-end flex-wrap gap-3">
+                                                                {/* Free Seats (Only for user seat tier) */}
+                                                                {activeTab === PLAN_GROUP_USER_SEAT && (
+                                                                    <div className="plan-fee-input-width-lg">
+                                                                        <label className="form-label text-muted small mb-1">Free Seats including partner</label>
+                                                                        <div className="input-group input-group-sm plan-fee-input-group-limit">
+                                                                            <input
+                                                                                type="number"
+                                                                                className="form-control form-control-sm bg-white text-center"
+                                                                                value={edits.total_seat_count ?? '0'}
+                                                                                onChange={(e) => handleInputChange(plan.id, 'total_seat_count', e.target.value)}
+                                                                                min="0"
+                                                                                step="1"
+                                                                                disabled={isUpdating}
+                                                                            />
+                                                                            <span className="input-group-text bg-light text-muted">users</span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
                                                                 {/* Total Amount */}
                                                                 <div className="plan-fee-input-width">
-                                                                    <label className="form-label text-muted small mb-1">Total Amount</label>
+                                                                    <label className="form-label text-muted small mb-1">Total  Amount</label>
                                                                     <div className="input-group input-group-sm plan-fee-input-group">
                                                                         <span className="input-group-text bg-light text-muted">{currency}</span>
                                                                         <input
@@ -476,7 +547,7 @@ export default function PlanFee() {
                 </ModalHeader>
                 <ModalBody className="p-4 bg-white plan-fee-confirm-modal-body">
                     {selectedPlanForUpdate && (() => {
-                        const edits = editedValues[selectedPlanForUpdate.id] || { total_amount: '0', platform_fee: '0', total_installment_count_upto: '' };
+                        const edits = editedValues[selectedPlanForUpdate.id] || { total_amount: '0', platform_fee: '0', total_installment_count_upto: '', total_seat_count: '0' };
                         const currency = selectedPlanForUpdate.currency_symbol || selectedPlanForUpdate.currency || '$';
                         const isInstallment = isInstallmentPlan(selectedPlanForUpdate);
                         const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
@@ -494,6 +565,11 @@ export default function PlanFee() {
                         const originalLimit = selectedPlanForUpdate.total_installment_count_upto;
                         const editedLimit = edits.total_installment_count_upto ? parseInt(edits.total_installment_count_upto) : null;
                         const limitChanged = isInstallment && (originalLimit !== editedLimit);
+
+                        const isUserSeat = activeTab === PLAN_GROUP_USER_SEAT;
+                        const originalSeat = selectedPlanForUpdate.total_seat_count ?? 0;
+                        const editedSeat = edits.total_seat_count ? parseInt(edits.total_seat_count) : 0;
+                        const seatChanged = isUserSeat && (originalSeat !== editedSeat);
 
                         const changedItems = [];
                         if (amountChanged) {
@@ -515,6 +591,13 @@ export default function PlanFee() {
                                 label: 'Installment Upto',
                                 oldVal: originalLimit ? `${originalLimit} months` : 'Unlimited',
                                 newVal: editedLimit ? `${editedLimit} months` : 'Unlimited'
+                            });
+                        }
+                        if (seatChanged) {
+                            changedItems.push({
+                                label: 'Free Seats Limit',
+                                oldVal: `${originalSeat} Users`,
+                                newVal: `${editedSeat} Users`
                             });
                         }
 

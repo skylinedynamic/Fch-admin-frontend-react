@@ -3,19 +3,16 @@ import { createPortal } from 'react-dom';
 import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
 
-const MIN_MONTHS = 2;
-const MAX_MONTHS = 24;
-
 const formatCurrency = (value) => {
     const num = Number(value);
     if (!Number.isFinite(num)) return '0.00';
     return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const clampMonths = (value) => {
+const clampMonths = (value, min, max) => {
     const num = Number(value);
-    if (!Number.isFinite(num) || num < MIN_MONTHS) return MIN_MONTHS;
-    if (num > MAX_MONTHS) return MAX_MONTHS;
+    if (!Number.isFinite(num) || num < min) return min;
+    if (num > max) return max;
     return Math.round(num);
 };
 
@@ -33,6 +30,9 @@ export default function InstallmentDetailsModal({
     appliedMonths,
     appliedApplied,
     onHidden,
+    installmentMinMonths = 2,
+    installmentMaxMonths = 24,
+    installmentDefaultMonths = 12,
 }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -42,10 +42,15 @@ export default function InstallmentDetailsModal({
         onHiddenRef.current = onHidden;
     }, [onHidden]);
 
+    // Ensure we parse values safely
+    const minM = Number(installmentMinMonths) || 2;
+    const maxM = Number(installmentMaxMonths) || 24;
+    const defM = Number(installmentDefaultMonths) || defaultMonths || 12;
+
     const [totalAmountInput, setTotalAmountInput] = useState(totalAmount || 0);
     const [includeDownPayment, setIncludeDownPayment] = useState(false);
     const [downPayment, setDownPayment] = useState(0);
-    const [months, setMonths] = useState(clampMonths(12));
+    const [months, setMonths] = useState(clampMonths(defM, minM, maxM));
     const [validationError, setValidationError] = useState('');
 
     useEffect(() => {
@@ -97,12 +102,12 @@ export default function InstallmentDetailsModal({
                 setTotalAmountInput(appliedTotalAmount ?? (totalAmount || 0));
                 setIncludeDownPayment(Number(appliedDownPayment) > 0);
                 setDownPayment(appliedDownPayment ?? 0);
-                setMonths(clampMonths(appliedMonths ?? 12));
+                setMonths(clampMonths(appliedMonths ?? defM, minM, maxM));
             } else {
                 setTotalAmountInput(totalAmount || 0);
                 setIncludeDownPayment(false);
                 setDownPayment(0);
-                setMonths(clampMonths(12));
+                setMonths(clampMonths(defM, minM, maxM));
             }
             setValidationError('');
             modal.show();
@@ -110,14 +115,14 @@ export default function InstallmentDetailsModal({
             modal.hide();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [show]);
+    }, [show, totalAmount, defM, minM, maxM]);
 
     const monthOptions = useMemo(() => (
-        Array.from({ length: MAX_MONTHS - MIN_MONTHS + 1 }, (_, i) => {
-            const value = MIN_MONTHS + i;
+        Array.from({ length: Math.max(maxM - minM + 1, 1) }, (_, i) => {
+            const value = minM + i;
             return { label: `${value} Months`, value };
         })
-    ), []);
+    ), [minM, maxM]);
 
     const numericTotal = Number(totalAmountInput) || 0;
     const numericDown = includeDownPayment ? (Number(downPayment) || 0) : 0;

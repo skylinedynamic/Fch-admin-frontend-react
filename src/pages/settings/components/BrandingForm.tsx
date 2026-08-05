@@ -406,14 +406,28 @@ const BrandingForm: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="text-end mt-5 pt-3 border-top">
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="btn btn-primary waves-effect waves-light px-5"
-                                >
-                                    {saving ? <><span className="spinner-border spinner-border-sm me-2"></span>Saving...</> : <><i className="ri-save-line me-1"></i>Save Branding</>}
-                                </button>
+                            <div className="row mt-5 pt-3 border-top w-100 mx-0 px-0">
+                                <div className="col-12 px-0">
+                                    <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                                        <button
+                                            type="submit"
+                                            disabled={saving}
+                                            className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 w-100 w-sm-auto"
+                                        >
+                                            {saving ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                    <span>Saving...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="ri-save-line fs-16"></i>
+                                                    <span>Save Branding</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </form>
                     )}

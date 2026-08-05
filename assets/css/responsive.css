@@ -1778,20 +1778,47 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
 }
 
 /* ============================================================
-   SETTINGS PAGE MOBILE OPTIMIZATION
-   Fixes the huge vertical gap after the breadcrumbs/header
+   Settings Page — Breadcrumb & Body Responsive Polish
    ============================================================ */
+
+/* Desktop baseline: ensure breadcrumb section has good vertical rhythm */
+.settings-breadcrumb-row {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+.settings-page-title {
+    font-size: 18px;
+    margin-bottom: 2px !important;
+}
+
+.settings-breadcrumb {
+    flex-wrap: wrap;
+    overflow: visible;
+}
+
+/* Body section top padding */
+.settings-body-section {
+    padding-top: 0px;
+}
+
+/* ---- Tablet (≤ 991px) ---- */
 @media (max-width: 991.98px) {
+
+    /* Breadcrumb row: compact on tablet */
     .settings-page-wrapper .page-subheader-sticky {
-        padding: 8px 10px !important;
+        padding: 6px 12px !important;
         height: auto !important;
     }
 
-    /* Reduce the gap after the fixed subheader specifically for Settings */
-    .settings-page-wrapper .page-subheader-sticky+.row,
-    .settings-page-wrapper .page-subheader-sticky+div {
-        margin-top: 20px !important;
-        /* Minimized for better fit */
+    /* Reduce gap below the sticky header */
+    .settings-body-section {
+        padding-top: 12px !important;
+    }
+
+    /* Settings menu card: no sticky on tablet */
+    .settings-menu-card {
+        position: static !important;
     }
 
     .settings-menu-card {
@@ -1827,6 +1854,7 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         width: 100%;
         margin-top: 5px;
     }
+
     .table-filter .d-flex.gap-2 {
         flex-direction: column;
     }
@@ -1837,19 +1865,23 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
     .funding-section .card-animate .card-body {
         padding: 12px !important;
     }
+
     .funding-section .card-animate .kpi-title {
         font-size: 11px !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
+
     .funding-section .card-animate .counter-value {
         font-size: 15px !important;
     }
+
     .funding-section .card-animate .avatar-sm {
         width: 32px !important;
         height: 32px !important;
     }
+
     .funding-section .card-animate .avatar-title {
         font-size: 16px !important;
     }
@@ -1862,8 +1894,8 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
     .client-funding-options .ca-filter-bar {
         padding: 12px 16px !important;
     }
-    
-    .client-funding-options .ca-filter-bar > div {
+
+    .client-funding-options .ca-filter-bar>div {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 12px !important;
@@ -1904,161 +1936,751 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
    Partner Details Section — Responsive Styles
    ============================================================ */
 @media (max-width: 991.98px) {
-  .partner-info-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 16px !important;
-  }
+    .partner-info-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 16px !important;
+    }
 }
 
 @media (max-width: 575.98px) {
-  .partner-details-section {
-    padding: 16px !important;
-  }
-  
-  .partner-section-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 10px !important;
-  }
-  
-  .partner-status-badge {
-    align-self: flex-start !important;
-  }
-  
-  .partner-info-grid {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-  }
-  
-  /* Payment Method responsive rows */
-  .payment-method-row {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 1rem !important;
-    padding: 1.25rem !important;
-  }
+    .partner-details-section {
+        padding: 16px !important;
+    }
 
-  .payment-method-row .payment-method-switch {
-    margin-top: 4px;
-  }
+    .partner-section-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    .partner-status-badge {
+        align-self: flex-start !important;
+    }
+
+    .partner-info-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* Payment Method responsive rows */
+    .payment-method-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+        padding: 1.25rem !important;
+    }
+
+    .payment-method-row .payment-method-switch {
+        margin-top: 4px;
+    }
 }
 
 /* ============================================================
    Installment Details Modal — Responsive Styles
    ============================================================ */
 @media (max-width: 991.98px) {
-  /* Inputs and result panel stack instead of sitting side-by-side,
+
+    /* Inputs and result panel stack instead of sitting side-by-side,
      so the result panel switches from a left border to a top border. */
-  .installment-result-card {
-    height: auto;
-    border-left: 0;
-    border-top: 1px solid rgba(10, 179, 156, 0.15);
-  }
+    .installment-result-card {
+        height: auto;
+        border-left: 0;
+        border-top: 1px solid rgba(10, 179, 156, 0.15);
+    }
 }
 
 @media (max-width: 575.98px) {
-  .installment-details-modal .modal-dialog {
-    margin: 0.75rem;
-  }
+    .installment-details-modal .modal-dialog {
+        margin: 0.75rem;
+    }
 
-  .installment-modal-header,
-  .installment-modal-footer {
-    padding: 1rem;
-  }
+    .installment-modal-header,
+    .installment-modal-footer {
+        padding: 1rem;
+    }
 
-  .installment-icon-avatar {
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    font-size: 1.05rem;
-  }
+    .installment-icon-avatar {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        font-size: 1.05rem;
+    }
 
-  .installment-inputs-col {
-    padding: 1.25rem;
-  }
+    .installment-inputs-col {
+        padding: 1.25rem;
+    }
 
-  .installment-result-card {
-    padding: 1.25rem;
-  }
+    .installment-result-card {
+        padding: 1.25rem;
+    }
 
-  .installment-result-amount {
-    font-size: 1.8rem;
-  }
+    .installment-result-amount {
+        font-size: 1.8rem;
+    }
 
-  .installment-modal-footer {
-    flex-direction: column-reverse;
-    align-items: stretch;
-    gap: 0.6rem;
-  }
+    .installment-modal-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        gap: 0.6rem;
+    }
 
-  .installment-modal-footer .btn {
-    width: 100%;
-  }
+    .installment-modal-footer .btn {
+        width: 100%;
+    }
 
-  .installment-footer-hint {
-    text-align: center;
-  }
+    .installment-footer-hint {
+        text-align: center;
+    }
 
-  .installment-trigger-btn {
-    width: 100%;
-  }
+    .installment-trigger-btn {
+        width: 100%;
+    }
 }
 
 /* ============================================================
    Payment Provider Modal (pps) — Responsive Styles
    ============================================================ */
 @media (max-width: 767.98px) {
-  .ppm-card-header {
-    padding: 1rem 1.25rem;
-  }
+    .ppm-card-header {
+        padding: 1rem 1.25rem;
+    }
 
-  .ppm-card-body {
-    padding: 1rem;
-  }
+    .ppm-card-body {
+        padding: 1rem;
+    }
 
-  .pps-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.625rem;
-  }
+    .pps-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.625rem;
+    }
 
-  .pps-card {
-    padding: 1.15rem 0.75rem 1rem;
-  }
+    .pps-card {
+        padding: 1.15rem 0.75rem 1rem;
+    }
 
-  .pps-card-logo {
-    width: 84px;
-    height: 54px;
-    padding: 8px;
-  }
+    .pps-card-logo {
+        width: 84px;
+        height: 54px;
+        padding: 8px;
+    }
 
-  .pps-card-icon {
-    width: 54px;
-    height: 54px;
-  }
+    .pps-card-icon {
+        width: 54px;
+        height: 54px;
+    }
 
-  .pps-skeleton-logo {
-    width: 84px;
-    height: 54px;
-  }
+    .pps-skeleton-logo {
+        width: 84px;
+        height: 54px;
+    }
 
-  .card-detail-row {
-    flex-wrap: wrap;
-  }
+    .card-detail-row {
+        flex-wrap: wrap;
+    }
 }
 
 @media (max-width: 480px) {
-  .pps-grid {
-    grid-template-columns: 1fr;
-  }
+    .pps-grid {
+        grid-template-columns: 1fr;
+    }
 
-  .card-detail-row {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
+    .card-detail-row {
+        ============================================================*/ @media (max-width: 767.98px) {
+            .client-funding-options .ca-filter-bar {
+                padding: 12px 16px !important;
+            }
+
+            .client-funding-options .ca-filter-bar>div {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px !important;
+            }
+
+            .client-funding-options .ca-search-input-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .client-funding-options .ca-category-dropdown-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .client-funding-options .ca-filter-bar .d-flex.align-items-center.gap-2.flex-shrink-0 {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                width: 100% !important;
+                margin-left: 0 !important;
+            }
+
+            .client-funding-options .ca-filter-btn {
+                width: 100% !important;
+                border-radius: 4px !important;
+                height: 38px !important;
+            }
+
+            .client-funding-options .ca-btn-clear {
+                width: 100% !important;
+                border-radius: 4px !important;
+                height: 38px !important;
+            }
+        }
+
+        /* ============================================================
+   Partner Details Section — Responsive Styles
+   ============================================================ */
+        @media (max-width: 991.98px) {
+            .partner-info-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 16px !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .partner-details-section {
+                padding: 16px !important;
+            }
+
+            .partner-section-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+
+            .partner-status-badge {
+                align-self: flex-start !important;
+            }
+
+            .partner-info-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+
+            /* Payment Method responsive rows */
+            .payment-method-row {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 1rem !important;
+                padding: 1.25rem !important;
+            }
+
+            .payment-method-row .payment-method-switch {
+                margin-top: 4px;
+            }
+        }
+
+        /* ============================================================
+   Installment Details Modal — Responsive Styles
+   ============================================================ */
+        @media (max-width: 991.98px) {
+
+            /* Inputs and result panel stack instead of sitting side-by-side,
+     so the result panel switches from a left border to a top border. */
+            .installment-result-card {
+                height: auto;
+                border-left: 0;
+                border-top: 1px solid rgba(10, 179, 156, 0.15);
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .installment-details-modal .modal-dialog {
+                margin: 0.75rem;
+            }
+
+            .installment-modal-header,
+            .installment-modal-footer {
+                padding: 1rem;
+            }
+
+            .installment-icon-avatar {
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                font-size: 1.05rem;
+            }
+
+            .installment-inputs-col {
+                padding: 1.25rem;
+            }
+
+            .installment-result-card {
+                padding: 1.25rem;
+            }
+
+            .installment-result-amount {
+                font-size: 1.8rem;
+            }
+
+            .installment-modal-footer {
+                flex-direction: column-reverse;
+                align-items: stretch;
+                gap: 0.6rem;
+            }
+
+            .installment-modal-footer .btn {
+                width: 100%;
+            }
+
+            .installment-result-card {
+                height: auto;
+                border-left: 0;
+                border-top: 1px solid rgba(10, 179, 156, 0.15);
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .installment-details-modal .modal-dialog {
+                margin: 0.75rem;
+            }
+
+            .installment-modal-header,
+            .installment-modal-footer {
+                padding: 1rem;
+            }
+
+            .installment-icon-avatar {
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                font-size: 1.05rem;
+            }
+
+            .installment-inputs-col {
+                padding: 1.25rem;
+            }
+
+            .installment-result-card {
+                padding: 1.25rem;
+            }
+
+            .installment-result-amount {
+                font-size: 1.8rem;
+            }
+
+            .installment-modal-footer {
+                flex-direction: column-reverse;
+                align-items: stretch;
+                gap: 0.6rem;
+            }
+
+            .installment-modal-footer .btn {
+                width: 100%;
+            }
+
+            .installment-footer-hint {
+                text-align: center;
+            }
+
+            .installment-trigger-btn {
+                width: 100%;
+            }
+        }
+
+        /* ============================================================
+   Payment Provider Modal (pps) — Responsive Styles
+   ============================================================ */
+        @media (max-width: 767.98px) {
+            .ppm-card-header {
+                padding: 1rem 1.25rem;
+            }
+
+            .ppm-card-body {
+                padding: 1rem;
+            }
+
+            .pps-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.625rem;
+            }
+
+            .pps-card {
+                padding: 1.15rem 0.75rem 1rem;
+            }
+
+            .pps-card-logo {
+                width: 84px;
+                height: 54px;
+                padding: 8px;
+            }
+
+            .pps-card-icon {
+                width: 54px;
+                height: 54px;
+            }
+
+            .pps-skeleton-logo {
+                width: 84px;
+                height: 54px;
+            }
+
+            .card-detail-row {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .pps-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-detail-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .stripe-payment-modal.ppm-modal .modal-dialog {
+                margin: 0.5rem;
+            }
+        }
+
+        /* ============================================================
+   Payment Gateway Configuration Responsive Styles
+   ============================================================ */
+        @media (max-width: 767.98px) {
+            .payment-config-card-header {
+                padding: 12px 16px !important;
+            }
+
+            .payment-config-card-body {
+                padding: 16px !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .payment-config-input-group .input-group-text {
+                min-width: 110px !important;
+                font-size: 11px !important;
+            }
+        }
+
+        /* ============================================================
+   Settings Menu Card — Mobile: no sticky on small screens
+   ============================================================ */
+    }
+}
+}
 }
 
+/* ============================================================
+   Settings Module — Mobile & Tablet Responsive
+   (Bootstrap grid handles col stacking, these polish the inner UI)
+   ============================================================ */
+
+/* Mobile: compact padding on payment form card body */
+@media (max-width: 767.98px) {
+    .payment-method-card .card-body {
+        padding: 16px !important;
+    }
+
+    /* Status & env rows: stack vertically */
+    .payment-status-toggle-row,
+    .payment-provider-status-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    /* Env dropdown: full width */
+    .payment-provider-status-row>div:last-child {
+        width: 100% !important;
+    }
+
+    .payment-provider-status-row .p-dropdown {
+        width: 100% !important;
+    }
+
+    /* Save/back buttons: full width */
+    .payment-config-save-btn {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+}
+
+/* ============================================================
+   Settings Page — Breadcrumb & Body Responsive Polish
+   ============================================================ */
+
+/* Desktop defaults */
+.settings-breadcrumb-row {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+.settings-breadcrumb-row .py-2 {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+.settings-page-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.settings-breadcrumb {
+    font-size: 12px !important;
+    margin-bottom: 0 !important;
+}
+
+.settings-breadcrumb-row .breadcrumb {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* ---- Tablet (≤ 991.98px) ---- */
+@media (max-width: 991.98px) {
+
+    /* Push the body section down just enough to clear the fixed subheader, eliminating the huge white gap */
+    .settings-page-wrapper .settings-body-section {
+        margin-top: 0px !important;
+        padding-top: 0 !important;
+    }
+
+    /* Shrink title and breadcrumb padding to reduce height further */
+    .settings-page-wrapper .page-subheader-sticky {
+        padding: 4px 12px !important;
+        height: auto !important;
+    }
+
+    .settings-breadcrumb-row .py-2 {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+    }
+
+    .settings-page-title {
+        font-size: 14px !important;
+        margin-bottom: 0 !important;
+    }
+
+    .settings-breadcrumb {
+        font-size: 11px !important;
+    }
+
+    /* Polish Settings Menu buttons into a nice horizontal row on tablet */
+    .settings-menu-card .list-group {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 8px !important;
+    }
+
+    .settings-menu-card .list-group button {
+        flex: 1 1 auto !important;
+        margin-bottom: 0 !important;
+        justify-content: center !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+
+    /* Hide arrow indicators on tablet layout */
+    .settings-menu-card .list-group button i.ri-arrow-right-s-line {
+        display: none !important;
+    }
+
+    /* Reduce gap between menu card and active configuration cards on tablet/mobile */
+    .settings-page-wrapper .settings-menu-card {
+        margin-bottom: 0px !important;
+    }
+
+    .settings-page-wrapper .row.g-3 {
+        row-gap: 12px !important;
+    }
+}
+
+/* ---- Mobile (≤ 767.98px) ---- */
+@media (max-width: 767.98px) {
+    .settings-page-wrapper .settings-body-section {
+        margin-top: 0px !important;
+        margin-bottom: 40px !important;
+    }
+
+    /* Polish details form layout to stack input-group labels vertically on mobile */
+    .settings-page-wrapper .input-group {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0 !important;
+    }
+
+    .settings-page-wrapper .input-group-text {
+        width: 100% !important;
+        min-width: 0 !important;
+        border-radius: 4px 4px 0 0 !important;
+        border-bottom: 0 !important;
+        justify-content: flex-start !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+        font-size: 12px !important;
+        text-align: left !important;
+    }
+
+    .settings-page-wrapper .form-control,
+    .settings-page-wrapper .p-dropdown {
+        width: 100% !important;
+        border-radius: 0 0 4px 4px !important;
+    }
+
+    /* If validation error is shown inside input-group, make it look clean */
+    .settings-page-wrapper .input-group .invalid-feedback {
+        display: block !important;
+        margin-top: 4px !important;
+        padding-left: 4px !important;
+    }
+
+    /* Stack info banner rows inside settings on mobile */
+    .settings-page-wrapper .bg-info-subtle.d-flex,
+    .settings-page-wrapper .bg-primary-subtle.d-flex,
+    .settings-page-wrapper .bg-success-subtle.d-flex,
+    .settings-page-wrapper .bg-danger-subtle.d-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    .settings-page-wrapper .bg-info-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-primary-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-success-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-danger-subtle .flex-shrink-0 {
+        margin-right: 0 !important;
+        margin-bottom: 4px !important;
+    }
+
+    /* Make save/actions button wrappers stack on mobile (target container div only, not button element) */
+    .settings-page-wrapper .border-top div.d-flex {
+        flex-direction: column-reverse !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    .settings-page-wrapper .border-top div.d-flex button {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+}
+
+/* ---- Small Mobile (≤ 575.98px) ---- */
 @media (max-width: 575.98px) {
-  .stripe-payment-modal.ppm-modal .modal-dialog {
-    margin: 0.5rem;
-  }
+
+    /* More space for breadcrumbs if they wrap on small mobile */
+    .settings-page-wrapper .settings-body-section {
+        margin-top: 0px !important;
+        margin-bottom: 40px !important;
+    }
+
+    /* Shrink font size for breadcrumbs to fit cleanly */
+    .settings-breadcrumb {
+        font-size: 11px !important;
+    }
+
+    /* Stack buttons vertically on small mobile */
+    .settings-menu-card .list-group {
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+    }
+
+    .settings-menu-card .list-group button {
+        justify-content: flex-start !important;
+        border: 0 !important;
+        padding: 10px 14px !important;
+    }
+
+    .settings-menu-card .list-group button i.ri-arrow-right-s-line {
+        display: inline-block !important;
+    }
+
+    /* Force all input-group-texts to scale down to fit small screens */
+    .settings-page-wrapper .input-group-text {
+        min-width: 100px !important;
+        font-size: 11px !important;
+    }
+
+    /* Stack all info banners on small mobile */
+    .settings-page-wrapper .bg-info-subtle.d-flex,
+    .settings-page-wrapper .bg-primary-subtle.d-flex,
+    .settings-page-wrapper .bg-success-subtle.d-flex,
+    .settings-page-wrapper .bg-danger-subtle.d-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    .settings-page-wrapper .bg-info-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-primary-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-success-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-danger-subtle .flex-shrink-0 {
+        margin-right: 0 !important;
+    }
+
+    /* Card bodies tighter on small mobile */
+    .settings-page-wrapper .card-body {
+        padding: 14px !important;
+    }
+
+    /* Cash note panel compact */
+    .cash-note-panel {
+        padding: 12px !important;
+    }
+}
+
+/* ============================================================
+   Payment List & Config Pages — Responsive Tweaks
+   (layout is handled via Bootstrap flex-column/flex-sm-row in JSX)
+   ============================================================ */
+
+/* ─── TABLET (≤ 991px) ─── */
+@media (max-width: 991.98px) {
+    .payment-method-row {
+        padding: 1rem 1.25rem !important;
+    }
+
+    .payment-method-card .card-body {
+        padding: 1.25rem !important;
+    }
+}
+
+/* ─── MOBILE (≤ 767px) ─── */
+@media (max-width: 767.98px) {
+    .payment-method-row {
+        padding: 0.875rem 1rem !important;
+    }
+
+    .payment-method-logo-box {
+        width: 72px !important;
+        height: 48px !important;
+    }
+
+    .payment-method-card .card-body {
+        padding: 1rem !important;
+    }
+
+    .payment-method-card .card-header {
+        padding: 0.75rem 1rem !important;
+    }
+}
+
+/* ─── SMALL MOBILE (≤ 575px) ─── */
+@media (max-width: 575.98px) {
+    .payment-method-row {
+        padding: 0.75rem !important;
+    }
+
+    .payment-method-logo-box {
+        width: 60px !important;
+        height: 40px !important;
+    }
+
+    .payment-method-card .card-body {
+        padding: 0.875rem !important;
+    }
+
+    .payment-method-row .badge {
+        font-size: 10px !important;
+    }
 }
