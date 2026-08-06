@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import PageHeader from '../common/PageHeader';
 import ClientForm from './components/ClientForm';
 import { ClientInfoSectionRef } from './components/ClientInfoSection';
 import { BusinessFinancialsSectionRef } from './components/BusinessFinancialsSection';
@@ -369,47 +370,36 @@ export default function ClientDetails() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                {/* Page Header */}
-                <div className="row pb-1 bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">{id ? 'Edit Client' : 'Add Client'} Details</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/clients">Clients</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{id ? 'Edit Client' : 'Add Client'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE, ENROLLMENT_TABS.CAPITAL_ACCESS, ENROLLMENT_TABS.FUNDING_REQUESTS].includes(activeTab as any) && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-primary w-lg waves-effect"
-                                        onClick={handleSave}
-                                        disabled={isSaving || isLoading}
-                                    >
-                                        {isSaving ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                {id ? 'Updating...' : 'Saving...'}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
-                                            </>
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Client Profile" 
+                    breadcrumbs={[
+                        { label: 'Clients', path: '/clients' },
+                        { label: 'Client Profile' }
+                    ]}
+                >
+                    <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
+                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                    </Link>
+                    {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE, ENROLLMENT_TABS.CAPITAL_ACCESS, ENROLLMENT_TABS.FUNDING_REQUESTS].includes(activeTab as any) && (
+                        <button
+                            type="button"
+                            className="btn btn-primary w-lg waves-effect"
+                            onClick={handleSave}
+                            disabled={isSaving || isLoading}
+                        >
+                            {isSaving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    {id ? 'Updating...' : 'Saving...'}
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                </>
+                            )}
+                        </button>
+                    )}
+                </PageHeader>
 
                 {/* Metrics Strip (Only show if editing) */}
                 {id && (

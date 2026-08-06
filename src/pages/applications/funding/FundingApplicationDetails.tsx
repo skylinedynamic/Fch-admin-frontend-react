@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import PageHeader from '../../common/PageHeader';
 import { queryKeys } from '../../../lib/query/queryKeys';
 
 import { FundingApplicationDetails as FundingApplicationDetailsType } from '../../../modules/application/types';

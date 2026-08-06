@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import PageHeader from '../common/PageHeader';
 import { useUpdatePassword, useUpdateProfile, useUpdateProfilePicture } from '../../modules/auth-profile';
 import { useAuthStore } from '../../store/auth';
 import { refreshUser } from '../../lib/auth/authApi';
@@ -188,47 +189,37 @@ const Profile = () => {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">My Profile</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item">Settings</li>
-                                        <li className="breadcrumb-item active" aria-current="page">Profile</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div>
-                                {activeTab === 'profile' ? (
-                                    <button
-                                        type="submit"
-                                        form="profile-form"
-                                        className="btn btn-primary px-4 shadow-sm"
-                                        disabled={isSubmittingProfile}
-                                    >
-                                        {isSubmittingProfile ? (
-                                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...</>
-                                        ) : 'Save Changes'}
-                                    </button>
-                                ) : (
-                                    <button
-                                        type="submit"
-                                        form="password-form"
-                                        className="btn btn-primary px-4 shadow-sm"
-                                        disabled={isSubmittingPassword}
-                                    >
-                                        {isSubmittingPassword ? (
-                                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Updating...</>
-                                        ) : 'Update Password'}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="My Profile" 
+                    breadcrumbs={[
+                        { label: 'Settings', path: '#' },
+                        { label: 'Profile' }
+                    ]} 
+                >
+                    {activeTab === 'profile' ? (
+                        <button
+                            type="submit"
+                            form="profile-form"
+                            className="btn btn-primary px-4 shadow-sm"
+                            disabled={isSubmittingProfile}
+                        >
+                            {isSubmittingProfile ? (
+                                <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...</>
+                            ) : 'Save Changes'}
+                        </button>
+                    ) : (
+                        <button
+                            type="submit"
+                            form="password-form"
+                            className="btn btn-primary px-4 shadow-sm"
+                            disabled={isSubmittingPassword}
+                        >
+                            {isSubmittingPassword ? (
+                                <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Updating...</>
+                            ) : 'Update Password'}
+                        </button>
+                    )}
+                </PageHeader>
 
                 <div className="row">
                     <div className="col-lg-3">

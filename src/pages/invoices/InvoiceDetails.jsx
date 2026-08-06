@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { fetchInvoiceDetails, downloadInvoice } from '../../modules/invoice/services';
 import { toast } from 'react-toastify';
 import { INVOICE_STATUS_COLORS, STATUS_PAID } from '../../config/invoiceConfig';
@@ -94,20 +95,13 @@ export default function InvoiceDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row">
-                    <div className="col-12 d-flex justify-content-between align-items-center py-2">
-                        <div>
-                            <h4 className="fs-20 mb-1">{invoice ? `Invoice #${invoice.invoice_id}` : 'Invoice Details'}</h4>
-                            <nav aria-label="breadcrumb">
-                                <ol className="breadcrumb m-0 fs-12 text-muted">
-                                    <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                    <li className="breadcrumb-item"><Link to="/invoices" className="text-muted">Invoices</Link></li>
-                                    <li className="breadcrumb-item active text-primary fw-medium" aria-current="page">Details</li>
-                                </ol>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title={invoice ? `Invoice #${invoice.invoice_id}` : 'Invoice Details'} 
+                    breadcrumbs={[
+                        { label: 'Invoices', path: '/invoices' },
+                        { label: 'Details' }
+                    ]} 
+                />
 
                 {loading ? (
                     <DetailsSkeletonLoader />

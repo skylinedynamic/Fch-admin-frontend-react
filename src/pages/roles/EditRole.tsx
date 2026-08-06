@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import PageHeader from '../common/PageHeader'
 import { useGroupedPermissions, useUpdateRole } from '../../modules/role/queries'
 import type { ApiModulePermissions } from '../../modules/role/types'
 import PermissionCardsLoader from '../../components/Loader/PermissionCardsLoader'
@@ -240,39 +241,31 @@ export default function EditRole() {
   return (
     <div className="page-content">
       <div className="container-fluid">
-        <div className="row pb-1 page-subheader-sticky bg-body">
-          <div className="col-12">
-            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-              <div className="flex-grow-1">
-                <h4 className="fs-20 mb-1">Edit Roles &amp; Permissions</h4>
-                <nav aria-label="breadcrumb" className="d-block">
-                  <ol className="breadcrumb m-0">
-                    <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                    <li className="breadcrumb-item"><Link to="/roles-permissions">Roles &amp; Permissions</Link></li>
-                    <li className="breadcrumb-item active" aria-current="page">Edit</li>
-                  </ol>
-                </nav>
-              </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
-                  <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                </button>
-                <button type="button" className="btn btn-primary w-lg" onClick={handleSave} disabled={updating}>
-                  {updating ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm align-middle me-2" aria-hidden="true"></span>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <i className="ri-save-3-line align-middle me-1"></i> Save
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+        <PageHeader 
+          title="Edit Roles & Permissions" 
+          breadcrumbs={[
+            { label: 'Roles & Permissions', path: '/roles-permissions' },
+            { label: 'Edit' }
+          ]} 
+        >
+          <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+            <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
+              <i className="ri-arrow-left-line align-middle me-1"></i> Back
+            </button>
+            <button type="button" className="btn btn-primary w-lg" onClick={handleSave} disabled={updating}>
+              {updating ? (
+                <>
+                  <span className="spinner-border spinner-border-sm align-middle me-2" aria-hidden="true"></span>
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <i className="ri-save-3-line align-middle me-1"></i> Update
+                </>
+              )}
+            </button>
           </div>
-        </div >
+        </PageHeader>
 
         <div className="row">
           <div className="col-xxl-12">

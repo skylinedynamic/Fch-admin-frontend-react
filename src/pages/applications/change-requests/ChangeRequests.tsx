@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -247,22 +248,13 @@ export default function ChangeRequests() {
             <div className="container-fluid">
 
                 {/* Page Header */}
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between py-2">
-                            <div>
-                                <h4 className="fs-20 mb-1">Change Requests</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item">Intake &amp; Review</li>
-                                        <li className="breadcrumb-item active">Change Requests</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Change Requests" 
+                    breadcrumbs={[
+                        { label: 'Intake & Review', path: '#' },
+                        { label: 'Change Requests' }
+                    ]} 
+                />
 
                 {/* Summary Cards */}
                 <div className="row change-request-section">

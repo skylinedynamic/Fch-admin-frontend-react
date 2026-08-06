@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -14,6 +15,7 @@ import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { formatCurrency } from '../../../utils/helper';
 import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS } from '../../../config/funding';
+import { FUNDING_APPLICATION_STATUS_OPTIONS } from '../../../config/borrower';
 
 export default function FundingSequence() {
     const { hasPermission } = usePermissions();
@@ -32,6 +34,7 @@ export default function FundingSequence() {
     // Filter states
     const [searchText, setSearchText] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [selectedAppStatus, setSelectedAppStatus] = useState<string>('');
     const [selectedFundingSequenceId, setSelectedFundingSequenceId] = useState<string>('');
     const [filters, setFilters] = useState<any>({});
 
@@ -41,11 +44,13 @@ export default function FundingSequence() {
     const [appliedFilters, setAppliedFilters] = useState<{
         search: string;
         status: string;
+        application_status: string;
         funding_sequence_id: string;
         filters: any;
     }>({
         search: '',
         status: '',
+        application_status: '',
         funding_sequence_id: '',
         filters: {}
     });
@@ -56,6 +61,7 @@ export default function FundingSequence() {
         per_page: perPage,
         search: appliedFilters.search,
         status: appliedFilters.status,
+        application_status: appliedFilters.application_status,
         funding_sequence_id: appliedFilters.funding_sequence_id,
         sort_field: sortField,
         sort_order: sortOrder,
@@ -90,6 +96,7 @@ export default function FundingSequence() {
             ...prev,
             search: searchText,
             status: selectedStatus,
+            application_status: selectedAppStatus,
             funding_sequence_id: selectedFundingSequenceId,
             filters: filters
         }));
@@ -99,11 +106,13 @@ export default function FundingSequence() {
     const handleClearFilters = () => {
         setSearchText('');
         setSelectedStatus('');
+        setSelectedAppStatus('');
         setSelectedFundingSequenceId('');
         initFilters();
         setAppliedFilters({
             search: '',
             status: '',
+            application_status: '',
             funding_sequence_id: '',
             filters: {}
         });
@@ -169,21 +178,10 @@ export default function FundingSequence() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Funding Requests</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Funding Requests</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Funding Requests" 
+                    breadcrumbs={[{ label: 'Funding Requests' }]} 
+                />
 
                 <div className="row row-table-fit funding-sequnce-section">
                     <div className="col-12">
@@ -191,7 +189,7 @@ export default function FundingSequence() {
                             <div className="card-body">
                                 <form className="table-filter mb-1" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
                                     <div className="row g-3 mb-2">
-                                        <div className="col-xxl-5 col-sm-12">
+                                        <div className="col-xxl-4 col-sm-12">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -208,13 +206,26 @@ export default function FundingSequence() {
                                             <div>
                                                 <Dropdown
                                                     value={selectedStatus}
-                                                    options={[{ label: 'All Status', value: '' }, ...FUNDING_REVIEW_STATUS_OPTIONS.map(o => ({ ...o, value: o.value || '' }))]}
-                                                    optionLabel="label"
-                                                    optionValue="value"
+                                                    options={Object.values(FUNDING_REVIEW_STATUS).map(status => ({
+                                                        label: status,
+                                                        value: status
+                                                    }))}
                                                     onChange={(e) => setSelectedStatus(e.value)}
-                                                    filter
-                                                    filterBy="label"
-                                                    placeholder="All Status"
+                                                    placeholder="Request Status"
+                                                    className="w-100 bg-light border-light"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-xxl-2 col-sm-6">
+                                            <div>
+                                                <Dropdown
+                                                    value={selectedAppStatus}
+                                                    options={[
+                                                        { label: 'Not Started', value: 'Not Started' },
+                                                        ...FUNDING_APPLICATION_STATUS_OPTIONS
+                                                    ]}
+                                                    onChange={(e) => setSelectedAppStatus(e.value)}
+                                                    placeholder="Application Status"
                                                     className="w-100 bg-light border-light"
                                                 />
                                             </div>
@@ -229,12 +240,12 @@ export default function FundingSequence() {
                                                     onChange={(e) => setSelectedFundingSequenceId(e.value)}
                                                     filter
                                                     filterBy="label"
-                                                    placeholder="All Funding Types"
+                                                    placeholder="Funding Type"
                                                     className="w-100 bg-light border-light"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="col-xxl-3 col-sm-12">
+                                        <div className="col-xxl-2 col-sm-6">
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-warning flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleApplyFilters}>
                                                     <i className="ri-equalizer-fill align-bottom"></i> Filters
@@ -282,12 +293,19 @@ export default function FundingSequence() {
                                             )}
                                             <Column field="funding_sequence_id" header="Funding Sequence" body={(r) => r.funding_sequence?.name || '-'} sortable style={{ minWidth: '160px' }} />
                                             <Column field="funding_type" header="Funding Type" sortable style={{ minWidth: '150px' }} />
-                                            <Column field="use_of_funds" header="Purpose" sortable style={{ minWidth: '160px' }} />
                                             <Column header="Requested Amount" field="requested_amount" body={(r) => formatCurrency(r.requested_amount ?? 0, '$', 1, 0)} sortable style={{ minWidth: '150px' }} />
                                             {isHost && (
                                                 <Column field="lender_names" header="Assigned Lender" body={(r) => r.lender_names || '-'} sortable style={{ minWidth: '160px' }} />
                                             )}
-                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '140px' }} />
+                                            <Column field="status" header="Request Status" body={statusBodyTemplate} sortable style={{ minWidth: '140px' }} />
+                                            <Column field="application_status" header="Application Status" body={(r) => {
+                                                if (r.status === FUNDING_REVIEW_STATUS.APPROVED && !r.funding_application?.status) {
+                                                    return <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Not Started</span>;
+                                                }
+                                                return r.funding_application?.status ? (
+                                                    <span className="badge bg-secondary-subtle text-secondary">{r.funding_application.status}</span>
+                                                ) : '-';
+                                            }} sortable style={{ minWidth: '140px' }} />
                                             <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '100px' }} />
                                         </DataTable>
                                     </div>

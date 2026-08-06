@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import SettingsForm from './components/SettingsForm';
 import "../../../assets/css/settings-redesign.css";
 
@@ -28,32 +29,13 @@ const Settings: React.FC = () => {
         <div className="page-content settings-page-wrapper">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-18 mb-1">Settings</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0 fs-12">
-                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item">
-                                            <span
-                                                className="text-muted"
-                                                style={{ cursor: 'pointer' }}
-                                                onClick={() => setActiveSection('payment')}
-                                            >
-                                                Settings
-                                            </span>
-                                        </li>
-                                        <li className="breadcrumb-item active" aria-current="page">
-                                            {getBreadcrumbTitle()}
-                                        </li>
-                                    </ol>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Settings" 
+                    breadcrumbs={[
+                        { label: 'Settings', onClick: () => setActiveSection('payment') },
+                        { label: getBreadcrumbTitle() }
+                    ]} 
+                />
 
                 <div className="row">
                     <div className="col-12">

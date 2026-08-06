@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { toast } from 'react-toastify';
 
@@ -624,45 +625,37 @@ export default function EmployeeDetails() {
     <div className="page-content">
       <div className="container-fluid">
         {/* Header */}
-        <div className="row pb-1 page-subheader-sticky bg-body">
-          <div className="col-12">
-            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-              <div className="flex-grow-1">
-                <h4 className="fs-20 mb-1">Employee Details</h4>
-                <nav aria-label="breadcrumb">
-                  <ol className="breadcrumb m-0">
-                    <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                    <li className="breadcrumb-item"><Link to="/employees">Employees</Link></li>
-                    <li className="breadcrumb-item active" aria-current="page">Employee Details</li>
-                  </ol>
-                </nav>
-              </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                <Link to="/employees" className="btn btn-outline-secondary w-lg waves-effect">
-                  <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="btn btn-primary w-lg waves-effect"
-                  disabled={isSaving || loading}
-                >
-                  {isSaving ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                      {id ? 'Updating...' : 'Saving...'}
-                    </>
-                  ) : (
-                    <>
-                      <i className="ri-save-3-line align-middle me-1"></i>
-                      {id ? 'Update' : 'Save'}
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+        <PageHeader 
+          title="Employee Details" 
+          breadcrumbs={[
+            { label: 'Employees', path: '/employees' },
+            { label: 'Employee Details' }
+          ]} 
+        >
+          <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+            <Link to="/employees" className="btn btn-outline-secondary w-lg waves-effect">
+              <i className="ri-arrow-left-line align-middle me-1"></i> Back
+            </Link>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="btn btn-primary w-lg waves-effect"
+              disabled={isSaving || loading}
+            >
+              {isSaving ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                  {id ? 'Updating...' : 'Saving...'}
+                </>
+              ) : (
+                <>
+                  <i className="ri-save-3-line align-middle me-1"></i>
+                  {id ? 'Update' : 'Save'}
+                </>
+              )}
+            </button>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Main Content */}
         <div className="row">

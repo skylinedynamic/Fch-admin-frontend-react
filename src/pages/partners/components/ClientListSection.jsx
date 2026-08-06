@@ -5,6 +5,7 @@ import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchBorrowers } from '../../../modules/partner/services';
 import { Skeleton } from 'primereact/skeleton';
+import { toast } from 'react-toastify';
 
 export default function ClientListSection() {
     const { id } = useParams();

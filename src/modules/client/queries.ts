@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
     fetchClients,
     fetchClientById,
@@ -52,6 +52,7 @@ export const useClients = (params: ClientFilterParams) => {
     return useQuery({
         queryKey: clientKeys.list(params),
         queryFn: () => fetchAllBorrowers(params),
+        placeholderData: keepPreviousData,
     });
 };
 

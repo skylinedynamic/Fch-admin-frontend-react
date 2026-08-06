@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -224,51 +225,39 @@ export default function Contacts() {
                     color: #6c757d;
                 }
             `}</style>
-
-            {/* Header */}
+            
             <div className="container-fluid">
-                <div className="row pb-1">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Contacts</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Contacts</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <div className="d-flex gap-2">
-                                    {hasPermission('delete contacts') && Array.isArray(selectedContacts) && selectedContacts.length > 0 ? (
-                                        <div className="btn-group">
-                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
-                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    ) : hasPermission('create contacts') ? (
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary fw-medium waves-effect waves-light"
-                                            onClick={() => navigate('/contacts/create')}
-                                        >
-                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Contact
-                                        </button>
-                                    ) : null}
-                                </div>
-                            </div>
+                {/* Header */}
+                <PageHeader 
+                title="Contacts" 
+                breadcrumbs={[{ label: 'Contacts' }]} 
+            >
+                <div className="d-flex gap-2">
+                    {hasPermission('delete contacts') && Array.isArray(selectedContacts) && selectedContacts.length > 0 ? (
+                        <div className="btn-group">
+                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span className="visually-hidden">Toggle dropdown</span>
+                            </button>
+                            <ul className="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                    </button>
+                                </li>
+                            </ul>
                         </div>
-                    </div>
+                    ) : hasPermission('create contacts') ? (
+                        <button
+                            type="button"
+                            className="btn btn-primary fw-medium waves-effect waves-light"
+                            onClick={() => navigate('/contacts/create')}
+                        >
+                            <i className="ri-add-fill me-1 align-bottom"></i> Add Contact
+                        </button>
+                    ) : null}
                 </div>
+            </PageHeader>
 
                 {/* Filters and Table */}
                 <div className="row row-table-fit">

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -467,70 +468,62 @@ export default function BorrowerVerificationRequests() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Borrower Request Task Details</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/verification-center">Verification Center</Link></li>
-                                        <li className="breadcrumb-item active">Borrower Request Task Details</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="flex-shrink-0 d-flex gap-2">
-                                <button
-                                    onClick={() => navigate('/verification-center')}
-                                    className="btn btn-outline-primary btn-md px-4"
-                                    style={{ borderRadius: '5px' }}
-                                >
-                                    <i className="ri-arrow-left-line align-bottom me-1"></i> Back
+                <PageHeader 
+                    title="Borrower Request Task Details" 
+                    breadcrumbs={[
+                        { label: 'Verification Center', path: '/verification-center' },
+                        { label: 'Borrower Request Task Details' }
+                    ]} 
+                >
+                    <div className="flex-shrink-0 d-flex gap-2">
+                        <button
+                            onClick={() => navigate('/verification-center')}
+                            className="btn btn-outline-primary btn-md px-4"
+                            style={{ borderRadius: '5px' }}
+                        >
+                            <i className="ri-arrow-left-line align-bottom me-1"></i> Back
+                        </button>
+                        {selectedRequests.length > 0 && (
+                            <div className="btn-group">
+                                <button type="button" className="btn bg-success text-white fw-medium">
+                                    Actions
                                 </button>
-                                {selectedRequests.length > 0 && (
-                                    <div className="btn-group">
-                                        <button type="button" className="btn bg-success text-white fw-medium">
-                                            Actions
+                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle dropdown</span>
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button
+                                            type="button"
+                                            className="dropdown-item"
+                                            onClick={() => openActionModal('api_verify')}
+                                        >
+                                            MicroBilt Bulk Verification
                                         </button>
-                                        <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <span className="visually-hidden">Toggle dropdown</span>
+                                    </li>
+                                    <li>
+                                        <button
+                                            type="button"
+                                            className="dropdown-item"
+                                            onClick={() => openActionModal('manual_verify')}
+                                        >
+                                            Manual Bulk Verification
                                         </button>
-                                        <ul className="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <button
-                                                    type="button"
-                                                    className="dropdown-item"
-                                                    onClick={() => openActionModal('api_verify')}
-                                                >
-                                                    MicroBilt Bulk Verification
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button
-                                                    type="button"
-                                                    className="dropdown-item"
-                                                    onClick={() => openActionModal('manual_verify')}
-                                                >
-                                                    Manual Bulk Verification
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button
-                                                    type="button"
-                                                    className="dropdown-item text-danger"
-                                                    onClick={() => openActionModal('reject')}
-                                                >
-                                                    Manual Bulk Rejection
-                                                </button>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                )}
+                                    </li>
+                                    <li>
+                                        <button
+                                            type="button"
+                                            className="dropdown-item text-danger"
+                                            onClick={() => openActionModal('reject')}
+                                        >
+                                            Manual Bulk Rejection
+                                        </button>
+                                    </li>
+                                </ul>
                             </div>
-                        </div>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
 
 

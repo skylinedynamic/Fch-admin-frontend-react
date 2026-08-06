@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import PageHeader from '../common/PageHeader';
 
 // FullCalendar Imports
 import FullCalendar from '@fullcalendar/react';
@@ -190,28 +191,18 @@ export default function Appointments() {
     return (
         <div className="page-content appointments-page">
             <div className="container-fluid">
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center justify-content-between flex-column flex-lg-row py-2">
-                            <div className="flex-grow-1 d-lg-none">
-                                <h4 className="fs-20 mb-1">Appointments</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0 fs-12 text-muted">
-                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active text-primary font-weight-bold" aria-current="page">Appointments</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="flex-shrink-0 d-lg-none page-actions">
-                                {hasPermission('create appointments') && (
-                                    <button className="btn btn-primary" onClick={() => handleNewEvent()}>
-                                        <i className="ri-add-fill me-1 align-bottom"></i> Create New Appointment
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                <PageHeader 
+                    title="Appointments" 
+                    breadcrumbs={[{ label: 'Appointments' }]} 
+                >
+                    <div className="flex-shrink-0 d-lg-none page-actions">
+                        {hasPermission('create appointments') && (
+                            <button className="btn btn-primary" onClick={() => handleNewEvent()}>
+                                <i className="ri-add-fill me-1 align-bottom"></i> Create New Appointment
+                            </button>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
                 <div className="col-12 appointment-section">
                     <div className="row">
                         <div className="col-lg-4 col-xl-3">

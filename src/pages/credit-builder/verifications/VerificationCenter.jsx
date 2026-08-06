@@ -5,7 +5,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { toast } from 'react-toastify';
-
+import PageHeader from '../../common/PageHeader';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { fetchVerificationRequests } from '../../../modules/verification-center/services';
@@ -170,22 +170,13 @@ export default function VerificationCenter() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Verification Center</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item">Credit Builder</li>
-                                        <li className="breadcrumb-item active">Verification Center</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Verification Center" 
+                    breadcrumbs={[
+                        { label: 'Credit Builder', path: '#' },
+                        { label: 'Verification Center' }
+                    ]} 
+                />
 
                 <div className="row row-table-fit verification-section">
                     <div className="col-12">

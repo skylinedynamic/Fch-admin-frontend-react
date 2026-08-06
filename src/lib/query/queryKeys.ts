@@ -39,6 +39,24 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.application.all, 'detail', id] as const,
     summary: ['summary'] as const,
   },
+  //SCRUM-67
+  // fundingApplication: {
+  //   all: ['fundingApplication'] as const,
+  //   businessInfo: () => [...queryKeys.fundingApplication.all, 'businessInfo'] as const,
+  //   ownershipInfo: () => [...queryKeys.fundingApplication.all, 'ownershipInfo'] as const,
+  //   financialInfo: () => [...queryKeys.fundingApplication.all, 'financialInfo'] as const,
+  //   disclosuresConsent: () => [...queryKeys.fundingApplication.all, 'disclosuresConsent'] as const,
+  //   federalCompliance: () => [...queryKeys.fundingApplication.all, 'federalCompliance'] as const,
+  //   attestation: () => [...queryKeys.fundingApplication.all, 'attestation'] as const,
+  //   documents: (id?: number | string | null) => [...queryKeys.fundingApplication.all, 'documents', ...(id ? [id] : [])] as const,
+  //   fundingRequest: () => [...queryKeys.fundingApplication.all, 'fundingRequest'] as const,
+  //   documentTypes: () => [...queryKeys.fundingApplication.all, 'documentTypes'] as const,
+  // },
+  // documents: {
+  //   all: ['documents'] as const,
+  //   list: () => [...queryKeys.documents.all, 'list'] as const,
+  //   types: () => [...queryKeys.documents.all, 'types'] as const,
+  // },
   agreement: {
     all: ['agreement'] as const,
     detail: (slug: string) => [...queryKeys.agreement.all, 'detail', slug] as const,

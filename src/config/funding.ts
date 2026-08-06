@@ -61,12 +61,12 @@ export const FUNDING_STATUS_OPTIONS: SelectOption[] = [
 ];
 
 export const FUNDING_REVIEW_STATUS = {
-    PENDING: 'Funding Request Pending',
-    IN_PROGRESS: 'Request In Progress',
-    APPROVED: 'Application Request Approved',
-    ACCEPTED: 'Funding Request Accepted',
-    REJECTED: 'Request Rejected',
-    CANCELED: 'Request Canceled'
+    PENDING: 'Pending',
+    IN_PROGRESS: 'In Progress',
+    APPROVED: 'Approved',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected',
+    CANCELED: 'Cancelled'
 };
 
 export const FUNDING_REVIEW_STATUS_COLORS: Record<string, string> = {
@@ -79,12 +79,12 @@ export const FUNDING_REVIEW_STATUS_COLORS: Record<string, string> = {
 };
 
 export const FUNDING_REVIEW_STATUS_OPTIONS = [
-    { label: 'Funding Request Pending', value: FUNDING_REVIEW_STATUS.PENDING },
-    { label: 'Funding Request Accepted', value: FUNDING_REVIEW_STATUS.ACCEPTED },
-    { label: 'Request In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
-    { label: 'Application Request Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
-    { label: 'Request Rejected', value: FUNDING_REVIEW_STATUS.REJECTED },
-    { label: 'Request Canceled', value: FUNDING_REVIEW_STATUS.CANCELED }
+    { label: 'Pending', value: FUNDING_REVIEW_STATUS.PENDING },
+    { label: 'Accepted', value: FUNDING_REVIEW_STATUS.ACCEPTED },
+    { label: 'In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
+    { label: 'Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
+    { label: 'Rejected', value: FUNDING_REVIEW_STATUS.REJECTED },
+    { label: 'Cancelled', value: FUNDING_REVIEW_STATUS.CANCELED }
 ];
 
 export const FUNDING_CATEGORY_OPTIONS: SelectOption[] = [
