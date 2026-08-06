@@ -174,7 +174,7 @@ export default function InvoiceDetails() {
                                                                 <tr key={idx}>
                                                                     <th scope="row">{idx + 1}</th>
                                                                     <td className="text-start">
-                                                                        <span className="fw-medium">{item.description || 'Service'}</span>
+                                                                        <span className="fw-medium">{item.type || 'Service'}</span>
                                                                     </td>
                                                                     <td>${Number(item.rate || item.amount).toFixed(2)}</td>
                                                                     <td>{item.quantity || 1}</td>
