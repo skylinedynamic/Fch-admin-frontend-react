@@ -121,8 +121,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         const fetchFixedPlan = async () => {
             try {
                 const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
-                if (response.data?.status && response.data?.data?.payment_amount) {
-                    setFixedEnrollmentAmount(Number(response.data.data.payment_amount));
+                if (response.data?.status && response.data?.data?.total_amount) {
+                    setFixedEnrollmentAmount(Number(response.data.data.total_amount));
                 }
             } catch (error) {
                 console.error('Failed to fetch fixed enrollment plan:', error);
@@ -162,13 +162,13 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             if (borrowerPlans.length > 0 && targetType === ENTITY_TYPE_BORROWER) {
                 setPlanId(borrowerPlans[0].id);
                 setEnrollmentType(borrowerPlans[0].enrollment_type);
-                setCustomEnrollmentAmount(borrowerPlans[0].payment_amount || '');
+                setCustomEnrollmentAmount(borrowerPlans[0].total_amount || '');
                 setCustomPlatformFee(borrowerPlans[0].platform_fee || 0);
 
                 // Setup defaults if it's installment plan type
                 const isInst = borrowerPlans[0].enrollment_type?.toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (borrowerPlans[0].total_installments_count > 1);
                 if (isInst) {
-                    const totalVal = Number(borrowerPlans[0].total_amount || borrowerPlans[0].payment_amount || 0);
+                    const totalVal = Number(borrowerPlans[0].total_amount || 0);
                     setEnrollmentAmount(totalVal);
                     setInstallmentDownPayment(0);
                     setInstallmentMonths(12);
@@ -203,7 +203,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         return borrowerPlans.map(plan => ({
             label: plan.enrollment_type,
             value: plan.id,
-            price: Number(plan.payment_amount),
+            price: Number(plan.total_amount),
             enrollment_type: plan.enrollment_type
         }));
     }, [borrowerPlans]);
@@ -367,7 +367,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                 // Set default installment details if clicked/switched to installment option
                                                                 const isInst = opt.enrollment_type?.toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (matchingPlan?.total_installments_count > 1);
                                                                 if (isInst) {
-                                                                    const totalVal = Number(matchingPlan?.total_amount || matchingPlan?.payment_amount || 0);
+                                                                    const totalVal = Number(matchingPlan?.total_amount || 0);
                                                                     setEnrollmentAmount(totalVal);
                                                                     setInstallmentDownPayment(0);
                                                                     setInstallmentMonths(12);
@@ -463,7 +463,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                                 type="button"
                                                                                 className="btn btn-sm btn-outline-secondary"
                                                                                 onClick={() => {
-                                                                                    const initialVal = Number(selectedBorrowerPlan?.total_amount || selectedBorrowerPlan?.payment_amount || 0);
+                                                                                    const initialVal = Number(selectedBorrowerPlan?.total_amount || 0);
                                                                                     setEnrollmentAmount(initialVal);
                                                                                     setInstallmentDownPayment(0);
                                                                                     setInstallmentMonths(12);
@@ -482,7 +482,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                                 <i className="ri-hand-coin-line text-primary me-1"></i> Total Enrollment Cost:
                                                                             </span>
                                                                             <span className="amount-value text-success fw-semibold">
-                                                                                ${Number(selectedBorrowerPlan?.total_amount || selectedBorrowerPlan?.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                                ${Number(selectedBorrowerPlan?.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                             </span>
                                                                         </div>
                                                                         <div className="custom-notice mb-2">
@@ -565,7 +565,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                 <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                     <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                         <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                        Two separate invoices are created. The Borrower pays <strong>${Number(isBorrowerInstallmentPlan ? (installmentApplied ? installmentDownPayment : (selectedBorrowerPlan?.total_amount || selectedBorrowerPlan?.payment_amount || 0)) : customEnrollmentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>, and <strong>${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> is automatically charged to the Partner.
+                                                                        Two separate invoices are created. The Borrower pays <strong>${Number(isBorrowerInstallmentPlan ? (installmentApplied ? installmentDownPayment : (selectedBorrowerPlan?.total_amount || 0)) : customEnrollmentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>, and <strong>${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> is automatically charged to the Partner.
                                                                     </p>
                                                                 </div>
                                                             </>
@@ -656,13 +656,13 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                 plan.enrollment_type === e.value
                                                             );
                                                             if (selectedPlan) {
-                                                                setCustomEnrollmentAmount(selectedPlan.payment_amount || '');
+                                                                setCustomEnrollmentAmount(selectedPlan.total_amount || '');
                                                                 setCustomPlatformFee(selectedPlan.platform_fee || 0);
 
                                                                 // Set default installment details if clicked/switched to installment option
                                                                 const isInst = e.value?.toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase() || (selectedPlan?.total_installments_count > 1);
                                                                 if (isInst) {
-                                                                    const totalVal = Number(selectedPlan.total_amount || selectedPlan.payment_amount || 0);
+                                                                    const totalVal = Number(selectedPlan.total_amount || 0);
                                                                     setEnrollmentAmount(totalVal);
                                                                     setInstallmentDownPayment(0);
                                                                     setInstallmentMonths(12);
@@ -808,7 +808,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                                 type="button"
                                                                                 className="btn btn-sm btn-outline-secondary"
                                                                                 onClick={() => {
-                                                                                    const initialVal = Number(selectedPartnerPlan?.total_amount || selectedPartnerPlan?.payment_amount || 0);
+                                                                                    const initialVal = Number(selectedPartnerPlan?.total_amount || 0);
                                                                                     setEnrollmentAmount(initialVal);
                                                                                     setInstallmentDownPayment(0);
                                                                                     setInstallmentMonths(12);
@@ -827,7 +827,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                                 <i className="ri-hand-coin-line text-success me-1"></i> Total Enrollment Cost:
                                                                             </span>
                                                                             <span className="amount-value text-success fw-semibold">
-                                                                                ${Number(selectedPartnerPlan?.total_amount || selectedPartnerPlan?.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                                ${Number(selectedPartnerPlan?.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                             </span>
                                                                         </div>
                                                                         <div className="custom-notice mb-2">
@@ -854,7 +854,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                         <i className="ri-shield-user-line me-1 text-success"></i> Partner Invoice:
                                                                     </span>
                                                                     <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
-                                                                        ${Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        ${Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                     </span>
                                                                 </div>
                                                                 <div className="d-flex justify-content-between align-items-center mb-2">
@@ -882,7 +882,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                             <i className="ri-calculator-line me-1 text-success"></i> Total Amount:
                                                                         </span>
                                                                         <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
-                                                                            ${(Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount) * selectedPartnerPlan.total_installments_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            ${(Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.total_amount) * selectedPartnerPlan.total_installments_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -953,8 +953,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 }
                 totalAmount={
                     targetType === ENTITY_TYPE_BORROWER
-                        ? Number(selectedBorrowerPlan?.total_amount || selectedBorrowerPlan?.payment_amount || 0)
-                        : Number(selectedPartnerPlan?.total_amount || selectedPartnerPlan?.payment_amount || 0)
+                        ? Number(selectedBorrowerPlan?.total_amount || 0)
+                        : Number(selectedPartnerPlan?.total_amount || 0)
                 }
                 appliedTotalAmount={enrollmentAmount}
                 appliedDownPayment={installmentDownPayment}

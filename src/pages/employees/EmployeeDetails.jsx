@@ -337,9 +337,7 @@ export default function EmployeeDetails() {
 
               const data = await getUserCount();
               const currentCount = parseInt(data?.data?.count || 0);
-              const freeLimit = parseInt(freshUser?.total_free_users || 0);
-              const paidLimit = parseInt(freshUser?.total_paid_users || 0);
-              const totalAllowed = 3 + paidLimit;
+              const totalAllowed = parseInt(freshUser?.user_seats || 3);
 
               if (currentCount >= totalAllowed) {
                 // Limit reached! Uncheck the box and show modal
@@ -569,7 +567,6 @@ export default function EmployeeDetails() {
       if (isPurchaseFlow) {
         formData.append('is_paid', 'true');
         formData.append('months', limitData.months);
-        formData.append('amount', limitData.totalPrice);
       }
 
       if (id) {

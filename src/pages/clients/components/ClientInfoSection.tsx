@@ -122,7 +122,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             ...plan,
             label: `${plan.enrollment_type}`,
             value: plan.id, // Use ID as value
-            price: Number(plan.payment_amount)
+            price: Number(plan.total_amount)
         }));
 
         // Always inject a fallback display option so the (possibly disabled) dropdown
@@ -1222,15 +1222,15 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                         const updates: any = {
                                             plan_id: selectedVal,
                                             enrollment_type: selectedOption?.enrollment_type || formData.enrollment_type || '',
-                                            enrollment_payment: selectedOption ? selectedOption.payment_amount : '',
-                                            payment_amount: selectedOption ? selectedOption.payment_amount : '',
-                                            amount: selectedOption ? selectedOption.payment_amount : ''
+                                            enrollment_payment: selectedOption ? selectedOption.total_amount : '',
+                                            payment_amount: selectedOption ? selectedOption.total_amount : '',
+                                            amount: selectedOption ? selectedOption.total_amount : ''
                                         };
 
                                         if (isInstallmentSelected) {
                                             setShowInstallmentModal(true);
 
-                                            const planTotal = Number(selectedOption?.total_amount || selectedOption?.payment_amount || 0);
+                                            const planTotal = Number(selectedOption?.total_amount || 0);
                                             const planMonths = Number(selectedOption?.total_installments_count || 12);
                                             const defaultMonthly = planMonths > 0 ? (planTotal / planMonths) : 0;
 
@@ -1318,7 +1318,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 const { installments, totalAmount, price } = selectedOption
                                                     ? calculateEnrollmentDetails({
                                                         ...selectedOption,
-                                                        payment_amount: (selectedOption as any).payment_amount || formData.payment_amount || formData.amount || 0
+                                                        total_amount: (selectedOption as any).total_amount || formData.payment_amount || formData.amount || 0
                                                     }, isHost)
                                                     : {
                                                         installments: formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR ? ENROLLMENT_INSTALLMENTS.ONE_TIME :
@@ -1423,7 +1423,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                             <i className={`ri-hand-coin-line ${forWLOrCP ? 'text-primary' : ''} me-1`}></i> Total Enrollment Cost:
                                                                         </span>
                                                                         <span className={`amount-value ${amtClass}`} style={forWLOrCP ? { fontWeight: 'bold' } : undefined}>
-                                                                            ${Number(selectedOption?.total_amount || selectedOption?.payment_amount || formData.total_subscription_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            ${Number(selectedOption?.total_amount || formData.total_subscription_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
                                                                     </div>
                                                                     <div className="custom-notice mb-2">
@@ -1524,7 +1524,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                 <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                     <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || selectedOption?.payment_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
+                                                                                                                                         Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
                                                                 </p>
                                                             </div>
                                                         </>
@@ -1610,7 +1610,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     show={showInstallmentModal}
                     onHide={() => setShowInstallmentModal(false)}
                     defaultMonths={selectedOption?.total_installments_count || 12}
-                    totalAmount={Number(selectedOption?.total_amount || selectedOption?.payment_amount || formData.total_subscription_amount || 0)}
+                    totalAmount={Number(selectedOption?.total_amount || formData.total_subscription_amount || 0)}
                     appliedTotalAmount={formData.enrollment_amount}
                     appliedDownPayment={formData.installment_down_payment}
                     appliedMonths={formData.installment_months}

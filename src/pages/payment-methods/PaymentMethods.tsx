@@ -113,8 +113,8 @@ export default function PaymentMethods(): React.JSX.Element {
                                 <div className="card-body p-0">
                                     {providers.map((provider) => (
                                         <div className="payment-method-row" key={provider.id}>
-                                            {/* Left side: Premium Logo Frame & Details */}
-                                            <div className="d-flex align-items-center gap-4 flex-wrap">
+                                                                                        {/* Left side: Premium Logo Frame & Details */}
+                                            <div className="d-flex align-items-center gap-4 flex-wrap flex-grow-1">
                                                 <div className="payment-method-logo-box">
                                                     <img 
                                                         src={provider.logo || ''} 
@@ -137,7 +137,7 @@ export default function PaymentMethods(): React.JSX.Element {
                                             </div>
 
                                             {/* Right side: Switch Switcher inside form-check to prevent overlaps */}
-                                            <div className="form-check form-switch form-switch-lg custom-switch-primary m-0 d-flex align-items-center gap-2">
+                                            <div className="form-check form-switch form-switch-lg custom-switch-primary m-0 d-flex align-items-center gap-2 flex-shrink-0">
                                                 <input
                                                     className="form-check-input cursor-pointer payment-method-switch"
                                                     type="checkbox"

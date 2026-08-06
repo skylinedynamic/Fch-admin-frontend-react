@@ -47,10 +47,13 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
         const newStatus = !status;
         setToggling(true);
         try {
-            await updatePartnerPaymentProviderStatus({
+            const response = await updatePartnerPaymentProviderStatus({
                 payment_provider_id: provider.id,
                 status: newStatus
             });
+            if (response && response.status && response.data && response.data.id) {
+                setLinkageId(response.data.id);
+            }
             setStatus(newStatus);
             toast.success(`${provider.name} status updated successfully.`);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
@@ -385,7 +388,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 };
             }
 
-            await updatePartnerPaymentProviderConfig({
+            const response = await updatePartnerPaymentProviderConfig({
                 id: linkageId,
                 payment_provider_id: provider.id,
                 payment_mode: formData.payment_mode || MODE_SANDBOX,
@@ -393,6 +396,9 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 is_default: isDefault,
                 configuration: configuration
             });
+            if (response && response.status && response.data && response.data.id) {
+                setLinkageId(response.data.id);
+            }
             toast.success(`${provider.name} configuration saved successfully!`);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
         } catch (error: any) {

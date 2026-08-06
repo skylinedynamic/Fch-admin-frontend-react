@@ -141,8 +141,8 @@ export default function ClientDetails() {
         const fetchFixedPlan = async () => {
             try {
                 const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
-                if (response.data?.status && response.data?.data?.payment_amount) {
-                    setFixedEnrollmentAmount(Number(response.data.data.payment_amount));
+                if (response.data?.status && response.data?.data?.total_amount) {
+                    setFixedEnrollmentAmount(Number(response.data.data.total_amount));
                 }
             } catch (error) {
                 console.error('Failed to fetch fixed enrollment plan:', error);

@@ -95,7 +95,7 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
 
             enrollment_type = payload.enrollment_type || 'One Time Payment';
         } else {
-            amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount as string) : 800;
+            amount = nonHostPlan?.total_amount ? parseFloat(nonHostPlan.total_amount as string) : 800;
             enrollment_type = nonHostPlan?.enrollment_type || 'Fixed enrollment';
         }
     }
@@ -222,8 +222,8 @@ export const calculateEnrollmentDetails = (plan: BorrowerPlan, isHost: boolean) 
     const installments = plan.total_installments_count ||
         (plan.enrollment_type === ENROLLMENT_TYPE_ONE_TIME ? 1 : (isHost ? 6 : 1));
 
-    const totalAmount = plan.total_amount || plan.payment_amount;
-    const price = typeof plan.payment_amount === 'string' ? parseFloat(plan.payment_amount) : plan.payment_amount;
+    const totalAmount = plan.total_amount || 0;
+    const price = typeof plan.total_amount === 'string' ? parseFloat(plan.total_amount) : (plan.total_amount || 0);
 
     return {
         installments,

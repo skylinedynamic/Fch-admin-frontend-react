@@ -82,9 +82,7 @@ export default function Users() {
 
       const data = await getUserCount();
       const currentCount = data.data.count || 0;
-      const freeLimit = freshUser?.total_free_users || 0;
-      const paidLimit = freshUser?.total_paid_users || 0;
-      const totalAllowed = 3 + paidLimit;
+      const totalAllowed = freshUser?.user_seats || 3;
 
       if (currentCount < totalAllowed) {
         setShowAddUser(true);
@@ -382,8 +380,7 @@ export default function Users() {
           // If purchase flow, include these fields. 
           // Note: Backend must accept is_paid:true or handle it appropriately.
           // If backend rejects 'is_paid' for creation without payment, this flow might fail.
-          // Assuming backend allows creation or we handle payment after.
-          ...(isPurchaseFlow ? { is_paid: true, months: limitData.months, amount: limitData.totalPrice } : {})
+          ...(isPurchaseFlow ? { is_paid: true, months: limitData.months } : {})
         })
     }
 

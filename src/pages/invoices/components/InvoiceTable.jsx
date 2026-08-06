@@ -75,6 +75,10 @@ export default function InvoiceTable({
         return <span>{rowData.displayable_payment_amount || '-'}</span>;
     };
 
+    const typeBodyTemplate = (rowData) => {
+        return <span className="fw-medium">{rowData.type || '-'}</span>;
+    };
+
     const actionBodyTemplate = (rowData) => {
         const isNotPaid = rowData.status !== STATUS_PAID;
         const isNotHost = user?.is_host == 0;
@@ -124,7 +128,7 @@ export default function InvoiceTable({
                 filters={filters}
                 sortField={sortField}
                 sortOrder={sortOrder === 'asc' ? 1 : -1}
-                globalFilterFields={['invoice_id', 'customer_name', 'email', 'country', 'payment_date', 'payment_amount', 'status']}
+                globalFilterFields={['invoice_id', 'customer_name', 'email', 'country', 'payment_date', 'payment_amount', 'status', 'type']}
                 dataKey="id"
                 scrollable
                 scrollHeight="flex"
@@ -139,6 +143,7 @@ export default function InvoiceTable({
                 <Column field="email" header="Email" bodyClassName="text-muted" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by email"></Column>
                 <Column field="created_at" header="Invoice Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
                 <Column field="payment_amount" header="Amount" body={amountBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by amount"></Column>
+                <Column field="type" header="Type" body={typeBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by type"></Column>
                 <Column field="status" header="Status" body={statusBodyTemplate} style={{ minWidth: '150px' }} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false}></Column>
                 <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '120px' }}></Column>
             </DataTable>
