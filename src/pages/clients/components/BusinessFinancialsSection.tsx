@@ -358,7 +358,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     <div className="">
                         <label className="form-label">Years in Business</label>
                         <div className="form-control bg-light" style={{ minHeight: '38.39px', display: 'flex', alignItems: 'center' }}>
-                            {formData?.years_in_business || 'Not set to business start date'}
+                            {formData?.years_in_business || 'Set the Business Start Date'}
                         </div>
                     </div>
                 </div>
