@@ -112,6 +112,7 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     delete (payload as any).payment_amount;
     delete (payload as any).enrollment_payment;
     delete (payload as any).installment_applied;
+    delete (payload as any).subscriptions;
 
     const isInstallment = (enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
 
@@ -133,7 +134,7 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
 /**
  * Maps the form data for client update.
  */
-export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Partial<Client> => {
+export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFreeTrial = false): Partial<Client> => {
     const payload: any = {
         ...formData,
         // Resolve city pairs without deleting them. If 'Others' is selected but empty, keep 'Others'.
@@ -163,54 +164,130 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
         payload.status = formData.status;
     }
 
-    if (!isHost) {
-        payload.is_partner_paying = String(payload.plan_id) !== '5';
-    } else {
-        const rawAmount = payload.enrollment_payment ?? payload.payment_amount ?? payload.amount;
+    // Detect free trial → regular conversion
+    const isConvertingFromFreeTrial = wasFreeTrial && !(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1');
 
-        if (rawAmount !== undefined && rawAmount !== null) {
-            const amount = (rawAmount === '' || rawAmount === null)
+    if (isConvertingFromFreeTrial) {
+        // Calculate Enrollment Type and Amount (mirrors mapClientPayload)
+        let amount = 0;
+        let enrollment_type = formData.enrollment_type;
+
+        if (isHost) {
+            const rawAmount = formData.enrollment_payment ??
+                (formData as any).enrollment_amount ??
+                formData.payment_amount ??
+                formData.amount;
+
+            amount = (rawAmount === '' || rawAmount === null || rawAmount === undefined)
                 ? 0
                 : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
 
-            payload.enrollment_payment = isNaN(amount) ? 0 : amount;
-        } else if (payload.plan_id) {
-            payload.enrollment_payment = 0;
+            if (isNaN(amount)) amount = 0;
+
+            if (!enrollment_type && formData.plan_id) {
+                enrollment_type = 'Default Enrollment';
+            }
+        } else {
+            if (formData.plan_id) {
+                const rawAmount = formData.enrollment_payment ??
+                    formData.payment_amount ??
+                    formData.amount;
+
+                amount = (rawAmount === '' || rawAmount === null || rawAmount === undefined)
+                    ? 0
+                    : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
+
+                if (isNaN(amount)) amount = 0;
+
+                enrollment_type = formData.enrollment_type || 'One Time Payment';
+            } else {
+                amount = 800; // default/fallback
+                enrollment_type = 'Fixed enrollment';
+            }
+        }
+
+        payload.enrollment_amount = Number(formData.enrollment_amount || amount || 0);
+        payload.enrollment_type = enrollment_type;
+        payload.is_partner_paying = !isHost && String(payload.plan_id) !== '5';
+
+        const isInstallment = (enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
+        if (!isInstallment) {
+            delete payload.installment_down_payment;
+            delete payload.installment_months;
+            delete payload.installment_monthly_amount;
+            delete payload.installment_remaining_balance;
+        } else {
+            payload.installment_remaining_balance = Math.max(0, Number(payload.enrollment_amount || 0) - Number(formData.installment_down_payment || 0));
+            payload.installment_down_payment = Number(formData.installment_down_payment || 0);
+            payload.installment_months = Number(formData.installment_months || 12);
+            payload.installment_monthly_amount = Number(formData.installment_monthly_amount || 0);
+        }
+    } else {
+        if (!isHost) {
+            payload.is_partner_paying = String(payload.plan_id) !== '5';
+        } else {
+            const rawAmount = payload.enrollment_payment ?? payload.payment_amount ?? payload.amount;
+
+            if (rawAmount !== undefined && rawAmount !== null) {
+                const amount = (rawAmount === '' || rawAmount === null)
+                    ? 0
+                    : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
+
+                payload.enrollment_payment = isNaN(amount) ? 0 : amount;
+            } else if (payload.plan_id) {
+                payload.enrollment_payment = 0;
+            }
         }
     }
 
     payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
 
-    const isInstallment = (formData.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
+    // Strip enrollment, billing, subscription, and invoice properties on update always
+    const enrollmentFieldsToSkip = [
+        'plan_id',
+        'subscription_plan_id',
+        'partner_type',
+        'enrollment_type',
+        'enrollment_amount',
+        'installment_down_payment',
+        'installment_months',
+        'installment_monthly_amount',
+        'installment_remaining_balance',
+        'invoice',
+        'is_partner_paying',
+        'latest_subscription',
+        'subscription',
+        'amount',
+        'payment_amount',
+        'enrollment_payment',
+        'installment_applied',
+        'subscriptions' // Read-only history list — never sent to the API
+    ];
 
-    // Pass only enrollment_amount in payload, stripping other amount and temp properties
-    delete (payload as any).amount;
-    delete (payload as any).payment_amount;
-    delete (payload as any).enrollment_payment;
-    delete (payload as any).installment_applied;
+    // Fields that are always allowed through during a free trial conversion
+    const freeTrialConversionAllowedFields = [
+        'plan_id',
+        'subscription_plan_id',
+        'enrollment_type',
+        'enrollment_amount',
+        'installment_down_payment',
+        'installment_months',
+        'installment_monthly_amount',
+        'installment_remaining_balance',
+        'is_free_trail',
+        'free_trail_end_date',
+        'is_partner_paying',
+        'amount',
+        'payment_amount',
+        'enrollment_payment',
+        'installment_applied'
+    ];
 
-    payload.enrollment_amount = Number(formData.enrollment_amount || 0);
-
-    if (!isInstallment) {
-        delete payload.installment_down_payment;
-        delete payload.installment_months;
-        delete payload.installment_monthly_amount;
-        delete payload.installment_remaining_balance;
-    } else {
-        payload.installment_remaining_balance = Math.max(0, Number(formData.enrollment_amount || 0) - Number(formData.installment_down_payment || 0));
-        payload.installment_down_payment = Number(formData.installment_down_payment || 0);
-        payload.installment_months = Number(formData.installment_months || 12);
-        payload.installment_monthly_amount = Number(formData.installment_monthly_amount || 0);
-    }
-
-    // 'current_selection' is a frontend-only placeholder used when the borrower already
-    // has a plan that could not be matched to a known plan ID.
-    // The dropdown is disabled in this case, so there is no plan change — strip it
-    // entirely so the backend's exists:subscription_plans,id rule is never triggered.
-    if (payload.plan_id === 'current_selection') {
-        delete payload.plan_id;
-        delete payload.enrollment_amount;
-    }
+    enrollmentFieldsToSkip.forEach(field => {
+        if (!isConvertingFromFreeTrial || !freeTrialConversionAllowedFields.includes(field)) {
+            delete payload[field];
+        }
+    });
 
     return payload;
 };

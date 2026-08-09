@@ -185,7 +185,7 @@ export default function InvoiceDetails() {
                                                             <tr>
                                                                 <th scope="row">1</th>
                                                                 <td className="text-start">
-                                                                    <span className="fw-medium">General Payment</span>
+                                                                    <span className="fw-medium">{invoice.type}</span>
                                                                 </td>
                                                                 <td>{invoice.displayable_payment_amount || '-'}</td>
                                                                 <td>1</td>

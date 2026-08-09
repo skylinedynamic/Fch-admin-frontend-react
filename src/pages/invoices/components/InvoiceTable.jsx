@@ -75,6 +75,19 @@ export default function InvoiceTable({
         return <span>{rowData.displayable_payment_amount || '-'}</span>;
     };
 
+    const customerBodyTemplate = (rowData) => {
+        const customerName = rowData.customer_name || '-';
+        const entityType = rowData.entity_type
+            ? rowData.entity_type : null;
+
+        return (
+            <span>
+                {customerName}
+                {entityType && <span className="text-muted ms-1">({entityType})</span>}
+            </span>
+        );
+    };
+
     const typeBodyTemplate = (rowData) => {
         return <span className="fw-medium">{rowData.type || '-'}</span>;
     };
@@ -139,7 +152,7 @@ export default function InvoiceTable({
                 rowClassName={() => 'cursor-pointer'}
             >
                 <Column field="invoice_id" header="Invoice ID" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by ID"></Column>
-                <Column field="customer_name" header="Customer" style={{ minWidth: '180px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by name"></Column>
+                <Column field="customer_name" header="Customer" body={customerBodyTemplate} style={{ minWidth: '180px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by name"></Column>
                 <Column field="email" header="Email" bodyClassName="text-muted" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by email"></Column>
                 <Column field="created_at" header="Invoice Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
                 <Column field="payment_amount" header="Amount" body={amountBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by amount"></Column>

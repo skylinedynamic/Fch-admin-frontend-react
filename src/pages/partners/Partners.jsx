@@ -199,7 +199,7 @@ export default function Partners() {
         setAppliedFilters(filters);
         setPage(1);
     };
-
+  
 
     const handleClearFilters = () => {
         setSearchText('');

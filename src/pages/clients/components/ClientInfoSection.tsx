@@ -132,7 +132,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         //       the update payload in mapClientUpdatePayload() and never sent to the API.
         if (formData.plan_id && formData.plan_id !== 'current_selection' && !options.find((opt: any) => String(opt.value) === String(formData.plan_id))) {
             // Real plan_id but not found in the fetched list — inject it so it stays visible
-            const currentPrice = Number(formData.payment_amount || formData.amount || 0);
+            const currentPrice = Number(formData.payable_amount || formData.payment_amount || formData.amount || 0);
             options.unshift({
                 label: formData.enrollment_type || 'Current Plan',
                 value: formData.plan_id,
@@ -148,7 +148,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             );
 
             if (!match) {
-                const currentPrice = Number(formData.payment_amount || formData.amount || 0);
+                const currentPrice = Number(formData.payable_amount || formData.payment_amount || formData.amount || 0);
                 options.unshift({
                     label: formData.enrollment_type,
                     value: 'current_selection',
@@ -160,7 +160,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
 
         return options;
-    }, [isHost, borrowerPlans, formData.plan_id, formData.enrollment_type, formData.payment_amount, formData.amount]);
+    }, [isHost, borrowerPlans, formData.plan_id, formData.enrollment_type, formData.payable_amount, formData.payment_amount, formData.amount]);
 
     // 3. Sync Fetch to Local State - Use ref to prevent infinite loops
     const hasSyncedData = React.useRef(false);
@@ -169,9 +169,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         if (fetchedData && !hasSyncedData.current) {
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
-
-            // plan_id is now returned directly by the API (latestSubscription.subscription_plan_id).
-            // No frontend guessing needed — use it as-is.
 
             // Normalize date
             if (apiData.business_start_date) {
@@ -186,9 +183,35 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 }
             }
 
-            // Ensure enrollment_payment is synced from payment_amount for edit mode consistency
-            if (apiData.payment_amount && (!apiData.enrollment_payment || apiData.enrollment_payment === '')) {
-                apiData.enrollment_payment = apiData.payment_amount;
+            // Flatten enrollment_details into apiData — mirrors PartnerProfile.jsx pattern.
+            // The API now returns all enrollment/subscription fields nested under enrollment_details.
+            const ed = apiData.enrollment_details;
+            if (ed) {
+                apiData.plan_id                                = ed.plan_id || '';
+                apiData.enrollment_type                        = ed.enrollment_type || '';
+                apiData.payable_amount                         = ed.payable_amount !== undefined && ed.payable_amount !== null ? ed.payable_amount : '';
+                apiData.payment_amount                         = ed.payable_amount !== undefined && ed.payable_amount !== null ? ed.payable_amount : '';
+                apiData.total_subscription_amount              = ed.total_subscription_amount !== undefined && ed.total_subscription_amount !== null ? ed.total_subscription_amount : '';
+                apiData.monthly_platform_fee                   = ed.monthly_platform_fee !== undefined && ed.monthly_platform_fee !== null ? ed.monthly_platform_fee : '';
+                apiData.enrollment_amount                      = ed.enrollment_amount !== undefined && ed.enrollment_amount !== null ? ed.enrollment_amount : '';
+                apiData.installment_applied                    = ed.installment_applied === true || ed.installment_applied === 'true' || ed.installment_applied === 1 || ed.installment_applied === '1';
+                apiData.installment_down_payment               = Number(ed.installment_down_payment || 0);
+                apiData.installment_months                     = Number(ed.installment_months || 0);
+                apiData.installment_monthly_amount             = Number(ed.installment_monthly_amount || 0);
+                apiData.installment_remaining_balance          = Number(ed.installment_remaining_balance || 0);
+                // Formatted display strings
+                apiData.payable_amount_formatted               = ed.payable_amount_formatted || '';
+                apiData.total_subscription_amount_formatted    = ed.total_subscription_amount_formatted || '';
+                apiData.monthly_platform_fee_formatted         = ed.monthly_platform_fee_formatted || '';
+                apiData.enrollment_amount_formatted            = ed.enrollment_amount_formatted || '';
+                apiData.installment_down_payment_formatted     = ed.installment_down_payment_formatted || '';
+                apiData.installment_monthly_amount_formatted   = ed.installment_monthly_amount_formatted || '';
+                apiData.installment_remaining_balance_formatted= ed.installment_remaining_balance_formatted || '';
+            }
+
+            // Sync enrollment_payment from payable_amount for edit mode consistency
+            if (apiData.payable_amount && (!apiData.enrollment_payment || apiData.enrollment_payment === '')) {
+                apiData.enrollment_payment = apiData.payable_amount;
             }
 
             setFormData(prev => ({ ...prev, ...apiData }));
@@ -425,7 +448,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     useImperativeHandle(ref, () => ({
         save: async () => {
             console.log('[ClientInfoSection] Starting save...', { clientId, formData });
-            const payload = mapClientUpdatePayload(formData, isHost);
+            const payload = mapClientUpdatePayload(formData, isHost, wasFreeTrial);
             console.log('[ClientInfoSection] Mapped payload:', payload);
 
             return new Promise((resolve, reject) => {
@@ -1203,7 +1226,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 {!(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1') && (
                     <>
-                        {/* Enrollment Type Dropdown (Now for both Host and Non-Host) */}
+                        {/* Enrollment Type Dropdown — shown when creating or when converting from free trial */}
+                        {!(!!clientId && !wasFreeTrial) && (
                         <div className="col-lg-6">
                             <div className="mb-3">
                                 <label htmlFor="enrollment_type" className="form-label">
@@ -1273,12 +1297,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                     optionValue="value"
                                     placeholder="Select Enrollment Type"
                                     className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
-                                    disabled={!!clientId && !wasFreeTrial}
                                     appendTo="self"
                                 />
                                 {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
                             </div>
                         </div>
+                        )}
 
                         {/* Custom Override Inputs for isHost, White-Label or Certified Partner — hidden for installment plans */}
                         {(isHost || currentUser?.partner_type === PARTNER_TYPES.WHITE_LABEL || currentUser?.partner_type === PARTNER_TYPES.CERTIFIED) && (formData.plan_id || formData.enrollment_type) && !isInstallmentPlan && !(formData.installment_applied === true || formData.installment_applied === 'true') && (
@@ -1309,7 +1333,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         {(formData.plan_id || formData.enrollment_type) && (
                             <div className="col-lg-12">
                                 <div className="mb-3">
-                                    <label className="form-label">Enrollment Amount</label>
+                                    <label className="form-label">{clientId ? 'Enrollment Details' : 'Enrollment Amount'}</label>
                                     <div className="enrollment-base-alert">
                                         <div className="card-body">
                                             {(() => {
@@ -1318,13 +1342,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 const { installments, totalAmount, price } = selectedOption
                                                     ? calculateEnrollmentDetails({
                                                         ...selectedOption,
-                                                        total_amount: (selectedOption as any).total_amount || formData.payment_amount || formData.amount || 0
+                                                        total_amount: (selectedOption as any).total_amount || formData.payable_amount || formData.payment_amount || formData.amount || 0
                                                     }, isHost)
                                                     : {
                                                         installments: formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR ? ENROLLMENT_INSTALLMENTS.ONE_TIME :
                                                             (formData.enrollment_type === ENROLLMENT_TYPES.SIX_MONTH_STR ? ENROLLMENT_INSTALLMENTS.SIX_MONTHS : (isHost ? ENROLLMENT_INSTALLMENTS.DEFAULT_HOST : ENROLLMENT_INSTALLMENTS.DEFAULT_NON_HOST)),
-                                                        totalAmount: formData.payment_amount || formData.amount || 0,
-                                                        price: formData.payment_amount || formData.amount || 0
+                                                        totalAmount: formData.payable_amount || formData.payment_amount || formData.amount || 0,
+                                                        price: formData.payable_amount || formData.payment_amount || formData.amount || 0
                                                     };
 
                                                 const hasCustomEnrollment = formData.enrollment_payment !== undefined && formData.enrollment_payment !== '';
@@ -1341,6 +1365,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 const isWLOrCP = (isWL || isCP) && !isHost;
 
                                                 const renderInstallmentContent = (forWLOrCP: boolean) => {
+                                                    // Borrower is "already in paid mode" when they have a saved subscription
+                                                    // (clientId exists) and are NOT on a free trial — mirrors partner logic.
+                                                    const isAlreadyInPaidMode = !!clientId && !wasFreeTrial;
                                                     const labelClass = forWLOrCP ? 'text-primary' : '';
                                                     const labelStyle = forWLOrCP ? { fontWeight: 600 } : undefined;
                                                     const valueClass = forWLOrCP ? 'text-primary fw-semibold' : 'fw-semibold text-success';
@@ -1356,7 +1383,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                             <i className={`ri-hand-coin-line ${infoIconClass} me-1`}></i> Total Enrollment Amount:
                                                                         </span>
                                                                         <span className={`info-value ${valueClass}`}>
-                                                                            ${Number(formData.enrollment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            {formData.enrollment_amount_formatted || ('$' + Number(formData.enrollment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
                                                                         </span>
                                                                     </div>
                                                                     <div className="d-flex justify-content-between align-items-center mb-2">
@@ -1364,7 +1391,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                             <i className={`ri-wallet-3-line ${infoIconClass} me-1`}></i> Down Payment (Upfront):
                                                                         </span>
                                                                         <span className="info-value text-success fw-semibold">
-                                                                            ${Number(formData.installment_down_payment || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            {formData.installment_down_payment_formatted || ('$' + Number(formData.installment_down_payment || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
                                                                         </span>
                                                                     </div>
                                                                     <div className="d-flex justify-content-between align-items-center mb-2">
@@ -1380,41 +1407,48 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                             <i className={`ri-money-dollar-circle-line ${infoIconClass} me-1`}></i> Monthly Installment Amount:
                                                                         </span>
                                                                         <span className="amount-value text-success fw-semibold">
-                                                                            ${Number(
+                                                                            {formData.installment_monthly_amount_formatted || ('$' + Number(
                                                                                 formData.installment_monthly_amount !== undefined && formData.installment_monthly_amount !== ''
                                                                                     ? formData.installment_monthly_amount
                                                                                     : ((Number(formData.enrollment_amount) || 0) - (Number(formData.installment_down_payment) || 0)) / (Number(formData.installment_months) || 12)
-                                                                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
                                                                         </span>
                                                                     </div>
+                                                                    {!isAlreadyInPaidMode && (
                                                                     <div className={`d-flex gap-2 mt-3 ${forWLOrCP ? 'mb-3' : 'mb-2'}`}>
+                                                                        {!isAlreadyInPaidMode && (
                                                                         <button
                                                                             type="button"
                                                                             className="btn btn-sm installment-trigger-btn"
                                                                             onClick={() => setShowInstallmentModal(true)}
+                                                                            style={{ opacity: 1, cursor: 'pointer' }}
                                                                         >
                                                                             <i className="ri-edit-line me-1"></i> View Payment Details
                                                                         </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            className="btn btn-sm btn-light border"
-                                                                            onClick={() => {
-                                                                                handleInputChange({ target: { name: 'installment_applied', value: false } });
-                                                                                handleInputChange({ target: { name: 'installment_down_payment', value: 0 } });
-                                                                                handleInputChange({ target: { name: 'installment_months', value: 0 } });
-                                                                                handleInputChange({ target: { name: 'installment_monthly_amount', value: 0 } });
-                                                                                handleInputChange({ target: { name: 'enrollment_type', value: '' } });
-                                                                                handleInputChange({ target: { name: 'enrollment_amount', value: '' } });
-                                                                                handleInputChange({ target: { name: 'monthly_platform_fee', value: '' } });
-                                                                                handleInputChange({ target: { name: 'plan_id', value: '' } });
-                                                                                handleInputChange({ target: { name: 'enrollment_payment', value: '' } });
-                                                                                handleInputChange({ target: { name: 'payment_amount', value: '' } });
-                                                                                handleInputChange({ target: { name: 'amount', value: '' } });
-                                                                            }}
-                                                                        >
-                                                                            <i className="ri-refresh-line me-1"></i> Reset
-                                                                        </button>
+                                                                        )}
+                                                                        {!isAlreadyInPaidMode && (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-sm btn-light border"
+                                                                                onClick={() => {
+                                                                                    handleInputChange({ target: { name: 'installment_applied', value: false } });
+                                                                                    handleInputChange({ target: { name: 'installment_down_payment', value: 0 } });
+                                                                                    handleInputChange({ target: { name: 'installment_months', value: 0 } });
+                                                                                    handleInputChange({ target: { name: 'installment_monthly_amount', value: 0 } });
+                                                                                    handleInputChange({ target: { name: 'enrollment_type', value: '' } });
+                                                                                    handleInputChange({ target: { name: 'enrollment_amount', value: '' } });
+                                                                                    handleInputChange({ target: { name: 'monthly_platform_fee', value: '' } });
+                                                                                    handleInputChange({ target: { name: 'plan_id', value: '' } });
+                                                                                    handleInputChange({ target: { name: 'enrollment_payment', value: '' } });
+                                                                                    handleInputChange({ target: { name: 'payment_amount', value: '' } });
+                                                                                    handleInputChange({ target: { name: 'amount', value: '' } });
+                                                                                }}
+                                                                            >
+                                                                                <i className="ri-refresh-line me-1"></i> Reset
+                                                                            </button>
+                                                                        )}
                                                                     </div>
+                                                                    )}
                                                                 </>
                                                             ) : (
                                                                 <>
@@ -1423,7 +1457,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                             <i className={`ri-hand-coin-line ${forWLOrCP ? 'text-primary' : ''} me-1`}></i> Total Enrollment Cost:
                                                                         </span>
                                                                         <span className={`amount-value ${amtClass}`} style={forWLOrCP ? { fontWeight: 'bold' } : undefined}>
-                                                                            ${Number(selectedOption?.total_amount || formData.total_subscription_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            {formData.total_subscription_amount_formatted || ('$' + Number(selectedOption?.total_amount || formData.total_subscription_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
                                                                         </span>
                                                                     </div>
                                                                     <div className="custom-notice mb-2">
@@ -1436,6 +1470,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                         type="button"
                                                                         className={`btn btn-sm installment-trigger-btn mt-2 ${forWLOrCP ? 'mb-3' : ''}`}
                                                                         onClick={() => setShowInstallmentModal(true)}
+                                                                        disabled={isAlreadyInPaidMode}
                                                                     >
                                                                         <i className="ri-calculator-line me-1"></i> View Installment Details
                                                                     </button>
@@ -1447,20 +1482,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                                                 if (isWLOrCP) {
                                                     const customAmount = currentPaymentAmount;
-                                                    const clientTypeLabel = isCP ? CLIENT_TYPE_LABELS.CERTIFIED : CLIENT_TYPE_LABELS.WHITE_LABEL;
 
                                                     return (
                                                         <>
                                                             <input type="hidden" name="is_partner_paying" value="false" />
 
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <span className="info-label">
-                                                                    <i className="ri-user-settings-line"></i> Client Type:
-                                                                </span>
-                                                                <span className="info-value text-info" style={{ fontWeight: 'bold' }}>
-                                                                    {clientTypeLabel}
-                                                                </span>
-                                                            </div>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <span className="info-label">
                                                                     <i className="ri-bank-card-line"></i> Payment Plan:
@@ -1539,14 +1565,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                                                         <div className="d-flex justify-content-between align-items-center mb-2">
                                                             <span className="info-label">
-                                                                <i className="ri-user-settings-line"></i> Client Type:
-                                                            </span>
-                                                            <span className={`info-value ${isHost ? 'text-primary' : 'text-success'}`}>
-                                                                {isHost ? 'Host Client' : 'Partner Client'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                                            <span className="info-label">
                                                                 <i className="ri-bank-card-line"></i> Payment Plan:
                                                             </span>
                                                             <span className="info-value text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
@@ -1609,8 +1627,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <InstallmentDetailsModal
                     show={showInstallmentModal}
                     onHide={() => setShowInstallmentModal(false)}
-                    defaultMonths={selectedOption?.total_installments_count || 12}
-                    totalAmount={Number(selectedOption?.total_amount || formData.total_subscription_amount || 0)}
+                    defaultMonths={selectedOption?.total_installments_count || formData.installment_months || 12}
+                    totalAmount={Number(selectedOption?.total_amount || formData.enrollment_amount || formData.total_subscription_amount || 0)}
                     appliedTotalAmount={formData.enrollment_amount}
                     appliedDownPayment={formData.installment_down_payment}
                     appliedMonths={formData.installment_months}

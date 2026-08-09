@@ -118,6 +118,7 @@ export default function PartnerProfile() {
         installment_months: 0,
         installment_monthly_amount: 0,
         installment_remaining_balance: 0,
+        subscriptions: [],
     });
 
     // Fetch Partner Plans on mount
@@ -343,12 +344,26 @@ export default function PartnerProfile() {
                 address_line_1: data.address_line_1 || '', // Map address_line_1 → address
                 partner_image: data.partner_image || '', // Map company_logo → partner_image
                 country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
-                // Normalize installment fields coming from backend (may be strings/null)
-                installment_applied: data.installment_applied === true || data.installment_applied === 'true' || data.installment_applied === 1 || data.installment_applied === '1',
-                installment_down_payment: Number(data.installment_down_payment || 0),
-                installment_months: Number(data.installment_months || 0),
-                installment_monthly_amount: Number(data.installment_monthly_amount || 0),
-                installment_remaining_balance: Number(data.installment_remaining_balance || 0),
+                plan_id: data.enrollment_details?.plan_id || '',
+                enrollment_type: data.enrollment_details?.enrollment_type || '',
+                payable_amount: data.enrollment_details?.payable_amount !== undefined && data.enrollment_details?.payable_amount !== null ? data.enrollment_details.payable_amount : '',
+                total_subscription_amount: data.enrollment_details?.total_subscription_amount !== undefined && data.enrollment_details?.total_subscription_amount !== null ? data.enrollment_details.total_subscription_amount : '',
+                monthly_platform_fee: data.enrollment_details?.monthly_platform_fee !== undefined && data.enrollment_details?.monthly_platform_fee !== null ? data.enrollment_details.monthly_platform_fee : '',
+                enrollment_amount: data.enrollment_details?.enrollment_amount !== undefined && data.enrollment_details?.enrollment_amount !== null ? data.enrollment_details.enrollment_amount : '',
+                installment_applied: data.enrollment_details?.installment_applied === true || data.enrollment_details?.installment_applied === 'true' || data.enrollment_details?.installment_applied === 1 || data.enrollment_details?.installment_applied === '1',
+                installment_down_payment: Number(data.enrollment_details?.installment_down_payment || 0),
+                installment_months: Number(data.enrollment_details?.installment_months || 0),
+                installment_monthly_amount: Number(data.enrollment_details?.installment_monthly_amount || 0),
+                installment_remaining_balance: Number(data.enrollment_details?.installment_remaining_balance || 0),
+                // Formatted fields using helper strings from enrollment_details
+                payable_amount_formatted: data.enrollment_details?.payable_amount_formatted || '',
+                total_subscription_amount_formatted: data.enrollment_details?.total_subscription_amount_formatted || '',
+                monthly_platform_fee_formatted: data.enrollment_details?.monthly_platform_fee_formatted || '',
+                enrollment_amount_formatted: data.enrollment_details?.enrollment_amount_formatted || '',
+                installment_down_payment_formatted: data.enrollment_details?.installment_down_payment_formatted || '',
+                installment_monthly_amount_formatted: data.enrollment_details?.installment_monthly_amount_formatted || '',
+                installment_remaining_balance_formatted: data.enrollment_details?.installment_remaining_balance_formatted || '',
+                subscriptions: data.subscriptions || [],
             }));
             setWasFreeTrial(!!data.is_free_trail);
 
@@ -387,62 +402,6 @@ export default function PartnerProfile() {
             }
         }
     }, [formData.agent, users]);
-
-    // Fetch subscription data when subscription tab is active
-    useEffect(() => {
-        const fetchSubscriptionData = async () => {
-            if (!id || activeTab !== 'subscription' || isPartnerLoading) return;
-
-            try {
-                const response = await getSubscription(id);
-                if (response.status && response.data) {
-                    const subscriptionData = response.data;
-                    setFormData(prev => ({
-                        ...prev,
-                        partner_type: subscriptionData.partner_type || prev.partner_type,
-                        enrollment_type: subscriptionData.enrollment_type || '',
-                        enrollment_amount: subscriptionData.enrollment_amount || '',
-                        first_reg_date: subscriptionData.first_reg_date || '',
-                        first_reg_amount: subscriptionData.first_reg_amount || '',
-                        first_reg_amount_2: subscriptionData.first_reg_amount_2 || '',
-                        first_reg_payment: subscriptionData.first_reg_payment || '',
-                        first_reg_payment_2: subscriptionData.first_reg_payment_2 || '',
-                        recurring_amount: subscriptionData.monthly_platform_fee || subscriptionData.recurring_amount || '',
-                        monthly_platform_fee: subscriptionData.monthly_platform_fee || '',
-                        total_paid_amount: subscriptionData.total_paid_amount || '',
-                        subscription_start_date: subscriptionData.subscription_start_date || '',
-                        subscription_end_date: subscriptionData.subscription_end_date || '',
-                        expiry_date: subscriptionData.expiry_date || '',
-                        termination_date: subscriptionData.termination_date || '',
-                        subscription_status: subscriptionData.status || ''
-                    }));
-                }
-            } catch (error) {
-                // console.error('Failed to fetch subscription data', error);
-                // If subscription doesn't exist (404), reset subscription fields to empty
-                if (error.response?.status === 404) {
-                    setFormData(prev => ({
-                        ...prev,
-                        enrollment_type: '',
-                        enrollment_amount: '',
-                        first_reg_date: '',
-                        first_reg_amount: '',
-                        first_reg_payment: '',
-                        first_reg_payment_2: '',
-                        recurring_amount: '',
-                        total_paid_amount: '',
-                        subscription_start_date: '',
-                        subscription_end_date: '',
-                        expiry_date: '',
-                        termination_date: '',
-                        subscription_status: ''
-                    }));
-                }
-            }
-        };
-
-        fetchSubscriptionData();
-    }, [id, activeTab, isPartnerLoading]);
 
 
 
@@ -698,12 +657,73 @@ export default function PartnerProfile() {
                     'installment_remaining_balance'
                 ];
 
+                const enrollmentFieldsToSkipOnUpdate = [
+                    'partner_type',
+                    'enrollment_type',
+                    'enrollment_amount',
+                    'monthly_platform_fee',
+                    'recurring_amount',
+                    'total_paid_amount',
+                    'payable_amount',
+                    'total_subscription_amount',
+                    'subscription_start_date',
+                    'subscription_end_date',
+                    'expiry_date',
+                    'termination_date',
+                    'subscription_status',
+                    'is_free_trail',
+                    'free_trail_end_date',
+                    'is_partner_paying',
+                    'installment_applied',
+                    'installment_down_payment',
+                    'installment_months',
+                    'installment_monthly_amount',
+                    'installment_remaining_balance',
+                    'invoice',
+                    'plan_id',
+                    'enrollment_details',
+                    'payable_amount_formatted',
+                    'total_subscription_amount_formatted',
+                    'monthly_platform_fee_formatted',
+                    'enrollment_amount_formatted',
+                    'installment_down_payment_formatted',
+                    'installment_monthly_amount_formatted',
+                    'installment_remaining_balance_formatted',
+                    'subscriptions'
+                ];
+
+                // Detect free trial → regular conversion
+                const isConvertingFromFreeTrial = wasFreeTrial && !formData.is_free_trail;
+
+                // Fields that are always allowed through during a free trial conversion
+                const freeTrialConversionAllowedFields = [
+                    'partner_type',
+                    'enrollment_type',
+                    'enrollment_amount',
+                    'monthly_platform_fee',
+                    'recurring_amount',
+                    'installment_applied',
+                    'installment_down_payment',
+                    'installment_months',
+                    'installment_monthly_amount',
+                    'installment_remaining_balance',
+                    'is_free_trail',
+                    'free_trail_end_date',
+                ];
+
                 // Append all form fields with proper field name mapping
                 Object.entries(formData).forEach(([key, value]) => {
                     if (value !== null && value !== undefined) {
-                        // Skip partner_type and enrollment_type during update to prevent changes
-                        if (id && (key === 'partner_type' || (key === 'enrollment_type' && !wasFreeTrial))) {
+                        // Skip partner_type on update unless converting from free trial
+                        if (id && key === 'partner_type' && !isConvertingFromFreeTrial) {
                             return;
+                        }
+
+                        // Skip enrollment/billing fields on update, UNLESS this is a free trial conversion
+                        if (id && enrollmentFieldsToSkipOnUpdate.includes(key)) {
+                            if (!isConvertingFromFreeTrial || !freeTrialConversionAllowedFields.includes(key)) {
+                                return;
+                            }
                         }
 
                         // Skip obsolete fields
@@ -753,12 +773,16 @@ export default function PartnerProfile() {
                                 formDataToSend.append('country_code', value);
                             }
                         } else if (key === 'enrollment_amount') {
-                            // Accurate code: specifically ensure enrollment payment fields are sent
-                            formDataToSend.append('enrollment_amount', value || '');
+                            // Skip on free trial create — amounts not applicable
+                            if (!(!id && formData.is_free_trail)) {
+                                formDataToSend.append('enrollment_amount', value || '');
+                            }
                         } else if (key === 'monthly_platform_fee' || key === 'recurring_amount') {
-                            // Accurate code: send platform fee to backend
-                            if (!formDataToSend.has('monthly_platform_fee')) {
-                                formDataToSend.append('monthly_platform_fee', formData.monthly_platform_fee || formData.recurring_amount || '');
+                            // Skip on free trial create — amounts not applicable
+                            if (!(!id && formData.is_free_trail)) {
+                                if (!formDataToSend.has('monthly_platform_fee')) {
+                                    formDataToSend.append('monthly_platform_fee', formData.monthly_platform_fee || formData.recurring_amount || '');
+                                }
                             }
                         } else if (key === 'partner_domain') {
                             // Send partner_domain on create (all types) or update (Certified only)
@@ -778,6 +802,8 @@ export default function PartnerProfile() {
                             formDataToSend.append('free_trail_end_date', formData.is_free_trail && value ? value : '');
                         } else if (key === 'installment_applied') {
                             // Frontend-only flag - not sent to the API
+                        } else if (key === 'subscriptions') {
+                            // Read-only history list — never sent to the API
                         } else if (key === 'installment_down_payment' || key === 'installment_months' || key === 'installment_monthly_amount' || key === 'installment_remaining_balance') {
                             // Always send installment numeric fields (even 0) so the backend can persist the full plan
                             formDataToSend.append(key, (value === '' || value === null || value === undefined) ? 0 : value);

@@ -201,7 +201,6 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle,
                                                 <Col sm={6}><InfoItem label="Current Tier" value={<span className="badge bg-secondary-subtle text-secondary p-2 fs-12">{client.current_tier_name || 'N/A'}</span>} /></Col>
                                                 <Col sm={6}><InfoItem label="Partner Name" value={client.partner_name} /></Col>
                                                 <Col sm={6}><InfoItem label="Assigned To" value={client.assign_name} /></Col>
-                                                <Col sm={12}><InfoItem label="Invoice ID" value={(client as any).invoice?.invoice_id || 'N/A'} /></Col>
                                             </Row>
                                         </CardBody>
                                     </Card>

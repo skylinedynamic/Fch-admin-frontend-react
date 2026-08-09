@@ -107,7 +107,7 @@ export default function PartnerForm({
                     {loading ? (
                         <FormLoader count={8} />
                     ) : (
-                        <SubscriptionListSection partnerId={partnerId} />
+                        <SubscriptionListSection subscriptions={formData.subscriptions || []} />
                     )}
                 </div>
             )}
