@@ -121,22 +121,6 @@ export default function PartnerProfile() {
         subscriptions: [],
     });
 
-    // Fetch Partner Plans on mount
-    const loadPlans = useCallback(async () => {
-        try {
-            const response = await fetchPartnerPlans();
-            if (response.status) {
-                setPartnerPlans(response.data || []);
-            }
-        } catch (err) {
-            toast.error('Failed to load partner plans');
-        }
-    }, []);
-
-    useEffect(() => {
-        loadPlans();
-    }, [loadPlans]);
-
     // Fetch users on mount
     useEffect(() => {
         const fetchUsers = async () => {
@@ -231,6 +215,28 @@ export default function PartnerProfile() {
     const [isSaving, setIsSaving] = useState(false);
     const [partnerPlans, setPartnerPlans] = useState([]);
     const [wasFreeTrial, setWasFreeTrial] = useState(false);
+
+    // Fetch Partner Plans on mount
+    const loadPlans = useCallback(async () => {
+        try {
+            const response = await fetchPartnerPlans();
+            if (response.status) {
+                setPartnerPlans(response.data || []);
+            }
+        } catch (err) {
+            toast.error('Failed to load partner plans');
+        }
+    }, []);
+
+    useEffect(() => {
+        // Only load partner plans if creating a new partner, or if the partner is currently on a free trial (as they may convert to a paid plan)
+        const isCreateMode = !id;
+        const isFreeTrial = formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || wasFreeTrial;
+
+        if (isCreateMode || isFreeTrial) {
+            loadPlans();
+        }
+    }, [id, wasFreeTrial, formData.is_free_trail, loadPlans]);
 
     // Metrics Configuration
     const metricsConfig = [
@@ -536,16 +542,26 @@ export default function PartnerProfile() {
             }));
             setErrors(prev => ({ ...prev, [name]: null }));
         } else if (name === 'enrollment_amount') {
-            setFormData(prev => ({
-                ...prev,
-                enrollment_amount: value,
-            }));
+            setFormData(prev => {
+                const remaining = Math.max(0, Number(value || 0) - Number(prev.installment_down_payment || 0));
+                return {
+                    ...prev,
+                    enrollment_amount: value,
+                    installment_remaining_balance: remaining
+                };
+            });
             setErrors(prev => ({ ...prev, enrollment_amount: null }));
         } else if (name === 'monthly_platform_fee' || name === 'recurring_amount') {
             setFormData(prev => ({ ...prev, monthly_platform_fee: value, recurring_amount: value }));
             setErrors(prev => ({ ...prev, monthly_platform_fee: null, platform_fee: null }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData(prev => {
+                const nextState = { ...prev, [name]: value };
+                if (name === 'installment_down_payment') {
+                    nextState.installment_remaining_balance = Math.max(0, Number(nextState.enrollment_amount || 0) - Number(value || 0));
+                }
+                return nextState;
+            });
             setErrors(prev => ({ ...prev, [name]: null }));
         }
     };

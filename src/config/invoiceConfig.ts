@@ -6,6 +6,7 @@ export const STATUS_PENDING = 'Pending';
 export const STATUS_SUCCESS = 'Success';
 export const STATUS_CANCELLED = 'Cancelled';
 export const STATUS_OVERDUE = 'Overdue';
+export const STATUS_PROCESSING = 'Processing';
 export const STATUS_ALL = 'All Status';
 
 export const INVOICE_STATUS_OPTIONS = [

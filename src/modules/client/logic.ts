@@ -62,6 +62,31 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
         payload.free_trail_end_date = normalizeDate(payload.free_trail_end_date);
     }
 
+    payload.entity_type = 'Borrower';
+    payload.status = formData.status;
+    payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
+
+    // Check if free trial
+    const isFreeTrial = payload.is_free_trail == 1 || payload.is_free_trail === true || payload.is_free_trail === 'true' || payload.is_free_trail === '1';
+
+    if (isFreeTrial) {
+        delete payload.plan_id;
+        delete payload.enrollment_type;
+        delete payload.enrollment_amount;
+        delete (payload as any).payment_amount;
+        delete (payload as any).enrollment_payment;
+        delete (payload as any).amount;
+        delete payload.installment_down_payment;
+        delete payload.installment_months;
+        delete payload.installment_monthly_amount;
+        delete payload.installment_remaining_balance;
+        delete payload.is_partner_paying;
+        delete (payload as any).installment_applied;
+        delete (payload as any).subscriptions;
+        delete (payload as any).enrollment_details;
+        return payload;
+    }
+
     // Calculate Enrollment Type and Amount
     let amount = 0;
     let enrollment_type = payload.enrollment_type;
@@ -102,10 +127,7 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
 
     payload.enrollment_amount = Number(formData.enrollment_amount || amount || 0);
     payload.enrollment_type = enrollment_type;
-    payload.entity_type = 'Borrower';
     payload.is_partner_paying = !isHost && String(payload.plan_id) !== '5';
-    payload.status = formData.status;
-    payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
 
     // Strip legacy/unwanted fields
     delete (payload as any).amount;
@@ -113,6 +135,7 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     delete (payload as any).enrollment_payment;
     delete (payload as any).installment_applied;
     delete (payload as any).subscriptions;
+    delete (payload as any).enrollment_details;
 
     const isInstallment = (enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
 
@@ -261,7 +284,8 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFre
         'payment_amount',
         'enrollment_payment',
         'installment_applied',
-        'subscriptions' // Read-only history list — never sent to the API
+        'subscriptions', // Read-only history list — never sent to the API
+        'enrollment_details' // Read-only summary object from API — never sent on update
     ];
 
     // Fields that are always allowed through during a free trial conversion
@@ -288,6 +312,8 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFre
             delete payload[field];
         }
     });
+
+    delete payload.enrollment_details;
 
     return payload;
 };

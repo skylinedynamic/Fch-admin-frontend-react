@@ -82,7 +82,7 @@ const DynamicActionModal: React.FC<DynamicActionModalProps> = ({
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-body p-5 text-center">
                         {imgSrc ? (
-                            <img src={imgSrc} alt="Modal Icon" className="mb-3 d-block mx-auto" style={{ height: '40px' }} />
+                            <img src={imgSrc} alt="Modal Icon" className="mb-3 d-block mx-auto" style={{ height: '70px' }} />
                         ) : iconClass.includes('lord-icon') ? (
                             // @ts-ignore
                             <lord-icon

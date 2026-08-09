@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchClients,
     fetchClientById,
+    fetchBorrowerBusinessFinancials,
     createClient,
     updateClient,
     updateBusinessFinancials,
@@ -36,6 +37,7 @@ export const clientKeys = {
     creditProfile: (id: string | number) => [...clientKeys.detail(id), 'creditProfile'] as const,
     capitalAccess: (id: string | number) => [...clientKeys.detail(id), 'capitalAccess'] as const,
     capitalAccessStrategies: (id: string | number) => [...clientKeys.detail(id), 'capitalAccessStrategies'] as const,
+    businessFinancials: (id: string | number) => [...clientKeys.detail(id), 'businessFinancials'] as const,
     listStats: (partnerId?: string | number) => [...clientKeys.lists(), 'stats', partnerId] as const,
     partners: () => ['partners'] as const,
     users: () => ['users'] as const,
@@ -62,6 +64,15 @@ export const useClient = (id: string | number, enabled: boolean = true) => {
     });
 };
 
+// Fetch only Business Financials tab fields via dedicated endpoint
+export const useBusinessFinancials = (id: string | number, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.businessFinancials(id),
+        queryFn: () => fetchBorrowerBusinessFinancials(id),
+        enabled: enabled && !!id,
+    });
+};
+
 export const useCreateClient = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -83,12 +94,13 @@ export const useUpdateClient = () => {
     });
 };
 
+
 export const useUpdateBusinessFinancials = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({ id, data }: { id: string | number; data: Partial<Client> }) => updateBusinessFinancials(id, data),
         onSuccess: (data, variables) => {
-            queryClient.invalidateQueries({ queryKey: clientKeys.detail(variables.id) });
+            queryClient.invalidateQueries({ queryKey: clientKeys.businessFinancials(variables.id) });
             queryClient.invalidateQueries({ queryKey: clientKeys.lists() });
         },
     });

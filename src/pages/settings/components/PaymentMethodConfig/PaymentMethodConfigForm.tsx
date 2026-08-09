@@ -73,6 +73,9 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
     const [errors, setErrors] = useState<FormErrors>({});
 
+    const [bankDetails, setBankDetails] = useState<any[]>([]);
+    const [bankErrors, setBankErrors] = useState<Record<number, Record<string, string>>>({});
+
     const name = provider.name;
 
     const isStripe = name === PROVIDER_STRIPE;
@@ -143,47 +146,8 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                     });
                 }
                 if (isBank) {
-                    const sandboxBank1 = config.sandbox?.bank_1 || {};
-                    const sandboxBank2 = config.sandbox?.bank_2 || {};
-                    const sBank1Name = sandboxBank1.bank_name || config.sandbox?.bank_name || '';
-                    const sBank1AccName = sandboxBank1.account_name || config.sandbox?.account_name || '';
-                    const sBank1Route = sandboxBank1.routing_number || config.sandbox?.routing_number || '';
-                    const sBank1AccNum = sandboxBank1.account_number || config.sandbox?.account_number || '';
-                    const sBank1Instr = sandboxBank1.instructions || config.sandbox?.instructions || '';
-
-                    const productionBank1 = config.production?.bank_1 || {};
-                    const productionBank2 = config.production?.bank_2 || {};
-                    const pBank1Name = productionBank1.bank_name || config.production?.bank_name || '';
-                    const pBank1AccName = productionBank1.account_name || config.production?.account_name || '';
-                    const pBank1Route = productionBank1.routing_number || config.production?.routing_number || '';
-                    const pBank1AccNum = productionBank1.account_number || config.production?.account_number || '';
-                    const pBank1Instr = productionBank1.instructions || config.production?.instructions || '';
-
+                    setBankDetails(linkage.bank_details || []);
                     setFormData({
-                        bank_name_1_sandbox: sBank1Name,
-                        account_name_1_sandbox: sBank1AccName,
-                        routing_number_1_sandbox: sBank1Route,
-                        account_number_1_sandbox: sBank1AccNum,
-                        instructions_1_sandbox: sBank1Instr,
-
-                        bank_name_2_sandbox: sandboxBank2.bank_name || '',
-                        account_name_2_sandbox: sandboxBank2.account_name || '',
-                        routing_number_2_sandbox: sandboxBank2.routing_number || '',
-                        account_number_2_sandbox: sandboxBank2.account_number || '',
-                        instructions_2_sandbox: sandboxBank2.instructions || '',
-
-                        bank_name_1_production: pBank1Name,
-                        account_name_1_production: pBank1AccName,
-                        routing_number_1_production: pBank1Route,
-                        account_number_1_production: pBank1AccNum,
-                        instructions_1_production: pBank1Instr,
-
-                        bank_name_2_production: productionBank2.bank_name || '',
-                        account_name_2_production: productionBank2.account_name || '',
-                        routing_number_2_production: productionBank2.routing_number || '',
-                        account_number_2_production: productionBank2.account_number || '',
-                        instructions_2_production: productionBank2.instructions || '',
-
                         payment_mode: paymentMode
                     });
                 }
@@ -225,6 +189,91 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
         setPendingMode(null);
     };
 
+    const handleBankDetailChange = (index: number, field: string, value: any) => {
+        setBankDetails(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], [field]: value };
+            return updated;
+        });
+
+        // Clear error for this field
+        if (bankErrors[index]?.[field]) {
+            setBankErrors(prev => {
+                const next = { ...prev };
+                if (next[index]) {
+                    const rowErrors = { ...next[index] };
+                    delete rowErrors[field];
+                    if (Object.keys(rowErrors).length === 0) {
+                        delete next[index];
+                    } else {
+                        next[index] = rowErrors;
+                    }
+                }
+                return next;
+            });
+        }
+    };
+
+    const addBankAccount = (mode: string) => {
+        setBankDetails(prev => [
+            ...prev,
+            {
+                id: null,
+                bank_name: '',
+                account_name: '',
+                account_number: '',
+                routing_number: '',
+                instructions: '',
+                payment_mode: mode,
+                is_default: prev.filter(b => b.payment_mode === mode).length === 0,
+                status: true
+            }
+        ]);
+    };
+
+    const deleteBankAccount = (index: number) => {
+        setBankDetails(prev => {
+            const updated = [...prev];
+            const wasDefault = updated[index]?.is_default;
+            const mode = updated[index]?.payment_mode;
+            
+            updated.splice(index, 1);
+            
+            if (wasDefault && updated.length > 0) {
+                const firstRemainingIndex = updated.findIndex(b => b.payment_mode === mode);
+                if (firstRemainingIndex !== -1) {
+                    updated[firstRemainingIndex] = { ...updated[firstRemainingIndex], is_default: true };
+                }
+            }
+            return updated;
+        });
+        
+        setBankErrors(prev => {
+            const next: Record<number, Record<string, string>> = {};
+            Object.keys(prev).forEach(key => {
+                const idx = parseInt(key, 10);
+                if (idx < index) {
+                    next[idx] = prev[idx];
+                } else if (idx > index) {
+                    next[idx - 1] = prev[idx];
+                }
+            });
+            return next;
+        });
+    };
+
+    const setDefaultBankAccount = (indexToSet: number) => {
+        setBankDetails(prev => {
+            const targetMode = prev[indexToSet]?.payment_mode;
+            return prev.map((bank, index) => {
+                if (bank.payment_mode === targetMode) {
+                    return { ...bank, is_default: index === indexToSet };
+                }
+                return bank;
+            });
+        });
+    };
+
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
         const mode = formData.payment_mode || MODE_SANDBOX;
@@ -263,33 +312,31 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             }
         }
         if (isBank) {
-            if (!formData[`bank_name_1${suffix}`]) {
-                newErrors[`bank_name_1${suffix}`] = 'Bank Name is required.';
-            }
-            if (!formData[`account_name_1${suffix}`]) {
-                newErrors[`account_name_1${suffix}`] = 'Account Holder Name is required.';
-            }
-            if (!formData[`account_number_1${suffix}`]) {
-                newErrors[`account_number_1${suffix}`] = 'Account Number is required.';
-            }
+            const newBankErrors: Record<number, Record<string, string>> = {};
+            let hasErrors = false;
 
-            const hasAnyBank2Field =
-                formData[`bank_name_2${suffix}`] ||
-                formData[`account_name_2${suffix}`] ||
-                formData[`account_number_2${suffix}`] ||
-                formData[`routing_number_2${suffix}`] ||
-                formData[`instructions_2${suffix}`];
+            bankDetails.forEach((bank, index) => {
+                const rowErrors: Record<string, string> = {};
+                if (!bank.bank_name || !bank.bank_name.trim()) {
+                    rowErrors.bank_name = 'Bank Name is required.';
+                    hasErrors = true;
+                }
+                if (!bank.account_name || !bank.account_name.trim()) {
+                    rowErrors.account_name = 'Account Holder Name is required.';
+                    hasErrors = true;
+                }
+                if (!bank.account_number || !bank.account_number.trim()) {
+                    rowErrors.account_number = 'Account Number is required.';
+                    hasErrors = true;
+                }
+                if (Object.keys(rowErrors).length > 0) {
+                    newBankErrors[index] = rowErrors;
+                }
+            });
 
-            if (hasAnyBank2Field) {
-                if (!formData[`bank_name_2${suffix}`]) {
-                    newErrors[`bank_name_2${suffix}`] = 'Bank Name is required.';
-                }
-                if (!formData[`account_name_2${suffix}`]) {
-                    newErrors[`account_name_2${suffix}`] = 'Account Holder Name is required.';
-                }
-                if (!formData[`account_number_2${suffix}`]) {
-                    newErrors[`account_number_2${suffix}`] = 'Account Number is required.';
-                }
+            setBankErrors(newBankErrors);
+            if (hasErrors) {
+                return false;
             }
         }
 
@@ -341,40 +388,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             } else if (isCash) {
                 configuration = {};
             } else if (isBank) {
-                configuration = {
-                    sandbox: {
-                        bank_1: {
-                            bank_name: formData.bank_name_1_sandbox || null,
-                            account_name: formData.account_name_1_sandbox || null,
-                            routing_number: formData.routing_number_1_sandbox || null,
-                            account_number: formData.account_number_1_sandbox || null,
-                            instructions: formData.instructions_1_sandbox || null
-                        },
-                        bank_2: {
-                            bank_name: formData.bank_name_2_sandbox || null,
-                            account_name: formData.account_name_2_sandbox || null,
-                            routing_number: formData.routing_number_2_sandbox || null,
-                            account_number: formData.account_number_2_sandbox || null,
-                            instructions: formData.instructions_2_sandbox || null
-                        }
-                    },
-                    production: {
-                        bank_1: {
-                            bank_name: formData.bank_name_1_production || null,
-                            account_name: formData.account_name_1_production || null,
-                            routing_number: formData.routing_number_1_production || null,
-                            account_number: formData.account_number_1_production || null,
-                            instructions: formData.instructions_1_production || null
-                        },
-                        bank_2: {
-                            bank_name: formData.bank_name_2_production || null,
-                            account_name: formData.account_name_2_production || null,
-                            routing_number: formData.routing_number_2_production || null,
-                            account_number: formData.account_number_2_production || null,
-                            instructions: formData.instructions_2_production || null
-                        }
-                    }
-                };
+                configuration = {};
             } else {
                 configuration = {
                     sandbox: {
@@ -394,10 +408,14 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 payment_mode: formData.payment_mode || MODE_SANDBOX,
                 status: status,
                 is_default: isDefault,
-                configuration: configuration
-            });
+                configuration: configuration,
+                bank_details: isBank ? bankDetails : undefined
+            } as any);
             if (response && response.status && response.data && response.data.id) {
                 setLinkageId(response.data.id);
+                if (isBank && response.data.bank_details) {
+                    setBankDetails(response.data.bank_details);
+                }
             }
             toast.success(`${provider.name} configuration saved successfully!`);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
@@ -731,248 +749,170 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
                                     {isBank && (
                                         <div className="col-12 animate__animated animate__fadeIn">
-                                            <div className="row g-4">
-                                                {/* Bank Account 1 */}
-                                                <div className="col-12 col-lg-6">
-                                                    <div className="payment-config-card">
-                                                        <div className="payment-config-card-header d-flex align-items-center gap-2">
-                                                            <div className="payment-config-icon-wrapper primary">
-                                                                <i className="ri-bank-line fs-14"></i>
-                                                            </div>
-                                                            <span className="payment-config-card-title">Bank Account 1 (Primary)</span>
-                                                        </div>
-                                                        <div className="payment-config-card-body">
-                                                            <div className="row g-3">
-                                                                {/* Bank Name 1 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className={`input-group-text ${errors[`bank_name_1${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
-                                                                            Bank Name
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control fs-14 ${errors[`bank_name_1${suffix}`] ? 'is-invalid border-danger' : ''}`}
-                                                                            name={`bank_name_1${suffix}`}
-                                                                            value={formData[`bank_name_1${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="e.g. Chase Bank"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                        {errors[`bank_name_1${suffix}`] && (
-                                                                            <div className="invalid-feedback ps-3 pb-2">
-                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`bank_name_1${suffix}`]}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Account Name 1 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className={`input-group-text ${errors[`account_name_1${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
-                                                                            Account Name
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control fs-14 ${errors[`account_name_1${suffix}`] ? 'is-invalid border-danger' : ''}`}
-                                                                            name={`account_name_1${suffix}`}
-                                                                            value={formData[`account_name_1${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Account Holder Name"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                        {errors[`account_name_1${suffix}`] && (
-                                                                            <div className="invalid-feedback ps-3 pb-2">
-                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`account_name_1${suffix}`]}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Account Number 1 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className={`input-group-text ${errors[`account_number_1${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
-                                                                            Account Number
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control fs-14 ${errors[`account_number_1${suffix}`] ? 'is-invalid border-danger' : ''}`}
-                                                                            name={`account_number_1${suffix}`}
-                                                                            value={formData[`account_number_1${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Bank Account Number"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                        {errors[`account_number_1${suffix}`] && (
-                                                                            <div className="invalid-feedback ps-3 pb-2">
-                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`account_number_1${suffix}`]}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Routing Number 1 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className="input-group-text bg-light text-muted">
-                                                                            Routing Number
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className="form-control fs-14"
-                                                                            name={`routing_number_1${suffix}`}
-                                                                            value={formData[`routing_number_1${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Routing / ABA Number"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Instructions 1 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className="input-group-text bg-light text-muted">
-                                                                            Instructions
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className="form-control fs-14"
-                                                                            name={`instructions_1${suffix}`}
-                                                                            value={formData[`instructions_1${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Instructions or Swift/BIC codes for Account 1"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                            <div className="card border shadow-none bg-light-subtle rounded-3">
+                                                <div className="card-header bg-white border-bottom d-flex align-items-center justify-content-between p-3">
+                                                    <div>
+                                                        <h6 className="mb-0 fw-semibold text-dark fs-14">Bank Details Configuration</h6>
+                                                        <p className="text-muted mb-0 fs-12">
+                                                            Manage bank details for your customers to perform bank transfers in the <strong>{isSandbox ? 'Sandbox' : 'Production'}</strong> environment.
+                                                        </p>
                                                     </div>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1.5 px-3"
+                                                        onClick={() => addBankAccount(isSandbox ? MODE_SANDBOX : MODE_PRODUCTION)}
+                                                        disabled={loading || toggling || !status}
+                                                    >
+                                                        <i className="ri-add-line fs-14"></i> Add Bank Account
+                                                    </button>
                                                 </div>
-
-                                                {/* Bank Account 2 */}
-                                                <div className="col-12 col-lg-6">
-                                                    <div className="payment-config-card">
-                                                        <div className="payment-config-card-header d-flex align-items-center justify-content-between">
-                                                            <div className="d-flex align-items-center gap-2">
-                                                                <div className="payment-config-icon-wrapper secondary">
-                                                                    <i className="ri-bank-line fs-14"></i>
-                                                                </div>
-                                                                <span className="payment-config-card-title">Bank Account 2 (Optional)</span>
-                                                            </div>
-                                                            <span className="badge bg-light text-muted border rounded-pill px-2.5 py-0.5 fs-10 fw-normal">Optional</span>
-                                                        </div>
-                                                        <div className="payment-config-card-body">
-                                                            <div className="row g-3">
-                                                                {/* Bank Name 2 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className={`input-group-text ${errors[`bank_name_2${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
-                                                                            Bank Name
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control fs-14 ${errors[`bank_name_2${suffix}`] ? 'is-invalid border-danger' : ''}`}
-                                                                            name={`bank_name_2${suffix}`}
-                                                                            value={formData[`bank_name_2${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="e.g. Wells Fargo"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                        {errors[`bank_name_2${suffix}`] && (
-                                                                            <div className="invalid-feedback ps-3 pb-2">
-                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`bank_name_2${suffix}`]}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Account Name 2 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className={`input-group-text ${errors[`account_name_2${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
-                                                                            Account Name
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control fs-14 ${errors[`account_name_2${suffix}`] ? 'is-invalid border-danger' : ''}`}
-                                                                            name={`account_name_2${suffix}`}
-                                                                            value={formData[`account_name_2${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Account Holder Name"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                        {errors[`account_name_2${suffix}`] && (
-                                                                            <div className="invalid-feedback ps-3 pb-2">
-                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`account_name_2${suffix}`]}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Account Number 2 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className={`input-group-text ${errors[`account_number_2${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
-                                                                            Account Number
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control fs-14 ${errors[`account_number_2${suffix}`] ? 'is-invalid border-danger' : ''}`}
-                                                                            name={`account_number_2${suffix}`}
-                                                                            value={formData[`account_number_2${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Bank Account Number"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                        {errors[`account_number_2${suffix}`] && (
-                                                                            <div className="invalid-feedback ps-3 pb-2">
-                                                                                <i className="ri-error-warning-line me-1"></i>{errors[`account_number_2${suffix}`]}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Routing Number 2 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className="input-group-text bg-light text-muted">
-                                                                            Routing Number
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className="form-control fs-14"
-                                                                            name={`routing_number_2${suffix}`}
-                                                                            value={formData[`routing_number_2${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Routing / ABA Number"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Instructions 2 */}
-                                                                <div className="col-12">
-                                                                    <div className="input-group payment-config-input-group">
-                                                                        <span className="input-group-text bg-light text-muted">
-                                                                            Instructions
-                                                                        </span>
-                                                                        <input
-                                                                            type="text"
-                                                                            className="form-control fs-14"
-                                                                            name={`instructions_2${suffix}`}
-                                                                            value={formData[`instructions_2${suffix}`] || ''}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Instructions or Swift/BIC codes for Account 2"
-                                                                            disabled={loading || toggling || !status}
-                                                                        />
-                                                                    </div>
+                                                <div className="card-body p-0">
+                                                    {bankDetails.filter(b => b.payment_mode === (isSandbox ? MODE_SANDBOX : MODE_PRODUCTION)).length === 0 ? (
+                                                        <div className="text-center py-5 px-3">
+                                                            <div className="avatar-md mx-auto mb-3">
+                                                                <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-24">
+                                                                    <i className="ri-bank-line"></i>
                                                                 </div>
                                                             </div>
+                                                            <h5 className="fs-14 fw-semibold text-dark mb-1">No Bank Accounts Configured</h5>
+                                                            <p className="text-muted fs-12 mb-3 max-w-350 mx-auto">
+                                                                Add one or more bank accounts to show to clients during the bank transfer payment process.
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 px-3"
+                                                                onClick={() => addBankAccount(isSandbox ? MODE_SANDBOX : MODE_PRODUCTION)}
+                                                                disabled={loading || toggling || !status}
+                                                            >
+                                                                <i className="ri-add-line fs-14"></i> Add Your First Account
+                                                            </button>
                                                         </div>
-                                                    </div>
+                                                    ) : (
+                                                        <div className="table-responsive">
+                                                            <table className="table table-hover align-middle mb-0 fs-13">
+                                                                <thead className="table-light">
+                                                                    <tr>
+                                                                        <th style={{ width: '60px' }} className="text-center">Default</th>
+                                                                        <th>Bank Name</th>
+                                                                        <th>Account Name</th>
+                                                                        <th>Account Number</th>
+                                                                        <th>Routing Number</th>
+                                                                        <th>Instructions / Swift</th>
+                                                                        <th style={{ width: '60px' }} className="text-center">Action</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {bankDetails.map((bank, index) => {
+                                                                        if (bank.payment_mode !== (isSandbox ? MODE_SANDBOX : MODE_PRODUCTION)) return null;
+
+                                                                        const rowErrors = bankErrors[index] || {};
+
+                                                                        return (
+                                                                            <tr key={index} className="animate__animated animate__fadeIn">
+                                                                                <td className="text-center">
+                                                                                    <div className="form-check d-flex justify-content-center m-0">
+                                                                                        <input
+                                                                                            className="form-check-input cursor-pointer"
+                                                                                            type="radio"
+                                                                                            name={`default_bank_${isSandbox ? MODE_SANDBOX : MODE_PRODUCTION}`}
+                                                                                            checked={!!bank.is_default}
+                                                                                            onChange={() => setDefaultBankAccount(index)}
+                                                                                            disabled={loading || toggling || !status}
+                                                                                            style={{ width: '1.15rem', height: '1.15rem' }}
+                                                                                            title="Set as Default Account"
+                                                                                        />
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td>
+                                                                                    <div>
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            className={`form-control form-control-sm fs-13 ${rowErrors.bank_name ? 'is-invalid border-danger' : ''}`}
+                                                                                            value={bank.bank_name || ''}
+                                                                                            onChange={(e) => handleBankDetailChange(index, 'bank_name', e.target.value)}
+                                                                                            placeholder="e.g. Chase Bank"
+                                                                                            disabled={loading || toggling || !status}
+                                                                                        />
+                                                                                        {rowErrors.bank_name && (
+                                                                                            <div className="text-danger fs-11 mt-1">
+                                                                                                {rowErrors.bank_name}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td>
+                                                                                    <div>
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            className={`form-control form-control-sm fs-13 ${rowErrors.account_name ? 'is-invalid border-danger' : ''}`}
+                                                                                            value={bank.account_name || ''}
+                                                                                            onChange={(e) => handleBankDetailChange(index, 'account_name', e.target.value)}
+                                                                                            placeholder="Holder Name"
+                                                                                            disabled={loading || toggling || !status}
+                                                                                        />
+                                                                                        {rowErrors.account_name && (
+                                                                                            <div className="text-danger fs-11 mt-1">
+                                                                                                {rowErrors.account_name}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td>
+                                                                                    <div>
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            className={`form-control form-control-sm fs-13 ${rowErrors.account_number ? 'is-invalid border-danger' : ''}`}
+                                                                                            value={bank.account_number || ''}
+                                                                                            onChange={(e) => handleBankDetailChange(index, 'account_number', e.target.value)}
+                                                                                            placeholder="Account Number"
+                                                                                            disabled={loading || toggling || !status}
+                                                                                        />
+                                                                                        {rowErrors.account_number && (
+                                                                                            <div className="text-danger fs-11 mt-1">
+                                                                                                {rowErrors.account_number}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td>
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        className="form-control form-control-sm fs-13"
+                                                                                        value={bank.routing_number || ''}
+                                                                                        onChange={(e) => handleBankDetailChange(index, 'routing_number', e.target.value)}
+                                                                                        placeholder="Routing Number"
+                                                                                        disabled={loading || toggling || !status}
+                                                                                    />
+                                                                                </td>
+                                                                                <td>
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        className="form-control form-control-sm fs-13"
+                                                                                        value={bank.instructions || ''}
+                                                                                        onChange={(e) => handleBankDetailChange(index, 'instructions', e.target.value)}
+                                                                                        placeholder="Instructions/Swift"
+                                                                                        disabled={loading || toggling || !status}
+                                                                                    />
+                                                                                </td>
+                                                                                <td className="text-center">
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        className="btn btn-sm btn-soft-danger btn-icon waves-effect waves-light rounded-circle"
+                                                                                        onClick={() => deleteBankAccount(index)}
+                                                                                        disabled={loading || toggling || !status}
+                                                                                        title="Delete Bank Account"
+                                                                                        style={{ width: '28px', height: '28px', padding: 0 }}
+                                                                                    >
+                                                                                        <i className="ri-delete-bin-5-line fs-14"></i>
+                                                                                    </button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

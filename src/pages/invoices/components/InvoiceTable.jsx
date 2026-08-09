@@ -4,7 +4,7 @@ import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import TableLoader from '../../../components/Loader/TableLoader';
-import { INVOICE_STATUS_COLORS, INVOICE_STATUS_OPTIONS, STATUS_PAID } from '../../../config/invoiceConfig';
+import { INVOICE_STATUS_COLORS, INVOICE_STATUS_OPTIONS, STATUS_PAID, STATUS_PROCESSING } from '../../../config/invoiceConfig';
 import InvoicePaymentModal from './InvoicePaymentModal';
 import InvoicePreviewModal from './InvoicePreviewModal';
 import { useAuthStore } from '../../../store/auth';
@@ -93,7 +93,7 @@ export default function InvoiceTable({
     };
 
     const actionBodyTemplate = (rowData) => {
-        const isNotPaid = rowData.status !== STATUS_PAID;
+        const isNotPaid = rowData.status !== STATUS_PAID && rowData.status !== STATUS_PROCESSING;
         const isNotHost = user?.is_host == 0;
         return (
             <div className="d-flex align-items-center gap-2">

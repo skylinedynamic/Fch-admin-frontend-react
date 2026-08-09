@@ -2,11 +2,10 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import {
-    useClient,
+    useBusinessFinancials,
     useUpdateBusinessFinancials,
     DEFAULT_CLIENT_STATE,
     CURRENCY_OPTIONS,
-    mapClientUpdatePayload
 } from '../../../modules/client';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import type { Client } from '../../../modules/client/types';
@@ -56,8 +55,8 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     onSaveSuccess
 }, ref) => {
 
-    // 1. Data Fetching
-    const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
+    // 1. Data Fetching — uses dedicated business-financials endpoint
+    const { data: fetchedData, isLoading: isFetching } = useBusinessFinancials(clientId as string, !!clientId);
     const updateMutation = useUpdateBusinessFinancials();
 
     // 2. Local State
@@ -110,7 +109,24 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                 }
             });
 
-            const payload = mapClientUpdatePayload(apiData, true); // Financials usually host-agnostic for fields kept
+            // Send only the business financials fields to the dedicated endpoint
+            const payload = {
+                currency: apiData.currency,
+                monthly_revenue: apiData.monthly_revenue,
+                avg_bank_balance: apiData.avg_bank_balance,
+                average_monthly_deposits: apiData.average_monthly_deposits,
+                monthly_deposit_count: apiData.monthly_deposit_count,
+                annual_revenue: apiData.annual_revenue,
+                profit_margin: apiData.profit_margin,
+                current_business_debt: apiData.current_business_debt,
+                fico_score: apiData.fico_score,
+                paydex_score: apiData.paydex_score,
+                years_in_business: apiData.years_in_business,
+                number_of_employees: apiData.number_of_employees,
+                nsf_count: apiData.nsf_count,
+                negative_days: apiData.negative_days,
+                funding_urgency: apiData.funding_urgency,
+            };
             console.log('[BusinessFinancialsSection] Mapped payload:', payload);
 
             return new Promise((resolve, reject) => {

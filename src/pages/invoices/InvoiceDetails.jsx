@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchInvoiceDetails, downloadInvoice } from '../../modules/invoice/services';
 import { toast } from 'react-toastify';
-import { INVOICE_STATUS_COLORS, STATUS_PAID } from '../../config/invoiceConfig';
+import { INVOICE_STATUS_COLORS, STATUS_PAID, STATUS_PROCESSING } from '../../config/invoiceConfig';
 import { useAuthStore } from '../../store/auth';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import InvoicePaymentModal from './components/InvoicePaymentModal';
@@ -68,8 +68,15 @@ export default function InvoiceDetails() {
         }
     };
 
-    const handlePaymentSuccess = () => {
+    const handlePaymentSuccess = (paymentRes) => {
         setShowPaymentModal(false);
+        const newStatus = paymentRes?.status || STATUS_PROCESSING;
+        setInvoice(prev => prev ? {
+            ...prev,
+            status: newStatus,
+            invoice_status: paymentRes?.invoice_status || newStatus,
+            payment_status: paymentRes?.payment_status || newStatus,
+        } : prev);
         // Reload details after payment
         setLoading(true);
         fetchInvoiceDetails(id).then(res => {
@@ -210,7 +217,7 @@ export default function InvoiceDetails() {
                                                 </table>
                                             </div>
                                             <div className="mt-4 d-flex justify-content-end gap-2">
-                                                {invoice.status !== STATUS_PAID && user?.is_host == 0 && invoice.entity_type?.includes(ENTITY_TYPE_PARTNER) && (
+                                                {invoice.status !== STATUS_PAID && invoice.status !== STATUS_PROCESSING && user?.is_host == 0 && invoice.entity_type?.includes(ENTITY_TYPE_PARTNER) && (
                                                     <button className="btn btn-primary" onClick={() => setShowPaymentModal(true)}>
                                                         <i className="ri-secure-payment-line align-middle me-1"></i> Pay Now
                                                     </button>

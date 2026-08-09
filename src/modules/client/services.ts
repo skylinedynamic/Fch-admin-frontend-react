@@ -18,6 +18,12 @@ export const fetchClientById = async (id: string | number): Promise<Client> => {
     return data;
 };
 
+// Fetch only business financials fields (Business Financials tab)
+export const fetchBorrowerBusinessFinancials = async (id: string | number): Promise<any> => {
+    const { data } = await apiClient.get(`/common/borrowers/business-financials/${id}`);
+    return data;
+};
+
 export const createClient = async (payload: Client): Promise<Client> => {
     const { data } = await apiClient.post('/common/borrowers', payload);
     return data;
@@ -27,6 +33,7 @@ export const updateClient = async (id: string | number, payload: Partial<Client>
     const { data } = await apiClient.post(`/common/borrowers/${id}`, payload);
     return data;
 };
+
 
 export const updateBusinessFinancials = async (id: string | number, payload: Partial<Client>): Promise<Client> => {
     const { data } = await apiClient.post(`/common/borrowers/${id}/business-financials`, payload);

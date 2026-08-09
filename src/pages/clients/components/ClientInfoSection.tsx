@@ -103,6 +103,16 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState<number>(0);
 
     useEffect(() => {
+        // If updating an existing client who is NOT in a free trial, do NOT fetch fixed enrollment plan
+        if (clientId && !isFetching && !wasFreeTrial) {
+            return;
+        }
+
+        // If in update mode and still fetching client data, wait for it before deciding
+        if (clientId && isFetching) {
+            return;
+        }
+
         const fetchFixedPlan = async () => {
             try {
                 const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
@@ -114,7 +124,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             }
         };
         fetchFixedPlan();
-    }, []);
+    }, [clientId, isFetching, wasFreeTrial]);
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = borrowerPlans;

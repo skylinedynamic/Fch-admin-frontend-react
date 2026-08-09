@@ -1008,6 +1008,7 @@ export default function PartnerInformationSection({
                     handleInputChange({ target: { name: 'installment_down_payment', value: data.downPayment } });
                     handleInputChange({ target: { name: 'installment_months', value: data.months } });
                     handleInputChange({ target: { name: 'installment_monthly_amount', value: data.monthlyPayment } });
+                    handleInputChange({ target: { name: 'installment_remaining_balance', value: Math.max(0, Number(data.totalAmount || 0) - Number(data.downPayment || 0)) } });
                     handleInputChange({ target: { name: 'installment_applied', value: true } });
                 }}
             />

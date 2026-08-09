@@ -86,6 +86,7 @@ export interface PartnerPaymentProviderConfig {
     status: boolean;
     is_default: boolean;
     configuration: Record<string, any>;
+    bank_details?: any[];
 }
 
 export const fetchPartnerPaymentProviders = async (): Promise<{ status: boolean; data: PartnerPaymentProvider[] }> => {

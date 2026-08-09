@@ -4,7 +4,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import PaymentStats from './components/PaymentStats';
 import PaymentFilters from './components/PaymentFilters';
 import PaymentTable from './components/PaymentTable';
-import { fetchPayments, fetchPaymentStats } from '../../modules/payment';
+import { fetchPayments, fetchPaymentStats, approvePayment } from '../../modules/payment';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ListSkeletonLoader from '../../components/Loader/ListSkeletonLoader';
@@ -29,6 +29,9 @@ export default function Payments() {
     const [filters, setFilters] = useState({});
     const [searchText, setSearchText] = useState('');
     const [selectedStatus, setSelectedStatus] = useState(null);
+    const [selectedEnvironment, setSelectedEnvironment] = useState(null);
+    const [selectedMethod, setSelectedMethod] = useState(null);
+    const [selectedType, setSelectedType] = useState(null);
     const [selectedPayee, setSelectedPayee] = useState(null);
     const [selectedCycle, setSelectedCycle] = useState(null);
     const [dateRange, setDateRange] = useState([]);
@@ -36,6 +39,9 @@ export default function Payments() {
     // Applied filter states (to trigger fetch)
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedStatus, setAppliedStatus] = useState(null);
+    const [appliedEnvironment, setAppliedEnvironment] = useState(null);
+    const [appliedMethod, setAppliedMethod] = useState(null);
+    const [appliedType, setAppliedType] = useState(null);
     const [appliedPayee, setAppliedPayee] = useState(null);
     const [appliedCycle, setAppliedCycle] = useState(null);
     const [appliedDateRange, setAppliedDateRange] = useState(null);
@@ -107,6 +113,9 @@ export default function Payments() {
             const payload = {
                 search: appliedSearchText,
                 status: appliedStatus,
+                is_environment: appliedEnvironment,
+                payment_from: appliedMethod,
+                transaction_type: appliedType,
                 payee_id: appliedPayee,
                 cycle: appliedCycle,
                 date_from: dateFrom,
@@ -130,7 +139,10 @@ export default function Payments() {
             loadStats({
                 date_from: dateFrom,
                 date_to: dateTo,
-                status: appliedStatus
+                status: appliedStatus,
+                is_environment: appliedEnvironment,
+                payment_from: appliedMethod,
+                transaction_type: appliedType
             });
         } catch (error) {
             console.error('Error fetching payments:', error);
@@ -145,11 +157,14 @@ export default function Payments() {
         if (Object.keys(appliedFilters).length > 0) {
             loadData();
         }
-    }, [appliedSearchText, appliedStatus, appliedPayee, appliedCycle, appliedDateRange, appliedFilters, page, perPage, sortField, sortOrder]);
+    }, [appliedSearchText, appliedStatus, appliedEnvironment, appliedMethod, appliedType, appliedPayee, appliedCycle, appliedDateRange, appliedFilters, page, perPage, sortField, sortOrder]);
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
         setAppliedStatus(selectedStatus);
+        setAppliedEnvironment(selectedEnvironment);
+        setAppliedMethod(selectedMethod);
+        setAppliedType(selectedType);
         setAppliedPayee(selectedPayee);
         setAppliedCycle(selectedCycle);
         setAppliedDateRange(dateRange);
@@ -160,11 +175,17 @@ export default function Payments() {
     const handleClearFilters = () => {
         setSearchText('');
         setSelectedStatus(null);
+        setSelectedEnvironment(null);
+        setSelectedMethod(null);
+        setSelectedType(null);
         setSelectedPayee(null);
         setSelectedCycle(null);
         setDateRange([]);
         setAppliedSearchText('');
         setAppliedStatus(null);
+        setAppliedEnvironment(null);
+        setAppliedMethod(null);
+        setAppliedType(null);
         setAppliedPayee(null);
         setAppliedCycle(null);
         setAppliedDateRange(null);
@@ -186,6 +207,21 @@ export default function Payments() {
         setFilters(e.filters);
         setAppliedFilters(e.filters);
         setPage(1);
+    };
+
+    const handleApprovePayment = async (paymentId) => {
+        try {
+            const response = await approvePayment(paymentId);
+            if (response.status || response.data) {
+                toast.success(response.message || 'Payment approved successfully!');
+                loadData();
+            } else {
+                toast.error(response.message || 'Failed to approve payment');
+            }
+        } catch (error) {
+            console.error('Error approving payment:', error);
+            toast.error(error.response?.data?.message || 'Failed to approve payment');
+        }
     };
 
     return (
@@ -225,6 +261,9 @@ export default function Payments() {
                                         <PaymentFilters
                                             searchText={searchText} setSearchText={setSearchText}
                                             selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
+                                            selectedEnvironment={selectedEnvironment} setSelectedEnvironment={setSelectedEnvironment}
+                                            selectedMethod={selectedMethod} setSelectedMethod={setSelectedMethod}
+                                            selectedType={selectedType} setSelectedType={setSelectedType}
                                             selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
                                             selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
                                             dateRange={dateRange} setDateRange={setDateRange}
@@ -245,6 +284,7 @@ export default function Payments() {
                                             filters={filters}
                                             sortField={sortField}
                                             sortOrder={sortOrder}
+                                            onApprove={handleApprovePayment}
                                         />
                                     </div>
                                 </div>
