@@ -17,6 +17,7 @@ export const SUBSCRIPTION_STATUS_COLORS: { [key: string]: string } = {
 
 export const ENROLLMENT_TYPE_ONE_TIME = 'One Time Payment';
 export const ENROLLMENT_TYPE_INSTALLMENT = 'Installment';
+export const FIXED_ENROLLMENT_FOR_BORROWER = 'Fixed enrollment';
 
 export const ENROLLMENT_TYPE_OPTIONS = [
     { label: ENROLLMENT_TYPE_ONE_TIME, value: ENROLLMENT_TYPE_ONE_TIME },

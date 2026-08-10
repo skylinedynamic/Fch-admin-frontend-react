@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'reac
 import "../../../assets/css/dropdown-validation.css";
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans } from '../../modules/partner/services';
+import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors } from '../../modules/partner';
 import { locationData, getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, PARTNER_INFORMATION_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
@@ -650,185 +650,7 @@ export default function PartnerProfile() {
             }
 
 
-                const formDataToSend = new FormData();
-
-                // Determine whether this is an installment enrollment to decide
-                // whether to send installment payment data OR regular payment data.
-                const isInstallmentEnrollment = (formData.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
-
-                // Obsolete payment fields — never sent to backend
-                const obsoletePaymentFields = [
-                    'first_reg_amount',
-                    'first_reg_amount_2',
-                    'first_reg_payment',
-                    'first_reg_payment_2'
-                ];
-
-                // Installment payment fields — skipped when installment is NOT active
-                const installmentFields = [
-                    'installment_applied',
-                    'installment_down_payment',
-                    'installment_months',
-                    'installment_monthly_amount',
-                    'installment_remaining_balance'
-                ];
-
-                const enrollmentFieldsToSkipOnUpdate = [
-                    'partner_type',
-                    'enrollment_type',
-                    'enrollment_amount',
-                    'monthly_platform_fee',
-                    'recurring_amount',
-                    'total_paid_amount',
-                    'payable_amount',
-                    'total_subscription_amount',
-                    'subscription_start_date',
-                    'subscription_end_date',
-                    'expiry_date',
-                    'termination_date',
-                    'subscription_status',
-                    'is_free_trail',
-                    'free_trail_end_date',
-                    'is_partner_paying',
-                    'installment_applied',
-                    'installment_down_payment',
-                    'installment_months',
-                    'installment_monthly_amount',
-                    'installment_remaining_balance',
-                    'invoice',
-                    'plan_id',
-                    'enrollment_details',
-                    'payable_amount_formatted',
-                    'total_subscription_amount_formatted',
-                    'monthly_platform_fee_formatted',
-                    'enrollment_amount_formatted',
-                    'installment_down_payment_formatted',
-                    'installment_monthly_amount_formatted',
-                    'installment_remaining_balance_formatted',
-                    'subscriptions'
-                ];
-
-                // Detect free trial → regular conversion
-                const isConvertingFromFreeTrial = wasFreeTrial && !formData.is_free_trail;
-
-                // Fields that are always allowed through during a free trial conversion
-                const freeTrialConversionAllowedFields = [
-                    'partner_type',
-                    'enrollment_type',
-                    'enrollment_amount',
-                    'monthly_platform_fee',
-                    'recurring_amount',
-                    'installment_applied',
-                    'installment_down_payment',
-                    'installment_months',
-                    'installment_monthly_amount',
-                    'installment_remaining_balance',
-                    'is_free_trail',
-                    'free_trail_end_date',
-                ];
-
-                // Append all form fields with proper field name mapping
-                Object.entries(formData).forEach(([key, value]) => {
-                    if (value !== null && value !== undefined) {
-                        // Skip partner_type on update unless converting from free trial
-                        if (id && key === 'partner_type' && !isConvertingFromFreeTrial) {
-                            return;
-                        }
-
-                        // Skip enrollment/billing fields on update, UNLESS this is a free trial conversion
-                        if (id && enrollmentFieldsToSkipOnUpdate.includes(key)) {
-                            if (!isConvertingFromFreeTrial || !freeTrialConversionAllowedFields.includes(key)) {
-                                return;
-                            }
-                        }
-
-                        // Skip obsolete fields
-                        if (obsoletePaymentFields.includes(key)) {
-                            return;
-                        }
-                        if (!isInstallmentEnrollment && installmentFields.includes(key)) {
-                            return;
-                        }
-
-                        if (key === 'partner_image') {
-                            // Append if it's a File object (user selected a new image) or a string path (from file manager)
-                            if (value instanceof File) {
-                                // Send as 'partner_image' - the backend field name
-                                formDataToSend.append('partner_image', value);
-                            } else if (typeof value === 'string' && value.trim() !== '' && !value.startsWith('http')) {
-                                // Send path string if it's not a full URL (which usually means it was just selected from file manager)
-                                formDataToSend.append('partner_image', value);
-                            }
-                        } else if (key === 'agent') {
-                            // Map 'agent' to 'assign_to' and 'assigned_user_id' for backend
-                            if (value !== '') {
-                                formDataToSend.append('assign_to', value);
-                                formDataToSend.append('assigned_user_id', value);
-                            }
-                        } else if (key === 'status') {
-                            // Ensure status is always sent if present
-                            formDataToSend.append('status', value || '');
-                        } else if (key === 'city') {
-                            // If city is "Others", save the other_city value to city column
-                            if (value === 'Others' && formData.other_city) {
-                                formDataToSend.append('city', formData.other_city);
-                            } else if (value !== 'Others') {
-                                // Otherwise, save the selected city
-                                formDataToSend.append('city', value);
-                            }
-                        } else if (key === 'other_city') {
-                            // Don't send other_city as a separate field to backend
-                            // It's handled in the city field logic above
-                        } else if (key === 'agentEmail' || key === 'agentPhone' || key === 'company_logo') {
-                            // Skip these:
-                            // - agentEmail/Phone are frontend-only
-                            // - company_logo (string) should not be sent back; we only send it if it's a File (handled above)
-                        } else if (key === 'country_code') {
-                            // Always send country_code if it exists
-                            if (value) {
-                                formDataToSend.append('country_code', value);
-                            }
-                        } else if (key === 'enrollment_amount') {
-                            // Skip on free trial create — amounts not applicable
-                            if (!(!id && formData.is_free_trail)) {
-                                formDataToSend.append('enrollment_amount', value || '');
-                            }
-                        } else if (key === 'monthly_platform_fee' || key === 'recurring_amount') {
-                            // Skip on free trial create — amounts not applicable
-                            if (!(!id && formData.is_free_trail)) {
-                                if (!formDataToSend.has('monthly_platform_fee')) {
-                                    formDataToSend.append('monthly_platform_fee', formData.monthly_platform_fee || formData.recurring_amount || '');
-                                }
-                            }
-                        } else if (key === 'partner_domain') {
-                            // Send partner_domain on create (all types) or update (Certified only)
-                            const shouldSend = !id || formData.partner_type === PARTNER_TYPES.CERTIFIED;
-                            if (shouldSend && value && typeof value === 'string') {
-                                const cleanValue = value.trim();
-                                if (cleanValue !== '') {
-                                    const firstPart = cleanValue.split('.')[0];
-                                    formDataToSend.append('partner_domain', firstPart);
-                                }
-                            }
-                        } else if (key === 'borrower_domain') {
-                            // Do not send borrower_domain
-                        } else if (key === 'is_free_trail') {
-                            formDataToSend.append('is_free_trail', value ? '1' : '0');
-                        } else if (key === 'free_trail_end_date') {
-                            formDataToSend.append('free_trail_end_date', formData.is_free_trail && value ? value : '');
-                        } else if (key === 'installment_applied') {
-                            // Frontend-only flag - not sent to the API
-                        } else if (key === 'subscriptions') {
-                            // Read-only history list — never sent to the API
-                        } else if (key === 'installment_down_payment' || key === 'installment_months' || key === 'installment_monthly_amount' || key === 'installment_remaining_balance') {
-                            // Always send installment numeric fields (even 0) so the backend can persist the full plan
-                            formDataToSend.append(key, (value === '' || value === null || value === undefined) ? 0 : value);
-                        } else if (value !== '' && value !== null) {
-                            formDataToSend.append(key, value);
-                        }
-                    }
-                });
-
+                const formDataToSend = buildPartnerFormDataPayload(formData, id, wasFreeTrial, partnerPlans);
 
                 if (id) {
                     await updatePartner(id, formDataToSend);
@@ -906,13 +728,7 @@ export default function PartnerProfile() {
                 }
             } catch (error) {
                 if (error.response?.data?.errors) {
-                    const backendErrors = error.response.data.errors;
-                    const newErrors = {};
-                    Object.entries(backendErrors).forEach(([field, errorMsg]) => {
-                        const message = Array.isArray(errorMsg) ? errorMsg[0] : errorMsg;
-                        // toast.error(message);
-                        newErrors[field] = message;
-                    });
+                    const newErrors = mapPartnerBackendErrors(error.response.data.errors);
                     setErrors(newErrors);
                     requestAnimationFrame(() => {
                         const firstErrorField = document.querySelector('.is-invalid, .p-invalid');

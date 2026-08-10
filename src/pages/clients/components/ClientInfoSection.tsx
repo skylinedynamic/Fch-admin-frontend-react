@@ -479,8 +479,22 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         if (responseData?.errors && setErrors) {
                             const backendErrors = responseData.errors;
                             const mappedErrors: Record<string, string> = {};
+
+                            // Remap enrollment.* dotted keys → flat UI field names
+                            const enrollmentKeyMap: Record<string, string> = {
+                                'enrollment':                       'enrollment',
+                                'enrollment.plan_id':               'plan_id',
+                                'enrollment.enrollment_type':       'enrollment_type',
+                                'enrollment.amount':                'enrollment_amount',
+                                'enrollment.down_payment':          'installment_down_payment',
+                                'enrollment.months':                'installment_months',
+                                'enrollment.monthly_amount':        'installment_monthly_amount',
+                                'enrollment.remaining_balance':     'installment_remaining_balance',
+                            };
+
                             Object.keys(backendErrors).forEach(key => {
-                                mappedErrors[key] = Array.isArray(backendErrors[key])
+                                const mappedKey = enrollmentKeyMap[key] ?? key;
+                                mappedErrors[mappedKey] = Array.isArray(backendErrors[key])
                                     ? backendErrors[key][0]
                                     : backendErrors[key];
                             });

@@ -58,6 +58,13 @@ export default function PartnerInformationSection({
             (plan.enrollment_type || '').toString().toLowerCase() === (enrollmentType || '').toString().toLowerCase()
     );
 
+    // Auto-sync plan_id whenever matching selectedPlan is resolved
+    useEffect(() => {
+        if (selectedPlan && selectedPlan.id && String(formData.plan_id) !== String(selectedPlan.id)) {
+            handleInputChange({ target: { name: 'plan_id', value: selectedPlan.id } });
+        }
+    }, [selectedPlan?.id, formData.plan_id]);
+
     const hasCustomEnrollment = (enrollmentAmount !== undefined && enrollmentAmount !== '') || (payableAmount !== undefined && payableAmount !== '');
     const hasCustomPlatformFee = (monthlyPlatformFee !== undefined && monthlyPlatformFee !== '') || (recurringAmount !== undefined && recurringAmount !== '') || (platformFee !== undefined && platformFee !== '');
 
@@ -524,7 +531,10 @@ export default function PartnerInformationSection({
                                     value: type
                                 }));
                             })()}
-                            onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
+                            onChange={(e) => {
+                                handleInputChange({ target: { name: 'partner_type', value: e.value } });
+                                handleInputChange({ target: { name: 'plan_id', value: '' } });
+                            }}
                             optionLabel="label"
                             optionValue="value"
                             placeholder="Select partner type..."
@@ -661,6 +671,12 @@ export default function PartnerInformationSection({
                                     })()}
                                     onChange={(e) => {
                                         handleInputChange({ target: { name: 'enrollment_type', value: e.value } });
+                                        // Resolve and persist the matched plan_id immediately
+                                        const matchedPlan = partnerPlans.find(
+                                            plan => plan.partner_type === formData.partner_type &&
+                                                (plan.enrollment_type || '').toString().toLowerCase() === (e.value || '').toString().toLowerCase()
+                                        );
+                                        handleInputChange({ target: { name: 'plan_id', value: matchedPlan?.id || '' } });
                                         if ((e.value || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase()) {
                                             setShowInstallmentModal(true);
                                         }

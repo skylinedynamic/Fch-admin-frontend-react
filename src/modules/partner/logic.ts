@@ -1,0 +1,163 @@
+import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
+import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
+
+/**
+ * Resolves matching partner plan ID from available partner plans based on partner_type and enrollment_type.
+ */
+export const resolvePartnerPlanId = (formData: any, partnerPlans: any[] = []): string | number => {
+    if (formData.plan_id) return formData.plan_id;
+
+    const matchedPlan = partnerPlans.find(
+        p => p.partner_type === formData.partner_type &&
+            (p.enrollment_type || '').toString().toLowerCase() === (formData.enrollment_type || '').toString().toLowerCase()
+    );
+
+    return matchedPlan?.id || '';
+};
+
+/**
+ * Maps backend error object keys (e.g. `enrollment.plan_id`) to flat UI error field names.
+ */
+export const mapPartnerBackendErrors = (backendErrors: Record<string, any>): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+
+    const enrollmentKeyMap: Record<string, string> = {
+        'enrollment':                           'enrollment',
+        'enrollment.plan_id':                   'plan_id',
+        'enrollment.enrollment_type':           'enrollment_type',
+        'enrollment.amount':                    'enrollment_amount',
+        'enrollment.monthly_platform_fee':      'monthly_platform_fee',
+        'enrollment.down_payment':              'installment_down_payment',
+        'enrollment.months':                    'installment_months',
+        'enrollment.monthly_amount':            'installment_monthly_amount',
+        'enrollment.remaining_balance':         'installment_remaining_balance',
+    };
+
+    Object.entries(backendErrors).forEach(([field, errorMsg]) => {
+        const message = Array.isArray(errorMsg) ? errorMsg[0] : errorMsg;
+        const mappedKey = enrollmentKeyMap[field] ?? field;
+        newErrors[mappedKey] = message;
+    });
+
+    return newErrors;
+};
+
+/**
+ * Builds the FormData payload for create or update partner operations.
+ */
+export const buildPartnerFormDataPayload = (
+    formData: Record<string, any>,
+    id?: string | number,
+    wasFreeTrial: boolean = false,
+    partnerPlans: any[] = []
+): FormData => {
+    const formDataToSend = new FormData();
+    const isInstallmentEnrollment = (formData.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
+    const isConvertingFromFreeTrial = wasFreeTrial && !formData.is_free_trail;
+
+    const enrollmentSubFields = [
+        'plan_id',
+        'enrollment_type',
+        'enrollment_amount',
+        'monthly_platform_fee',
+        'recurring_amount',
+        'installment_down_payment',
+        'installment_months',
+        'installment_monthly_amount',
+        'installment_remaining_balance',
+    ];
+
+    const skipAlways = [
+        'first_reg_amount', 'first_reg_amount_2', 'first_reg_payment', 'first_reg_payment_2',
+        'installment_applied', 'subscriptions', 'enrollment_details',
+        'payable_amount', 'total_subscription_amount', 'total_paid_amount',
+        'subscription_start_date', 'subscription_end_date', 'expiry_date',
+        'termination_date', 'subscription_status', 'is_partner_paying',
+        'payable_amount_formatted', 'total_subscription_amount_formatted',
+        'monthly_platform_fee_formatted', 'enrollment_amount_formatted',
+        'installment_down_payment_formatted', 'installment_monthly_amount_formatted',
+        'installment_remaining_balance_formatted',
+        'agentEmail', 'agentPhone', 'company_logo',
+        'other_city',
+        'borrower_domain',
+    ];
+
+    // Append top-level (non-enrollment) fields
+    Object.entries(formData).forEach(([key, value]) => {
+        if (value === null || value === undefined) return;
+        if (enrollmentSubFields.includes(key)) return;
+        if (skipAlways.includes(key)) return;
+
+        if (id && !isConvertingFromFreeTrial) {
+            const updateSkipFields = ['partner_type', 'is_free_trail', 'free_trail_end_date', 'invoice'];
+            if (updateSkipFields.includes(key)) return;
+        }
+
+        if (key === 'partner_image') {
+            if (value instanceof File) {
+                formDataToSend.append('partner_image', value);
+            } else if (typeof value === 'string' && value.trim() !== '' && !value.startsWith('http')) {
+                formDataToSend.append('partner_image', value);
+            }
+        } else if (key === 'agent') {
+            if (value !== '') {
+                formDataToSend.append('assign_to', value as string);
+                formDataToSend.append('assigned_user_id', value as string);
+            }
+        } else if (key === 'status') {
+            formDataToSend.append('status', (value || '') as string);
+        } else if (key === 'city') {
+            if (value === 'Others' && formData.other_city) {
+                formDataToSend.append('city', formData.other_city);
+            } else if (value !== 'Others') {
+                formDataToSend.append('city', value as string);
+            }
+        } else if (key === 'country_code') {
+            if (value) formDataToSend.append('country_code', value as string);
+        } else if (key === 'partner_domain') {
+            const shouldSend = !id || formData.partner_type === PARTNER_TYPES.CERTIFIED;
+            if (shouldSend && value && typeof value === 'string') {
+                const cleanValue = value.trim();
+                if (cleanValue !== '') {
+                    const firstPart = cleanValue.split('.')[0];
+                    formDataToSend.append('partner_domain', firstPart);
+                }
+            }
+        } else if (key === 'is_free_trail') {
+            formDataToSend.append('is_free_trail', value ? '1' : '0');
+        } else if (key === 'free_trail_end_date') {
+            formDataToSend.append('free_trail_end_date', formData.is_free_trail && value ? (value as string) : '');
+        } else if (value !== '' && value !== null) {
+            formDataToSend.append(key, value as string | Blob);
+        }
+    });
+
+    // Append enrollment sub-object
+    const shouldSendEnrollment = !id || isConvertingFromFreeTrial;
+    const isFreeTrial = formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === '1';
+
+    if (shouldSendEnrollment && !isFreeTrial) {
+        const enrollmentAmount = formData.enrollment_amount;
+        const monthlyFee = formData.monthly_platform_fee || formData.recurring_amount || '';
+        const resolvedPlanId = resolvePartnerPlanId(formData, partnerPlans);
+
+        formDataToSend.append('enrollment[plan_id]', String(resolvedPlanId));
+        formDataToSend.append('enrollment[enrollment_type]', formData.enrollment_type || '');
+        formDataToSend.append('enrollment[amount]', enrollmentAmount !== undefined && enrollmentAmount !== '' ? String(enrollmentAmount) : '');
+        formDataToSend.append('enrollment[monthly_platform_fee]', String(monthlyFee));
+
+        if (isInstallmentEnrollment) {
+            const downPayment = Number(formData.installment_down_payment || 0);
+            const months = Number(formData.installment_months || 12);
+            const monthly = Number(formData.installment_monthly_amount || 0);
+            const remaining = Math.max(0, Number(enrollmentAmount || 0) - downPayment);
+
+            formDataToSend.append('enrollment[down_payment]', String(downPayment));
+            formDataToSend.append('enrollment[months]', String(months));
+            formDataToSend.append('enrollment[monthly_amount]', String(monthly));
+            formDataToSend.append('enrollment[remaining_balance]', String(remaining));
+        }
+    }
+
+    return formDataToSend;
+};

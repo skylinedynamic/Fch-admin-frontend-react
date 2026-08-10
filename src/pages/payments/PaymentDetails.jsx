@@ -12,6 +12,8 @@ import {
 } from '../../config/paymentConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
+import { formatDate } from '../../utils/formatters';
+import ErrorPage from '../Utility/ErrorPage';
 
 export default function PaymentDetails() {
     const { id } = useParams();
@@ -56,7 +58,7 @@ export default function PaymentDetails() {
                     if (typeof modalInstanceRef.current.dispose === 'function') {
                         modalInstanceRef.current.dispose();
                     }
-                } catch (_) {}
+                } catch (_) { }
                 modalInstanceRef.current = null;
             }
         };
@@ -112,13 +114,7 @@ export default function PaymentDetails() {
     };
 
     if (!loading && !payment) {
-        return (
-            <div className="page-content">
-                <div className="container-fluid">
-                    <div className="alert alert-danger">Payment not found.</div>
-                </div>
-            </div>
-        );
+        return <ErrorPage status={404} title="Payment Not Found" message="The payment you are looking for does not exist or you do not have permission to view it." />;
     }
 
     const status = payment?.status?.toLowerCase();
@@ -127,7 +123,9 @@ export default function PaymentDetails() {
     const envColor = PAYMENT_ENVIRONMENT_COLORS[envVal] || 'info';
     const envLabel = PAYMENT_ENVIRONMENT_LABELS[envVal] || 'Sandbox';
     const payerType = payment?.entity_type?.includes(ENTITY_TYPE_PARTNER) ? ENTITY_TYPE_PARTNER : payment?.entity_type?.includes(ENTITY_TYPE_BORROWER) ? ENTITY_TYPE_BORROWER : 'Customer';
-    const approvalRemarks = payment?.note || payment?.details?.approval_note;
+    const rawDetails = payment?.raw_details || (typeof payment?.details === 'object' ? payment?.details : null);
+    const hasRawDetails = rawDetails && (typeof rawDetails === 'object' ? Object.keys(rawDetails).length > 0 : String(rawDetails).trim() !== '');
+    const approvalRemarks = payment?.note || payment?.details?.approval_note || (typeof rawDetails === 'object' ? (rawDetails?.approval_note || rawDetails?.note) : null);
 
     return (
         <div className="page-content">
@@ -169,7 +167,7 @@ export default function PaymentDetails() {
                                                     </Link>
                                                 ) : '-'}
                                             </h4>
-                                            <p className="text-muted mb-0 fs-13">Date: {payment.transaction_date || payment.created_at || '-'}</p>
+                                            <p className="text-muted mb-0 fs-13">Date: {payment.transaction_date ? formatDate(payment.transaction_date) : (payment.created_at ? formatDate(payment.created_at) : '-')}</p>
                                         </div>
                                         <div className="flex-shrink-0 text-end">
                                             <h2 className="text-primary mb-1">{payment.amount || '-'}</h2>
@@ -185,7 +183,7 @@ export default function PaymentDetails() {
                                                 <i className="ri-checkbox-circle-fill fs-18 me-2 text-success"></i>
                                                 <span className="fw-semibold fs-14">Approval Remarks:</span>
                                             </div>
-                                            <p className="mb-0 fs-13 ps-4 text-dark">{approvalRemarks}</p>
+                                            <p className="mb-0 fs-13 ps-4 text-dark fw-medium">{approvalRemarks}</p>
                                         </div>
                                     )}
 
@@ -241,15 +239,6 @@ export default function PaymentDetails() {
                                         </div>
                                     </div>
 
-                                    {payment.details && (
-                                        <div className="mb-4">
-                                            <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Details</h5>
-                                            <div className="bg-light rounded p-3 border">
-                                                <p className="mb-0 fs-14 text-dark">{payment.details}</p>
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {/* Bottom Payment Approval Section */}
                                     {payment.can_approve && (
                                         <div className="border border-warning rounded p-4 bg-warning bg-opacity-10 mt-4">
@@ -286,6 +275,49 @@ export default function PaymentDetails() {
                                                     <i className="ri-check-double-line me-1"></i> Approve Payment
                                                 </button>
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* Bottom Approval Info Section */}
+                                    {payment?.is_manual && hasRawDetails && (
+                                        <div className="mt-4">
+                                            <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Approval Info</h5>
+
+                                            {typeof rawDetails === 'object' && (
+                                                <div className="row">
+                                                    {rawDetails.approved_by && (
+                                                        <div className="col-lg-3 col-sm-6 mb-3">
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Approved By</p>
+                                                            <h5 className="fs-14 mb-0">{rawDetails.approved_by}</h5>
+                                                        </div>
+                                                    )}
+                                                    {rawDetails.approved_at && (
+                                                        <div className="col-lg-3 col-sm-6 mb-3">
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Approved Date &amp; Time</p>
+                                                            <h5 className="fs-14 mb-0">{formatDate(rawDetails.approved_at)}</h5>
+                                                        </div>
+                                                    )}
+                                                    {Object.entries(rawDetails).map(([key, val]) => {
+                                                        if (['approved_by', 'approved_at', 'approval_note', 'note'].includes(key)) return null;
+                                                        if (val === null || val === undefined || val === '') return null;
+                                                        return (
+                                                            <div className="col-lg-3 col-sm-6 mb-3" key={key}>
+                                                                <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">{key.replace(/_/g, ' ')}</p>
+                                                                <h5 className="fs-14 mb-0">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</h5>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            {typeof rawDetails === 'string' && (
+                                                <div className="row">
+                                                    <div className="col-12 mb-3">
+                                                        <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Details</p>
+                                                        <h5 className="fs-14 mb-0">{rawDetails}</h5>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

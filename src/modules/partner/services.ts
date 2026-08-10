@@ -11,6 +11,8 @@ export const getPartner = async (id: string | number): Promise<Partner> => {
   return data;
 };
 
+export const fetchPartnerById = getPartner;
+
 export const createPartner = async (payload: Partial<Partner> | FormData): Promise<Partner> => {
   const config = payload instanceof FormData
     ? { headers: { 'Content-Type': 'multipart/form-data' } }

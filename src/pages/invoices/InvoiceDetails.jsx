@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/auth';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import InvoicePaymentModal from './components/InvoicePaymentModal';
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
+import ErrorPage from '../Utility/ErrorPage';
 
 const base64ToBlob = (base64, mimeType) => {
     const byteCharacters = atob(base64);
@@ -29,10 +30,12 @@ export default function InvoiceDetails() {
         const getDetails = async () => {
             try {
                 const response = await fetchInvoiceDetails(id);
-                if (response.status) {
-                    setInvoice(response.data);
+                if (response.status || response.data) {
+                    setInvoice(response.data || response);
+                } else if (response.invoice_id) {
+                    setInvoice(response);
                 } else {
-                    toast.error(response.message || 'Failed to load invoice details');
+                    toast.error('Failed to load invoice details');
                 }
             } catch (error) {
                 console.error('Error fetching invoice details:', error);
@@ -45,38 +48,29 @@ export default function InvoiceDetails() {
     }, [id]);
 
     const handleDownload = async () => {
-        const downloadId = invoice?.id || id;
         try {
-            const response = await downloadInvoice(downloadId);
-            if (response && response.status && response.data?.file) {
+            const response = await downloadInvoice(id);
+            if (response.data && response.data.file) {
                 const blob = base64ToBlob(response.data.file, response.data.mime_type || 'application/pdf');
                 const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', response.data.file_name || `Invoice_${invoice?.invoice_id || id}.pdf`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = response.data.file_name || `Invoice-${id}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
                 window.URL.revokeObjectURL(url);
+                toast.success('Invoice downloaded successfully');
             } else {
-                throw new Error(response?.message || 'Failed to download invoice PDF');
+                toast.error('Failed to download invoice');
             }
         } catch (error) {
-            const message = error?.message || 'Failed to download invoice PDF';
-            console.error('Download failed', error);
-            toast.error(message);
+            console.error('Error downloading invoice:', error);
+            toast.error('Error downloading invoice');
         }
     };
 
-    const handlePaymentSuccess = (paymentRes) => {
-        setShowPaymentModal(false);
-        const newStatus = paymentRes?.status || STATUS_PROCESSING;
-        setInvoice(prev => prev ? {
-            ...prev,
-            status: newStatus,
-            invoice_status: paymentRes?.invoice_status || newStatus,
-            payment_status: paymentRes?.payment_status || newStatus,
-        } : prev);
+    const handlePaymentSuccess = () => {
         // Reload details after payment
         setLoading(true);
         fetchInvoiceDetails(id).then(res => {
@@ -86,13 +80,7 @@ export default function InvoiceDetails() {
     };
 
     if (!loading && !invoice) {
-        return (
-            <div className="page-content">
-                <div className="container-fluid">
-                    <div className="alert alert-danger">Invoice not found.</div>
-                </div>
-            </div>
-        );
+        return <ErrorPage status={404} title="Invoice Not Found" message="The invoice you are looking for does not exist or you do not have permission to view it." />;
     }
 
     const statusSeverity = invoice?.status ? INVOICE_STATUS_COLORS[invoice.status] || 'primary' : 'primary';
