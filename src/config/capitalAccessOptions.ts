@@ -26,7 +26,7 @@ export const ACCESS_TIME_OPTIONS: AccessTimeOption[] = [
     { label: ACCESS_TIME.DAY, value: ACCESS_TIME.DAY },
 ];
 
-export const DAY_OPTIONS: DayOption[] = Array.from({ length: 180 }, (_, i) => ({
+export const DAY_OPTIONS: DayOption[] = Array.from({ length: 400 }, (_, i) => ({
     label: `Day ${i + 1}`,
     value: String(i + 1),
 }));
