@@ -62,6 +62,7 @@ export type Client = {
     nsf_count?: string | number;
     negative_days?: string | number;
     funding_urgency?: string;
+    bank_accounts?: any[];
 
     // Metadata
     created_at?: string;

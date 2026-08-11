@@ -181,6 +181,13 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
         delete payload.enrollment_payment;
     }
 
+    // Filter out completely empty bank account rows before sending to backend
+    if (payload.bank_accounts && Array.isArray(payload.bank_accounts)) {
+        payload.bank_accounts = payload.bank_accounts.filter(
+            (acc: any) => acc.id || acc.bank_name || acc.account_open_date
+        );
+    }
+
     return payload;
 };
 

@@ -67,6 +67,12 @@ export default function ClientDetails() {
         total_tickets: 0,
         total_documents: 0
     });
+    
+    // Clear errors when navigating between different clients
+    useEffect(() => {
+        setErrors({});
+    }, [id]);
+
     // const [statsLoading, setStatsLoading] = useState(false); // Managed by Query
     const [settings, setSettings] = useState<any>(null);
     const [nonHostPlan, setNonHostPlan] = useState<any>(null);
@@ -193,6 +199,7 @@ export default function ClientDetails() {
     const handleTabChange = (tabInfo: string) => {
         if (activeTab === tabInfo) return;
 
+        setErrors({}); // Clear errors when switching tabs
         setIsLoading(true);
         setActiveTab(tabInfo);
 
