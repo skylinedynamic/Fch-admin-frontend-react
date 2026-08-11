@@ -389,7 +389,7 @@ export default function PaymentDetails() {
                                                         </div>
                                                     )}
                                                     {Object.entries(rawDetails).map(([key, val]) => {
-                                                        if (['approved_by', 'approved_at', 'approval_note', 'rejected_by', 'rejected_at', 'rejection_reason', 'decision', 'note'].includes(key)) return null;
+                                                        if (['approved_by', 'approved_at', 'approval_note', 'bank_detail_id', 'approved_by_id', 'rejected_by', 'rejected_at', 'rejection_reason', 'decision', 'note'].includes(key)) return null;
                                                         if (val === null || val === undefined || val === '') return null;
                                                         return (
                                                             <div className="col-lg-3 col-sm-6 mb-3" key={key}>
