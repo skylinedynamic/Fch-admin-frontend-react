@@ -103,7 +103,8 @@ export const deleteFundingType = async (id: number | string) => {
 
 
 
-// export const fetchBorrowerFunding = async () => {
-//     const response = await apiClient.get('/admin/funding-sequencings/grouped');
-//     return response.data;
-// };
+// fetchBorrowerFunding: Gets funding sequences for the partner-assisted wizard
+export const fetchBorrowerFunding = async (params: any = {}) => {
+    const response = await apiClient.get('/common/funding-sequencings/grouped', { params });
+    return response.data;
+};
