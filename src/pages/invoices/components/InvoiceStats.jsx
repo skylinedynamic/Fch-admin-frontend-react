@@ -14,28 +14,34 @@ export default function InvoiceStats({ stats, loading }) {
         );
     }
 
+    const getVal = (val, isRate = false) => {
+        if (val == null) return isRate ? '0%' : '$0';
+        if (typeof val === 'string' && (val.startsWith('$') || val.endsWith('%'))) return val;
+        return isRate ? `${val}%` : `$${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
     const statCards = [
         {
             title: 'Invoices Sent',
-            value: stats?.data?.invoices_sent ? `$${stats.data.invoices_sent.toLocaleString()}` : '$0',
+            value: getVal(stats?.invoices_sent ?? stats?.data?.invoices_sent),
             icon: 'ri-file-list-3-line',
             colorVariant: 'primary'
         },
         {
             title: 'Paid Invoices',
-            value: stats?.data?.paid_invoices ? `$${stats.data.paid_invoices.toLocaleString()}` : '$0',
+            value: getVal(stats?.paid_invoices ?? stats?.data?.paid_invoices),
             icon: 'ri-checkbox-circle-line',
             colorVariant: 'success'
         },
         {
             title: 'Unpaid Invoices',
-            value: stats?.data?.unpaid_invoices ? `$${stats.data.unpaid_invoices.toLocaleString()}` : '$0',
+            value: getVal(stats?.unpaid_invoices ?? stats?.data?.unpaid_invoices),
             icon: 'ri-close-circle-line',
             colorVariant: 'danger'
         },
         {
             title: 'Collection Rate',
-            value: stats?.data?.collection_rate ? `${stats.data.collection_rate}%` : '0%',
+            value: getVal(stats?.collection_rate ?? stats?.data?.collection_rate, true),
             icon: 'ri-bar-chart-line',
             colorVariant: 'info'
         }

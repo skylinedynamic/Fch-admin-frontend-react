@@ -157,7 +157,20 @@ export default function PaymentTable({
                 ></Column>
                 <Column field="amount" header="Amount" body={amountBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by amount" style={{ minWidth: '100px' }}></Column>
                 <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '100px' }}></Column>
-                <Column field="is_environment" header="Environment" body={environmentBodyTemplate} sortable filter filterElement={environmentFilterElement} showFilterMatchModes={false} style={{ minWidth: '130px' }}></Column>
+                <Column
+                    field="is_environment"
+                    header="Environment"
+                    body={environmentBodyTemplate}
+                    sortable
+                    filter
+                    filterElement={environmentFilterElement}
+                    showFilterMatchModes={false}
+                    alignHeader="center"
+                    align="center"
+                    headerClassName="text-center"
+                    bodyClassName="text-center"
+                    style={{ minWidth: '130px' }}
+                ></Column>
             </DataTable>
         </div>
     );

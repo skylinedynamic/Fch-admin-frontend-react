@@ -48,6 +48,11 @@ const isBankTransferProvider = (provider) => {
 
 const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
   const [bankAccounts, setBankAccounts] = useState(selectedProvider?.bank_details || []);
+  const [selectedBankId, setSelectedBankId] = useState(() => {
+    const list = selectedProvider?.bank_details || [];
+    const def = list.find(b => b.is_default) || list[0];
+    return def?.id || null;
+  });
   const [loading, setLoading] = useState(!selectedProvider?.bank_details?.length);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -60,7 +65,10 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
 
   useEffect(() => {
     if (selectedProvider?.bank_details && selectedProvider.bank_details.length > 0) {
-      setBankAccounts(selectedProvider.bank_details);
+      const list = selectedProvider.bank_details;
+      setBankAccounts(list);
+      const def = list.find(b => b.is_default) || list[0];
+      if (def && !selectedBankId) setSelectedBankId(def.id);
       setLoading(false);
       return;
     }
@@ -73,7 +81,10 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
         if (isMounted && res?.status && Array.isArray(res?.data)) {
           const bankProvider = res.data.find(p => p?.name === PROVIDER_BANK_TRANSFER);
           if (bankProvider?.bank_details) {
-            setBankAccounts(bankProvider.bank_details);
+            const list = bankProvider.bank_details;
+            setBankAccounts(list);
+            const def = list.find(b => b.is_default) || list[0];
+            if (def && !selectedBankId) setSelectedBankId(def.id);
           }
         }
       } catch (err) {
@@ -95,22 +106,24 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
   };
 
   const handleConfirmPayment = async () => {
+    if (!selectedBankId) {
+      toast.error("Please select a bank account to complete the transfer.");
+      return;
+    }
     setSubmitting(true);
     try {
       if (invoice?.id && selectedProvider?.id) {
-        try {
-          await processUnifiedPayment({
-            payment_token: JSON.stringify({
-              gateway: selectedProvider?.name || PROVIDER_BANK_TRANSFER,
-              mode: 'manual',
-              transaction_number: transactionNumber ? transactionNumber.trim() : null,
-            }),
-            invoice_id: invoice.id,
-            payment_method_id: selectedProvider.id,
-          });
-        } catch (apiErr) {
-          console.log('Manual payment submission fallback logged');
-        }
+        await processUnifiedPayment({
+          payment_token: JSON.stringify({
+            gateway: selectedProvider?.name || PROVIDER_BANK_TRANSFER,
+            mode: 'manual',
+            bank_detail_id: selectedBankId,
+            transaction_number: transactionNumber ? transactionNumber.trim() : null,
+          }),
+          invoice_id: invoice.id,
+          payment_method_id: selectedProvider.id,
+          bank_detail_id: selectedBankId,
+        });
       }
       setSubmitted(true);
       toast.success(`Payment submitted successfully! Status: ${STATUS_PROCESSING}`);
@@ -123,7 +136,7 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
       }
     } catch (err) {
       console.error('Error confirming payment:', err);
-      toast.error("Failed to submit payment confirmation");
+      toast.error(err?.response?.data?.message || "Failed to submit payment confirmation");
     } finally {
       setSubmitting(false);
     }
@@ -168,25 +181,39 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
             </div>
           ) : bankAccounts.length > 0 ? (
             <div className="row g-3">
-              {bankAccounts.map((bank, index) => (
-                <div key={bank.id || index} className="col-12 col-md-6">
-                  <div className="card border-0 shadow-sm rounded-3 h-100 mb-0 bg-white">
-                    {/* Card Header */}
-                    <div className="card-header bg-light-subtle border-0 py-2.5 px-3 d-flex align-items-center justify-content-between">
-                      <div className="d-flex align-items-center gap-2">
-                        <div className="avatar-xs flex-shrink-0">
-                          <span className="avatar-title bg-primary-subtle text-primary rounded-circle fs-14">
-                            <i className="ri-bank-line"></i>
-                          </span>
+              {bankAccounts.map((bank, index) => {
+                const isSelected = Number(selectedBankId) === Number(bank.id);
+                return (
+                  <div
+                    key={bank.id || index}
+                    className="col-12 col-md-6"
+                    onClick={() => setSelectedBankId(bank.id)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className={`card border shadow-sm rounded-3 h-100 mb-0 bg-white ${isSelected ? 'border-primary shadow' : ''}`}>
+                      {/* Card Header */}
+                      <div className="card-header bg-light-subtle border-0 py-2.5 px-3 d-flex align-items-center justify-content-between">
+                        <div className="d-flex align-items-center gap-2">
+                          <input
+                            type="radio"
+                            name="selected_bank_transfer_account"
+                            checked={isSelected}
+                            onChange={() => setSelectedBankId(bank.id)}
+                            className="form-check-input mt-0 cursor-pointer"
+                          />
+                          <h6 className="mb-0 fw-bold text-dark fs-14 text-truncate">{bank.bank_name || 'Bank Account'}</h6>
                         </div>
-                        <h6 className="mb-0 fw-bold text-dark fs-14 text-truncate">{bank.bank_name || 'Bank Account'}</h6>
+                        {isSelected ? (
+                          <span className="badge bg-primary-subtle text-primary fs-11">
+                            Selected
+                          </span>
+                        ) : bank.is_default ? (
+                          <span className="badge bg-success-subtle text-success fs-11">
+                            Default
+                          </span>
+                        ) : null}
                       </div>
-                      {bank.is_default && (
-                        <span className="badge bg-success-subtle text-success fs-11">
-                          Default
-                        </span>
-                      )}
-                    </div>
 
                     {/* Card Content Table */}
                     <div className="card-body p-3 pt-1">
@@ -270,7 +297,8 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
           ) : (
             <div className="alert alert-warning mb-0 fs-13">

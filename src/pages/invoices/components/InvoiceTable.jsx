@@ -96,7 +96,7 @@ export default function InvoiceTable({
         const isNotPaid = rowData.status !== STATUS_PAID && rowData.status !== STATUS_PROCESSING;
         const isNotHost = user?.is_host == 0;
         return (
-            <div className="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-center justify-content-center gap-2">
                 <button
                     className="btn btn-soft-danger btn-sm p-1 d-flex align-items-center justify-content-center"
                     style={{ width: '28px', height: '28px' }}
@@ -141,7 +141,7 @@ export default function InvoiceTable({
                 filters={filters}
                 sortField={sortField}
                 sortOrder={sortOrder === 'asc' ? 1 : -1}
-                globalFilterFields={['invoice_id', 'customer_name', 'email', 'country', 'payment_date', 'payment_amount', 'status', 'type']}
+                globalFilterFields={['created_at', 'invoice_id', 'customer_name', 'country', 'payment_date', 'payment_amount', 'status', 'type']}
                 dataKey="id"
                 scrollable
                 scrollHeight="flex"
@@ -151,14 +151,13 @@ export default function InvoiceTable({
                 onRowClick={(e) => navigate(`/invoices/${e.data.id}`)}
                 rowClassName={() => 'cursor-pointer'}
             >
-                <Column field="invoice_id" header="Invoice ID" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by ID"></Column>
-                <Column field="customer_name" header="Customer" body={customerBodyTemplate} style={{ minWidth: '180px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by name"></Column>
-                <Column field="email" header="Email" bodyClassName="text-muted" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by email"></Column>
                 <Column field="created_at" header="Invoice Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
+                <Column field="invoice_id" header="Invoice ID" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by ID"></Column>
+                <Column field="customer_name" header="Name" body={customerBodyTemplate} style={{ minWidth: '180px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by name"></Column>
                 <Column field="payment_amount" header="Amount" body={amountBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by amount"></Column>
                 <Column field="type" header="Type" body={typeBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by type"></Column>
                 <Column field="status" header="Status" body={statusBodyTemplate} style={{ minWidth: '150px' }} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false}></Column>
-                <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '120px' }}></Column>
+                <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '150px' }} alignHeader="center" align="center" headerClassName="text-center" bodyClassName="text-center"></Column>
             </DataTable>
 
             <InvoicePaymentModal

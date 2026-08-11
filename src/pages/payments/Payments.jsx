@@ -4,7 +4,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import PaymentStats from './components/PaymentStats';
 import PaymentFilters from './components/PaymentFilters';
 import PaymentTable from './components/PaymentTable';
-import { fetchPayments, fetchPaymentStats, approvePayment } from '../../modules/payment';
+import { fetchPayments, approvePayment } from '../../modules/payment';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ListSkeletonLoader from '../../components/Loader/ListSkeletonLoader';
@@ -78,22 +78,9 @@ export default function Payments() {
         };
     }, []);
 
-    const loadStats = async (params = {}) => {
-        try {
-            setStatsLoading(true);
-            const response = await fetchPaymentStats(params);
-            if (response.status) {
-                setStats(response.data);
-            }
-        } catch (error) {
-            console.error('Error fetching payment stats:', error);
-        } finally {
-            setStatsLoading(false);
-        }
-    };
-
     const loadData = async () => {
         setLoading(true);
+        setStatsLoading(true);
         try {
             // Format date range for backend if present
             let dateFrom = null;
@@ -131,23 +118,18 @@ export default function Payments() {
             if (response.status) {
                 setPayments(response.data || []);
                 setTotalRecords(response.meta?.total || 0);
+                if (response.stats) {
+                    setStats(response.stats);
+                }
             } else {
                 toast.error(response.message || 'Failed to fetch payments');
             }
-
-            // Also load stats with the same filter parameters
-            loadStats({
-                date_from: dateFrom,
-                date_to: dateTo,
-                status: appliedStatus,
-                is_environment: appliedEnvironment,
-                payment_from: appliedMethod,
-                transaction_type: appliedType
-            });
         } catch (error) {
             console.error('Error fetching payments:', error);
             toast.error('Failed to load payments');
         } finally {
+            setLoading(false);
+            setStatsLoading(false);
             setLoading(false);
             setInitialLoading(false);
         }

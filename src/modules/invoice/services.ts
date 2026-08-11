@@ -6,11 +6,6 @@ export const fetchInvoices = async (params: InvoiceFilterParams = {}) => {
     return data;
 };
 
-export const fetchInvoiceStats = async (params: InvoiceFilterParams = {}) => {
-    const { data } = await apiClient.post('/common/invoices/stats', params);
-    return data;
-};
-
 export const fetchInvoiceDetails = async (id: number | string) => {
     const { data } = await apiClient.get(`/common/invoices/${id}`);
     return data;
@@ -26,7 +21,7 @@ export const fetchPartnerPaymentMethods = async () => {
     return data;
 };
 
-export const processUnifiedPayment = async (payload: { payment_token: string; invoice_id: number | string; payment_method_id: number }) => {
+export const processUnifiedPayment = async (payload: { payment_token: string; invoice_id: number | string; payment_method_id: number; bank_detail_id?: number | string }) => {
     const response = await apiClient.post('/payment/process', payload);
     return response.data;
 };

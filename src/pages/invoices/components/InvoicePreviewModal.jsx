@@ -275,7 +275,10 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 <h6 className="text-muted text-uppercase fw-semibold mb-3">Payment Details:</h6>
                                                 {!isCommissionPayout && <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">Stripe</span></p>}
                                                 <p className="text-muted mb-1">Payment Status: <span className="fw-medium" id="payment-method">{displayInvoice.status}</span></p>
-                                                {displayInvoice.status.toLowerCase() == STATUS_PAID.toLowerCase() && (
+                                                {displayInvoice.payment_date && (
+                                                    <p className="text-muted mb-1">Paid Date: <span className="fw-medium" id="paid-date">{displayInvoice.payment_date}</span></p>
+                                                )}
+                                                {displayInvoice.status?.toLowerCase() == STATUS_PAID.toLowerCase() && (
                                                     <>
                                                         <p className="text-muted mb-1">{isCommissionPayout ? 'Payee Name' : 'Card Holder'}: <span className="fw-medium" id="card-holder-name">{displayInvoice.customer_name || displayInvoice.name}</span></p>
                                                         <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>

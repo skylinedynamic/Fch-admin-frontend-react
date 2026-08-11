@@ -14,6 +14,7 @@ export const INVOICE_STATUS_OPTIONS = [
     { label: STATUS_PAID, value: STATUS_PAID },
     { label: STATUS_UNPAID, value: STATUS_UNPAID },
     { label: STATUS_PENDING, value: STATUS_PENDING },
+    { label: STATUS_PROCESSING, value: STATUS_PROCESSING },
     { label: STATUS_SUCCESS, value: STATUS_SUCCESS },
     { label: STATUS_FAILED, value: STATUS_FAILED },
     { label: STATUS_DISPUTED, value: STATUS_DISPUTED },
@@ -27,11 +28,24 @@ export const INVOICE_CYCLE_OPTIONS = [
     { label: 'Annually', value: 'Annually' }
 ];
 
+export const INVOICE_HOST_OWNERSHIP_OPTIONS = [
+    { label: 'All Invoice', value: null },
+    { label: 'Partner Only', value: true },
+    { label: 'Borrower Only', value: false }
+];
+
+export const INVOICE_OWNERSHIP_OPTIONS = [
+    { label: 'All Invoice', value: null },
+    { label: 'Mine Only', value: true },
+    { label: 'Borrower Only', value: false }
+];
+
 export const INVOICE_STATUS_COLORS: { [key: string]: string } = {
     [STATUS_PAID]: 'success',
     [STATUS_SUCCESS]: 'success',
     [STATUS_UNPAID]: 'danger',
     [STATUS_PENDING]: 'warning',
+    [STATUS_PROCESSING]: 'warning',
     [STATUS_OVERDUE]: 'danger',
     [STATUS_CANCELLED]: 'secondary',
     [STATUS_DISPUTED]: 'info',

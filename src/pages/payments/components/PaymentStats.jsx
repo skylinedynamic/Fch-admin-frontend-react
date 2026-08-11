@@ -3,34 +3,36 @@ import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 
 export default function PaymentStats({ stats, loading }) {
+    const getVal = (val) => {
+        if (val == null) return '$0';
+        if (typeof val === 'string' && val.startsWith('$')) return val;
+        return `$${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
     const config = [
         {
             title: "Total Transactions",
             dataKey: "total_payments",
             icon: "ri-money-dollar-circle-line",
-            colorVariant: "primary",
-            isAmount: true
+            colorVariant: "primary"
         },
         {
             title: "Total Paid",
             dataKey: "completed",
             icon: "ri-checkbox-circle-line",
-            colorVariant: "success",
-            isAmount: true
+            colorVariant: "success"
         },
         {
             title: "Total Pending",
             dataKey: "pending",
             icon: "ri-time-line",
-            colorVariant: "info",
-            isAmount: false
+            colorVariant: "info"
         },
         {
-            title: "Total Failed",
-            dataKey: "failed",
-            icon: "ri-close-circle-line",
-            colorVariant: "danger",
-            isAmount: false
+            title: "Total Processing",
+            dataKey: "processing",
+            icon: "ri-refresh-line",
+            colorVariant: "warning"
         }
     ];
 
@@ -50,7 +52,7 @@ export default function PaymentStats({ stats, loading }) {
                 <StatisticsCard
                     key={`stat-${index}`}
                     title={item.title}
-                    count={item.isAmount ? `$${Number(stats[item.dataKey] || 0).toLocaleString()}` : (stats[item.dataKey] || 0)}
+                    count={getVal(stats?.[item.dataKey] ?? stats?.data?.[item.dataKey])}
                     icon={item.icon}
                     colorVariant={item.colorVariant}
                 />

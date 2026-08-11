@@ -26,14 +26,32 @@ export default function PaymentDetails() {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [approving, setApproving] = useState(false);
 
-    // Bootstrap Modal Ref
+    // Rejection state
+    const [rejectReason, setRejectReason] = useState('');
+    const [rejectReasonError, setRejectReasonError] = useState('');
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [rejecting, setRejecting] = useState(false);
+
+    // Bootstrap Modal Refs
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
+    const rejectModalRef = useRef(null);
+    const rejectModalInstanceRef = useRef(null);
 
     useEffect(() => {
         if (!modalRef.current) return;
         if (!modalInstanceRef.current) {
             modalInstanceRef.current = new Modal(modalRef.current, {
+                backdrop: 'static',
+                keyboard: false,
+            });
+        }
+    }, [payment]);
+
+    useEffect(() => {
+        if (!rejectModalRef.current) return;
+        if (!rejectModalInstanceRef.current) {
+            rejectModalInstanceRef.current = new Modal(rejectModalRef.current, {
                 backdrop: 'static',
                 keyboard: false,
             });
@@ -51,6 +69,16 @@ export default function PaymentDetails() {
     }, [showConfirmModal]);
 
     useEffect(() => {
+        const modal = rejectModalInstanceRef.current;
+        if (!modal) return;
+        if (showRejectModal) {
+            modal.show();
+        } else {
+            modal.hide();
+        }
+    }, [showRejectModal]);
+
+    useEffect(() => {
         return () => {
             if (modalInstanceRef.current) {
                 try {
@@ -60,6 +88,15 @@ export default function PaymentDetails() {
                     }
                 } catch (_) { }
                 modalInstanceRef.current = null;
+            }
+            if (rejectModalInstanceRef.current) {
+                try {
+                    rejectModalInstanceRef.current.hide();
+                    if (typeof rejectModalInstanceRef.current.dispose === 'function') {
+                        rejectModalInstanceRef.current.dispose();
+                    }
+                } catch (_) { }
+                rejectModalInstanceRef.current = null;
             }
         };
     }, []);
@@ -110,6 +147,34 @@ export default function PaymentDetails() {
             toast.error(error.response?.data?.message || 'Error approving payment');
         } finally {
             setApproving(false);
+        }
+    };
+
+    const handleRejectClick = () => {
+        if (!rejectReason.trim()) {
+            setRejectReasonError('Rejection reason is required.');
+            return;
+        }
+        setRejectReasonError('');
+        setShowRejectModal(true);
+    };
+
+    const handleConfirmReject = async () => {
+        try {
+            setRejecting(true);
+            const response = await rejectPayment(id, { reason: rejectReason.trim(), note: rejectReason.trim() });
+            if (response.status || response.data) {
+                toast.success(response.message || 'Payment rejected successfully. Invoice is now Unpaid.');
+                setPayment(response.data || response);
+                setShowRejectModal(false);
+            } else {
+                toast.error(response.message || 'Failed to reject payment.');
+            }
+        } catch (error) {
+            console.error('Error rejecting payment:', error);
+            toast.error(error.response?.data?.message || 'Error rejecting payment');
+        } finally {
+            setRejecting(false);
         }
     };
 
@@ -265,12 +330,20 @@ export default function PaymentDetails() {
                                                 ></textarea>
                                                 {noteError && <div className="invalid-feedback">{noteError}</div>}
                                             </div>
-                                            <div className="d-flex justify-content-end">
+                                            <div className="d-flex justify-content-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-danger px-4 fw-medium"
+                                                    onClick={handleRejectClick}
+                                                    disabled={approving || rejecting}
+                                                >
+                                                    <i className="ri-close-circle-line me-1"></i> Reject Payment
+                                                </button>
                                                 <button
                                                     type="button"
                                                     className="btn btn-success px-4 fw-medium"
                                                     onClick={handleApproveClick}
-                                                    disabled={approving}
+                                                    disabled={approving || rejecting}
                                                 >
                                                     <i className="ri-check-double-line me-1"></i> Approve Payment
                                                 </button>
@@ -278,10 +351,10 @@ export default function PaymentDetails() {
                                         </div>
                                     )}
 
-                                    {/* Bottom Approval Info Section */}
+                                    {/* Bottom Approval / Rejection Info Section */}
                                     {payment?.is_manual && hasRawDetails && (
                                         <div className="mt-4">
-                                            <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Approval Info</h5>
+                                            <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Verification Info</h5>
 
                                             {typeof rawDetails === 'object' && (
                                                 <div className="row">
@@ -297,8 +370,26 @@ export default function PaymentDetails() {
                                                             <h5 className="fs-14 mb-0">{formatDate(rawDetails.approved_at)}</h5>
                                                         </div>
                                                     )}
+                                                    {rawDetails.rejected_by && (
+                                                        <div className="col-lg-3 col-sm-6 mb-3">
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12 text-danger">Rejected By</p>
+                                                            <h5 className="fs-14 mb-0 text-danger">{rawDetails.rejected_by}</h5>
+                                                        </div>
+                                                    )}
+                                                    {rawDetails.rejected_at && (
+                                                        <div className="col-lg-3 col-sm-6 mb-3">
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12 text-danger">Rejected Date &amp; Time</p>
+                                                            <h5 className="fs-14 mb-0 text-danger">{formatDate(rawDetails.rejected_at)}</h5>
+                                                        </div>
+                                                    )}
+                                                    {rawDetails.rejection_reason && (
+                                                        <div className="col-lg-3 col-sm-6 mb-3">
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12 text-danger">Rejection Reason</p>
+                                                            <h5 className="fs-14 mb-0 text-danger">{rawDetails.rejection_reason}</h5>
+                                                        </div>
+                                                    )}
                                                     {Object.entries(rawDetails).map(([key, val]) => {
-                                                        if (['approved_by', 'approved_at', 'approval_note', 'note'].includes(key)) return null;
+                                                        if (['approved_by', 'approved_at', 'approval_note', 'rejected_by', 'rejected_at', 'rejection_reason', 'decision', 'note'].includes(key)) return null;
                                                         if (val === null || val === undefined || val === '') return null;
                                                         return (
                                                             <div className="col-lg-3 col-sm-6 mb-3" key={key}>
@@ -374,6 +465,60 @@ export default function PaymentDetails() {
                                     <span><i className="ri-loader-4-line spin me-1"></i> Approving...</span>
                                 ) : (
                                     <span><i className="ri-check-line me-1"></i> Confirm & Approve</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Rejection Confirmation Modal */}
+            <div className="modal fade flip" ref={rejectModalRef} tabIndex="-1" aria-hidden="true">
+                <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-content border-0 shadow">
+                        <div className="modal-header border-bottom py-3 bg-danger bg-opacity-10">
+                            <h5 className="modal-title mb-0 fw-semibold text-danger">
+                                <i className="ri-close-circle-line me-2 fs-18 align-middle"></i>Confirm Payment Rejection
+                            </h5>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={() => setShowRejectModal(false)}
+                                disabled={rejecting}
+                            ></button>
+                        </div>
+                        <div className="modal-body p-4">
+                            <p className="text-muted fs-14 mb-3">
+                                Are you sure you want to reject this payment of <strong className="text-dark">{payment?.amount}</strong> for Invoice <strong className="text-dark">{payment?.invoice_id || '-'}</strong>?
+                            </p>
+                            <div className="bg-light rounded p-3 mb-3 border border-danger-subtle">
+                                <span className="fw-semibold fs-13 text-danger d-block mb-1">Rejection Reason / Remarks:</span>
+                                <p className="mb-0 fs-13 text-dark text-break fw-medium">{rejectReason}</p>
+                            </div>
+                            <p className="text-muted fs-12 mb-0">
+                                <i className="ri-information-line me-1 align-middle text-warning"></i>
+                                This action will mark the payment as <strong>Failed</strong> and revert the invoice status back to <strong>Unpaid</strong> so the user can pay again.
+                            </p>
+                        </div>
+                        <div className="modal-footer border-0 pt-0">
+                            <button
+                                type="button"
+                                className="btn btn-light"
+                                onClick={() => setShowRejectModal(false)}
+                                disabled={rejecting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-danger px-4"
+                                onClick={handleConfirmReject}
+                                disabled={rejecting}
+                            >
+                                {rejecting ? (
+                                    <span><i className="ri-loader-4-line spin me-1"></i> Rejecting...</span>
+                                ) : (
+                                    <span><i className="ri-close-line me-1"></i> Confirm & Reject</span>
                                 )}
                             </button>
                         </div>

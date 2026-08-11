@@ -121,7 +121,10 @@ export default function InvoiceDetails() {
                                                 </div>
                                                 <div className="flex-grow-1 ms-3">
                                                     <h4 className="card-title text-primary mb-1 fs-18">Invoice #{invoice.invoice_id}</h4>
-                                                    <p className="text-muted mb-0 fs-13">Date: <span className="fw-medium text-body">{invoice.created_at}</span></p>
+                                                    <p className="text-muted mb-0 fs-13">Invoice Date: <span className="fw-medium text-body">{invoice.created_at}</span></p>
+                                                    {invoice.payment_date && (
+                                                        <p className="text-muted mb-0 fs-13">Paid Date: <span className="fw-medium text-body">{invoice.payment_date}</span></p>
+                                                    )}
                                                 </div>
                                                 <div className="flex-shrink-0 text-end">
                                                     <h2 className="text-primary mb-1">{invoice.displayable_payment_amount || '-'}</h2>
@@ -136,6 +139,9 @@ export default function InvoiceDetails() {
                                                 <div className="col-lg-6 col-md-6">
                                                     <h5 className="fs-15 fw-bold mb-3"><i className="ri-file-list-3-line text-muted align-middle me-1"></i> Invoice Details</h5>
                                                     <p className="mb-2 text-muted">Entity Type: <span className="fw-medium text-body">{invoice.entity_type?.includes(ENTITY_TYPE_PARTNER) ? ENTITY_TYPE_PARTNER : invoice.entity_type?.includes(ENTITY_TYPE_BORROWER) ? ENTITY_TYPE_BORROWER : 'Customer'}</span></p>
+                                                    {invoice.payment_date && (
+                                                        <p className="mb-2 text-muted">Paid Date: <span className="fw-medium text-body">{invoice.payment_date}</span></p>
+                                                    )}
                                                     {invoice.enrollment_type && (
                                                         <p className="mb-2 text-muted">Enrollment Type: <span className="fw-medium text-body">{invoice.enrollment_type}</span></p>
                                                     )}

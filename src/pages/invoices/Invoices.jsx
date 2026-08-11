@@ -4,7 +4,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import InvoiceStats from './components/InvoiceStats';
 import InvoiceFilters from './components/InvoiceFilters';
 import InvoiceTable from './components/InvoiceTable';
-import { fetchInvoices, fetchInvoiceStats } from '../../modules/invoice';
+import { fetchInvoices } from '../../modules/invoice';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ListSkeletonLoader from '../../components/Loader/ListSkeletonLoader';
@@ -31,6 +31,7 @@ export default function Invoices() {
     const [filters, setFilters] = useState({});
     const [searchText, setSearchText] = useState('');
     const [selectedStatus, setSelectedStatus] = useState(null);
+    const [selectedMine, setSelectedMine] = useState(null);
     const [selectedPayee, setSelectedPayee] = useState(null);
     const [selectedCycle, setSelectedCycle] = useState(null);
     const [dateRange, setDateRange] = useState([]);
@@ -38,6 +39,7 @@ export default function Invoices() {
     // Applied filter states (to trigger fetch)
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedStatus, setAppliedStatus] = useState(null);
+    const [appliedMine, setAppliedMine] = useState(null);
     const [appliedPayee, setAppliedPayee] = useState(null);
     const [appliedCycle, setAppliedCycle] = useState(null);
     const [appliedDateRange, setAppliedDateRange] = useState(null);
@@ -72,20 +74,9 @@ export default function Invoices() {
         };
     }, []);
 
-    const loadStats = async (params = {}) => {
-        try {
-            setStatsLoading(true);
-            const response = await fetchInvoiceStats(params);
-            setStats(response);
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-        } finally {
-            setStatsLoading(false);
-        }
-    };
-
     const loadData = async () => {
         setLoading(true);
+        setStatsLoading(true);
         try {
             // Format date range for backend if present
             let dateFrom = null;
@@ -102,11 +93,14 @@ export default function Invoices() {
                 dateTo = formatDate(appliedDateRange[1]);
             }
 
+            const extractValue = (val) => (val && typeof val === 'object' && 'value' in val ? val.value : val);
+
             const payload = {
                 search: appliedSearchText,
-                status: appliedStatus,
-                payee_id: appliedPayee,
-                cycle: appliedCycle,
+                status: extractValue(appliedStatus),
+                is_mine: extractValue(appliedMine),
+                payee_id: extractValue(appliedPayee),
+                cycle: extractValue(appliedCycle),
                 date_from: dateFrom,
                 date_to: dateTo,
                 filters: appliedFilters,
@@ -122,17 +116,18 @@ export default function Invoices() {
             if (response.status) {
                 setInvoices(response.data || []);
                 setTotalRecords(response.meta?.total || 0);
+                if (response.stats) {
+                    setStats(response.stats);
+                }
             } else {
                 toast.error(response.message || 'Failed to fetch invoices');
             }
-
-            // Also load stats with the same payload (excluding pagination/sorting usually, but backend handles it)
-            loadStats(payload);
         } catch (error) {
             console.error('Error fetching invoices:', error);
             toast.error('Failed to load invoices');
         } finally {
             setLoading(false);
+            setStatsLoading(false);
             setInitialLoading(false);
         }
     };
@@ -141,11 +136,12 @@ export default function Invoices() {
         if (Object.keys(appliedFilters).length > 0) {
             loadData();
         }
-    }, [appliedSearchText, appliedStatus, appliedPayee, appliedCycle, appliedDateRange, appliedFilters, page, perPage, sortField, sortOrder]);
+    }, [appliedSearchText, appliedStatus, appliedMine, appliedPayee, appliedCycle, appliedDateRange, appliedFilters, page, perPage, sortField, sortOrder]);
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
         setAppliedStatus(selectedStatus);
+        setAppliedMine(selectedMine);
         setAppliedPayee(selectedPayee);
         setAppliedCycle(selectedCycle);
         setAppliedDateRange(dateRange);
@@ -156,11 +152,13 @@ export default function Invoices() {
     const handleClearFilters = () => {
         setSearchText('');
         setSelectedStatus(null);
+        setSelectedMine(null);
         setSelectedPayee(null);
         setSelectedCycle(null);
         setDateRange([]);
         setAppliedSearchText('');
         setAppliedStatus(null);
+        setAppliedMine(null);
         setAppliedPayee(null);
         setAppliedCycle(null);
         setAppliedDateRange(null);
@@ -221,12 +219,14 @@ export default function Invoices() {
                                         <InvoiceFilters
                                             searchText={searchText} setSearchText={setSearchText}
                                             selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
+                                            selectedMine={selectedMine} setSelectedMine={setSelectedMine}
                                             selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
                                             selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
                                             dateRange={dateRange} setDateRange={setDateRange}
                                             onApply={handleApplyFilters}
                                             onClear={handleClearFilters}
                                             loading={loading}
+                                            isHost={user?.is_host == 1 || user?.is_host === true}
                                         />
 
                                         <InvoiceTable
