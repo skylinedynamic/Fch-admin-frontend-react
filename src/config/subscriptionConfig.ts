@@ -1,7 +1,15 @@
 export const STATUS_ACTIVE = 'Active';
 export const STATUS_EXPIRED = 'Expired';
 export const STATUS_PENDING = 'Pending';
+export const STATUS_COMPLETED = 'Completed';
+export const STATUS_CANCELLED = 'Cancelled';
 export const STATUS_ALL = 'All Statuses';
+
+export const SUBSCRIPTION_STATUS_ACTIVE = STATUS_ACTIVE;
+export const SUBSCRIPTION_STATUS_COMPLETED = STATUS_COMPLETED;
+export const SUBSCRIPTION_STATUS_CANCELLED = STATUS_CANCELLED;
+export const SUBSCRIPTION_STATUS_EXPIRED = STATUS_EXPIRED;
+export const SUBSCRIPTION_STATUS_PENDING = STATUS_PENDING;
 
 export const SUBSCRIPTION_STATUS_OPTIONS = [
     { label: STATUS_ACTIVE, value: STATUS_ACTIVE },

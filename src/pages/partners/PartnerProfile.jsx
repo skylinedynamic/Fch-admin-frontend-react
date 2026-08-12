@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'reac
 import "../../../assets/css/dropdown-validation.css";
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors } from '../../modules/partner';
+import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors } from '../../modules/partner';
 import { locationData, getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, PARTNER_INFORMATION_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
@@ -580,74 +580,10 @@ export default function PartnerProfile() {
         setErrors(prev => ({ ...prev, agent: null }));
     };
 
-    // Handle subscription save
-    const handleSubscriptionSave = async () => {
-        if (!id) {
-            toast.error('Please save the partner first before adding subscription details');
-            return;
-        }
-
-        try {
-
-
-            const subscriptionPayload = {
-                partner_id: id,
-                partner_type: formData.partner_type,
-                enrollment_type: formData.enrollment_type,
-                enrollment_amount: formData.enrollment_amount,
-                first_reg_date: formData.first_reg_date,
-                monthly_platform_fee: formData.monthly_platform_fee || formData.recurring_amount,
-                total_paid_amount: formData.total_paid_amount,
-                subscription_start_date: formData.subscription_start_date,
-                subscription_end_date: formData.subscription_end_date,
-                expiry_date: formData.expiry_date,
-                termination_date: formData.termination_date,
-                status: formData.subscription_status
-            };
-
-            await saveSubscription(subscriptionPayload);
-            toast.success('Subscription saved successfully');
-
-            // Clear errors for successfully saved fields
-            if (Object.keys(errors).length > 0) {
-                setErrors({});
-            }
-
-            // Stay on subscription tab after save (no redirect)
-        } catch (error) {
-            if (error.response?.data?.errors) {
-                const backendErrors = error.response.data.errors;
-                // Set errors in state for display
-                const errorObj = {};
-                Object.entries(backendErrors).forEach(([field, errorMsg]) => {
-                    const message = Array.isArray(errorMsg) ? errorMsg[0] : errorMsg;
-                    errorObj[field] = message;
-                    // toast.error(message);
-                });
-                setErrors(prev => ({ ...prev, ...errorObj }));
-                requestAnimationFrame(() => {
-                    const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
-                    if (firstErrorField) {
-                        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                });
-            } else if (error.response?.data?.message) {
-                toast.error(error.response.data.message);
-            } else {
-                toast.error('Failed to save subscription');
-            }
-        }
-    };
-
     // Handle form submission
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Delegate to subscription save if on subscription tab
-            if (activeTab === 'subscription') {
-                await handleSubscriptionSave();
-                return;
-            }
 
 
                 const formDataToSend = buildPartnerFormDataPayload(formData, id, wasFreeTrial, partnerPlans);

@@ -154,6 +154,18 @@ export default function Header() {
           animation: 'headerDropdownIn 0.15s ease',
         }}
       >
+        {/* ── My Subscription (non-host partner only) ───────────── */}
+        {user?.entity_type === 'Partner' && Number(user?.is_host) === 0 && (
+          <Link
+            className="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
+            to="/my-subscription"
+            onClick={closeDropdown}
+          >
+            <i className="ri-vip-crown-2-line text-muted fs-16"></i>
+            <span>My Subscription</span>
+          </Link>
+        )}
+
         {/* ── Profile ─────────────────────────────────────── */}
         <Link
           className="dropdown-item d-flex align-items-center gap-2 py-2 px-3"

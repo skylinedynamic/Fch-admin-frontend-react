@@ -1,11 +1,25 @@
+export const PAYMENT_STATUS_SUCCEEDED = 'succeeded';
+export const PAYMENT_STATUS_PENDING = 'pending';
+export const PAYMENT_STATUS_PROCESSING = 'processing';
+export const PAYMENT_STATUS_REJECTED = 'rejected';
+export const PAYMENT_STATUS_FAILED = 'failed';
+export const PAYMENT_STATUS_DISPUTED = 'disputed';
+export const PAYMENT_STATUS_REFUNDED = 'refunded';
+
+export const PAYMENT_STATUS_PAID = 'Paid';
+export const PAYMENT_STATUS_UNPAID = 'Unpaid';
+
+const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+
 export const PAYMENT_STATUS_OPTIONS = [
     { label: 'All Status', value: null },
-    { label: 'Succeeded', value: 'succeeded' },
-    { label: 'Pending', value: 'pending' },
-    { label: 'Processing', value: 'processing' },
-    { label: 'Failed', value: 'failed' },
-    { label: 'Disputed', value: 'disputed' },
-    { label: 'Refunded', value: 'refunded' }
+    { label: capitalize(PAYMENT_STATUS_SUCCEEDED), value: PAYMENT_STATUS_SUCCEEDED },
+    { label: capitalize(PAYMENT_STATUS_PENDING), value: PAYMENT_STATUS_PENDING },
+    { label: capitalize(PAYMENT_STATUS_PROCESSING), value: PAYMENT_STATUS_PROCESSING },
+    { label: capitalize(PAYMENT_STATUS_REJECTED), value: PAYMENT_STATUS_REJECTED },
+    { label: capitalize(PAYMENT_STATUS_FAILED), value: PAYMENT_STATUS_FAILED },
+    { label: capitalize(PAYMENT_STATUS_DISPUTED), value: PAYMENT_STATUS_DISPUTED },
+    { label: capitalize(PAYMENT_STATUS_REFUNDED), value: PAYMENT_STATUS_REFUNDED }
 ];
 
 export const PAYMENT_CYCLE_OPTIONS = [
@@ -16,13 +30,14 @@ export const PAYMENT_CYCLE_OPTIONS = [
     { label: 'Yearly', value: 'Yearly' }
 ];
 
-export const PAYMENT_STATUS_COLORS = {
-    'succeeded': 'success',
-    'pending': 'warning',
-    'processing': 'warning',
-    'failed': 'danger',
-    'disputed': 'info',
-    'refunded': 'secondary'
+export const PAYMENT_STATUS_COLORS: { [key: string]: string } = {
+    [PAYMENT_STATUS_SUCCEEDED]: 'success',
+    [PAYMENT_STATUS_PENDING]: 'warning',
+    [PAYMENT_STATUS_PROCESSING]: 'warning',
+    [PAYMENT_STATUS_REJECTED]: 'danger',
+    [PAYMENT_STATUS_FAILED]: 'danger',
+    [PAYMENT_STATUS_DISPUTED]: 'info',
+    [PAYMENT_STATUS_REFUNDED]: 'secondary'
 };
 
 export const PAYMENT_ENVIRONMENT_OPTIONS = [
@@ -31,12 +46,12 @@ export const PAYMENT_ENVIRONMENT_OPTIONS = [
     { label: 'Sandbox', value: 0 }
 ];
 
-export const PAYMENT_ENVIRONMENT_COLORS = {
+export const PAYMENT_ENVIRONMENT_COLORS: { [key: number]: string } = {
     [1]: 'success', // Production
     [0]: 'info'     // Sandbox
 };
 
-export const PAYMENT_ENVIRONMENT_LABELS = {
+export const PAYMENT_ENVIRONMENT_LABELS: { [key: number]: string } = {
     [1]: 'Production',
     [0]: 'Sandbox'
 };

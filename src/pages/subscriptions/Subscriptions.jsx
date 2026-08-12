@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchGlobalSubscriptions, fetchSubscriptionStats } from '../../modules/partner/services';
+import { fetchGlobalSubscriptions } from '../../modules/partner/services';
 import SubscriptionTable from './components/SubscriptionTable';
 import SubscriptionFilters from './components/SubscriptionFilters';
 import { toast } from 'react-toastify';
@@ -47,8 +47,9 @@ export default function Subscriptions() {
             partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             enrollment_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             payable_amount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            next_installment_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            next_platform_fee_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            subscription_start_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            subscription_end_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            enrollment_completed_at: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             created_at: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
         };
@@ -58,7 +59,6 @@ export default function Subscriptions() {
 
     useEffect(() => {
         initFilters();
-        loadStats();
 
         // Add class to body to prevent global scroll
         document.body.classList.add('table-page-fit-active');
@@ -67,20 +67,6 @@ export default function Subscriptions() {
             document.body.classList.remove('table-page-fit-active');
         };
     }, []);
-
-    const loadStats = async () => {
-        setStatsLoading(true);
-        try {
-            const response = await fetchSubscriptionStats();
-            if (response.status) {
-                setStats(response.data);
-            }
-        } catch (error) {
-            console.error('Error fetching subscription stats:', error);
-        } finally {
-            setStatsLoading(false);
-        }
-    };
 
     const loadData = async () => {
         setLoading(true);
@@ -99,6 +85,10 @@ export default function Subscriptions() {
             if (response.status) {
                 setSubscriptions(response.data || []);
                 setTotalRecords(response.meta?.total || 0);
+                if (response.stats) {
+                    setStats(response.stats);
+                    setStatsLoading(false);
+                }
             } else {
                 toast.error(response.message || 'Failed to fetch subscriptions');
             }
@@ -107,6 +97,7 @@ export default function Subscriptions() {
             toast.error('Failed to load subscriptions');
         } finally {
             setLoading(false);
+            setStatsLoading(false);
         }
     };
 

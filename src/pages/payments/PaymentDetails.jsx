@@ -1,14 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Modal from 'bootstrap/js/dist/modal';
-import { fetchPaymentById, approvePayment } from '../../modules/payment/services';
+import { fetchPaymentById, approvePayment, rejectPayment } from '../../modules/payment/services';
 import { toast } from 'react-toastify';
 import {
     PAYMENT_STATUS_COLORS,
     PAYMENT_ENVIRONMENT_COLORS,
     PAYMENT_ENVIRONMENT_LABELS,
     TRANSACTION_TYPE_DEBIT,
-    TRANSACTION_TYPE_CREDIT
+    TRANSACTION_TYPE_CREDIT,
+    PAYMENT_STATUS_SUCCEEDED,
+    PAYMENT_STATUS_REJECTED,
+    PAYMENT_STATUS_FAILED,
+    PAYMENT_STATUS_PAID
 } from '../../config/paymentConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
@@ -20,16 +24,12 @@ export default function PaymentDetails() {
     const [payment, setPayment] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Approval state
-    const [approvalNote, setApprovalNote] = useState('');
+    // Approval / Rejection state
+    const [note, setNote] = useState('');
     const [noteError, setNoteError] = useState('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [approving, setApproving] = useState(false);
-
-    // Rejection state
-    const [rejectReason, setRejectReason] = useState('');
-    const [rejectReasonError, setRejectReasonError] = useState('');
     const [showRejectModal, setShowRejectModal] = useState(false);
+    const [approving, setApproving] = useState(false);
     const [rejecting, setRejecting] = useState(false);
 
     // Bootstrap Modal Refs
@@ -123,10 +123,6 @@ export default function PaymentDetails() {
     }, [id]);
 
     const handleApproveClick = () => {
-        if (!approvalNote.trim()) {
-            setNoteError('Approval note is required.');
-            return;
-        }
         setNoteError('');
         setShowConfirmModal(true);
     };
@@ -134,7 +130,7 @@ export default function PaymentDetails() {
     const handleConfirmApprove = async () => {
         try {
             setApproving(true);
-            const response = await approvePayment(id, { note: approvalNote.trim() });
+            const response = await approvePayment(id, { note: note.trim() });
             if (response.status || response.data) {
                 toast.success(response.message || 'Payment approved successfully!');
                 setPayment(response.data || response);
@@ -151,18 +147,18 @@ export default function PaymentDetails() {
     };
 
     const handleRejectClick = () => {
-        if (!rejectReason.trim()) {
-            setRejectReasonError('Rejection reason is required.');
+        if (!note.trim()) {
+            setNoteError('Note / Rejection reason is required for rejection.');
             return;
         }
-        setRejectReasonError('');
+        setNoteError('');
         setShowRejectModal(true);
     };
 
     const handleConfirmReject = async () => {
         try {
             setRejecting(true);
-            const response = await rejectPayment(id, { reason: rejectReason.trim(), note: rejectReason.trim() });
+            const response = await rejectPayment(id, { reason: note.trim(), note: note.trim() });
             if (response.status || response.data) {
                 toast.success(response.message || 'Payment rejected successfully. Invoice is now Unpaid.');
                 setPayment(response.data || response);
@@ -186,11 +182,18 @@ export default function PaymentDetails() {
     const statusColor = PAYMENT_STATUS_COLORS[status] || 'primary';
     const envVal = payment?.is_environment ? 1 : 0;
     const envColor = PAYMENT_ENVIRONMENT_COLORS[envVal] || 'info';
-    const envLabel = PAYMENT_ENVIRONMENT_LABELS[envVal] || 'Sandbox';
+    const envLabel = PAYMENT_ENVIRONMENT_LABELS[envVal];
     const payerType = payment?.entity_type?.includes(ENTITY_TYPE_PARTNER) ? ENTITY_TYPE_PARTNER : payment?.entity_type?.includes(ENTITY_TYPE_BORROWER) ? ENTITY_TYPE_BORROWER : 'Customer';
     const rawDetails = payment?.raw_details || (typeof payment?.details === 'object' ? payment?.details : null);
     const hasRawDetails = rawDetails && (typeof rawDetails === 'object' ? Object.keys(rawDetails).length > 0 : String(rawDetails).trim() !== '');
-    const approvalRemarks = payment?.note || payment?.details?.approval_note || (typeof rawDetails === 'object' ? (rawDetails?.approval_note || rawDetails?.note) : null);
+
+    const rejectionRemarks = payment?.rejection_reason
+        || payment?.details?.rejection_reason
+        || (typeof rawDetails === 'object' ? (rawDetails?.rejection_reason || rawDetails?.reason) : null);
+
+    const approvalRemarks = payment?.note
+        || payment?.details?.approval_note
+        || (typeof rawDetails === 'object' ? (rawDetails?.approval_note || (rawDetails?.decision === 'approved' ? rawDetails?.note : null)) : null);
 
     return (
         <div className="page-content">
@@ -252,6 +255,16 @@ export default function PaymentDetails() {
                                         </div>
                                     )}
 
+                                    {rejectionRemarks && (
+                                        <div className="alert alert-danger bg-danger-subtle text-danger border-0 p-3 mb-4 rounded">
+                                            <div className="d-flex align-items-center mb-1">
+                                                <i className="ri-close-circle-fill fs-18 me-2 text-danger"></i>
+                                                <span className="fw-semibold fs-14">Rejection Remarks:</span>
+                                            </div>
+                                            <p className="mb-0 fs-13 ps-4 text-dark fw-medium">{rejectionRemarks}</p>
+                                        </div>
+                                    )}
+
                                     <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Payment Details</h5>
                                     <div className="row mb-4">
                                         <div className="col-lg-3 col-sm-6 mb-3">
@@ -304,55 +317,8 @@ export default function PaymentDetails() {
                                         </div>
                                     </div>
 
-                                    {/* Bottom Payment Approval Section */}
-                                    {payment.can_approve && (
-                                        <div className="border border-warning rounded p-4 bg-warning bg-opacity-10 mt-4">
-                                            <h5 className="fs-16 fw-bold text-warning mb-2">
-                                                <i className="ri-time-line me-2 fs-18 align-middle"></i>Payment Approval
-                                            </h5>
-                                            <p className="text-muted fs-13 mb-3">
-                                                This payment is currently <strong>Processing</strong> and requires your approval. Enter approval details below and click <strong>Approve Payment</strong>.
-                                            </p>
-                                            <div className="mb-3">
-                                                <label className="form-label fw-semibold fs-13">
-                                                    Approval Note / Remarks <span className="text-danger">*</span>
-                                                </label>
-                                                <textarea
-                                                    className={`form-control ${noteError ? 'is-invalid' : ''}`}
-                                                    rows="3"
-                                                    placeholder="Enter approval details (e.g., Bank name, wire transfer reference ID, check number, or approval note)..."
-                                                    value={approvalNote}
-                                                    onChange={(e) => {
-                                                        setApprovalNote(e.target.value);
-                                                        if (e.target.value.trim()) setNoteError('');
-                                                    }}
-                                                    disabled={approving}
-                                                ></textarea>
-                                                {noteError && <div className="invalid-feedback">{noteError}</div>}
-                                            </div>
-                                            <div className="d-flex justify-content-end gap-2">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-danger px-4 fw-medium"
-                                                    onClick={handleRejectClick}
-                                                    disabled={approving || rejecting}
-                                                >
-                                                    <i className="ri-close-circle-line me-1"></i> Reject Payment
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-success px-4 fw-medium"
-                                                    onClick={handleApproveClick}
-                                                    disabled={approving || rejecting}
-                                                >
-                                                    <i className="ri-check-double-line me-1"></i> Approve Payment
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {/* Bottom Approval / Rejection Info Section */}
-                                    {payment?.is_manual && hasRawDetails && (
+                                    {hasRawDetails && (
                                         <div className="mt-4">
                                             <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Verification Info</h5>
 
@@ -382,14 +348,8 @@ export default function PaymentDetails() {
                                                             <h5 className="fs-14 mb-0 text-danger">{formatDate(rawDetails.rejected_at)}</h5>
                                                         </div>
                                                     )}
-                                                    {rawDetails.rejection_reason && (
-                                                        <div className="col-lg-3 col-sm-6 mb-3">
-                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12 text-danger">Rejection Reason</p>
-                                                            <h5 className="fs-14 mb-0 text-danger">{rawDetails.rejection_reason}</h5>
-                                                        </div>
-                                                    )}
                                                     {Object.entries(rawDetails).map(([key, val]) => {
-                                                        if (['approved_by', 'approved_at', 'approval_note', 'bank_detail_id', 'approved_by_id', 'rejected_by', 'rejected_at', 'rejection_reason', 'decision', 'note'].includes(key)) return null;
+                                                        if (['approved_by', 'approved_at', 'approval_note', 'bank_detail_id', 'approved_by_id', 'rejected_by', 'rejected_at', 'rejected_by_id', 'rejection_reason', 'decision', 'note', 'reason'].includes(key)) return null;
                                                         if (val === null || val === undefined || val === '') return null;
                                                         return (
                                                             <div className="col-lg-3 col-sm-6 mb-3" key={key}>
@@ -409,6 +369,53 @@ export default function PaymentDetails() {
                                                     </div>
                                                 </div>
                                             )}
+                                        </div>
+                                    )}
+
+                                    {/* Bottom Payment Approval / Rejection Section */}
+                                    {payment.can_approve && (
+                                        <div className="rounded p-4 bg-warning bg-opacity-10 mt-4">
+                                            <h5 className="fs-16 fw-bold text-warning mb-2">
+                                                <i className="ri-time-line me-2 fs-18 align-middle"></i>Payment Approval &amp; Decision
+                                            </h5>
+                                            <p className="text-muted fs-13 mb-3">
+                                                This payment is currently <strong>Processing</strong> and requires your action. Enter notes/remarks below and select <strong>Approve Payment</strong> or <strong>Reject Payment</strong>.
+                                            </p>
+                                            <div className="mb-3">
+                                                <label className="form-label fw-semibold fs-13">
+                                                    Note / Remarks <span className="text-muted fw-normal fs-12">(Required for Rejection, Optional for Approval)</span>
+                                                </label>
+                                                <textarea
+                                                    className={`form-control ${noteError ? 'is-invalid' : ''}`}
+                                                    rows="3"
+                                                    placeholder="Enter approval details or rejection reason (e.g., Bank name, reference ID, check number, or reason for rejection)..."
+                                                    value={note}
+                                                    onChange={(e) => {
+                                                        setNote(e.target.value);
+                                                        if (e.target.value.trim()) setNoteError('');
+                                                    }}
+                                                    disabled={approving || rejecting}
+                                                ></textarea>
+                                                {noteError && <div className="invalid-feedback">{noteError}</div>}
+                                            </div>
+                                            <div className="d-flex justify-content-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-danger px-4 fw-medium"
+                                                    onClick={handleRejectClick}
+                                                    disabled={approving || rejecting}
+                                                >
+                                                    <i className="ri-close-circle-line me-1"></i> Reject Payment
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-success px-4 fw-medium"
+                                                    onClick={handleApproveClick}
+                                                    disabled={approving || rejecting}
+                                                >
+                                                    <i className="ri-check-double-line me-1"></i> Approve Payment
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -438,8 +445,8 @@ export default function PaymentDetails() {
                                 Are you sure you want to approve this payment of <strong className="text-dark">{payment?.amount}</strong> for Invoice <strong className="text-dark">{payment?.invoice_id || '-'}</strong>?
                             </p>
                             <div className="bg-light rounded p-3 mb-3 border">
-                                <span className="fw-semibold fs-13 text-muted d-block mb-1">Approval Note / Remarks:</span>
-                                <p className="mb-0 fs-13 text-dark text-break fw-medium">{approvalNote}</p>
+                                <span className="fw-semibold fs-13 text-muted d-block mb-1">Note / Remarks:</span>
+                                <p className="mb-0 fs-13 text-dark text-break fw-medium">{note.trim() || <span className="text-muted fs-12 italic">No note provided</span>}</p>
                             </div>
                             <p className="text-muted fs-12 mb-0">
                                 <i className="ri-information-line me-1 align-middle text-primary"></i>
@@ -464,7 +471,7 @@ export default function PaymentDetails() {
                                 {approving ? (
                                     <span><i className="ri-loader-4-line spin me-1"></i> Approving...</span>
                                 ) : (
-                                    <span><i className="ri-check-line me-1"></i> Confirm & Approve</span>
+                                    <span><i className="ri-check-line me-1"></i> Confirm &amp; Approve</span>
                                 )}
                             </button>
                         </div>
@@ -493,11 +500,11 @@ export default function PaymentDetails() {
                             </p>
                             <div className="bg-light rounded p-3 mb-3 border border-danger-subtle">
                                 <span className="fw-semibold fs-13 text-danger d-block mb-1">Rejection Reason / Remarks:</span>
-                                <p className="mb-0 fs-13 text-dark text-break fw-medium">{rejectReason}</p>
+                                <p className="mb-0 fs-13 text-dark text-break fw-medium">{note}</p>
                             </div>
                             <p className="text-muted fs-12 mb-0">
                                 <i className="ri-information-line me-1 align-middle text-warning"></i>
-                                This action will mark the payment as <strong>Failed</strong> and revert the invoice status back to <strong>Unpaid</strong> so the user can pay again.
+                                This action will mark the payment status as <strong>Rejected</strong> and revert the invoice status back to <strong>Unpaid</strong> so the user can pay again.
                             </p>
                         </div>
                         <div className="modal-footer border-0 pt-0">
@@ -518,7 +525,7 @@ export default function PaymentDetails() {
                                 {rejecting ? (
                                     <span><i className="ri-loader-4-line spin me-1"></i> Rejecting...</span>
                                 ) : (
-                                    <span><i className="ri-close-line me-1"></i> Confirm & Reject</span>
+                                    <span><i className="ri-close-line me-1"></i> Confirm &amp; Reject</span>
                                 )}
                             </button>
                         </div>
@@ -528,3 +535,4 @@ export default function PaymentDetails() {
         </div>
     );
 }
+

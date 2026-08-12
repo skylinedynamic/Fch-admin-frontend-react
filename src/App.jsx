@@ -12,7 +12,7 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
-import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute } from './lib/auth';
+import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -53,6 +53,7 @@ import SubscriptionDetails from './pages/subscriptions/SubscriptionDetails.tsx';
 import PlanFee from './pages/plan-fee/PlanFee.tsx';
 import Billing from './pages/billing/Billing.jsx';
 import BillingDetails from './pages/billing/BillingDetails.jsx';
+import MySubscription from './pages/my-subscription/MySubscription';
 import Profile from './pages/auth-profile/Profile';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
@@ -371,13 +372,16 @@ export default function App() {
             </Route>
 
             {/* Subscriptions Routes */}
-            <Route element={<HostRoute />}>
-              <Route element={<PermissionRoute permission="view subscriptions" />}>
-                <Route path="subscriptions" element={<Subscriptions />} />
-                <Route path="subscriptions/:id" element={<SubscriptionDetails />} />
-                <Route path="billing" element={<Billing />} />
-                <Route path="billing/:id" element={<BillingDetails />} />
-              </Route>
+            <Route element={<PermissionRoute permission="view subscriptions" />}>
+              <Route path="subscriptions" element={<Subscriptions />} />
+              <Route path="subscriptions/:id" element={<SubscriptionDetails />} />
+              <Route path="billing" element={<Billing />} />
+              <Route path="billing/:id" element={<BillingDetails />} />
+            </Route>
+
+            {/* Non-Host Partner My Subscription Route */}
+            <Route element={<NonHostPartnerRoute />}>
+              <Route path="my-subscription" element={<MySubscription />} />
             </Route>
 
             {/* General Settings */}

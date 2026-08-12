@@ -127,37 +127,16 @@ const menuItems = [
     permission: "view commission",
   },
   {
-    to: "/billing",
-    icon: "ri-bill-line",
-    label: "Billing",
-    permission: "view subscriptions",
-    isHostOnly: true,
-  },
-  {
-    to: "/invoices",
-    icon: "ri-file-text-line",
-    label: "Invoices",
-    permission: "view invoices",
-  },
-  {
-    to: "/payments",
-    icon: "bx bx-credit-card",
-    label: "Payments",
-    permission: "view payments",
-  },
-  {
-    to: "/payment-methods",
-    icon: "ri-wallet-3-line",
-    label: "Payment Method",
-    isHostOnly: true,
-    isPartnerOnly: true,
-  },
-  {
     to: "/subscriptions",
     icon: "bx bx-sync",
     label: "Subscriptions",
     permission: "view subscriptions",
-    isHostOnly: true,
+  },
+  {
+    to: "/billing",
+    icon: "ri-bill-line",
+    label: "Upcoming Billings",
+    permission: "view subscriptions",
   },
   {
     to: "/appointments",
@@ -367,6 +346,11 @@ export default function Sidebar() {
 
       // 6. Generic rule: Check isPartnerOnly flag
       if (item.isPartnerOnly && currentUser?.entity_type !== ENTITY_TYPE_PARTNER) {
+        return false;
+      }
+
+      // 7. Generic rule: Check isNonHostPartnerOnly flag
+      if (item.isNonHostPartnerOnly && (isHost || currentUser?.entity_type !== ENTITY_TYPE_PARTNER)) {
         return false;
       }
 

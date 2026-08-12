@@ -120,11 +120,11 @@ export default function Billing() {
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Upcoming Billing</h4>
+                                <h4 className="fs-20 mb-1">Upcoming Billings</h4>
                                 <nav aria-label="breadcrumb">
                                     <ol className="breadcrumb m-0 fs-12 text-muted">
                                         <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active text-primary font-weight-bold" aria-current="page">Upcoming Billing</li>
+                                        <li className="breadcrumb-item active text-primary font-weight-bold" aria-current="page">Upcoming Billings</li>
                                     </ol>
                                 </nav>
                             </div>

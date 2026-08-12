@@ -1,15 +1,20 @@
 import { loadStripe } from '@stripe/stripe-js/pure';
 
-let stripePromise;
+const stripePromises = {};
 
 export const getStripe = async (publicKey) => {
-  if (!stripePromise && publicKey) {
+  const key = publicKey || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  if (!key) {
+    console.warn('[getStripe] No publishable key available.');
+    return null;
+  }
+  if (!stripePromises[key]) {
     try {
-      stripePromise = loadStripe(publicKey);
+      stripePromises[key] = loadStripe(key);
     } catch (error) {
-      console.error('Error initializing Stripe:', error);
+      console.error('[getStripe] Error initializing Stripe:', error);
       return null;
     }
   }
-  return stripePromise;
+  return stripePromises[key];
 };

@@ -133,7 +133,7 @@ export default function BillingDetails() {
                             <nav aria-label="breadcrumb">
                                 <ol className="breadcrumb m-0 fs-12 text-muted">
                                     <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                    <li className="breadcrumb-item"><Link to="/billing" className="text-muted">Billing</Link></li>
+                                    <li className="breadcrumb-item"><Link to="/billing" className="text-muted">Upcoming Billings</Link></li>
                                     <li className="breadcrumb-item active text-primary fw-medium" aria-current="page">Details</li>
                                 </ol>
                             </nav>

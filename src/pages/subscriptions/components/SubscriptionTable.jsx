@@ -4,6 +4,8 @@ import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { SUBSCRIPTION_STATUS_OPTIONS,SUBSCRIPTION_STATUS_COLORS } from '../../../config/subscriptionConfig';
+import { useAuthStore } from '../../../store/auth/authStore';
+import { ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 
 export default function SubscriptionTable({ 
     data, loading, totalRecords, page, perPage, 
@@ -11,6 +13,9 @@ export default function SubscriptionTable({
     sortField, sortOrder 
 }) {
     const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
+    const isHost = user?.is_host == 1 || user?.is_host === true;
+
     const statusBodyTemplate = (rowData) => {
         const status = rowData.status || 'N/A';
         const color = SUBSCRIPTION_STATUS_COLORS[status] || 'secondary';
@@ -34,19 +39,18 @@ export default function SubscriptionTable({
         return rowData[field] || '-';
     };
 
-    const nameBodyTemplate = (rowData) => (
-        <div>
-            {rowData.borrower_id ? (
-                <>
-                    <div className="fw-medium">{rowData.borrower_name} <span className="text-muted small">(Borrower)</span></div>
-                </>
-            ) : (
-                <>
-                    <div className="fw-medium">{rowData.partner_name} <span className="text-muted small">(Partner)</span></div>
-                </>
-            )}
-        </div>
-    );
+    const nameBodyTemplate = (rowData) => {
+        const name = rowData.borrower_id ? rowData.borrower_name : rowData.partner_name;
+        const entityLabel = rowData.borrower_id ? `(${ENTITY_TYPE_BORROWER})` : `(${ENTITY_TYPE_PARTNER})`;
+
+        return (
+            <div>
+                <div className="fw-medium">
+                    {name} {isHost && <span className="text-muted small">{entityLabel}</span>}
+                </div>
+            </div>
+        );
+    };
 
 
 
@@ -85,8 +89,9 @@ export default function SubscriptionTable({
                 <Column field="partner_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by Name" style={{ minWidth: '200px' }} />
                 <Column field="enrollment_type" header="Enrollment Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '180px' }} />
                 <Column field="payable_amount" header="Payable Amount" body={amountBodyTemplate('payable_amount')} sortable filter filterPlaceholder="Search by amount" style={{ minWidth: '130px' }} />
-                <Column field="next_installment_date" header="Next Installment" body={dateBodyTemplate('next_installment_date')} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '150px' }} />
-                <Column field="next_platform_fee_date" header="Next Platform Fee" body={dateBodyTemplate('next_platform_fee_date')} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '150px' }} />
+                <Column field="subscription_start_date" header="Start Date" body={dateBodyTemplate('subscription_start_date')} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '150px' }} />
+                <Column field="subscription_end_date" header="End Date" body={dateBodyTemplate('subscription_end_date')} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '150px' }} />
+                <Column field="enrollment_completed_at" header="Enrollment Completed At" body={dateBodyTemplate('enrollment_completed_at')} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '170px' }} />
                 <Column field="created_at" header="Created At" sortable filter filterPlaceholder="Search by date" style={{ minWidth: '150px' }} />
                 <Column 
                     field="status" 

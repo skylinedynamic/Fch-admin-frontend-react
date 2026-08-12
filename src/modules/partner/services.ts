@@ -76,33 +76,13 @@ export const deletePartnerDocument = async (docId: string | number) => {
   return data;
 };
 
-export const getSubscription = async (partnerId: string | number) => {
-  const { data } = await apiClient.post(`/admin/partner-subscriptions/${partnerId}`);
-  return data;
-};
-
 export const deletePartners = async (ids: Array<number | string>) => {
   const res = await apiClient.post('/admin/partners/multiple-delete', { ids });
   return res.data;
 };
 
-export const saveSubscription = async (payload: any) => {
-  const { data } = await apiClient.post('/admin/partners/subscription', payload);
-  return data;
-};
-
-export const fetchSubscriptions = async (partnerId: string | number, payload: any = {}) => {
-  const { data } = await apiClient.post(`/admin/partners/fetch-subscriptions/${partnerId}`, payload);
-  return data;
-};
-
-export const fetchAllSubscriptions = async (partnerId: string | number, payload: any = {}) => {
-  const { data } = await apiClient.post(`/admin/partners/fetch-all-subscriptions`, { ...payload, partner_id: partnerId });
-  return data;
-};
-
 export const fetchGlobalSubscriptions = async (payload: any = {}) => {
-  const { data } = await apiClient.post(`/admin/partners/fetch-all-subscriptions`, payload);
+  const { data } = await apiClient.post(`/common/subscriptions/fetch-all`, payload);
   return data;
 };
 
@@ -117,8 +97,8 @@ export const fetchBillingDetails = async (id: string | number) => {
 };
 
 export const fetchSubscriptionStats = async () => {
-  const { data } = await apiClient.post('/admin/partners/subscriptions-stats');
-  return data;
+  const { data } = await apiClient.post('/common/subscriptions/fetch-all', { per_page: 1 });
+  return { status: true, message: data.message, data: data.stats };
 };
 
 export const fetchPartnerStats = async () => {
@@ -163,7 +143,7 @@ export const updateMyTenantConfig = async (payload: Partial<TenantConfig>): Prom
 };
 
 export const getSubscriptionDetails = async (id: string | number) => {
-  const { data } = await apiClient.get(`/admin/partners/subscription/${id}`);
+  const { data } = await apiClient.get(`/common/subscriptions/${id}`);
   return data;
 };
 
