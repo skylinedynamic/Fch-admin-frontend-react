@@ -4275,7 +4275,6 @@ File: Custom Css File
 
 .stripe-submit-btn {
   background-color: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
   color: #ffffff !important;
   font-size: 15px;
   font-weight: 600;
@@ -4288,7 +4287,6 @@ File: Custom Css File
 
 .stripe-submit-btn:hover:not(:disabled) {
   background-color: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
   filter: brightness(85%);
   transform: translateY(-1px);
   box-shadow: 0 6px 12px rgba(0, 31, 63, 0.18);
@@ -4306,7 +4304,9 @@ File: Custom Css File
 
 /* Responsive button width utility: full-width on mobile, auto on sm+ */
 @media (min-width: 576px) {
-  .w-sm-auto { width: auto !important; }
+  .w-sm-auto {
+    width: auto !important;
+  }
 }
 
 .payment-method-card {
@@ -5622,4 +5622,3 @@ File: Custom Css File
 .col-w-160 {
   min-width: 160px;
 }
-

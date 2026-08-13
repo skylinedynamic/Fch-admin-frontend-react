@@ -26,6 +26,7 @@ interface SubscriptionDetailData {
     termination_date?: string;
     total_subscription_amount?: string;
     payable_amount?: string;
+    subscription_amount_per_month?: string;
     monthly_platform_fee?: string;
     total_paid_amount?: string;
     installment_type?: number;
@@ -33,6 +34,7 @@ interface SubscriptionDetailData {
     installments_paid?: number;
     down_payment?: string;
     current_phase?: string;
+    next_billing_date?: string;
     next_installment_date?: string;
     next_platform_fee_date?: string;
     enrollment_completed_at?: string;
@@ -156,6 +158,9 @@ export default function SubscriptionDetails() {
     const paidInst = subscriptionDetails.installments_paid || 0;
     const totalInst = subscriptionDetails.installment_count || 12;
     const percentage = totalInst > 0 ? Math.min(Math.round((paidInst / totalInst) * 100), 100) : 0;
+    const isInstallment = subscriptionDetails.installment_type === 1 ||
+        subscriptionDetails.enrollment_type?.toLowerCase().includes('payment plan') ||
+        subscriptionDetails.enrollment_type?.toLowerCase().includes('installment');
 
     return (
         <div className="page-content">
@@ -275,55 +280,82 @@ export default function SubscriptionDetails() {
                                 <h4 className="card-title mb-0 flex-grow-1">Billing & Progression</h4>
                             </div>
                             <div className="card-body p-4">
-                                {subscriptionDetails.installment_type === 1 && (
-                                    <div className="bg-light bg-opacity-50 p-3 rounded mb-4 border border-light">
-                                        <div className="d-flex align-items-center justify-content-between mb-2">
-                                            <span className="text-dark fw-semibold fs-13">Installment Progress</span>
-                                            <span className="badge bg-primary text-white fs-12 px-2.5 py-1">
-                                                {paidInst} of {totalInst} Paid ({percentage}%)
-                                            </span>
+                                {isInstallment ? (
+                                    <>
+                                        <div className="bg-light bg-opacity-50 p-3 rounded mb-4 border border-light">
+                                            <div className="d-flex align-items-center justify-content-between mb-2">
+                                                <span className="text-dark fw-semibold fs-13">Installment Progress</span>
+                                                <span className="badge bg-primary text-white fs-12 px-2.5 py-1">
+                                                    {paidInst} of {totalInst} Paid ({percentage}%)
+                                                </span>
+                                            </div>
+                                            <div className="progress progress-sm bg-primary-subtle rounded-pill" style={{ height: '8px' }}>
+                                                <div
+                                                    className="progress-bar bg-primary rounded-pill progress-bar-striped progress-bar-animated"
+                                                    role="progressbar"
+                                                    style={{ width: `${percentage}%` }}
+                                                    aria-valuenow={percentage}
+                                                    aria-valuemin={0}
+                                                    aria-valuemax={100}
+                                                ></div>
+                                            </div>
                                         </div>
-                                        <div className="progress progress-sm bg-primary-subtle rounded-pill" style={{ height: '8px' }}>
-                                            <div
-                                                className="progress-bar bg-primary rounded-pill progress-bar-striped progress-bar-animated"
-                                                role="progressbar"
-                                                style={{ width: `${percentage}%` }}
-                                                aria-valuenow={percentage}
-                                                aria-valuemin={0}
-                                                aria-valuemax={100}
-                                            ></div>
+
+                                        <div className="row g-4">
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Total Payable Amount</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.payable_amount || '$0.00'}</h5>
+                                            </div>
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Down Payment</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-success">{subscriptionDetails.down_payment || '$0.00'}</h5>
+                                            </div>
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Subscription Per Month</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.subscription_amount_per_month || '$0.00'}</h5>
+                                            </div>
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Installment Count & Paid</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-dark">{paidInst} of {totalInst} Paid</h5>
+                                            </div>
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Platform Fee</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.monthly_platform_fee || '$0.00'}</h5>
+                                            </div>
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Next Billing Date</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.next_billing_date || subscriptionDetails.subscription_end_date || 'N/A'}</h5>
+                                            </div>
+                                            {subscriptionDetails.enrollment_completed_at && (
+                                                <div className="col-sm-6 col-md-3">
+                                                    <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Enrollment Completed At</p>
+                                                    <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.enrollment_completed_at}</h5>
+                                                </div>
+                                            )}
                                         </div>
+                                    </>
+                                ) : (
+                                    <div className="row g-4">
+                                        <div className="col-sm-6 col-md-3">
+                                            <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Total Payable Amount</p>
+                                            <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.payable_amount || '$0.00'}</h5>
+                                        </div>
+                                        <div className="col-sm-6 col-md-3">
+                                            <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Platform Fee</p>
+                                            <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.monthly_platform_fee || '$0.00'}</h5>
+                                        </div>
+                                        <div className="col-sm-6 col-md-3">
+                                            <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Next Billing Date</p>
+                                            <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.next_billing_date || subscriptionDetails.subscription_end_date || 'N/A'}</h5>
+                                        </div>
+                                        {subscriptionDetails.enrollment_completed_at && (
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Enrollment Completed At</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.enrollment_completed_at}</h5>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-
-                                <div className="row g-4">
-                                    <div className="col-sm-6 col-md-3">
-                                        <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Installment Plan Type</p>
-                                        <h5 className="fs-14 mb-0 fw-semibold text-dark">
-                                            {subscriptionDetails.installment_type === 1 ? 'Installment Plan' : 'One Time Payment'}
-                                        </h5>
-                                    </div>
-                                    {subscriptionDetails.down_payment && (
-                                        <div className="col-sm-6 col-md-3">
-                                            <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Down Payment</p>
-                                            <h5 className="fs-14 mb-0 fw-semibold text-success">{subscriptionDetails.down_payment}</h5>
-                                        </div>
-                                    )}
-                                    <div className="col-sm-6 col-md-3">
-                                        <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Next Installment Date</p>
-                                        <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.next_installment_date || 'N/A'}</h5>
-                                    </div>
-                                    <div className="col-sm-6 col-md-3">
-                                        <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Next Platform Fee Date</p>
-                                        <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.next_platform_fee_date || 'N/A'}</h5>
-                                    </div>
-                                    {subscriptionDetails.enrollment_completed_at && (
-                                        <div className="col-sm-6 col-md-3">
-                                            <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Enrollment Completed At</p>
-                                            <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.enrollment_completed_at}</h5>
-                                        </div>
-                                    )}
-                                </div>
                             </div>
                         </div>
 
@@ -347,9 +379,10 @@ export default function SubscriptionDetails() {
                                         className="p-datatable-sm"
                                         emptyMessage="No invoices found for this subscription."
                                     >
-                                        <Column field="id" header="Invoice ID" style={{ minWidth: '100px' }} />
+                                        <Column field="invoice_id" header="Invoice ID" style={{ minWidth: '100px' }} />
                                         <Column field="created_at" header="Invoice Date" sortable style={{ minWidth: '140px' }} />
                                         <Column field="payment_amount" header="Amount" body={amountBodyTemplate} sortable style={{ minWidth: '110px' }} />
+                                        <Column field="type" header="Type" sortable style={{ minWidth: '110px' }} />
                                         <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '110px' }} />
                                         <Column header="Action" body={actionBodyTemplate} style={{ width: '80px', textAlign: 'center' }} />
                                     </DataTable>

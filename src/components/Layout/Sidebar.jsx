@@ -126,6 +126,20 @@ const menuItems = [
     label: "Commisions",
     permission: "view commission",
   },
+
+  {
+    to: "/invoices",
+    icon: "ri-file-text-line",
+    label: "Invoices",
+    permission: "view invoices",
+  },
+  {
+    to: "/payments",
+    icon: "ri-bank-card-2-line",
+    label: "Payments",
+    permission: "view payments",
+  },
+
   {
     to: "/subscriptions",
     icon: "bx bx-sync",
@@ -138,6 +152,7 @@ const menuItems = [
     label: "Upcoming Billings",
     permission: "view subscriptions",
   },
+
   {
     to: "/appointments",
     icon: "ri-calendar-2-line",
