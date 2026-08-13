@@ -275,16 +275,15 @@ export default function FundApplication() {
       const resolvedType = fundingData.preferred_funding_type || ''
       const resolvedTimeframe = matchTimeframe(fundingData.timeframe_needed)
 
-      setFunding(prev => ({
-        ...prev,
-        requestedAmount: prev.requestedAmount || parsedAmount,
-        purpose: prev.purpose || resolvedPurpose,
-        approvedFunding: prev.approvedFunding || resolvedApproved,
-        fundingType: prev.fundingType || resolvedType,
-        timeframe: prev.timeframe || resolvedTimeframe,
-        collateral: prev.collateral || fundingData.collateral_available || '',
-        purposeNote: prev.purposeNote || fundingData.purpose_note || '',
-      }))
+      setFunding({
+        requestedAmount: parsedAmount,
+        purpose: resolvedPurpose,
+        approvedFunding: resolvedApproved,
+        fundingType: resolvedType,
+        timeframe: resolvedTimeframe,
+        collateral: fundingData.collateral_available || '',
+        purposeNote: fundingData.purpose_note || '',
+      })
 
       if (fundingData.funding_sequence_id && !fundingSequenceId) {
         setFundingSequenceId(fundingData.funding_sequence_id)

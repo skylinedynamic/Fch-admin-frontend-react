@@ -199,13 +199,13 @@ export default function FundingRequestStep({
 
       setFunding({
         ...funding,
-        requestedAmount: parsedAmount || funding.requestedAmount || '',
+        requestedAmount: parsedAmount,
         purpose: resolvedPurpose,
         approvedFunding: resolvedApprovedFunding,
         fundingType: resolvedFundingType,
         timeframe: resolvedTimeframe,
-        collateral: apiData.collateral_available || funding.collateral || '',
-        purposeNote: apiData.purpose_note || funding.purposeNote || '',
+        collateral: apiData.collateral_available || '',
+        purposeNote: apiData.purpose_note || '',
       })
     } else if (urlApprovedFunding && !funding.approvedFunding) {
       // If no API data yet, but we have a URL param, pre-fill it immediately
