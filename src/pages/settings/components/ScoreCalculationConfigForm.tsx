@@ -1322,7 +1322,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
                                     onClick={() => setActiveTab('readiness')}
                                     role="tab"
                                 >
-                                    Funding Readiness
+                                    Capital Access Readiness
                                 </button>
                             </li>
                             <li className="nav-item">

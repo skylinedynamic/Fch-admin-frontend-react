@@ -1985,3 +1985,50 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         justify-content: center !important;
     }
 }
+/* Specific fix for Funding Request Details Header responsiveness */
+@media (max-width: 991.98px) {
+    /* Stack the Title/Breadcrumb above the Buttons */
+    .page-subheader-sticky:has(a[href="/intake-review/funding-request"]) > .col-12 > .d-flex,
+    .mobile-sticky-header:has(a[href="/intake-review/funding-request"]) > .col-12 > .d-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+    
+    /* Ensure breadcrumb is strictly one row */
+    .page-subheader-sticky:has(a[href="/intake-review/funding-request"]) .breadcrumb,
+    .mobile-sticky-header:has(a[href="/intake-review/funding-request"]) .breadcrumb {
+        flex-wrap: nowrap !important;
+        overflow-x: visible !important;
+    }
+    
+    /* Ensure the button containers wrap properly */
+    .page-subheader-sticky:has(a[href="/intake-review/funding-request"]) .page-actions,
+    .mobile-sticky-header:has(a[href="/intake-review/funding-request"]) .page-actions {
+        flex-wrap: wrap !important;
+        width: 100% !important;
+        justify-content: flex-start !important;
+    }
+    
+    /* "Go to Client" gets its own row */
+    .page-subheader-sticky:has(a[href="/intake-review/funding-request"]) .page-actions .btn-info,
+    .mobile-sticky-header:has(a[href="/intake-review/funding-request"]) .page-actions .btn-info {
+        width: 100% !important;
+        white-space: nowrap !important;
+    }
+    
+    /* "Process Funding Application" and "Back" share the next row */
+    .page-subheader-sticky:has(a[href="/intake-review/funding-request"]) .page-actions .btn-primary,
+    .mobile-sticky-header:has(a[href="/intake-review/funding-request"]) .page-actions .btn-primary {
+        flex: 1 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .page-subheader-sticky:has(a[href="/intake-review/funding-request"]) .page-actions .btn-outline-secondary,
+    .mobile-sticky-header:has(a[href="/intake-review/funding-request"]) .page-actions .btn-outline-secondary {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+    }
+}
