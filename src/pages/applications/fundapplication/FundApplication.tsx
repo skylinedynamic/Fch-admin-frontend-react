@@ -114,6 +114,7 @@ export default function FundApplication() {
   const [fundingRequestId, setFundingRequestId] = useState<string | number | null>(null)
 
   const [activeStep, setActiveStep] = useState<number>(STEP_INDICES.BUSINESS_INFO)
+  const [highestVisitedStep, setHighestVisitedStep] = useState<number>(STEP_INDICES.BUSINESS_INFO)
   const [loading, setLoading] = useState(true)
   const [isNavigatingSave, setIsNavigatingSave] = useState(false)
   const [mobileOpenIdx, setMobileOpenIdx] = useState<number | null>(STEP_INDICES.BUSINESS_INFO)
@@ -397,16 +398,46 @@ export default function FundApplication() {
     [canProceedFromBusinessInfo, owner, financial, funding, disclosure, federal, attestation]
   )
 
+  const initializedRef = React.useRef(false)
+  useEffect(() => {
+    if (fundingData && !loading && !initializedRef.current) {
+      const firstInvalid = tabs.findIndex((_, index) => !isStepValid(index))
+      const initialHighest = firstInvalid === -1 ? tabs.length - 1 : firstInvalid
+      setHighestVisitedStep(initialHighest)
+      // We do not set activeStep here so the user always starts at step 1 to review
+      initializedRef.current = true
+    }
+  }, [fundingData, loading, isStepValid])
+
+  useEffect(() => {
+    setHighestVisitedStep(prev => Math.max(prev, activeStep))
+  }, [activeStep])
+
   // Check if a step is complete (for progress display)
   const isStepComplete = useCallback(
     (stepIndex: number): boolean => {
       // Document upload shows checkmark ONLY if user passed the tab AND has files
       if (stepIndex === STEP_INDICES.DOCUMENT_UPLOAD) {
-        return activeStep > STEP_INDICES.DOCUMENT_UPLOAD && Boolean(documentsData && documentsData.length > 0)
+        return stepIndex < highestVisitedStep && Boolean(documentsData && documentsData.length > 0)
       }
-      return isStepValid(stepIndex)
+
+      if (!isStepValid(stepIndex)) return false;
+
+      // Active step never shows a checkmark (it shows its number highlighted)
+      if (stepIndex === activeStep) return false;
+
+      // Steps beyond the highest visited step cannot show a checkmark, even if pre-filled
+      if (stepIndex > highestVisitedStep) return false;
+
+      // A step is only considered visually complete if all preceding steps are also valid
+      for (let i = 0; i < stepIndex; i++) {
+        if (i === STEP_INDICES.DOCUMENT_UPLOAD) continue;
+        if (!isStepValid(i)) return false;
+      }
+
+      return true;
     },
-    [activeStep, documentsData, isStepValid]
+    [activeStep, highestVisitedStep, documentsData, isStepValid]
   )
 
   // Progress calculations
