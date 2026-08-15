@@ -17,6 +17,7 @@ export default function Subscriptions() {
     const [stats, setStats] = useState({
         total_subscriptions: 0,
         active_subscriptions: 0,
+        pending_subscriptions: 0,
         expiring_soon: 0,
         expired_subscriptions: 0,
         revenue_this_month: 0
@@ -44,7 +45,9 @@ export default function Subscriptions() {
     const initFilters = () => {
         const initial = {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            subscriber_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            entity_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             enrollment_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             payable_amount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             subscription_start_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
@@ -152,21 +155,21 @@ export default function Subscriptions() {
             label: "Active Subscriptions",
             counter: stats.active_subscriptions,
             icon: "ri-checkbox-circle-line",
-            color: "warning",
+            color: "success",
         },
         {
             id: 3,
+            label: "Pending Subscriptions",
+            counter: stats.pending_subscriptions || 0,
+            icon: "ri-time-line",
+            color: "warning",
+        },
+        {
+            id: 4,
             label: "Expiring Soon",
             counter: stats.expiring_soon,
             icon: "ri-hourglass-2-line",
             color: "info",
-        },
-        {
-            id: 4,
-            label: "Revenue (This Month)",
-            counter: `${stats.revenue_this_month}`,
-            icon: "ri-money-dollar-circle-line",
-            color: "success",
         },
     ];
 

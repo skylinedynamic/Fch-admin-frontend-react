@@ -454,7 +454,8 @@ const EmailConfigurationForm: React.FC = () => {
                                                 {saving ? (
                                                     <>
                                                         <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                        <span>Saving...</span>
+                                                        <i className="ri-save-2-line fs-18"></i>
+                                                        <span>Saving Configuration ...</span>
                                                     </>
                                                 ) : (
                                                     <>
