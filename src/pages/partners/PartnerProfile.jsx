@@ -587,28 +587,66 @@ export default function PartnerProfile() {
         try {
 
 
-                const formDataToSend = buildPartnerFormDataPayload(formData, id, wasFreeTrial, partnerPlans);
+            const formDataToSend = buildPartnerFormDataPayload(formData, id, wasFreeTrial, partnerPlans);
 
-                if (id) {
-                    await updatePartner(id, formDataToSend);
-                    // Force refresh both local form data and global user session
-                    await fetchPartnerData(true);
-                    await refreshUserData();
+            if (id) {
+                await updatePartner(id, formDataToSend);
+                // Force refresh both local form data and global user session
+                await fetchPartnerData(true);
+                await refreshUserData();
 
-                    toast.success('Partner updated successfully');
-                    window.dispatchEvent(new Event('refreshActivities'));
+                toast.success('Partner updated successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
 
-                    // Redirect to next tab after update
-                    // Attach any selected documents (selected in DocumentsSection)
+                // Redirect to next tab after update
+                // Attach any selected documents (selected in DocumentsSection)
+                try {
+                    if (selectedDocumentsToAttach && selectedDocumentsToAttach.length > 0) {
+                        const filePaths = selectedDocumentsToAttach.map(f => (typeof f === 'string' ? f : (f.path || f)));
+                        await attachPartnerDocuments({
+                            partner_id: id,
+                            files: filePaths,
+                            document_type: 'Documents',
+                            entity_type: 'partners',
+                            entity_id: id
+                        });
+                        toast.success(`${filePaths.length} document(s) uploaded`);
+                        setDocumentsReloadKey(k => k + 1);
+                        setDocumentsClearKey(k => k + 1);
+                        setSelectedDocumentsToAttach([]);
+                    }
+                } catch (e) {
+                    toast.error(e.response?.data?.message || 'Failed to attach documents');
+                }
+                const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription', 'tenantConfig'];
+                const currentIndex = tabOrder.indexOf(activeTab);
+                const nextTab = tabOrder[currentIndex + 1];
+
+                if (nextTab) {
+                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: nextTab } }), 800);
+                } else {
+                    // If on last tab, stay on current tab
+                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: activeTab } }), 800);
+                }
+            } else {
+                const response = await createPartner(formDataToSend);
+                toast.success('Partner created successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
+
+                // Get the newly created partner ID from response
+                const newPartnerId = response?.data?.id || response?.id;
+
+                if (newPartnerId) {
+                    // If there are selected documents from the DocumentsSection, attach them to the new partner
                     try {
                         if (selectedDocumentsToAttach && selectedDocumentsToAttach.length > 0) {
                             const filePaths = selectedDocumentsToAttach.map(f => (typeof f === 'string' ? f : (f.path || f)));
                             await attachPartnerDocuments({
-                                partner_id: id,
+                                partner_id: newPartnerId,
                                 files: filePaths,
                                 document_type: 'Documents',
                                 entity_type: 'partners',
-                                entity_id: id
+                                entity_id: newPartnerId
                             });
                             toast.success(`${filePaths.length} document(s) uploaded`);
                             setDocumentsReloadKey(k => k + 1);
@@ -618,69 +656,31 @@ export default function PartnerProfile() {
                     } catch (e) {
                         toast.error(e.response?.data?.message || 'Failed to attach documents');
                     }
-                    const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription', 'tenantConfig'];
-                    const currentIndex = tabOrder.indexOf(activeTab);
-                    const nextTab = tabOrder[currentIndex + 1];
-
-                    if (nextTab) {
-                        setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: nextTab } }), 800);
-                    } else {
-                        // If on last tab, stay on current tab
-                        setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: activeTab } }), 800);
-                    }
+                    // Redirect to the partner profile page with Status & Agent tab active
+                    setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab: 'statusAgent' } }), 800);
                 } else {
-                    const response = await createPartner(formDataToSend);
-                    toast.success('Partner created successfully');
-                    window.dispatchEvent(new Event('refreshActivities'));
-
-                    // Get the newly created partner ID from response
-                    const newPartnerId = response?.data?.id || response?.id;
-
-                    if (newPartnerId) {
-                        // If there are selected documents from the DocumentsSection, attach them to the new partner
-                        try {
-                            if (selectedDocumentsToAttach && selectedDocumentsToAttach.length > 0) {
-                                const filePaths = selectedDocumentsToAttach.map(f => (typeof f === 'string' ? f : (f.path || f)));
-                                await attachPartnerDocuments({
-                                    partner_id: newPartnerId,
-                                    files: filePaths,
-                                    document_type: 'Documents',
-                                    entity_type: 'partners',
-                                    entity_id: newPartnerId
-                                });
-                                toast.success(`${filePaths.length} document(s) uploaded`);
-                                setDocumentsReloadKey(k => k + 1);
-                                setDocumentsClearKey(k => k + 1);
-                                setSelectedDocumentsToAttach([]);
-                            }
-                        } catch (e) {
-                            toast.error(e.response?.data?.message || 'Failed to attach documents');
-                        }
-                        // Redirect to the partner profile page with Status & Agent tab active
-                        setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab: 'statusAgent' } }), 800);
-                    } else {
-                        // Fallback to partners list if no ID returned
-                        setTimeout(() => navigate('/partners'), 800);
-                    }
+                    // Fallback to partners list if no ID returned
+                    setTimeout(() => navigate('/partners'), 800);
                 }
-            } catch (error) {
-                if (error.response?.data?.errors) {
-                    const newErrors = mapPartnerBackendErrors(error.response.data.errors);
-                    setErrors(newErrors);
-                    requestAnimationFrame(() => {
-                        const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
-                        if (firstErrorField) {
-                            firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                    });
-                } else if (error.response?.data?.message) {
-                    toast.error(error.response.data.message);
-                } else {
-                    toast.error(id ? 'Failed to update partner' : 'Failed to save partner');
-                }
-            } finally {
-                setIsSaving(false);
             }
+        } catch (error) {
+            if (error.response?.data?.errors) {
+                const newErrors = mapPartnerBackendErrors(error.response.data.errors);
+                setErrors(newErrors);
+                requestAnimationFrame(() => {
+                    const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
+                    if (firstErrorField) {
+                        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            } else if (error.response?.data?.message) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error(id ? 'Failed to update partner' : 'Failed to save partner');
+            }
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
