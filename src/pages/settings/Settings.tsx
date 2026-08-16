@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import SettingsForm from './components/SettingsForm';
 import "../../../assets/css/settings-redesign.css";
 

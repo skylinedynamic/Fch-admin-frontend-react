@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { useFundingRequestDetails, useUpdateFundingRequestStatus, useAssignLenderToFundingRequest } from '../../../modules/application';
-import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 import FundingRequestDetailLoader from './components/FundingRequestDetailLoader';
 import { getFileConfig } from '../../../config/fileTypeConfig';
@@ -16,8 +16,8 @@ import { Dialog } from 'primereact/dialog';
 import { formatCurrency } from '../../../utils/helper';
 import ReviewProgressCard from './components/ReviewProgressCard';
 import LenderMatchStats from './components/LenderMatchStats';
-import '../../../assets/css/funding-requests.css';
-
+import '../../../../assets/css/funding-requests.css';
+import { toast } from 'react-toastify';
 
 import { useAuthStore } from '../../../store/auth/authStore';
 import { getDocStatusBadgeConfig } from '../../../utils/badgeHelper';
@@ -132,15 +132,7 @@ export default function FundingRequestDetail() {
     };
 
     const getExactStatusStyles = (status: string) => {
-        const mapping: Record<string, string> = {
-            [FUNDING_REVIEW_STATUS.PENDING]: 'Pending',
-            [FUNDING_REVIEW_STATUS.ACCEPTED]: 'Accepted',
-            [FUNDING_REVIEW_STATUS.IN_PROGRESS]: 'In Progress',
-            [FUNDING_REVIEW_STATUS.APPROVED]: 'Approved',
-            [FUNDING_REVIEW_STATUS.REJECTED]: 'Rejected',
-            [FUNDING_REVIEW_STATUS.CANCELED]: 'Canceled',
-        };
-        const label = mapping[status] || 'Pending';
+        const label = status || FUNDING_REVIEW_STATUS.PENDING;
         const card = FUNDING_REVIEW_GUIDELINE_CARDS.find(c => c.label === label);
         return {
             bg: card?.bg || '#f0fdf4',
@@ -151,10 +143,6 @@ export default function FundingRequestDetail() {
 
     const getStatusBadge = (status: string) => {
         const styles = getExactStatusStyles(status);
-        const displayStatus = status === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'In Progress' :
-            status === FUNDING_REVIEW_STATUS.REJECTED ? 'Rejected' :
-                status === FUNDING_REVIEW_STATUS.CANCELED ? 'Canceled' :
-                    status === 'PENDING' ? 'Pending' : status;
 
         return (
             <span
@@ -165,7 +153,7 @@ export default function FundingRequestDetail() {
                     border: `1px solid ${styles.border}`
                 }}
             >
-                {displayStatus}
+                {status}
             </span>
         );
     };
@@ -176,34 +164,31 @@ export default function FundingRequestDetail() {
 
                 <div className="container-fluid">
                     {/* Header */}
-                    <div className="row pb-1 page-subheader-sticky bg-body">
-                        <div className="col-12">
-                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                                <div className="flex-grow-1">
-                                    <h4 className="fs-20 mb-1">Funding Request Details</h4>
-                                    <nav aria-label="breadcrumb">
-                                        <ol className="breadcrumb m-0">
-                                            <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                            <li className="breadcrumb-item"><Link to="/intake-review/funding-request">Funding Requests</Link></li>
-                                            <li className="breadcrumb-item active" aria-current="page">Review Details</li>
-                                        </ol>
-                                    </nav>
-                                </div>
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link to="/intake-review/funding-request" className="btn btn-outline-secondary w-lg waves-effect">
-                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                    </Link>
-                                </div>
-                            </div>
+                    {/* Header */}
+                    <PageHeader
+                        title="Funding Request Details"
+                        breadcrumbs={[
+                            { label: 'Funding Requests', path: '/intake-review/funding-request' },
+                            { label: 'Details' }
+                        ]}
+                    >
+                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            {(review?.borrower?.id || review?.borrower_id) && (
+                                <Link to={`/clients/${review.borrower?.id || review.borrower_id}`} className="btn btn-info waves-effect">
+                                    <i className="ri-user-line align-middle me-1"></i> Go to Client
+                                </Link>
+                            )}
+                            {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id && (
+                                <Link to={`/fund-application/${review.id}`} className="btn btn-primary waves-effect">
+                                    <i className="ri-file-list-3-line align-middle"></i> Process Application
+                                </Link>
+                            )}
+                            <Link to="/intake-review/funding-request" className="btn btn-outline-secondary w-lg waves-effect">
+                                <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                            </Link>
                         </div>
-                    </div>
-
-
-
-
-
-
-                    <div className="row mt-3 fr-style-4f667c71">
+                    </PageHeader>
+                    <div className="row">
                         <div className="col-lg-8">
                             <ReviewProgressCard
                                 status={review.status}
@@ -593,119 +578,123 @@ export default function FundingRequestDetail() {
 
                         </div>
                         {/* Right sticky column — pure CSS sticky */}
-                        <div className="col-lg-4 d-flex flex-column gap-3 fr-style-30509dca">
-                            {isHost && (
-                                <div className="card shadow-sm border-0 mb-0 rounded-3 flex-shrink-0">
-                                    <div className="card-header bg-white border-0 pt-4 pb-0">
-                                        <div className="d-flex align-items-center">
-                                            <div className="avatar-xs me-3">
-                                                <span className="avatar-title bg-light text-dark rounded fs-18">
-                                                    <i className="ri-shield-check-line"></i>
-                                                </span>
-                                            </div>
-                                            <h5 className="card-title mb-0 fs-16 fw-bold">Review Actions</h5>
-                                        </div>
-                                    </div>
-                                    <div className="card-body p-4">
-                                        <p className="text-muted fs-13 mb-3">Update the status of this funding sequence step.</p>
-
-                                        {/* Status Row */}
-                                        <div className="mb-3">
-                                            <label className="form-label fs-13 fw-semibold mb-2">Status</label>
-                                            <div className="d-flex gap-2 align-items-center">
-                                                <div className="flex-grow-1 fr-status-dropdown-wrap">
-                                                    <Dropdown
-                                                        value={selectedStatus}
-                                                        options={FUNDING_REVIEW_STATUS_OPTIONS}
-                                                        onChange={(e) => setSelectedStatus(e.value)}
-                                                        className={`w-100 d-flex align-items-center fr-status-dropdown ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
-                                                        placeholder="Select a Status"
-                                                        pt={{
-                                                            root: { className: 'w-100 rounded fr-status-dropdown-root' },
-                                                            input: { className: 'fs-14 py-0 d-flex align-items-center fr-status-dropdown-input' },
-                                                            item: { className: 'fs-14' }
-                                                        }}
-                                                    />
+                        <div className="col-lg-4" style={{ position: 'sticky', top: '133px', height: 'calc(100vh - 133px)', zIndex: 10 }}>
+                            <div className="d-flex flex-column gap-3 fr-style-30509dca" style={{ height: '100%', paddingBottom: '20px' }}>
+                                {isHost && (
+                                    <div className="card shadow-sm border-0 mb-0 rounded-3 flex-shrink-0">
+                                        <div className="card-header bg-white border-0 pt-4 pb-0">
+                                            <div className="d-flex align-items-center">
+                                                <div className="avatar-xs me-3">
+                                                    <span className="avatar-title bg-light text-dark rounded fs-18">
+                                                        <i className="ri-shield-check-line"></i>
+                                                    </span>
                                                 </div>
-                                                {/* Show Confirm button in same row ONLY if not Rejected */}
-                                                {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-2 px-4 fr-style-59ff025d fr-confirm-btn"
-                                                        onClick={() => {
-                                                            if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
-                                                                if (isHost && assignedLenderIds.length === 0) {
-                                                                    setShowMissingLenderModal(true);
+                                                <h5 className="card-title mb-0 fs-16 fw-bold">Review Actions</h5>
+                                            </div>
+                                        </div>
+                                        <div className="card-body p-4">
+                                            <p className="text-muted fs-13 mb-3">Update the status of this funding sequence step.</p>
+
+                                            {/* Status Row */}
+                                            <div className="mb-3">
+                                                <label className="form-label fs-13 fw-semibold mb-2">Status</label>
+                                                <div className="d-flex gap-2" style={{ height: '42px' }}>
+                                                    <div className="flex-grow-1" style={{ minWidth: 0, height: '100%' }}>
+                                                        <Dropdown
+                                                            value={selectedStatus}
+                                                            options={FUNDING_REVIEW_STATUS_OPTIONS}
+                                                            onChange={(e) => setSelectedStatus(e.value)}
+                                                            className={`w-100 d-flex align-items-center h-100 ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
+                                                            placeholder="Select a Status"
+                                                            pt={{
+                                                                root: { className: 'w-100 rounded h-100' },
+                                                                input: { className: 'fs-14 d-flex align-items-center h-100 text-truncate', style: { minHeight: '42px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', paddingRight: '2rem' } },
+                                                                item: { className: 'fs-14' }
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    {/* Show Confirm button in same row ONLY if not Rejected */}
+                                                    {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-1 px-3 h-100 flex-shrink-0"
+                                                            onClick={() => {
+                                                                if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
+                                                                    if (isHost && assignedLenderIds.length === 0) {
+                                                                        setShowMissingLenderModal(true);
+                                                                        return;
+                                                                    }
+                                                                }
+                                                                if (selectedStatus !== review.status) {
+                                                                    setShowStatusModal(true);
+                                                                } else {
+                                                                    toast.info('Status is unchanged.');
+                                                                }
+                                                            }}
+                                                            disabled={updateStatusMutation.isPending}
+                                                        >
+                                                            Confirm <i className="ri-arrow-right-line"></i>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Note and Confirm button below for Rejected */}
+                                            {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
+                                                <div className="mb-2 mt-3">
+                                                    <label className="form-label fs-13 fw-semibold mb-2">Reason / Note <span className="text-danger">*</span></label>
+                                                    <textarea
+                                                        className={`form-control rounded fr-style-6e003d7 ${validationErrors.reject_reason ? 'is-invalid' : 'bg-light border-0'}`}
+                                                        rows={4}
+                                                        value={rejectReason}
+                                                        onChange={(e) => {
+                                                            setRejectReason(e.target.value);
+                                                            if (validationErrors.reject_reason) {
+                                                                setValidationErrors({ ...validationErrors, reject_reason: null });
+                                                            }
+                                                        }}
+                                                        placeholder="Please provide a reason for rejection..."
+                                                    ></textarea>
+                                                    {validationErrors.reject_reason && (
+                                                        <div className="invalid-feedback d-block mt-2">
+                                                            {validationErrors.reject_reason[0]}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="mt-3">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
+                                                            onClick={() => {
+                                                                if (!rejectReason.trim()) {
+                                                                    setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
                                                                     return;
                                                                 }
-                                                            }
-                                                            if (selectedStatus !== review.status) {
                                                                 setShowStatusModal(true);
-                                                            } else {
-                                                                toast.info('Status is unchanged.');
-                                                            }
-                                                        }}
-                                                        disabled={updateStatusMutation.isPending}
-                                                    >
-                                                        Confirm <i className="ri-arrow-right-line ms-1"></i>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Note and Confirm button below for Rejected */}
-                                        {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
-                                            <div className="mb-2 mt-3">
-                                                <label className="form-label fs-13 fw-semibold mb-2">Reason / Note <span className="text-danger">*</span></label>
-                                                <textarea
-                                                    className={`form-control rounded fr-style-6e003d7 ${validationErrors.reject_reason ? 'is-invalid' : 'bg-light border-0'}`}
-                                                    rows={4}
-                                                    value={rejectReason}
-                                                    onChange={(e) => {
-                                                        setRejectReason(e.target.value);
-                                                        if (validationErrors.reject_reason) {
-                                                            setValidationErrors({ ...validationErrors, reject_reason: null });
-                                                        }
-                                                    }}
-                                                    placeholder="Please provide a reason for rejection..."
-                                                ></textarea>
-                                                {validationErrors.reject_reason && (
-                                                    <div className="invalid-feedback d-block mt-2">
-                                                        {validationErrors.reject_reason[0]}
+                                                            }}
+                                                        >
+                                                            Confirm <i className="ri-arrow-right-line ms-1"></i>
+                                                        </button>
                                                     </div>
-                                                )}
-
-                                                <div className="mt-3">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
-                                                        onClick={() => {
-                                                            if (!rejectReason.trim()) {
-                                                                setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
-                                                                return;
-                                                            }
-                                                            setShowStatusModal(true);
-                                                        }}
-                                                    >
-                                                        Confirm <i className="ri-arrow-right-line ms-1"></i>
-                                                    </button>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            <ActivitySidebar
-                                entityId={review.id}
-                                entityType={ENTITY_TYPE_FUNDING_REQUEST}
-                                loading={isUpdatingOrFetching}
-                                partnerId={review.partner_id}
-                                borrowerEmail={review.borrower?.user?.email || review.borrower?.email}
-                                partnerEmail={review.partner?.user?.email || review.partner?.email}
-                                hostEmail={review.host_email}
-                                isHost={isHost}
-                            />
+                                <ActivitySidebar
+                                    entityId={review.id}
+                                    entityType={ENTITY_TYPE_FUNDING_REQUEST}
+                                    loading={isUpdatingOrFetching}
+                                    partnerId={review.partner_id}
+                                    borrowerEmail={review.borrower?.user?.email || review.borrower?.email}
+                                    partnerEmail={review.partner?.user?.email || review.partner?.email}
+                                    hostEmail={review.host_email}
+                                    isHost={isHost}
+                                    disableSticky={true}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -758,17 +747,27 @@ export default function FundingRequestDetail() {
                                     </div>
 
                                     {/* Status Transition */}
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <span className="fs-13 text-muted fw-medium">Status Change</span>
-                                        <div className="d-flex align-items-center gap-2">
+                                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                                        <span className="fs-13 text-muted fw-medium flex-shrink-0">Status Change</span>
+                                        <div className="d-flex align-items-center justify-content-sm-end flex-wrap gap-2 text-start text-sm-end">
                                             <span
-                                                className="badge fs-12 bg-primary-subtle text-primary px-2 py-1"
+                                                className="badge fs-12 px-2 py-1"
+                                                style={{
+                                                    backgroundColor: getExactStatusStyles(review?.status || '').bg,
+                                                    color: getExactStatusStyles(review?.status || '').iconBg,
+                                                    border: `1px solid ${getExactStatusStyles(review?.status || '').border}`
+                                                }}
                                             >
                                                 {review?.status === 'IN_PROGRESS' ? 'In Progress' : review?.status}
                                             </span>
                                             <i className="ri-arrow-right-line text-muted fs-12"></i>
                                             <span
-                                                className="badge fs-12 bg-dark text-white px-2 py-1"
+                                                className="badge fs-12 px-2 py-1"
+                                                style={{
+                                                    backgroundColor: getExactStatusStyles(selectedStatus).bg,
+                                                    color: getExactStatusStyles(selectedStatus).iconBg,
+                                                    border: `1px solid ${getExactStatusStyles(selectedStatus).border}`
+                                                }}
                                             >
                                                 {selectedStatus === 'IN_PROGRESS' ? 'In Progress' : selectedStatus}
                                             </span>
@@ -807,7 +806,7 @@ export default function FundingRequestDetail() {
                                     {updateStatusMutation.isPending ? (
                                         <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...</>
                                     ) : (
-                                        <><i className="ri-checkbox-circle-line me-1"></i> {selectedStatus === FUNDING_REVIEW_STATUS.APPROVED && !isHost ? "Approve" : `Confirm ${selectedStatus}`}</>
+                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm</>
                                     )}
                                 </button>
                             </div>
@@ -856,17 +855,17 @@ export default function FundingRequestDetail() {
                                             <span className="fs-13 text-muted fw-medium">Match Analysis</span>
                                             <div className="d-flex align-items-center gap-2">
                                                 <span className={`fs-13 fw-semibold ${lenderToAssign.score_text?.includes('Excellent') ? 'text-success' :
-                                                        lenderToAssign.score_text?.includes('Good') ? 'text-warning' :
-                                                            lenderToAssign.score_text?.includes('Poor') ? 'text-danger' :
-                                                                'text-primary'
+                                                    lenderToAssign.score_text?.includes('Good') ? 'text-warning' :
+                                                        lenderToAssign.score_text?.includes('Poor') ? 'text-danger' :
+                                                            'text-primary'
                                                     }`}>
                                                     {lenderToAssign.matches_fraction || 'N/A'}
                                                 </span>
                                                 <i className="ri-arrow-right-line text-muted fs-12"></i>
                                                 <span className={`badge fs-12 text-white ${lenderToAssign.score_text?.includes('Excellent') ? 'bg-success' :
-                                                        lenderToAssign.score_text?.includes('Good') ? 'bg-warning' :
-                                                            lenderToAssign.score_text?.includes('Poor') ? 'bg-danger' :
-                                                                'bg-primary'
+                                                    lenderToAssign.score_text?.includes('Good') ? 'bg-warning' :
+                                                        lenderToAssign.score_text?.includes('Poor') ? 'bg-danger' :
+                                                            'bg-primary'
                                                     }`}>
                                                     {lenderToAssign.score_text || 'Match'}
                                                 </span>

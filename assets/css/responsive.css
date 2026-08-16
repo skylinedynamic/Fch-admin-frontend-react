@@ -1268,32 +1268,40 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
 
     .page-subheader-sticky+.row,
     .page-subheader-sticky+form,
-    .page-subheader-sticky+div {
+    .page-subheader-sticky+div,
+    .page-subheader-sticky+* {
         margin-top: 100px !important;
     }
 
     .breadcrumb {
         font-size: 11px !important;
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        white-space: nowrap !important;
-        padding-bottom: 5px !important;
-        margin-bottom: 15px !important;
-        -webkit-overflow-scrolling: touch;
+        flex-wrap: wrap !important;
+        overflow-x: visible !important;
+        white-space: normal !important;
+        padding-bottom: 2px !important;
+        margin-bottom: 0 !important;
     }
 
     .page-actions {
-        width: 100% !important;
+        width: auto !important;
         display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-end !important;
         gap: 8px !important;
-        margin-top: 5px !important;
+        margin-top: 0 !important;
+    }
+
+    .page-actions .btn,
+    .page-actions .btn-group {
+        flex: 0 1 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+        display: flex !important;
     }
 
     .page-actions .btn {
-        flex: 1 !important;
-        padding: 10px 5px !important;
+        padding: 8px 10px !important;
         font-size: 13px !important;
-        display: flex !important;
         align-items: center !important;
         justify-content: center !important;
     }
@@ -1315,6 +1323,12 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         width: 100% !important;
         border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06) !important;
+    }
+
+    .mobile-sticky-header+.row,
+    .mobile-sticky-header+div,
+    .mobile-sticky-header+* {
+        margin-top: 80px !important;
     }
 }
 
@@ -1338,6 +1352,8 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
     .tier-section,
     .verification-section,
     .credit-account-section,
+    .lenders-account-section,
+    .funding-sequnce-section,
     .lead-section {
         margin-top: 80px !important;
     }
@@ -1367,6 +1383,8 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
     .tier-section,
     .verification-section,
     .credit-account-section,
+    .lenders-account-section,
+    .funding-sequnce-section,
     .lead-section,
     .resource-section .row.g-2 {
         display: flex !important;
@@ -1850,13 +1868,18 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
 }
 
 @media (max-width: 767.98px) {
-    .table-filter .btn {
-        width: 100%;
+
+    .table-filter .btn,
+    .table-filter .btn-clear {
+        flex: 1 1 0 !important;
+        /* Force equal width */
         margin-top: 5px;
+        min-width: 0 !important;
     }
 
     .table-filter .d-flex.gap-2 {
-        flex-direction: column;
+        flex-direction: row !important;
+        width: 100%;
     }
 }
 
@@ -1936,6 +1959,11 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
    Partner Details Section — Responsive Styles
    ============================================================ */
 @media (max-width: 991.98px) {
+    .partner-info-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 16px !important;
+    }
+
     .partner-info-grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 16px !important;

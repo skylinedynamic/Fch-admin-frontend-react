@@ -1,21 +1,16 @@
 import { Link } from 'react-router-dom';
 import { usePermissions } from '../../../lib/auth/usePermissions';
+import PageHeader from '../../common/PageHeader';
 
 export default function EmployeeListHeader({ selection, onDeleteSelected }) {
     const { hasPermission } = usePermissions();
     return (
-        <div className="row pb-1 mobile-sticky-header">
-            <div className="col-12">
-                <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                    <div className="flex-grow-1">
-                        <h4 className="fs-20 mb-1">Employees</h4>
-                        <nav aria-label="breadcrumb" className="d-block">
-                            <ol className="breadcrumb m-0">
-                                <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
-                                <li className="breadcrumb-item active" aria-current="page">Employees</li>
-                            </ol>
-                        </nav>
-                    </div>
+        <PageHeader 
+            title="Employees" 
+            breadcrumbs={[
+                { label: 'Employees' }
+            ]} 
+        >
                     <div className="mt-0">
                         <form onSubmit={(e) => e.preventDefault()}>
                             <div className="row g-3 mb-0 align-items-center">
@@ -51,8 +46,6 @@ export default function EmployeeListHeader({ selection, onDeleteSelected }) {
                             </div>
                         </form>
                     </div>
-                </div>
-            </div>
-        </div>
+        </PageHeader>
     );
 }

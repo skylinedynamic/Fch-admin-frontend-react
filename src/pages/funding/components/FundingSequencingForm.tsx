@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
 import { toast } from 'react-toastify';
@@ -622,76 +623,68 @@ export default function FundingSequencingForm() {
             `}</style>
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-18 fw-semibold mb-1">{isEditMode ? 'Edit Funding Sequence' : 'New Funding Sequence'}</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/funding" className="text-muted">Funding Sequence</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{isEditMode ? 'Edit' : 'Add'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            {!(activeTab === 'visibility' && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link
-                                        to={activeTab === 'visibility' && activeLenderId !== null ? `/funding/visibility-rules/${id}` : '/funding'}
-                                        className="btn btn-outline-secondary w-lg waves-effect"
-                                    >
-                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                    </Link>
-                                    <button
-                                        type="submit"
-                                        form="funding-sequencing-form"
-                                        className="btn btn-primary w-lg waves-effect"
-                                        disabled={loading || initialLoading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                {isEditMode ? 'Updating...' : 'Saving...'}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-3-line align-middle me-1"></i> {isEditMode ? 'Update' : 'Save'}
-                                            </>
-                                        )}
+                <PageHeader 
+                    title={isEditMode ? 'Edit Funding Sequence' : 'New Funding Sequence'} 
+                    breadcrumbs={[
+                        { label: 'Funding Sequence', path: '/funding' },
+                        { label: isEditMode ? 'Edit' : 'Add' }
+                    ]} 
+                >
+                    {!(activeTab === 'visibility' && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
+                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            <Link
+                                to={activeTab === 'visibility' && activeLenderId !== null ? `/funding/visibility-rules/${id}` : '/funding'}
+                                className="btn btn-outline-secondary w-lg waves-effect"
+                            >
+                                <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                            </Link>
+                            <button
+                                type="submit"
+                                form="funding-sequencing-form"
+                                className="btn btn-primary w-lg waves-effect"
+                                disabled={loading || initialLoading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        {isEditMode ? 'Updating...' : 'Saving...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="ri-save-3-line align-middle me-1"></i> {isEditMode ? 'Update' : 'Save'}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            {visibilitySelectionCount > 0 ? (
+                                <div className="btn-group">
+                                    <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                    <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span className="visually-hidden">Toggle dropdown</span>
                                     </button>
+                                    <ul className="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button type="button" className="dropdown-item text-danger" onClick={() => setShowVisibilityBulkDelete(true)}>
+                                                <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                            </button>
+                                        </li>
+                                    </ul>
                                 </div>
                             ) : (
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    {visibilitySelectionCount > 0 ? (
-                                        <div className="btn-group">
-                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button type="button" className="dropdown-item text-danger" onClick={() => setShowVisibilityBulkDelete(true)}>
-                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary w-lg waves-effect"
-                                            onClick={() => navigate(`/funding/visibility-rules/${id}/configuration`)}
-                                        >
-                                            <i className="ri-add-line align-middle me-1"></i> Add Underwriting Logic
-                                        </button>
-                                    )}
-                                </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary waves-effect"
+                                    style={{ whiteSpace: 'nowrap' }}
+                                    onClick={() => navigate(`/funding/visibility-rules/${id}/configuration`)}
+                                >
+                                    <i className="ri-add-line align-middle me-1"></i> Add Underwriting Logic
+                                </button>
                             )}
-
                         </div>
-                    </div>
-                </div>
+                    )}
+                </PageHeader>
 
                 {initialLoading ? (
                     <div className="row">
@@ -748,26 +741,28 @@ export default function FundingSequencingForm() {
 
                                                 <div className="row g-4 align-items-start">
                                                     {/* Row 1 */}
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Funding Sequence Name <span className="text-danger">*</span></label>
                                                             <input type="text" name="name" className={`form-control rounded-3 py-2 ${(errors as any).name ? 'is-invalid' : ''}`} value={formData.name} onChange={handleChange} placeholder="Borrower-facing display name" />
                                                             {(errors as any).name && <div className="invalid-feedback">{(errors as any).name}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Amount Range <span className="text-danger">*</span></label>
-                                                            <div className="d-flex gap-2 align-items-start">
-                                                                <div className="w-50">
+                                                            <div className="row g-2 align-items-start">
+                                                                <div className="col-12 col-sm-5">
                                                                     <div className="input-group">
                                                                         <span className={`input-group-text bg-light text-muted px-3 ${(errors as any).min_amount ? 'border-danger text-danger' : ''}`}>$</span>
                                                                         <input type="number" min="0" onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }} name="min_amount" className={`form-control py-2 ${(errors as any).min_amount ? 'is-invalid border-danger' : ''}`} value={formData.min_amount} onChange={handleChange} placeholder="Min" />
                                                                     </div>
                                                                     {(errors as any).min_amount && <div className="text-danger mt-1 fs-13">{(errors as any).min_amount}</div>}
                                                                 </div>
-                                                                <div className="text-muted fw-bold mt-2 pt-1">-</div>
-                                                                <div className="w-50">
+                                                                <div className="col-auto d-none d-sm-flex align-items-center pt-1">
+                                                                    <span className="text-muted fw-bold">-</span>
+                                                                </div>
+                                                                <div className="col-12 col-sm-5">
                                                                     <div className="input-group">
                                                                         <span className={`input-group-text bg-light text-muted px-3 ${(errors as any).max_amount ? 'border-danger text-danger' : ''}`}>$</span>
                                                                         <input type="number" min="0" onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }} name="max_amount" className={`form-control py-2 ${(errors as any).max_amount ? 'is-invalid border-danger' : ''}`} value={formData.max_amount} onChange={handleChange} placeholder="Max" />
@@ -779,7 +774,7 @@ export default function FundingSequencingForm() {
                                                     </div>
 
                                                     {/* Row 2 */}
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <label className="form-label text-dark fw-medium mb-0">Funding Group <span className="text-danger">*</span></label>
@@ -799,7 +794,7 @@ export default function FundingSequencingForm() {
                                                         </div>
                                                     </div>
                                                     {/* Row 4 */}
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <label className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
@@ -818,7 +813,7 @@ export default function FundingSequencingForm() {
                                                     </div>
 
                                                     {/* Row 3 */}
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Icon <span className="text-danger">*</span></label>
                                                             <div className="position-relative" ref={dropdownRef}>
@@ -848,7 +843,7 @@ export default function FundingSequencingForm() {
                                                             {(errors as any).icon && <small className="text-danger mt-1 d-block">{(errors as any).icon}</small>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Color</label>
                                                             <Dropdown
@@ -865,35 +860,35 @@ export default function FundingSequencingForm() {
                                                         </div>
                                                     </div>
                                                     {/* Row 5 */}
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Subtitle <span className="text-danger">*</span></label>
                                                             <input type="text" name="subtitle" className={`form-control rounded-3 py-2 ${(errors as any).subtitle ? 'is-invalid' : ''}`} value={formData.subtitle} onChange={handleChange} placeholder="e.g. Revolving access to working capital" />
                                                             {(errors as any).subtitle && <div className="invalid-feedback">{(errors as any).subtitle}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Terms</label>
                                                             <input type="text" name="terms" className={`form-control rounded-3 py-2 ${(errors as any).terms ? 'is-invalid' : ''}`} value={formData.terms} onChange={handleChange} placeholder="e.g. 3–24 months, 12–60 months" />
                                                         </div>
                                                     </div>
                                                     {/* Row 4 */}
-                                                    <div className="col-lg-4 col-md-4">
+                                                    <div className="col-lg-4 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Order</label>
                                                             <input type="number" name="sort_order" className={`form-control rounded-3 py-2 ${(errors as any).sort_order ? 'is-invalid' : ''}`} value={formData.sort_order} onChange={handleChange} placeholder="e.g. 1" />
                                                             {(errors as any).sort_order && <div className="invalid-feedback">{(errors as any).sort_order}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-4 col-md-4">
+                                                    <div className="col-lg-4 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Action URL</label>
                                                             <input type="text" name="action_url" className={`form-control rounded-3 py-2 ${(errors as any).action_url ? 'is-invalid' : ''}`} value={formData.action_url} onChange={handleChange} placeholder="e.g. https://example.com/apply" />
                                                             {(errors as any).action_url && <div className="invalid-feedback">{(errors as any).action_url}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-4 col-md-4">
+                                                    <div className="col-lg-4 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
                                                             <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
@@ -901,24 +896,25 @@ export default function FundingSequencingForm() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Uses</label>
-                                                            <MultiSelect
-                                                                value={formData.uses}
+                                                            <Dropdown
+                                                                value={formData.uses && formData.uses.length > 0 ? formData.uses[0] : null}
                                                                 options={USES_OPTIONS}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value ? [e.value] : [] } })}
                                                                 optionLabel="label"
                                                                 optionValue="value"
                                                                 placeholder="Select uses..."
-                                                                className="w-100 rounded-3 slim-multiselect"
-                                                                display="chip"
+                                                                filter
+                                                                filterPlaceholder="Search uses..."
+                                                                className="w-100 rounded-3 slim-dropdown"
                                                             />
                                                         </div>
                                                     </div>
 
                                                     {/* Row 7 */}
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Status <span className="text-danger">*</span></label>
                                                             <Dropdown

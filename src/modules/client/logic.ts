@@ -263,6 +263,13 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFre
     }
     // When NOT converting, send no enrollment sub-object at all (update is for personal/business fields only)
 
+    // Filter out completely empty bank account rows before sending to backend
+    if (payload.bank_accounts && Array.isArray(payload.bank_accounts)) {
+        payload.bank_accounts = payload.bank_accounts.filter(
+            (acc: any) => acc.id || acc.bank_name || acc.account_open_date
+        );
+    }
+
     return payload;
 };
 

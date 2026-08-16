@@ -102,3 +102,9 @@ export const deleteFundingType = async (id: number | string) => {
 };
 
 
+
+// fetchBorrowerFunding: Gets funding sequences for the partner-assisted wizard
+export const fetchBorrowerFunding = async (params: any = {}) => {
+    const response = await apiClient.get('/common/funding-sequencings/grouped', { params });
+    return response.data;
+};

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Dropdown } from 'primereact/dropdown';
 import { Column } from 'primereact/column';
@@ -202,58 +203,44 @@ export default function TiersList() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Manage Tier</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active"><Link to="/tiers">Manage Tier</Link></li>
-                                    </ol>
-                                </nav>
+                <PageHeader
+                    title="Manage Tier"
+                    breadcrumbs={[
+                        { label: 'Manage Tier' }
+                    ]}
+                >
+                    <div className="d-flex gap-2">
+                        {isDeveloper && hasPermission('update tier') && (
+                            <div className="btn-group">
+                                {Array.isArray(selectedTiers) && selectedTiers.length > 0 ? (
+                                    <>
+                                        <button type="button" className="btn bg-success text-white fw-medium">
+                                            Actions
+                                        </button>
+                                        <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <span className="visually-hidden">Toggle dropdown</span>
+                                        </button>
+                                        <ul className="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <button
+                                                    type="button"
+                                                    className="dropdown-item text-danger"
+                                                    onClick={openDeleteModal}
+                                                >
+                                                    <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </>
+                                ) : (
+                                    <Link to="/tiers/create" className="btn btn-primary fw-medium waves-effect waves-light">
+                                        <i className="ri-add-fill me-1 align-bottom"></i> Add Tier
+                                    </Link>
+                                )}
                             </div>
-                            <div className="mt-0">
-                                <form onSubmit={(e) => e.preventDefault()}>
-                                    <div className="row g-3 mb-0 align-items-center">
-                                        <div className="col-sm-auto">
-                                            {isDeveloper && hasPermission('update tier') && (
-                                                <div className="btn-group">
-                                                    {Array.isArray(selectedTiers) && selectedTiers.length > 0 ? (
-                                                        <>
-                                                            <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
-                                                                Actions
-                                                            </button>
-                                                            <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                                <span className="visually-hidden">Toggle dropdown</span>
-                                                            </button>
-                                                            <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                                                                <li>
-                                                                    <button
-                                                                        type="button"
-                                                                        className="dropdown-item text-danger"
-                                                                        onClick={openDeleteModal}
-                                                                    >
-                                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                                    </button>
-                                                                </li>
-                                                            </ul>
-                                                        </>
-                                                    ) : (
-                                                        <Link to="/tiers/create" className="btn btn-primary fw-medium waves-effect waves-light">
-                                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Tier
-                                                        </Link>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row row-table-fit tier-section">
                     <div className="col-12">

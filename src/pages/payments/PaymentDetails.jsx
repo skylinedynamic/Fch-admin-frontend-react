@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Modal from 'bootstrap/js/dist/modal';
+import PageHeader from '../common/PageHeader';
 import { fetchPaymentById, approvePayment, rejectPayment } from '../../modules/payment/services';
 import { toast } from 'react-toastify';
 import {
@@ -202,20 +203,13 @@ export default function PaymentDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row">
-                    <div className="col-12 d-flex justify-content-between align-items-center py-2">
-                        <div>
-                            <h4 className="fs-20 mb-1">Payment Details</h4>
-                            <nav aria-label="breadcrumb">
-                                <ol className="breadcrumb m-0 fs-12 text-muted">
-                                    <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                    <li className="breadcrumb-item"><Link to="/payments" className="text-muted">Payments</Link></li>
-                                    <li className="breadcrumb-item active text-primary fw-medium" aria-current="page">Details</li>
-                                </ol>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader
+                    title="Payment Details"
+                    breadcrumbs={[
+                        { label: 'Payments', path: '/payments' },
+                        { label: 'Details' }
+                    ]}
+                />
 
                 {loading ? (
                     <DetailsSkeletonLoader />

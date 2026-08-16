@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { useSeoSettings, useDeleteSeoSettings } from '../../modules/cms/queries';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
@@ -117,48 +118,39 @@ export default function SeoSettings() {
         <div className="page-content page-content-fit seo-section">
             <div className="container-fluid">
                 {/* Header with Breadcrumbs */}
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">SEO Settings</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active">CMS</li>
-                                        <li className="breadcrumb-item active" aria-current="page">SEO Settings</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <div className="btn-group">
-                                    {selectedRows.length > 0 && hasPermission('delete seo settings') ? (
-                                        <>
-                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle Dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button type="button" className="dropdown-item text-danger" onClick={() => setShowDeleteModal(true)}>
-                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </>
-                                    ) : hasPermission('update seo settings') ? (
-                                        <button
-                                            className="btn btn-primary fw-medium waves-effect waves-light"
-                                            onClick={() => navigate('/cms/seo-settings/create')}
-                                        >
-                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Page SEO
+                {/* Header with Breadcrumbs */}
+                <PageHeader 
+                    title="SEO Settings" 
+                    breadcrumbs={[
+                        { label: 'CMS' },
+                        { label: 'SEO Settings' }
+                    ]} 
+                >
+                    <div className="btn-group">
+                        {selectedRows.length > 0 && hasPermission('delete seo settings') ? (
+                            <>
+                                <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button type="button" className="dropdown-item text-danger" onClick={() => setShowDeleteModal(true)}>
+                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                         </button>
-                                    ) : null}
-                                </div>
-                            </div>
-                        </div>
+                                    </li>
+                                </ul>
+                            </>
+                        ) : hasPermission('update seo settings') ? (
+                            <button
+                                className="btn btn-primary fw-medium waves-effect waves-light"
+                                onClick={() => navigate('/cms/seo-settings/create')}
+                            >
+                                <i className="ri-add-fill me-1 align-bottom"></i> Add Page SEO
+                            </button>
+                        ) : null}
                     </div>
-                </div>
+                </PageHeader>
 
                 {/* Filters and Table Section */}
                 <div className="row row-table-fit">

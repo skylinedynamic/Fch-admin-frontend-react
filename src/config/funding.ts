@@ -66,7 +66,7 @@ export const FUNDING_REVIEW_STATUS = {
     APPROVED: 'Approved',
     ACCEPTED: 'Accepted',
     REJECTED: 'Rejected',
-    CANCELED: 'Canceled'
+    CANCELED: 'Cancelled'
 };
 
 export const FUNDING_REVIEW_STATUS_COLORS: Record<string, string> = {
@@ -84,7 +84,7 @@ export const FUNDING_REVIEW_STATUS_OPTIONS = [
     { label: 'In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
     { label: 'Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
     { label: 'Rejected', value: FUNDING_REVIEW_STATUS.REJECTED },
-    { label: 'Canceled', value: FUNDING_REVIEW_STATUS.CANCELED }
+    { label: 'Cancelled', value: FUNDING_REVIEW_STATUS.CANCELED }
 ];
 
 export const FUNDING_CATEGORY_OPTIONS: SelectOption[] = [
@@ -99,18 +99,31 @@ export const FUNDING_CATEGORY_OPTIONS: SelectOption[] = [
 ];
 
 export const USES_OPTIONS: SelectOption[] = [
-    { label: 'Working Capital', value: 'Working Capital' },
+    { label: 'Accounts Receivable', value: 'Accounts Receivable' },
+    { label: 'Business Acquisition', value: 'Business Acquisition' },
+    { label: 'Business Expansion', value: 'Business Expansion' },
+    { label: 'Business Line of Credit', value: 'Business Line of Credit' },
+    { label: 'Commercial Real Estate Purchase', value: 'Commercial Real Estate Purchase' },
+    { label: 'Commercial Real Estate Refinance', value: 'Commercial Real Estate Refinance' },
+    { label: 'Debt Refinance / Consolidation', value: 'Debt Refinance / Consolidation' },
+    { label: 'Equipment Lease', value: 'Equipment Lease' },
+    { label: 'Equipment Purchase', value: 'Equipment Purchase' },
+    { label: 'Franchise Purchase', value: 'Franchise Purchase' },
+    { label: 'Furniture, Fixtures & Equipment (FF&E)', value: 'Furniture, Fixtures & Equipment (FF&E)' },
+    { label: 'Ground-Up Construction', value: 'Ground-Up Construction' },
     { label: 'Inventory', value: 'Inventory' },
+    { label: 'Land Purchase / Development', value: 'Land Purchase / Development' },
+    { label: 'Marketing / Advertising', value: 'Marketing / Advertising' },
+    { label: 'Owner Occupied Commercial Property', value: 'Owner Occupied Commercial Property' },
+    { label: 'Partner Buyout', value: 'Partner Buyout' },
     { label: 'Payroll', value: 'Payroll' },
-    { label: 'Expansion', value: 'Expansion' },
-    { label: 'Equipment', value: 'Equipment' },
-    { label: 'Marketing', value: 'Marketing' },
-    { label: 'Refinance Debt', value: 'Refinance Debt' },
-    { label: 'New Construction', value: 'New Construction' },
-    { label: 'Ground-Up Development', value: 'Ground-Up Development' },
-    { label: 'Land Development', value: 'Land Development' },
-    { label: 'Renovation', value: 'Renovation' },
-    { label: 'Commercial Property', value: 'Commercial Property' },
+    { label: 'Professional Services', value: 'Professional Services' },
+    { label: 'Renovation / Tenant Improvements', value: 'Renovation / Tenant Improvements' },
+    { label: 'Startup Costs', value: 'Startup Costs' },
+    { label: 'Technology / Software', value: 'Technology / Software' },
+    { label: 'Transportation / Fleet', value: 'Transportation / Fleet' },
+    { label: 'Working Capital', value: 'Working Capital' },
+    { label: 'Other', value: 'Other' },
 ];
 
 export const READINESS_FACTOR_STATUS_OPTIONS: SelectOption[] = [
@@ -290,40 +303,40 @@ export const FUNDING_REVIEW_TIMELINE_STEPS = [
     },
     {
         key: FUNDING_REVIEW_STATUS.PENDING,
-        label: 'Pending',
+        label: FUNDING_REVIEW_STATUS.PENDING,
         icon: 'ri-time-line',
     },
     {
         key: FUNDING_REVIEW_STATUS.ACCEPTED,
-        label: 'Accepted',
+        label: FUNDING_REVIEW_STATUS.ACCEPTED,
         icon: 'ri-checkbox-circle-line',
     },
     {
         key: FUNDING_REVIEW_STATUS.IN_PROGRESS,
-        label: 'In Progress',
+        label: FUNDING_REVIEW_STATUS.IN_PROGRESS,
         subtext: 'Under Review',
         icon: 'ri-user-3-fill',
     },
     {
         key: FUNDING_REVIEW_STATUS.APPROVED,
-        label: 'Approved',
+        label: FUNDING_REVIEW_STATUS.APPROVED,
         icon: 'ri-user-follow-line',
     },
     {
         key: FUNDING_REVIEW_STATUS.REJECTED,
-        label: 'Rejected',
+        label: FUNDING_REVIEW_STATUS.REJECTED,
         icon: 'ri-user-unfollow-line',
     },
     {
         key: FUNDING_REVIEW_STATUS.CANCELED,
-        label: 'Canceled',
+        label: FUNDING_REVIEW_STATUS.CANCELED,
         icon: 'ri-stop-circle-line',
     },
 ];
 
 export const FUNDING_REVIEW_GUIDELINE_CARDS = [
     {
-        label: 'Pending',
+        label: FUNDING_REVIEW_STATUS.PENDING,
         desc: 'Request submitted and waiting for review.',
         bg: '#f0fdf4',
         border: '#bbf7d0',
@@ -331,7 +344,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-time-line'
     },
     {
-        label: 'Accepted',
+        label: FUNDING_REVIEW_STATUS.ACCEPTED,
         desc: 'Review completed successfully.',
         bg: '#fefce8',
         border: '#fef08a',
@@ -339,7 +352,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-check-line'
     },
     {
-        label: 'In Progress',
+        label: FUNDING_REVIEW_STATUS.IN_PROGRESS,
         desc: 'Admin can reviewing the request.',
         bg: '#eff6ff',
         border: '#bfdbfe',
@@ -347,7 +360,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-shield-user-fill'
     },
     {
-        label: 'Approved',
+        label: FUNDING_REVIEW_STATUS.APPROVED,
         desc: 'Borrower can start funding application.',
         bg: '#f0fdf4',
         border: '#bbf7d0',
@@ -355,7 +368,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-check-line'
     },
     {
-        label: 'Rejected',
+        label: FUNDING_REVIEW_STATUS.REJECTED,
         desc: 'Request declined missing information.',
         bg: '#fef2f2',
         border: '#fecaca',
@@ -363,7 +376,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-close-line'
     },
     {
-        label: 'Canceled',
+        label: FUNDING_REVIEW_STATUS.CANCELED,
         desc: 'Request has been canceled.',
         bg: '#fef2f2',
         border: '#fecaca',

@@ -1138,6 +1138,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                     handleInputChange({ target: { name: 'business_start_date', value: dateString } });
                                 }}
                                 dateFormat="dd M, yy"
+                                maxDate={new Date()}
                                 placeholder="Select date"
                                 showIcon
                                 className="w-100"

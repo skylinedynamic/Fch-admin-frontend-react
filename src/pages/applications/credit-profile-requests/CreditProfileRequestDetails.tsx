@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { useCreditProfileRequestDetails } from '../../../modules/credit-profile-request';
 import CreditProfileRequestDetailsLoader from '../../../components/Loader/CreditProfileRequestDetailsLoader';
 import { formatSSN, formatDate } from '../../../utils/formatters';
@@ -86,27 +87,19 @@ export default function CreditProfileRequestDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Application Details</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/intake-review/credit-profile-requests">Credit Profile Requests</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Details</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/intake-review/credit-profile-requests" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                            </div>
-                        </div>
+                <PageHeader 
+                    title="Application Details" 
+                    breadcrumbs={[
+                        { label: 'Credit Profile Requests', path: '/intake-review/credit-profile-requests' },
+                        { label: 'Details' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <Link to="/intake-review/credit-profile-requests" className="btn btn-outline-secondary w-lg waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </Link>
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row g-4">
                     {/* ── Left column (8) ── */}

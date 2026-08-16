@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { Dropdown } from 'primereact/dropdown';
 
 import { toast } from 'react-toastify';
@@ -157,22 +158,13 @@ export default function TierForm() {
         return (
             <div className="page-content">
                 <div className="container-fluid">
-                    <div className="row pb-1 page-subheader-sticky bg-body">
-                        <div className="col-12">
-                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                                <div className="flex-grow-1">
-                                    <h4 className="fs-20 mb-1">Edit Tier</h4>
-                                    <nav aria-label="breadcrumb">
-                                        <ol className="breadcrumb m-0">
-                                            <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                            <li className="breadcrumb-item"><Link to="/tiers">Manage Tier</Link></li>
-                                            <li className="breadcrumb-item active">Edit</li>
-                                        </ol>
-                                    </nav>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <PageHeader 
+                        title="Edit Tier" 
+                        breadcrumbs={[
+                            { label: 'Manage Tier', path: '/tiers' },
+                            { label: 'Edit' }
+                        ]} 
+                    />
                     <div className="row">
                         <div className="col-xxl-12">
                             <div className="card">
@@ -189,19 +181,13 @@ export default function TierForm() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">{isEditMode ? 'Edit Tier' : 'Add New Tier'}</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/tiers">Manage Tier</Link></li>
-                                        <li className="breadcrumb-item active">{isEditMode ? 'Edit' : 'Add'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
+                <PageHeader 
+                    title={isEditMode ? 'Edit Tier' : 'Add New Tier'} 
+                    breadcrumbs={[
+                        { label: 'Manage Tier', path: '/tiers' },
+                        { label: isEditMode ? 'Edit' : 'Add' }
+                    ]} 
+                >
                             <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                                 <Link to="/tiers" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
@@ -317,11 +303,8 @@ export default function TierForm() {
                                         )}
                                     </>
                                 )}
-
                             </div>
-                        </div>
-                    </div>
-                </div>
+                </PageHeader>
 
                 <div className="row tier-section">
                     <div className="col-xxl-12">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import "../../../assets/css/dropdown-validation.css";
+import PageHeader from '../common/PageHeader';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors } from '../../modules/partner';
@@ -685,62 +686,51 @@ export default function PartnerProfile() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                {/* Page Title */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Partner Profile</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/partners">Partners</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Partner Profile</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
+                <PageHeader
+                    title={id ? (formData.company_name || formData.full_name || 'Partner Profile') : 'Create Partner'}
+                    breadcrumbs={[
+                        { label: 'Partners', path: '/partners' },
+                        { label: id ? (formData.company_name || formData.full_name || 'Partner Profile') : 'Create Partner' }
+                    ]}
+                >
+                    <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
+                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                    </Link>
 
-                                {/* Generic Partner Save Button */}
-                                {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig'].includes(activeTab) && (
-                                    ((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
-                                        <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
-                                            {isSaving ? (
-                                                <>
-                                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                    {id ? 'Updating...' : 'Saving...'}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
-                                                </>
-                                            )}
-                                        </button>
-                                    )
+                    {/* Generic Partner Save Button */}
+                    {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig'].includes(activeTab) && (
+                        ((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
+                            <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
+                                {isSaving ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        {id ? 'Updating...' : 'Saving...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                    </>
                                 )}
+                            </button>
+                        )
+                    )}
 
-                                {/* Specific Tenant Config Save Button */}
-                                {activeTab === 'tenantConfig' && id && hasPermission('update partners') && (
-                                    <button type="submit" form="tenant-config-form" className="btn btn-primary w-lg waves-effect" disabled={isSaving}>
-                                        {isSaving ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                Updating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-3-line align-middle me-1"></i> Update
-                                            </>
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    {/* Specific Tenant Config Save Button */}
+                    {activeTab === 'tenantConfig' && id && hasPermission('update partners') && (
+                        <button type="submit" form="tenant-config-form" className="btn btn-primary w-lg waves-effect" disabled={isSaving}>
+                            {isSaving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Updating...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-save-3-line align-middle me-1"></i> Update
+                                </>
+                            )}
+                        </button>
+                    )}
+                </PageHeader>
 
                 {/* Metrics Strip */}
                 <div className="row pt-1">

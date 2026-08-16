@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import InvoiceStats from './components/InvoiceStats';
 import InvoiceFilters from './components/InvoiceFilters';
@@ -186,23 +187,10 @@ export default function Invoices() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Invoices</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0 fs-12 text-muted">
-                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active text-primary font-weight-bold" aria-current="page">Invoices</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Invoices" 
+                    breadcrumbs={[{ label: 'Invoices' }]} 
+                />
 
                 {initialLoading ? (
                     <ListSkeletonLoader />

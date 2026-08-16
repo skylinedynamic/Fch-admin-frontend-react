@@ -31,9 +31,9 @@ const FundingReadinessTab: React.FC<FundingReadinessTabProps> = ({
                     </div>
                 </div>
                 <div className="flex-grow-1">
-                    <h6 className="mb-1 text-dark fw-semibold fs-14">Funding Readiness Score Rules</h6>
+                    <h6 className="mb-1 text-dark fw-semibold fs-14">Capital Access Readiness Scores Rules</h6>
                     <p className="text-muted mb-0 fs-13">
-                        Define weight configuration for the funding readiness evaluation.
+                        Define weight configuration for the Capital Access Readiness evaluation.
                         The sum of all factor weights must equal exactly <strong>100%</strong>.
                     </p>
                 </div>
@@ -171,9 +171,9 @@ const FundingReadinessTab: React.FC<FundingReadinessTabProps> = ({
                                                 disabled={loading}
                                             />
                                             <span className="input-group-text">%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        </div>
+                                    </td>
+                                </tr>
                                 <tr>
                                     <td>
                                         <div className="d-flex align-items-center gap-2">
@@ -556,7 +556,7 @@ const FundingReadinessTab: React.FC<FundingReadinessTabProps> = ({
                                             <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_personal_t1" value={formData.rev_rule_personal_t1} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{width: '80px'}} name="rev_subscore_strong" value={formData.rev_subscore_strong} onChange={handleInputChange} disabled={loading} />
+                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{ width: '80px' }} name="rev_subscore_strong" value={formData.rev_subscore_strong} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                     </tr>
                                     {/* Moderate */}
@@ -577,7 +577,7 @@ const FundingReadinessTab: React.FC<FundingReadinessTabProps> = ({
                                             <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_personal_t1) - 1) || 0} disabled />
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{width: '80px'}} name="rev_subscore_moderate" value={formData.rev_subscore_moderate} onChange={handleInputChange} disabled={loading} />
+                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{ width: '80px' }} name="rev_subscore_moderate" value={formData.rev_subscore_moderate} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                     </tr>
                                     {/* Limited */}
@@ -598,7 +598,7 @@ const FundingReadinessTab: React.FC<FundingReadinessTabProps> = ({
                                             <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_personal_t2) - 1) || 0} disabled />
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{width: '80px'}} name="rev_subscore_limited" value={formData.rev_subscore_limited} onChange={handleInputChange} disabled={loading} />
+                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{ width: '80px' }} name="rev_subscore_limited" value={formData.rev_subscore_limited} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                     </tr>
                                     {/* Weak */}
@@ -615,7 +615,7 @@ const FundingReadinessTab: React.FC<FundingReadinessTabProps> = ({
                                             <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_personal_t3) - 1) || 0} disabled />
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{width: '80px'}} name="rev_subscore_weak" value={formData.rev_subscore_weak} onChange={handleInputChange} disabled={loading} />
+                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{ width: '80px' }} name="rev_subscore_weak" value={formData.rev_subscore_weak} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                     </tr>
                                 </tbody>

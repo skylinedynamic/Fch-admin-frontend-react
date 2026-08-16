@@ -13,11 +13,11 @@ import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { FundingApplication as FundingApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
+import { downloadFundingApplication, downloadFundingSignature } from '../../../modules/application/services';
+import { toast } from 'react-toastify';
 
 import { APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
-
-
-
+import PageHeader from '../../common/PageHeader';
 export default function FundingApplication() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
@@ -188,27 +188,14 @@ export default function FundingApplication() {
     };
 
 
-
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header Section */}
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Funding Applications</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Funding Applications</li>
-                                    </ol>
-                                </nav>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Funding Applications" 
+                    breadcrumbs={[{ label: 'Funding Applications' }]} 
+                />
 
                 {/* Statistics Cards */}
                 <div className="row funding-section">
@@ -262,15 +249,18 @@ export default function FundingApplication() {
                                             />
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <Calendar
-                                                value={dateRange}
-                                                onChange={(e: any) => setDateRange(e.value)}
-                                                selectionMode="range"
-                                                readOnlyInput
-                                                placeholder="Select Date Range"
-                                                className="w-100 employee-filter-dropdown"
-                                                showIcon
-                                            />
+                                            <div className="search-box">
+                                                <Calendar
+                                                    value={dateRange}
+                                                    onChange={(e: any) => setDateRange(e.value)}
+                                                    selectionMode="range"
+                                                    readOnlyInput
+                                                    placeholder="Select Date Range"
+                                                    className="w-100"
+                                                    inputClassName="form-control search bg-light border-light"
+                                                />
+                                                <i className="ri-calendar-2-line search-icon"></i>
+                                            </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="d-flex gap-2">

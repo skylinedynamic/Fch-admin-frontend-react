@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -218,31 +219,23 @@ export default function CreditAccountsList() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Credit Accounts</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item">Credit Builder</li>
-                                        <li className="breadcrumb-item active">Credit Accounts</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <div className="btn-group">
-                                    {hasPermission('create credit accounts') && (
-                                        <Link to="/credit-accounts/create" className="btn btn-primary fw-medium waves-effect waves-light">
-                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Account
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
+                <PageHeader 
+                    title="Credit Accounts" 
+                    breadcrumbs={[
+                        { label: 'Credit Builder', path: '#' },
+                        { label: 'Credit Accounts' }
+                    ]} 
+                >
+                    <div className="mt-0">
+                        <div className="btn-group">
+                            {hasPermission('create credit accounts') && (
+                                <Link to="/credit-accounts/create" className="btn btn-primary fw-medium waves-effect waves-light">
+                                    <i className="ri-add-fill me-1 align-bottom"></i> Add Account
+                                </Link>
+                            )}
                         </div>
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row row-table-fit credit-account-section">
                     <div className="col-12">

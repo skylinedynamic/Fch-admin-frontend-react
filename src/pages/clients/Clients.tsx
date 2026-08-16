@@ -9,6 +9,7 @@ import ClientListTable from './components/ClientListTable';
 import { Client, ClientListStatistics } from '../../modules/client/types';
 import { AuthUser } from '../../store/auth';
 import { toast } from 'react-toastify';
+import PageHeader from '../common/PageHeader';
 
 export default function Clients() {
     const navigate = useNavigate();
@@ -76,48 +77,36 @@ export default function Clients() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Clients</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Clients</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <div className="btn-group">
-                                    {hasPermission('delete clients') && selectedClients.length > 0 ? (
-                                        <>
-                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
-                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </>
-                                    ) : hasPermission('create clients') ? (
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary fw-medium waves-effect waves-light"
-                                            onClick={() => navigate('/clients/create')}
-                                        >
-                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Client
+                <PageHeader
+                    title="Clients"
+                    breadcrumbs={[{ label: 'Clients' }]}
+                >
+                    <div className="btn-group">
+                        {hasPermission('delete clients') && selectedClients.length > 0 ? (
+                            <>
+                                <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle dropdown</span>
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                         </button>
-                                    ) : null}
-                                </div>
-                            </div>
-                        </div>
+                                    </li>
+                                </ul>
+                            </>
+                        ) : hasPermission('create clients') ? (
+                            <button
+                                type="button"
+                                className="btn btn-primary fw-medium waves-effect waves-light"
+                                onClick={() => navigate('/clients/create')}
+                            >
+                                <i className="ri-add-fill me-1 align-bottom"></i> Add Client
+                            </button>
+                        ) : null}
                     </div>
-                </div>
+                </PageHeader>
 
                 {/* Statistics Cards */}
                 <ClientStats

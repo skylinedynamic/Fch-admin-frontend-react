@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { getLenders, deleteLender, getLenderProductCategories } from '../../modules/lender/services';
 import { Lender } from '../../modules/lender/types';
 import { DataTable, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import TableLoader from '../../components/Loader/TableLoader';
+import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function LendersList() {
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
     const [lenders, setLenders] = useState<Lender[]>([]);
     const [loading, setLoading] = useState(true);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -128,51 +131,39 @@ export default function LendersList() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Lenders</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Lenders</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <div className="btn-group">
-                                    {selectedLenders.length > 0 ? (
-                                        <>
-                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button type="button" className="dropdown-item text-danger" onClick={() => setShowDeleteModal(true)}>
-                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary fw-medium waves-effect waves-light"
-                                            onClick={() => navigate('/lenders/create')}
-                                        >
-                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Lender
+                <PageHeader 
+                    title="Lenders" 
+                    breadcrumbs={[{ label: 'Lenders' }]} 
+                >
+                    <div className="btn-group">
+                        {hasPermission('delete lenders') && Array.isArray(selectedLenders) && selectedLenders.length > 0 ? (
+                            <>
+                                <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button type="button" className="dropdown-item text-danger" onClick={() => setShowDeleteModal(true)}>
+                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                         </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                                    </li>
+                                </ul>
+                            </>
+                        ) : (
+                            <button
+                                type="button"
+                                className="btn btn-primary fw-medium waves-effect waves-light"
+                                onClick={() => navigate('/lenders/create')}
+                            >
+                                <i className="ri-add-fill me-1 align-bottom"></i> Add Lender
+                            </button>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
                 {/* Filters and Table */}
-                <div className="row row-table-fit mt-3">
+                <div className="row row-table-fit lenders-account-section">
                     <div className="col-lg-12">
                         <div className="card shadow-sm border-0">
                             <div className="card-body">

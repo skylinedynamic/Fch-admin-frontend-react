@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import PageHeader from '../common/PageHeader';
 import ClientForm from './components/ClientForm';
 import { ClientInfoSectionRef } from './components/ClientInfoSection';
 import { BusinessFinancialsSectionRef } from './components/BusinessFinancialsSection';
@@ -65,6 +66,14 @@ export default function ClientDetails() {
         total_tickets: 0,
         total_documents: 0
     });
+
+    // Clear errors when navigating between different clients
+    useEffect(() => {
+        setErrors({});
+    }, [id]);
+
+    // const [statsLoading, setStatsLoading] = useState(false); // Managed by Query
+    const [settings, setSettings] = useState<any>(null);
     const [nonHostPlan, setNonHostPlan] = useState<any>(null);
 
     // Refs for Child Components
@@ -160,6 +169,7 @@ export default function ClientDetails() {
     const handleTabChange = (tabInfo: string) => {
         if (activeTab === tabInfo) return;
 
+        setErrors({}); // Clear errors when switching tabs
         setIsLoading(true);
         setActiveTab(tabInfo);
 
@@ -319,14 +329,14 @@ export default function ClientDetails() {
 
                     // Remap enrollment.* dotted keys → flat UI field names
                     const enrollmentKeyMap: Record<string, string> = {
-                        'enrollment':                       'enrollment',
-                        'enrollment.plan_id':               'plan_id',
-                        'enrollment.enrollment_type':       'enrollment_type',
-                        'enrollment.amount':                'enrollment_amount',
-                        'enrollment.down_payment':          'installment_down_payment',
-                        'enrollment.months':                'installment_months',
-                        'enrollment.monthly_amount':        'installment_monthly_amount',
-                        'enrollment.remaining_balance':     'installment_remaining_balance',
+                        'enrollment': 'enrollment',
+                        'enrollment.plan_id': 'plan_id',
+                        'enrollment.enrollment_type': 'enrollment_type',
+                        'enrollment.amount': 'enrollment_amount',
+                        'enrollment.down_payment': 'installment_down_payment',
+                        'enrollment.months': 'installment_months',
+                        'enrollment.monthly_amount': 'installment_monthly_amount',
+                        'enrollment.remaining_balance': 'installment_remaining_balance',
                     };
 
                     Object.keys(backendErrors).forEach(key => {
@@ -351,47 +361,36 @@ export default function ClientDetails() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                {/* Page Header */}
-                <div className="row pb-1 bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">{id ? 'Edit Client' : 'Add Client'} Details</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/clients">Clients</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{id ? 'Edit Client' : 'Add Client'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE, ENROLLMENT_TABS.CAPITAL_ACCESS, ENROLLMENT_TABS.FUNDING_REQUESTS].includes(activeTab as any) && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-primary w-lg waves-effect"
-                                        onClick={handleSave}
-                                        disabled={isSaving || isLoading}
-                                    >
-                                        {isSaving ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                {id ? 'Updating...' : 'Saving...'}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
-                                            </>
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader
+                    title="Client Profile"
+                    breadcrumbs={[
+                        { label: 'Clients', path: '/clients' },
+                        { label: 'Client Profile' }
+                    ]}
+                >
+                    <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
+                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                    </Link>
+                    {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE, ENROLLMENT_TABS.CAPITAL_ACCESS, ENROLLMENT_TABS.FUNDING_REQUESTS].includes(activeTab as any) && (
+                        <button
+                            type="button"
+                            className="btn btn-primary w-lg waves-effect"
+                            onClick={handleSave}
+                            disabled={isSaving || isLoading}
+                        >
+                            {isSaving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    {id ? 'Updating...' : 'Saving...'}
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                </>
+                            )}
+                        </button>
+                    )}
+                </PageHeader>
 
                 {/* Metrics Strip (Only show if editing) */}
                 {id && (
@@ -486,7 +485,7 @@ export default function ClientDetails() {
                                             Business Financials
                                         </button>
                                     </li>
-                                    <li className="nav-item">
+                                    {/* <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === ENROLLMENT_TABS.CHECKLIST ? 'active' : ''}`}
                                             onClick={() => handleTabChange(ENROLLMENT_TABS.CHECKLIST)}
@@ -496,7 +495,7 @@ export default function ClientDetails() {
                                         >
                                             Document Checklist
                                         </button>
-                                    </li>
+                                    </li> */}
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === ENROLLMENT_TABS.DOCUMENTS ? 'active' : ''}`}
