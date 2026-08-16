@@ -45,7 +45,8 @@ export default function DisclosuresStep({
     }
 
     try {
-      await saveDisclosures(payload)
+      const response = await saveDisclosures(payload)
+      toast.success(response?.message || 'Disclosures saved successfully!')
       return true
     } catch (error: any) {
       console.error('Error saving disclosures:', error)
