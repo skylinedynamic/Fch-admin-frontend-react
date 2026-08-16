@@ -143,6 +143,13 @@ export default function Billing() {
                                     loading={loading}
                                 />
 
+                                <div className="alert alert-info bg-info-subtle border-0 text-dark p-3 rounded-3 mb-3 fs-13 shadow-xs d-flex align-items-center gap-2.5" role="alert">
+                                    <i className="ri-information-fill fs-20 text-info flex-shrink-0 me-2"></i>
+                                    <div>
+                                        <strong>Note:</strong> This Upcoming Billing list only includes <strong>Active Subscribers</strong> whose subscription ends within the next <strong>10 days</strong>.
+                                    </div>
+                                </div>
+
                                 <BillingTable
                                     data={billings}
                                     loading={loading}

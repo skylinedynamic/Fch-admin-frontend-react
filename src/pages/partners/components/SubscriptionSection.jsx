@@ -3,20 +3,22 @@ import { Calendar } from 'primereact/calendar';
 
 import { parseDate } from '../../../utils/formatters';
 import { Dropdown } from 'primereact/dropdown';
-import { PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, SUBSCRIPTION_PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_STATUS_OPTIONS } from '../../../config/partnerTypeOptions';
+import { PARTNER_TYPES, SUBSCRIPTION_PARTNER_TYPES } from '../../../config/partnerTypeOptions';
+import { ENROLLMENT_TYPE_ONE_TIME, ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_OPTIONS, SUBSCRIPTION_STATUS_OPTIONS } from '../../../config/subscriptionConfig';
+
+const partnerTypeOptions = [
+    { label: PARTNER_TYPES.CERTIFIED, value: PARTNER_TYPES.CERTIFIED },
+    { label: PARTNER_TYPES.WHITE_LABEL, value: PARTNER_TYPES.WHITE_LABEL }
+];
 
 export default function SubscriptionSection({ formData, handleInputChange, errors = {} }) {
-    // Helper to get selected partner type config
-    const selectedPartnerType = PARTNER_TYPE_OPTIONS.find(pt => pt.value === formData.partner_type);
-
     const isReferral = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.REFERRAL;
     const isFounding = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.FOUNDING;
     const isExecutive = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.EXECUTIVE;
     const isFoundingOrExecutive = isFounding || isExecutive;
 
-    // Fix: Use enrollment_type instead of payment_type
-    const isOneTime = formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR;
-    const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPES.PAYMENT_PLAN_STR;
+    const isOneTime = formData.enrollment_type === ENROLLMENT_TYPE_ONE_TIME;
+    const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPE_INSTALLMENT;
 
     // Effect 1: Set Defaults when Partner Type or Enrollment Type changes
     useEffect(() => {
@@ -109,7 +111,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                     <label className="form-label">Partner Type <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.partner_type || ''}
-                        options={PARTNER_TYPE_OPTIONS || []}
+                        options={partnerTypeOptions}
                         onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
                         optionLabel="label"
                         optionValue="value"
@@ -129,7 +131,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                     <label className="form-label">Enrollment Type <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.enrollment_type || ''}
-                        options={PAYMENT_TYPE_OPTIONS || []}
+                        options={ENROLLMENT_TYPE_OPTIONS}
                         onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
                         optionLabel="label"
                         optionValue="value"

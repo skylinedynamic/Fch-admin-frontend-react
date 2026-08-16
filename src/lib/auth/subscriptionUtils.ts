@@ -1,5 +1,5 @@
 import { UserSubscription } from './auth';
-import { SUBSCRIPTION_STATUS_TYPES } from '../../config/partnerTypeOptions';
+import { STATUS_ACTIVE, STATUS_CANCELLED, STATUS_COMPLETED } from '../../config/subscriptionConfig';
 
 /**
  * Helper: convert string date to midnight Date object, or null
@@ -37,43 +37,29 @@ export function isSubscriptionRestricted(subscription: UserSubscription | null |
         return false; // Active free trial → not restricted
     }
 
+    const subStatus = String(subscription.subscription_status || '').toLowerCase().trim();
+    const activeStatus = String(STATUS_ACTIVE || 'active').toLowerCase().trim();
+    const cancelledStatus = String(STATUS_CANCELLED || 'cancelled').toLowerCase().trim();
+    const completedStatus = String(STATUS_COMPLETED || 'completed').toLowerCase().trim();
+
+    // If status is not active, cancelled, or completed → restricted
+    if (subStatus && subStatus !== activeStatus && subStatus !== cancelledStatus && subStatus !== completedStatus) {
+        return true;
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const endDate = toDate(subscription.subscription_end_date);
-    const nextInstallmentDate = toDate(subscription.next_installment_date);
-    const nextPlatformFeeDate = toDate(subscription.next_platform_fee_date);
-    const phase = subscription.phase;
 
-    // Subscription inactive → restricted
-    if ((subscription.subscription_status || '') !== SUBSCRIPTION_STATUS_TYPES.ACTIVE) {
+    // If subscription_end_date is null, no need to lock
+    if (!endDate) {
+        return false;
+    }
+
+    // Lock profile/menu if current date is past subscription_end_date
+    if (today > endDate) {
         return true;
-    }
-
-    // Enrollment phase → check next installment
-    if (phase === 'enrollment') {
-        if (nextInstallmentDate && today >= nextInstallmentDate) {
-            return true;
-        }
-        return false;
-    }
-
-    // Subscription ended → platform fee may apply
-    if (endDate && today >= endDate) {
-        // Platform fee due today or past → restricted
-        if (nextPlatformFeeDate && today >= nextPlatformFeeDate) {
-            return true;
-        }
-        // Package ended, platform fee not yet due → ok
-        return false;
-    }
-
-    // Platform fee phase before subscription end (rare edge case)
-    if (phase === 'platform_fee') {
-        if (nextPlatformFeeDate && today >= nextPlatformFeeDate) {
-            return true;
-        }
-        return false;
     }
 
     // Default → not restricted

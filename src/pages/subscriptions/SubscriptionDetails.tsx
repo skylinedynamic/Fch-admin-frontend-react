@@ -8,6 +8,8 @@ import { toast } from 'react-toastify';
 import BillingDetailsLoader from '../../components/Loader/BillingDetailsLoader';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import { INVOICE_STATUS_COLORS } from '../../config/invoiceConfig';
+import { ENROLLMENT_TYPE_INSTALLMENT, checkIsInstallmentPlan } from '../../config/subscriptionConfig';
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 
 interface SubscriptionDetailData {
     id: string | number;
@@ -168,17 +170,17 @@ export default function SubscriptionDetails() {
     }
 
     // Determine Entity Type & Configuration
-    const entityType = subscriptionDetails.entity_type?.toLowerCase() || '';
-    const isPartner = entityType === 'partner';
-    const isBorrower = entityType === 'borrower';
+    const entityType = subscriptionDetails.entity_type || '';
+    const isPartner = entityType === ENTITY_TYPE_PARTNER;
+    const isBorrower = entityType === ENTITY_TYPE_BORROWER;
     const isAdditionalSeat = !isPartner && !isBorrower;
 
     const subscriptionTitle = subscriptionDetails.subscription_title || (
-        isPartner ? 'Partner Subscription' : isBorrower ? 'Borrower Subscription' : 'Additional Seat Subscription'
+        isPartner ? `${ENTITY_TYPE_PARTNER} Subscription` : isBorrower ? `${ENTITY_TYPE_BORROWER} Subscription` : 'Additional Seat Subscription'
     );
 
     const typeColor = isPartner ? 'primary' : isBorrower ? 'success' : 'info';
-    const accountType = isPartner ? 'Partner' : isBorrower ? 'Borrower' : (subscriptionDetails.entity_type || 'User / Additional Seat');
+    const accountType = isPartner ? ENTITY_TYPE_PARTNER : isBorrower ? ENTITY_TYPE_BORROWER : (subscriptionDetails.entity_type || 'User / Additional Seat');
 
     const subscriberName = subscriptionDetails.subscriber_name || subscriptionDetails.partner_name || subscriptionDetails.borrower_name || 'N/A';
     const subscriberEmail = subscriptionDetails.subscriber_email || subscriptionDetails.partner_email || subscriptionDetails.borrower_email || 'N/A';
@@ -187,9 +189,7 @@ export default function SubscriptionDetails() {
     const paidInst = subscriptionDetails.installments_paid || 0;
     const totalInst = subscriptionDetails.installment_count || 12;
     const percentage = totalInst > 0 ? Math.min(Math.round((paidInst / totalInst) * 100), 100) : 0;
-    const isInstallment = subscriptionDetails.installment_type === 1 ||
-        subscriptionDetails.enrollment_type?.toLowerCase().includes('payment plan') ||
-        subscriptionDetails.enrollment_type?.toLowerCase().includes('installment');
+    const isInstallment = subscriptionDetails.installment_type === 1;
 
     return (
         <div className="page-content">
@@ -422,7 +422,7 @@ export default function SubscriptionDetails() {
                                                 <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Total Payable Amount</p>
                                                 <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.payable_amount || '$0.00'}</h5>
                                             </div>
-                                            {subscriptionDetails.down_payment && (
+                                            {isInstallment && subscriptionDetails.down_payment && (
                                                 <div className="col-sm-6 col-md-3">
                                                     <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Down Payment</p>
                                                     <h5 className="fs-14 mb-0 fw-semibold text-success">{subscriptionDetails.down_payment}</h5>
@@ -492,7 +492,7 @@ export default function SubscriptionDetails() {
                                                 <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Total Enrollment Payable</p>
                                                 <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.payable_amount || '$0.00'}</h5>
                                             </div>
-                                            {subscriptionDetails.down_payment && (
+                                            {isInstallment && subscriptionDetails.down_payment && (
                                                 <div className="col-sm-6 col-md-3">
                                                     <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Down Payment</p>
                                                     <h5 className="fs-14 mb-0 fw-semibold text-success">{subscriptionDetails.down_payment}</h5>

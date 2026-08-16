@@ -7,6 +7,7 @@ import { logout } from '../../lib/auth'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
+import { ENTITY_TYPE_PARTNER } from '../../config/appConfig'
 
 export default function Header() {
   const navigate = useNavigate()
@@ -155,7 +156,7 @@ export default function Header() {
         }}
       >
         {/* ── My Subscription (non-host partner only) ───────────── */}
-        {user?.entity_type === 'Partner' && Number(user?.is_host) === 0 && (
+        {user?.entity_type === ENTITY_TYPE_PARTNER && Number(user?.is_host) === 0 && (
           <Link
             className="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
             to="/my-subscription"
@@ -190,7 +191,7 @@ export default function Header() {
 
         {/* ── My Agreement (partner-only) ──────────────────── */}
         {user?.is_agreement_signed &&
-          user?.entity_type === 'Partner' &&
+          user?.entity_type === ENTITY_TYPE_PARTNER &&
           Number(user?.is_host) === 0 && (
             <Link
               className="dropdown-item d-flex align-items-center gap-2 py-2 px-3"

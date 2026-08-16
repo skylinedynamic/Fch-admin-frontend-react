@@ -16,11 +16,6 @@ export type AuthUser = {
 export type UserSubscription = {
   enrollment_type?: string
   subscription_status?: string
-  first_payment_date?: string | null
-  platform_fee_start_date?: string | null
-  next_installment_date?: string | null
-  next_platform_fee_date?: string | null
-  enrollment_completed_at?: string | null
   subscription_start_date?: string | null
   subscription_end_date?: string | null
   phase?: string

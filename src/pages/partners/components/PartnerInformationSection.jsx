@@ -5,7 +5,7 @@ import { Calendar } from 'primereact/calendar';
 
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
-import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES, PARTNER_TYPES } from '../../../config/partnerTypeOptions';
+import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
@@ -13,7 +13,7 @@ import InstallmentDetailsModal from '../../../components/Common/Payment/Installm
 import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
-import { ENROLLMENT_TYPE_INSTALLMENT } from '../../../config/subscriptionConfig';
+import { ENROLLMENT_TYPE_ONE_TIME, ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_OPTIONS } from '../../../config/subscriptionConfig';
 
 
 export default function PartnerInformationSection({
@@ -70,7 +70,7 @@ export default function PartnerInformationSection({
 
     const currentPaymentAmount = enrollmentAmount || payableAmount || (selectedPlan?.total_amount || 0);
     const currentPlatformFee = monthlyPlatformFee || recurringAmount || platformFee || (selectedPlan?.platform_fee || 0);
-    const isOneTime = enrollmentType === ENROLLMENT_TYPES.ONE_TIME_STR || enrollmentType?.includes('One Time');
+    const isOneTime = (enrollmentType || '').toString().toLowerCase() === ENROLLMENT_TYPE_ONE_TIME.toLowerCase() || (enrollmentType || '').toString().toLowerCase().includes('one time');
     const partnerTypeName = selectedPlan?.partner_type || formData.partner_type;
     const enrollmentTypeName = selectedPlan?.enrollment_type || enrollmentType;
     const enrollmentTypeSlug = (selectedPlan?.enrollment_type_slug || formData.enrollment_type_slug || '').toString().toLowerCase();
@@ -667,7 +667,7 @@ export default function PartnerInformationSection({
                                             });
                                         }
 
-                                        return options.length > 0 ? options : (PAYMENT_TYPE_OPTIONS || []);
+                                        return options.length > 0 ? options : (ENROLLMENT_TYPE_OPTIONS || []);
                                     })()}
                                     onChange={(e) => {
                                         handleInputChange({ target: { name: 'enrollment_type', value: e.value } });

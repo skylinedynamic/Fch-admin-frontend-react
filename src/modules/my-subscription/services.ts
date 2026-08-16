@@ -14,3 +14,8 @@ export const updateMySubscriptionDefaultPaymentMethod = async (payload: { provid
   const { data } = await apiClient.post('/common/my-subscription/update-payment-method', payload);
   return data;
 };
+
+export const cancelMySubscription = async () => {
+  const { data } = await apiClient.post('/common/my-subscription/cancel-subscription');
+  return data;
+};

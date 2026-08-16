@@ -120,7 +120,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     useEffect(() => {
         const fetchFixedPlan = async () => {
             try {
-                const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
+                const response = await apiClient.get('/common/partner-plans/fixed_enrollment');
                 if (response.data?.status && response.data?.data?.total_amount) {
                     setFixedEnrollmentAmount(Number(response.data.data.total_amount));
                 }

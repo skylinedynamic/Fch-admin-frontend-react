@@ -30,11 +30,6 @@ export async function login(email: string, password: string, remember: boolean =
       setUserSubscription({
         enrollment_type: user.enrollment_type as string | undefined,
         subscription_status: user.subscription_status as string | undefined,
-        first_payment_date: user.first_payment_date as string | null | undefined,
-        platform_fee_start_date: user.platform_fee_start_date as string | null | undefined,
-        next_installment_date: user.next_installment_date as string | null | undefined,
-        next_platform_fee_date: user.next_platform_fee_date as string | null | undefined,
-        enrollment_completed_at: user.enrollment_completed_at as string | null | undefined,
         subscription_start_date: user.subscription_start_date as string | null | undefined,
         subscription_end_date: user.subscription_end_date as string | null | undefined,
         phase: user.phase as string | undefined,

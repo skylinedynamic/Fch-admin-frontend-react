@@ -14,7 +14,28 @@ export default function ConfirmationModal({ show, onHide, onConfirm, loading, ti
                 keyboard: false,
             });
         }
-    }, [modalRef]);
+
+        const handleHidden = () => {
+            if (onHide) onHide();
+        };
+
+        const modalEl = modalRef.current;
+        modalEl?.addEventListener('hidden.bs.modal', handleHidden);
+
+        return () => {
+            modalEl?.removeEventListener('hidden.bs.modal', handleHidden);
+            const modal = modalInstanceRef.current;
+            if (modal) {
+                try {
+                    modal.hide();
+                    if (typeof modal.dispose === 'function') modal.dispose();
+                } catch (_) {}
+            }
+            modalInstanceRef.current = null;
+            document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove());
+            document.body.classList.remove('modal-open');
+        };
+    }, []);
 
     // Show/Hide Logic
     useEffect(() => {

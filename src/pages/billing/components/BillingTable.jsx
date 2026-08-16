@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 
-export default function BillingTable({ 
-    data, loading, totalRecords, page, perPage, 
-    onPage, onSort, onFilter, filters, 
-    sortField, sortOrder 
+export default function BillingTable({
+    data, loading, totalRecords, page, perPage,
+    onPage, onSort, onFilter, filters,
+    sortField, sortOrder
 }) {
     const navigate = useNavigate();
 
@@ -17,7 +17,7 @@ export default function BillingTable({
 
     const typeBodyTemplate = (rowData) => {
         const type = rowData.upcoming_billing_type || 'Installment';
-        const color = type === 'Platform Fee' ? 'info' : 'primary';
+        const color = 'primary';
         return <span className={`badge bg-${color}-subtle text-${color}`}>{type}</span>;
     };
 
@@ -50,7 +50,7 @@ export default function BillingTable({
     };
 
     const statusBodyTemplate = (rowData) => {
-        const status = rowData.status || 'Active';
+        const status = rowData.status;
         return <span className="badge bg-success-subtle text-success">{status}</span>;
     };
 

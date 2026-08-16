@@ -264,17 +264,17 @@ export default function BillingDetails() {
                                                             </h5>
                                                         </div>
                                                         <div className="col-sm-6">
-                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Next Installment Date</p>
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Start Date</p>
                                                             <h5 className="fs-14 mb-0">
                                                                 <i className="ri-calendar-event-line text-muted align-middle me-1"></i>
-                                                                {subscription.next_installment_date || 'N/A'}
+                                                                {subscription.subscription_start_date || 'N/A'}
                                                             </h5>
                                                         </div>
                                                         <div className="col-sm-6">
-                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Next Platform Fee Date</p>
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">End Date</p>
                                                             <h5 className="fs-14 mb-0">
                                                                 <i className="ri-calendar-event-line text-muted align-middle me-1"></i>
-                                                                {subscription.next_platform_fee_date || 'N/A'}
+                                                                {subscription.subscription_end_date || 'N/A'}
                                                             </h5>
                                                         </div>
                                                     </div>

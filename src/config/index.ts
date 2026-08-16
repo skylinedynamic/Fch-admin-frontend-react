@@ -9,7 +9,7 @@
  */
 
 // Partner related configurations
-export { PARTNER_TYPE_OPTIONS, type PartnerTypeOption } from './partnerTypeOptions';
+export { PARTNER_TYPES, SUBSCRIPTION_PARTNER_TYPES } from './partnerTypeOptions';
 
 // User/Employee related configurations
 export { GENDER_OPTIONS, type GenderOption } from './genderOptions';

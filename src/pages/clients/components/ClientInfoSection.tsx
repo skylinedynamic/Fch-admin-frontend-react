@@ -23,8 +23,8 @@ import { locationData, getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
 import { useAuthStore } from '../../../store/auth/authStore';
-import { ENROLLMENT_TYPE_INSTALLMENT } from '../../../config/subscriptionConfig';
-import { PARTNER_TYPES, CLIENT_TYPE_LABELS, ENROLLMENT_INSTALLMENTS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
+import { ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_ONE_TIME } from '../../../config/subscriptionConfig';
+import { PARTNER_TYPES, CLIENT_TYPE_LABELS } from '../../../config/partnerTypeOptions';
 import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import { Link } from 'react-router-dom';
@@ -115,7 +115,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
         const fetchFixedPlan = async () => {
             try {
-                const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
+                const response = await apiClient.get('/common/partner-plans/fixed_enrollment');
                 if (response.data?.status && response.data?.data?.total_amount) {
                     setFixedEnrollmentAmount(Number(response.data.data.total_amount));
                 }
@@ -197,26 +197,26 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             // The API now returns all enrollment/subscription fields nested under enrollment_details.
             const ed = apiData.enrollment_details;
             if (ed) {
-                apiData.plan_id                                = ed.plan_id || '';
-                apiData.enrollment_type                        = ed.enrollment_type || '';
-                apiData.payable_amount                         = ed.payable_amount !== undefined && ed.payable_amount !== null ? ed.payable_amount : '';
-                apiData.payment_amount                         = ed.payable_amount !== undefined && ed.payable_amount !== null ? ed.payable_amount : '';
-                apiData.total_subscription_amount              = ed.total_subscription_amount !== undefined && ed.total_subscription_amount !== null ? ed.total_subscription_amount : '';
-                apiData.monthly_platform_fee                   = ed.monthly_platform_fee !== undefined && ed.monthly_platform_fee !== null ? ed.monthly_platform_fee : '';
-                apiData.enrollment_amount                      = ed.enrollment_amount !== undefined && ed.enrollment_amount !== null ? ed.enrollment_amount : '';
-                apiData.installment_applied                    = ed.installment_applied === true || ed.installment_applied === 'true' || ed.installment_applied === 1 || ed.installment_applied === '1';
-                apiData.installment_down_payment               = Number(ed.installment_down_payment || 0);
-                apiData.installment_months                     = Number(ed.installment_months || 0);
-                apiData.installment_monthly_amount             = Number(ed.installment_monthly_amount || 0);
-                apiData.installment_remaining_balance          = Number(ed.installment_remaining_balance || 0);
+                apiData.plan_id = ed.plan_id || '';
+                apiData.enrollment_type = ed.enrollment_type || '';
+                apiData.payable_amount = ed.payable_amount !== undefined && ed.payable_amount !== null ? ed.payable_amount : '';
+                apiData.payment_amount = ed.payable_amount !== undefined && ed.payable_amount !== null ? ed.payable_amount : '';
+                apiData.total_subscription_amount = ed.total_subscription_amount !== undefined && ed.total_subscription_amount !== null ? ed.total_subscription_amount : '';
+                apiData.monthly_platform_fee = ed.monthly_platform_fee !== undefined && ed.monthly_platform_fee !== null ? ed.monthly_platform_fee : '';
+                apiData.enrollment_amount = ed.enrollment_amount !== undefined && ed.enrollment_amount !== null ? ed.enrollment_amount : '';
+                apiData.installment_applied = ed.installment_applied === true || ed.installment_applied === 'true' || ed.installment_applied === 1 || ed.installment_applied === '1';
+                apiData.installment_down_payment = Number(ed.installment_down_payment || 0);
+                apiData.installment_months = Number(ed.installment_months || 0);
+                apiData.installment_monthly_amount = Number(ed.installment_monthly_amount || 0);
+                apiData.installment_remaining_balance = Number(ed.installment_remaining_balance || 0);
                 // Formatted display strings
-                apiData.payable_amount_formatted               = ed.payable_amount_formatted || '';
-                apiData.total_subscription_amount_formatted    = ed.total_subscription_amount_formatted || '';
-                apiData.monthly_platform_fee_formatted         = ed.monthly_platform_fee_formatted || '';
-                apiData.enrollment_amount_formatted            = ed.enrollment_amount_formatted || '';
-                apiData.installment_down_payment_formatted     = ed.installment_down_payment_formatted || '';
-                apiData.installment_monthly_amount_formatted   = ed.installment_monthly_amount_formatted || '';
-                apiData.installment_remaining_balance_formatted= ed.installment_remaining_balance_formatted || '';
+                apiData.payable_amount_formatted = ed.payable_amount_formatted || '';
+                apiData.total_subscription_amount_formatted = ed.total_subscription_amount_formatted || '';
+                apiData.monthly_platform_fee_formatted = ed.monthly_platform_fee_formatted || '';
+                apiData.enrollment_amount_formatted = ed.enrollment_amount_formatted || '';
+                apiData.installment_down_payment_formatted = ed.installment_down_payment_formatted || '';
+                apiData.installment_monthly_amount_formatted = ed.installment_monthly_amount_formatted || '';
+                apiData.installment_remaining_balance_formatted = ed.installment_remaining_balance_formatted || '';
             }
 
             // Sync enrollment_payment from payable_amount for edit mode consistency
@@ -482,14 +482,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                             // Remap enrollment.* dotted keys → flat UI field names
                             const enrollmentKeyMap: Record<string, string> = {
-                                'enrollment':                       'enrollment',
-                                'enrollment.plan_id':               'plan_id',
-                                'enrollment.enrollment_type':       'enrollment_type',
-                                'enrollment.amount':                'enrollment_amount',
-                                'enrollment.down_payment':          'installment_down_payment',
-                                'enrollment.months':                'installment_months',
-                                'enrollment.monthly_amount':        'installment_monthly_amount',
-                                'enrollment.remaining_balance':     'installment_remaining_balance',
+                                'enrollment': 'enrollment',
+                                'enrollment.plan_id': 'plan_id',
+                                'enrollment.enrollment_type': 'enrollment_type',
+                                'enrollment.amount': 'enrollment_amount',
+                                'enrollment.down_payment': 'installment_down_payment',
+                                'enrollment.months': 'installment_months',
+                                'enrollment.monthly_amount': 'installment_monthly_amount',
+                                'enrollment.remaining_balance': 'installment_remaining_balance',
                             };
 
                             Object.keys(backendErrors).forEach(key => {
@@ -1252,80 +1252,80 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <>
                         {/* Enrollment Type Dropdown — shown when creating or when converting from free trial */}
                         {!(!!clientId && !wasFreeTrial) && (
-                        <div className="col-lg-6">
-                            <div className="mb-3">
-                                <label htmlFor="enrollment_type" className="form-label">
-                                    Enrollment Type <span className="text-danger">*</span>
-                                </label>
-                                <Dropdown
-                                    inputId="plan_id"
-                                    value={formData.plan_id}
-                                    options={enrollmentOptions}
-                                    onChange={(e) => {
-                                        const selectedVal = e.value;
-                                        const selectedOption = enrollmentOptions.find((opt: any) => String(opt.value) === String(selectedVal));
+                            <div className="col-lg-6">
+                                <div className="mb-3">
+                                    <label htmlFor="enrollment_type" className="form-label">
+                                        Enrollment Type <span className="text-danger">*</span>
+                                    </label>
+                                    <Dropdown
+                                        inputId="plan_id"
+                                        value={formData.plan_id}
+                                        options={enrollmentOptions}
+                                        onChange={(e) => {
+                                            const selectedVal = e.value;
+                                            const selectedOption = enrollmentOptions.find((opt: any) => String(opt.value) === String(selectedVal));
 
-                                        const isInstallmentSelected = (selectedOption?.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
+                                            const isInstallmentSelected = (selectedOption?.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
 
-                                        const updates: any = {
-                                            plan_id: selectedVal,
-                                            enrollment_type: selectedOption?.enrollment_type || formData.enrollment_type || '',
-                                            enrollment_payment: selectedOption ? selectedOption.total_amount : '',
-                                            payment_amount: selectedOption ? selectedOption.total_amount : '',
-                                            amount: selectedOption ? selectedOption.total_amount : ''
-                                        };
+                                            const updates: any = {
+                                                plan_id: selectedVal,
+                                                enrollment_type: selectedOption?.enrollment_type || formData.enrollment_type || '',
+                                                enrollment_payment: selectedOption ? selectedOption.total_amount : '',
+                                                payment_amount: selectedOption ? selectedOption.total_amount : '',
+                                                amount: selectedOption ? selectedOption.total_amount : ''
+                                            };
 
-                                        if (isInstallmentSelected) {
-                                            setShowInstallmentModal(true);
+                                            if (isInstallmentSelected) {
+                                                setShowInstallmentModal(true);
 
-                                            const planTotal = Number(selectedOption?.total_amount || 0);
-                                            const planMonths = Number(selectedOption?.total_installments_count || 12);
-                                            const defaultMonthly = planMonths > 0 ? (planTotal / planMonths) : 0;
+                                                const planTotal = Number(selectedOption?.total_amount || 0);
+                                                const planMonths = Number(selectedOption?.total_installments_count || 12);
+                                                const defaultMonthly = planMonths > 0 ? (planTotal / planMonths) : 0;
 
-                                            updates.installment_applied = true;
-                                            updates.installment_down_payment = 0;
-                                            updates.installment_months = planMonths;
-                                            updates.installment_monthly_amount = defaultMonthly;
-                                            updates.enrollment_amount = planTotal;
+                                                updates.installment_applied = true;
+                                                updates.installment_down_payment = 0;
+                                                updates.installment_months = planMonths;
+                                                updates.installment_monthly_amount = defaultMonthly;
+                                                updates.enrollment_amount = planTotal;
 
-                                            updates.enrollment_payment = planTotal;
-                                            updates.payment_amount = planTotal;
-                                            updates.amount = planTotal;
-                                        } else {
-                                            updates.installment_applied = false;
-                                            updates.installment_down_payment = 0;
-                                            updates.installment_months = 0;
-                                            updates.installment_monthly_amount = 0;
-                                        }
+                                                updates.enrollment_payment = planTotal;
+                                                updates.payment_amount = planTotal;
+                                                updates.amount = planTotal;
+                                            } else {
+                                                updates.installment_applied = false;
+                                                updates.installment_down_payment = 0;
+                                                updates.installment_months = 0;
+                                                updates.installment_monthly_amount = 0;
+                                            }
 
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            ...updates
-                                        }));
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                ...updates
+                                            }));
 
-                                        // Propagate changes to parent
-                                        if (handleLocationChange) {
-                                            Object.entries(updates).forEach(([name, value]) => {
-                                                handleLocationChange(name, value);
-                                            });
-                                        }
+                                            // Propagate changes to parent
+                                            if (handleLocationChange) {
+                                                Object.entries(updates).forEach(([name, value]) => {
+                                                    handleLocationChange(name, value);
+                                                });
+                                            }
 
-                                        // Clear error if present
-                                        if (setErrors && errors.plan_id) {
-                                            const newErrors = { ...errors };
-                                            delete newErrors.plan_id;
-                                            setErrors(newErrors);
-                                        }
-                                    }}
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    placeholder="Select Enrollment Type"
-                                    className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
-                                    appendTo="self"
-                                />
-                                {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
+                                            // Clear error if present
+                                            if (setErrors && errors.plan_id) {
+                                                const newErrors = { ...errors };
+                                                delete newErrors.plan_id;
+                                                setErrors(newErrors);
+                                            }
+                                        }}
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        placeholder="Select Enrollment Type"
+                                        className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
+                                        appendTo="self"
+                                    />
+                                    {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
+                                </div>
                             </div>
-                        </div>
                         )}
 
                         {/* Custom Override Inputs for isHost, White-Label or Certified Partner — hidden for installment plans */}
@@ -1369,8 +1369,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                         total_amount: (selectedOption as any).total_amount || formData.payable_amount || formData.payment_amount || formData.amount || 0
                                                     }, isHost)
                                                     : {
-                                                        installments: formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR ? ENROLLMENT_INSTALLMENTS.ONE_TIME :
-                                                            (formData.enrollment_type === ENROLLMENT_TYPES.SIX_MONTH_STR ? ENROLLMENT_INSTALLMENTS.SIX_MONTHS : (isHost ? ENROLLMENT_INSTALLMENTS.DEFAULT_HOST : ENROLLMENT_INSTALLMENTS.DEFAULT_NON_HOST)),
+                                                        installments: (formData.enrollment_type === ENROLLMENT_TYPE_ONE_TIME || (formData.enrollment_type || '').toLowerCase().includes('one time'))
+                                                            ? 1
+                                                            : (Number(formData.installment_count || formData.installments) || 1),
                                                         totalAmount: formData.payable_amount || formData.payment_amount || formData.amount || 0,
                                                         price: formData.payable_amount || formData.payment_amount || formData.amount || 0
                                                     };
@@ -1439,39 +1440,39 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                         </span>
                                                                     </div>
                                                                     {!isAlreadyInPaidMode && (
-                                                                    <div className={`d-flex gap-2 mt-3 ${forWLOrCP ? 'mb-3' : 'mb-2'}`}>
-                                                                        {!isAlreadyInPaidMode && (
-                                                                        <button
-                                                                            type="button"
-                                                                            className="btn btn-sm installment-trigger-btn"
-                                                                            onClick={() => setShowInstallmentModal(true)}
-                                                                            style={{ opacity: 1, cursor: 'pointer' }}
-                                                                        >
-                                                                            <i className="ri-edit-line me-1"></i> View Payment Details
-                                                                        </button>
-                                                                        )}
-                                                                        {!isAlreadyInPaidMode && (
-                                                                            <button
-                                                                                type="button"
-                                                                                className="btn btn-sm btn-light border"
-                                                                                onClick={() => {
-                                                                                    handleInputChange({ target: { name: 'installment_applied', value: false } });
-                                                                                    handleInputChange({ target: { name: 'installment_down_payment', value: 0 } });
-                                                                                    handleInputChange({ target: { name: 'installment_months', value: 0 } });
-                                                                                    handleInputChange({ target: { name: 'installment_monthly_amount', value: 0 } });
-                                                                                    handleInputChange({ target: { name: 'enrollment_type', value: '' } });
-                                                                                    handleInputChange({ target: { name: 'enrollment_amount', value: '' } });
-                                                                                    handleInputChange({ target: { name: 'monthly_platform_fee', value: '' } });
-                                                                                    handleInputChange({ target: { name: 'plan_id', value: '' } });
-                                                                                    handleInputChange({ target: { name: 'enrollment_payment', value: '' } });
-                                                                                    handleInputChange({ target: { name: 'payment_amount', value: '' } });
-                                                                                    handleInputChange({ target: { name: 'amount', value: '' } });
-                                                                                }}
-                                                                            >
-                                                                                <i className="ri-refresh-line me-1"></i> Reset
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
+                                                                        <div className={`d-flex gap-2 mt-3 ${forWLOrCP ? 'mb-3' : 'mb-2'}`}>
+                                                                            {!isAlreadyInPaidMode && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="btn btn-sm installment-trigger-btn"
+                                                                                    onClick={() => setShowInstallmentModal(true)}
+                                                                                    style={{ opacity: 1, cursor: 'pointer' }}
+                                                                                >
+                                                                                    <i className="ri-edit-line me-1"></i> View Payment Details
+                                                                                </button>
+                                                                            )}
+                                                                            {!isAlreadyInPaidMode && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="btn btn-sm btn-light border"
+                                                                                    onClick={() => {
+                                                                                        handleInputChange({ target: { name: 'installment_applied', value: false } });
+                                                                                        handleInputChange({ target: { name: 'installment_down_payment', value: 0 } });
+                                                                                        handleInputChange({ target: { name: 'installment_months', value: 0 } });
+                                                                                        handleInputChange({ target: { name: 'installment_monthly_amount', value: 0 } });
+                                                                                        handleInputChange({ target: { name: 'enrollment_type', value: '' } });
+                                                                                        handleInputChange({ target: { name: 'enrollment_amount', value: '' } });
+                                                                                        handleInputChange({ target: { name: 'monthly_platform_fee', value: '' } });
+                                                                                        handleInputChange({ target: { name: 'plan_id', value: '' } });
+                                                                                        handleInputChange({ target: { name: 'enrollment_payment', value: '' } });
+                                                                                        handleInputChange({ target: { name: 'payment_amount', value: '' } });
+                                                                                        handleInputChange({ target: { name: 'amount', value: '' } });
+                                                                                    }}
+                                                                                >
+                                                                                    <i className="ri-refresh-line me-1"></i> Reset
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
                                                                     )}
                                                                 </>
                                                             ) : (
@@ -1574,7 +1575,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                 <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                     <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                                                                                         Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
+                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
                                                                 </p>
                                                             </div>
                                                         </>

@@ -104,11 +104,6 @@ export async function refreshSubscription(): Promise<void> {
       setUserSubscription({
         enrollment_type: user.enrollment_type,
         subscription_status: user.subscription_status,
-        first_payment_date: user.first_payment_date,
-        platform_fee_start_date: user.platform_fee_start_date,
-        next_installment_date: user.next_installment_date,
-        next_platform_fee_date: user.next_platform_fee_date,
-        enrollment_completed_at: user.enrollment_completed_at,
         subscription_start_date: user.subscription_start_date,
         subscription_end_date: user.subscription_end_date,
         phase: user.phase,

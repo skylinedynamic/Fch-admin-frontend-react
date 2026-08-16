@@ -190,6 +190,13 @@ const menuItems = [
     permission: "view users",
   },
   {
+    to: "/payment-methods",
+    icon: "ri-secure-payment-line",
+    label: "Payment Method",
+    isHostOnly: true,
+    isPartnerOnly: true,
+  },
+  {
     to: "/plan-and-fee",
     icon: "ri-bank-card-line",
     label: "Plan & Fee",

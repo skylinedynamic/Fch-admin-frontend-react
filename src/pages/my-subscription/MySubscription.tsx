@@ -7,11 +7,13 @@ import { Skeleton } from 'primereact/skeleton';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
+import ConfirmationModal from '../../components/Common/Modals/ConfirmationModal';
 import MySubscriptionLoader from '../../components/Loader/MySubscriptionLoader';
 import {
   fetchMySubscriptionDetails,
   fetchMySubscriptionPaymentProviders,
   updateMySubscriptionDefaultPaymentMethod,
+  cancelMySubscription,
 } from '../../modules/my-subscription/services';
 import {
   STATUS_ACTIVE as SUBSCRIPTION_STATUS_ACTIVE,
@@ -284,9 +286,11 @@ const ChangePaymentMethodModal: React.FC<ChangePaymentMethodModalProps> = ({
         try {
           modal.hide();
           if (typeof modal.dispose === 'function') modal.dispose();
-        } catch (_) {}
+        } catch (_) { }
       }
       modalInstanceRef.current = null;
+      document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove());
+      document.body.classList.remove('modal-open');
     };
   }, []);
 
@@ -310,16 +314,15 @@ const ChangePaymentMethodModal: React.FC<ChangePaymentMethodModalProps> = ({
     try {
       const res = await fetchMySubscriptionPaymentProviders();
       const rawList = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-      const list = rawList.filter((p: PaymentProviderItem) => p.status !== false && p.status !== 0 && p.status !== '0');
-      const displayList = list.length > 0 ? list : rawList;
-      setProviders(displayList);
-      if (displayList.length > 0) {
-        const matching = displayList.find(
+      const list = rawList.filter((p: PaymentProviderItem) => Boolean(p.status) === true);
+      setProviders(list);
+      if (list.length > 0) {
+        const matching = list.find(
           (p: PaymentProviderItem) =>
             (p.name || '').toLowerCase() === (currentMethod || '').toLowerCase() ||
             (p.display_name || '').toLowerCase() === (currentMethod || '').toLowerCase()
         );
-        setSelectedProvider(matching || displayList[0]);
+        setSelectedProvider(matching || list[0]);
       }
     } catch (err: any) {
       console.error('Failed to fetch payment providers:', err);
@@ -329,11 +332,10 @@ const ChangePaymentMethodModal: React.FC<ChangePaymentMethodModalProps> = ({
   };
 
   const handleClose = () => {
+    onClose();
     const modal = modalInstanceRef.current;
     if (modal) {
       modal.hide();
-    } else {
-      onClose();
     }
   };
 
@@ -408,9 +410,8 @@ const ChangePaymentMethodModal: React.FC<ChangePaymentMethodModalProps> = ({
                     return (
                       <div key={p.id} className="col-12 col-sm-6 col-md-4">
                         <div
-                          className={`card cursor-pointer h-100 mb-0 transition-all position-relative rounded-1 provider-card-box ${
-                            isSelected ? 'border-2 border-primary bg-primary-subtle shadow-sm' : 'border bg-white hover-shadow'
-                          }`}
+                          className={`card cursor-pointer h-100 mb-0 transition-all position-relative rounded-1 provider-card-box ${isSelected ? 'border-2 border-primary bg-primary-subtle shadow-sm' : 'border bg-white hover-shadow'
+                            }`}
                           onClick={() => setSelectedProvider(p)}
                         >
                           {isSelected && (
@@ -508,13 +509,29 @@ export default function MySubscription(): JSX.Element {
   const [data, setData] = useState<MySubscriptionData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showChangeModal, setShowChangeModal] = useState<boolean>(false);
+  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
+  const [cancelling, setCancelling] = useState<boolean>(false);
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    try {
+      await cancelMySubscription();
+      toast.success('Subscription cancelled successfully');
+      setShowCancelModal(false);
+      loadSubscriptionDetails(false);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to cancel subscription.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     loadSubscriptionDetails();
   }, []);
 
-  const loadSubscriptionDetails = async () => {
-    setLoading(true);
+  const loadSubscriptionDetails = async (showLoadingSpinner: boolean = true) => {
+    if (showLoadingSpinner) setLoading(true);
     setError(null);
     try {
       const res = await fetchMySubscriptionDetails();
@@ -523,7 +540,7 @@ export default function MySubscription(): JSX.Element {
       console.error('Failed to load my subscription details:', err);
       setError(err?.response?.data?.message || 'Failed to fetch subscription details.');
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) setLoading(false);
     }
   };
 
@@ -648,10 +665,10 @@ export default function MySubscription(): JSX.Element {
                         {recentBill && (
                           <span
                             className={`badge billing-card-badge-pill ${(recentBill.status || '').toUpperCase() === PAYMENT_STATUS_PAID.toUpperCase()
-                                ? 'bg-success-subtle text-success border border-success-subtle'
-                                : (recentBill.status || '').toUpperCase() === PAYMENT_STATUS_PROCESSING.toUpperCase()
-                                  ? 'bg-warning-subtle text-warning border border-warning-subtle'
-                                  : 'bg-danger-subtle text-danger border border-danger-subtle'
+                              ? 'bg-success-subtle text-success border border-success-subtle'
+                              : (recentBill.status || '').toUpperCase() === PAYMENT_STATUS_PROCESSING.toUpperCase()
+                                ? 'bg-warning-subtle text-warning border border-warning-subtle'
+                                : 'bg-danger-subtle text-danger border border-danger-subtle'
                               }`}
                           >
                             {recentBill.status}
@@ -822,14 +839,22 @@ export default function MySubscription(): JSX.Element {
                         </div>
                       </div>
                       <div className="d-flex align-items-center gap-2">
+                        {!isSubscriptionCompleted && !isSubscriptionCancelled && subscription && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger px-2.5 py-1 fs-12 fw-medium rounded-1 d-inline-flex align-items-center gap-1"
+                            onClick={() => setShowCancelModal(true)}
+                          >
+                            <i className="ri-close-circle-line"></i> Cancel Subscription
+                          </button>
+                        )}
                         <span
-                          className={`badge billing-card-badge-pill ${
-                            isSubscriptionCompleted
+                          className={`badge billing-card-badge-pill ${isSubscriptionCompleted
                               ? 'bg-success-subtle text-success border border-success-subtle'
                               : isSubscriptionCancelled
                                 ? 'bg-danger-subtle text-danger border border-danger-subtle'
                                 : 'bg-info-subtle text-info border border-info-subtle'
-                          }`}
+                            }`}
                         >
                           {isSubscriptionCompleted ? SUBSCRIPTION_STATUS_COMPLETED : subscription?.status || SUBSCRIPTION_STATUS_ACTIVE}
                         </span>
@@ -882,16 +907,29 @@ export default function MySubscription(): JSX.Element {
                 </div>
               </div>
             </div>
-
-            {/* Modals */}
-            <ChangePaymentMethodModal
-              show={showChangeModal}
-              currentMethod={partner?.default_payment_method}
-              onClose={() => setShowChangeModal(false)}
-              onUpdated={loadSubscriptionDetails}
-            />
           </>
         )}
+
+        {/* Modals */}
+        <ChangePaymentMethodModal
+          show={showChangeModal}
+          currentMethod={partner?.default_payment_method}
+          onClose={() => setShowChangeModal(false)}
+          onUpdated={() => loadSubscriptionDetails(false)}
+        />
+
+        {/* Cancel Subscription Confirmation Modal */}
+        <ConfirmationModal
+          show={showCancelModal}
+          onHide={() => setShowCancelModal(false)}
+          onConfirm={handleCancelSubscription}
+          loading={cancelling}
+          title="Cancel Subscription"
+          message="Are you sure you want to cancel your partner subscription? Once cancelled, your automatic recurring billing will stop and your subscription status will be marked as Cancelled."
+          confirmText="Yes, Cancel Subscription"
+          cancelText="Keep Subscription"
+          variant="danger"
+        />
       </div>
     </div>
   );

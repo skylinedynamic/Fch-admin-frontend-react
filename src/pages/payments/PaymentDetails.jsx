@@ -12,7 +12,8 @@ import {
     PAYMENT_STATUS_SUCCEEDED,
     PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_FAILED,
-    PAYMENT_STATUS_PAID
+    PAYMENT_STATUS_PAID,
+    PROVIDER_STRIPE
 } from '../../config/paymentConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
@@ -184,6 +185,8 @@ export default function PaymentDetails() {
     const envColor = PAYMENT_ENVIRONMENT_COLORS[envVal] || 'info';
     const envLabel = PAYMENT_ENVIRONMENT_LABELS[envVal];
     const payerType = payment?.entity_type?.includes(ENTITY_TYPE_PARTNER) ? ENTITY_TYPE_PARTNER : payment?.entity_type?.includes(ENTITY_TYPE_BORROWER) ? ENTITY_TYPE_BORROWER : 'Customer';
+    const paymentMethod = payment?.from || payment?.payment_method || payment?.payment_provider || '';
+    const isStripe = String(paymentMethod) == String(PROVIDER_STRIPE);
     const rawDetails = payment?.raw_details || (typeof payment?.details === 'object' ? payment?.details : null);
     const hasRawDetails = rawDetails && (typeof rawDetails === 'object' ? Object.keys(rawDetails).length > 0 : String(rawDetails).trim() !== '');
 
@@ -318,7 +321,7 @@ export default function PaymentDetails() {
                                     </div>
 
                                     {/* Bottom Approval / Rejection Info Section */}
-                                    {hasRawDetails && (
+                                    {!isStripe && hasRawDetails && (
                                         <div className="mt-4">
                                             <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Verification Info</h5>
 

@@ -111,8 +111,8 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="flex-grow-1">
-                        <h5 className="fs-16 fw-bold text-danger mb-1">Currently you have pending invoice</h5>
-                        <p className="text-muted mb-0 fs-14">Please pay your invoice. Click here to go to the invoice and complete the payment.</p>
+                        <h5 className="fs-16 fw-bold text-danger mb-1">Your subscription is expired.</h5>
+                        <p className="text-muted mb-0 fs-14">Please pay your pending invoice if exists or contact with Administrator.</p>
                       </div>
                       <div className="flex-shrink-0 ms-3">
                         <Button
