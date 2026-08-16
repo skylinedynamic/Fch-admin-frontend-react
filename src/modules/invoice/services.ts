@@ -22,13 +22,8 @@ export const processInvoicePayment = async (payload: any) => {
 };
 
 export const downloadInvoice = async (id: number | string) => {
-    // We use responseType: 'blob' for streaming files
-    const response = await apiClient({
-        url: `/common/invoices/${id}/download`,
-        method: 'GET',
-        responseType: 'blob',
-    });
-    return response.data;
+    const { data } = await apiClient.get(`/common/invoices/${id}/download`);
+    return data;
 };
 
 export const sendInvoice = async (id: number | string) => {

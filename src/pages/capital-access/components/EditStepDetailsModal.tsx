@@ -161,6 +161,7 @@ export default function EditStepDetailsModal({
                                             onChange={(e: any) => setEditDetailsForm(prev => ({ ...prev, access_day: e.value }))}
                                             className="w-100"
                                             appendTo="self"
+                                            filter
                                         />
                                     </div>
                                     <div className="col-md-4">

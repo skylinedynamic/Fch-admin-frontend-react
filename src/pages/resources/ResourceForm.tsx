@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { useCreateResource, useUpdateResource, useGroupedResources } from '../../modules/resource/queries';
 import { getResourceNextId } from '../../modules/resource/services';
 import { ResourceItem, ResourceFormData } from '../../modules/resource/types';
@@ -192,32 +193,24 @@ const ResourceForm: React.FC = () => {
 
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">{isEdit ? 'Edit Resource' : 'Add Resource'} Details</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/resources">Resources</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{isEdit ? 'Edit Resource' : 'Add Resource'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/resources" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                <button type="button" className="btn btn-primary w-lg waves-effect" onClick={onSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
-                                    {(createMutation.isPending || updateMutation.isPending)
-                                        ? <><span className="spinner-border spinner-border-sm me-1" role="status"></span>{isEdit ? 'Updating...' : 'Saving...'}</>
-                                        : <><i className="ri-save-3-line align-middle me-1"></i>{isEdit ? 'Update' : 'Save'}</>}
-                                </button>
-                            </div>
-                        </div>
+                <PageHeader 
+                    title={`${isEdit ? 'Edit Resource' : 'Add Resource'} Details`}
+                    breadcrumbs={[
+                        { label: 'Resources', path: '/resources' },
+                        { label: isEdit ? 'Edit Resource' : 'Add Resource' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <Link to="/resources" className="btn btn-outline-secondary w-lg waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </Link>
+                        <button type="button" className="btn btn-primary w-lg waves-effect" onClick={onSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+                            {(createMutation.isPending || updateMutation.isPending)
+                                ? <><span className="spinner-border spinner-border-sm me-1" role="status"></span>{isEdit ? 'Updating...' : 'Saving...'}</>
+                                : <><i className="ri-save-3-line align-middle me-1"></i>{isEdit ? 'Update' : 'Save'}</>}
+                        </button>
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row">
                     {/* Main Form col-8 */}

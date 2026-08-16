@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../../../../assets/css/client-funding.css';
 import { toast } from 'react-toastify';
 import { fetchClientFundingOptions } from '../../../modules/client';
 import ClientFundingDetail from './ClientFundingDetail';

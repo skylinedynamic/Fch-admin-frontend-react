@@ -1,0 +1,13 @@
+/* ============================================================
+   Audit History Page Responsive Styles
+   ============================================================ */
+
+/* Ensure breadcrumbs wrap nicely on mobile screens instead of showing a horizontal scrollbar */
+.audit-history-breadcrumb {
+    flex-wrap: wrap !important;
+}
+
+/* Adjust page actions (like the Back button) to not stretch to full width on mobile devices */
+.audit-history-actions {
+    align-self: flex-start;
+}

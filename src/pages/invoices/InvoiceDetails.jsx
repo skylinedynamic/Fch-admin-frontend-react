@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { fetchInvoiceDetails, downloadInvoice } from '../../modules/invoice/services';
 import { toast } from 'react-toastify';
 import { INVOICE_STATUS_COLORS, STATUS_PAID } from '../../config/invoiceConfig';
@@ -7,6 +8,16 @@ import { useAuthStore } from '../../store/auth';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import InvoicePaymentModal from './components/InvoicePaymentModal';
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
+
+const base64ToBlob = (base64, mimeType) => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+};
 
 export default function InvoiceDetails() {
     const { id } = useParams();
@@ -35,18 +46,26 @@ export default function InvoiceDetails() {
     }, [id]);
 
     const handleDownload = async () => {
+        const downloadId = invoice?.id || id;
         try {
-            const blob = await downloadInvoice(id);
-            const url = window.URL.createObjectURL(new Blob([blob]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `Invoice_${invoice?.invoice_id || id}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            const response = await downloadInvoice(downloadId);
+            if (response && response.status && response.data?.file) {
+                const blob = base64ToBlob(response.data.file, response.data.mime_type || 'application/pdf');
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', response.data.file_name || `Invoice_${invoice?.invoice_id || id}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+            } else {
+                throw new Error(response?.message || 'Failed to download invoice PDF');
+            }
         } catch (error) {
+            const message = error?.message || 'Failed to download invoice PDF';
             console.error('Download failed', error);
-            toast.error('Failed to download invoice PDF');
+            toast.error(message);
         }
     };
 
@@ -76,20 +95,13 @@ export default function InvoiceDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row">
-                    <div className="col-12 d-flex justify-content-between align-items-center py-2">
-                        <div>
-                            <h4 className="fs-20 mb-1">{invoice ? `Invoice #${invoice.invoice_id}` : 'Invoice Details'}</h4>
-                            <nav aria-label="breadcrumb">
-                                <ol className="breadcrumb m-0 fs-12 text-muted">
-                                    <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                    <li className="breadcrumb-item"><Link to="/invoices" className="text-muted">Invoices</Link></li>
-                                    <li className="breadcrumb-item active text-primary fw-medium" aria-current="page">Details</li>
-                                </ol>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title={invoice ? `Invoice #${invoice.invoice_id}` : 'Invoice Details'} 
+                    breadcrumbs={[
+                        { label: 'Invoices', path: '/invoices' },
+                        { label: 'Details' }
+                    ]} 
+                />
 
                 {loading ? (
                     <DetailsSkeletonLoader />
@@ -111,7 +123,7 @@ export default function InvoiceDetails() {
                                                     <p className="text-muted mb-0 fs-13">Date: <span className="fw-medium text-body">{invoice.created_at}</span></p>
                                                 </div>
                                                 <div className="flex-shrink-0 text-end">
-                                                    <h2 className="text-primary mb-1">{invoice.payment_amount || '-'}</h2>
+                                                    <h2 className="text-primary mb-1">{invoice.displayable_payment_amount || '-'}</h2>
                                                     <span className={`badge bg-${statusSeverity} fs-12 text-uppercase`}>{invoice.status}</span>
                                                 </div>
                                             </div>
@@ -169,9 +181,9 @@ export default function InvoiceDetails() {
                                                                 <td className="text-start">
                                                                     <span className="fw-medium">General Payment</span>
                                                                 </td>
-                                                                <td>{invoice.payment_amount || '-'}</td>
+                                                                <td>{invoice.displayable_payment_amount || '-'}</td>
                                                                 <td>1</td>
-                                                                <td className="text-end">{invoice.payment_amount || '-'}</td>
+                                                                <td className="text-end">{invoice.displayable_payment_amount || '-'}</td>
                                                             </tr>
                                                         )}
                                                     </tbody>
@@ -182,11 +194,11 @@ export default function InvoiceDetails() {
                                                     <tbody>
                                                         <tr>
                                                             <td>Sub Total</td>
-                                                            <td className="text-end">{invoice.payment_amount || '-'}</td>
+                                                            <td className="text-end">{invoice.displayable_payment_amount || '-'}</td>
                                                         </tr>
                                                         <tr className="border-top border-top-dashed fs-15">
                                                             <th scope="row">Total Amount</th>
-                                                            <th className="text-end">{invoice.payment_amount || '-'}</th>
+                                                            <th className="text-end">{invoice.displayable_payment_amount || '-'}</th>
                                                         </tr>
                                                     </tbody>
                                                 </table>

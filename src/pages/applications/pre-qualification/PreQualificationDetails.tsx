@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { PreQualificationApplicationDetails as PreQualificationApplicationDetailsType } from '../../../modules/application/types';
 import { APPLICATION_STATUS_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 import { Dropdown } from 'primereact/dropdown';
@@ -150,27 +151,19 @@ export default function PreQualificationDetails() {
             <div className="page-content">
                 <div className="container-fluid">
                     {/* Header */}
-                    <div className="row pb-1 page-subheader-sticky bg-body">
-                        <div className="col-12">
-                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                                <div className="flex-grow-1">
-                                    <h4 className="fs-20 mb-1">Application Details</h4>
-                                    <nav aria-label="breadcrumb">
-                                        <ol className="breadcrumb m-0">
-                                            <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                            <li className="breadcrumb-item"><Link to="/intake-review/pre-qualification">Pre-Qualification Applications</Link></li>
-                                            <li className="breadcrumb-item active" aria-current="page">Details</li>
-                                        </ol>
-                                    </nav>
-                                </div>
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link to="/intake-review/pre-qualification" className="btn btn-outline-secondary w-lg waves-effect">
-                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                    </Link>
-                                </div>
-                            </div>
+                    <PageHeader 
+                        title="Application Details" 
+                        breadcrumbs={[
+                            { label: 'Pre-Qualification Applications', path: '/intake-review/pre-qualification' },
+                            { label: 'Details' }
+                        ]} 
+                    >
+                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            <Link to="/intake-review/pre-qualification" className="btn btn-outline-secondary w-lg waves-effect">
+                                <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                            </Link>
                         </div>
-                    </div>
+                    </PageHeader>
 
                     <div className="row">
                         {/* Sidebar Tabs */}

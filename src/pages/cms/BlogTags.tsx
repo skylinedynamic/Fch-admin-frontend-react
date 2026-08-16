@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { useTags, useCreateTag, useUpdateTag, useDeleteTags } from '../../modules/cms/queries';
+import PageHeader from '../common/PageHeader';
 import { Dialog } from 'primereact/dialog';
 import { toast } from 'react-toastify';
 import TableLoader from "../../components/Loader/TableLoader";
@@ -78,27 +79,20 @@ export default function BlogTags() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Sticky Header */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Blog Tags</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/cms/blogs">Blogs</Link></li>
-                                        <li className="breadcrumb-item active">Tags</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="d-flex gap-2">
-                                <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-                                    <i className="ri-add-line me-1 align-bottom"></i> Add Tag
-                                </button>
-                            </div>
-                        </div>
+                {/* Sticky Header */}
+                <PageHeader 
+                    title="Blog Tags" 
+                    breadcrumbs={[
+                        { label: 'Blogs', path: '/cms/blogs' },
+                        { label: 'Tags' }
+                    ]} 
+                >
+                    <div className="d-flex gap-2">
+                        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+                            <i className="ri-add-line me-1 align-bottom"></i> Add Tag
+                        </button>
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="card mt-4">
                     <div className="card-body p-0">

@@ -268,7 +268,7 @@ export const CapitalAccessSkeleton: React.FC = () => {
             </div>
 
             <div className="row g-4 mb-4">
-                {/* Funding Readiness Score Card Skeleton */}
+                {/* Capital Access Readiness Scores Card Skeleton */}
                 <div className="col-md-6">
                     <div className="ca-metric-card h-100">
                         <div className="ca-metric-header">

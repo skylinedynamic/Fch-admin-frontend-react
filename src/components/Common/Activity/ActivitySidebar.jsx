@@ -11,15 +11,16 @@ import {
     LOG_TYPE_BORROWER_CREATE, LOG_TYPE_BORROWER_UPDATE, LOG_TYPE_BORROWER_CONTACT_UPDATE, LOG_TYPE_BORROWER_PAYMENT, LOG_TYPE_BUSINESS_UPDATE,
     LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE,
     LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
-    LOG_TYPE_TASK_VERIFICATION, ENTITY_TYPE_FUNDING_REQUEST,
-    LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE
+    LOG_TYPE_TASK_VERIFICATION, ENTITY_TYPE_FUNDING_REQUEST, ENTITY_TYPE_FUNDING_APPLICATION,
+    LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE,
+    LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE
 } from '../../../config/appConfig';
 
 import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
-export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false }) {
+export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '145px', disableSticky = false }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -66,6 +67,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') params.borrower_id = entityId;
                 if (entityType === ENTITY_TYPE_PARTNER) params.partner_id = entityId;
                 if (entityType === ENTITY_TYPE_FUNDING_REQUEST) params.funding_request_id = entityId;
+                if (entityType === ENTITY_TYPE_FUNDING_APPLICATION) params.funding_application_id = entityId;
             }
 
             const response = await getActivityLogs(params);
@@ -143,7 +145,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
         };
         window.addEventListener('refreshActivities', handleRefresh);
         return () => window.removeEventListener('refreshActivities', handleRefresh);
-    }, [entityId, entityType]);
+    }, [entityId, entityType, partnerEmail, borrowerEmail, hostEmail]);
 
     useEffect(() => {
         window._activityEntityContext = {
@@ -215,14 +217,16 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     };
 
     const getSubtitle = (activity) => {
-        if (activity.log_type === 'email') {
+        const logType = (activity.log_type || '').toLowerCase();
+        
+        if (logType === 'email' || logType === 'email sent') {
             const emails = Array.isArray(activity.to_emails)
                 ? activity.to_emails.join(', ')
                 : (activity.to_emails || 'N/A');
             return `To: ${emails} • Subject: ${activity.subject || 'No Subject'} • ${formatRelativeDate(activity.created_at)}`;
         }
 
-        if (activity.log_type === 'activity') {
+        if (logType === 'activity') {
             const ref = activity.reference || 'N/A';
             // Use activity_date (if available from scheduling), else fallback to created_at
             const dateToUse = activity.activity_date || activity.created_at;
@@ -268,19 +272,19 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
                 return (
                     <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark fw-bold d-block">{prefix}</span>
+                        <span className="text-dark d-block">{prefix}</span>
                         <span className="d-inline-flex align-items-center flex-wrap gap-1 mt-1">
-                            <span style={{ color: getStatusColor(oldStatus), fontWeight: '700' }}>{oldStatus}</span>
+                            <span style={{ color: getStatusColor(oldStatus) }}>{oldStatus}</span>
                             <span className="text-muted px-1" style={{ fontSize: '11px' }}>→</span>
-                            <span style={{ color: getStatusColor(newStatus), fontWeight: '700' }}>{newStatus}</span>
+                            <span style={{ color: getStatusColor(newStatus) }}>{newStatus}</span>
                         </span>
                     </span>
                 );
             } else {
                 return (
                     <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark fw-bold d-block">{prefix}</span>
-                        <span style={{ color: getStatusColor(statusPart), fontWeight: '700' }} className="d-block mt-1">{statusPart}</span>
+                        <span className="text-dark d-block">{prefix}</span>
+                        <span style={{ color: getStatusColor(statusPart) }} className="d-block mt-1">{statusPart}</span>
                     </span>
                 );
             }
@@ -291,11 +295,12 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
     const getTitle = (activity) => {
         let title = '';
+        const logType = (activity.log_type || '').toLowerCase();
         if (activity.event_label) {
             title = activity.event_label;
-        } else if (activity.log_type === 'email') {
+        } else if (logType === 'email' || logType === 'email sent') {
             title = activity.subject ? `Email Sent: ${activity.subject}` : 'Email Sent';
-        } else if (activity.log_type === 'activity') {
+        } else if (logType === 'activity') {
             const refType = activity.reference ? activity.reference : 'Activity';
             title = activity.subject ? `${refType}: ${activity.subject}` : `${refType} Logged`;
         } else {
@@ -334,9 +339,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
             LOG_TYPE_INVOICE_CREATE,
             LOG_TYPE_DOCUMENT_UPLOAD,
             LOG_TYPE_CHECKLIST_UPDATE,
+            LOG_TYPE_PARTNER_CONTACT_UPDATE, LOG_TYPE_FUNDING_REQUEST_CREATE, 
+            LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE, LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE,
             LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
             LOG_TYPE_TASK_VERIFICATION,
-            LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE,
         ];
         if (commIconTypes.includes(logTypeRaw) && config) {
             return (
@@ -392,12 +398,12 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     };
 
     return (
-        <div className="card activity-sidebar-card d-flex flex-column w-100 h-100 mb-0" style={{ flex: 1, minHeight: 0, position: 'sticky', top: '145px', alignSelf: 'flex-start', zIndex: 10 }}>
+        <div className="card activity-sidebar-card d-flex flex-column w-100 mb-0 shadow-sm border-0" style={disableSticky ? { border: 'none', flexGrow: 1, minHeight: 0 } : { height: `calc(100vh - ${stickyTopOffset})`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
             {/* Card Header */}
-            <div className="card-header px-3 py-2 align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={{ position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
-                <h4 className="card-title mb-0">
+            <div className="card-header align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={disableSticky ? { backgroundColor: '#fff' } : { position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
+                <h5 className="card-title mb-0 fs-16">
                     <i className="ri-history-line align-middle me-2"></i>Activity
-                </h4>
+                </h5>
                 {!hideTopButtons && (
                     <div className="d-flex gap-2 chip-actions w-100 w-sm-auto justify-content-center justify-content-sm-end">
                         <button
@@ -423,10 +429,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
             </div>
 
             {/* Card Body with Scrollbar */}
-            <div className="card-body p-0 pb-4 d-flex flex-column" style={{ minHeight: 0 }}>
+            <div className="card-body p-0 pb-4 d-flex flex-column" style={disableSticky ? { minHeight: 0, flexGrow: 1 } : { minHeight: 0 }}>
                 <div
                     className="activity-scroll-container flex-grow-1"
-                    style={{
+                    style={disableSticky ? { padding: '12px 16px', overflowY: 'auto', overflowX: 'hidden', minHeight: 0 } : {
                         overflowY: 'auto',
                         overflowX: 'hidden',
                         padding: '12px 16px',
@@ -486,7 +492,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
                                                                 {/* Content */}
                                                                 <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-13 mb-0 fw-bold text-dark d-flex align-items-center flex-wrap gap-2">
+                                                                    <h6 className="fs-13 mb-0 text-dark d-flex align-items-center flex-wrap gap-2">
                                                                         <span>{getTitle(activity)}</span>
                                                                         {activity.properties?.visible_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to FCH</span>}
                                                                         {activity.properties?.visible_to_borrower == 1 && <span className="badge bg-info-subtle text-info" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to Borrower</span>}

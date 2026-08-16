@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -261,44 +262,32 @@ export default function FundingList() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Funding</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Funding</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <div className="btn-group">
-                                    {Array.isArray(selectedFundings) && selectedFundings.length > 0 ? (
-                                        <>
-                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle Dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
-                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </>
-                                    ) : (
-                                        <Link to="/funding/create" className="btn btn-primary fw-medium waves-effect waves-light">
-                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Funding
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                <PageHeader 
+                    title="Funding" 
+                    breadcrumbs={[{ label: 'Funding' }]} 
+                >
+                    <div className="btn-group">
+                        {Array.isArray(selectedFundings) && selectedFundings.length > 0 ? (
+                            <>
+                                <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                        </button>
+                                    </li>
+                                </ul>
+                            </>
+                        ) : (
+                            <Link to="/funding/create" className="btn btn-primary fw-medium waves-effect waves-light">
+                                <i className="ri-add-fill me-1 align-bottom"></i> Add Funding
+                            </Link>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row row-table-fit credit-account-section">
                     <div className="col-12">
@@ -316,18 +305,16 @@ export default function FundingList() {
                                     ) : (
                                         <div className="row g-3 mb-2">
                                             <div className="col-xxl-3 col-sm-12">
-                                                <div className="input-group vendor-filter-input-group border-0 transition-all shadow-sm-hover bg-light rounded" style={{ backgroundColor: '#f3f6f9' }}>
-                                                    <span className="input-group-text bg-transparent border-0 pe-1">
-                                                        <i className="ri-search-line text-muted opacity-75"></i>
-                                                    </span>
+                                                <div className="search-box h-100">
                                                     <input
                                                         type="text"
-                                                        className="form-control bg-transparent border-0 ps-1 fs-13 shadow-none"
+                                                        className="form-control search bg-light border-light h-100"
                                                         placeholder="Search here..."
                                                         value={searchText}
                                                         onChange={(e) => setSearchText(e.target.value)}
                                                         onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                                                     />
+                                                    <i className="ri-search-line search-icon"></i>
                                                 </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">

@@ -10,6 +10,8 @@ import {
 } from '../../../modules/client';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import type { Client } from '../../../modules/client/types';
+import Flatpickr from 'react-flatpickr';
+import 'flatpickr/dist/flatpickr.css';
 
 const defaultFinancialsState = DEFAULT_CLIENT_STATE;
 
@@ -32,7 +34,7 @@ const unformatNumber = (val: any) => {
     return String(val).replace(/,/g, '');
 };
 
-const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'average_monthly_deposits', 'annual_revenue', 'current_business_debt'];
+const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'average_monthly_deposits', 'annual_revenue', 'annual_personal_income', 'current_business_debt'];
 
 interface BusinessFinancialsSectionProps {
     clientId?: string | null;
@@ -97,6 +99,55 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
         }
     };
 
+    const handleAddBankAccount = () => {
+        if (setErrors) {
+            // Clear any lingering errors for new row index
+            const newIndex = formData.bank_accounts ? formData.bank_accounts.length : 0;
+            const newErrors = { ...errors };
+            delete newErrors[`bank_accounts.${newIndex}.bank_name`];
+            delete newErrors[`bank_accounts.${newIndex}.account_open_date`];
+            setErrors(newErrors);
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            bank_accounts: [
+                ...(prev.bank_accounts || []),
+                { bank_name: '', account_open_date: null }
+            ]
+        }));
+    };
+
+    const handleRemoveBankAccount = (index: number) => {
+        if (setErrors) {
+            // Clear all bank account errors when removing to prevent index shifting bugs
+            const newErrors = { ...errors };
+            Object.keys(newErrors).forEach(key => {
+                if (key.startsWith('bank_accounts.')) {
+                    delete newErrors[key];
+                }
+            });
+            setErrors(newErrors);
+        }
+
+        setFormData(prev => {
+            const newAccounts = [...(prev.bank_accounts || [])];
+            newAccounts.splice(index, 1);
+            return { ...prev, bank_accounts: newAccounts };
+        });
+    };
+
+    const handleBankAccountChange = (index: number, field: string, value: any) => {
+        setFormData(prev => {
+            const newAccounts = [...(prev.bank_accounts || [])];
+            newAccounts[index] = {
+                ...newAccounts[index],
+                [field]: value
+            };
+            return { ...prev, bank_accounts: newAccounts };
+        });
+    };
+
     // 4. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
@@ -104,6 +155,8 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
 
             // Unformat values before sending to API
             const apiData = { ...formData };
+            delete apiData.years_in_business; // Do not send computed read-only field to API
+
             CURRENCY_FIELDS.forEach(field => {
                 if (apiData[field]) {
                     apiData[field] = unformatNumber(apiData[field]);
@@ -212,7 +265,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     </div>
                 </div>
 
-                <div className="col-lg-4">
+                <div className="col-md-6">
                     <div className="">
                         <label htmlFor="average_monthly_deposits" className="form-label">Average Monthly Deposits</label>
                         <div className="input-group">
@@ -231,7 +284,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     </div>
                 </div>
 
-                <div className="col-lg-4">
+                <div className="col-md-6">
                     <div className="">
                         <label htmlFor="monthly_deposit_count" className="form-label">Monthly Deposit Count</label>
                         <input
@@ -247,7 +300,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     </div>
                 </div>
 
-                <div className="col-lg-4">
+                <div className="col-md-6">
                     <div className="">
                         <label htmlFor="annual_revenue" className="form-label">Annual Revenue</label>
                         <div className="input-group">
@@ -262,6 +315,24 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                                 onChange={handleInputChange}
                             />
                             {errors.annual_revenue && <div className="invalid-feedback">{errors.annual_revenue}</div>}
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-6">
+                    <div className="">
+                        <label htmlFor="annual_personal_income" className="form-label">Annual Personal Income</label>
+                        <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.annual_personal_income ? 'is-invalid' : ''}`}
+                                id="annual_personal_income"
+                                name="annual_personal_income"
+                                placeholder="0.00"
+                                value={formData.annual_personal_income || ''}
+                                onChange={handleInputChange}
+                            />
+                            {errors.annual_personal_income && <div className="invalid-feedback">{errors.annual_personal_income}</div>}
                         </div>
                     </div>
                 </div>
@@ -336,17 +407,10 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
 
                 <div className="col-lg-6">
                     <div className="">
-                        <label htmlFor="years_in_business" className="form-label">Years in Business</label>
-                        <input
-                            type="number"
-                            className={`form-control ${errors.years_in_business ? 'is-invalid' : ''}`}
-                            id="years_in_business"
-                            name="years_in_business"
-                            placeholder="1"
-                            value={formData.years_in_business || ''}
-                            onChange={handleInputChange}
-                        />
-                        {errors.years_in_business && <div className="invalid-feedback">{errors.years_in_business}</div>}
+                        <label className="form-label">Years in Business</label>
+                        <div className="form-control bg-light" style={{ minHeight: '38.39px', display: 'flex', alignItems: 'center' }}>
+                            {formData?.years_in_business || 'Please set business start date'}
+                        </div>
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -412,6 +476,106 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         />
                         {errors.funding_urgency && <div className="invalid-feedback">{errors.funding_urgency}</div>}
                     </div>
+                </div>
+
+                {/* Bank Accounts Repeater Section */}
+                <div className="col-12 mt-4">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h5 className="mb-0 ">
+                            <i className="ri-bank-line me-1 align-bottom "></i> Business Bank Accounts
+                        </h5>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-soft-primary d-flex align-items-center"
+                            onClick={handleAddBankAccount}
+                        >
+                            <i className="ri-add-line me-1"></i> Add Bank Account
+                        </button>
+                    </div>
+
+                    {!(formData.bank_accounts && formData.bank_accounts.length > 0) ? (
+                        <div className="text-center py-4 border border-dashed rounded bg-light">
+                            <p className="text-muted mb-0">No bank accounts added yet. Click "Add Bank Account" to add one.</p>
+                        </div>
+                    ) : (
+                        <div className="row g-3">
+                            {formData.bank_accounts.map((account: any, index: number) => (
+                                <div key={account.id || `new-${index}`} className="col-12">
+                                    <div className="card border shadow-none mb-0 bg-light-subtle position-relative overflow-hidden">
+                                        <div className="card-body p-3">
+                                            <div className="row g-3 align-items-end">
+                                                {/* Bank Name */}
+                                                <div className="col-md-6">
+                                                    <label className="form-label">Bank Name <span className="text-danger">*</span></label>
+                                                    <div className="position-relative">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="e.g. Chase, Bank of America"
+                                                            value={account.bank_name || ''}
+                                                            onChange={(e) => {
+                                                                handleBankAccountChange(index, 'bank_name', e.target.value);
+                                                                if (setErrors && errors[`bank_accounts.${index}.bank_name`]) {
+                                                                    const newErrors = { ...errors };
+                                                                    delete newErrors[`bank_accounts.${index}.bank_name`];
+                                                                    setErrors(newErrors);
+                                                                }
+                                                            }}
+                                                            className={`form-control ${errors[`bank_accounts.${index}.bank_name`] ? 'is-invalid' : ''}`}
+                                                        />
+                                                        {errors[`bank_accounts.${index}.bank_name`] && (
+                                                            <div className="invalid-feedback d-block">{errors[`bank_accounts.${index}.bank_name`]}</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Account Open Date */}
+                                                <div className="col-md-5">
+                                                    <label className="form-label">Business Account Open Date</label>
+                                                    <div className="position-relative">
+                                                        <Flatpickr
+                                                            className={`form-control ${errors[`bank_accounts.${index}.account_open_date`] ? 'is-invalid' : ''}`}
+                                                            value={account.account_open_date || ''}
+                                                            onChange={(dates, dateStr) => {
+                                                                handleBankAccountChange(index, 'account_open_date', dateStr || null);
+                                                                if (setErrors && errors[`bank_accounts.${index}.account_open_date`]) {
+                                                                    const newErrors = { ...errors };
+                                                                    delete newErrors[`bank_accounts.${index}.account_open_date`];
+                                                                    setErrors(newErrors);
+                                                                }
+                                                            }}
+                                                            options={{
+                                                                dateFormat: "Y-m-d",
+                                                                altInput: true,
+                                                                altFormat: "j M, Y",
+                                                                maxDate: "today",
+                                                                monthSelectorType: "dropdown"
+                                                            }}
+                                                            placeholder="Select account open date"
+                                                        />
+                                                        {errors[`bank_accounts.${index}.account_open_date`] && (
+                                                            <div className="invalid-feedback d-block">{errors[`bank_accounts.${index}.account_open_date`]}</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Remove button */}
+                                                <div className="col-md-1 text-end">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-icon btn-soft-danger w-100"
+                                                        onClick={() => handleRemoveBankAccount(index)}
+                                                        title="Remove bank account"
+                                                    >
+                                                        <i className="ri-delete-bin-line fs-16"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </form>

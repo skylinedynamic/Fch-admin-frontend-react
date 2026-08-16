@@ -14,7 +14,9 @@ export const ENTITY_TYPE_PARTNER = 'Partner';
 export const ENTITY_TYPE_BORROWER = 'Borrower';
 export const ENTITY_TYPE_EMPLOYEE = 'Employee';
 export const ENTITY_TYPE_USER = '';
+export const ENTITY_TYPE_USER_MODEL = 'USER';
 export const ENTITY_TYPE_FUNDING_REQUEST = 'Funding Request';
+export const ENTITY_TYPE_FUNDING_APPLICATION = 'Funding Application';
 
 export const TYPE_EMAIL = 'email';
 export const TYPE_ACTIVITY = 'activity';
@@ -40,6 +42,7 @@ export const LOG_TYPE_LEAD_DETAILS_UPDATE = 'lead_details_update';
 export const LOG_TYPE_LEAD_CONTACT_UPDATE = 'lead_contact_update';
 export const LOG_TYPE_FUNDING_REQUEST_CREATE = 'funding_request_create';
 export const LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE = 'funding_request_status_update';
+export const LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE = 'funding_application_status_update';
 export const LOG_TYPE_BATCH_PROCESS = 'batch_process';
 export const LOG_TYPE_INVOICE_CREATE = 'invoice_create';
 export const LOG_TYPE_USER_CREATE = 'user_create';
@@ -59,3 +62,6 @@ export const LOG_TYPE_BUSINESS_UPDATE = 'business_update';
 export const LOG_TYPE_DOCUMENT_UPLOAD = 'document_upload';
 export const LOG_TYPE_CHECKLIST_UPDATE = 'checklist_update';
 export const LOG_TYPE_TASK_VERIFICATION = 'task_verification';
+
+export const PASSWORD_GENERATE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+export const PASSWORD_GENERATE_LENGTH = 14;

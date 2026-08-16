@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getLender, createLender, updateLender, getLenderProductCategories } from '../../modules/lender/services';
 import { Lender } from '../../modules/lender/types';
+import PageHeader from '../common/PageHeader';
 import FormLoader from '../../components/Loader/FormLoader';
 import { formatPhoneNumber, parseDate } from '../../utils/formatters';
 import { Dropdown } from 'primereact/dropdown';
@@ -165,34 +166,26 @@ export default function LenderForm() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-18 fw-semibold mb-1">{isEditMode ? 'Edit Lender' : 'Add Lender'}</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/lenders" className="text-muted">Lenders</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{isEditMode ? 'Edit' : 'Add'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <button type="button" className="btn btn-outline-secondary w-lg waves-effect" onClick={() => navigate('/lenders')} disabled={loading}>
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </button>
-                                <button type="button" className="btn btn-primary w-lg waves-effect" onClick={handleSubmit} disabled={loading || initialLoading}>
-                                    {loading ? (
-                                        <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> {isEditMode ? 'Updating...' : 'Saving...'}</>
-                                    ) : (
-                                        <><i className="ri-save-3-line align-middle me-1"></i> {isEditMode ? 'Update' : 'Save'}</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                <PageHeader 
+                    title={isEditMode ? 'Edit Lender' : 'Add Lender'} 
+                    breadcrumbs={[
+                        { label: 'Lenders', path: '/lenders' },
+                        { label: isEditMode ? 'Edit' : 'Add' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <button type="button" className="btn btn-outline-secondary w-lg waves-effect" onClick={() => navigate('/lenders')} disabled={loading}>
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </button>
+                        <button type="button" className="btn btn-primary w-lg waves-effect" onClick={handleSubmit} disabled={loading || initialLoading}>
+                            {loading ? (
+                                <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> {isEditMode ? 'Updating...' : 'Saving...'}</>
+                            ) : (
+                                <><i className="ri-save-3-line align-middle me-1"></i> {isEditMode ? 'Update' : 'Save'}</>
+                            )}
+                        </button>
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row">
                     <div className="col-12 mx-auto">

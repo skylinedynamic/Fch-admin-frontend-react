@@ -52,6 +52,7 @@ export type Client = {
     average_monthly_deposits?: string | number;
     monthly_deposit_count?: string | number;
     annual_revenue?: string | number;
+    annual_personal_income?: string | number;
     profit_margin?: string | number;
     current_business_debt?: string | number;
     fico_score?: string | number;
@@ -61,6 +62,7 @@ export type Client = {
     nsf_count?: string | number;
     negative_days?: string | number;
     funding_urgency?: string;
+    bank_accounts?: any[];
 
     // Metadata
     created_at?: string;
@@ -105,6 +107,7 @@ export type ClientFilterParams = {
     assigned_user_id?: string | number; // Kept for compatibility if used elsewhere
     assign_id?: string | number; // Used in Clients.jsx
     current_tier?: string | number; // Used in Clients.jsx
+    status?: string;
 };
 
 export type ClientProfileStats = {

@@ -92,7 +92,7 @@
 .fr-style-55e26e66 { width: 15%; }
 .fr-style-18eb16e4 { min-width: 0; }
 .fr-style-affbd8f { width: 28px; height: 28px; flex-shrink: 0; }
-.fr-style-30509dca { position: sticky; top: 145px; max-height: calc(100vh - 150px); align-self: flex-start; z-index: 10; }
+.fr-style-30509dca { position: sticky; top: 120px; max-height: calc(100vh - 130px); align-self: flex-start; z-index: 10; }
 .fr-style-374ec73b { padding-top: 1.85rem !important; }
 .fr-style-59ff025d { margin-top: 2px; }
 .fr-style-6e003d7 { resize: none; }
@@ -102,7 +102,7 @@
 
 /* ReviewProgressCard Auto-extracted inline styles */
 .fr-progress-style-3c782fa9 { width: 48px; height: 48px; background: #f8fafc; color: #1e293b; margin-right: 16px; }
-.fr-progress-style-3ded13b6 { color: #0f172a; }
+.fr-progress-style-3ded13b6 { color: var(--primary-color); }
 .fr-progress-style-484b8e41 { width: 76px; height: 76px; }
 .fr-progress-style-386cac71 { transform: rotate(-90deg); }
 .fr-progress-style-67aa90fa { font-size: 15px; line-height: 1; }

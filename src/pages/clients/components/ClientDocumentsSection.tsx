@@ -10,6 +10,7 @@ import { Skeleton } from 'primereact/skeleton';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input, UncontrolledTooltip, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem } from 'reactstrap';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { usePermissions } from '../../../lib/auth/usePermissions';
 // @ts-ignore
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { deleteBorrowerDocument } from '../../../modules/client/services';

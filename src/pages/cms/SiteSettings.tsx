@@ -1,5 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { formatPhoneNumber } from '../../utils/formatters';
+import PageHeader from '../common/PageHeader';
 import { useSiteSettings, useUpdateSiteSettings } from '../../modules/cms/queries';
 import { SiteSettingsData, SiteSetting, SocialLink, SOCIAL_PLATFORMS } from '../../modules/cms/types';
 import { toast } from 'react-toastify';
@@ -285,44 +286,36 @@ export default function SiteSettings() {
     return (
         <div className="page-content site-settings-section">
             <div className="container-fluid">
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center flex-nowrap py-2" style={{ gap: '8px' }}>
-                            <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                                <h4 className="fs-20 mb-1">Site Settings</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active">CMS</li>
-                                        <li className="breadcrumb-item active">Settings</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="d-flex gap-2 flex-shrink-0">
-                                {hasPermission('update site settings') && (
-                                    <button
-                                        type="submit"
-                                        form="site-settings-form"
-                                        className="btn btn-primary d-flex align-items-center"
-                                        disabled={updateMutation.isPending || isLoading}
-                                    >
-                                        {updateMutation.isPending ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-line me-1"></i>
-                                                Save Settings
-                                            </>
-                                        )}
-                                    </button>
+                <PageHeader 
+                    title="Site Settings" 
+                    breadcrumbs={[
+                        { label: 'CMS' },
+                        { label: 'Settings' }
+                    ]} 
+                >
+                    <div className="d-flex gap-2 flex-shrink-0">
+                        {hasPermission('update site settings') && (
+                            <button
+                                type="submit"
+                                form="site-settings-form"
+                                className="btn btn-primary d-flex align-items-center"
+                                disabled={updateMutation.isPending || isLoading}
+                            >
+                                {updateMutation.isPending ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="ri-save-line me-1"></i>
+                                        Save Settings
+                                    </>
                                 )}
-                            </div>
-                        </div>
+                            </button>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
                 {isLoading ? (
                     <div className="mt-n3">

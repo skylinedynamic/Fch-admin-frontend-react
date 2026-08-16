@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchBorrowers } from '../../../modules/partner/services';
 import { Skeleton } from 'primereact/skeleton';
+import { toast } from 'react-toastify';
 
 export default function ClientListSection() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [borrowers, setBorrowers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -112,6 +114,17 @@ export default function ClientListSection() {
                 onFilter={onFilter}
                 onPage={onPage}
                 onSort={onSort}
+                onRowClick={(e) => {
+                    if (!showSkeleton && e.data && e.data.id && !e.data.id.toString().startsWith('skeleton_')) {
+                        navigate(`/clients/${e.data.id}`);
+                    }
+                }}
+                rowClassName={(rowData) => {
+                    if (!showSkeleton && rowData && rowData.id && !rowData.id.toString().startsWith('skeleton_')) {
+                        return 'cursor-pointer';
+                    }
+                    return '';
+                }}
                 globalFilterFields={[
                     'full_name',
                     'business_name',

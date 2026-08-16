@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import TableLoader from '../../../components/Loader/TableLoader';
@@ -127,22 +128,13 @@ export default function CreditProfileRequests() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header Section */}
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Request Credit Profile</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item">Intake &amp; Review</li>
-                                        <li className="breadcrumb-item active" aria-current="page">Request Credit Profile</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Request Credit Profile" 
+                    breadcrumbs={[
+                        { label: 'Intake & Review', path: '#' },
+                        { label: 'Request Credit Profile' }
+                    ]} 
+                />
 
                 {/* Filters and Table */}
                 <div className="row row-table-fit">

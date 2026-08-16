@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, ChangeEvent, FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { useBlogs, useSaveSeoSetting, useSeoSettings } from '../../modules/cms/queries';
 import { toast } from 'react-toastify';
 import CmsFormLoader from '../../components/Loader/CmsFormLoader';
@@ -188,45 +189,39 @@ export default function SeoSettingEdit() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">{id ? (isLoading || isFetching ? 'Loading SEO...' : 'Edit SEO Settings') : 'Add SEO Settings'}</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item">CMS</li>
-                                        <li className="breadcrumb-item"><Link to="/cms/seo-settings">SEO Settings</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{id ? 'Edit' : 'Create'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/cms/seo-settings" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                <button
-                                    type="submit"
-                                    form="seo-form"
-                                    className="btn btn-primary w-lg waves-effect"
-                                    disabled={saveMutation.isPending || isLoading || isFetching}
-                                >
-                                    {saveMutation.isPending ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-save-3-line align-middle me-1"></i> Save Changes
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                {/* Page Header */}
+                <PageHeader 
+                    title={id ? (isLoading || isFetching ? 'Loading SEO...' : 'Edit SEO Settings') : 'Add SEO Settings'} 
+                    breadcrumbs={[
+                        { label: 'CMS' },
+                        { label: 'SEO Settings', path: '/cms/seo-settings' },
+                        { label: id ? 'Edit' : 'Create' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2">
+                        <Link to="/cms/seo-settings" className="btn btn-outline-secondary waves-effect" style={{ whiteSpace: 'nowrap' }}>
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </Link>
+                        <button
+                            type="submit"
+                            form="seo-form"
+                            className="btn btn-primary waves-effect"
+                            style={{ whiteSpace: 'nowrap' }}
+                            disabled={saveMutation.isPending || isLoading || isFetching}
+                        >
+                            {saveMutation.isPending ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    {id ? 'Updating...' : 'Saving...'}
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                </>
+                            )}
+                        </button>
                     </div>
-                </div>
+                </PageHeader>
 
                 {id && (isLoading || isFetching) ? (
                     <CmsFormLoader showHeader={false} />

@@ -1589,47 +1589,43 @@ export default function CreditProfileSection({
     }
 
     return (
-        <Card className="border shadow-none mb-0">
-            <CardBody className="p-5">
-                <div
-                    className={`rounded border border-2 border-dashed p-5 text-center transition-all ${dragActive ? 'border-primary bg-primary-subtle' : 'border-muted bg-light'}`}
-                    onDragEnter={handleDrag}
-                    onDragOver={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDrop={handleDrop}
-                    style={{ borderStyle: 'dashed', cursor: 'pointer', transition: 'all 0.2s ease-in-out' }}
-                >
-                    {isUploading ? (
-                        <div className="py-4">
-                            <Spinner color="primary" className="mb-3" style={{ width: '3rem', height: '3rem' }} />
-                            <h5 className="mb-2">Parsing Credit Report PDF...</h5>
-                            <p className="text-muted mb-0">Local parser is extracting credit scores, tradelines and records from your document.</p>
-                        </div>
-                    ) : (
-                        <div className="py-4">
-                            <div className="mb-3">
-                                <i className="ri-upload-cloud-2-fill display-4 text-muted"></i>
-                            </div>
-                            <h4 className="mb-2">Drag & Drop Credit Report PDF</h4>
-                            <p className="text-muted mb-4">or click the button below to select and upload a PDF report</p>
-
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                id="credit-report-upload"
-                                accept="application/pdf"
-                                onChange={handleFileChange}
-                                className="d-none"
-                            />
-                            <label htmlFor="credit-report-upload" className="btn btn-primary px-4 py-2 cursor-pointer mb-0">
-                                <i className="ri-add-line align-middle me-1"></i> Choose PDF Report
-                            </label>
-
-                            <p className="text-muted fs-12 mt-3 mb-0">Only digital PDFs are supported. Image/scanned reports will fail parsing.</p>
-                        </div>
-                    )}
+        <div
+            className={`rounded border border-2 border-dashed p-3 text-center transition-all ${dragActive ? 'border-primary bg-primary-subtle' : 'border-muted bg-light'}`}
+            onDragEnter={handleDrag}
+            onDragOver={handleDrag}
+            onDragLeave={handleDrag}
+            onDrop={handleDrop}
+            style={{ borderStyle: 'dashed', cursor: 'pointer', transition: 'all 0.2s ease-in-out' }}
+        >
+            {isUploading ? (
+                <div className="py-2">
+                    <Spinner color="primary" className="mb-3" style={{ width: '3rem', height: '3rem' }} />
+                    <h5 className="mb-2">Parsing Credit Report PDF...</h5>
+                    <p className="text-muted mb-0">Local parser is extracting credit scores, tradelines and records from your document.</p>
                 </div>
-            </CardBody>
-        </Card>
+            ) : (
+                <div className="py-2">
+                    <div className="mb-3">
+                        <i className="ri-upload-cloud-2-fill display-4 text-muted"></i>
+                    </div>
+                    <h4 className="mb-2">Drag & Drop Credit Report PDF</h4>
+                    <p className="text-muted mb-4">or click the button below to select and upload a PDF report</p>
+
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        id="credit-report-upload"
+                        accept="application/pdf"
+                        onChange={handleFileChange}
+                        className="d-none"
+                    />
+                    <label htmlFor="credit-report-upload" className="btn btn-primary px-4 py-2 cursor-pointer mb-0">
+                        <i className="ri-add-line align-middle me-1"></i> Choose PDF Report
+                    </label>
+
+                    <p className="text-muted fs-12 mt-3 mb-0">Only digital PDFs are supported. Image/scanned reports will fail parsing.</p>
+                </div>
+            )}
+        </div>
     );
 }

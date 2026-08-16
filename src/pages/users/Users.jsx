@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
@@ -475,72 +476,60 @@ export default function Users() {
   return (
     <div className="page-content page-content-fit user-section">
       <div className="container-fluid">
-        <div className="row pb-1 mobile-sticky-header">
-          <div className="col-12">
-            <div className="d-flex align-items-center justify-content-between flex-row py-2">
-              <div className="flex-grow-1">
-                <h4 className="fs-20 mb-1">Users</h4>
-                <nav aria-label="breadcrumb" className="d-block">
-                  <ol className="breadcrumb m-0">
-                    <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
-                    <li className="breadcrumb-item active" aria-current="page">Users</li>
-                  </ol>
-                </nav>
-              </div>
-              <div className="mt-0">
-                <form onSubmit={(e) => e.preventDefault()}>
-                  <div className="row g-3 mb-0 align-items-center">
-                    <div className="col-sm-auto">
-                      <div className="btn-group">
-                        {hasPermission('delete users') && Array.isArray(selection) && selection.length > 0 ? (
-                          <>
-                            <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
-                              Actions
-                            </button>
-                            <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                              <span className="visually-hidden">Toggle dropdown</span>
-                            </button>
-                            <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                              <li>
-                                <button
-                                  className="dropdown-item text-danger"
-                                  type="button"
-                                  onClick={() => {
-                                    if (!selection || selection.length === 0) {
-                                      toast.warn("No users selected for deletion");
-                                      return;
-                                    }
-                                    setDeletingUserId(null);
-                                    setShowDeleteModal(true);
-                                  }}
-                                >
-                                  <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                </button>
-                              </li>
-                            </ul>
-                          </>
-                        ) : hasPermission('create users') ? (
+        <PageHeader 
+          title="Users" 
+          breadcrumbs={[{ label: 'Users' }]} 
+        >
+          <form onSubmit={(e) => e.preventDefault()}>
+            <div className="row g-3 mb-0 align-items-center">
+              <div className="col-sm-auto">
+                <div className="btn-group">
+                  {hasPermission('delete users') && Array.isArray(selection) && selection.length > 0 ? (
+                    <>
+                      <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                        Actions
+                      </button>
+                      <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span className="visually-hidden">Toggle dropdown</span>
+                      </button>
+                      <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                        <li>
                           <button
-                            className="btn btn-primary fw-medium"
-                            onClick={handleAddUserClick}
-                            disabled={loadingLimitCheck}
+                            className="dropdown-item text-danger"
+                            type="button"
+                            onClick={() => {
+                              if (!selection || selection.length === 0) {
+                                toast.warn("No users selected for deletion");
+                                return;
+                              }
+                              setDeletingUserId(null);
+                              setShowDeleteModal(true);
+                            }}
                           >
-                            {loadingLimitCheck ? (
-                              <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                            ) : (
-                              <i className="ri-add-fill me-1 align-bottom"></i>
-                            )}
-                            Add User
+                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                           </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </form>
+                        </li>
+                      </ul>
+                    </>
+                  ) : hasPermission('create users') ? (
+                    <button
+                      className="btn btn-primary fw-medium"
+                      onClick={handleAddUserClick}
+                      disabled={loadingLimitCheck}
+                    >
+                      {loadingLimitCheck ? (
+                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                      ) : (
+                        <i className="ri-add-fill me-1 align-bottom"></i>
+                      )}
+                      Add User
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </form>
+        </PageHeader>
 
         <div className="row row-table-fit">
           <div className="col-lg-12">

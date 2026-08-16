@@ -36,7 +36,8 @@ import {
     LOG_TYPE_APPOINTMENT_DELETE,
     LOG_TYPE_TASK_VERIFICATION,
     LOG_TYPE_FUNDING_REQUEST_CREATE,
-    LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE
+    LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE,
+    LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE
 } from '../config/appConfig';
 
 export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): AvatarConfig | null => {
@@ -65,7 +66,7 @@ export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): Ava
         return { icon: 'ri-file-add-line', bgClass: 'bg-info-subtle text-info' };
     }
 
-    if (logTypeRaw === LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE) {
+    if (logTypeRaw === LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE || logTypeRaw === LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE) {
         return { icon: 'ri-refresh-line', bgClass: 'bg-warning-subtle text-warning' };
     }
 

@@ -7,7 +7,7 @@ export const DataTable = (props) => {
   const showSkeleton = !!loading
 
   if (showSkeleton) {
-    const count = typeof props.rows === 'number' ? props.rows : 20
+    const count = typeof props.skeletonRows === 'number' ? props.skeletonRows : 8
 
     // Attempt to determine column count from children
     let columns = 6

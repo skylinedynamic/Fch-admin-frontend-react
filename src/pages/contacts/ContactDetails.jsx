@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import PageHeader from '../common/PageHeader';
 
 import {
     createContact,
@@ -285,41 +286,33 @@ export default function ContactDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Contact Details</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/contacts">Contacts</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Contact Details</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-0">
-                                <Link to="/contacts" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                {((id && hasPermission('update contacts')) || (!id && hasPermission('create contacts'))) && (
-                                    <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary w-lg waves-effect">
-                                        {saving ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
-                                            </>
-                                        )}
-                                    </button>
+                <PageHeader 
+                    title="Contact Details" 
+                    breadcrumbs={[
+                        { label: 'Contacts', path: '/contacts' },
+                        { label: 'Contact Details' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-0">
+                        <Link to="/contacts" className="btn btn-outline-secondary w-lg waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </Link>
+                        {((id && hasPermission('update contacts')) || (!id && hasPermission('create contacts'))) && (
+                            <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary w-lg waves-effect">
+                                {saving ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                    </>
                                 )}
-                            </div>
-                        </div>
+                            </button>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row">
                     {/* Left Side: Contact Form */}

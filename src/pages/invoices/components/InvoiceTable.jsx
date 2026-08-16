@@ -8,6 +8,7 @@ import { INVOICE_STATUS_COLORS, INVOICE_STATUS_OPTIONS, STATUS_PAID } from '../.
 import InvoicePaymentModal from './InvoicePaymentModal';
 import InvoicePreviewModal from './InvoicePreviewModal';
 import { useAuthStore } from '../../../store/auth';
+import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 
 export default function InvoiceTable({
     data,
@@ -71,7 +72,7 @@ export default function InvoiceTable({
     };
 
     const amountBodyTemplate = (rowData) => {
-        return <span>{rowData.payment_amount}</span>;
+        return <span>{rowData.displayable_payment_amount || '-'}</span>;
     };
 
     const actionBodyTemplate = (rowData) => {
@@ -90,7 +91,7 @@ export default function InvoiceTable({
                 >
                     <i className="ri-file-pdf-line fs-14"></i>
                 </button>
-                {isNotPaid && isNotHost && rowData.entity_type?.includes('Partner') && (
+                {isNotPaid && isNotHost && rowData.entity_type?.includes(ENTITY_TYPE_PARTNER) && (
                     <button
                         className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
                         onClick={(e) => {

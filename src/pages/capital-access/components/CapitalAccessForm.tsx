@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
@@ -463,46 +464,38 @@ export default function CapitalAccessForm() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-18 fw-semibold mb-1">{isEditMode ? 'Edit Capital Program' : 'Create Capital Program'}</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/capital-access" className="text-muted">Capital Access</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{isEditMode ? 'Edit Builder' : 'Create Builder'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/capital-access" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                {((isEditMode && hasPermission('update credit accounts')) || (!isEditMode && hasPermission('create credit accounts'))) && (
-                                    <button
-                                        type="submit"
-                                        form="capital-account-form"
-                                        className="btn btn-primary waves-effect w-lg"
-                                        disabled={loading || initialLoading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                {isEditMode ? 'Updating...' : 'Saving...'}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-line align-middle me-1"></i> {isEditMode ? 'Save Changes' : 'Save Program'}
-                                            </>
-                                        )}
-                                    </button>
+                <PageHeader 
+                    title={isEditMode ? 'Edit Capital Program' : 'Create Capital Program'} 
+                    breadcrumbs={[
+                        { label: 'Capital Access', path: '/capital-access' },
+                        { label: isEditMode ? 'Edit Builder' : 'Create Builder' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <Link to="/capital-access" className="btn btn-outline-secondary w-lg waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </Link>
+                        {((isEditMode && hasPermission('update credit accounts')) || (!isEditMode && hasPermission('create credit accounts'))) && (
+                            <button
+                                type="submit"
+                                form="capital-account-form"
+                                className="btn btn-primary waves-effect w-lg"
+                                disabled={loading || initialLoading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        {isEditMode ? 'Updating...' : 'Saving...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="ri-save-line align-middle me-1"></i> {isEditMode ? 'Save Changes' : 'Save Program'}
+                                    </>
                                 )}
-                            </div>
-                        </div>
+                            </button>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
                 {initialLoading ? (
                     <div className="row">
