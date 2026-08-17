@@ -78,12 +78,9 @@ export default function Users() {
     try {
       setLoadingLimitCheck(true);
 
-      const detailsRes = await getUserDetails();
-      const freshUser = detailsRes.data?.user;
-
       const data = await getUserCount();
       const currentCount = data.data.count || 0;
-      const totalAllowed = freshUser?.user_seats || 3;
+      const totalAllowed = data.data.seat_limit || data.data.user_seats || userSubscription?.user_seats || 3;
 
       if (currentCount < totalAllowed) {
         setShowAddUser(true);
@@ -483,9 +480,9 @@ export default function Users() {
   return (
     <div className="page-content page-content-fit user-section">
       <div className="container-fluid">
-        <PageHeader 
-          title="Users" 
-          breadcrumbs={[{ label: 'Users' }]} 
+        <PageHeader
+          title="Users"
+          breadcrumbs={[{ label: 'Users' }]}
         >
           <form onSubmit={(e) => e.preventDefault()}>
             <div className="row g-3 mb-0 align-items-center">

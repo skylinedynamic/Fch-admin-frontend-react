@@ -156,7 +156,7 @@ export default function Header() {
         }}
       >
         {/* ── My Subscription (non-host partner only) ───────────── */}
-        {user?.entity_type === ENTITY_TYPE_PARTNER && Number(user?.is_host) === 0 && (
+        {user?.entity_type === ENTITY_TYPE_PARTNER && Number(user?.is_host) === 0 && !!user?.first_payment_date && (
           <Link
             className="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
             to="/my-subscription"

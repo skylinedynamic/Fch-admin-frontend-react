@@ -39,7 +39,7 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
     };
 
     return (
-        <div className="modal fade" ref={modalRef} tabIndex="-1" aria-hidden="true">
+        <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
                 <div className="modal-content border-0">
                     <div className="modal-body p-5 text-center px-4">

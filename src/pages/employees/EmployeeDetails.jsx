@@ -40,6 +40,7 @@ export default function EmployeeDetails() {
 
   // State
   const user = useAuthStore((state) => state.user);
+  const userSubscription = useAuthStore((state) => state.userSubscription);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -327,18 +328,9 @@ export default function EmployeeDetails() {
             try {
               setLoadingLimitCheck(true);
 
-              // Fetch fresh user details to check if host or limits
-              const detailsRes = await getUserDetails();
-              const freshUser = detailsRes?.data?.user;
-
-              // Double check host status from fresh data
-              if (freshUser?.is_host == 1) {
-                return;
-              }
-
               const data = await getUserCount();
               const currentCount = parseInt(data?.data?.count || 0);
-              const totalAllowed = parseInt(freshUser?.user_seats || 3);
+              const totalAllowed = parseInt(data?.data?.seat_limit || data?.data?.user_seats || userSubscription?.user_seats || 3);
 
               if (currentCount >= totalAllowed) {
                 // Limit reached! Uncheck the box and show modal
