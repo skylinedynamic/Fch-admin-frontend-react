@@ -132,15 +132,7 @@ export default function FundingRequestDetail() {
     };
 
     const getExactStatusStyles = (status: string) => {
-        const mapping: Record<string, string> = {
-            [FUNDING_REVIEW_STATUS.PENDING]: 'Pending',
-            [FUNDING_REVIEW_STATUS.ACCEPTED]: 'Accepted',
-            [FUNDING_REVIEW_STATUS.IN_PROGRESS]: 'In Progress',
-            [FUNDING_REVIEW_STATUS.APPROVED]: 'Approved',
-            [FUNDING_REVIEW_STATUS.REJECTED]: 'Rejected',
-            [FUNDING_REVIEW_STATUS.CANCELED]: 'Canceled',
-        };
-        const label = mapping[status] || 'Pending';
+        const label = status || FUNDING_REVIEW_STATUS.PENDING;
         const card = FUNDING_REVIEW_GUIDELINE_CARDS.find(c => c.label === label);
         return {
             bg: card?.bg || '#f0fdf4',
@@ -180,11 +172,11 @@ export default function FundingRequestDetail() {
                         ]}
                     >
                         <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                            {/* {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id && (
+                            {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id && (
                                 <Link to={`/fund-application/${review.id}`} className="btn btn-primary waves-effect">
                                     Process Funding Application
                                 </Link>
-                            )} */}
+                            )}
                             <Link to="/intake-review/funding-request" className="btn btn-outline-secondary w-lg waves-effect">
                                 <i className="ri-arrow-left-line align-middle me-1"></i> Back
                             </Link>
