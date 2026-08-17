@@ -1,4 +1,5 @@
 import React from "react";
+import Modal from "bootstrap/js/dist/modal";
 import { Dropdown } from "primereact/dropdown";
 import { usePermissions } from "../../../lib/auth/usePermissions";
 
@@ -20,14 +21,29 @@ const UserModal = ({
 }) => {
   const { hasPermission } = usePermissions();
   const [errors, setErrors] = React.useState({});
+  const modalRef = React.useRef(null);
+  const modalInstanceRef = React.useRef(null);
 
-  // Merge backend errors with frontend errors
-  const allErrors = { ...errors, ...backendErrors };
-
-  // Reset errors when modal opens/closes
+  // Initialize Bootstrap Modal
   React.useEffect(() => {
+    if (!modalRef.current) return;
+    if (!modalInstanceRef.current) {
+      modalInstanceRef.current = new Modal(modalRef.current, {
+        backdrop: 'static',
+        keyboard: false,
+      });
+    }
+  }, []);
+
+  // Control Modal Show / Hide with animation
+  React.useEffect(() => {
+    const modal = modalInstanceRef.current;
+    if (!modal) return;
     if (show) {
+      modal.show();
       setErrors({});
+    } else {
+      modal.hide();
     }
   }, [show]);
 
@@ -99,13 +115,13 @@ const UserModal = ({
     }
   };
 
-  if (!show) return null;
+  // Merge backend errors with frontend errors
+  const allErrors = { ...errors, ...backendErrors };
 
   return (
-    <>
-      <div className="modal fade flip show d-block" tabIndex="-1" role="dialog">
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content border-0 shadow-lg custom-user-modal">
+    <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content border-0 shadow-lg custom-user-modal">
             <div className="modal-header border-0 bg-light p-3 custom-user-modal-header">
               <div className="d-flex align-items-center gap-2">
                 <div className="avatar-xs flex-shrink-0">
@@ -363,10 +379,8 @@ const UserModal = ({
               </form>
             </div>
           </div>
-        </div>
       </div>
-      <div className="modal-backdrop fade show"></div>
-    </>
+    </div>
   );
 };
 

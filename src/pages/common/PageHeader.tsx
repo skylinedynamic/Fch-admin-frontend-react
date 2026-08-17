@@ -28,8 +28,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumbs, children, s
                                     <Link to="/">Dashboard</Link>
                                 </li>
                                 {breadcrumbs.map((item, index) => (
-                                    <li 
-                                        key={index} 
+                                    <li
+                                        key={index}
                                         className={`breadcrumb-item ${!item.path ? 'active' : ''}`}
                                         aria-current={!item.path ? 'page' : undefined}
                                     >

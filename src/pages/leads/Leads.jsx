@@ -385,9 +385,9 @@ export default function Leads() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header Section */}
-                <PageHeader 
-                    title="Leads" 
-                    breadcrumbs={[{ label: 'Leads' }]} 
+                <PageHeader
+                    title="Leads"
+                    breadcrumbs={[{ label: 'Leads' }]}
                 >
                     <div className="d-flex align-items-center gap-2">
                         <div className="btn-group">

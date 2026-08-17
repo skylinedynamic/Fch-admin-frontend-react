@@ -515,12 +515,12 @@ export default function LeadDetails() {
             <div className="page-content">
                 <div className="container-fluid">
                     {/* Page Title */}
-                    <PageHeader 
-                        title="Lead Profile" 
+                    <PageHeader
+                        title="Lead Profile"
                         breadcrumbs={[
                             { label: 'Leads', path: '/leads' },
                             { label: 'Lead Profile' }
-                        ]} 
+                        ]}
                     >
                         <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                             <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">

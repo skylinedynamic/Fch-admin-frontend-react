@@ -200,7 +200,7 @@ export default function Partners() {
         setAppliedFilters(filters);
         setPage(1);
     };
-  
+
 
     const handleClearFilters = () => {
         setSearchText('');
@@ -294,9 +294,9 @@ export default function Partners() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header mirrored from Clients.jsx */}
-                <PageHeader 
-                    title="Partners" 
-                    breadcrumbs={[{ label: 'Partners' }]} 
+                <PageHeader
+                    title="Partners"
+                    breadcrumbs={[{ label: 'Partners' }]}
                 >
                     <div className="btn-group">
                         {hasPermission('delete partners') && Array.isArray(selectedPartners) && selectedPartners.length > 0 ? (
