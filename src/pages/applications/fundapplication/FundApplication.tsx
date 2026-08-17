@@ -17,6 +17,7 @@ import CoBorrowerModal from './components/shared/CoBorrowerModal'
 // Hooks
 import { useCoBorrowers } from './hooks/useCoBorrowers'
 import { FUNDING_PURPOSE_OTHER, purposeOfFundingOptions, timeframeOptions } from '../../../data/profile'
+import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower'
 import { useFundingRequest, useFundingApplicationDocuments } from '../../../modules/funding-application/queries'
 import { formatCurrency } from '../../../utils/borrowerFormatters'
 
@@ -410,9 +411,17 @@ export default function FundApplication() {
     setHighestVisitedStep(prev => Math.max(prev, activeStep))
   }, [activeStep])
 
+  const isApplicationSubmitted = Boolean(
+    fundingData?.status && 
+    fundingData.status !== FUNDING_APPLICATION_STATUS.ON_HOLD && 
+    fundingData.status !== FUNDING_APPLICATION_STATUS.DRAFT
+  )
+
   // Check if a step is complete (for progress display)
   const isStepComplete = useCallback(
     (stepIndex: number): boolean => {
+      if (isApplicationSubmitted) return true;
+
       // Document upload shows checkmark ONLY if user passed the tab AND has files
       if (stepIndex === STEP_INDICES.DOCUMENT_UPLOAD) {
         return stepIndex < highestVisitedStep && Boolean(documentsData && documentsData.length > 0)
@@ -434,15 +443,15 @@ export default function FundApplication() {
 
       return true;
     },
-    [activeStep, highestVisitedStep, documentsData, isStepValid]
+    [activeStep, highestVisitedStep, documentsData, isStepValid, isApplicationSubmitted]
   )
 
   // Progress calculations
   const stepsTotal = tabs.length
-  const completedCount = tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
-  const progressPct = Math.round((completedCount / stepsTotal) * 100)
-  const firstInvalidIdx = tabs.findIndex((_, index) => !isStepValid(index))
-  const maxAllowedIdx = firstInvalidIdx === -1 ? stepsTotal - 1 : firstInvalidIdx
+  const completedCount = isApplicationSubmitted ? stepsTotal : tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
+  const progressPct = isApplicationSubmitted ? 100 : Math.round((completedCount / stepsTotal) * 100)
+  const firstInvalidIdx = isApplicationSubmitted ? -1 : tabs.findIndex((_, index) => !isStepValid(index))
+  const maxAllowedIdx = isApplicationSubmitted ? stepsTotal - 1 : (firstInvalidIdx === -1 ? stepsTotal - 1 : firstInvalidIdx)
 
   // Handle tab switching with auto-save
   const handleTabSwitch = useCallback(

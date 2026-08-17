@@ -10,6 +10,7 @@ import { downloadBorrowerDocument } from '../../../modules/client/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
 import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS } from '../../../config/funding';
+import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
@@ -179,6 +180,10 @@ export default function FundingRequestDetail() {
                                 </Link>
                             )}
                             {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id && (
+                                !review.funding_application ||
+                                review.funding_application.status === FUNDING_APPLICATION_STATUS.ON_HOLD ||
+                                review.funding_application.status === FUNDING_APPLICATION_STATUS.DRAFT
+                            ) && (
                                 <Link to={`/fund-application/${review.id}`} className="btn btn-primary waves-effect">
                                     <i className="ri-file-list-3-line align-middle"></i> Process Application
                                 </Link>
