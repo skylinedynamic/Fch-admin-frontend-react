@@ -269,13 +269,13 @@ export default function CapitalAccessSection({ clientId }: CapitalAccessSectionP
             <div className="ca-dashboard-welcome">
 
                 <div className="row g-4 mb-4">
-                    {/* Funding Readiness Score Card */}
+                    {/* Capital Access Readiness Scores Card */}
                     <div className="col-md-6">
                         <div className="ca-metric-card h-100">
                             <div className="ca-metric-header">
                                 <div className="ca-metric-title-block">
                                     <h6 className="ca-metric-card-label">
-                                        Funding Readiness Score
+                                        Capital Access Readiness Scores
                                     </h6>
                                     <div className="ca-score-display">
                                         <span

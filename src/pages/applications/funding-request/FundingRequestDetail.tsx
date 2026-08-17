@@ -164,6 +164,7 @@ export default function FundingRequestDetail() {
 
                 <div className="container-fluid">
                     {/* Header */}
+                    {/* Header */}
                     <PageHeader
                         title="Funding Request Details"
                         breadcrumbs={[
@@ -172,9 +173,14 @@ export default function FundingRequestDetail() {
                         ]}
                     >
                         <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            {(review?.borrower?.id || review?.borrower_id) && (
+                                <Link to={`/clients/${review.borrower?.id || review.borrower_id}`} className="btn btn-info waves-effect">
+                                    <i className="ri-user-line align-middle me-1"></i> Go to Client
+                                </Link>
+                            )}
                             {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id && (
                                 <Link to={`/fund-application/${review.id}`} className="btn btn-primary waves-effect">
-                                    Process Funding Application
+                                    <i className="ri-file-list-3-line align-middle"></i> Process Application
                                 </Link>
                             )}
                             <Link to="/intake-review/funding-request" className="btn btn-outline-secondary w-lg waves-effect">

@@ -114,6 +114,7 @@ export default function FundApplication() {
   const [fundingRequestId, setFundingRequestId] = useState<string | number | null>(null)
 
   const [activeStep, setActiveStep] = useState<number>(STEP_INDICES.BUSINESS_INFO)
+  const [highestVisitedStep, setHighestVisitedStep] = useState<number>(STEP_INDICES.BUSINESS_INFO)
   const [loading, setLoading] = useState(true)
   const [isNavigatingSave, setIsNavigatingSave] = useState(false)
   const [mobileOpenIdx, setMobileOpenIdx] = useState<number | null>(STEP_INDICES.BUSINESS_INFO)
@@ -261,7 +262,7 @@ export default function FundApplication() {
   const { data: fundingData } = useFundingRequest(currentReqId)
   const fundingApplicationId = fundingData?.id ?? null
   const { data: documentsData } = useFundingApplicationDocuments(fundingApplicationId, {
-    enabled: activeStep >= STEP_INDICES.DOCUMENT_UPLOAD,
+    enabled: !!fundingApplicationId,
   })
 
   // Synchronize funding data when fetched from API
@@ -398,16 +399,38 @@ export default function FundApplication() {
     [canProceedFromBusinessInfo, owner, financial, funding, disclosure, federal, attestation]
   )
 
+  const initializedRef = React.useRef(false)
+  useEffect(() => {
+    if (fundingData && !loading && !initializedRef.current) {
+      const firstInvalid = tabs.findIndex((_, index) => !isStepValid(index))
+      const initialHighest = firstInvalid === -1 ? tabs.length - 1 : firstInvalid
+      setHighestVisitedStep(initialHighest)
+      initializedRef.current = true
+    }
+  }, [fundingData, loading, isStepValid])
+
+  useEffect(() => {
+    setHighestVisitedStep(prev => Math.max(prev, activeStep))
+  }, [activeStep])
+
   // Check if a step is complete (for progress display)
   const isStepComplete = useCallback(
     (stepIndex: number): boolean => {
-      // Document upload shows checkmark ONLY if user passed the tab AND has files
+      // If no funding application is saved yet, don't show checkmarks for unvisited future steps
+      if (!fundingApplicationId && stepIndex > highestVisitedStep) return false;
+
+      // Document upload shows checkmark ONLY if it has files
       if (stepIndex === STEP_INDICES.DOCUMENT_UPLOAD) {
-        return activeStep > STEP_INDICES.DOCUMENT_UPLOAD && Boolean(documentsData && documentsData.length > 0)
+        return Boolean(documentsData && documentsData.length > 0)
       }
-      return isStepValid(stepIndex)
+      if (!isStepValid(stepIndex)) return false;
+
+      // Active step never shows a checkmark (it shows its number highlighted)
+      if (stepIndex === activeStep) return false;
+
+      return true;
     },
-    [activeStep, documentsData, isStepValid]
+    [activeStep, highestVisitedStep, documentsData, isStepValid, fundingApplicationId]
   )
 
   // Progress calculations
@@ -429,15 +452,18 @@ export default function FundApplication() {
         return
       }
 
-      // If navigating forward, simulate a click on the "Save & Next" button
-      // This ensures validation and submission flow is exactly the same as clicking the button
-      const btn = document.getElementById('btn-save-next')
-      if (btn) {
-        btn.click()
-        return // Let the button handler manage the step transition
+      // If navigating forward, use the active step's save function to save and validate
+      if (activeStepSaveRef.current) {
+        setIsNavigatingSave(true)
+        const success = await activeStepSaveRef.current()
+        setIsNavigatingSave(false)
+        if (success) {
+          setActiveStep(targetIndex)
+        }
+        return
       }
 
-      // Fallback (or if no button exists, e.g. read-only step)
+      // Fallback
       setActiveStep(targetIndex)
     },
     [activeStep, maxAllowedIdx]
@@ -480,7 +506,7 @@ export default function FundApplication() {
   )
 
   // Render the current step content
-  const renderStep = (stepIndex: number): React.ReactNode => {
+  const renderStep = (stepIndex: number, isActive: boolean = true): React.ReactNode => {
     switch (stepIndex) {
       case STEP_INDICES.BUSINESS_INFO:
         return (
@@ -492,7 +518,7 @@ export default function FundApplication() {
             canProceed={canProceedFromBusinessInfo}
             onNext={() => setActiveStep(STEP_INDICES.OWNERSHIP_INFO)}
             loading={loading}
-            onRegisterSave={registerSave}
+            onRegisterSave={isActive ? registerSave : undefined}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
           />
@@ -515,6 +541,7 @@ export default function FundApplication() {
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
             {...commonStepProps}
+            onRegisterSave={isActive ? registerSave : undefined}
           />
         )
 
@@ -526,6 +553,7 @@ export default function FundApplication() {
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
             {...commonStepProps}
+            onRegisterSave={isActive ? registerSave : undefined}
           />
         )
 
@@ -537,6 +565,7 @@ export default function FundApplication() {
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
             {...commonStepProps}
+            onRegisterSave={isActive ? registerSave : undefined}
           />
         )
 
@@ -547,6 +576,7 @@ export default function FundApplication() {
             fundingRequestId={fundingRequestId || id}
             fundingApplicationId={fundingApplicationId}
             {...commonStepProps}
+            onRegisterSave={isActive ? registerSave : undefined}
           />
         )
 
@@ -558,6 +588,7 @@ export default function FundApplication() {
             disclosureItems={disclosureItems}
             fundingRequestId={fundingRequestId || id}
             {...commonStepProps}
+            onRegisterSave={isActive ? registerSave : undefined}
           />
         )
 
@@ -569,6 +600,7 @@ export default function FundApplication() {
             isValid={isStepValid(STEP_INDICES.FEDERAL_COMPLIANCE)}
             fundingRequestId={fundingRequestId || id}
             {...commonStepProps}
+            onRegisterSave={isActive ? registerSave : undefined}
           />
         )
 
@@ -643,7 +675,7 @@ export default function FundApplication() {
                           <span className="fw-semibold sidebar-step-label">{label}</span>
                           {isActive && <span className="sidebar-step-notch show"></span>}
                           {isActive && isNavigatingSave && (
-                            <span className="ms-auto spinner-border spinner-border-sm text-primary"></span>
+                            <span className="ms-auto spinner-border spinner-border-sm text-white"></span>
                           )}
                         </button>
                       </li>
@@ -662,7 +694,13 @@ export default function FundApplication() {
                   Step {activeStep + 1} of {stepsTotal}: {tabs[activeStep]}
                 </span>
               </div>
-              <div className="card-body">{renderStep(activeStep)}</div>
+              <div className="card-body">
+                {tabs.map((_, idx) => (
+                  <div key={idx} style={{ display: activeStep === idx ? 'block' : 'none' }}>
+                    {renderStep(idx, activeStep === idx)}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -690,11 +728,13 @@ export default function FundApplication() {
                           {renderStepBadge(idx, isCompleted)}
                           <span className="align-middle fw-semibold">{label}</span>
                           {isActive && isNavigatingSave && (
-                            <span className="ms-2 spinner-border spinner-border-sm text-primary"></span>
+                            <span className="ms-2 spinner-border spinner-border-sm text-white"></span>
                           )}
                           <i className={`ri-arrow-${isOpen ? 'up' : 'down'}-s-line ms-auto`}></i>
                         </button>
-                        {isOpen && <div className="p-3">{renderStep(idx)}</div>}
+                        <div className="p-3" style={{ display: isOpen ? 'block' : 'none' }}>
+                          {renderStep(idx, isOpen)}
+                        </div>
                       </li>
                     )
                   })}

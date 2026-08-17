@@ -13,7 +13,9 @@ export default function FundingRequestDetailLoader() {
                                 <div className="skeleton-line" style={{ width: '300px', height: '14px', borderRadius: '4px' }}></div>
                             </div>
                             <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <div className="skeleton-line" style={{ width: '80px', height: '38px', borderRadius: '4px' }}></div>
+                                <div className="skeleton-line" style={{ width: '130px', height: '38px', borderRadius: '4px' }}></div>
+                                <div className="skeleton-line" style={{ width: '180px', height: '38px', borderRadius: '4px' }}></div>
+                                <div className="skeleton-line" style={{ width: '90px', height: '38px', borderRadius: '4px' }}></div>
                             </div>
                         </div>
                     </div>
@@ -102,10 +104,10 @@ export default function FundingRequestDetailLoader() {
                             <div className="card-body p-4">
                                 <div className="skeleton-line mb-3" style={{ width: '100%', height: '14px', borderRadius: '4px' }}></div>
                                 <div className="skeleton-line mb-4" style={{ width: '80%', height: '14px', borderRadius: '4px' }}></div>
-                                
+
                                 <div className="skeleton-line mb-2" style={{ width: '60px', height: '12px', borderRadius: '4px' }}></div>
                                 <div className="skeleton-line w-100 mb-3" style={{ height: '38px', borderRadius: '6px' }}></div>
-                                
+
                                 <div className="skeleton-line w-100" style={{ height: '38px', borderRadius: '6px' }}></div>
                             </div>
                         </div>
