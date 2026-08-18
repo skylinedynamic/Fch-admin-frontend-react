@@ -86,16 +86,6 @@ export const fetchGlobalSubscriptions = async (payload: any = {}) => {
   return data;
 };
 
-export const fetchUpcomingBilling = async (payload: any = {}) => {
-  const { data } = await apiClient.post('/common/billing/fetch-upcoming', payload);
-  return data;
-};
-
-export const fetchBillingDetails = async (id: string | number) => {
-  const { data } = await apiClient.get(`/common/billing/${id}`);
-  return data;
-};
-
 export const fetchSubscriptionStats = async () => {
   const { data } = await apiClient.post('/common/subscriptions/fetch-all', { per_page: 1 });
   return { status: true, message: data.message, data: data.stats };

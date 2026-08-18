@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchUpcomingBilling } from '../../modules/partner/services';
+import { fetchUpcomingBilling } from '../../modules/billing';
 import BillingTable from './components/BillingTable';
 import BillingFilters from './components/BillingFilters';
 import { toast } from 'react-toastify';
@@ -17,7 +17,7 @@ export default function Billing() {
 
     // Sorting state
     const [sortField, setSortField] = useState('upcoming_billing_date');
-    const [sortOrder, setSortOrder] = useState('asc');
+    const [sortOrder, setSortOrder] = useState('desc');
 
     // Filter states
     const [filters, setFilters] = useState({});

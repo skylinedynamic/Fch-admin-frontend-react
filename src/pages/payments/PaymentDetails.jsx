@@ -20,9 +20,11 @@ import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfi
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
 import { formatDate } from '../../utils/formatters';
 import ErrorPage from '../Utility/ErrorPage';
+import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function PaymentDetails() {
     const { id } = useParams();
+    const { hasPermission } = usePermissions();
     const [payment, setPayment] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -370,7 +372,7 @@ export default function PaymentDetails() {
                                     )}
 
                                     {/* Bottom Payment Approval / Rejection Section */}
-                                    {payment.can_approve && (
+                                    {payment.can_approve && hasPermission('can approve payment') && (
                                         <div className="rounded p-4 bg-warning bg-opacity-10 mt-4">
                                             <h5 className="fs-16 fw-bold text-warning mb-2">
                                                 <i className="ri-time-line me-2 fs-18 align-middle"></i>Payment Approval &amp; Decision
