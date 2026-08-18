@@ -201,6 +201,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 apiData.enrollment_type = ed.enrollment_type || '';
                 apiData.payable_amount = ed.payable_amount !== undefined && ed.payable_amount !== null ? ed.payable_amount : '';
                 apiData.payment_amount = ed.payable_amount !== undefined && ed.payable_amount !== null ? ed.payable_amount : '';
+                apiData.borrower_fee_amount = ed.borrower_fee_amount !== undefined && ed.borrower_fee_amount !== null ? ed.borrower_fee_amount : '';
                 apiData.total_subscription_amount = ed.total_subscription_amount !== undefined && ed.total_subscription_amount !== null ? ed.total_subscription_amount : '';
                 apiData.monthly_platform_fee = ed.monthly_platform_fee !== undefined && ed.monthly_platform_fee !== null ? ed.monthly_platform_fee : '';
                 apiData.enrollment_amount = ed.enrollment_amount !== undefined && ed.enrollment_amount !== null ? ed.enrollment_amount : '';
@@ -210,6 +211,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 apiData.installment_monthly_amount = Number(ed.installment_monthly_amount || 0);
                 apiData.installment_remaining_balance = Number(ed.installment_remaining_balance || 0);
                 // Formatted display strings
+                apiData.borrower_fee_amount_formatted = ed.borrower_fee_amount_formatted || '';
                 apiData.payable_amount_formatted = ed.payable_amount_formatted || '';
                 apiData.total_subscription_amount_formatted = ed.total_subscription_amount_formatted || '';
                 apiData.monthly_platform_fee_formatted = ed.monthly_platform_fee_formatted || '';
@@ -1564,7 +1566,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                     <i className="ri-shield-user-line text-warning me-1"></i> Partner Invoice:
                                                                 </span>
                                                                 <span className="amount-value text-warning" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                                    ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                    {formData.borrower_fee_amount_formatted || (formData.enrollment_details?.borrower_fee_amount_formatted) || ('$' + fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
                                                                 </span>
                                                             </div>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">

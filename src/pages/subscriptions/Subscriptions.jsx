@@ -8,6 +8,23 @@ import SubscriptionFilters from './components/SubscriptionFilters';
 import { toast } from 'react-toastify';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
+import ListSkeletonLoader from '../../components/Loader/ListSkeletonLoader';
+
+// Built outside the component so useState(buildInitialFilters) only calls it once.
+// This means appliedFilters is populated on render 1 — no useEffect delay.
+const buildInitialFilters = () => ({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    subscriber_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    entity_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    enrollment_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    payable_amount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    subscription_start_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    subscription_end_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    enrollment_completed_at: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    created_at: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+});
 
 export default function Subscriptions() {
     const [loading, setLoading] = useState(true);
@@ -33,37 +50,17 @@ export default function Subscriptions() {
     const [sortField, setSortField] = useState('created_at');
     const [sortOrder, setSortOrder] = useState('desc');
 
-    // Filter states
-    const [filters, setFilters] = useState({});
+    // Filter states — initialised directly so no useEffect delay
+    const [filters, setFilters] = useState(buildInitialFilters);
     const [searchText, setSearchText] = useState('');
     const [selectedStatus, setSelectedStatus] = useState(null);
 
-    // Applied states to trigger fetch
+    // Applied states — also pre-populated so loadData fires on the first render
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedStatus, setAppliedStatus] = useState(null);
-    const [appliedFilters, setAppliedFilters] = useState({});
-
-    const initFilters = () => {
-        const initial = {
-            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            subscriber_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            entity_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            enrollment_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            payable_amount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            subscription_start_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            subscription_end_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            enrollment_completed_at: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            created_at: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
-        };
-        setFilters(initial);
-        setAppliedFilters(initial);
-    };
+    const [appliedFilters, setAppliedFilters] = useState(buildInitialFilters);
 
     useEffect(() => {
-        initFilters();
-
         // Add class to body to prevent global scroll
         document.body.classList.add('table-page-fit-active');
 
@@ -106,9 +103,7 @@ export default function Subscriptions() {
     };
 
     useEffect(() => {
-        if (Object.keys(appliedFilters).length > 0) {
-            loadData();
-        }
+        loadData();
     }, [appliedSearchText, appliedStatus, appliedFilters, page, perPage, sortField, sortOrder]);
 
     const handleApplyFilters = () => {
@@ -119,11 +114,13 @@ export default function Subscriptions() {
     };
 
     const handleClearFilters = () => {
+        const fresh = buildInitialFilters();
         setSearchText('');
         setSelectedStatus(null);
         setAppliedSearchText('');
         setAppliedStatus(null);
-        initFilters();
+        setFilters(fresh);
+        setAppliedFilters(fresh);
         setPage(1);
     };
 
@@ -177,61 +174,58 @@ export default function Subscriptions() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <PageHeader 
-                    title="Subscriptions" 
-                    breadcrumbs={[{ label: 'Subscriptions' }]} 
+                <PageHeader
+                    title="Subscriptions"
+                    breadcrumbs={[{ label: 'Subscriptions' }]}
                 />
 
-                <div className="row subscription-section">
-                    {statsLoading && (!stats || stats.total_subscriptions === 0) ? (
-                        <>
-                            <StatisticsCardSkeleton />
-                            <StatisticsCardSkeleton />
-                            <StatisticsCardSkeleton />
-                            <StatisticsCardSkeleton />
-                        </>
-                    ) : (
-                        statWidgets.map((widget, index) => (
-                            <StatisticsCard
-                                key={index}
-                                title={widget.label}
-                                count={widget.counter}
-                                icon={widget.icon}
-                                colorVariant={widget.color}
-                                colSize="col-xl-3 col-md-6"
-                            />
-                        ))
-                    )}
-                </div>
-                <div className="row row-table-fit">
-                    <div className="col-lg-12">
-                        <div className="card">
-                            <div className="card-body">
-                                <SubscriptionFilters
-                                    searchText={searchText} setSearchText={setSearchText}
-                                    selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
-                                    onApply={handleApplyFilters}
-                                    onClear={handleClearFilters}
-                                    loading={loading}
+                {loading ? (
+                    <ListSkeletonLoader />
+                ) : (
+                    <>
+                        <div className="row subscription-section">
+                            {statWidgets.map((widget, index) => (
+                                <StatisticsCard
+                                    key={index}
+                                    title={widget.label}
+                                    count={widget.counter}
+                                    icon={widget.icon}
+                                    colorVariant={widget.color}
+                                    colSize="col-xl-3 col-md-6"
                                 />
+                            ))}
+                        </div>
+                        <div className="row row-table-fit">
+                            <div className="col-lg-12">
+                                <div className="card">
+                                    <div className="card-body">
+                                        <SubscriptionFilters
+                                            searchText={searchText} setSearchText={setSearchText}
+                                            selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
+                                            onApply={handleApplyFilters}
+                                            onClear={handleClearFilters}
+                                            loading={loading}
+                                        />
 
-                                <SubscriptionTable
-                                    data={subscriptions}
-                                    loading={loading}
-                                    totalRecords={totalRecords}
-                                    page={page}
-                                    perPage={perPage}
-                                    onPage={onPage}
-                                    onSort={onSort}
-                                    onFilter={onFilter}
-                                    filters={filters}
-                                    sortField={sortField}
-                                    sortOrder={sortOrder}
-                                />
+                                        <SubscriptionTable
+                                            data={subscriptions}
+                                            loading={loading}
+                                            totalRecords={totalRecords}
+                                            page={page}
+                                            perPage={perPage}
+                                            onPage={onPage}
+                                            onSort={onSort}
+                                            onFilter={onFilter}
+                                            filters={filters}
+                                            sortField={sortField}
+                                            sortOrder={sortOrder}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
         </div>
     );

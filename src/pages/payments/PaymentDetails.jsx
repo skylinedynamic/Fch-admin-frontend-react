@@ -17,7 +17,7 @@ import {
     PROVIDER_STRIPE
 } from '../../config/paymentConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
-import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
+import PaymentDetailsLoader from '../../components/Loader/PaymentDetailsLoader';
 import { formatDate } from '../../utils/formatters';
 import ErrorPage from '../Utility/ErrorPage';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -214,7 +214,7 @@ export default function PaymentDetails() {
                 />
 
                 {loading ? (
-                    <DetailsSkeletonLoader />
+                    <PaymentDetailsLoader />
                 ) : (
                     <div className="row">
                         <div className="col-lg-12">

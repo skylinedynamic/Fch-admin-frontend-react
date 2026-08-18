@@ -14,7 +14,7 @@ export interface PageHeaderProps {
 }
 
 const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumbs, children, sticky = true }) => {
-    const headerClass = sticky ? "row pb-1 page-subheader-sticky bg-body" : "row pb-1 mobile-sticky-header";
+    const headerClass = sticky ? "row pb-1 page-subheader-sticky bg-body" : "row pb-1 page-header-static bg-body";
 
     return (
         <div className={headerClass}>

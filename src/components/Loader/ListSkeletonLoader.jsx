@@ -25,7 +25,7 @@ export default function ListSkeletonLoader() {
                                 </div>
                                 <Skeleton className="sk-w-200 sk-h-2_5rem sk-rounded"></Skeleton>
                             </div>
-                            
+
                             {/* Table skeleton */}
                             <div className="table-responsive">
                                 <table className="table table-borderless table-nowrap align-middle">
