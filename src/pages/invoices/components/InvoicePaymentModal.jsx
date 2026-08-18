@@ -215,90 +215,90 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
                         ) : null}
                       </div>
 
-                    {/* Card Content Table */}
-                    <div className="card-body p-3 pt-1">
-                      <table className="table table-borderless table-sm mb-0 fs-13">
-                        <tbody>
-                          {bank.account_name && (
+                      {/* Card Content Table */}
+                      <div className="card-body p-3 pt-1">
+                        <table className="table table-borderless table-sm mb-0 fs-13">
+                          <tbody>
+                            {bank.account_name && (
+                              <tr>
+                                <td className="text-muted fw-medium py-1 align-middle" style={{ width: '40%' }}>Account Name</td>
+                                <td className="fw-bold text-dark py-1 align-middle text-truncate">{bank.account_name}</td>
+                              </tr>
+                            )}
                             <tr>
-                              <td className="text-muted fw-medium py-1 align-middle" style={{ width: '40%' }}>Account Name</td>
-                              <td className="fw-bold text-dark py-1 align-middle text-truncate">{bank.account_name}</td>
-                            </tr>
-                          )}
-                          <tr>
-                            <td className="text-muted fw-medium py-1 align-middle">Account Number</td>
-                            <td className="py-1 align-middle">
-                              <span className="fw-bold font-monospace text-dark me-1">{bank.account_number || 'N/A'}</span>
-                              {bank.account_number && (
-                                <button
-                                  type="button"
-                                  className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
-                                  onClick={() => handleCopy(bank.account_number, `acc_${index}`)}
-                                  title="Copy Account Number"
-                                >
-                                  {copiedField === `acc_${index}` ? (
-                                    <i className="ri-check-line text-success fs-15"></i>
-                                  ) : (
-                                    <i className="ri-file-copy-line fs-14"></i>
-                                  )}
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                          {bank.routing_number && (
-                            <tr>
-                              <td className="text-muted fw-medium py-1 align-middle">Routing / ABA</td>
+                              <td className="text-muted fw-medium py-1 align-middle">Account Number</td>
                               <td className="py-1 align-middle">
-                                <span className="fw-bold font-monospace text-dark me-1">{bank.routing_number}</span>
-                                <button
-                                  type="button"
-                                  className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
-                                  onClick={() => handleCopy(bank.routing_number, `rout_${index}`)}
-                                  title="Copy Routing Number"
-                                >
-                                  {copiedField === `rout_${index}` ? (
-                                    <i className="ri-check-line text-success fs-15"></i>
-                                  ) : (
-                                    <i className="ri-file-copy-line fs-14"></i>
-                                  )}
-                                </button>
+                                <span className="fw-bold font-monospace text-dark me-1">{bank.account_number || 'N/A'}</span>
+                                {bank.account_number && (
+                                  <button
+                                    type="button"
+                                    className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
+                                    onClick={() => handleCopy(bank.account_number, `acc_${index}`)}
+                                    title="Copy Account Number"
+                                  >
+                                    {copiedField === `acc_${index}` ? (
+                                      <i className="ri-check-line text-success fs-15"></i>
+                                    ) : (
+                                      <i className="ri-file-copy-line fs-14"></i>
+                                    )}
+                                  </button>
+                                )}
                               </td>
                             </tr>
-                          )}
-                          {(invoice?.invoice_id || invoice?.id) && (
-                            <tr>
-                              <td className="text-muted fw-medium py-1 align-middle">Reference Memo</td>
-                              <td className="py-1 align-middle">
-                                <span className="fw-bold font-monospace text-primary me-1">Invoice #{invoice.invoice_id || invoice.id}</span>
-                                <button
-                                  type="button"
-                                  className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
-                                  onClick={() => handleCopy(`Invoice #${invoice.invoice_id || invoice.id}`, `memo_${index}`)}
-                                  title="Copy Reference"
-                                >
-                                  {copiedField === `memo_${index}` ? (
-                                    <i className="ri-check-line text-success fs-15"></i>
-                                  ) : (
-                                    <i className="ri-file-copy-line fs-14"></i>
-                                  )}
-                                </button>
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                            {bank.routing_number && (
+                              <tr>
+                                <td className="text-muted fw-medium py-1 align-middle">Routing / ABA</td>
+                                <td className="py-1 align-middle">
+                                  <span className="fw-bold font-monospace text-dark me-1">{bank.routing_number}</span>
+                                  <button
+                                    type="button"
+                                    className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
+                                    onClick={() => handleCopy(bank.routing_number, `rout_${index}`)}
+                                    title="Copy Routing Number"
+                                  >
+                                    {copiedField === `rout_${index}` ? (
+                                      <i className="ri-check-line text-success fs-15"></i>
+                                    ) : (
+                                      <i className="ri-file-copy-line fs-14"></i>
+                                    )}
+                                  </button>
+                                </td>
+                              </tr>
+                            )}
+                            {(invoice?.invoice_id || invoice?.id) && (
+                              <tr>
+                                <td className="text-muted fw-medium py-1 align-middle">Reference Memo</td>
+                                <td className="py-1 align-middle">
+                                  <span className="fw-bold font-monospace text-primary me-1">Invoice #{invoice.invoice_id || invoice.id}</span>
+                                  <button
+                                    type="button"
+                                    className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
+                                    onClick={() => handleCopy(`Invoice #${invoice.invoice_id || invoice.id}`, `memo_${index}`)}
+                                    title="Copy Reference"
+                                  >
+                                    {copiedField === `memo_${index}` ? (
+                                      <i className="ri-check-line text-success fs-15"></i>
+                                    ) : (
+                                      <i className="ri-file-copy-line fs-14"></i>
+                                    )}
+                                  </button>
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
 
-                      {bank.instructions && (
-                        <div className="bg-light p-2 rounded-2 fs-12 text-muted mt-2">
-                          <i className="ri-information-line me-1 text-primary"></i>
-                          <strong>Instructions:</strong> {bank.instructions}
-                        </div>
-                      )}
+                        {bank.instructions && (
+                          <div className="bg-light p-2 rounded-2 fs-12 text-muted mt-2">
+                            <i className="ri-information-line me-1 text-primary"></i>
+                            <strong>Instructions:</strong> {bank.instructions}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
             </div>
           ) : (
             <div className="alert alert-warning mb-0 fs-13">
@@ -402,7 +402,7 @@ const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess }) =>
   return (
     <div className="text-start py-3">
       {submitted ? (
-        <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-0 bg-white border border-success-subtle text-center p-4">
+        <div className="card border-0 shadow-sm overflow-hidden mb-0 bg-white text-center p-4">
           <div className="avatar-md mx-auto mb-3">
             <span className="avatar-title bg-success-subtle text-success rounded-circle fs-32 shadow-sm">
               <i className="ri-checkbox-circle-fill"></i>
@@ -411,7 +411,7 @@ const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess }) =>
           <h5 className="fw-bold text-dark mb-1">Payment Confirmation Submitted</h5>
           <p className="text-muted fs-13 mb-3">Invoice #{invoice?.invoice_id || invoice?.id} &middot; USD ${amount.toFixed(2)}</p>
 
-          <div className="d-inline-flex align-items-center gap-2 bg-warning-subtle text-warning border border-warning-subtle px-3 py-1.5 rounded-pill mb-4">
+          <div className="d-inline-flex align-items-center gap-2 bg-warning-subtle text-warning px-3 py-1.5 rounded-pill mb-4">
             <span className="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
             <span className="fw-bold fs-12 text-uppercase" style={{ letterSpacing: '0.5px' }}>Status: {STATUS_PROCESSING}</span>
           </div>

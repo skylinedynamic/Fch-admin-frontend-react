@@ -20,9 +20,11 @@ import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfi
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
 import { formatDate } from '../../utils/formatters';
 import ErrorPage from '../Utility/ErrorPage';
+import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function PaymentDetails() {
     const { id } = useParams();
+    const { hasPermission } = usePermissions();
     const [payment, setPayment] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -217,7 +219,7 @@ export default function PaymentDetails() {
                     <div className="row">
                         <div className="col-lg-12">
                             <div className="card border-0 overflow-hidden shadow-sm mb-4">
-                                <div className="card-header bg-soft-primary border-bottom border-primary border-opacity-25 p-4">
+                                <div className="card-header border-bottom border-primary border-opacity-25 p-4">
                                     <div className="d-flex align-items-center">
                                         <div className="flex-shrink-0 avatar-sm">
                                             <div className="avatar-title bg-primary bg-opacity-10 text-primary rounded fs-24">
@@ -370,7 +372,7 @@ export default function PaymentDetails() {
                                     )}
 
                                     {/* Bottom Payment Approval / Rejection Section */}
-                                    {payment.can_approve && (
+                                    {payment.can_approve && hasPermission('can approve payment') && (
                                         <div className="rounded p-4 bg-warning bg-opacity-10 mt-4">
                                             <h5 className="fs-16 fw-bold text-warning mb-2">
                                                 <i className="ri-time-line me-2 fs-18 align-middle"></i>Payment Approval &amp; Decision

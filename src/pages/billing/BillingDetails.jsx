@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchBillingDetails } from '../../modules/partner/services';
+import { fetchBillingDetails } from '../../modules/billing';
 import { fetchInvoices } from '../../modules/invoice/services';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
 import BillingDetailsLoader from '../../components/Loader/BillingDetailsLoader';
 import StatisticsCard from '../../components/Common/StatisticsCard';
-import { INVOICE_STATUS_COLORS } from '../../config/invoiceConfig';
+import { STATUS_PAID as INVOICE_STATUS_PAID, INVOICE_STATUS_COLORS } from '../../config/invoiceConfig';
+import { STATUS_ACTIVE as SUBSCRIPTION_STATUS_ACTIVE } from '../../config/subscriptionConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 
 export default function BillingDetails() {
@@ -49,13 +50,11 @@ export default function BillingDetails() {
             try {
                 setInvoicesLoading(true);
                 const params = {
+                    subscription_id: id,
                     page,
                     per_page: perPage,
                     sort_field: sortField,
                     sort_order: sortOrder,
-                    entity_id: billingDetails?.entity_id,
-                    entity_type: billingDetails?.entity_type,
-
                 };
                 const response = await fetchInvoices(params);
                 if (response.status) {
@@ -68,10 +67,10 @@ export default function BillingDetails() {
                 setInvoicesLoading(false);
             }
         };
-        if (id && billingDetails) {
+        if (id) {
             loadInvoices();
         }
-    }, [id, billingDetails, page, perPage, sortField, sortOrder]);
+    }, [id, page, perPage, sortField, sortOrder]);
 
     const onPage = (event) => {
         setPerPage(event.rows);
@@ -116,8 +115,8 @@ export default function BillingDetails() {
     const company = subscriber?.company_name || 'N/A';
 
     const totalInvoiced = invoices.reduce((sum, inv) => sum + parseFloat(inv.payment_amount || 0), 0);
-    const totalPaid = invoices.filter(inv => inv.status === 'Paid').reduce((sum, inv) => sum + parseFloat(inv.payment_amount || 0), 0);
-    const balanceDue = invoices.filter(inv => inv.status !== 'Paid').reduce((sum, inv) => sum + parseFloat(inv.payment_amount || 0), 0);
+    const totalPaid = invoices.filter(inv => inv.status === INVOICE_STATUS_PAID).reduce((sum, inv) => sum + parseFloat(inv.payment_amount || 0), 0);
+    const balanceDue = invoices.filter(inv => inv.status !== INVOICE_STATUS_PAID).reduce((sum, inv) => sum + parseFloat(inv.payment_amount || 0), 0);
 
     const typeColor = entity_type === ENTITY_TYPE_PARTNER ? 'primary' : 'success';
 
@@ -178,7 +177,7 @@ export default function BillingDetails() {
                                 <div className="card shadow-sm border-0 overflow-hidden">
 
                                     {/* Hero Header */}
-                                    <div className="card-header bg-soft-primary border-bottom border-primary border-opacity-25 p-4">
+                                    <div className="card-header border-bottom border-primary border-opacity-25 p-4">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-shrink-0 avatar-sm">
                                                 <div className={`avatar-title bg-${typeColor} bg-opacity-10 text-${typeColor} rounded fs-24`}>
@@ -240,29 +239,88 @@ export default function BillingDetails() {
                                                 {subscription ? (
                                                     <div className="row g-3">
                                                         <div className="col-sm-6">
-                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Enrollment Type</p>
-                                                            <span className="badge bg-primary-subtle text-primary fs-12 mt-1 px-2.5 py-1 text-uppercase">
-                                                                {subscription.enrollment_type || 'N/A'}
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Enrollment Model</p>
+                                                            <span className="badge bg-primary-subtle text-primary fs-12 mt-1 px-2.5 py-1 text-uppercase fw-semibold">
+                                                                {subscription.enrollment_type || 'Standard'}
                                                             </span>
                                                         </div>
                                                         <div className="col-sm-6">
                                                             <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Status</p>
-                                                            <span className={`badge bg-${subscription.status?.toLowerCase() === 'active' ? 'success' : 'warning'}-subtle text-${subscription.status?.toLowerCase() === 'active' ? 'success' : 'warning'} fs-12 mt-1 px-2.5 py-1 text-uppercase`}>
-                                                                {subscription.status}
+                                                            <span className={`badge bg-${subscription.status?.toLowerCase() === SUBSCRIPTION_STATUS_ACTIVE.toLowerCase() ? 'success' : 'warning'}-subtle text-${subscription.status?.toLowerCase() === SUBSCRIPTION_STATUS_ACTIVE.toLowerCase() ? 'success' : 'warning'} fs-12 mt-1 px-2.5 py-1 text-uppercase fw-semibold`}>
+                                                                {subscription.status || SUBSCRIPTION_STATUS_ACTIVE}
                                                             </span>
                                                         </div>
+
+                                                        {/* Dynamic breakdown based on enrollment_type / installment_type */}
+                                                        {((subscription.installment_type === 1 || String(subscription.installment_type) === '1') || subscription.enrollment_type === 'Installment') ? (
+                                                            <>
+                                                                <div className="col-sm-6">
+                                                                    <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Monthly Installment</p>
+                                                                    <h5 className="fs-14 mb-0">
+                                                                        {subscription.subscription_amount_per_month || subscription.payable_amount || '$0.00'}
+                                                                    </h5>
+                                                                </div>
+                                                                <div className="col-sm-6">
+                                                                    <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Installments Progress</p>
+                                                                    <h5 className="fs-14 mb-0">
+                                                                        {subscription.installments_paid || 0} of {subscription.installment_count || 1} Paid
+                                                                    </h5>
+                                                                </div>
+                                                                {subscription.down_payment && subscription.down_payment !== '$0.00' && (
+                                                                    <div className="col-sm-6">
+                                                                        <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Down Payment</p>
+                                                                        <h5 className="fs-14 mb-0 text-success">
+                                                                            {subscription.down_payment}
+                                                                        </h5>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <div className="col-sm-6">
+                                                                <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Total Subscription Amount</p>
+                                                                <h5 className="fs-14 mb-0">
+                                                                    {subscription.total_subscription_amount || subscription.payable_amount || '$0.00'}
+                                                                </h5>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Monthly Platform Fee for Partner */}
+                                                        {entity_type === ENTITY_TYPE_PARTNER && subscription.monthly_platform_fee && (
+                                                            <div className="col-sm-6">
+                                                                <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Monthly Platform Fee</p>
+                                                                <h5 className="fs-14 mb-0">
+                                                                    {subscription.monthly_platform_fee}
+                                                                </h5>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Additional Seats details if user_seats > 0 */}
+                                                        {subscription.user_seats > 0 && (
+                                                            <div className="col-sm-6">
+                                                                <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">User Seats</p>
+                                                                <h5 className="fs-14 mb-0 text-primary">
+                                                                    {subscription.user_seats} Seats ({subscription.per_seat_amount || '$0.00'}/seat)
+                                                                </h5>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Next Billing Due */}
                                                         <div className="col-sm-6">
-                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Installment Amount</p>
-                                                            <h5 className="fs-14 mb-0 text-dark fw-bold">
-                                                                ${parseFloat(subscription.payable_amount || 0).toFixed(2)}
+                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Next Billing Due</p>
+                                                            <h5 className="fs-14 mb-0 text-primary fw-semibold">
+                                                                {subscription.next_billing_date ? (
+                                                                    <>
+                                                                        {subscription.next_billing_date}
+                                                                        {subscription.next_billing_type && (
+                                                                            <span className="fs-12 text-muted ms-1">({subscription.next_billing_type}: {subscription.next_billing_amount})</span>
+                                                                        )}
+                                                                    </>
+                                                                ) : (
+                                                                    subscription.subscription_end_date || 'N/A'
+                                                                )}
                                                             </h5>
                                                         </div>
-                                                        <div className="col-sm-6">
-                                                            <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Monthly Platform Fee</p>
-                                                            <h5 className="fs-14 mb-0 text-dark fw-bold">
-                                                                ${parseFloat(subscription.monthly_platform_fee || 0).toFixed(2)}
-                                                            </h5>
-                                                        </div>
+
                                                         <div className="col-sm-6">
                                                             <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Start Date</p>
                                                             <h5 className="fs-14 mb-0">
