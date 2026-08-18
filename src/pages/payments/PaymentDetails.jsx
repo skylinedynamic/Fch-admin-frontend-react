@@ -217,7 +217,7 @@ export default function PaymentDetails() {
                     <div className="row">
                         <div className="col-lg-12">
                             <div className="card border-0 overflow-hidden shadow-sm mb-4">
-                                <div className="card-header bg-soft-primary border-bottom border-primary border-opacity-25 p-4">
+                                <div className="card-header border-bottom border-primary border-opacity-25 p-4">
                                     <div className="d-flex align-items-center">
                                         <div className="flex-shrink-0 avatar-sm">
                                             <div className="avatar-title bg-primary bg-opacity-10 text-primary rounded fs-24">

@@ -178,7 +178,7 @@ export default function BillingDetails() {
                                 <div className="card shadow-sm border-0 overflow-hidden">
 
                                     {/* Hero Header */}
-                                    <div className="card-header bg-soft-primary border-bottom border-primary border-opacity-25 p-4">
+                                    <div className="card-header border-bottom border-primary border-opacity-25 p-4">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-shrink-0 avatar-sm">
                                                 <div className={`avatar-title bg-${typeColor} bg-opacity-10 text-${typeColor} rounded fs-24`}>
