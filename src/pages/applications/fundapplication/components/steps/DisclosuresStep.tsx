@@ -28,7 +28,7 @@ export default function DisclosuresStep({
   fundingRequestId,
   onRegisterSave,
 }: DisclosuresStepProps) {
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useDisclosuresConsent(fundingRequestId)
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useDisclosuresConsent(fundingRequestId, { enabled: !!fundingRequestId })
   const { mutateAsync: saveDisclosures, isPending: isSaving } = useSaveDisclosuresConsent()
   const [disclosureId, setDisclosureId] = useState<number | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -88,6 +88,7 @@ export default function DisclosuresStep({
   const handleSubmit = async () => {
     const success = await handleSave()
     if (success) {
+      toast.success('Disclosures saved successfully')
       onNext()
     }
   }

@@ -42,7 +42,7 @@ export default function BusinessInformationStep({
   const [businessInfoId, setBusinessInfoId] = useState<number | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useBusinessInfo(fundingRequestId)
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useBusinessInfo(fundingRequestId, { enabled: !!fundingRequestId })
   const { mutateAsync: saveBusinessInfo, isPending: isSaving } = useSaveBusinessInfo()
 
   // Memoized save handler
@@ -67,7 +67,7 @@ export default function BusinessInformationStep({
       industry_type: business.industryType,
       entity_type: business.entityType,
       years_in_business: business.yearsInBusiness,
-      number_of_employees: business.employees ? parseInt(business.employees) : null,
+      number_of_employees: business.employees ? parseInt(business.employees.toString().replace(/,/g, ''), 10) : null,
       funding_sequence_id: fundingSequenceId || apiData?.funding_sequence_id || null,
       funding_request_id: fundingRequestId || apiData?.funding_request_id || null,
     }
@@ -223,6 +223,7 @@ export default function BusinessInformationStep({
   const handleNext = async () => {
     const success = await handleSave()
     if (success) {
+      toast.success('Business information saved successfully')
       onNext()
     }
   }

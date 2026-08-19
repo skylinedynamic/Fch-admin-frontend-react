@@ -201,14 +201,14 @@ export default function FundApplication() {
     const searchParams = new URLSearchParams(window.location.search);
     const seqId = state?.funding_sequence_id ?? state?.fundingSequenceId ?? searchParams.get('funding_sequence_id') ?? searchParams.get('fundingSequenceId');
     const reqId = id ?? state?.funding_request_id ?? state?.fundingRequestId ?? searchParams.get('funding_request_id') ?? searchParams.get('fundingRequestId');
-    
+
     if (seqId) setFundingSequenceId(seqId);
     if (reqId) setFundingRequestId(reqId);
 
     if (state && (state.purpose || state.approved_funding || state.requested_amount || state.funding_type)) {
       setFunding(prev => {
         let matchedPurpose = state.purpose ? matchPurpose(state.purpose) : prev.purpose;
-        
+
         return {
           ...prev,
           purpose: matchedPurpose,
@@ -228,15 +228,15 @@ export default function FundApplication() {
     patriotActAck: false,
     fcraAuth: false,
     ecoaAck: false,
-    bankruptcy: '',
-    lawsuit: '',
-    federalLoanDefault: '',
-    federalDebtDelinquent: '',
-    criminalOffense: '',
-    paroleProbation: '',
-    suspendedDebarred: '',
-    judgmentsLiensBusiness: '',
-    judgmentsLiensOwner: '',
+    bankruptcy: 'no',
+    lawsuit: 'no',
+    federalLoanDefault: 'no',
+    federalDebtDelinquent: 'no',
+    criminalOffense: 'no',
+    paroleProbation: 'no',
+    suspendedDebarred: 'no',
+    judgmentsLiensBusiness: 'no',
+    judgmentsLiensOwner: 'no',
     explanation: '',
   })
 
@@ -260,10 +260,10 @@ export default function FundApplication() {
 
   // Fetch funding request and documents (tab-wise lazy loading)
   const currentReqId = fundingRequestId || id || null
-  const { data: fundingData } = useFundingRequest(currentReqId)
+  const { data: fundingData } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
   const fundingApplicationId = fundingData?.id ?? null
   const { data: documentsData } = useFundingApplicationDocuments(fundingApplicationId, {
-    enabled: activeStep >= STEP_INDICES.DOCUMENT_UPLOAD,
+    enabled: !!fundingApplicationId,
   })
 
   // Synchronize funding data when fetched from API
@@ -330,10 +330,27 @@ export default function FundApplication() {
       business.yearsInBusiness
     )
   }, [personal, business])
-
   // Validation: Check if a specific step is valid
   const isStepValid = useCallback(
     (stepIndex: number): boolean => {
+      // Helper to check backend save state
+      const checkBackendSaved = (idx: number) => {
+        if (idx === STEP_INDICES.BUSINESS_INFO) return !!fundingData?.is_business_info_saved;
+        if (idx === STEP_INDICES.OWNERSHIP_INFO) return !!fundingData?.is_ownership_info_saved;
+        if (idx === STEP_INDICES.FINANCIAL_INFO) return !!fundingData?.is_financial_info_saved;
+        if (idx === STEP_INDICES.FUNDING_REQUEST) return !!fundingData?.is_funding_request_saved;
+        if (idx === STEP_INDICES.DOCUMENT_UPLOAD) return true;
+        if (idx === STEP_INDICES.DISCLOSURES) return !!fundingData?.is_disclosures_saved;
+        if (idx === STEP_INDICES.FEDERAL_COMPLIANCE) return !!fundingData?.is_federal_compliance_saved;
+        return false;
+      };
+
+      // If we're not currently on this tab, it is ONLY valid if it has been saved in the backend.
+      // This prevents unmounted tabs that happen to have valid pre-filled local state from bypassing the sequence.
+      if (activeStep !== stepIndex) {
+        return checkBackendSaved(stepIndex);
+      }
+
       switch (stepIndex) {
         case STEP_INDICES.BUSINESS_INFO:
           return canProceedFromBusinessInfo
@@ -399,51 +416,55 @@ export default function FundApplication() {
     [canProceedFromBusinessInfo, owner, financial, funding, disclosure, federal, attestation]
   )
 
+  const initializedRef = React.useRef(false)
   useEffect(() => {
-    if (!loading) {
+    if (fundingData && !loading && !initializedRef.current) {
       const firstInvalid = tabs.findIndex((_, index) => !isStepValid(index))
-      const calculatedHighest = firstInvalid === -1 ? tabs.length - 1 : firstInvalid
-      setHighestVisitedStep(prev => Math.max(prev, calculatedHighest))
+      const initialHighest = firstInvalid === -1 ? tabs.length - 1 : firstInvalid
+      setHighestVisitedStep(initialHighest)
+      initializedRef.current = true
     }
-  }, [loading, isStepValid])
+  }, [fundingData, loading, isStepValid])
 
   useEffect(() => {
     setHighestVisitedStep(prev => Math.max(prev, activeStep))
   }, [activeStep])
 
-  const isApplicationSubmitted = Boolean(
-    fundingData?.status && 
-    fundingData.status !== FUNDING_APPLICATION_STATUS.ON_HOLD && 
-    fundingData.status !== FUNDING_APPLICATION_STATUS.DRAFT
-  )
-
   // Check if a step is complete (for progress display)
   const isStepComplete = useCallback(
     (stepIndex: number): boolean => {
-      if (isApplicationSubmitted) return true;
+      // If no funding application is saved yet, NO step is complete
+      if (!fundingApplicationId) return false;
 
-      // Document upload shows checkmark ONLY if user passed the tab AND has files
-      if (stepIndex === STEP_INDICES.DOCUMENT_UPLOAD) {
-        return stepIndex < highestVisitedStep && Boolean(documentsData && documentsData.length > 0)
-      }
+      // Helper to check if a step is explicitly saved in the database
+      const isStepSaved = (idx: number) => {
+        if (idx === STEP_INDICES.BUSINESS_INFO) return !!fundingData?.is_business_info_saved;
+        if (idx === STEP_INDICES.OWNERSHIP_INFO) return !!fundingData?.is_ownership_info_saved;
+        if (idx === STEP_INDICES.FINANCIAL_INFO) return !!fundingData?.is_financial_info_saved;
+        if (idx === STEP_INDICES.FUNDING_REQUEST) return !!fundingData?.is_funding_request_saved;
+        if (idx === STEP_INDICES.DISCLOSURES) return !!fundingData?.is_disclosures_saved;
+        if (idx === STEP_INDICES.FEDERAL_COMPLIANCE) return !!fundingData?.is_federal_compliance_saved;
+        return true;
+      };
 
-      if (!isStepValid(stepIndex)) return false;
-
-      // Active step never shows a checkmark (it shows its number highlighted)
-      if (stepIndex === activeStep) return false;
-
-      // Steps beyond the highest visited step cannot show a checkmark, even if pre-filled
-      if (stepIndex > highestVisitedStep) return false;
-
-      // A step is only considered visually complete if all preceding steps are also valid
+      // Enforce strict linear progression: a step cannot be complete if ANY previous step is unsaved
       for (let i = 0; i < stepIndex; i++) {
-        if (i === STEP_INDICES.DOCUMENT_UPLOAD) continue;
-        if (!isStepValid(i)) return false;
+        if (!isStepSaved(i)) return false;
+        // If we are currently on the tab, enforce validation
+        if (activeStep === i && !isStepValid(i)) return false;
       }
+
+      // Document upload shows checkmark ONLY if it has files
+      if (stepIndex === STEP_INDICES.DOCUMENT_UPLOAD) {
+        return Boolean(documentsData && documentsData.length > 0)
+      }
+
+      if (!isStepSaved(stepIndex)) return false;
+      if (activeStep === stepIndex && !isStepValid(stepIndex)) return false;
 
       return true;
     },
-    [activeStep, highestVisitedStep, documentsData, isStepValid, isApplicationSubmitted]
+    [activeStep, highestVisitedStep, documentsData, isStepValid, fundingApplicationId, owner.isSaved, financial.isSaved, fundingData]
   )
 
   // Progress calculations
@@ -476,7 +497,7 @@ export default function FundApplication() {
         return
       }
 
-      // Fallback (e.g. read-only step without a save function)
+      // Fallback
       setActiveStep(targetIndex)
     },
     [activeStep, maxAllowedIdx]
@@ -623,11 +644,15 @@ export default function FundApplication() {
   }
 
   // Render step badge (number or checkmark)
-  const renderStepBadge = (stepIndex: number, isCompleted: boolean) => (
-    <span className={`sidebar-step-badge ${isCompleted ? 'completed' : ''}`}>
-      {isCompleted ? <i className="ri-check-line"></i> : stepIndex + 1}
-    </span>
-  )
+  const renderStepBadge = (stepIndex: number, isCompleted: boolean) => {
+    // Active step never shows a checkmark visually (it shows its number highlighted)
+    const showCheckmark = isCompleted && stepIndex !== activeStep;
+    return (
+      <span className={`sidebar-step-badge ${showCheckmark ? 'completed' : ''}`}>
+        {showCheckmark ? <i className="ri-check-line"></i> : stepIndex + 1}
+      </span>
+    )
+  }
 
   // Render progress header
   const renderProgressHeader = (className?: string) => (
@@ -650,8 +675,8 @@ export default function FundApplication() {
         {/* Page Header */}
         <div className="text-center mb-4">
           <h4 className="mb-1">
-            {funding.approvedFunding 
-              ? `Complete Your ${funding.approvedFunding} Application` 
+            {funding.approvedFunding
+              ? `Complete Your ${funding.approvedFunding} Application`
               : 'Start Your Business Funding Application'}
           </h4>
           <div className="text-muted">
@@ -743,15 +768,9 @@ export default function FundApplication() {
                           )}
                           <i className={`ri-arrow-${isOpen ? 'up' : 'down'}-s-line ms-auto`}></i>
                         </button>
-                        {isOpen && (
-                          <div className="p-3">
-                            {tabs.map((_, contentIdx) => (
-                              <div key={contentIdx} style={{ display: idx === contentIdx ? 'block' : 'none' }}>
-                                {renderStep(contentIdx, idx === contentIdx)}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="p-3" style={{ display: isOpen ? 'block' : 'none' }}>
+                          {renderStep(idx, isOpen)}
+                        </div>
                       </li>
                     )
                   })}
@@ -761,11 +780,11 @@ export default function FundApplication() {
           </div>
         </div>
       </div>
-      <CoBorrowerModal 
-        coDraft={coDraft} 
-        setCoDraft={setCoDraft} 
-        onSubmit={submitCoBorrower} 
-        isEditing={isEditing} 
+      <CoBorrowerModal
+        coDraft={coDraft}
+        setCoDraft={setCoDraft}
+        onSubmit={submitCoBorrower}
+        isEditing={isEditing}
       />
     </div>
   )

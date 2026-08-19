@@ -127,6 +127,7 @@ export interface FederalComplianceData {
   any_outstanding_judgments_business: boolean | null
   any_outstanding_judgments_owner: boolean | null
   federal_compliance_disclosures_explanation: string | null
+  is_federal_compliance_saved?: boolean
 }
 
 export interface FederalComplianceResponse {

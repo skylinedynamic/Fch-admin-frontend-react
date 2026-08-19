@@ -1005,6 +1005,7 @@ export default function LeadDetails() {
                                                                             className="w-100"
                                                                             appendTo="self"
                                                                             readOnlyInput
+                                                                            maxDate={new Date()}
                                                                         />
                                                                     </div>
                                                                     {errors.business_start_date && <div className="invalid-feedback d-block">{errors.business_start_date}</div>}

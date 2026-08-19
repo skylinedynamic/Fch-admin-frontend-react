@@ -59,7 +59,7 @@ export default function OwnershipInformationStep({
   const [lastCustomCity, setLastCustomCity] = useState('')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useOwnershipInfo(fundingRequestId)
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useOwnershipInfo(fundingRequestId, { enabled: !!fundingRequestId })
   const { mutateAsync: saveOwnershipInfo, isPending: isSaving } = useSaveOwnershipInfo()
 
   // Memoized save handler
@@ -106,8 +106,8 @@ export default function OwnershipInformationStep({
     }
 
     try {
-      const response = await saveOwnershipInfo(payload)
-      toast.success(response?.message || 'Ownership information saved successfully!')
+      await saveOwnershipInfo(payload)
+      setOwner((prev) => ({ ...prev, isSaved: true }))
       return true
     } catch (error: any) {
       const errors = error.response?.data?.errors
@@ -136,19 +136,20 @@ export default function OwnershipInformationStep({
       setOwner((prev) => ({
         ...prev,
         id: apiData.id || null,
-        firstName: apiData.first_name || '',
-        lastName: apiData.last_name || '',
-        dob: apiData.date_of_birth || '',
-        ssn: apiData.ssn ? formatSSN(apiData.ssn) : '',
-        citizenship: apiData.citizenship_status || citizenshipOptions[0].value,
-        streetAddress: apiData.street_address || '',
-        country: apiData.country || getDefaultCountry().name,
-        city: apiData.city || '',
-        state: apiData.state || '',
-        zip: apiData.zip_code || '',
-        ownershipPct: apiData.ownership || '',
-        hasCoBorrower: apiData.has_co_borrower ?? false,
-        phoneNumber: apiData.phone_number || '',
+        firstName: apiData.first_name || prev.firstName,
+        lastName: apiData.last_name || prev.lastName,
+        dob: apiData.date_of_birth || prev.dob,
+        ssn: apiData.ssn ? formatSSN(apiData.ssn) : prev.ssn,
+        citizenship: apiData.citizenship_status || prev.citizenship || citizenshipOptions[0].value,
+        streetAddress: apiData.street_address || prev.streetAddress,
+        country: apiData.country || prev.country || getDefaultCountry().name,
+        city: apiData.city || prev.city,
+        state: apiData.state || prev.state,
+        zip: apiData.zip_code || prev.zip,
+        ownershipPct: apiData.ownership || prev.ownershipPct,
+        hasCoBorrower: apiData.has_co_borrower ?? prev.hasCoBorrower,
+        phoneNumber: apiData.phone_number || prev.phoneNumber,
+        isSaved: apiData.is_ownership_info_saved,
       }))
 
       if (apiData.co_borrowers && apiData.co_borrowers.length > 0) {
@@ -185,6 +186,17 @@ export default function OwnershipInformationStep({
   // Helper to check if field has error
   const hasError = (fieldName: string): boolean => {
     return !!validationErrors[fieldName]
+  }
+
+  // Helper to clear field error on change
+  const clearError = (fieldName: string) => {
+    if (validationErrors[fieldName]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[fieldName]
+        return newErrors
+      })
+    }
   }
 
   // Update available states when country changes
@@ -279,6 +291,7 @@ export default function OwnershipInformationStep({
   const handleNext = async () => {
     const success = await handleSave()
     if (success) {
+      toast.success('Ownership information saved successfully')
       onNext()
     }
   }
@@ -345,7 +358,10 @@ export default function OwnershipInformationStep({
             className={`form-control ${hasError('ssn') ? 'is-invalid' : ''}`}
             placeholder="xxx-xx-xxxx"
             value={owner.ssn}
-            onChange={(e) => setOwner({ ...owner, ssn: formatSSN(e.target.value) })}
+            onChange={(e) => {
+              setOwner({ ...owner, ssn: formatSSN(e.target.value) })
+              clearError('ssn')
+            }}
           />
           {hasError('ssn') && <div className="invalid-feedback">{getFieldError('ssn')}</div>}
         </div>

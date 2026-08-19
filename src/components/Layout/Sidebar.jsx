@@ -52,14 +52,14 @@ const menuItems = [
         permission: 'view pre qualification',
       },
       {
-        to: '/intake-review/funding-application',
-        label: 'Funding Application',
-        permission: 'view funding application',
-      },
-      {
         to: '/intake-review/funding-request',
         label: 'Funding Request',
         permission: 'view funding request',
+      },
+      {
+        to: '/intake-review/funding-application',
+        label: 'Funding Application',
+        permission: 'view funding application',
       },
       {
         to: '/intake-review/change-requests',

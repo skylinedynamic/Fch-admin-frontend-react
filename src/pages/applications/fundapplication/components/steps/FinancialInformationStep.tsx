@@ -33,7 +33,7 @@ export default function FinancialInformationStep({
 }: FinancialInformationStepProps) {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFinancialInfo(fundingRequestId)
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFinancialInfo(fundingRequestId, { enabled: !!fundingRequestId })
   const { mutateAsync: saveFinancialInfo, isPending: isSaving } = useSaveFinancialInfo()
 
   // Helper to format date as YYYY-MM-DD
@@ -62,8 +62,8 @@ export default function FinancialInformationStep({
     }
 
     try {
-      const response = await saveFinancialInfo(payload)
-      toast.success(response?.message || 'Financial information saved successfully!')
+      await saveFinancialInfo(payload)
+      setFinancial((prev) => ({ ...prev, isSaved: true }))
       return true
     } catch (error: any) {
       const errors = error.response?.data?.errors
@@ -100,6 +100,7 @@ export default function FinancialInformationStep({
         businessCreditScore: apiData.self_reported_business_credit_score || financial.businessCreditScore,
         existingDebt: apiData.has_business_debt,
         debtBalance: apiData.debt_balance ? formatCurrency(apiData.debt_balance) : financial.debtBalance,
+        isSaved: apiData.is_financial_info_saved,
       })
     }
   }, [isSuccess, apiData, setFinancial])
@@ -117,6 +118,7 @@ export default function FinancialInformationStep({
   const handleNext = async () => {
     const success = await handleSave()
     if (success) {
+      toast.success('Financial information saved successfully')
       onNext()
     }
   }
