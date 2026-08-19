@@ -6,7 +6,7 @@ export const fetchMySubscriptionDetails = async () => {
 };
 
 export const fetchMySubscriptionPaymentProviders = async () => {
-  const { data } = await apiClient.get('/common/partner-payment-providers');
+  const { data } = await apiClient.get('/payment/get-payment-methods');
   return data;
 };
 
