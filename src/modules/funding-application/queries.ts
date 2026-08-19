@@ -10,6 +10,7 @@ export const useSaveBusinessInfo = () => {
     mutationFn: saveBusinessInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.businessInfo() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['funding-requests'] })
     },
@@ -22,6 +23,7 @@ export const useSaveOwnershipInfo = () => {
     mutationFn: saveOwnershipInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.ownershipInfo() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['funding-requests'] })
     },
@@ -34,6 +36,7 @@ export const useSaveFinancialInfo = () => {
     mutationFn: saveFinancialInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.financialInfo() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['funding-requests'] })
     },
@@ -58,6 +61,7 @@ export const useSaveDisclosuresConsent = () => {
     mutationFn: saveDisclosuresConsent,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.disclosuresConsent() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['funding-requests'] })
     },
@@ -70,6 +74,7 @@ export const useSaveFederalCompliance = () => {
     mutationFn: saveFederalCompliance,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.federalCompliance() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['funding-requests'] })
     },

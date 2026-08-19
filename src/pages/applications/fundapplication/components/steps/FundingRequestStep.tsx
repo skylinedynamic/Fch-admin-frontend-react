@@ -92,9 +92,9 @@ export default function FundingRequestStep({
     || searchParams.get('fundingRequestId')
     || null
 
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFundingRequest(effectiveRequestId)
+  const [fundingRequestId, setFundingRequestId] = useState<number | null>(effectiveRequestId ? Number(effectiveRequestId) : null)
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFundingRequest(fundingRequestId, { enabled: !!fundingRequestId })
   const saveMutation = useSaveFundingRequest()
-  const [fundingRequestId, setFundingRequestId] = useState<number | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   // Fetch approved funding options
@@ -159,6 +159,7 @@ export default function FundingRequestStep({
 
     try {
       await saveMutation.mutateAsync(payload)
+      toast.success('Funding request saved successfully')
       return true
     } catch (error: any) {
       console.error('Error saving funding request:', error)

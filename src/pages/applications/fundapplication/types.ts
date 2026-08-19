@@ -34,6 +34,7 @@ export type OwnerInfo = {
   ownershipPct: string
   hasCoBorrower: boolean
   phoneNumber: string
+  isSaved?: boolean
 }
 
 export type CoBorrower = {
@@ -66,6 +67,7 @@ export type FinancialInfo = {
   businessCreditScore: string
   existingDebt: boolean
   debtBalance: string
+  isSaved?: boolean
 }
 
 export type FundingRequest = {
@@ -76,6 +78,13 @@ export type FundingRequest = {
   fundingType: string
   timeframe: string
   collateral: string
+  is_business_info_saved?: boolean
+  is_funding_request_saved?: boolean
+  is_ownership_info_saved?: boolean
+  is_financial_info_saved?: boolean
+  is_disclosures_saved?: boolean
+  is_federal_compliance_saved?: boolean
+  signature_data?: any
 }
 
 export type FileEntry = {

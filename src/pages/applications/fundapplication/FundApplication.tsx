@@ -227,15 +227,15 @@ export default function FundApplication() {
     patriotActAck: false,
     fcraAuth: false,
     ecoaAck: false,
-    bankruptcy: '',
-    lawsuit: '',
-    federalLoanDefault: '',
-    federalDebtDelinquent: '',
-    criminalOffense: '',
-    paroleProbation: '',
-    suspendedDebarred: '',
-    judgmentsLiensBusiness: '',
-    judgmentsLiensOwner: '',
+    bankruptcy: 'no',
+    lawsuit: 'no',
+    federalLoanDefault: 'no',
+    federalDebtDelinquent: 'no',
+    criminalOffense: 'no',
+    paroleProbation: 'no',
+    suspendedDebarred: 'no',
+    judgmentsLiensBusiness: 'no',
+    judgmentsLiensOwner: 'no',
     explanation: '',
   })
 
@@ -259,7 +259,7 @@ export default function FundApplication() {
 
   // Fetch funding request and documents (tab-wise lazy loading)
   const currentReqId = fundingRequestId || id || null
-  const { data: fundingData } = useFundingRequest(currentReqId)
+  const { data: fundingData } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
   const fundingApplicationId = fundingData?.id ?? null
   const { data: documentsData } = useFundingApplicationDocuments(fundingApplicationId, {
     enabled: !!fundingApplicationId,
@@ -330,10 +330,27 @@ export default function FundApplication() {
       business.yearsInBusiness
     )
   }, [personal, business])
-
   // Validation: Check if a specific step is valid
   const isStepValid = useCallback(
     (stepIndex: number): boolean => {
+      // Helper to check backend save state
+      const checkBackendSaved = (idx: number) => {
+        if (idx === STEP_INDICES.BUSINESS_INFO) return !!fundingData?.is_business_info_saved;
+        if (idx === STEP_INDICES.OWNERSHIP_INFO) return !!fundingData?.is_ownership_info_saved;
+        if (idx === STEP_INDICES.FINANCIAL_INFO) return !!fundingData?.is_financial_info_saved;
+        if (idx === STEP_INDICES.FUNDING_REQUEST) return !!fundingData?.is_funding_request_saved;
+        if (idx === STEP_INDICES.DOCUMENT_UPLOAD) return true;
+        if (idx === STEP_INDICES.DISCLOSURES) return !!fundingData?.is_disclosures_saved;
+        if (idx === STEP_INDICES.FEDERAL_COMPLIANCE) return !!fundingData?.is_federal_compliance_saved;
+        return false;
+      };
+
+      // If we're not currently on this tab, it is ONLY valid if it has been saved in the backend.
+      // This prevents unmounted tabs that happen to have valid pre-filled local state from bypassing the sequence.
+      if (activeStep !== stepIndex) {
+        return checkBackendSaved(stepIndex);
+      }
+
       switch (stepIndex) {
         case STEP_INDICES.BUSINESS_INFO:
           return canProceedFromBusinessInfo
@@ -416,21 +433,38 @@ export default function FundApplication() {
   // Check if a step is complete (for progress display)
   const isStepComplete = useCallback(
     (stepIndex: number): boolean => {
-      // If no funding application is saved yet, don't show checkmarks for unvisited future steps
-      if (!fundingApplicationId && stepIndex > highestVisitedStep) return false;
+      // If no funding application is saved yet, NO step is complete
+      if (!fundingApplicationId) return false;
+
+      // Helper to check if a step is explicitly saved in the database
+      const isStepSaved = (idx: number) => {
+        if (idx === STEP_INDICES.BUSINESS_INFO) return !!fundingData?.is_business_info_saved;
+        if (idx === STEP_INDICES.OWNERSHIP_INFO) return !!fundingData?.is_ownership_info_saved;
+        if (idx === STEP_INDICES.FINANCIAL_INFO) return !!fundingData?.is_financial_info_saved;
+        if (idx === STEP_INDICES.FUNDING_REQUEST) return !!fundingData?.is_funding_request_saved;
+        if (idx === STEP_INDICES.DISCLOSURES) return !!fundingData?.is_disclosures_saved;
+        if (idx === STEP_INDICES.FEDERAL_COMPLIANCE) return !!fundingData?.is_federal_compliance_saved;
+        return true;
+      };
+
+      // Enforce strict linear progression: a step cannot be complete if ANY previous step is unsaved
+      for (let i = 0; i < stepIndex; i++) {
+        if (!isStepSaved(i)) return false;
+        // If we are currently on the tab, enforce validation
+        if (activeStep === i && !isStepValid(i)) return false;
+      }
 
       // Document upload shows checkmark ONLY if it has files
       if (stepIndex === STEP_INDICES.DOCUMENT_UPLOAD) {
         return Boolean(documentsData && documentsData.length > 0)
       }
-      if (!isStepValid(stepIndex)) return false;
-
-      // Active step never shows a checkmark (it shows its number highlighted)
-      if (stepIndex === activeStep) return false;
+      
+      if (!isStepSaved(stepIndex)) return false;
+      if (activeStep === stepIndex && !isStepValid(stepIndex)) return false;
 
       return true;
     },
-    [activeStep, highestVisitedStep, documentsData, isStepValid, fundingApplicationId]
+    [activeStep, highestVisitedStep, documentsData, isStepValid, fundingApplicationId, owner.isSaved, financial.isSaved, fundingData]
   )
 
   // Progress calculations
@@ -612,11 +646,15 @@ export default function FundApplication() {
   }
 
   // Render step badge (number or checkmark)
-  const renderStepBadge = (stepIndex: number, isCompleted: boolean) => (
-    <span className={`sidebar-step-badge ${isCompleted ? 'completed' : ''}`}>
-      {isCompleted ? <i className="ri-check-line"></i> : stepIndex + 1}
-    </span>
-  )
+  const renderStepBadge = (stepIndex: number, isCompleted: boolean) => {
+    // Active step never shows a checkmark visually (it shows its number highlighted)
+    const showCheckmark = isCompleted && stepIndex !== activeStep;
+    return (
+      <span className={`sidebar-step-badge ${showCheckmark ? 'completed' : ''}`}>
+        {showCheckmark ? <i className="ri-check-line"></i> : stepIndex + 1}
+      </span>
+    )
+  }
 
   // Render progress header
   const renderProgressHeader = (className?: string) => (
