@@ -939,7 +939,7 @@ export default function LeadDetails() {
                                                                 </div>
                                                             </div>
 
-                                                            {formData.entity_type === 'Other / Unknown' && (
+                                                            {(formData.entity_type === 'Other' || formData.entity_type === 'Other / Unknown') && (
                                                                 <div className="col-lg-6">
                                                                     <div className="mb-3">
                                                                         <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
@@ -970,7 +970,7 @@ export default function LeadDetails() {
                                                                 </div>
                                                             </div>
 
-                                                            {formData.industry_type === 'Other / Unknown' && (
+                                                            {(formData.industry_type === 'Other' || formData.industry_type === 'Other / Unknown') && (
                                                                 <div className="col-lg-6">
                                                                     <div className="mb-3">
                                                                         <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
