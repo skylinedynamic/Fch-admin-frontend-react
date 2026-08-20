@@ -26,7 +26,9 @@ export type Client = {
     business_postal_code?: string;
     business_phone?: string;
     business_entity_type?: string;
+    business_entity_type_note?: string;
     business_industry_type?: string;
+    business_industry_type_note?: string;
     business_start_date?: string;
     business_last_4_ssn?: string;
 

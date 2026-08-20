@@ -1108,6 +1108,23 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         {errors.business_entity_type && <small className="p-error">{errors.business_entity_type}</small>}
                     </div>
                 </div>
+                {formData.business_entity_type === (entityTypes.find(e => e.label === 'Other')?.value || 'Other') && (
+                    <div className="col-lg-6">
+                        <div className="mb-3">
+                            <label htmlFor="business_entity_type_note" className="form-label">Entity Type Details <span className="text-danger">*</span></label>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.business_entity_type_note ? 'is-invalid' : ''}`}
+                                id="business_entity_type_note"
+                                name="business_entity_type_note"
+                                placeholder="Enter entity type details"
+                                value={formData.business_entity_type_note || ''}
+                                onChange={handleInputChange}
+                            />
+                            {errors.business_entity_type_note && <div className="invalid-feedback">{errors.business_entity_type_note}</div>}
+                        </div>
+                    </div>
+                )}
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="business_industry_type" className="form-label">Industry Type</label>
@@ -1125,6 +1142,23 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         {errors.business_industry_type && <small className="p-error">{errors.business_industry_type}</small>}
                     </div>
                 </div>
+                {formData.business_industry_type === (industryTypes.find(i => i.label === 'Other')?.value || 'Other') && (
+                    <div className="col-lg-6">
+                        <div className="mb-3">
+                            <label htmlFor="business_industry_type_note" className="form-label">Industry Type Details <span className="text-danger">*</span></label>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.business_industry_type_note ? 'is-invalid' : ''}`}
+                                id="business_industry_type_note"
+                                name="business_industry_type_note"
+                                placeholder="Enter industry type details"
+                                value={formData.business_industry_type_note || ''}
+                                onChange={handleInputChange}
+                            />
+                            {errors.business_industry_type_note && <div className="invalid-feedback">{errors.business_industry_type_note}</div>}
+                        </div>
+                    </div>
+                )}
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="business_start_date" className="form-label">Business Start Date</label>
