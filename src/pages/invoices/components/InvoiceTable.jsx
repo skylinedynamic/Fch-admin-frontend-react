@@ -94,7 +94,9 @@ export default function InvoiceTable({
 
     const actionBodyTemplate = (rowData) => {
         const isNotPaid = rowData.status !== STATUS_PAID && rowData.status !== STATUS_PROCESSING;
-        const isNotHost = user?.is_host == 0;
+        const isHost = user?.is_host == 1 || user?.is_host === true;
+        const isNotHost = !isHost;
+        const canApprove = !!rowData.can_approve;
         return (
             <div className="d-flex align-items-center justify-content-center gap-2">
                 <button
@@ -108,9 +110,27 @@ export default function InvoiceTable({
                 >
                     <i className="ri-file-pdf-line fs-14"></i>
                 </button>
+                {canApprove && (
+                    <button
+                        className="btn btn-warning btn-sm waves-effect waves-light fw-medium border-0 py-0 px-2 d-inline-flex align-items-center justify-content-center"
+                        style={{ height: '28px', fontSize: '12px' }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (rowData.payment_id) {
+                                navigate(`/payments/${rowData.payment_id}`);
+                            } else {
+                                navigate(`/payments?search=${encodeURIComponent(rowData.invoice_id || rowData.id || '')}`);
+                            }
+                        }}
+                    >
+                        <i className="ri-eye-line align-middle me-1"></i>
+                        Review
+                    </button>
+                )}
                 {isNotPaid && isNotHost && rowData.entity_type?.includes(ENTITY_TYPE_PARTNER) && (
                     <button
-                        className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
+                        className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0 py-0 px-2 d-inline-flex align-items-center justify-content-center"
+                        style={{ height: '28px', fontSize: '12px' }}
                         onClick={(e) => {
                             e.stopPropagation();
                             handlePayClick(rowData);

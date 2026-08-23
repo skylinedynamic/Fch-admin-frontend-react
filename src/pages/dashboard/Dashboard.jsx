@@ -111,8 +111,8 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="flex-grow-1">
-                        <h5 className="fs-16 fw-bold text-danger mb-1">Your subscription is expired.</h5>
-                        <p className="text-muted mb-0 fs-14">Please pay your pending invoice if exists or contact with Administrator.</p>
+                        <h5 className="fs-16 fw-bold text-danger mb-1">Account Restricted: Pending Invoice or Expired Subscription</h5>
+                        <p className="text-muted mb-0 fs-14">Your account access is currently restricted due to a pending invoice or expired subscription. Please pay your outstanding invoices or contact the Administrator.</p>
                       </div>
                       <div className="flex-shrink-0 ms-3">
                         <Button
