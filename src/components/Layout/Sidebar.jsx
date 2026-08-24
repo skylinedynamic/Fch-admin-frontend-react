@@ -211,6 +211,23 @@ const menuItems = [
     ],
   },
   {
+    label: "Embedded Form",
+    icon: "ri-survey-line",
+    id: "embed-form-menu",
+    subItems: [
+      {
+        to: "/embed-form/settings",
+        label: "Configuration",
+        permission: "",
+      },
+      {
+        to: "/embed-form/submissions",
+        label: "Submissions",
+        permission: "",
+      },
+    ],
+  },
+  {
     to: "/admin/settings",
     icon: "ri-file-settings-fill",
     label: "Settings",

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import {
@@ -8,6 +9,7 @@ import {
 } from '../../modules/embed-form/services';
 
 export default function EmbedFormSettings() {
+    const navigate = useNavigate();
     const [config, setConfig] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -19,7 +21,7 @@ export default function EmbedFormSettings() {
     const [isActive, setIsActive] = useState(true);
     const [domainInput, setDomainInput] = useState('');
     const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
-    const [copied, setCopied] = useState<'snippet' | 'url' | null>(null);
+    const [copied, setCopied] = useState<'snippet' | 'url' | 'key' | null>(null);
 
     const loadConfig = useCallback(async () => {
         setLoading(true);
@@ -30,7 +32,7 @@ export default function EmbedFormSettings() {
                 setConfig(d);
                 setFormTitle(d.form_title || '');
                 setNotificationEmail(d.notification_email || '');
-                setIsActive(d.is_active);
+                setIsActive(Boolean(d.is_active));
                 setAllowedDomains(d.allowed_domains || []);
             }
         } catch {
@@ -40,9 +42,12 @@ export default function EmbedFormSettings() {
         }
     }, []);
 
-    useEffect(() => { loadConfig(); }, [loadConfig]);
+    useEffect(() => {
+        loadConfig();
+    }, [loadConfig]);
 
-    const handleSave = async () => {
+    const handleSave = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         setSaving(true);
         try {
             const res = await updateEmbedFormConfig({
@@ -52,23 +57,25 @@ export default function EmbedFormSettings() {
                 allowed_domains: allowedDomains,
             });
             if (res.status) {
-                toast.success('Configuration saved successfully.');
+                toast.success('Embed form configuration saved successfully.');
                 loadConfig();
             }
-        } catch (e: any) {
-            toast.error(e?.response?.data?.message || 'Failed to save configuration.');
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Failed to save configuration.');
         } finally {
             setSaving(false);
         }
     };
 
     const handleRegenerate = async () => {
-        if (!window.confirm('Regenerating the key will invalidate the current embed snippet. All existing embeds must be updated. Continue?')) return;
+        if (!window.confirm('Warning: Regenerating this key will invalidate your current embed code and shareable links. Existing embeds must be updated with the new code. Continue?')) {
+            return;
+        }
         setRegenerating(true);
         try {
             const res = await regenerateEmbedKey();
             if (res.status) {
-                toast.success('Embed key regenerated. Update your website embed code.');
+                toast.success('Public embed key regenerated successfully.');
                 loadConfig();
             }
         } catch {
@@ -81,7 +88,10 @@ export default function EmbedFormSettings() {
     const handleAddDomain = () => {
         const d = domainInput.trim();
         if (!d) return;
-        if (allowedDomains.includes(d)) { toast.warn('Domain already added.'); return; }
+        if (allowedDomains.includes(d)) {
+            toast.warning('Domain is already in the allowed list.');
+            return;
+        }
         setAllowedDomains(prev => [...prev, d]);
         setDomainInput('');
     };
@@ -90,196 +100,443 @@ export default function EmbedFormSettings() {
         setAllowedDomains(prev => prev.filter(d => d !== domain));
     };
 
-    const copyText = (text: string, type: 'snippet' | 'url') => {
+    const copyToClipboard = (text: string, type: 'snippet' | 'url' | 'key') => {
+        if (!text) return;
         navigator.clipboard.writeText(text).then(() => {
             setCopied(type);
+            toast.success(type === 'snippet' ? 'Embed code copied to clipboard!' : 'Copied to clipboard!');
             setTimeout(() => setCopied(null), 2500);
         });
     };
 
     if (loading) {
         return (
-            <div>
-                <PageHeader title="Embed Form Settings" breadcrumbs={[{ label: 'Settings' }, { label: 'Embed Form' }]} />
-                <div className="text-center p-5"><i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem' }} /></div>
+            <div className="page-content">
+                <div className="container-fluid">
+                    <PageHeader
+                        title="Embedded Form"
+                        breadcrumbs={[{ label: 'Embedded Form', path: '/embed-form/settings' }, { label: 'Configuration' }]}
+                    />
+                    <div className="row g-4">
+                        <div className="col-12 text-center py-5">
+                            <div className="spinner-border text-primary" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
 
     return (
-        <div>
-            <PageHeader
-                title="Embed Form Settings"
-                breadcrumbs={[{ label: 'Settings', path: '/admin/settings' }, { label: 'Embed Form' }]}
-            />
-
-            <div className="row g-4">
-                {/* LEFT — Settings */}
-                <div className="col-lg-7">
-
-                    {/* Status & Stats */}
-                    <div className="row g-3 mb-4">
-                        {[
-                            { label: 'Total Submissions', value: config?.submissions_count ?? 0, icon: 'ri-file-list-3-line', color: '#1a56db' },
-                            { label: 'Form Status', value: isActive ? 'Active' : 'Inactive', icon: 'ri-checkbox-circle-line', color: isActive ? '#0e9f6e' : '#e02424' },
-                        ].map((s) => (
-                            <div className="col-sm-6" key={s.label}>
-                                <div className="card shadow-none border h-100">
-                                    <div className="card-body d-flex align-items-center gap-3 p-3">
-                                        <div style={{ width: 44, height: 44, borderRadius: 10, background: s.color + '1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <i className={s.icon} style={{ fontSize: 22, color: s.color }} />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase' }}>{s.label}</div>
-                                            <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+        <div className="page-content">
+            <div className="container-fluid">
+                {/* Top Header */}
+                <PageHeader
+                    title="Embedded Form"
+                    breadcrumbs={[
+                        { label: 'Embedded Form', path: '/embed-form/settings' },
+                        { label: 'Configuration' }
+                    ]}
+                >
+                    <div className="d-flex gap-2">
+                        {config?.direct_url && (
+                            <a
+                                href={config.direct_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-outline-primary btn-sm"
+                            >
+                                <i className="ri-external-link-line me-1" /> View Live Form
+                            </a>
+                        )}
+                        <Link to="/embed-form/submissions" className="btn btn-primary btn-sm">
+                            <i className="ri-file-list-3-line me-1" /> Submissions
+                            {config?.submissions_count !== undefined && (
+                                <span className="badge bg-white text-primary ms-1">
+                                    {config.submissions_count}
+                                </span>
+                            )}
+                        </Link>
                     </div>
+                </PageHeader>
 
-                    {/* Form Config */}
-                    <div className="card shadow-none border mb-4">
-                        <div className="card-header bg-white border-bottom py-3">
-                            <h5 className="mb-0 fw-bold" style={{ fontSize: 15 }}>Form Configuration</h5>
-                        </div>
-                        <div className="card-body p-4">
-                            <div className="mb-3">
-                                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Form Title</label>
-                                <input
-                                    className="form-control"
-                                    value={formTitle}
-                                    onChange={(e) => setFormTitle(e.target.value)}
-                                    placeholder="e.g. Personal Loan Application"
-                                />
-                                <small className="text-muted">Displayed at the top of your embed form.</small>
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Notification Email</label>
-                                <input
-                                    type="email"
-                                    className="form-control"
-                                    value={notificationEmail}
-                                    onChange={(e) => setNotificationEmail(e.target.value)}
-                                    placeholder="notifications@yourcompany.com"
-                                />
-                                <small className="text-muted">Email to receive alerts when a new application is submitted. Leave blank to use your account email.</small>
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Form Status</label>
-                                <div className="d-flex gap-3 align-items-center">
-                                    <div className="form-check form-switch mb-0">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            id="isActiveSwitch"
-                                            checked={isActive}
-                                            onChange={(e) => setIsActive(e.target.checked)}
-                                            style={{ cursor: 'pointer' }}
-                                        />
-                                        <label className="form-check-label fw-medium" htmlFor="isActiveSwitch" style={{ cursor: 'pointer' }}>
-                                            {isActive ? '✅ Accepting Submissions' : '⛔ Form Disabled'}
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Allowed Domains */}
-                            <div className="mb-4">
-                                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Allowed Domains <small className="text-muted fw-normal">(optional CORS restriction)</small></label>
-                                <div className="d-flex gap-2 mb-2">
-                                    <input
-                                        className="form-control form-control-sm"
-                                        value={domainInput}
-                                        onChange={(e) => setDomainInput(e.target.value)}
-                                        placeholder="https://yourwebsite.com"
-                                        onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
-                                    />
-                                    <button className="btn btn-outline-primary btn-sm" onClick={handleAddDomain}>Add</button>
-                                </div>
-                                {allowedDomains.length > 0 && (
-                                    <div className="d-flex flex-wrap gap-2 mt-1">
-                                        {allowedDomains.map((d) => (
-                                            <span key={d} className="badge rounded-pill d-flex align-items-center gap-1" style={{ background: '#ebf0fe', color: '#1a56db', fontSize: 12, fontWeight: 500, padding: '5px 10px' }}>
-                                                {d}
-                                                <button type="button" className="btn-close btn-close-sm ms-1" onClick={() => handleRemoveDomain(d)} style={{ fontSize: 9 }} />
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                                <small className="text-muted">Add domains authorized to embed this form (e.g. your partner's website). Leave empty to allow from any domain.</small>
-                            </div>
-
-                            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                                {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving...</> : <><i className="ri-save-line me-2" />Save Configuration</>}
-                            </button>
-                        </div>
+                {/* Sub-Navigation Tabs */}
+                <div className="row mb-4">
+                    <div className="col-12">
+                        <ul className="nav nav-pills nav-customs nav-danger bg-white p-2 rounded shadow-sm border">
+                            <li className="nav-item">
+                                <Link
+                                    to="/embed-form/settings"
+                                    className="nav-link active fw-semibold"
+                                >
+                                    <i className="ri-settings-4-line me-1" /> Configuration & Embed Code
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link
+                                    to="/embed-form/submissions"
+                                    className="nav-link fw-semibold text-muted"
+                                >
+                                    <i className="ri-file-list-3-line me-1" /> Submissions List
+                                    {config?.submissions_count > 0 && (
+                                        <span className="badge bg-primary-subtle text-primary ms-2">
+                                            {config.submissions_count}
+                                        </span>
+                                    )}
+                                </Link>
+                            </li>
+                        </ul>
                     </div>
                 </div>
 
-                {/* RIGHT — Embed Code */}
-                <div className="col-lg-5">
-                    <div className="card shadow-none border mb-4" style={{ position: 'sticky', top: 20 }}>
-                        <div className="card-header bg-white border-bottom py-3">
-                            <h5 className="mb-0 fw-bold" style={{ fontSize: 15 }}>🔗 Embed Code & Direct Link</h5>
+                {/* Main Content Grid */}
+                <div className="row g-4">
+                    {/* Left Column: Form Settings */}
+                    <div className="col-lg-7">
+                        {/* Summary Metrics Row */}
+                        <div className="row g-3 mb-4">
+                            <div className="col-sm-6">
+                                <div className="card shadow-sm border-0 mb-0">
+                                    <div className="card-body p-3 d-flex align-items-center gap-3">
+                                        <div
+                                            className="avatar-sm flex-shrink-0 d-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary"
+                                            style={{ width: '48px', height: '48px' }}
+                                        >
+                                            <i className="ri-file-list-3-line fs-22" />
+                                        </div>
+                                        <div>
+                                            <div className="text-muted text-uppercase fw-semibold fs-11">Total Submissions</div>
+                                            <div className="fs-20 fw-bold text-dark">{config?.submissions_count ?? 0}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="col-sm-6">
+                                <div className="card shadow-sm border-0 mb-0">
+                                    <div className="card-body p-3 d-flex align-items-center gap-3">
+                                        <div
+                                            className={`avatar-sm flex-shrink-0 d-flex align-items-center justify-content-center rounded-3 ${
+                                                isActive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'
+                                            }`}
+                                            style={{ width: '48px', height: '48px' }}
+                                        >
+                                            <i className={isActive ? 'ri-checkbox-circle-line fs-22' : 'ri-close-circle-line fs-22'} />
+                                        </div>
+                                        <div>
+                                            <div className="text-muted text-uppercase fw-semibold fs-11">Form Status</div>
+                                            <div className="fs-16 fw-bold">
+                                                <span className={`badge ${isActive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fs-12`}>
+                                                    {isActive ? 'Accepting Submissions' : 'Disabled'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="card-body p-4">
-                            {/* Public key */}
-                            <div className="mb-4 p-3 rounded" style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}>
-                                <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Partner Public Key</div>
-                                <code style={{ fontSize: 12, color: '#1a56db', wordBreak: 'break-all' }}>{config?.public_key}</code>
+
+                        {/* Configuration Form Card */}
+                        <form onSubmit={handleSave}>
+                            <div className="card shadow-sm border-0 mb-4">
+                                <div className="card-header bg-transparent border-bottom pb-3 pt-4 px-4">
+                                    <div className="d-flex align-items-center">
+                                        <div className="avatar-sm me-3">
+                                            <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-20">
+                                                <i className="ri-settings-3-line" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h5 className="card-title mb-1 fw-bold">Form Configuration</h5>
+                                            <p className="text-muted mb-0 fs-13">Configure the title, notifications, and security for your embedded form</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="card-body p-4">
+                                    {/* Form Title */}
+                                    <div className="mb-3">
+                                        <label className="form-label fw-semibold fs-13">
+                                            Form Title <span className="text-danger">*</span>
+                                        </label>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-light text-muted" style={{ width: '42px' }}>
+                                                <i className="ri-t-box-line" />
+                                            </span>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={formTitle}
+                                                onChange={(e) => setFormTitle(e.target.value)}
+                                                placeholder="e.g. Personal Loan Application"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-text fs-12 text-muted">
+                                            This title appears as the main heading on the public application form.
+                                        </div>
+                                    </div>
+
+                                    {/* Notification Email */}
+                                    <div className="mb-3">
+                                        <label className="form-label fw-semibold fs-13">Notification Email Address</label>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-light text-muted" style={{ width: '42px' }}>
+                                                <i className="ri-mail-line" />
+                                            </span>
+                                            <input
+                                                type="email"
+                                                className="form-control"
+                                                value={notificationEmail}
+                                                onChange={(e) => setNotificationEmail(e.target.value)}
+                                                placeholder="notifications@yourcompany.com"
+                                            />
+                                        </div>
+                                        <div className="form-text fs-12 text-muted">
+                                            Alert emails with full applicant details will be sent here upon submission. If left blank, your account email is used.
+                                        </div>
+                                    </div>
+
+                                    {/* Form Active Switch */}
+                                    <div className="mb-4 pt-2">
+                                        <label className="form-label fw-semibold fs-13 d-block">Form Status</label>
+                                        <div className="form-check form-switch form-switch-md">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                id="formStatusSwitch"
+                                                checked={isActive}
+                                                onChange={(e) => setIsActive(e.target.checked)}
+                                                style={{ cursor: 'pointer' }}
+                                            />
+                                            <label className="form-check-label ms-2 fw-medium fs-13" htmlFor="formStatusSwitch" style={{ cursor: 'pointer' }}>
+                                                {isActive ? (
+                                                    <span className="text-success fw-bold">Active &mdash; Public link & iframe are accepting submissions</span>
+                                                ) : (
+                                                    <span className="text-danger fw-bold">Disabled &mdash; Public form will show an inactive message</span>
+                                                )}
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <hr className="my-4 text-muted opacity-25" />
+
+                                    {/* Allowed Domains */}
+                                    <div className="mb-4">
+                                        <label className="form-label fw-semibold fs-13">
+                                            Allowed Domains <small className="text-muted fw-normal">(Optional Security Restriction)</small>
+                                        </label>
+                                        <div className="input-group mb-2">
+                                            <span className="input-group-text bg-light text-muted" style={{ width: '42px' }}>
+                                                <i className="ri-global-line" />
+                                            </span>
+                                            <input
+                                                type="url"
+                                                className="form-control"
+                                                value={domainInput}
+                                                onChange={(e) => setDomainInput(e.target.value)}
+                                                placeholder="https://yourwebsite.com"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleAddDomain();
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-primary"
+                                                onClick={handleAddDomain}
+                                            >
+                                                <i className="ri-add-line me-1" /> Add Domain
+                                            </button>
+                                        </div>
+
+                                        {allowedDomains.length > 0 ? (
+                                            <div className="d-flex flex-wrap gap-2 mt-2">
+                                                {allowedDomains.map((domain) => (
+                                                    <span
+                                                        key={domain}
+                                                        className="badge bg-primary-subtle text-primary border border-primary-subtle fs-12 px-3 py-2 d-inline-flex align-items-center gap-2 rounded-pill"
+                                                    >
+                                                        <i className="ri-shield-check-line" />
+                                                        {domain}
+                                                        <button
+                                                            type="button"
+                                                            className="btn-close btn-close-xs ms-1"
+                                                            onClick={() => handleRemoveDomain(domain)}
+                                                            aria-label="Remove"
+                                                            style={{ fontSize: '8px' }}
+                                                        />
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="form-text fs-12 text-muted">
+                                                No restrictions specified. Form can be embedded on any authorized website.
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <div className="d-flex justify-content-end">
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary px-4 fw-semibold"
+                                            disabled={saving}
+                                        >
+                                            {saving ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-2" role="status" />
+                                                    Saving Changes...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="ri-save-line me-1" /> Save Configuration
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    {/* Right Column: Embed Snippet & Share Links */}
+                    <div className="col-lg-5">
+                        {/* Direct URL & Embed Code Card */}
+                        <div className="card shadow-sm border-0 mb-4 sticky-top" style={{ top: '80px', zIndex: 10 }}>
+                            <div className="card-header bg-transparent border-bottom pb-3 pt-4 px-4">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-sm me-3">
+                                        <div className="avatar-title bg-success-subtle text-success rounded-circle fs-20">
+                                            <i className="ri-code-s-slash-line" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h5 className="card-title mb-1 fw-bold">Embed & Share</h5>
+                                        <p className="text-muted mb-0 fs-13">Copy the integration code or direct link</p>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Direct URL */}
-                            <div className="mb-4">
-                                <label className="form-label fw-semibold" style={{ fontSize: 12, textTransform: 'uppercase', color: '#374151' }}>Shareable Form URL</label>
-                                <div className="d-flex gap-2">
-                                    <input className="form-control form-control-sm" readOnly value={config?.direct_url ?? ''} style={{ fontFamily: 'monospace', fontSize: 12 }} />
+                            <div className="card-body p-4">
+                                {/* Partner Public Key */}
+                                <div className="mb-4 p-3 bg-light rounded border">
+                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                        <span className="text-muted fw-semibold fs-11 text-uppercase">Public Partner Key</span>
+                                        <button
+                                            type="button"
+                                            className="btn btn-link btn-sm p-0 text-primary text-decoration-none fs-12"
+                                            onClick={() => copyToClipboard(config?.public_key, 'key')}
+                                        >
+                                            {copied === 'key' ? (
+                                                <span className="text-success"><i className="ri-check-line me-1" />Copied</span>
+                                            ) : (
+                                                <span><i className="ri-file-copy-line me-1" />Copy Key</span>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <code className="fs-12 text-primary text-break fw-semibold d-block">
+                                        {config?.public_key || '—'}
+                                    </code>
+                                </div>
+
+                                {/* Shareable Direct Link */}
+                                <div className="mb-4">
+                                    <label className="form-label fw-semibold fs-13">Direct Shareable Link</label>
+                                    <div className="input-group mb-2">
+                                        <input
+                                            type="text"
+                                            className="form-control bg-light fs-12 text-muted font-monospace"
+                                            readOnly
+                                            value={config?.direct_url || ''}
+                                        />
+                                        <button
+                                            type="button"
+                                            className={`btn ${copied === 'url' ? 'btn-success' : 'btn-outline-primary'}`}
+                                            onClick={() => copyToClipboard(config?.direct_url, 'url')}
+                                        >
+                                            {copied === 'url' ? (
+                                                <><i className="ri-check-line me-1" /> Copied</>
+                                            ) : (
+                                                <><i className="ri-file-copy-line me-1" /> Copy</>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <span className="form-text fs-12 text-muted">Send directly to your clients via SMS or email.</span>
+                                        {config?.direct_url && (
+                                            <a
+                                                href={config.direct_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="fs-12 text-primary fw-semibold text-decoration-none"
+                                            >
+                                                Open <i className="ri-external-link-line ms-1" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* iFrame Embed Code */}
+                                <div className="mb-4">
+                                    <label className="form-label fw-semibold fs-13">Website &lt;iframe&gt; Embed Snippet</label>
+                                    <div className="position-relative">
+                                        <textarea
+                                            className="form-control bg-light font-monospace fs-12 text-dark p-3"
+                                            rows={4}
+                                            readOnly
+                                            value={config?.embed_snippet || ''}
+                                            style={{ resize: 'none' }}
+                                        />
+                                    </div>
                                     <button
-                                        className={`btn btn-sm ${copied === 'url' ? 'btn-success' : 'btn-outline-secondary'}`}
-                                        style={{ whiteSpace: 'nowrap' }}
-                                        onClick={() => copyText(config?.direct_url, 'url')}
+                                        type="button"
+                                        className={`btn w-100 mt-2 fw-semibold ${copied === 'snippet' ? 'btn-success' : 'btn-outline-primary'}`}
+                                        onClick={() => copyToClipboard(config?.embed_snippet, 'snippet')}
                                     >
-                                        {copied === 'url' ? '✓ Copied' : 'Copy'}
+                                        {copied === 'snippet' ? (
+                                            <><i className="ri-check-line me-1" /> Embed Code Copied!</>
+                                        ) : (
+                                            <><i className="ri-code-box-line me-1" /> Copy Embed HTML</>
+                                        )}
                                     </button>
+                                    <div className="form-text fs-12 text-muted mt-2">
+                                        Paste this code into WordPress, Webflow, Shopify, or any custom website.
+                                    </div>
                                 </div>
-                                <small className="text-muted">Share this URL directly with your clients to fill the application.</small>
-                            </div>
 
-                            {/* Embed snippet */}
-                            <div className="mb-4">
-                                <label className="form-label fw-semibold" style={{ fontSize: 12, textTransform: 'uppercase', color: '#374151' }}>Website Embed Snippet</label>
-                                <div className="position-relative">
-                                    <textarea
-                                        className="form-control"
-                                        readOnly
-                                        value={config?.embed_snippet ?? ''}
-                                        rows={4}
-                                        style={{ fontFamily: 'monospace', fontSize: 11.5, resize: 'none', background: '#f8f9fa' }}
-                                    />
+                                {/* Security / Key Regeneration Card */}
+                                <div className="alert alert-warning border-0 p-3 mb-0" role="alert">
+                                    <div className="d-flex align-items-start gap-2">
+                                        <i className="ri-alert-line fs-18 text-warning flex-shrink-0 mt-1" />
+                                        <div className="flex-grow-1">
+                                            <h6 className="alert-heading fw-bold fs-13 mb-1">Key Management</h6>
+                                            <p className="fs-12 text-muted mb-2">
+                                                If you need to revoke existing embeds, you can regenerate your key.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-danger btn-sm fw-semibold"
+                                                onClick={handleRegenerate}
+                                                disabled={regenerating}
+                                            >
+                                                {regenerating ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-1" />
+                                                        Regenerating...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="ri-refresh-line me-1" /> Regenerate Public Key
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button
-                                    className={`btn btn-sm mt-2 w-100 ${copied === 'snippet' ? 'btn-success' : 'btn-outline-primary'}`}
-                                    onClick={() => copyText(config?.embed_snippet, 'snippet')}
-                                >
-                                    {copied === 'snippet' ? '✓ Copied!' : <><i className="ri-code-s-slash-line me-1" />Copy Embed Code</>}
-                                </button>
-                                <small className="text-muted">Paste this `&lt;iframe&gt;` code anywhere in your website HTML.</small>
-                            </div>
-
-                            {/* Regenerate key */}
-                            <div className="border-top pt-3">
-                                <p style={{ fontSize: 12, color: '#6b7280' }}>
-                                    ⚠️ Regenerating the key invalidates the existing embed snippet. Update your website after regenerating.
-                                </p>
-                                <button
-                                    className="btn btn-outline-danger btn-sm"
-                                    onClick={handleRegenerate}
-                                    disabled={regenerating}
-                                >
-                                    {regenerating ? <><span className="spinner-border spinner-border-sm me-1" />Regenerating...</> : <><i className="ri-refresh-line me-1" />Regenerate Key</>}
-                                </button>
                             </div>
                         </div>
                     </div>

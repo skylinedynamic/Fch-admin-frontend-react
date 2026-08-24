@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Tag } from 'primereact/tag';
@@ -13,6 +14,7 @@ import {
     getEmbedFormSubmission,
     updateEmbedFormSubmissionStatus,
     downloadEmbedFormAttachment,
+    getEmbedFormConfig,
 } from '../../modules/embed-form/services';
 
 const STATUS_OPTIONS = [
@@ -39,11 +41,19 @@ export default function EmbedFormSubmissions() {
     const [appliedSearch, setAppliedSearch] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [appliedStatus, setAppliedStatus] = useState<string>('');
+    const [config, setConfig] = useState<any>(null);
 
     // Detail modal
     const [detailVisible, setDetailVisible] = useState(false);
     const [detailData, setDetailData] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+
+    // Load initial config for direct link & total count
+    useEffect(() => {
+        getEmbedFormConfig().then(res => {
+            if (res.status) setConfig(res.data);
+        }).catch(() => {});
+    }, []);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -66,7 +76,9 @@ export default function EmbedFormSubmissions() {
         }
     }, [appliedSearch, appliedStatus, perPage, page]);
 
-    useEffect(() => { loadData(); }, [loadData]);
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleSearch = () => {
         setAppliedSearch(searchText);
@@ -99,7 +111,7 @@ export default function EmbedFormSubmissions() {
         try {
             const res = await updateEmbedFormSubmissionStatus(id, status);
             if (res.status) {
-                toast.success('Status updated.');
+                toast.success('Status updated successfully.');
                 if (detailData?.id === id) setDetailData({ ...detailData, status });
                 setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status } : s));
             }
@@ -114,219 +126,369 @@ export default function EmbedFormSubmissions() {
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const a = document.createElement('a');
             a.href = url;
-            a.download = att.original_name || 'attachment';
+            a.download = att.original_name || 'document';
             a.click();
             window.URL.revokeObjectURL(url);
         } catch {
-            toast.error('Failed to download file.');
+            toast.error('Failed to download document.');
         }
     };
 
-    // ── Templates ──
+    // ── Table Cell Renderers ──
     const nameTemplate = (row: any) => (
-        <span className="fw-semibold">{row.first_name} {row.last_name}</span>
+        <div>
+            <div className="fw-semibold text-dark">{row.first_name} {row.last_name}</div>
+            <div className="text-muted fs-11">{row.occupation || 'Applicant'}</div>
+        </div>
     );
 
     const statusTemplate = (row: any) => (
         <Tag
             value={row.status?.toUpperCase()}
             severity={STATUS_SEVERITY[row.status] ?? 'info'}
-            style={{ fontSize: '11px' }}
+            style={{ fontSize: '11px', letterSpacing: '0.5px' }}
         />
     );
 
     const amountTemplate = (row: any) => (
-        <span>{row.desired_funding_amount ? `$${parseFloat(row.desired_funding_amount).toLocaleString()}` : '—'}</span>
+        <span className="fw-semibold text-success">
+            {row.desired_funding_amount ? `$${parseFloat(row.desired_funding_amount).toLocaleString()}` : '—'}
+        </span>
     );
 
     const dateTemplate = (row: any) => (
-        <span>{row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
+        <span className="text-muted fs-12">
+            {row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+        </span>
     );
 
     const docsTemplate = (row: any) => (
-        <span className="text-muted">{row.attachments?.length ?? 0} file(s)</span>
+        <span className="badge bg-light text-dark border">
+            <i className="ri-attachment-line me-1 text-primary" />
+            {row.attachments?.length ?? 0} file(s)
+        </span>
     );
 
     const actionTemplate = (row: any) => (
         <div className="d-flex justify-content-center gap-2">
-            <Button
-                icon="pi pi-eye"
-                size="small"
-                outlined
-                severity="info"
-                tooltip="View Details"
-                tooltipOptions={{ position: 'top' }}
+            <button
+                type="button"
+                className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
                 onClick={() => viewDetail(row)}
-            />
+                title="View Full Application"
+            >
+                <i className="ri-eye-line" /> Details
+            </button>
         </div>
     );
 
     return (
-        <div>
-            <PageHeader
-                title="Form Submissions"
-                breadcrumbs={[
-                    { label: 'Settings', path: '/admin/settings' },
-                    { label: 'Embed Form', path: '/embed-form/settings' },
-                    { label: 'Submissions' },
-                ]}
-            />
+        <div className="page-content">
+            <div className="container-fluid">
+                {/* Header */}
+                <PageHeader
+                    title="Embedded Form"
+                    breadcrumbs={[
+                        { label: 'Embedded Form', path: '/embed-form/settings' },
+                        { label: 'Submissions' }
+                    ]}
+                >
+                    <div className="d-flex gap-2">
+                        {config?.direct_url && (
+                            <a
+                                href={config.direct_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-outline-primary btn-sm"
+                            >
+                                <i className="ri-external-link-line me-1" /> View Live Form
+                            </a>
+                        )}
+                        <Link to="/embed-form/settings" className="btn btn-outline-secondary btn-sm">
+                            <i className="ri-settings-4-line me-1" /> Configure Form
+                        </Link>
+                    </div>
+                </PageHeader>
 
-            {/* Filters */}
-            <div className="card shadow-none border mb-3">
-                <div className="card-body py-3">
-                    <div className="row g-2 align-items-end">
-                        <div className="col-md-4">
-                            <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>Search</label>
-                            <input
-                                className="form-control form-control-sm"
-                                placeholder="Name, email, phone..."
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            />
-                        </div>
-                        <div className="col-md-3">
-                            <label className="form-label fw-semibold mb-1" style={{ fontSize: '12px' }}>Status</label>
-                            <Dropdown
-                                value={selectedStatus}
-                                onChange={(e) => setSelectedStatus(e.value)}
-                                options={[{ label: 'All Statuses', value: '' }, ...STATUS_OPTIONS]}
-                                optionLabel="label"
-                                optionValue="value"
-                                className="w-100"
-                                placeholder="All Statuses"
-                            />
-                        </div>
-                        <div className="col-md-auto d-flex gap-2">
-                            <button className="btn btn-primary btn-sm" onClick={handleSearch}>
-                                <i className="ri-search-line me-1" /> Search
-                            </button>
-                            <button className="btn btn-outline-secondary btn-sm" onClick={handleClear}>
-                                <i className="ri-close-line me-1" /> Clear
-                            </button>
+                {/* Sub-Navigation Tabs */}
+                <div className="row mb-4">
+                    <div className="col-12">
+                        <ul className="nav nav-pills nav-customs nav-danger bg-white p-2 rounded shadow-sm border">
+                            <li className="nav-item">
+                                <Link
+                                    to="/embed-form/settings"
+                                    className="nav-link fw-semibold text-muted"
+                                >
+                                    <i className="ri-settings-4-line me-1" /> Configuration & Embed Code
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link
+                                    to="/embed-form/submissions"
+                                    className="nav-link active fw-semibold"
+                                >
+                                    <i className="ri-file-list-3-line me-1" /> Submissions List
+                                    {totalRecords > 0 && (
+                                        <span className="badge bg-white text-primary ms-2">
+                                            {totalRecords}
+                                        </span>
+                                    )}
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                {/* Filter Card */}
+                <div className="card shadow-sm border-0 mb-4">
+                    <div className="card-body p-3">
+                        <div className="row g-3 align-items-end">
+                            <div className="col-md-5">
+                                <label className="form-label fw-semibold fs-12 mb-1">Search Submissions</label>
+                                <div className="input-group">
+                                    <span className="input-group-text bg-light text-muted">
+                                        <i className="ri-search-line" />
+                                    </span>
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        placeholder="Applicant name, email, phone, employer..."
+                                        value={searchText}
+                                        onChange={(e) => setSearchText(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                    />
+                                </div>
+                            </div>
+                            <div className="col-md-3">
+                                <label className="form-label fw-semibold fs-12 mb-1">Filter by Status</label>
+                                <Dropdown
+                                    value={selectedStatus}
+                                    onChange={(e) => setSelectedStatus(e.value)}
+                                    options={[{ label: 'All Statuses', value: '' }, ...STATUS_OPTIONS]}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    className="w-100 p-inputtext-sm"
+                                    placeholder="All Statuses"
+                                />
+                            </div>
+                            <div className="col-md-auto d-flex gap-2">
+                                <button className="btn btn-primary btn-sm px-3" onClick={handleSearch}>
+                                    <i className="ri-search-line me-1" /> Search
+                                </button>
+                                <button className="btn btn-outline-secondary btn-sm px-3" onClick={handleClear}>
+                                    <i className="ri-refresh-line me-1" /> Reset
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* DataTable */}
-            {loading ? <TableLoader /> : (
-                <DataTable
-                    value={submissions}
-                    lazy
-                    paginator
-                    rows={perPage}
-                    totalRecords={totalRecords}
-                    onPage={(e: any) => { setPage((e.page ?? 0) + 1); setPerPage(e.rows); }}
-                    first={(page - 1) * perPage}
-                    rowsPerPageOptions={[10, 15, 25, 50]}
-                    emptyMessage="No submissions found."
-                >
-                    <Column field="submission_uid" header="Reference" style={{ fontSize: '12px' }} body={(row) => <code style={{ fontSize: '11px' }}>{row.submission_uid?.slice(0, 8)}...</code>} />
-                    <Column header="Applicant" body={nameTemplate} />
-                    <Column field="email" header="Email" />
-                    <Column field="phone" header="Phone" body={(row) => row.phone || '—'} />
-                    <Column header="Desired Amount" body={amountTemplate} />
-                    <Column field="credit_score" header="Credit Score" body={(row) => row.credit_score || '—'} />
-                    <Column header="Documents" body={docsTemplate} />
-                    <Column header="Status" body={statusTemplate} />
-                    <Column header="Submitted" body={dateTemplate} />
-                    <Column
-                        header="Action"
-                        body={actionTemplate}
-                        alignHeader="center"
-                        align="center"
-                        headerClassName="text-center"
-                        bodyClassName="text-center"
-                        style={{ width: '80px' }}
-                    />
-                </DataTable>
-            )}
-
-            {/* Detail Modal */}
-            <Dialog
-                visible={detailVisible}
-                onHide={() => setDetailVisible(false)}
-                header="Application Details"
-                style={{ width: '680px' }}
-                modal
-                draggable={false}
-            >
-                {detailLoading ? (
-                    <div className="text-center p-4"><i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem' }} /></div>
-                ) : detailData ? (
-                    <div>
-                        {/* Status update */}
-                        <div className="d-flex align-items-center gap-2 mb-4">
-                            <span className="fw-semibold" style={{ fontSize: '13px' }}>Status:</span>
-                            <Dropdown
-                                value={detailData.status}
-                                onChange={(e) => handleStatusChange(detailData.id, e.value)}
-                                options={STATUS_OPTIONS}
-                                optionLabel="label"
-                                optionValue="value"
-                                style={{ minWidth: '150px' }}
-                            />
-                        </div>
-
-                        {/* Info grid */}
-                        {[
-                            { label: 'Full Name', value: `${detailData.first_name} ${detailData.last_name}` },
-                            { label: 'Email', value: detailData.email },
-                            { label: 'Phone', value: detailData.phone },
-                            { label: 'Date of Birth', value: detailData.birthday },
-                            { label: 'Credit Score', value: detailData.credit_score },
-                            { label: 'Desired Amount', value: detailData.desired_funding_amount ? `$${parseFloat(detailData.desired_funding_amount).toLocaleString()}` : null },
-                            { label: 'Home Address', value: [detailData.home_address, detailData.city, detailData.state, detailData.postal_code].filter(Boolean).join(', ') },
-                            { label: 'Housing', value: `${detailData.housing_status || '—'} — ${detailData.monthly_housing_payment ? `$${detailData.monthly_housing_payment}/mo` : '—'}` },
-                            { label: 'Employer', value: detailData.employer_name },
-                            { label: 'Occupation', value: detailData.occupation },
-                            { label: 'Annual Income', value: detailData.annual_income ? `$${parseFloat(detailData.annual_income).toLocaleString()}` : null },
-                            { label: 'Sales Rep', value: detailData.sales_rep },
-                            { label: 'Referral Source', value: detailData.referral_source },
-                            { label: 'Submitted', value: detailData.created_at ? new Date(detailData.created_at).toLocaleString() : null },
-                            { label: 'Origin URL', value: detailData.origin_url },
-                        ].map(({ label, value }) => value ? (
-                            <div key={label} className="d-flex border-bottom py-2" style={{ fontSize: '13px' }}>
-                                <span className="text-muted fw-semibold" style={{ width: '160px', flexShrink: 0 }}>{label}</span>
-                                <span style={{ wordBreak: 'break-all' }}>{value}</span>
-                            </div>
-                        ) : null)}
-
-                        {/* Attachments */}
-                        {detailData.attachments?.length > 0 && (
-                            <div className="mt-4">
-                                <h6 className="fw-bold mb-3">Uploaded Documents</h6>
-                                {detailData.attachments.map((att: any) => (
-                                    <div
-                                        key={att.id}
-                                        className="d-flex align-items-center justify-content-between border rounded p-2 mb-2"
-                                        style={{ fontSize: '13px' }}
-                                    >
-                                        <div>
-                                            <i className="ri-file-line me-2 text-primary" />
-                                            <span className="fw-medium">{att.original_name}</span>
-                                            <span className="text-muted ms-2" style={{ fontSize: '11px' }}>
-                                                ({att.field_name?.replace(/_/g, ' ')})
-                                            </span>
-                                        </div>
-                                        <Button
-                                            icon="pi pi-download"
-                                            size="small"
-                                            outlined
-                                            severity="success"
-                                            tooltip="Download"
-                                            tooltipOptions={{ position: 'top' }}
-                                            onClick={() => handleDownload(att)}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+                {/* DataTable Card */}
+                <div className="card shadow-sm border-0">
+                    <div className="card-body p-0">
+                        {loading ? (
+                            <TableLoader />
+                        ) : (
+                            <DataTable
+                                value={submissions}
+                                lazy
+                                paginator
+                                rows={perPage}
+                                totalRecords={totalRecords}
+                                onPage={(e: any) => { setPage((e.page ?? 0) + 1); setPerPage(e.rows); }}
+                                first={(page - 1) * perPage}
+                                rowsPerPageOptions={[10, 15, 25, 50]}
+                                emptyMessage="No client form submissions found."
+                                className="table align-middle"
+                            >
+                                <Column
+                                    field="submission_uid"
+                                    header="Ref ID"
+                                    body={(row) => <code className="text-muted fs-11">#{row.submission_uid?.slice(0, 8)}</code>}
+                                    style={{ width: '110px' }}
+                                />
+                                <Column header="Applicant" body={nameTemplate} />
+                                <Column field="email" header="Email Address" />
+                                <Column field="phone" header="Phone" body={(row) => row.phone || '—'} />
+                                <Column header="Desired Amount" body={amountTemplate} />
+                                <Column field="credit_score" header="Credit Score" body={(row) => row.credit_score ? <span className="fw-semibold">{row.credit_score}</span> : '—'} />
+                                <Column header="Documents" body={docsTemplate} />
+                                <Column header="Status" body={statusTemplate} />
+                                <Column header="Date Submitted" body={dateTemplate} />
+                                <Column
+                                    header="Action"
+                                    body={actionTemplate}
+                                    alignHeader="center"
+                                    align="center"
+                                    headerClassName="text-center"
+                                    bodyClassName="text-center"
+                                    style={{ width: '110px' }}
+                                />
+                            </DataTable>
                         )}
                     </div>
-                ) : null}
-            </Dialog>
+                </div>
+
+                {/* Application Detail Modal */}
+                <Dialog
+                    visible={detailVisible}
+                    onHide={() => setDetailVisible(false)}
+                    header="Applicant Full Profile"
+                    style={{ width: '720px' }}
+                    modal
+                    draggable={false}
+                >
+                    {detailLoading ? (
+                        <div className="text-center p-5">
+                            <div className="spinner-border text-primary" role="status" />
+                        </div>
+                    ) : detailData ? (
+                        <div>
+                            {/* Top Status Banner */}
+                            <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded border mb-4">
+                                <div>
+                                    <span className="text-muted fs-12 d-block">Application Status:</span>
+                                    <Tag
+                                        value={detailData.status?.toUpperCase()}
+                                        severity={STATUS_SEVERITY[detailData.status] ?? 'info'}
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div className="d-flex align-items-center gap-2">
+                                    <span className="fw-semibold fs-13 text-muted">Change Status:</span>
+                                    <Dropdown
+                                        value={detailData.status}
+                                        onChange={(e) => handleStatusChange(detailData.id, e.value)}
+                                        options={STATUS_OPTIONS}
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        style={{ minWidth: '150px' }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Section 1: Personal & Loan */}
+                            <h6 className="fw-bold text-primary border-bottom pb-2 mb-3">
+                                <i className="ri-user-3-line me-1" /> Personal & Funding Details
+                            </h6>
+                            <div className="row g-2 fs-13 mb-4">
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Full Name:</span>
+                                    <span className="fw-bold text-dark">{detailData.first_name} {detailData.last_name}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Email:</span>
+                                    <span>{detailData.email}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Phone:</span>
+                                    <span>{detailData.phone || '—'}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Date of Birth:</span>
+                                    <span>{detailData.birthday || '—'}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Desired Funding:</span>
+                                    <span className="text-success fw-bold">
+                                        {detailData.desired_funding_amount ? `$${parseFloat(detailData.desired_funding_amount).toLocaleString()}` : '—'}
+                                    </span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Estimated Credit Score:</span>
+                                    <span className="fw-bold">{detailData.credit_score || '—'}</span>
+                                </div>
+                            </div>
+
+                            {/* Section 2: Living & Housing */}
+                            <h6 className="fw-bold text-primary border-bottom pb-2 mb-3">
+                                <i className="ri-home-4-line me-1" /> Living Information
+                            </h6>
+                            <div className="row g-2 fs-13 mb-4">
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Home Address:</span>
+                                    <span>{[detailData.home_address, detailData.city, detailData.state, detailData.postal_code].filter(Boolean).join(', ') || '—'}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Housing Status:</span>
+                                    <span>{detailData.housing_status || '—'} {detailData.monthly_housing_payment ? `($${detailData.monthly_housing_payment}/mo)` : ''}</span>
+                                </div>
+                            </div>
+
+                            {/* Section 3: Employer */}
+                            <h6 className="fw-bold text-primary border-bottom pb-2 mb-3">
+                                <i className="ri-briefcase-line me-1" /> Employment Information
+                            </h6>
+                            <div className="row g-2 fs-13 mb-4">
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Employer Name:</span>
+                                    <span>{detailData.employer_name || '—'}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Employer Phone:</span>
+                                    <span>{detailData.employer_phone || '—'}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Occupation / Job Title:</span>
+                                    <span>{detailData.occupation || '—'}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted d-block fw-semibold">Annual Income:</span>
+                                    <span className="fw-bold">
+                                        {detailData.annual_income ? `$${parseFloat(detailData.annual_income).toLocaleString()}` : '—'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Section 4: Uploaded Documents */}
+                            <h6 className="fw-bold text-primary border-bottom pb-2 mb-3">
+                                <i className="ri-attachment-line me-1" /> Uploaded Documents ({detailData.attachments?.length ?? 0})
+                            </h6>
+                            {detailData.attachments?.length > 0 ? (
+                                <div className="row g-2 mb-3">
+                                    {detailData.attachments.map((att: any) => (
+                                        <div key={att.id} className="col-12">
+                                            <div className="d-flex align-items-center justify-content-between p-2 border rounded bg-white">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <div className="avatar-xs flex-shrink-0 d-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded">
+                                                        <i className="ri-file-text-line" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-semibold text-dark fs-13">{att.original_name}</div>
+                                                        <div className="text-muted fs-11 text-capitalize">
+                                                            {att.field_name?.replace(/_/g, ' ')} &bull; {att.file_size ? `${(att.file_size / 1024).toFixed(0)} KB` : ''}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    icon="pi pi-download"
+                                                    label="Download"
+                                                    size="small"
+                                                    severity="success"
+                                                    outlined
+                                                    onClick={() => handleDownload(att)}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-muted fs-13">No documents attached.</p>
+                            )}
+
+                            {/* Submission Metadata */}
+                            <div className="bg-light p-3 rounded fs-12 text-muted mt-3">
+                                <div className="row g-1">
+                                    <div className="col-sm-6"><strong>Reference UID:</strong> {detailData.submission_uid}</div>
+                                    <div className="col-sm-6"><strong>Date Submitted:</strong> {detailData.created_at ? new Date(detailData.created_at).toLocaleString() : '—'}</div>
+                                    {detailData.sales_rep && <div className="col-sm-6"><strong>Sales Rep:</strong> {detailData.sales_rep}</div>}
+                                    {detailData.referral_source && <div className="col-sm-6"><strong>Referral Source:</strong> {detailData.referral_source}</div>}
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+                </Dialog>
+            </div>
         </div>
     );
 }
