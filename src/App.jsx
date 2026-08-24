@@ -76,7 +76,7 @@ import FundingSequencingForm from './pages/funding/components/FundingSequencingF
 import LendersList from './pages/lenders/LendersList';
 import LenderForm from './pages/lenders/LenderForm';
 import EmbedFormSettings from './pages/embed-form/EmbedFormSettings.tsx';
-import EmbedFormSubmissions from './pages/embed-form/EmbedFormSubmissions.jsx';
+import EmbedFormSubmissions from './pages/embed-form/EmbedFormSubmissions.tsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)

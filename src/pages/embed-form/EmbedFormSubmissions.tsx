@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Tag } from 'primereact/tag';
@@ -8,7 +8,6 @@ import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import TableLoader from '../../components/Loader/TableLoader';
-import { useAuthStore } from '../../store/auth/authStore';
 import {
     fetchEmbedFormSubmissions,
     getEmbedFormSubmission,
@@ -31,9 +30,6 @@ const STATUS_SEVERITY: Record<string, 'info' | 'warning' | 'success' | 'danger'>
 };
 
 export default function EmbedFormSubmissions() {
-    const currentUser = useAuthStore((state) => state.user);
-    const isHost = currentUser?.is_host == 1;
-
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
