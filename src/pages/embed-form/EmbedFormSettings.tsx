@@ -294,7 +294,8 @@ export default function EmbedFormSettings() {
                                             />
                                             <button
                                                 type="button"
-                                                className="btn btn-outline-primary"
+                                                className="btn text-white fw-semibold"
+                                                style={{ backgroundColor: 'var(--secondary-color)', borderColor: 'var(--secondary-color)' }}
                                                 onClick={handleAddDomain}
                                             >
                                                 <i className="ri-add-line me-1" /> Add Domain
@@ -376,7 +377,8 @@ export default function EmbedFormSettings() {
                                         <span className="text-muted fw-semibold fs-11 text-uppercase">Public Partner Key</span>
                                         <button
                                             type="button"
-                                            className="btn btn-link btn-sm p-0 text-primary text-decoration-none fs-12"
+                                            className="btn btn-link btn-sm p-0 text-decoration-none fs-12 fw-semibold"
+                                            style={{ color: 'var(--secondary-color)' }}
                                             onClick={() => copyToClipboard(config?.public_key, 'key')}
                                         >
                                             {copied === 'key' ? (
@@ -403,7 +405,8 @@ export default function EmbedFormSettings() {
                                         />
                                         <button
                                             type="button"
-                                            className={`btn ${copied === 'url' ? 'btn-success' : 'btn-outline-primary'}`}
+                                            className={`btn text-white fw-semibold ${copied === 'url' ? 'btn-success' : ''}`}
+                                            style={copied === 'url' ? undefined : { backgroundColor: 'var(--secondary-color)', borderColor: 'var(--secondary-color)' }}
                                             onClick={() => copyToClipboard(config?.direct_url, 'url')}
                                         >
                                             {copied === 'url' ? (
@@ -442,7 +445,8 @@ export default function EmbedFormSettings() {
                                     </div>
                                     <button
                                         type="button"
-                                        className={`btn w-100 mt-2 fw-semibold ${copied === 'snippet' ? 'btn-success' : 'btn-outline-primary'}`}
+                                        className={`btn w-100 mt-2 fw-semibold text-white ${copied === 'snippet' ? 'btn-success' : ''}`}
+                                        style={copied === 'snippet' ? undefined : { backgroundColor: 'var(--secondary-color)', borderColor: 'var(--secondary-color)' }}
                                         onClick={() => copyToClipboard(config?.embed_snippet, 'snippet')}
                                     >
                                         {copied === 'snippet' ? (
