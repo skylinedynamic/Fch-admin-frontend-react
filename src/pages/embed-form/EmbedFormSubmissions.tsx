@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Tag } from 'primereact/tag';
@@ -14,7 +13,6 @@ import {
     getEmbedFormSubmission,
     updateEmbedFormSubmissionStatus,
     downloadEmbedFormAttachment,
-    getEmbedFormConfig,
 } from '../../modules/embed-form/services';
 
 const STATUS_OPTIONS = [
@@ -41,19 +39,11 @@ export default function EmbedFormSubmissions() {
     const [appliedSearch, setAppliedSearch] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [appliedStatus, setAppliedStatus] = useState<string>('');
-    const [config, setConfig] = useState<any>(null);
 
     // Detail modal
     const [detailVisible, setDetailVisible] = useState(false);
     const [detailData, setDetailData] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
-
-    // Load initial config for direct link & total count
-    useEffect(() => {
-        getEmbedFormConfig().then(res => {
-            if (res.status) setConfig(res.data);
-        }).catch(() => {});
-    }, []);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -187,57 +177,12 @@ export default function EmbedFormSubmissions() {
             <div className="container-fluid">
                 {/* Header */}
                 <PageHeader
-                    title="Embedded Form"
+                    title="Form Submissions"
                     breadcrumbs={[
                         { label: 'Embedded Form', path: '/embed-form/settings' },
                         { label: 'Submissions' }
                     ]}
-                >
-                    <div className="d-flex gap-2">
-                        {config?.direct_url && (
-                            <a
-                                href={config.direct_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-outline-primary btn-sm"
-                            >
-                                <i className="ri-external-link-line me-1" /> View Live Form
-                            </a>
-                        )}
-                        <Link to="/embed-form/settings" className="btn btn-outline-secondary btn-sm">
-                            <i className="ri-settings-4-line me-1" /> Configure Form
-                        </Link>
-                    </div>
-                </PageHeader>
-
-                {/* Sub-Navigation Tabs */}
-                <div className="row mb-4">
-                    <div className="col-12">
-                        <ul className="nav nav-pills nav-customs nav-danger bg-white p-2 rounded shadow-sm border">
-                            <li className="nav-item">
-                                <Link
-                                    to="/embed-form/settings"
-                                    className="nav-link fw-semibold text-muted"
-                                >
-                                    <i className="ri-settings-4-line me-1" /> Configuration & Embed Code
-                                </Link>
-                            </li>
-                            <li className="nav-item">
-                                <Link
-                                    to="/embed-form/submissions"
-                                    className="nav-link active fw-semibold"
-                                >
-                                    <i className="ri-file-list-3-line me-1" /> Submissions List
-                                    {totalRecords > 0 && (
-                                        <span className="badge bg-white text-primary ms-2">
-                                            {totalRecords}
-                                        </span>
-                                    )}
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+                />
 
                 {/* Filter Card */}
                 <div className="card shadow-sm border-0 mb-4">

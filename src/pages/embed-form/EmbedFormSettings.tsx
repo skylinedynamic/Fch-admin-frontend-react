@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import {
@@ -9,7 +8,6 @@ import {
 } from '../../modules/embed-form/services';
 
 export default function EmbedFormSettings() {
-    const navigate = useNavigate();
     const [config, setConfig] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -134,62 +132,12 @@ export default function EmbedFormSettings() {
             <div className="container-fluid">
                 {/* Top Header */}
                 <PageHeader
-                    title="Embedded Form"
+                    title="Form Configuration"
                     breadcrumbs={[
                         { label: 'Embedded Form', path: '/embed-form/settings' },
                         { label: 'Configuration' }
                     ]}
-                >
-                    <div className="d-flex gap-2">
-                        {config?.direct_url && (
-                            <a
-                                href={config.direct_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-outline-primary btn-sm"
-                            >
-                                <i className="ri-external-link-line me-1" /> View Live Form
-                            </a>
-                        )}
-                        <Link to="/embed-form/submissions" className="btn btn-primary btn-sm">
-                            <i className="ri-file-list-3-line me-1" /> Submissions
-                            {config?.submissions_count !== undefined && (
-                                <span className="badge bg-white text-primary ms-1">
-                                    {config.submissions_count}
-                                </span>
-                            )}
-                        </Link>
-                    </div>
-                </PageHeader>
-
-                {/* Sub-Navigation Tabs */}
-                <div className="row mb-4">
-                    <div className="col-12">
-                        <ul className="nav nav-pills nav-customs nav-danger bg-white p-2 rounded shadow-sm border">
-                            <li className="nav-item">
-                                <Link
-                                    to="/embed-form/settings"
-                                    className="nav-link active fw-semibold"
-                                >
-                                    <i className="ri-settings-4-line me-1" /> Configuration & Embed Code
-                                </Link>
-                            </li>
-                            <li className="nav-item">
-                                <Link
-                                    to="/embed-form/submissions"
-                                    className="nav-link fw-semibold text-muted"
-                                >
-                                    <i className="ri-file-list-3-line me-1" /> Submissions List
-                                    {config?.submissions_count > 0 && (
-                                        <span className="badge bg-primary-subtle text-primary ms-2">
-                                            {config.submissions_count}
-                                        </span>
-                                    )}
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+                />
 
                 {/* Main Content Grid */}
                 <div className="row g-4">
