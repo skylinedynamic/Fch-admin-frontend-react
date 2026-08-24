@@ -350,10 +350,13 @@ export default function PaymentDetails() {
                                                     {Object.entries(rawDetails).map(([key, val]) => {
                                                         if (['approved_by', 'approved_at', 'approval_note', 'bank_detail_id', 'approved_by_id', 'rejected_by', 'rejected_at', 'rejected_by_id', 'rejection_reason', 'decision', 'note', 'reason'].includes(key)) return null;
                                                         if (val === null || val === undefined || val === '') return null;
+                                                        const displayVal = typeof val === 'object'
+                                                            ? JSON.stringify(val)
+                                                            : (key === 'mode' && typeof val === 'string' ? val.charAt(0).toUpperCase() + val.slice(1).toLowerCase() : String(val));
                                                         return (
                                                             <div className="col-lg-3 col-sm-6 mb-3" key={key}>
                                                                 <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">{key.replace(/_/g, ' ')}</p>
-                                                                <h5 className="fs-14 mb-0">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</h5>
+                                                                <h5 className={`fs-14 mb-0 ${key === 'mode' ? 'text-capitalize' : ''}`}>{displayVal}</h5>
                                                             </div>
                                                         );
                                                     })}
@@ -468,7 +471,9 @@ export default function PaymentDetails() {
                                 disabled={approving}
                             >
                                 {approving ? (
-                                    <span><i className="ri-loader-4-line spin me-1"></i> Approving...</span>
+                                    <span>
+                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Approving...
+                                    </span>
                                 ) : (
                                     <span><i className="ri-check-line me-1"></i> Confirm &amp; Approve</span>
                                 )}
@@ -522,7 +527,9 @@ export default function PaymentDetails() {
                                 disabled={rejecting}
                             >
                                 {rejecting ? (
-                                    <span><i className="ri-loader-4-line spin me-1"></i> Rejecting...</span>
+                                    <span>
+                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Rejecting...
+                                    </span>
                                 ) : (
                                     <span><i className="ri-close-line me-1"></i> Confirm &amp; Reject</span>
                                 )}

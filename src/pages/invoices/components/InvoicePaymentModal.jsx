@@ -46,14 +46,181 @@ const isBankTransferProvider = (provider) => {
   return name === target || slug === 'bank_transfer' || name.includes('bank') || name.includes('transfer');
 };
 
-const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
+const BankDetailsSkeleton = () => (
+  <div className="bank-skeleton-container" aria-busy="true" aria-live="polite">
+    {/* Informational Alert Box Skeleton */}
+    <div className="alert alert-info border-0 shadow-sm rounded-1 p-3 mb-3 d-flex align-items-start gap-3">
+      <div className="avatar-xs flex-shrink-0 mt-0.5">
+        <span className="avatar-title bg-info text-white rounded-circle fs-15">
+          <i className="ri-information-line"></i>
+        </span>
+      </div>
+      <div className="flex-grow-1">
+        <div className="bank-skeleton-pulse bank-skeleton-alert-title mb-2"></div>
+        <div className="bank-skeleton-pulse bank-skeleton-alert-text"></div>
+      </div>
+    </div>
+
+    {/* 2 Bank Cards Skeleton Grid */}
+    <div className="row g-3">
+      {[1, 2].map((item) => (
+        <div key={item} className="col-12 col-md-6">
+          <div className="bank-skeleton-card">
+            {/* Card Header Skeleton */}
+            <div className="bank-skeleton-card-header">
+              <div className="d-flex align-items-center gap-2">
+                <div className="bank-skeleton-pulse bank-skeleton-radio"></div>
+                <div className="bank-skeleton-pulse bank-skeleton-title"></div>
+              </div>
+              <div className="bank-skeleton-pulse bank-skeleton-badge"></div>
+            </div>
+
+            {/* Card Body Rows Skeleton */}
+            <div className="bank-skeleton-card-body">
+              <div className="bank-skeleton-row">
+                <div className="bank-skeleton-pulse bank-skeleton-label"></div>
+                <div className="bank-skeleton-pulse bank-skeleton-value"></div>
+              </div>
+              <div className="bank-skeleton-row">
+                <div className="bank-skeleton-pulse bank-skeleton-label"></div>
+                <div className="bank-skeleton-pulse bank-skeleton-value"></div>
+              </div>
+              <div className="bank-skeleton-row">
+                <div className="bank-skeleton-pulse bank-skeleton-label"></div>
+                <div className="bank-skeleton-pulse bank-skeleton-value"></div>
+              </div>
+              <div className="bank-skeleton-row">
+                <div className="bank-skeleton-pulse bank-skeleton-label"></div>
+                <div className="bank-skeleton-pulse bank-skeleton-value"></div>
+              </div>
+              <div className="bank-skeleton-pulse bank-skeleton-instruction"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Transaction Number Skeleton */}
+    <div className="mt-3.5 pt-3 border-top">
+      <div className="bank-skeleton-pulse bank-skeleton-input-label"></div>
+      <div className="bank-skeleton-pulse bank-skeleton-input-box"></div>
+      <div className="bank-skeleton-pulse bank-skeleton-input-help"></div>
+    </div>
+
+    {/* Action Footer Skeleton */}
+    <div className="mt-4 pt-3 border-top d-flex align-items-center justify-content-between gap-2">
+      <div>
+        <div className="bank-skeleton-pulse bank-skeleton-footer-amount-label"></div>
+        <div className="bank-skeleton-pulse bank-skeleton-footer-amount-value"></div>
+      </div>
+      <div className="bank-skeleton-pulse bank-skeleton-footer-btn"></div>
+    </div>
+  </div>
+);
+
+const PaymentConfirmationReceiptView = ({ invoice, selectedProvider, transactionNumber, amount, onHide }) => (
+  <div className="ppm-view-fade-in py-1">
+    <div className="fintech-receipt-card mb-0">
+      {/* Header Banner */}
+      <div className="fintech-receipt-header">
+        <div className="fintech-success-icon-wrap">
+          <i className="ri-checkbox-circle-fill"></i>
+        </div>
+        <div className="mb-2">
+          <span className="badge bg-success-subtle text-success fs-12 px-3 py-1.5 rounded-pill fw-semibold">
+            <i className="ri-check-double-line me-1 align-middle"></i> Payment Submitted Successfully
+          </span>
+        </div>
+        <div className="fintech-receipt-amount">
+          ${amount.toFixed(2)}<span className="currency">USD</span>
+        </div>
+        <div className="fs-13 text-muted">
+          Payment confirmation received for Invoice #{invoice?.invoice_id || invoice?.id}
+        </div>
+      </div>
+
+      {/* Body Details */}
+      <div className="fintech-receipt-body">
+        {/* Receipt Details Table */}
+        <table className="fintech-receipt-table mb-3">
+          <tbody>
+            <tr>
+              <td className="label-col">Invoice Number</td>
+              <td className="value-col font-monospace">#{invoice?.invoice_id || invoice?.id}</td>
+            </tr>
+            <tr>
+              <td className="label-col">Payment Method</td>
+              <td className="value-col text-primary">{selectedProvider?.name || 'Bank Transfer'}</td>
+            </tr>
+            {transactionNumber && (
+              <tr>
+                <td className="label-col">Reference ID</td>
+                <td className="value-col font-monospace text-dark">{transactionNumber}</td>
+              </tr>
+            )}
+            <tr>
+              <td className="label-col">Verification Status</td>
+              <td className="value-col">
+                <span className="badge bg-warning-subtle text-warning-emphasis fs-11 px-2.5 py-1 rounded fw-semibold">
+                  <i className="ri-hourglass-fill me-1 align-middle"></i>Under Review
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Process Timeline */}
+        <div className="fintech-timeline">
+          <div className="fintech-step completed">
+            <div className="fintech-step-icon">
+              <i className="ri-check-line"></i>
+            </div>
+            <div className="fintech-step-label">Submitted</div>
+          </div>
+          <div className="fintech-step active">
+            <div className="fintech-step-icon">
+              <i className="ri-loader-4-line"></i>
+            </div>
+            <div className="fintech-step-label">Review</div>
+          </div>
+          <div className="fintech-step">
+            <div className="fintech-step-icon">
+              <i className="ri-shield-check-line"></i>
+            </div>
+            <div className="fintech-step-label">Account Active</div>
+          </div>
+        </div>
+
+        {/* Notice Box */}
+        <div className="fintech-notice-box">
+          <div>
+            Administration is reviewing your payment. You will receive an email confirmation once verified and approved.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Modal Action Footer */}
+    <div className="mt-4 pt-3 border-top d-flex align-items-center justify-content-end">
+      <button
+        type="button"
+        className="btn btn-primary px-4 py-2 fw-semibold rounded-1 d-inline-flex align-items-center gap-2 shadow-sm"
+        onClick={onHide}
+      >
+        <i className="ri-close-line fs-16"></i> Close
+      </button>
+    </div>
+  </div>
+);
+
+const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess, onHide, onSubmittedChange }) => {
   const [bankAccounts, setBankAccounts] = useState(selectedProvider?.bank_details || []);
   const [selectedBankId, setSelectedBankId] = useState(() => {
     const list = selectedProvider?.bank_details || [];
     const def = list.find(b => b.is_default) || list[0];
     return def?.id || null;
   });
-  const [loading, setLoading] = useState(!selectedProvider?.bank_details?.length);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
@@ -64,19 +231,27 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
     : (parseFloat(invoice.payment_amount) || 0)) : 0;
 
   useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+
     if (selectedProvider?.bank_details && selectedProvider.bank_details.length > 0) {
       const list = selectedProvider.bank_details;
       setBankAccounts(list);
       const def = list.find(b => b.is_default) || list[0];
       if (def && !selectedBankId) setSelectedBankId(def.id);
-      setLoading(false);
-      return;
+
+      const timer = setTimeout(() => {
+        if (isMounted) setLoading(false);
+      }, 400);
+
+      return () => {
+        isMounted = false;
+        clearTimeout(timer);
+      };
     }
 
-    let isMounted = true;
     const loadBankDetails = async () => {
       try {
-        setLoading(true);
         const res = await fetchPartnerPaymentMethods();
         if (isMounted && res?.status && Array.isArray(res?.data)) {
           const bankProvider = res.data.find(p => p?.name === PROVIDER_BANK_TRANSFER);
@@ -90,7 +265,11 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
       } catch (err) {
         console.error('Failed to load bank details:', err);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setTimeout(() => {
+            if (isMounted) setLoading(false);
+          }, 300);
+        }
       }
     };
 
@@ -126,12 +305,15 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
         });
       }
       setSubmitted(true);
-      toast.success(`Payment submitted successfully! Status: ${STATUS_PROCESSING}`);
+      if (onSubmittedChange) onSubmittedChange(true);
       if (onSuccess) {
         onSuccess({
           status: STATUS_PROCESSING,
           invoice_status: STATUS_PROCESSING,
           payment_status: STATUS_PROCESSING,
+          isManual: true,
+          invoice: invoice,
+          provider: selectedProvider?.name || 'Bank Transfer',
         });
       }
     } catch (err) {
@@ -142,24 +324,26 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
     }
   };
 
+  if (submitted) {
+    return (
+      <PaymentConfirmationReceiptView
+        invoice={invoice}
+        selectedProvider={selectedProvider}
+        transactionNumber={transactionNumber}
+        amount={amount}
+        onHide={onHide}
+      />
+    );
+  }
+
   return (
     <div className="text-start py-2">
-      {submitted ? (
-        <div className="card border-0 bg-success-subtle shadow-sm rounded-3 text-center p-4">
-          <div className="avatar-md mx-auto mb-2">
-            <span className="avatar-title bg-success text-white rounded-circle fs-28 shadow-sm">
-              <i className="ri-checkbox-circle-fill"></i>
-            </span>
-          </div>
-          <h5 className="fw-bold text-success mb-1">Payment Status: Processing</h5>
-          <p className="fs-13 text-muted mb-0">
-            Your payment confirmation for Invoice #{invoice?.invoice_id || invoice?.id} (USD ${amount.toFixed(2)}) has been submitted. Administration will verify your transfer and notify you upon confirmation.
-          </p>
-        </div>
+      {loading ? (
+        <BankDetailsSkeleton />
       ) : (
-        <>
+        <div className="ppm-view-fade-in">
           {/* Informational Alert Box */}
-          <div className="alert alert-info border-0 shadow-sm rounded-3 p-3 mb-3 d-flex align-items-start gap-3">
+          <div className="alert alert-info border-0 shadow-sm rounded-1 p-3 mb-3 d-flex align-items-start gap-3">
             <div className="avatar-xs flex-shrink-0 mt-0.5">
               <span className="avatar-title bg-info text-white rounded-circle fs-15">
                 <i className="ri-information-line"></i>
@@ -168,18 +352,13 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
             <div>
               <h6 className="mb-1 text-info fw-bold fs-14">Bank Transfer Details</h6>
               <p className="mb-0 fs-12 text-muted">
-                Your payment will be processed manually. After confirmation from administration, you will be notified.
+                Transfer funds directly to one of the bank accounts below, then click Confirm Payment.
               </p>
             </div>
           </div>
 
           {/* 2 Bank Details per Row Grid */}
-          {loading ? (
-            <div className="text-center py-4">
-              <div className="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
-              <span className="fs-13 text-muted">Loading bank account details...</span>
-            </div>
-          ) : bankAccounts.length > 0 ? (
+          {bankAccounts.length > 0 ? (
             <div className="row g-3">
               {bankAccounts.map((bank, index) => {
                 const isSelected = Number(selectedBankId) === Number(bank.id);
@@ -191,13 +370,13 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
                     role="button"
                     tabIndex={0}
                   >
-                    <div className={`card border shadow-sm rounded-3 h-100 mb-0 bg-white ${isSelected ? 'border-primary shadow' : ''}`}>
+                    <div className={`card bank-card-item h-100 mb-0 ${isSelected ? 'bank-card-selected' : ''}`}>
                       {/* Card Header */}
-                      <div className="card-header bg-light-subtle border-0 py-2.5 px-3 d-flex align-items-center justify-content-between">
+                      <div className="card-header border-0 py-2.5 px-3 d-flex align-items-center justify-content-between">
                         <div className="d-flex align-items-center gap-2">
                           <input
                             type="radio"
-                            name="selected_bank_transfer_account"
+                            name="selected_partner_bank_account"
                             checked={isSelected}
                             onChange={() => setSelectedBankId(bank.id)}
                             className="form-check-input mt-0 cursor-pointer"
@@ -206,7 +385,7 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
                         </div>
                         {isSelected ? (
                           <span className="badge bg-primary-subtle text-primary fs-11">
-                            Selected
+                            <i className="ri-check-line me-1"></i>Selected
                           </span>
                         ) : bank.is_default ? (
                           <span className="badge bg-success-subtle text-success fs-11">
@@ -216,30 +395,48 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
                       </div>
 
                       {/* Card Content Table */}
-                      <div className="card-body p-3 pt-1">
+                      <div className="card-body p-3 pt-2">
                         <table className="table table-borderless table-sm mb-0 fs-13">
                           <tbody>
                             {bank.account_name && (
                               <tr>
-                                <td className="text-muted fw-medium py-1 align-middle" style={{ width: '40%' }}>Account Name</td>
-                                <td className="fw-bold text-dark py-1 align-middle text-truncate">{bank.account_name}</td>
+                                <td className="text-muted fw-medium py-1.5 align-middle col-w-40">
+                                  Account Name
+                                </td>
+                                <td className="py-1.5 align-middle">
+                                  <span className="fw-bold text-dark me-1">{bank.account_name}</span>
+                                  <button
+                                    type="button"
+                                    className="bank-copy-btn shadow-none align-middle"
+                                    onClick={() => handleCopy(bank.account_name, `name_${index}`)}
+                                    title="Copy Account Name"
+                                  >
+                                    {copiedField === `name_${index}` ? (
+                                      <i className="ri-check-line text-success fs-14"></i>
+                                    ) : (
+                                      <i className="ri-file-copy-line fs-13"></i>
+                                    )}
+                                  </button>
+                                </td>
                               </tr>
                             )}
                             <tr>
-                              <td className="text-muted fw-medium py-1 align-middle">Account Number</td>
-                              <td className="py-1 align-middle">
+                              <td className="text-muted fw-medium py-1.5 align-middle">
+                                Account Number
+                              </td>
+                              <td className="py-1.5 align-middle">
                                 <span className="fw-bold font-monospace text-dark me-1">{bank.account_number || 'N/A'}</span>
                                 {bank.account_number && (
                                   <button
                                     type="button"
-                                    className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
+                                    className="bank-copy-btn shadow-none align-middle"
                                     onClick={() => handleCopy(bank.account_number, `acc_${index}`)}
                                     title="Copy Account Number"
                                   >
                                     {copiedField === `acc_${index}` ? (
-                                      <i className="ri-check-line text-success fs-15"></i>
+                                      <i className="ri-check-line text-success fs-14"></i>
                                     ) : (
-                                      <i className="ri-file-copy-line fs-14"></i>
+                                      <i className="ri-file-copy-line fs-13"></i>
                                     )}
                                   </button>
                                 )}
@@ -247,19 +444,21 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
                             </tr>
                             {bank.routing_number && (
                               <tr>
-                                <td className="text-muted fw-medium py-1 align-middle">Routing / ABA</td>
-                                <td className="py-1 align-middle">
+                                <td className="text-muted fw-medium py-1.5 align-middle">
+                                  Routing / ABA
+                                </td>
+                                <td className="py-1.5 align-middle">
                                   <span className="fw-bold font-monospace text-dark me-1">{bank.routing_number}</span>
                                   <button
                                     type="button"
-                                    className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
+                                    className="bank-copy-btn shadow-none align-middle"
                                     onClick={() => handleCopy(bank.routing_number, `rout_${index}`)}
                                     title="Copy Routing Number"
                                   >
                                     {copiedField === `rout_${index}` ? (
-                                      <i className="ri-check-line text-success fs-15"></i>
+                                      <i className="ri-check-line text-success fs-14"></i>
                                     ) : (
-                                      <i className="ri-file-copy-line fs-14"></i>
+                                      <i className="ri-file-copy-line fs-13"></i>
                                     )}
                                   </button>
                                 </td>
@@ -267,19 +466,21 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
                             )}
                             {(invoice?.invoice_id || invoice?.id) && (
                               <tr>
-                                <td className="text-muted fw-medium py-1 align-middle">Reference Memo</td>
-                                <td className="py-1 align-middle">
-                                  <span className="fw-bold font-monospace text-primary me-1">Invoice #{invoice.invoice_id || invoice.id}</span>
+                                <td className="text-muted fw-medium py-1.5 align-middle">
+                                  Reference Memo
+                                </td>
+                                <td className="py-1.5 align-middle">
+                                  <span className="bank-memo-pill font-monospace fw-bold me-1">{invoice.invoice_id || invoice.id}</span>
                                   <button
                                     type="button"
-                                    className="btn p-0 border-0 bg-transparent text-primary ms-1 shadow-none align-middle"
-                                    onClick={() => handleCopy(`Invoice #${invoice.invoice_id || invoice.id}`, `memo_${index}`)}
-                                    title="Copy Reference"
+                                    className="bank-copy-btn shadow-none align-middle"
+                                    onClick={() => handleCopy(`${invoice.invoice_id || invoice.id}`, `memo_${index}`)}
+                                    title="Copy Reference Memo"
                                   >
                                     {copiedField === `memo_${index}` ? (
-                                      <i className="ri-check-line text-success fs-15"></i>
+                                      <i className="ri-check-line text-success fs-14"></i>
                                     ) : (
-                                      <i className="ri-file-copy-line fs-14"></i>
+                                      <i className="ri-file-copy-line fs-13"></i>
                                     )}
                                   </button>
                                 </td>
@@ -289,9 +490,22 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
                         </table>
 
                         {bank.instructions && (
-                          <div className="bg-light p-2 rounded-2 fs-12 text-muted mt-2">
-                            <i className="ri-information-line me-1 text-primary"></i>
-                            <strong>Instructions:</strong> {bank.instructions}
+                          <div className="bank-instruction-alert fs-12 text-muted mt-2.5 d-flex align-items-start justify-content-between gap-2">
+                            <div>
+                              <strong>Instructions:</strong> {bank.instructions}
+                            </div>
+                            <button
+                              type="button"
+                              className="bank-copy-btn shadow-none flex-shrink-0"
+                              onClick={() => handleCopy(bank.instructions, `inst_${index}`)}
+                              title="Copy Instructions"
+                            >
+                              {copiedField === `inst_${index}` ? (
+                                <i className="ri-check-line text-success fs-14"></i>
+                              ) : (
+                                <i className="ri-file-copy-line fs-13"></i>
+                              )}
+                            </button>
                           </div>
                         )}
                       </div>
@@ -302,7 +516,6 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
             </div>
           ) : (
             <div className="alert alert-warning mb-0 fs-13">
-              <i className="ri-alert-line me-2"></i>
               No active bank accounts found. Please contact administration for payment instructions.
             </div>
           )}
@@ -312,14 +525,18 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
             <label className="form-label fw-semibold text-dark fs-13 mb-1">
               Transaction Number <span className="text-muted fw-normal fs-12">(Optional)</span>
             </label>
-            <input
-              type="text"
-              className="form-control form-control-sm border shadow-none bg-white font-monospace fs-13"
-              style={{ border: '1px solid #bcc5d1', borderRadius: '6px', padding: '8px 12px' }}
-              placeholder="Enter bank wire / transfer transaction number"
-              value={transactionNumber}
-              onChange={(e) => setTransactionNumber(e.target.value)}
-            />
+            <div className="transaction-input-group">
+              <span className="input-group-text">
+                <i className="ri-file-text-line"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control form-control-sm bg-white font-monospace fs-13"
+                placeholder="Enter wire or transfer reference number"
+                value={transactionNumber}
+                onChange={(e) => setTransactionNumber(e.target.value)}
+              />
+            </div>
             <small className="text-muted fs-11 mt-1 d-block">
               Provide your wire or ACH transaction reference ID to help administration verify your payment.
             </small>
@@ -333,7 +550,7 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
             </div>
             <button
               type="button"
-              className="btn btn-primary px-4 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2"
+              className="btn btn-primary px-4 py-2 fw-semibold rounded-1 d-inline-flex align-items-center gap-2 shadow-sm"
               onClick={handleConfirmPayment}
               disabled={submitting}
             >
@@ -349,13 +566,13 @@ const BankTransferDetailsView = ({ selectedProvider, invoice, onSuccess }) => {
               )}
             </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
 };
 
-const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess }) => {
+const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess, onHide, onSubmittedChange }) => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [transactionNumber, setTransactionNumber] = useState('');
@@ -383,12 +600,15 @@ const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess }) =>
         }
       }
       setSubmitted(true);
-      toast.success(`Payment submitted successfully! Status: ${STATUS_PROCESSING}`);
+      if (onSubmittedChange) onSubmittedChange(true);
       if (onSuccess) {
         onSuccess({
           status: STATUS_PROCESSING,
           invoice_status: STATUS_PROCESSING,
           payment_status: STATUS_PROCESSING,
+          isManual: true,
+          invoice: invoice,
+          provider: selectedProvider?.name || 'Manual Payment',
         });
       }
     } catch (err) {
@@ -399,89 +619,74 @@ const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess }) =>
     }
   };
 
+  if (submitted) {
+    return (
+      <PaymentConfirmationReceiptView
+        invoice={invoice}
+        selectedProvider={selectedProvider}
+        transactionNumber={transactionNumber}
+        amount={amount}
+        onHide={onHide}
+      />
+    );
+  }
+
   return (
     <div className="text-start py-3">
-      {submitted ? (
-        <div className="card border-0 shadow-sm overflow-hidden mb-0 bg-white text-center p-4">
-          <div className="avatar-md mx-auto mb-3">
-            <span className="avatar-title bg-success-subtle text-success rounded-circle fs-32 shadow-sm">
-              <i className="ri-checkbox-circle-fill"></i>
-            </span>
-          </div>
-          <h5 className="fw-bold text-dark mb-1">Payment Confirmation Submitted</h5>
-          <p className="text-muted fs-13 mb-3">Invoice #{invoice?.invoice_id || invoice?.id} &middot; USD ${amount.toFixed(2)}</p>
-
-          <div className="d-inline-flex align-items-center gap-2 bg-warning-subtle text-warning px-3 py-1.5 rounded-pill mb-4">
-            <span className="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
-            <span className="fw-bold fs-12 text-uppercase" style={{ letterSpacing: '0.5px' }}>Status: {STATUS_PROCESSING}</span>
-          </div>
-
-          <div className="p-3 bg-light rounded-3 text-start fs-13 text-muted max-w-md mx-auto">
-            <p className="mb-1 text-dark fw-semibold">Next Steps:</p>
-            <p className="mb-0">
-              Your payment status is updated to <strong>{STATUS_PROCESSING}</strong>. Administration will verify your transfer and notify you upon final confirmation.
-            </p>
-          </div>
+      <div className="alert alert-info border-0 shadow-sm rounded-1 p-3.5 mb-4 d-flex align-items-start gap-3">
+        <div>
+          <h6 className="mb-1 text-info fw-semibold">{selectedProvider?.name || 'Payment Method'}</h6>
+          <p className="mb-0 fs-13 text-muted">
+            It will process manually, after confirmation from administration you will be notified.
+          </p>
         </div>
-      ) : (
-        <>
-          <div className="alert alert-info border-0 shadow-sm rounded-3 p-3.5 mb-4 d-flex align-items-start gap-3">
-            <div className="avatar-xs flex-shrink-0 mt-1">
-              <span className="avatar-title bg-info-subtle text-info rounded-circle fs-16">
-                <i className="ri-information-line"></i>
-              </span>
-            </div>
-            <div>
-              <h6 className="mb-1 text-info fw-semibold">{selectedProvider?.name || 'Payment Method'}</h6>
-              <p className="mb-0 fs-13 text-muted">
-                It will process manually, after confirmation from administration you will be notified.
-              </p>
-            </div>
-          </div>
+      </div>
 
-          {/* Transaction Number Input */}
-          <div className="mb-4 text-start">
-            <label className="form-label fw-semibold text-dark fs-13 mb-1">
-              Transaction Number <span className="text-muted fw-normal fs-12">(Optional)</span>
-            </label>
-            <input
-              type="text"
-              className="form-control form-control-sm border shadow-none bg-white font-monospace fs-13"
-              style={{ border: '1px solid #bcc5d1', borderRadius: '6px', padding: '8px 12px' }}
-              placeholder="Enter transaction / reference number"
-              value={transactionNumber}
-              onChange={(e) => setTransactionNumber(e.target.value)}
-            />
-            <small className="text-muted fs-11 mt-1 d-block">
-              Provide your reference ID to help administration verify your payment.
-            </small>
-          </div>
+      {/* Transaction Number Input */}
+      <div className="mb-4 text-start">
+        <label className="form-label fw-semibold text-dark fs-13 mb-1">
+          Transaction Number <span className="text-muted fw-normal fs-12">(Optional)</span>
+        </label>
+        <div className="transaction-input-group">
+          <span className="input-group-text">
+            <i className="ri-file-text-line"></i>
+          </span>
+          <input
+            type="text"
+            className="form-control form-control-sm bg-white font-monospace fs-13"
+            placeholder="Enter transaction / reference number"
+            value={transactionNumber}
+            onChange={(e) => setTransactionNumber(e.target.value)}
+          />
+        </div>
+        <small className="text-muted fs-11 mt-1 d-block">
+          Provide your reference ID to help administration verify your payment.
+        </small>
+      </div>
 
-          <div className="mt-4 pt-3 border-top d-flex align-items-center justify-content-between gap-3">
-            <div className="text-start">
-              <span className="fs-11 text-muted d-block text-uppercase fw-semibold" style={{ letterSpacing: '0.5px' }}>Total Due</span>
-              <span className="fs-18 fw-extrabold text-dark font-monospace">${amount.toFixed(2)} USD</span>
-            </div>
-            <button
-              type="button"
-              className="btn btn-primary btn-lg px-4 py-2.5 fs-15 fw-bold shadow-md rounded-3 d-inline-flex align-items-center gap-2 transition-all"
-              onClick={handleConfirmPayment}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <i className="ri-checkbox-circle-fill fs-18"></i> Confirm Payment
-                </>
-              )}
-            </button>
-          </div>
-        </>
-      )}
+      <div className="mt-4 pt-3 border-top d-flex align-items-center justify-content-between gap-3">
+        <div className="text-start">
+          <span className="fs-11 text-muted d-block text-uppercase fw-semibold" style={{ letterSpacing: '0.5px' }}>Total Due</span>
+          <span className="fs-18 fw-extrabold text-dark font-monospace">${amount.toFixed(2)} USD</span>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary btn-lg px-4 py-2.5 fs-15 fw-bold shadow-md rounded-1 d-inline-flex align-items-center gap-2 transition-all"
+          onClick={handleConfirmPayment}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <>
+              <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Submitting...
+            </>
+          ) : (
+            <>
+              <i className="ri-checkbox-circle-fill fs-18"></i> Confirm Payment
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 };
@@ -490,6 +695,7 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
   const modalRef = useRef(null);
   const modalInstanceRef = useRef(null);
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const amount = invoice ? (typeof invoice.payment_amount === 'string'
     ? parseFloat(invoice.payment_amount.replace(/[^0-9.]/g, ''))
@@ -521,15 +727,18 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
   useEffect(() => {
     if (!show) {
       setSelectedProvider(null);
+      setIsSubmitted(false);
     }
   }, [show]);
 
   const handleProviderSelect = (provider) => {
     setSelectedProvider(provider);
+    setIsSubmitted(false);
   };
 
   const handleBackToProviders = () => {
     setSelectedProvider(null);
+    setIsSubmitted(false);
   };
 
   const isStripe = isStripeProvider(selectedProvider);
@@ -537,10 +746,9 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
   const providerLogo = selectedProvider ? resolveLogo(selectedProvider.name, selectedProvider.logo) : '';
 
   return (
-    <div className="modal fade stripe-payment-modal ppm-modal" ref={modalRef} tabIndex="-1" aria-hidden="true">
+    <div className="modal fade stripe-payment-modal ppm-modal flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
       <div
-        className={`modal-dialog modal-dialog-centered${isBankTransfer ? ' modal-xl' : ''}`}
-        style={isBankTransfer ? { maxWidth: '850px', width: '92%' } : {}}
+        className={`modal-dialog modal-dialog-centered${isBankTransfer ? ' modal-xl ppm-bank-transfer-dialog' : ''}`}
       >
         <div className="modal-content ppm-content">
           {!selectedProvider ? (
@@ -572,39 +780,56 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
           ) : (
             <>
               <div className="ppm-card-header">
-                <div className="d-flex align-items-center gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-link text-muted p-0 text-decoration-none"
-                    onClick={handleBackToProviders}
-                  >
-                    <i className="ri-arrow-left-line fs-18"></i>
-                  </button>
-                  <div>
-                    <h5 className="mb-0 fs-15 fw-semibold text-dark">Complete Payment</h5>
-                    <p className="text-muted mb-0 fs-12">
-                      {selectedProvider.name} &middot; Invoice #{invoice?.invoice_id} &middot; USD ${amount.toFixed(2)}
-                    </p>
+                {isSubmitted ? (
+                  <div className="d-flex align-items-center gap-3">
+                    <div className="avatar-sm flex-shrink-0">
+                      <div className="avatar-title bg-success-subtle text-success rounded fs-20 payment-method-avatar-title">
+                        <i className="ri-checkbox-circle-fill"></i>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 className="mb-0 fs-15 fw-semibold text-dark">Payment Confirmation</h5>
+                      <p className="text-muted mb-0 fs-12">
+                        Invoice #{invoice?.invoice_id} &middot; USD ${amount.toFixed(2)}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="d-flex align-items-center gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-link text-muted p-0 text-decoration-none"
+                      onClick={handleBackToProviders}
+                    >
+                      <i className="ri-arrow-left-line fs-18"></i>
+                    </button>
+                    <div>
+                      <h5 className="mb-0 fs-15 fw-semibold text-dark">Complete Payment</h5>
+                      <p className="text-muted mb-0 fs-12">
+                        {selectedProvider.name} &middot; Invoice #{invoice?.invoice_id} &middot; USD ${amount.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <button type="button" className="btn-close" onClick={onHide}></button>
               </div>
 
               <div className="ppm-card-body">
-                <div className="ppm-gateway-provider mb-1 pb-0 text-center" style={{ margin: '0 0 10px 0', padding: 0 }}>
-                  {providerLogo ? (
-                    <img
-                      src={providerLogo}
-                      alt={selectedProvider.name}
-                      className="ppm-gateway-logo-img"
-                      style={{ height: '80px', width: 'auto', maxHeight: '95px', maxWidth: '300px', objectFit: 'contain' }}
-                    />
-                  ) : (
-                    <span className="ppm-gateway-icon" style={{ fontSize: '48px' }}>
-                      <i className="ri-secure-payment-line"></i>
-                    </span>
-                  )}
-                </div>
+                {!isSubmitted && (
+                  <div className="ppm-gateway-provider mb-2 pb-0 text-center">
+                    {providerLogo ? (
+                      <img
+                        src={providerLogo}
+                        alt={selectedProvider.name}
+                        className="ppm-gateway-logo-img"
+                      />
+                    ) : (
+                      <span className="ppm-gateway-icon ppm-gateway-icon-large">
+                        <i className="ri-secure-payment-line"></i>
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {isStripe ? (
                   <StripeForm
@@ -619,12 +844,16 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
                     selectedProvider={selectedProvider}
                     invoice={invoice}
                     onSuccess={onSuccess}
+                    onHide={onHide}
+                    onSubmittedChange={setIsSubmitted}
                   />
                 ) : (
                   <ManualProcessingNoticeView
                     selectedProvider={selectedProvider}
                     invoice={invoice}
                     onSuccess={onSuccess}
+                    onHide={onHide}
+                    onSubmittedChange={setIsSubmitted}
                   />
                 )}
               </div>
