@@ -8,7 +8,6 @@ import { FilterMatchMode } from 'primereact/api';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import TableLoader from '../../components/Loader/TableLoader';
-import FilterLoader from '../../components/Loader/FilterLoader';
 import {
     fetchEmbedFormSubmissions,
     getEmbedFormSubmission,
@@ -260,56 +259,48 @@ export default function EmbedFormSubmissions() {
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
-                                {/* Top Filter Bar */}
+                                {/* Top Filter Bar - Always Visible */}
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
                                     handleApplyFilters();
                                 }}>
-                                    {loading && submissions.length === 0 ? (
-                                        <FilterLoader config={[
-                                            { col: "col-xxl-4 col-sm-12" }, // Search
-                                            { col: "col-xxl-4 col-sm-6" },  // Status
-                                            { col: "col-xxl-4 col-sm-6", isButton: true } // Action Buttons
-                                        ]} />
-                                    ) : (
-                                        <div className="row g-3 mb-3">
-                                            <div className="col-xxl-4 col-sm-12">
-                                                <div className="search-box">
-                                                    <input
-                                                        type="text"
-                                                        className="form-control search bg-light border-light"
-                                                        placeholder="Search by name, email, phone, employer..."
-                                                        value={searchText}
-                                                        onChange={(e) => setSearchText(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
-                                                    />
-                                                    <i className="ri-search-line search-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div className="col-xxl-4 col-sm-6">
-                                                <Dropdown
-                                                    value={selectedStatus}
-                                                    options={[{ label: 'All Status', value: '' }, ...STATUS_OPTIONS]}
-                                                    onChange={(e) => setSelectedStatus(e.value)}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="All Status"
-                                                    className="w-100 employee-filter-dropdown"
-                                                    showClear
+                                    <div className="row g-3 mb-3">
+                                        <div className="col-xxl-4 col-sm-12">
+                                            <div className="search-box">
+                                                <input
+                                                    type="text"
+                                                    className="form-control search bg-light border-light"
+                                                    placeholder="Search by name, email, phone, employer..."
+                                                    value={searchText}
+                                                    onChange={(e) => setSearchText(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                                                 />
-                                            </div>
-                                            <div className="col-xxl-4 col-sm-6">
-                                                <div className="d-flex gap-2">
-                                                    <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
-                                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                                    </button>
-                                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
-                                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                                    </button>
-                                                </div>
+                                                <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                    )}
+                                        <div className="col-xxl-4 col-sm-6">
+                                            <Dropdown
+                                                value={selectedStatus}
+                                                options={[{ label: 'All Status', value: '' }, ...STATUS_OPTIONS]}
+                                                onChange={(e) => setSelectedStatus(e.value)}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="All Status"
+                                                className="w-100 employee-filter-dropdown"
+                                                showClear
+                                            />
+                                        </div>
+                                        <div className="col-xxl-4 col-sm-6">
+                                            <div className="d-flex gap-2">
+                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                </button>
+                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </form>
 
                                 {/* Table */}
