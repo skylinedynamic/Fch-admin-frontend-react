@@ -75,6 +75,8 @@ import FundingList from './pages/funding/FundingList';
 import FundingSequencingForm from './pages/funding/components/FundingSequencingForm';
 import LendersList from './pages/lenders/LendersList';
 import LenderForm from './pages/lenders/LenderForm';
+import EmbedFormSettings from './pages/embed-form/EmbedFormSettings.tsx';
+import EmbedFormSubmissions from './pages/embed-form/EmbedFormSubmissions.jsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -386,6 +388,11 @@ export default function App() {
             </Route>
 
 
+            {/* Embed Form Module */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="embed-form/settings" element={<EmbedFormSettings />} />
+              <Route path="embed-form/submissions" element={<EmbedFormSubmissions />} />
+            </Route>
 
             {/* Under Construction - accessible to all authenticated users */}
             <Route path="under-construction/:feature" element={<UnderConstruction />} />
