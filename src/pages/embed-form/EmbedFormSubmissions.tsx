@@ -165,10 +165,9 @@ export default function EmbedFormSubmissions() {
         <div>
             <PageHeader
                 title="Form Submissions"
-                description="View and manage applications received through your embedded loan form."
-                breadcrumb={[
-                    { label: 'Settings', href: '#' },
-                    { label: 'Embed Form', href: '/embed-form/settings' },
+                breadcrumbs={[
+                    { label: 'Settings', path: '/admin/settings' },
+                    { label: 'Embed Form', path: '/embed-form/settings' },
                     { label: 'Submissions' },
                 ]}
             />

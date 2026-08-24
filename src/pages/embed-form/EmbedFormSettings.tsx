@@ -100,7 +100,7 @@ export default function EmbedFormSettings() {
     if (loading) {
         return (
             <div>
-                <PageHeader title="Embed Form Settings" description="Configure your embeddable loan application form." />
+                <PageHeader title="Embed Form Settings" breadcrumbs={[{ label: 'Settings' }, { label: 'Embed Form' }]} />
                 <div className="text-center p-5"><i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem' }} /></div>
             </div>
         );
@@ -110,8 +110,7 @@ export default function EmbedFormSettings() {
         <div>
             <PageHeader
                 title="Embed Form Settings"
-                description="Generate your embed code and configure the loan application form for your website."
-                breadcrumb={[{ label: 'Settings' }, { label: 'Embed Form' }]}
+                breadcrumbs={[{ label: 'Settings', path: '/admin/settings' }, { label: 'Embed Form' }]}
             />
 
             <div className="row g-4">

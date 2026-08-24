@@ -13,7 +13,7 @@ export interface PageHeaderProps {
     sticky?: boolean;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumbs, children, sticky = true }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumbs = [], children, sticky = true }) => {
     const headerClass = sticky ? "row pb-1 page-subheader-sticky bg-body" : "row pb-1 mobile-sticky-header";
 
     return (
