@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { DataTable } from '../../components/Table/DataTableWrapper';
+import { DataTable, DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
+import { FilterMatchMode } from 'primereact/api';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import TableLoader from '../../components/Loader/TableLoader';
+import FilterLoader from '../../components/Loader/FilterLoader';
 import {
     fetchEmbedFormSubmissions,
     getEmbedFormSubmission,
@@ -28,13 +30,23 @@ export default function EmbedFormSubmissions() {
     const [perPage, setPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
 
-    // Filters
+    // Sorting state
+    const [sortField, setSortField] = useState<string>('id');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+    // Filters state
     const [searchText, setSearchText] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedStatus, setAppliedStatus] = useState<string>('');
+    const [filters, setFilters] = useState<DataTableFilterMeta>({
+        first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        email: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        phone: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        status: { value: null, matchMode: FilterMatchMode.EQUALS },
+    });
 
-    // Detail Modal
+    // Detail Modal state
     const [detailVisible, setDetailVisible] = useState(false);
     const [detailData, setDetailData] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -47,6 +59,8 @@ export default function EmbedFormSubmissions() {
                 status: appliedStatus || undefined,
                 per_page: perPage,
                 page,
+                sort_field: sortField,
+                sort_order: sortOrder,
             };
             const res = await fetchEmbedFormSubmissions(payload);
             if (res.status) {
@@ -58,12 +72,12 @@ export default function EmbedFormSubmissions() {
         } finally {
             setLoading(false);
         }
-    }, [appliedSearchText, appliedStatus, perPage, page]);
+    }, [appliedSearchText, appliedStatus, perPage, page, sortField, sortOrder]);
 
     useEffect(() => {
         const timeout = setTimeout(() => {
             loadData();
-        }, 200);
+        }, 150);
         return () => clearTimeout(timeout);
     }, [loadData]);
 
@@ -78,14 +92,31 @@ export default function EmbedFormSubmissions() {
         setSelectedStatus('');
         setAppliedSearchText('');
         setAppliedStatus('');
+        setFilters({
+            first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            email: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            phone: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            status: { value: null, matchMode: FilterMatchMode.EQUALS },
+        });
         setPage(1);
     };
 
-    const onPage = (event: any) => {
+    const onPage = (event: DataTablePageEvent) => {
         const nextPerPage = event.rows;
-        const nextPage = Math.floor(event.first / event.rows) + 1;
+        const nextPage = Math.floor((event.first || 0) / event.rows) + 1;
         setPerPage(nextPerPage);
         setPage(nextPage);
+    };
+
+    const onSort = (event: DataTableSortEvent) => {
+        const field = event.sortField;
+        const order = event.sortOrder === 1 ? 'asc' : 'desc';
+        setSortField(field || 'id');
+        setSortOrder(order);
+    };
+
+    const onFilter = (e: any) => {
+        setFilters(e.filters);
     };
 
     const viewDetail = async (row: any) => {
@@ -126,6 +157,23 @@ export default function EmbedFormSubmissions() {
         } catch {
             toast.error('Failed to download document.');
         }
+    };
+
+    // ── Column Filter Elements ──
+    const statusFilterElement = (options: any) => {
+        return (
+            <Dropdown
+                value={options.value}
+                options={[{ label: 'All Status', value: '' }, ...STATUS_OPTIONS]}
+                onChange={(e) => options.filterApplyCallback(e.value)}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select Status"
+                className="p-column-filter"
+                showClear
+                style={{ minWidth: '10rem' }}
+            />
+        );
     };
 
     // ── Table Body Templates ──
@@ -198,7 +246,7 @@ export default function EmbedFormSubmissions() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                {/* Header */}
+                {/* Header Section */}
                 <PageHeader
                     title="Form Submissions"
                     breadcrumbs={[
@@ -212,51 +260,60 @@ export default function EmbedFormSubmissions() {
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
-                                {/* Filter Bar */}
+                                {/* Top Filter Bar */}
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
                                     handleApplyFilters();
                                 }}>
-                                    <div className="row g-3 mb-3">
-                                        <div className="col-xxl-4 col-sm-12">
-                                            <div className="search-box">
-                                                <input
-                                                    type="text"
-                                                    className="form-control search bg-light border-light"
-                                                    placeholder="Search here..."
-                                                    value={searchText}
-                                                    onChange={(e) => setSearchText(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                    {loading && submissions.length === 0 ? (
+                                        <FilterLoader config={[
+                                            { col: "col-xxl-4 col-sm-12" }, // Search
+                                            { col: "col-xxl-4 col-sm-6" },  // Status
+                                            { col: "col-xxl-4 col-sm-6", isButton: true } // Action Buttons
+                                        ]} />
+                                    ) : (
+                                        <div className="row g-3 mb-3">
+                                            <div className="col-xxl-4 col-sm-12">
+                                                <div className="search-box">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control search bg-light border-light"
+                                                        placeholder="Search by name, email, phone, employer..."
+                                                        value={searchText}
+                                                        onChange={(e) => setSearchText(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                                    />
+                                                    <i className="ri-search-line search-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div className="col-xxl-4 col-sm-6">
+                                                <Dropdown
+                                                    value={selectedStatus}
+                                                    options={[{ label: 'All Status', value: '' }, ...STATUS_OPTIONS]}
+                                                    onChange={(e) => setSelectedStatus(e.value)}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    placeholder="All Status"
+                                                    className="w-100 employee-filter-dropdown"
+                                                    showClear
                                                 />
-                                                <i className="ri-search-line search-icon"></i>
+                                            </div>
+                                            <div className="col-xxl-4 col-sm-6">
+                                                <div className="d-flex gap-2">
+                                                    <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                    </button>
+                                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-3 col-sm-6">
-                                            <Dropdown
-                                                value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, ...STATUS_OPTIONS]}
-                                                onChange={(e) => setSelectedStatus(e.value)}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                placeholder="All Status"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
-                                        </div>
-                                        <div className="col-xxl-3 col-sm-6">
-                                            <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
-                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                                </button>
-                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
-                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    )}
                                 </form>
 
                                 {/* Table */}
-                                {loading ? (
+                                {loading && submissions.length === 0 ? (
                                     <TableLoader rows={10} columns={new Array(8).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
@@ -270,7 +327,14 @@ export default function EmbedFormSubmissions() {
                                             first={(page - 1) * perPage}
                                             rows={perPage}
                                             rowsPerPageOptions={[10, 25, 50, 100]}
+                                            sortMode="single"
+                                            sortField={sortField}
+                                            sortOrder={sortOrder === 'asc' ? 1 : -1}
+                                            filterDisplay="menu"
+                                            filters={filters}
+                                            onFilter={onFilter}
                                             onPage={onPage}
+                                            onSort={onSort}
                                             dataKey="id"
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
@@ -280,16 +344,71 @@ export default function EmbedFormSubmissions() {
                                                 field="submission_uid"
                                                 header="Ref ID"
                                                 body={(rowData) => <code className="text-muted fs-11">#{rowData.submission_uid?.slice(0, 8)}</code>}
+                                                sortable
                                                 style={{ minWidth: '110px' }}
                                             />
-                                            <Column field="first_name" header="Applicant" body={applicantBodyTemplate} style={{ minWidth: '160px' }} />
-                                            <Column field="email" header="Email" body={(rowData) => rowData.email || '-'} style={{ minWidth: '180px' }} />
-                                            <Column field="phone" header="Phone" body={(rowData) => rowData.phone || '-'} style={{ minWidth: '130px' }} />
-                                            <Column field="desired_funding_amount" header="Desired Amount" body={amountBodyTemplate} style={{ minWidth: '140px' }} />
-                                            <Column field="credit_score" header="Credit Score" body={(rowData) => rowData.credit_score || '-'} style={{ minWidth: '120px' }} />
+                                            <Column
+                                                field="first_name"
+                                                header="Applicant"
+                                                body={applicantBodyTemplate}
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by applicant"
+                                                style={{ minWidth: '160px' }}
+                                            />
+                                            <Column
+                                                field="email"
+                                                header="Email"
+                                                body={(rowData) => rowData.email || '-'}
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by email"
+                                                style={{ minWidth: '180px' }}
+                                            />
+                                            <Column
+                                                field="phone"
+                                                header="Phone"
+                                                body={(rowData) => rowData.phone || '-'}
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by phone"
+                                                style={{ minWidth: '130px' }}
+                                            />
+                                            <Column
+                                                field="desired_funding_amount"
+                                                header="Desired Amount"
+                                                body={amountBodyTemplate}
+                                                sortable
+                                                style={{ minWidth: '140px' }}
+                                            />
+                                            <Column
+                                                field="credit_score"
+                                                header="Credit Score"
+                                                body={(rowData) => rowData.credit_score || '-'}
+                                                sortable
+                                                style={{ minWidth: '120px' }}
+                                            />
                                             <Column header="Documents" body={docsBodyTemplate} style={{ minWidth: '120px' }} />
-                                            <Column field="status" header="Status" body={statusBodyTemplate} style={{ minWidth: '120px' }} />
-                                            <Column header="Date Submitted" body={dateBodyTemplate} style={{ minWidth: '130px' }} />
+                                            <Column
+                                                field="status"
+                                                header="Status"
+                                                body={statusBodyTemplate}
+                                                sortable
+                                                filter
+                                                filterElement={statusFilterElement}
+                                                showFilterMatchModes={false}
+                                                style={{ minWidth: '120px' }}
+                                            />
+                                            <Column
+                                                field="created_at"
+                                                header="Date Submitted"
+                                                body={dateBodyTemplate}
+                                                sortable
+                                                style={{ minWidth: '130px' }}
+                                            />
                                             <Column
                                                 header="Action"
                                                 body={actionBodyTemplate}
