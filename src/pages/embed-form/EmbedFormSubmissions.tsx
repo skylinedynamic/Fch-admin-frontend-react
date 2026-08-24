@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
-import { Tag } from 'primereact/tag';
-import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
+import { Button } from 'primereact/button';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
-import { DataTable } from '../../components/Table/DataTableWrapper';
 import TableLoader from '../../components/Loader/TableLoader';
 import {
     fetchEmbedFormSubmissions,
@@ -22,25 +21,20 @@ const STATUS_OPTIONS = [
     { label: 'Rejected', value: 'rejected' },
 ];
 
-const STATUS_SEVERITY: Record<string, 'info' | 'warning' | 'success' | 'danger'> = {
-    new: 'info',
-    reviewing: 'warning',
-    converted: 'success',
-    rejected: 'danger',
-};
-
 export default function EmbedFormSubmissions() {
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(15);
+    const [perPage, setPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
+
+    // Filters
     const [searchText, setSearchText] = useState('');
-    const [appliedSearch, setAppliedSearch] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedStatus, setAppliedStatus] = useState<string>('');
 
-    // Detail modal
+    // Detail Modal
     const [detailVisible, setDetailVisible] = useState(false);
     const [detailData, setDetailData] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -49,7 +43,7 @@ export default function EmbedFormSubmissions() {
         setLoading(true);
         try {
             const payload: any = {
-                search: appliedSearch || undefined,
+                search: appliedSearchText || undefined,
                 status: appliedStatus || undefined,
                 per_page: perPage,
                 page,
@@ -59,29 +53,39 @@ export default function EmbedFormSubmissions() {
                 setSubmissions(res.data ?? []);
                 setTotalRecords(res.meta?.total ?? 0);
             }
-        } catch {
-            toast.error('Failed to load submissions.');
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to fetch form submissions');
         } finally {
             setLoading(false);
         }
-    }, [appliedSearch, appliedStatus, perPage, page]);
+    }, [appliedSearchText, appliedStatus, perPage, page]);
 
     useEffect(() => {
-        loadData();
+        const timeout = setTimeout(() => {
+            loadData();
+        }, 200);
+        return () => clearTimeout(timeout);
     }, [loadData]);
 
-    const handleSearch = () => {
-        setAppliedSearch(searchText);
+    const handleApplyFilters = () => {
+        setAppliedSearchText(searchText);
         setAppliedStatus(selectedStatus);
         setPage(1);
     };
 
-    const handleClear = () => {
+    const handleClearFilters = () => {
         setSearchText('');
         setSelectedStatus('');
-        setAppliedSearch('');
+        setAppliedSearchText('');
         setAppliedStatus('');
         setPage(1);
+    };
+
+    const onPage = (event: any) => {
+        const nextPerPage = event.rows;
+        const nextPage = Math.floor(event.first / event.rows) + 1;
+        setPerPage(nextPerPage);
+        setPage(nextPage);
     };
 
     const viewDetail = async (row: any) => {
@@ -91,7 +95,7 @@ export default function EmbedFormSubmissions() {
             const res = await getEmbedFormSubmission(row.id);
             setDetailData(res.data);
         } catch {
-            toast.error('Failed to load submission details.');
+            toast.error('Failed to load application details.');
         } finally {
             setDetailLoading(false);
         }
@@ -124,56 +128,75 @@ export default function EmbedFormSubmissions() {
         }
     };
 
-    // ── Table Cell Renderers ──
-    const nameTemplate = (row: any) => (
-        <div>
-            <div className="fw-semibold text-dark">{row.first_name} {row.last_name}</div>
-            <div className="text-muted fs-11">{row.occupation || 'Applicant'}</div>
-        </div>
-    );
+    // ── Table Body Templates ──
+    const applicantBodyTemplate = (rowData: any) => {
+        return (
+            <div>
+                <div className="fw-medium text-dark">{rowData.first_name} {rowData.last_name}</div>
+                {rowData.occupation && <div className="text-muted fs-11">{rowData.occupation}</div>}
+            </div>
+        );
+    };
 
-    const statusTemplate = (row: any) => (
-        <Tag
-            value={row.status?.toUpperCase()}
-            severity={STATUS_SEVERITY[row.status] ?? 'info'}
-            style={{ fontSize: '11px', letterSpacing: '0.5px' }}
-        />
-    );
+    const statusBodyTemplate = (rowData: any) => {
+        const statusMap: Record<string, string> = {
+            new: 'bg-primary-subtle text-primary',
+            reviewing: 'bg-warning-subtle text-warning',
+            converted: 'bg-success-subtle text-success',
+            rejected: 'bg-danger-subtle text-danger',
+        };
+        const className = statusMap[rowData.status?.toLowerCase()] || 'bg-light text-body';
+        return (
+            <span className={`badge ${className} px-3 py-1 rounded-pill fw-medium text-uppercase`}>
+                {rowData.status}
+            </span>
+        );
+    };
 
-    const amountTemplate = (row: any) => (
-        <span className="fw-semibold text-success">
-            {row.desired_funding_amount ? `$${parseFloat(row.desired_funding_amount).toLocaleString()}` : '—'}
-        </span>
-    );
+    const amountBodyTemplate = (rowData: any) => {
+        return (
+            <span>
+                {rowData.desired_funding_amount ? `$${parseFloat(rowData.desired_funding_amount).toLocaleString()}` : '-'}
+            </span>
+        );
+    };
 
-    const dateTemplate = (row: any) => (
-        <span className="text-muted fs-12">
-            {row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
-        </span>
-    );
+    const dateBodyTemplate = (rowData: any) => {
+        return (
+            <span className="text-muted fs-12">
+                {rowData.created_at ? new Date(rowData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
+            </span>
+        );
+    };
 
-    const docsTemplate = (row: any) => (
-        <span className="badge bg-light text-dark border">
-            <i className="ri-attachment-line me-1 text-primary" />
-            {row.attachments?.length ?? 0} file(s)
-        </span>
-    );
+    const docsBodyTemplate = (rowData: any) => {
+        const count = rowData.attachments?.length ?? 0;
+        return (
+            <span className="badge bg-light text-dark border">
+                <i className="ri-attachment-line me-1 text-primary"></i>
+                {count} file(s)
+            </span>
+        );
+    };
 
-    const actionTemplate = (row: any) => (
-        <div className="d-flex justify-content-center gap-2">
-            <button
-                type="button"
-                className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
-                onClick={() => viewDetail(row)}
-                title="View Full Application"
-            >
-                <i className="ri-eye-line" /> Details
-            </button>
-        </div>
-    );
+    const actionBodyTemplate = (rowData: any) => {
+        return (
+            <div className="d-flex align-items-center justify-content-center">
+                <button
+                    type="button"
+                    className="btn btn-soft-primary btn-sm p-1 d-flex align-items-center justify-content-center"
+                    style={{ width: '28px', height: '28px' }}
+                    onClick={() => viewDetail(rowData)}
+                    title="View Details"
+                >
+                    <i className="ri-eye-line fs-14"></i>
+                </button>
+            </div>
+        );
+    };
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header */}
                 <PageHeader
@@ -184,93 +207,103 @@ export default function EmbedFormSubmissions() {
                     ]}
                 />
 
-                {/* Filter Card */}
-                <div className="card shadow-sm border-0 mb-4">
-                    <div className="card-body p-3">
-                        <div className="row g-3 align-items-end">
-                            <div className="col-md-5">
-                                <label className="form-label fw-semibold fs-12 mb-1">Search Submissions</label>
-                                <div className="input-group">
-                                    <span className="input-group-text bg-light text-muted">
-                                        <i className="ri-search-line" />
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className="form-control form-control-sm"
-                                        placeholder="Applicant name, email, phone, employer..."
-                                        value={searchText}
-                                        onChange={(e) => setSearchText(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-md-3">
-                                <label className="form-label fw-semibold fs-12 mb-1">Filter by Status</label>
-                                <Dropdown
-                                    value={selectedStatus}
-                                    onChange={(e) => setSelectedStatus(e.value)}
-                                    options={[{ label: 'All Statuses', value: '' }, ...STATUS_OPTIONS]}
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    className="w-100 p-inputtext-sm"
-                                    placeholder="All Statuses"
-                                />
-                            </div>
-                            <div className="col-md-auto d-flex gap-2">
-                                <button className="btn btn-primary btn-sm px-3" onClick={handleSearch}>
-                                    <i className="ri-search-line me-1" /> Search
-                                </button>
-                                <button className="btn btn-outline-secondary btn-sm px-3" onClick={handleClear}>
-                                    <i className="ri-refresh-line me-1" /> Reset
-                                </button>
+                {/* Filters and Table Section */}
+                <div className="row row-table-fit">
+                    <div className="col-lg-12">
+                        <div className="card">
+                            <div className="card-body">
+                                {/* Filter Bar */}
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleApplyFilters();
+                                }}>
+                                    <div className="row g-3 mb-3">
+                                        <div className="col-xxl-4 col-sm-12">
+                                            <div className="search-box">
+                                                <input
+                                                    type="text"
+                                                    className="form-control search bg-light border-light"
+                                                    placeholder="Search here..."
+                                                    value={searchText}
+                                                    onChange={(e) => setSearchText(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                                />
+                                                <i className="ri-search-line search-icon"></i>
+                                            </div>
+                                        </div>
+                                        <div className="col-xxl-3 col-sm-6">
+                                            <Dropdown
+                                                value={selectedStatus}
+                                                options={[{ label: 'All Status', value: '' }, ...STATUS_OPTIONS]}
+                                                onChange={(e) => setSelectedStatus(e.value)}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="All Status"
+                                                className="w-100 employee-filter-dropdown"
+                                            />
+                                        </div>
+                                        <div className="col-xxl-3 col-sm-6">
+                                            <div className="d-flex gap-2">
+                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                </button>
+                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+
+                                {/* Table */}
+                                {loading ? (
+                                    <TableLoader rows={10} columns={new Array(8).fill({ style: { minWidth: '100px' } })} />
+                                ) : (
+                                    <div className="table-responsive table-card mt-1">
+                                        <DataTable
+                                            scrollable
+                                            scrollHeight="flex"
+                                            value={submissions}
+                                            paginator
+                                            lazy
+                                            totalRecords={totalRecords}
+                                            first={(page - 1) * perPage}
+                                            rows={perPage}
+                                            rowsPerPageOptions={[10, 25, 50, 100]}
+                                            onPage={onPage}
+                                            dataKey="id"
+                                            responsiveLayout="scroll"
+                                            className="p-datatable-sm"
+                                            emptyMessage="No form submissions found"
+                                        >
+                                            <Column
+                                                field="submission_uid"
+                                                header="Ref ID"
+                                                body={(rowData) => <code className="text-muted fs-11">#{rowData.submission_uid?.slice(0, 8)}</code>}
+                                                style={{ minWidth: '110px' }}
+                                            />
+                                            <Column field="first_name" header="Applicant" body={applicantBodyTemplate} style={{ minWidth: '160px' }} />
+                                            <Column field="email" header="Email" body={(rowData) => rowData.email || '-'} style={{ minWidth: '180px' }} />
+                                            <Column field="phone" header="Phone" body={(rowData) => rowData.phone || '-'} style={{ minWidth: '130px' }} />
+                                            <Column field="desired_funding_amount" header="Desired Amount" body={amountBodyTemplate} style={{ minWidth: '140px' }} />
+                                            <Column field="credit_score" header="Credit Score" body={(rowData) => rowData.credit_score || '-'} style={{ minWidth: '120px' }} />
+                                            <Column header="Documents" body={docsBodyTemplate} style={{ minWidth: '120px' }} />
+                                            <Column field="status" header="Status" body={statusBodyTemplate} style={{ minWidth: '120px' }} />
+                                            <Column header="Date Submitted" body={dateBodyTemplate} style={{ minWidth: '130px' }} />
+                                            <Column
+                                                header="Action"
+                                                body={actionBodyTemplate}
+                                                alignHeader="center"
+                                                align="center"
+                                                headerClassName="text-center"
+                                                bodyClassName="text-center"
+                                                style={{ width: '80px', minWidth: '80px' }}
+                                            />
+                                        </DataTable>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                {/* DataTable Card */}
-                <div className="card shadow-sm border-0">
-                    <div className="card-body p-0">
-                        {loading ? (
-                            <TableLoader />
-                        ) : (
-                            <DataTable
-                                value={submissions}
-                                lazy
-                                paginator
-                                rows={perPage}
-                                totalRecords={totalRecords}
-                                onPage={(e: any) => { setPage((e.page ?? 0) + 1); setPerPage(e.rows); }}
-                                first={(page - 1) * perPage}
-                                rowsPerPageOptions={[10, 15, 25, 50]}
-                                emptyMessage="No client form submissions found."
-                                className="table align-middle"
-                            >
-                                <Column
-                                    field="submission_uid"
-                                    header="Ref ID"
-                                    body={(row) => <code className="text-muted fs-11">#{row.submission_uid?.slice(0, 8)}</code>}
-                                    style={{ width: '110px' }}
-                                />
-                                <Column header="Applicant" body={nameTemplate} />
-                                <Column field="email" header="Email Address" />
-                                <Column field="phone" header="Phone" body={(row) => row.phone || '—'} />
-                                <Column header="Desired Amount" body={amountTemplate} />
-                                <Column field="credit_score" header="Credit Score" body={(row) => row.credit_score ? <span className="fw-semibold">{row.credit_score}</span> : '—'} />
-                                <Column header="Documents" body={docsTemplate} />
-                                <Column header="Status" body={statusTemplate} />
-                                <Column header="Date Submitted" body={dateTemplate} />
-                                <Column
-                                    header="Action"
-                                    body={actionTemplate}
-                                    alignHeader="center"
-                                    align="center"
-                                    headerClassName="text-center"
-                                    bodyClassName="text-center"
-                                    style={{ width: '110px' }}
-                                />
-                            </DataTable>
-                        )}
                     </div>
                 </div>
 
@@ -293,11 +326,9 @@ export default function EmbedFormSubmissions() {
                             <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded border mb-4">
                                 <div>
                                     <span className="text-muted fs-12 d-block">Application Status:</span>
-                                    <Tag
-                                        value={detailData.status?.toUpperCase()}
-                                        severity={STATUS_SEVERITY[detailData.status] ?? 'info'}
-                                        className="mt-1"
-                                    />
+                                    <span className={`badge bg-primary-subtle text-primary px-3 py-1 rounded-pill fw-medium text-uppercase mt-1`}>
+                                        {detailData.status}
+                                    </span>
                                 </div>
                                 <div className="d-flex align-items-center gap-2">
                                     <span className="fw-semibold fs-13 text-muted">Change Status:</span>
