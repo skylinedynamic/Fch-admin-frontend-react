@@ -98,6 +98,7 @@ export default function PlanFee() {
     // Modal states
     const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
     const [selectedPlanForUpdate, setSelectedPlanForUpdate] = useState<Plan | null>(null);
+    const [includeExistingSubscription, setIncludeExistingSubscription] = useState<boolean>(false);
 
     const loadPlans = async () => {
         setLoading(true);
@@ -204,6 +205,7 @@ export default function PlanFee() {
         }
 
         setSelectedPlanForUpdate(plan);
+        setIncludeExistingSubscription(false);
         setShowConfirmModal(true);
     };
 
@@ -234,6 +236,10 @@ export default function PlanFee() {
 
             if (activeTab === PLAN_GROUP_USER_SEAT) {
                 payload.total_seat_count = edits.total_seat_count ? parseInt(edits.total_seat_count) : 0;
+            }
+
+            if (activeTab === PLAN_GROUP_BORROWER_FEE || activeTab === PLAN_GROUP_USER_SEAT) {
+                payload.include_existing_subscription = includeExistingSubscription;
             }
 
             const response = await updatePlanFeeSubscription(id, payload);
@@ -536,14 +542,18 @@ export default function PlanFee() {
                 isOpen={showConfirmModal}
                 toggle={() => setShowConfirmModal(false)}
                 centered
+                size="lg"
                 modalClassName="flip plan-fee-confirm-modal"
                 contentClassName="border-0 shadow-lg"
+                style={{ borderRadius: '4px' }}
             >
-                <ModalHeader toggle={() => setShowConfirmModal(false)} className="bg-light border-bottom py-3">
-                    <span className="fs-15 fw-bold text-dark mb-0">
-                        <i className="ri-shield-check-line text-primary me-2 align-middle fs-18"></i>
-                        Confirm Rate Changes
-                    </span>
+                <ModalHeader toggle={() => setShowConfirmModal(false)} className="bg-light border-0 py-3 px-4">
+                    <div className="d-flex align-items-center">
+                        <i className="ri-shield-check-line text-primary me-3 fs-18"></i>
+                        <span className="fs-15 fw-bold text-dark mb-0">
+                            Confirm Rate Changes
+                        </span>
+                    </div>
                 </ModalHeader>
                 <ModalBody className="p-4 bg-white plan-fee-confirm-modal-body">
                     {selectedPlanForUpdate && (() => {
@@ -575,6 +585,7 @@ export default function PlanFee() {
                         if (amountChanged) {
                             changedItems.push({
                                 label: 'Total Amount',
+                                icon: 'ri-money-dollar-circle-line',
                                 oldVal: `${currency}${originalAmount.toFixed(2)}`,
                                 newVal: `${currency}${editedAmount.toFixed(2)}`
                             });
@@ -582,13 +593,15 @@ export default function PlanFee() {
                         if (platformFeeChanged) {
                             changedItems.push({
                                 label: 'Platform Fee',
+                                icon: 'ri-percent-line',
                                 oldVal: `${currency}${originalFee.toFixed(2)}`,
                                 newVal: `${currency}${editedFee.toFixed(2)}`
                             });
                         }
                         if (limitChanged) {
                             changedItems.push({
-                                label: 'Installment Upto',
+                                label: 'Installment Limit',
+                                icon: 'ri-calendar-2-line',
                                 oldVal: originalLimit ? `${originalLimit} months` : 'Unlimited',
                                 newVal: editedLimit ? `${editedLimit} months` : 'Unlimited'
                             });
@@ -596,6 +609,7 @@ export default function PlanFee() {
                         if (seatChanged) {
                             changedItems.push({
                                 label: 'Free Seats Limit',
+                                icon: 'ri-user-shared-line',
                                 oldVal: `${originalSeat} Users`,
                                 newVal: `${editedSeat} Users`
                             });
@@ -603,39 +617,118 @@ export default function PlanFee() {
 
                         return (
                             <div>
-                                <p className="text-muted mb-4 fs-13">
-                                    Please review and confirm the rate modifications for <strong className="text-dark">{partnerName ? `${partnerName} - ${enrollmentName}` : enrollmentName}</strong>:
-                                </p>
-
-                                <div className="bg-info-subtle p-3 mb-4 plan-fee-changed-items-box">
-                                    <div className="d-flex flex-column gap-3 fs-13">
-                                        {changedItems.map((item) => (
-                                            <div key={item.label} className="d-flex align-items-center justify-content-between">
-                                                <span className="text-muted fw-semibold">{item.label}</span>
-                                                <div className="d-flex align-items-center gap-2 font-monospace">
-                                                    <span className="text-muted text-decoration-line-through">{item.oldVal}</span>
-                                                    <i className="ri-arrow-right-line text-muted"></i>
-                                                    <span className="text-success fw-bold">{item.newVal}</span>
-                                                </div>
-                                            </div>
-                                        ))}
+                                {/* Plan Header Info */}
+                                <div className="d-flex align-items-center justify-content-between mb-3 pb-2.5">
+                                    <div>
+                                        <span className="text-muted text-uppercase fs-11 fw-semibold d-block mb-1">Target Plan</span>
+                                        <h5 className="fs-15 fw-bold text-dark mb-0">
+                                            {partnerName ? `${partnerName} — ${enrollmentName}` : enrollmentName}
+                                        </h5>
                                     </div>
+                                    <span className="badge bg-light text-primary px-3 py-1.5 fs-12 fw-semibold text-capitalize" style={{ borderRadius: '4px' }}>
+                                        {activeTab.replace(/_/g, ' ')}
+                                    </span>
                                 </div>
 
-                                <div className="alert alert-warning border-0 border-start border-3 border-warning bg-warning-subtle text-dark p-3 rounded-0 mb-4 fs-12 plan-fee-alert-note">
-                                    <div className="d-flex gap-2">
-                                        <div>
-                                            <strong className="text-dark">Please note:</strong> This rate modification will apply immediately to new registrations. Existing users' plans will remain unchanged.
+                                {/* Comparison Table */}
+                                <div className="mb-3 overflow-hidden" style={{ borderRadius: '4px' }}>
+                                    <table className="plan-fee-param-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Parameter</th>
+                                                <th className="text-center" style={{ width: '32%' }}>Current</th>
+                                                <th className="text-center" style={{ width: '34%' }}>Updated</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {changedItems.map((item) => (
+                                                <tr key={item.label}>
+                                                    <td>
+                                                        <div className="d-flex align-items-center">
+                                                            <i className={`${item.icon} text-primary fs-16 me-3`}></i>
+                                                            <span className="text-dark fw-medium fs-13">{item.label}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <span className="text-muted text-decoration-line-through font-monospace fs-13">{item.oldVal}</span>
+                                                    </td>
+                                                    <td className="text-center bg-success-subtle bg-opacity-25">
+                                                        <span className="text-success fw-bold font-monospace fs-14">{item.newVal}</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Include existing subscription card (Borrower Fee & User Seat) */}
+                                {(activeTab === PLAN_GROUP_BORROWER_FEE || activeTab === PLAN_GROUP_USER_SEAT) && (
+                                    <div
+                                        className={`plan-fee-checkbox-card mb-3 ${includeExistingSubscription ? 'is-active' : ''}`}
+                                        style={{ borderRadius: '4px' }}
+                                        onClick={() => setIncludeExistingSubscription(!includeExistingSubscription)}
+                                    >
+                                        <div className="d-flex align-items-center">
+                                            <input
+                                                className="form-check-input cursor-pointer me-3 flex-shrink-0"
+                                                type="checkbox"
+                                                id="modalIncludeExistingSub"
+                                                style={{ width: '1.15rem', height: '1.15rem', marginTop: 0, cursor: 'pointer', borderRadius: '4px' }}
+                                                checked={includeExistingSubscription}
+                                                onChange={(e) => setIncludeExistingSubscription(e.target.checked)}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                            <label className="form-check-label fs-13 fw-semibold text-dark cursor-pointer mb-0" htmlFor="modalIncludeExistingSub">
+                                                Include existing Subscription
+                                            </label>
+                                        </div>
+
+                                        {/* User Seat specific subtle note with smooth height/opacity transition */}
+                                        {activeTab === PLAN_GROUP_USER_SEAT && (
+                                            <div className={`plan-fee-warning-collapse ${includeExistingSubscription ? 'show' : ''}`}>
+                                                <div className="alert alert-warning bg-warning-subtle border-0 text-dark p-2.5 mb-0 fs-12 d-flex align-items-start shadow-none" style={{ borderRadius: '4px' }}>
+                                                    <i className="ri-alert-fill fs-16 text-warning flex-shrink-0 me-3 mt-0.5"></i>
+                                                    <div className="text-dark">
+                                                        <strong className="text-dark fw-bold">Note:</strong> Only amount will update, seat count will be same.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Informational Notice Alert */}
+                                <div className="alert alert-info bg-info-subtle border-0 text-dark p-3 mb-4 fs-12 shadow-none" style={{ borderRadius: '4px' }}>
+                                    <div className="d-flex align-items-start">
+                                        <i className="ri-information-fill fs-16 text-info flex-shrink-0 me-3 mt-0.5"></i>
+                                        <div className="text-dark lh-base">
+                                            <strong className="text-dark fw-bold">Please note:</strong>{' '}
+                                            {includeExistingSubscription
+                                                ? (activeTab === PLAN_GROUP_USER_SEAT
+                                                    ? 'This rate modification will apply immediately to new registrations as well as existing active subscriptions (existing user seat counts will remain unchanged).'
+                                                    : 'This rate modification will apply immediately to new registrations as well as existing active subscriptions.')
+                                                : 'This rate modification will apply immediately to new registrations. Existing users\' plans will remain unchanged.'}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="hstack gap-2 justify-content-end mt-4">
-                                    <button type="button" className="btn btn-light px-4 py-2 border fw-semibold fs-13 plan-fee-modal-btn" onClick={() => setShowConfirmModal(false)}>
+                                {/* Modal Footer Actions */}
+                                <div className="hstack gap-2 justify-content-end pt-2 border-top">
+                                    <button
+                                        type="button"
+                                        className="btn btn-light px-4 py-2 border-0 fw-semibold fs-13"
+                                        style={{ borderRadius: '4px' }}
+                                        onClick={() => setShowConfirmModal(false)}
+                                    >
                                         Cancel
                                     </button>
-                                    <button type="button" className="btn btn-primary px-4 py-2 fw-semibold fs-13 d-flex align-items-center gap-2 plan-fee-modal-btn" onClick={handleExecuteUpdate}>
-                                        <i className="ri-check-line fs-15"></i>
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary px-4 py-2 fw-semibold fs-13 d-flex align-items-center gap-2"
+                                        style={{ borderRadius: '4px' }}
+                                        onClick={handleExecuteUpdate}
+                                    >
+                                        <i className="ri-check-line fs-15 me-2"></i>
                                         Confirm & Save
                                     </button>
                                 </div>

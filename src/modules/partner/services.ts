@@ -137,4 +137,9 @@ export const getSubscriptionDetails = async (id: string | number) => {
   return data;
 };
 
+export const getPartnerBorrowerFee = async () => {
+  const { data } = await apiClient.get('/common/subscriptions/partner-borrower-fee');
+  return data;
+};
+
 
