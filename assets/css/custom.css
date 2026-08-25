@@ -477,7 +477,7 @@ File: Custom Css File
 
 /* Sub-menu items */
 .menu-dropdown .nav-item {
-  margin: 0.25rem 0.5rem;
+  margin: 0.25rem 0 !important;
 }
 
 /* Sub-menu links */
