@@ -902,8 +902,8 @@ File: Custom Css File
 
 /* Skeleton Loader Styles */
 .skeleton-line {
-  background: #e9e9e9;
-  background: linear-gradient(90deg, #e9e9e9 25%, #f5f5f5 45%, #e9e9e9 65%);
+  background: #eef2f6;
+  background: linear-gradient(90deg, #eef2f6 25%, #f8f9fa 50%, #eef2f6 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   display: block;
@@ -913,13 +913,13 @@ File: Custom Css File
 
 /* Override Bootstrap placeholder to match skeleton-line */
 .placeholder {
-  background-color: #e9e9e9 !important;
+  background-color: #eef2f6 !important;
   opacity: 1 !important;
 }
 
 .placeholder-glow .placeholder {
-  background: #e9e9e9 !important;
-  background: linear-gradient(90deg, #e9e9e9 25%, #f5f5f5 45%, #e9e9e9 65%) !important;
+  background: #eef2f6 !important;
+  background: linear-gradient(90deg, #eef2f6 25%, #f8f9fa 50%, #eef2f6 75%) !important;
   background-size: 200% 100% !important;
   animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
 }
@@ -5276,7 +5276,7 @@ File: Custom Css File
 }
 
 .plan-fee-input-width {
-  width: 120px !important;
+  width: 150px !important;
 }
 
 .plan-fee-input-width-lg {
@@ -5333,28 +5333,101 @@ File: Custom Css File
 
 /* Modal and related elements spacing overrides */
 .plan-fee-confirm-modal .modal-dialog {
-  max-width: 420px !important;
+  max-width: 620px !important;
+  width: 95% !important;
+  margin: 1.75rem auto;
 }
 
 .plan-fee-confirm-modal .modal-content {
   border-radius: 4px !important;
+  overflow: hidden !important;
+  border: none !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1) !important;
 }
 
 .plan-fee-confirm-modal-body {
-  border-radius: 4px !important;
-  overflow: hidden !important;
+  border-radius: 0 0 4px 4px !important;
+  padding: 1.5rem !important;
 }
 
-.plan-fee-changed-items-box {
-  border-radius: 4px !important;
+.plan-fee-param-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.plan-fee-alert-note {
-  border-radius: 0 4px 4px 0 !important;
+.plan-fee-param-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 14px;
+  border: none;
 }
 
-.plan-fee-modal-btn {
+.plan-fee-param-table td {
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: middle;
+}
+
+.plan-fee-param-table tr:last-child td {
+  border-bottom: none;
+}
+
+.plan-fee-checkbox-card {
   border-radius: 4px !important;
+  background-color: #f8fafc;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.plan-fee-checkbox-card:hover {
+  background-color: #f1f5f9;
+}
+
+.plan-fee-checkbox-card.is-active {
+  background-color: #eff6ff;
+}
+
+.plan-fee-warning-collapse {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin 0.25s ease;
+}
+
+.plan-fee-warning-collapse.show {
+  max-height: 120px;
+  opacity: 1;
+  margin-top: 10px;
+}
+
+.plan-fee-confirm-modal * {
+  border-radius: 4px;
+}
+
+.plan-fee-warning-collapse {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin 0.25s ease;
+}
+
+.plan-fee-warning-collapse.show {
+  max-height: 120px;
+  opacity: 1;
+  margin-top: 10px;
+}
+
+.plan-fee-confirm-modal * {
+  border-radius: 4px;
 }
 
 /* ============================================================
@@ -5637,112 +5710,394 @@ File: Custom Css File
 }
 
 .skeleton-line {
-  display: inline-block;
-  background: #eff2f7;
+  display: block;
+  background: #eef2f6;
   background-image: linear-gradient(90deg,
-      #eff2f7 0px,
+      #eef2f6 0px,
       #f8f9fa 40px,
-      #eff2f7 80px);
+      #eef2f6 80px);
   background-size: 600px 100%;
   animation: skeleton-shimmer 1.5s infinite ease-in-out;
   border-radius: 4px;
 }
 
 /* Skeleton Size Helper Classes */
+.sk-avatar-32 {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+}
+
 .sk-avatar-lg {
   width: 48px;
   height: 48px;
   border-radius: 6px;
 }
 
-.sk-title-lg {
-  width: 220px;
-  height: 20px;
-  border-radius: 4px;
-}
-
-.sk-subtitle-md {
+.sk-title-sub {
   width: 180px;
-  height: 14px;
-  border-radius: 3px;
-}
-
-.sk-badge-md {
-  width: 80px;
-  height: 26px;
+  height: 15px;
+  margin-bottom: 6px;
   border-radius: 4px;
 }
 
-.sk-section-title {
-  width: 180px;
-  height: 18px;
+.sk-subtitle-sub {
+  width: 130px;
+  height: 12px;
   border-radius: 4px;
 }
 
-.sk-section-title-lg {
-  width: 200px;
-  height: 18px;
-  border-radius: 4px;
-}
-
-.sk-label-sm {
+.sk-badge-status {
   width: 70px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.sk-card-title-lg {
+  width: 230px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-card-title-sm {
+  width: 130px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-progress-label {
+  width: 130px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.sk-progress-badge {
+  width: 160px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.sk-progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 10px;
+}
+
+.sk-grid-label-1 {
+  width: 90px;
   height: 11px;
+  margin-bottom: 8px;
   border-radius: 3px;
 }
 
-.sk-label-md {
+.sk-grid-label-2 {
+  width: 80px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-3 {
+  width: 60px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-4 {
   width: 100px;
   height: 11px;
+  margin-bottom: 8px;
   border-radius: 3px;
 }
 
-.sk-value-md {
+.sk-grid-label-5 {
+  width: 70px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-6 {
+  width: 125px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-7 {
+  width: 110px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-8 {
+  width: 105px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f1 {
+  width: 115px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f2 {
+  width: 95px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f3 {
+  width: 125px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f4 {
+  width: 135px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f5 {
+  width: 175px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f6 {
+  width: 105px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f7 {
+  width: 120px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f8 {
+  width: 150px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-val-1 {
+  width: 140px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-2 {
+  width: 110px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-3 {
+  width: 130px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-4 {
+  width: 95px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-5 {
   width: 120px;
   height: 16px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
-.sk-value-lg {
-  width: 140px;
+.sk-grid-val-6 {
+  width: 120px;
   height: 16px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
-.sk-th-sm {
+.sk-grid-val-7 {
+  width: 120px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-8 {
+  width: 120px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f1 {
+  width: 90px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f2 {
+  width: 80px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f3 {
+  width: 85px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f4 {
+  width: 90px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f5 {
+  width: 75px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f6 {
+  width: 80px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f7 {
+  width: 130px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f8 {
+  width: 130px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-th-id {
   width: 70px;
   height: 12px;
   border-radius: 3px;
 }
 
+.sk-th-date {
+  width: 85px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-amount {
+  width: 60px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-type {
+  width: 45px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-status {
+  width: 55px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-action {
+  width: 45px;
+  height: 12px;
+  border-radius: 3px;
+  margin: 0 auto;
+}
+
 .sk-td-id {
-  width: 100px;
+  width: 85px;
   height: 14px;
   border-radius: 3px;
 }
 
 .sk-td-date {
-  width: 120px;
+  width: 110px;
   height: 14px;
   border-radius: 3px;
 }
 
 .sk-td-amount {
-  width: 80px;
+  width: 70px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.sk-td-type {
+  width: 65px;
   height: 14px;
   border-radius: 3px;
 }
 
 .sk-td-status {
-  width: 60px;
-  height: 18px;
-  border-radius: 10px;
+  width: 75px;
+  height: 22px;
+  border-radius: 50px;
 }
 
-.sk-td-action {
+.sk-td-btn {
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+
+.sk-col-id {
+  min-width: 100px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-date {
+  min-width: 140px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-amount {
+  min-width: 110px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-type {
+  min-width: 110px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-status {
+  min-width: 110px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-action {
+  width: 80px;
+  text-align: center;
+  padding: 10px 14px !important;
+}
+
+.sk-td-cell {
+  padding: 12px 14px !important;
 }
 
 .sk-action-btn-lg {

@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
-import { fetchPartnerPlans } from '../../../modules/partner/services';
+import { fetchPartnerPlans, getPartnerBorrowerFee } from '../../../modules/partner/services';
 import { fetchBorrowerPlans } from '../../../modules/client/services';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../../config/appConfig';
 import LeadConvertSkeleton from '../../../components/Loader/LeadConvertSkeleton';
-import { apiClient } from '../../../lib/http/apiClient';
 import { useAuthStore } from '../../../store/auth/authStore';
 import InstallmentDetailsModal from '../../../components/Common/Payment/InstallmentDetailsModal';
 import { ENROLLMENT_TYPE_INSTALLMENT } from '../../../config/subscriptionConfig';
@@ -118,17 +117,25 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     }, [backendErrors]);
 
     useEffect(() => {
-        const fetchFixedPlan = async () => {
+        if (isHost || currentUser?.is_host) {
+            setFixedEnrollmentAmount(0);
+            return;
+        }
+
+        const fetchPartnerBorrowerFee = async () => {
             try {
-                const response = await apiClient.get('/common/partner-plans/fixed_enrollment');
-                if (response.data?.status && response.data?.data?.total_amount) {
-                    setFixedEnrollmentAmount(Number(response.data.data.total_amount));
+                const response = await getPartnerBorrowerFee();
+                if (response?.status && response?.data?.borrower_fee_amount !== undefined) {
+                    setFixedEnrollmentAmount(Number(response.data.borrower_fee_amount));
                 }
             } catch (error) {
-                console.error('Failed to fetch fixed enrollment plan:', error);
+                console.error('Failed to fetch partner borrower fee:', error);
             }
         };
+        fetchPartnerBorrowerFee();
+    }, [isHost, currentUser?.is_host]);
 
+    useEffect(() => {
         const loadPlans = async () => {
             setFetching(true);
             try {
@@ -146,7 +153,6 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             }
         };
 
-        fetchFixedPlan();
         loadPlans();
     }, []);
 

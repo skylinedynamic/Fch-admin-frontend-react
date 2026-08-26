@@ -334,7 +334,7 @@ export default function SubscriptionDetails() {
                                         {Boolean(subscriptionDetails.user_seats) && (
                                             <>
                                                 <div className="col-sm-6 col-md-3">
-                                                    <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Allocated User Seats</p>
+                                                    <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Free User Seats (Including Partner)</p>
                                                     <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.user_seats} Seats</h5>
                                                 </div>
                                                 {subscriptionDetails.per_seat_amount && (
@@ -343,13 +343,15 @@ export default function SubscriptionDetails() {
                                                         <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.per_seat_amount}</h5>
                                                     </div>
                                                 )}
-                                                {subscriptionDetails.total_seat_amount && (
-                                                    <div className="col-sm-6 col-md-3">
-                                                        <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Monthly Seat Total</p>
-                                                        <h5 className="fs-14 mb-0 fw-semibold text-primary">{subscriptionDetails.total_seat_amount}</h5>
-                                                    </div>
-                                                )}
+
                                             </>
+                                        )}
+
+                                        {subscriptionDetails.borrower_fee_amount && (
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Borrower Fee</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.borrower_fee_amount}</h5>
+                                            </div>
                                         )}
 
                                         <div className="col-sm-6 col-md-3">

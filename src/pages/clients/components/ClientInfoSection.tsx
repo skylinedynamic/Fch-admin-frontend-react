@@ -5,7 +5,6 @@ import { Calendar } from 'primereact/calendar';
 
 import { toast } from 'react-toastify';
 import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS } from '../../../utils/formatters';
-import { apiClient } from '../../../lib/http/apiClient';
 import {
     useClient,
     useUpdateClient,
@@ -20,7 +19,7 @@ import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import { locationData, getCountryPhoneInfo } from '../../../config/locations';
-import { allUsers } from '../../../modules/partner/services';
+import { allUsers, getPartnerBorrowerFee } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_ONE_TIME } from '../../../config/subscriptionConfig';
@@ -102,8 +101,16 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const { data: borrowerPlans = [] } = useBorrowerPlans();
     const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState<number>(0);
 
+    const isUserHost = Boolean(currentUser?.is_host || isHost);
+
     useEffect(() => {
-        // If updating an existing client who is NOT in a free trial, do NOT fetch fixed enrollment plan
+        // If auth user is host (is_host == 1), no need to call
+        if (isUserHost) {
+            setFixedEnrollmentAmount(0);
+            return;
+        }
+
+        // If updating an existing client who is NOT in a free trial, do NOT fetch borrower fee
         if (clientId && !isFetching && !wasFreeTrial) {
             return;
         }
@@ -113,18 +120,18 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             return;
         }
 
-        const fetchFixedPlan = async () => {
+        const fetchPartnerBorrowerFee = async () => {
             try {
-                const response = await apiClient.get('/common/partner-plans/fixed_enrollment');
-                if (response.data?.status && response.data?.data?.total_amount) {
-                    setFixedEnrollmentAmount(Number(response.data.data.total_amount));
+                const response = await getPartnerBorrowerFee();
+                if (response?.status && response?.data?.borrower_fee_amount !== undefined) {
+                    setFixedEnrollmentAmount(Number(response.data.borrower_fee_amount));
                 }
             } catch (error) {
-                console.error('Failed to fetch fixed enrollment plan:', error);
+                console.error('Failed to fetch partner borrower fee:', error);
             }
         };
-        fetchFixedPlan();
-    }, [clientId, isFetching, wasFreeTrial]);
+        fetchPartnerBorrowerFee();
+    }, [isUserHost, clientId, isFetching, wasFreeTrial]);
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = borrowerPlans;
