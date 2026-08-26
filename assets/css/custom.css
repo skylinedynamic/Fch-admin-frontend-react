@@ -5276,7 +5276,7 @@ File: Custom Css File
 }
 
 .plan-fee-input-width {
-  width: 120px !important;
+  width: 150px !important;
 }
 
 .plan-fee-input-width-lg {
@@ -5783,63 +5783,322 @@ File: Custom Css File
   border-radius: 10px;
 }
 
-.sk-grid-label-1 { width: 90px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-2 { width: 80px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-3 { width: 60px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-4 { width: 100px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-5 { width: 70px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-6 { width: 125px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-7 { width: 110px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-8 { width: 105px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
+.sk-grid-label-1 {
+  width: 90px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
 
-.sk-grid-label-f1 { width: 115px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-f2 { width: 95px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-f3 { width: 125px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-f4 { width: 135px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-f5 { width: 175px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-f6 { width: 105px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-f7 { width: 120px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
-.sk-grid-label-f8 { width: 150px; height: 11px; margin-bottom: 8px; border-radius: 3px; }
+.sk-grid-label-2 {
+  width: 80px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
 
-.sk-grid-val-1 { width: 140px; height: 22px; border-radius: 4px; }
-.sk-grid-val-2 { width: 110px; height: 16px; border-radius: 4px; }
-.sk-grid-val-3 { width: 130px; height: 16px; border-radius: 4px; }
-.sk-grid-val-4 { width: 95px; height: 22px; border-radius: 4px; }
-.sk-grid-val-5 { width: 120px; height: 16px; border-radius: 4px; }
-.sk-grid-val-6 { width: 120px; height: 16px; border-radius: 4px; }
-.sk-grid-val-7 { width: 120px; height: 16px; border-radius: 4px; }
-.sk-grid-val-8 { width: 120px; height: 16px; border-radius: 4px; }
+.sk-grid-label-3 {
+  width: 60px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
 
-.sk-grid-val-f1 { width: 90px; height: 16px; border-radius: 4px; }
-.sk-grid-val-f2 { width: 80px; height: 16px; border-radius: 4px; }
-.sk-grid-val-f3 { width: 85px; height: 16px; border-radius: 4px; }
-.sk-grid-val-f4 { width: 90px; height: 16px; border-radius: 4px; }
-.sk-grid-val-f5 { width: 75px; height: 16px; border-radius: 4px; }
-.sk-grid-val-f6 { width: 80px; height: 16px; border-radius: 4px; }
-.sk-grid-val-f7 { width: 130px; height: 16px; border-radius: 4px; }
-.sk-grid-val-f8 { width: 130px; height: 16px; border-radius: 4px; }
+.sk-grid-label-4 {
+  width: 100px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
 
-.sk-th-id { width: 70px; height: 12px; border-radius: 3px; }
-.sk-th-date { width: 85px; height: 12px; border-radius: 3px; }
-.sk-th-amount { width: 60px; height: 12px; border-radius: 3px; }
-.sk-th-type { width: 45px; height: 12px; border-radius: 3px; }
-.sk-th-status { width: 55px; height: 12px; border-radius: 3px; }
-.sk-th-action { width: 45px; height: 12px; border-radius: 3px; margin: 0 auto; }
+.sk-grid-label-5 {
+  width: 70px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
 
-.sk-td-id { width: 85px; height: 14px; border-radius: 3px; }
-.sk-td-date { width: 110px; height: 14px; border-radius: 3px; }
-.sk-td-amount { width: 70px; height: 14px; border-radius: 3px; }
-.sk-td-type { width: 65px; height: 14px; border-radius: 3px; }
-.sk-td-status { width: 75px; height: 22px; border-radius: 50px; }
-.sk-td-btn { width: 32px; height: 32px; border-radius: 4px; margin: 0 auto; }
+.sk-grid-label-6 {
+  width: 125px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
 
-.sk-col-id { min-width: 100px; padding: 10px 14px !important; }
-.sk-col-date { min-width: 140px; padding: 10px 14px !important; }
-.sk-col-amount { min-width: 110px; padding: 10px 14px !important; }
-.sk-col-type { min-width: 110px; padding: 10px 14px !important; }
-.sk-col-status { min-width: 110px; padding: 10px 14px !important; }
-.sk-col-action { width: 80px; text-align: center; padding: 10px 14px !important; }
-.sk-td-cell { padding: 12px 14px !important; }
+.sk-grid-label-7 {
+  width: 110px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-8 {
+  width: 105px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f1 {
+  width: 115px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f2 {
+  width: 95px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f3 {
+  width: 125px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f4 {
+  width: 135px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f5 {
+  width: 175px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f6 {
+  width: 105px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f7 {
+  width: 120px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-label-f8 {
+  width: 150px;
+  height: 11px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+
+.sk-grid-val-1 {
+  width: 140px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-2 {
+  width: 110px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-3 {
+  width: 130px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-4 {
+  width: 95px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-5 {
+  width: 120px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-6 {
+  width: 120px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-7 {
+  width: 120px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-8 {
+  width: 120px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f1 {
+  width: 90px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f2 {
+  width: 80px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f3 {
+  width: 85px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f4 {
+  width: 90px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f5 {
+  width: 75px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f6 {
+  width: 80px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f7 {
+  width: 130px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-grid-val-f8 {
+  width: 130px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sk-th-id {
+  width: 70px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-date {
+  width: 85px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-amount {
+  width: 60px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-type {
+  width: 45px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-status {
+  width: 55px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.sk-th-action {
+  width: 45px;
+  height: 12px;
+  border-radius: 3px;
+  margin: 0 auto;
+}
+
+.sk-td-id {
+  width: 85px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.sk-td-date {
+  width: 110px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.sk-td-amount {
+  width: 70px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.sk-td-type {
+  width: 65px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.sk-td-status {
+  width: 75px;
+  height: 22px;
+  border-radius: 50px;
+}
+
+.sk-td-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+
+.sk-col-id {
+  min-width: 100px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-date {
+  min-width: 140px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-amount {
+  min-width: 110px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-type {
+  min-width: 110px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-status {
+  min-width: 110px;
+  padding: 10px 14px !important;
+}
+
+.sk-col-action {
+  width: 80px;
+  text-align: center;
+  padding: 10px 14px !important;
+}
+
+.sk-td-cell {
+  padding: 12px 14px !important;
+}
 
 .sk-action-btn-lg {
   width: 90px;

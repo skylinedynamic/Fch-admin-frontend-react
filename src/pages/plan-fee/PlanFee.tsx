@@ -238,7 +238,11 @@ export default function PlanFee() {
                 payload.total_seat_count = edits.total_seat_count ? parseInt(edits.total_seat_count) : 0;
             }
 
-            if (activeTab === PLAN_GROUP_BORROWER_FEE || activeTab === PLAN_GROUP_USER_SEAT) {
+            const originalFee = parseFloat(String(selectedPlanForUpdate.platform_fee || 0));
+            const editedFee = parseFloat(edits.platform_fee || '0');
+            const platformFeeChanged = showPlatformFee && (originalFee !== editedFee);
+
+            if (activeTab === PLAN_GROUP_USER_SEAT || platformFeeChanged) {
                 payload.include_existing_subscription = includeExistingSubscription;
             }
 
@@ -457,7 +461,7 @@ export default function PlanFee() {
                                                                 {/* Platform Fee */}
                                                                 {showPlatformFee && (
                                                                     <div className="plan-fee-input-width">
-                                                                        <label className="form-label text-muted small mb-1">Platform Fee</label>
+                                                                        <label className="form-label text-muted small mb-1"> Monthly Platform Fee</label>
                                                                         <div className="input-group input-group-sm plan-fee-input-group">
                                                                             <span className="input-group-text bg-light text-muted">{currency}</span>
                                                                             <input
@@ -661,8 +665,8 @@ export default function PlanFee() {
                                     </table>
                                 </div>
 
-                                {/* Include existing subscription card (Borrower Fee & User Seat) */}
-                                {(activeTab === PLAN_GROUP_BORROWER_FEE || activeTab === PLAN_GROUP_USER_SEAT) && (
+                                {/* Include existing subscription card (User Seat or Platform Fee changed) */}
+                                {(activeTab === PLAN_GROUP_USER_SEAT || platformFeeChanged) && (
                                     <div
                                         className={`plan-fee-checkbox-card mb-3 ${includeExistingSubscription ? 'is-active' : ''}`}
                                         style={{ borderRadius: '4px' }}
@@ -694,6 +698,18 @@ export default function PlanFee() {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Platform Fee specific subtle note with smooth height/opacity transition */}
+                                        {platformFeeChanged && activeTab !== PLAN_GROUP_USER_SEAT && (
+                                            <div className={`plan-fee-warning-collapse ${includeExistingSubscription ? 'show' : ''}`}>
+                                                <div className="alert alert-warning bg-warning-subtle border-0 text-dark p-2.5 mb-0 fs-12 d-flex align-items-start shadow-none" style={{ borderRadius: '4px' }}>
+                                                    <i className="ri-alert-fill fs-16 text-warning flex-shrink-0 me-3 mt-0.5"></i>
+                                                    <div className="text-dark">
+                                                        <strong className="text-dark fw-bold">Note:</strong> Only monthly platform fee will be updated for existing partners and new partners.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -706,7 +722,9 @@ export default function PlanFee() {
                                             {includeExistingSubscription
                                                 ? (activeTab === PLAN_GROUP_USER_SEAT
                                                     ? 'This rate modification will apply immediately to new registrations as well as existing active subscriptions (existing user seat counts will remain unchanged).'
-                                                    : 'This rate modification will apply immediately to new registrations as well as existing active subscriptions.')
+                                                    : platformFeeChanged
+                                                        ? 'Only the platform fee will be updated for existing active partners. All new registrations will use the updated rate.'
+                                                        : 'This rate modification will apply immediately to new registrations as well as existing active subscriptions.')
                                                 : 'This rate modification will apply immediately to new registrations. Existing users\' plans will remain unchanged.'}
                                         </div>
                                     </div>
