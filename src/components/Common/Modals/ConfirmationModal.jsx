@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 
-export default function ConfirmationModal({ show, onHide, onConfirm, loading, title, message, confirmText = 'Confirm', cancelText = 'Cancel', variant = 'primary' }) {
+export default function ConfirmationModal({ show, onHide, onConfirm, loading, title, message, confirmText = 'Confirm', cancelText = 'Close', variant = 'primary' }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
 
@@ -27,6 +27,20 @@ export default function ConfirmationModal({ show, onHide, onConfirm, loading, ti
         }
     }, [show]);
 
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            const modal = modalInstanceRef.current;
+            if (modal) {
+                try {
+                    modal.hide();
+                    if (typeof modal.dispose === 'function') modal.dispose();
+                } catch (_) { }
+            }
+            modalInstanceRef.current = null;
+        };
+    }, []);
+
     const handleConfirm = () => {
         if (onConfirm) onConfirm();
     };
@@ -36,41 +50,47 @@ export default function ConfirmationModal({ show, onHide, onConfirm, loading, ti
     };
 
     const confirmBtnClass = `btn-${variant}`;
-    const icon = variant === 'danger' ? 'ri-error-warning-line text-danger' : 'ri-question-line text-primary';
-
+    
     return (
         <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content border-0 shadow-lg">
-                    <div className="modal-body p-4 text-center">
-                        <i className={`${icon} display-4 mb-3 d-block`}></i>
-                        <h4 className="mb-2">{title || 'Confirm Action'}</h4>
-                        <p className="text-muted mb-4">
-                            {message || 'Are you sure you want to proceed?'}
-                        </p>
+                <div className="modal-content">
+                    <div className="modal-body p-5 text-center">
+                        <lord-icon
+                            src={variant === 'danger' ? "https://cdn.lordicon.com/gsqxdxog.json" : "https://cdn.lordicon.com/tdrtiskw.json"}
+                            trigger="loop"
+                            colors={`primary:${variant === 'danger' ? '#405189' : '#f7b84b'},secondary:${variant === 'danger' ? '#f06548' : '#405189'}`}
+                            style={{ width: '90px', height: '90px' }}
+                        ></lord-icon>
+                        <div className="mt-4 text-center">
+                            <h4>{title || 'Confirm Action'}</h4>
+                            <p className="text-muted fs-15 mb-4">
+                                {message || 'Are you sure you want to proceed?'}
+                            </p>
 
-                        <div className="hstack gap-2 justify-content-center">
-                            <button
-                                type="button"
-                                className="btn btn-light"
-                                onClick={handleClose}
-                                disabled={loading}
-                            >
-                                {cancelText}
-                            </button>
-                            <button
-                                type="button"
-                                className={`btn ${confirmBtnClass}`}
-                                onClick={handleConfirm}
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <>
-                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                        Processing...
-                                    </>
-                                ) : confirmText}
-                            </button>
+                            <div className="hstack gap-2 justify-content-center remove">
+                                <button
+                                    type="button"
+                                    className="btn btn-link link-success fw-medium"
+                                    onClick={handleClose}
+                                    disabled={loading}
+                                >
+                                    <i className="ri-close-line me-1 align-middle"></i> {cancelText}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`btn ${confirmBtnClass}`}
+                                    onClick={handleConfirm}
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            Processing...
+                                        </>
+                                    ) : confirmText}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

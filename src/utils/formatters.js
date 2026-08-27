@@ -136,3 +136,19 @@ export const formatDate = (dateStr) => {
         return dateStr;
     }
 };
+
+/**
+ * Formats a date string into a human-readable format including time.
+ * @param dateStr ISO or YYYY-MM-DD HH:mm:ss string
+ */
+export const parseDateTime = (dateStr) => {
+    if (!dateStr) return '—';
+    try {
+        return new Date(dateStr).toLocaleString('en-US', { 
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+    } catch {
+        return dateStr;
+    }
+};

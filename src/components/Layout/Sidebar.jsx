@@ -150,6 +150,11 @@ const menuItems = [
     label: "Appointments",
     permission: "view appointments",
   },
+  {
+    to: "/reminders",
+    icon: "ri-alarm-warning-line",
+    label: "Task & Reminders",
+  },
   // {
   //   to: '/under-construction/training-courses',
   //   icon: 'ri-live-fill',

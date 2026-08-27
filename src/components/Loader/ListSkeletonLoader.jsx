@@ -2,15 +2,17 @@ import React from 'react';
 import { Skeleton } from 'primereact/skeleton';
 import StatisticsCardSkeleton from '../Common/StatisticsCardSkeleton';
 
-export default function ListSkeletonLoader() {
+export default function ListSkeletonLoader({ showCards = false }) {
     return (
         <>
             {/* Stats Cards Skeleton */}
-            <div className="row">
-                {[1, 2, 3, 4].map(i => (
-                    <StatisticsCardSkeleton key={i} />
-                ))}
-            </div>
+            {showCards && (
+                <div className="row">
+                    {[1, 2, 3, 4].map(i => (
+                        <StatisticsCardSkeleton key={i} />
+                    ))}
+                </div>
+            )}
 
             {/* Table Card Skeleton */}
             <div className="row row-table-fit">

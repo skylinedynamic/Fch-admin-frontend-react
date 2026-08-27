@@ -7,6 +7,7 @@ import { useDashboardData } from '../../modules/dashboard';
 import { formatCurrency } from '../../utils/helper';
 import TableLoader from '../../components/Loader/TableLoader';
 import { logout, clearAuth } from '../../lib/auth';
+import '../../assets/css/reminder.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -383,6 +384,77 @@ export default function Dashboard() {
                       <div className="mt-3">
                         <Link to="/appointments" className="btn btn-outline-primary w-100 rounded-pill">
                           <i className="ri-calendar-event-line align-middle me-1"></i> Schedule Meeting
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-xl-12 mb-3">
+                  <div className="card mb-0">
+                    <div className="card-header align-items-center d-flex">
+                      <h4 className="card-title mb-0 flex-grow-1">Upcoming Task & Reminder Events</h4>
+                      {dashboardData?.pending_reminders_count > 0 && (
+                        <span className="badge bg-primary-subtle text-primary fw-semibold fs-12">
+                          {dashboardData.pending_reminders_count} Pending
+                        </span>
+                      )}
+                    </div>
+                    <div className="card-body pt-0">
+                      {isLoading ? (
+                        <div className="py-3">
+                          <div className="skeleton-line col-12 mb-2 d-block" style={{ height: '16px' }}></div>
+                          <div className="skeleton-line col-10 d-block" style={{ height: '16px' }}></div>
+                        </div>
+                      ) : (dashboardData?.upcoming_tasks_reminders?.length > 0) ? (
+                        <>
+                          <ul className="list-group list-group-flush border-dashed">
+                            {dashboardData.upcoming_tasks_reminders.map((reminder, index) => {
+                              const date = reminder.set_date_time ? new Date(reminder.set_date_time) : (reminder.reminder_date_time ? new Date(reminder.reminder_date_time) : (reminder.remind_at ? new Date(reminder.remind_at) : (reminder.send_at ? new Date(reminder.send_at) : new Date())));
+                              const day = isNaN(date.getTime()) ? '-' : date.getDate();
+                              const weekDay = isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-US', { weekday: 'short' });
+                              const time = isNaN(date.getTime()) ? '-' : date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                              return (
+                                <li key={index} className="list-group-item ps-0">
+                                  <div className="row align-items-center g-3">
+                                    <div className="col-auto">
+                                      <div className="avatar-sm p-1 py-2 h-auto bg-light rounded-3 material-shadow">
+                                        <div className="text-center">
+                                          <h5 className="mb-0">{day}</h5>
+                                          <div className="text-muted">{weekDay}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="col">
+                                      <div className="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 className="text-muted mb-0 fs-13">{time}</h5>
+                                        <span className="badge bg-warning-subtle text-warning text-uppercase">{reminder.reference_type || 'Reminder'}</span>
+                                      </div>
+                                      <Link to="/reminders" className="text-reset fs-14 mb-0 text-truncate d-block">{reminder.title || reminder.summary || 'Task/Reminder'}</Link>
+                                    </div>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+
+                          {dashboardData?.pending_reminders_count > dashboardData?.upcoming_tasks_reminders?.length && (
+                            <div className="reminder-more-badge">
+                              + {dashboardData.pending_reminders_count - dashboardData.upcoming_tasks_reminders.length} more reminders
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-center py-4 text-muted border-dashed border-0 border-top mt-2">
+                          <i className="ri-alarm-warning-line fs-24 mb-2 d-block"></i>
+                          No upcoming tasks/reminders
+                        </div>
+                      )}
+
+                      <div className="mt-3">
+                        <Link to="/reminders" className="btn btn-outline-primary w-100 rounded-pill">
+                          <i className="ri-arrow-right-line align-middle me-1"></i> View All Reminders
                         </Link>
                       </div>
                     </div>
