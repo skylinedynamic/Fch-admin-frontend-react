@@ -335,3 +335,152 @@ export const CapitalAccessSkeleton: React.FC = () => {
     );
 };
 
+/**
+ * Custom skeleton loader for the Embed Form Configuration / Settings Page
+ */
+export const EmbedFormSettingsSkeleton: React.FC = () => {
+    return (
+        <div className="animate__animated animate__fadeIn">
+            <div className="row g-4">
+                {/* Left Column: Form Settings */}
+                <div className="col-lg-7">
+                    {/* Summary Metrics Row */}
+                    <div className="row g-3 mb-4">
+                        <div className="col-sm-6">
+                            <div className="card shadow-sm border-0 mb-0">
+                                <div className="card-body p-3 d-flex align-items-center gap-3">
+                                    <div className="skeleton-line rounded-3 flex-shrink-0" style={{ width: '48px', height: '48px' }} />
+                                    <div className="flex-grow-1">
+                                        <div className="skeleton-line mb-2" style={{ width: '100px', height: '11px' }} />
+                                        <div className="skeleton-line" style={{ width: '60px', height: '24px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-sm-6">
+                            <div className="card shadow-sm border-0 mb-0">
+                                <div className="card-body p-3 d-flex align-items-center gap-3">
+                                    <div className="skeleton-line rounded-3 flex-shrink-0" style={{ width: '48px', height: '48px' }} />
+                                    <div className="flex-grow-1">
+                                        <div className="skeleton-line mb-2" style={{ width: '80px', height: '11px' }} />
+                                        <div className="skeleton-line" style={{ width: '120px', height: '20px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Configuration Form Card Skeleton */}
+                    <div className="card shadow-sm border-0 mb-4">
+                        <div className="card-header bg-transparent border-0 pb-3 pt-4 px-4">
+                            <div className="d-flex align-items-center">
+                                <div className="skeleton-line rounded-circle me-3 flex-shrink-0" style={{ width: '40px', height: '40px' }} />
+                                <div className="flex-grow-1">
+                                    <div className="skeleton-line mb-2" style={{ width: '160px', height: '18px' }} />
+                                    <div className="skeleton-line" style={{ width: '300px', height: '12px' }} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card-body p-4">
+                            {/* Form Title Field */}
+                            <div className="mb-3">
+                                <div className="skeleton-line mb-2" style={{ width: '90px', height: '14px' }} />
+                                <div className="skeleton-line rounded w-100 mb-1" style={{ height: '42px' }} />
+                                <div className="skeleton-line" style={{ width: '280px', height: '11px' }} />
+                            </div>
+
+                            {/* Notification Email Field */}
+                            <div className="mb-3">
+                                <div className="skeleton-line mb-2" style={{ width: '160px', height: '14px' }} />
+                                <div className="skeleton-line rounded w-100 mb-1" style={{ height: '42px' }} />
+                                <div className="skeleton-line" style={{ width: '380px', height: '11px' }} />
+                            </div>
+
+                            {/* Form Active Switch */}
+                            <div className="mb-4 pt-2">
+                                <div className="skeleton-line mb-2" style={{ width: '90px', height: '14px' }} />
+                                <div className="d-flex align-items-center gap-2">
+                                    <div className="skeleton-line rounded-pill" style={{ width: '44px', height: '24px' }} />
+                                    <div className="skeleton-line" style={{ width: '240px', height: '14px' }} />
+                                </div>
+                            </div>
+
+                            <div className="my-4" />
+
+                            {/* Allowed Domains */}
+                            <div className="mb-4">
+                                <div className="skeleton-line mb-2" style={{ width: '130px', height: '14px' }} />
+                                <div className="skeleton-line rounded w-100 mb-2" style={{ height: '42px' }} />
+                                <div className="d-flex gap-2">
+                                    <div className="skeleton-line rounded-pill" style={{ width: '140px', height: '28px' }} />
+                                    <div className="skeleton-line rounded-pill" style={{ width: '160px', height: '28px' }} />
+                                </div>
+                            </div>
+
+                            {/* Submit Button */}
+                            <div className="d-flex justify-content-end">
+                                <div className="skeleton-line rounded" style={{ width: '160px', height: '40px' }} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column: Embed & Share Card Skeleton */}
+                <div className="col-lg-5">
+                    <div className="card shadow-sm border-0 mb-4">
+                        <div className="card-header bg-transparent border-0 pb-3 pt-4 px-4">
+                            <div className="d-flex align-items-center">
+                                <div className="skeleton-line rounded-circle me-3 flex-shrink-0" style={{ width: '40px', height: '40px' }} />
+                                <div className="flex-grow-1">
+                                    <div className="skeleton-line mb-2" style={{ width: '130px', height: '18px' }} />
+                                    <div className="skeleton-line" style={{ width: '220px', height: '12px' }} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card-body p-4">
+                            {/* Partner Key Box */}
+                            <div className="mb-4 p-3 bg-light rounded">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <div className="skeleton-line" style={{ width: '110px', height: '11px' }} />
+                                    <div className="skeleton-line" style={{ width: '60px', height: '12px' }} />
+                                </div>
+                                <div className="skeleton-line" style={{ width: '100%', height: '16px' }} />
+                            </div>
+
+                            {/* Direct Shareable Link */}
+                            <div className="mb-4">
+                                <div className="skeleton-line mb-2" style={{ width: '130px', height: '14px' }} />
+                                <div className="skeleton-line rounded w-100 mb-2" style={{ height: '42px' }} />
+                                <div className="skeleton-line" style={{ width: '220px', height: '11px' }} />
+                            </div>
+
+                            {/* iFrame Embed Snippet */}
+                            <div className="mb-4">
+                                <div className="skeleton-line mb-2" style={{ width: '180px', height: '14px' }} />
+                                <div className="skeleton-line rounded w-100 mb-2" style={{ height: '100px' }} />
+                                <div className="skeleton-line rounded w-100 mb-2" style={{ height: '40px' }} />
+                                <div className="skeleton-line" style={{ width: '280px', height: '11px' }} />
+                            </div>
+
+                            {/* Key Management Alert box */}
+                            <div className="p-3 bg-warning-subtle rounded">
+                                <div className="d-flex align-items-start gap-2">
+                                    <div className="skeleton-line rounded-circle flex-shrink-0" style={{ width: '20px', height: '20px' }} />
+                                    <div className="flex-grow-1">
+                                        <div className="skeleton-line mb-1" style={{ width: '110px', height: '14px' }} />
+                                        <div className="skeleton-line mb-2" style={{ width: '220px', height: '12px' }} />
+                                        <div className="skeleton-line rounded" style={{ width: '160px', height: '32px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+

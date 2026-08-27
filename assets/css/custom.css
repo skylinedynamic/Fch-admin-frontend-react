@@ -4297,3 +4297,20 @@ File: Custom Css File
 .stripe-submit-btn:active:not(:disabled) {
   transform: translateY(1px);
 }
+
+/* Fix StatisticsCard collapsing inside page-content-fit layout */
+.page-content-fit .partner-section .card,
+.page-content-fit .lead-section .card,
+.page-content-fit .invoice-section .card,
+.page-content-fit .embed-stats-section .card {
+  min-height: auto !important;
+  height: auto !important;
+  flex: none !important;
+  overflow: visible !important;
+  margin-bottom: 0 !important;
+}
+
+.embed-stats-section {
+  flex-shrink: 0 !important;
+  margin-bottom: 1rem !important;
+}

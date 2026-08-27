@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
+import { EmbedFormSettingsSkeleton } from '../../components/Loader/SpecificSkeletons';
 import {
     getEmbedFormConfig,
     updateEmbedFormConfig,
@@ -32,9 +33,11 @@ export default function EmbedFormSettings() {
                 setNotificationEmail(d.notification_email || '');
                 setIsActive(Boolean(d.is_active));
                 setAllowedDomains(d.allowed_domains || []);
+            } else {
+                toast.error(res?.message || 'Failed to load embed form configuration.');
             }
-        } catch {
-            toast.error('Failed to load embed form configuration.');
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || err?.message || 'Failed to load embed form configuration.');
         } finally {
             setLoading(false);
         }
@@ -55,11 +58,13 @@ export default function EmbedFormSettings() {
                 allowed_domains: allowedDomains,
             });
             if (res.status) {
-                toast.success('Embed form configuration saved successfully.');
+                toast.success(res?.message || 'Embed form configuration saved successfully.');
                 loadConfig();
+            } else {
+                toast.error(res?.message || 'Failed to save configuration.');
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Failed to save configuration.');
+            toast.error(err?.response?.data?.message || err?.message || 'Failed to save configuration.');
         } finally {
             setSaving(false);
         }
@@ -73,11 +78,13 @@ export default function EmbedFormSettings() {
         try {
             const res = await regenerateEmbedKey();
             if (res.status) {
-                toast.success('Public embed key regenerated successfully.');
+                toast.success(res?.message || 'Public embed key regenerated successfully.');
                 loadConfig();
+            } else {
+                toast.error(res?.message || 'Failed to regenerate key.');
             }
-        } catch {
-            toast.error('Failed to regenerate key.');
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || err?.message || 'Failed to regenerate key.');
         } finally {
             setRegenerating(false);
         }
@@ -107,26 +114,6 @@ export default function EmbedFormSettings() {
         });
     };
 
-    if (loading) {
-        return (
-            <div className="page-content">
-                <div className="container-fluid">
-                    <PageHeader
-                        title="Embedded Form"
-                        breadcrumbs={[{ label: 'Embedded Form', path: '/embed-form/settings' }, { label: 'Configuration' }]}
-                    />
-                    <div className="row g-4">
-                        <div className="col-12 text-center py-5">
-                            <div className="spinner-border text-primary" role="status">
-                                <span className="visually-hidden">Loading...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="page-content">
             <div className="container-fluid">
@@ -139,8 +126,11 @@ export default function EmbedFormSettings() {
                     ]}
                 />
 
-                {/* Main Content Grid */}
-                <div className="row g-4">
+                {loading ? (
+                    <EmbedFormSettingsSkeleton />
+                ) : (
+                    /* Main Content Grid */
+                    <div className="row g-4">
                     {/* Left Column: Form Settings */}
                     <div className="col-lg-7">
                         {/* Summary Metrics Row */}
@@ -165,9 +155,8 @@ export default function EmbedFormSettings() {
                                 <div className="card shadow-sm border-0 mb-0">
                                     <div className="card-body p-3 d-flex align-items-center gap-3">
                                         <div
-                                            className={`avatar-sm flex-shrink-0 d-flex align-items-center justify-content-center rounded-3 ${
-                                                isActive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'
-                                            }`}
+                                            className={`avatar-sm flex-shrink-0 d-flex align-items-center justify-content-center rounded-3 ${isActive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'
+                                                }`}
                                             style={{ width: '48px', height: '48px' }}
                                         >
                                             <i className={isActive ? 'ri-checkbox-circle-line fs-22' : 'ri-close-circle-line fs-22'} />
@@ -463,7 +452,6 @@ export default function EmbedFormSettings() {
                                 {/* Security / Key Regeneration Card */}
                                 <div className="alert alert-warning border-0 p-3 mb-0" role="alert">
                                     <div className="d-flex align-items-start gap-2">
-                                        <i className="ri-alert-line fs-18 text-warning flex-shrink-0 mt-1" />
                                         <div className="flex-grow-1">
                                             <h6 className="alert-heading fw-bold fs-13 mb-1">Key Management</h6>
                                             <p className="fs-12 text-muted mb-2">
@@ -493,7 +481,8 @@ export default function EmbedFormSettings() {
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
-    );
+    </div>
+);
 }

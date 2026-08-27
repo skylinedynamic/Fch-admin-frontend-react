@@ -42,3 +42,9 @@ export const downloadEmbedFormAttachment = async (id: number | string) => {
   });
   return response;
 };
+
+export const convertEmbedFormSubmissionToBorrower = async (id: number | string, payload: any = {}) => {
+  const response = await apiClient.post(`/common/embed-forms/submissions/${id}/convert-to-borrower`, payload);
+  return response.data;
+};
+
