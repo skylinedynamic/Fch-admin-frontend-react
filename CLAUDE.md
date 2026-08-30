@@ -53,6 +53,6 @@ Use the `code-reviewer` agent (`~/.claude/agents/code-reviewer.md`) before mergi
 
 ## Related projects
 Sibling repos under `d:\laragon\www\`, part of the same FCH system:
-- **`fch-backend-api`** — Laravel 12 API backend shared by this app and the borrower portal (Passport auth, Spatie roles/permissions). This app talks to the `v1/admin` (`FCH` controller namespace) surface.
+- **`fch-backend-api`** (`fch-api`) — **the base project of the platform.** Laravel 12 API backend shared by this app and the borrower portal (Passport auth, Spatie roles/permissions). This app talks to the `v1/admin` (`FCH` controller namespace) surface. The data model, API contracts, permissions and compliance controls originate there — this repo is a consumer. For any change that spans both, start in `fch-api` and follow its response shapes rather than adapting the API to this app.
 - **`fch-borrower-react`** (`client-fch`) — the borrower-facing portal. Same stack and module conventions as this repo (`services.ts`/`queries.ts`/`types.ts`/`index.ts`, shared `apiClient`/`queryKeys`/auth-guard patterns) but a separate codebase — treat conventions there as shared guidance, not shared code.
 - **`fch-website-react`** — public marketing site (Next.js 16 + React 19), separate stack. This admin panel manages the CMS content, leads, and blog data the website reads.
