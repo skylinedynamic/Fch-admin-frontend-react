@@ -1,0 +1,204 @@
+/* Summernote UI Fixes for Bootstrap Modals and Fullscreen */
+
+/* Ensure Summernote dialogs (Link, Image, Video) appear above Bootstrap modals */
+.note-modal {
+    z-index: 2100 !important;
+    overflow-y: auto !important;
+}
+
+/* Backdrop rendered on body when dialogsInBody: true */
+.note-modal-backdrop {
+    z-index: 2099 !important;
+}
+
+/* Summernote uses 'in' class (Bootstrap 3 style) to show modals */
+.note-modal.in,
+.note-modal.show {
+    display: block !important;
+}
+
+.note-modal .modal-dialog {
+    z-index: 2052 !important;
+    max-width: 600px !important;
+    margin: 1.75rem auto !important;
+    min-height: auto !important;
+}
+
+.note-modal .modal-content {
+    border-radius: 0.375rem !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid #dee2e6 !important;
+    min-height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.note-modal .modal-header {
+    padding: 1rem 1.5rem !important;
+    border-bottom: 1px solid #e9ecef !important;
+    background-color: #f8f9fa !important;
+}
+
+.note-modal .modal-title {
+    font-size: 1.125rem !important;
+    font-weight: 600 !important;
+    color: #212529 !important;
+}
+
+.note-modal .modal-body {
+    padding: 1.5rem !important;
+    overflow-y: auto !important;
+    flex: 1 1 auto !important;
+}
+
+.note-modal .modal-footer {
+    padding: 1rem 1.5rem !important;
+    border-top: 1px solid #e9ecef !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 0.5rem !important;
+    background-color: #f8f9fa !important;
+    flex-shrink: 0 !important;
+    margin-top: 1rem !important;
+}
+
+/* Ensure dialog buttons are visible and styled */
+.note-modal .btn {
+    display: inline-block !important;
+    font-weight: 400 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+    user-select: none !important;
+    border: 1px solid transparent !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+    border-radius: 0.25rem !important;
+    transition: all 0.15s ease-in-out !important;
+    cursor: pointer !important;
+}
+
+.note-modal-footer {
+    height: 70px;
+}
+
+.note-modal .btn-primary {
+    color: #fff !important;
+    background-color: #405189 !important;
+    border-color: #405189 !important;
+}
+
+.note-modal .btn-primary:hover:not(:disabled) {
+    background-color: #364574 !important;
+    border-color: #364574 !important;
+}
+
+.note-modal .btn-primary:disabled {
+    opacity: 0.65 !important;
+    cursor: not-allowed !important;
+}
+
+.note-modal .btn-secondary {
+    color: #212529 !important;
+    background-color: #e9ecef !important;
+    border-color: #e9ecef !important;
+}
+
+.note-modal .btn-secondary:hover {
+    background-color: #d3d6d8 !important;
+    border-color: #d3d6d8 !important;
+}
+
+.note-modal .close {
+    padding: 0 !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    color: #000 !important;
+    opacity: 0.5 !important;
+    cursor: pointer !important;
+}
+
+.note-modal .close:hover {
+    opacity: 0.75 !important;
+}
+
+/* Fix for potential icon visibility issues */
+.note-editor .btn-light {
+    background-color: #fff;
+    border-color: #e2e5e8;
+}
+
+.note-editor .btn-light:hover {
+    background-color: #f3f6f9;
+}
+
+/* Ensure dialog inputs and labels are styled correctly */
+.note-modal .note-form-group {
+    margin-bottom: 1rem !important;
+}
+
+.note-modal .note-form-label,
+.note-modal label {
+    display: block !important;
+    margin-bottom: 0.5rem !important;
+    font-weight: 500 !important;
+    color: #212529 !important;
+    font-size: 0.875rem !important;
+}
+
+.note-modal .form-control,
+.note-modal .note-input {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    color: #495057 !important;
+    background-color: #fff !important;
+    background-clip: padding-box !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 0.25rem !important;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+
+.note-modal .form-control:focus,
+.note-modal .note-input:focus {
+    border-color: #405189 !important;
+    outline: 0 !important;
+    box-shadow: 0 0 0 0.2rem rgba(64, 81, 137, 0.25) !important;
+}
+
+/* Fix for file input */
+.note-modal input[type="file"] {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.375rem 0 !important;
+}
+
+/* Fix for checkbox */
+.note-modal .checkbox,
+.note-modal .form-check {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.note-modal .checkbox label,
+.note-modal .form-check-label {
+    font-weight: 400 !important;
+    cursor: pointer !important;
+}
+
+.note-modal input[type="checkbox"] {
+    margin-right: 0.5rem !important;
+    cursor: pointer !important;
+}
+
+/* Ensure proper spacing for form groups */
+.note-modal .form-group:last-child {
+    margin-bottom: 0 !important;
+}

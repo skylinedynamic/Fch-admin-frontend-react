@@ -1,0 +1,126 @@
+import React, { useState } from 'react';
+import { toast } from 'react-toastify';
+import { useSendTestMail } from '../../../modules/settings/queries';
+import { SendTestMailPayload } from '../../../modules/settings/types';
+
+interface FormErrors {
+    email?: string | null;
+    body?: string | null;
+}
+
+const TestMailForm: React.FC = () => {
+    const [formData, setFormData] = useState<SendTestMailPayload>({
+        email: '',
+        body: ''
+    });
+    const [errors, setErrors] = useState<FormErrors>({});
+
+    const sendTestMailMutation = useSendTestMail();
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (errors[name as keyof FormErrors]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
+    };
+
+    const validate = (): boolean => {
+        const newErrors: FormErrors = {};
+        if (!formData.email) {
+            newErrors.email = 'Recipient email is required.';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Invalid email address.';
+        }
+
+        if (!formData.body) {
+            newErrors.body = 'Message body is required.';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validate()) return;
+
+        sendTestMailMutation.mutate(formData, {
+            onSuccess: (response: any) => {
+                toast.success(response.message);
+                setFormData({ email: '', body: '' });
+            },
+            onError: (error: any) => {
+                toast.error(error.response?.data?.message || 'Failed to send test email.');
+            }
+        });
+    };
+
+    const loading = sendTestMailMutation.isPending;
+
+    return (
+        <div className="card shadow-sm border-0">
+            <div className="card-header bg-white border-bottom py-3">
+                <h5 className="card-title mb-0">Test Email Configuration</h5>
+                <p className="text-muted small mb-0">Use this form to verify your Mail server settings by sending a test message.</p>
+            </div>
+            <div className="card-body p-4">
+                <form onSubmit={handleSubmit}>
+                    <div className="row g-4">
+                        <div className="col-12">
+                            <label className="form-label fw-bold">Recipient Email Address</label>
+                            <input
+                                type="email"
+                                name="email"
+                                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                placeholder="Enter recipient email (e.g., test@example.com)"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                            />
+                            {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                        </div>
+
+                        <div className="col-12">
+                            <label className="form-label fw-bold">Message Body</label>
+                            <textarea
+                                name="body"
+                                className={`form-control ${errors.body ? 'is-invalid' : ''}`}
+                                rows={5}
+                                placeholder="Write your test message here..."
+                                value={formData.body}
+                                onChange={handleInputChange}
+                            ></textarea>
+                            {errors.body && <div className="invalid-feedback">{errors.body}</div>}
+                        </div>
+
+                        <div className="row mt-5 pt-3 border-top">
+                            <div className="col-12">
+                                <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 w-100 w-sm-auto"
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                <span>Sending...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-send-plane-fill fs-16"></i>
+                                                <span>Send Test Email</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default TestMailForm;

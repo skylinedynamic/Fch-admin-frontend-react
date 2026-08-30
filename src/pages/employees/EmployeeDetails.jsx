@@ -1,659 +1,810 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
+import { usePermissions } from '../../lib/auth/usePermissions';
+import { toast } from 'react-toastify';
+
+import {
+  createEmployee,
+  updateEmployee,
+  fetchEmployeeById,
+  fetchDepartments,
+  getNextEmployeeId
+} from '../../modules/employee';
+import { fetchRoles, getUserCount, purchaseUserSeats } from '../../modules/user/services';
+import { fetchInvoiceDetails } from '../../modules/invoice/services';
+import { getUserDetails } from '../../lib/auth/authApi';
+import UserLimitModal from '../users/components/UserLimitModal';
+import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
+import { useAuthStore } from '../../store/auth/authStore';
+import { locationData } from '../../config';
+import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
+
+import EmployeeForm from './components/EmployeeForm';
+import DepartmentModal from './components/DepartmentModal';
+import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
+import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
+import FormLoader from '../../components/Loader/FormLoader';
+import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
+import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
+import { scrollToFirstError } from '../../utils/formUtils';
 
 export default function EmployeeDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+
+  // Permission checks
+  const canCreate = hasPermission('create employees');
+  const canUpdate = hasPermission('update employees');
+
+  // State
+  const user = useAuthStore((state) => state.user);
+  const userSubscription = useAuthStore((state) => state.userSubscription);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [roles, setRoles] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+
+  // User Limit States
+  const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0, invoiceId: null, userId: null, entityId: null, entityType: null });
+  const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
+
+  // Location states
+  const [countries] = useState(
+    Object.keys(locationData).map((key) => ({
+      label: locationData[key].name,
+      value: locationData[key].name
+    }))
+  );
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [phonePrefix, setPhonePrefix] = useState({
+    phone_number_1: 'US',
+    phone_number_2: 'US',
+    emergency_phone: 'US'
+  });
+  const [profileImage, setProfileImage] = useState(avatarDefault);
+
+  const countryCodeOptions = [
+    { label: 'USA (+1)', value: 'US', phoneCode: '+1' },
+    { label: 'Canada (+1)', value: 'CA', phoneCode: '+1' }
+  ];
+
+  const [employee, setEmployee] = useState({
+    first_name: '',
+    phone_number_1: '',
+    phone_number_2: '',
+    email: '',
+    department: '',
+    designation: '',
+    job_status: '',
+    address: '',
+    joining_date: '',
+    country: 'United States',
+    country_code: '+1',
+    state: '',
+    city: '',
+    other_city: '',
+    postal_code: '',
+    date_of_birth: '',
+    emergency_contact: '',
+    emergency_phone: '',
+    employee_code: '',
+    create_account: false,
+    role_id: '',
+    password: '',
+    confirm_password: '',
+    image: ''
+  });
+
+  // Fetch roles and departments on mount
+  useEffect(() => {
+    fetchRoles()
+      .then((data) => setRoles(data))
+      .catch((err) => console.error('Failed to fetch roles', err));
+    fetchDepartments()
+      .then((data) => setDepartments(data))
+      .catch((err) => console.error('Failed to fetch departments', err));
+  }, []);
+
+  // Initialize states for default country (United States) on new employee creation
+  useEffect(() => {
+    if (!id && employee.country === 'United States') {
+      const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === 'United States');
+      const countryCode = countryEntry ? countryEntry[0] : 'USA';
+
+      if (countryCode && locationData[countryCode]) {
+        const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
+          label: locationData[countryCode].states[key].name,
+          value: locationData[countryCode].states[key].name
+        }));
+        setStates(stateOptions);
+      }
+    }
+  }, [id]);
+
+  // Fetch next employee ID for new employees
+  useEffect(() => {
+    const fetchNextId = async () => {
+      if (!id) {
+        try {
+          const response = await getNextEmployeeId();
+          const nextId = response.next_id || response.data?.next_id;
+          if (nextId) {
+            setEmployee(prev => ({
+              ...prev,
+              employee_code: nextId // Mapping next_id to employee_code
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch next employee ID', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchNextId();
+  }, [id]);
+
+  // Fetch employee data if editing
+  useEffect(() => {
+    if (id) {
+      setLoading(true);
+      fetchEmployeeById(id)
+        .then((data) => {
+          // Normalize Country: If it matches a key in locationData, convert to Name
+          let finalCountry = data.country;
+          if (locationData[finalCountry]) {
+            finalCountry = locationData[finalCountry].name;
+          }
+
+          // Find country code based on Name
+          const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === finalCountry);
+          const countryCode = countryEntry ? countryEntry[0] : null;
+
+          // Normalize State
+          let finalState = data.state;
+          if (countryCode && locationData[countryCode] && locationData[countryCode].states[finalState]) {
+            finalState = locationData[countryCode].states[finalState].name;
+          }
+
+          // Handle location cascading first to ensure options are available
+          let cityOptions = [];
+          if (countryCode && locationData[countryCode]) {
+            const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
+              label: locationData[countryCode].states[key].name,
+              value: locationData[countryCode].states[key].name
+            }));
+            setStates(stateOptions);
+
+            // Find State Code
+            let stateCode = null;
+            const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === finalState);
+            stateCode = sEntry ? sEntry[0] : finalState;
+
+            if (stateCode && locationData[countryCode].states[stateCode]) {
+              const cityList = locationData[countryCode].states[stateCode].cities;
+              cityOptions = cityList.map((city) => ({ label: city, value: city }));
+              setCities(cityOptions);
+            }
+          }
+
+          // Check if the city exists in the dropdown
+          const cityExists = cityOptions.some(cityOption => cityOption.value === data.city);
+
+          // If city doesn't exist in dropdown and city has a value, it's a custom city
+          let cityValue = data.city || '';
+          let otherCityValue = '';
+
+          if (data.city && !cityExists) {
+            // City is not in dropdown, set to "Others" and populate other_city
+            otherCityValue = data.city;
+            cityValue = 'Others';
+          }
+
+          const normalizedData = {
+            ...data,
+            country: finalCountry,
+            state: finalState,
+            city: cityValue,
+            other_city: otherCityValue,
+            country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
+            create_account:
+              data.create_account === true ||
+              data.create_account === 'true' ||
+              data.create_account === 1 ||
+              !!(data.user && Object.keys(data.user).length > 0),
+            role_id: data.user?.role_id ?? '',
+            image: data.image || null
+          };
+          setEmployee((prev) => ({ ...prev, ...normalizedData }));
+
+          // Set profile image matches partner pattern
+          if (data.image) {
+            setProfileImage(data.image);
+          }
+        })
+        .catch((err) => console.error('Failed to fetch employee', err))
+        .finally(() => setLoading(false));
+    }
+  }, [id]);
+
+  // Validation (Disabled - Relying on backend validation)
+  const validateField = (name, value) => {
+    // Client-side validation disabled - backend handles all validation
+    // Clear error for field being edited
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    return null;
+
+    /* COMMENTED OUT - CLIENT-SIDE VALIDATION DISABLED
+    let error = null;
+    switch (name) {
+      case 'first_name':
+      case 'department':
+      case 'designation':
+      case 'country':
+      case 'state':
+        error = validateRequired(value, name.replace('_', ' '));
+        break;
+      case 'city':
+        error = validateRequired(value, 'city');
+        break;
+      case 'other_city':
+        // Only validate other_city if city is set to "Others"
+        if (employee.city === 'Others') {
+          error = validateRequired(value, 'Other City');
+        }
+        break;
+      case 'email':
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
+          error = 'Email is required.';
+        } else {
+          error = validateEmail(value);
+        }
+        break;
+      case 'phone_number_1':
+        error = validatePhone(value);
+        break;
+      case 'role_id':
+        // Only validate role_id if create_account is checked
+        if (employee.create_account) {
+          error = validateRequired(value, 'Role');
+        }
+        break;
+      default:
+        break;
+    }
+    setErrors((prev) => ({ ...prev, [name]: error }));
+    return error;
+    */
+  };
+
+  // Handle form changes
+  const handleChange = (e) => {
+    const { name, value, type, checked, files } = e.target;
+
+    let newValue;
+    if (type === 'checkbox') {
+      newValue = checked;
+    } else if (type === 'file') {
+      newValue = files[0];
+    } else {
+      newValue = value;
+    }
+
+    // Special handling for create_account checkbox
+    if (name === 'create_account') {
+      if (checked) {
+        // Only perform check if it's a new employee OR if existing employee doesn't have a user account yet
+        const hasExistingAccount = id && employee.user && Object.keys(employee.user).length > 0;
+
+        if (!hasExistingAccount) {
+          // Immediately check the checkbox for better UX
+          setEmployee((prev) => ({
+            ...prev,
+            create_account: true,
+            role_id: prev.role_id,
+            user: !id ? prev.user : (prev.user || {})
+          }));
+
+          const performLimitCheck = async () => {
+            // Skip limit check for host users (superadmins)
+            if (user?.is_host == 1) {
+              return;
+            }
+
+            try {
+              setLoadingLimitCheck(true);
+
+              const data = await getUserCount();
+              const currentCount = parseInt(data?.data?.count || 0);
+              const totalAllowed = parseInt(data?.data?.seat_limit || data?.data?.user_seats || userSubscription?.user_seats || 3);
+
+              if (currentCount >= totalAllowed) {
+                // Limit reached! Uncheck the box and show modal
+                setEmployee((prev) => ({
+                  ...prev,
+                  create_account: false,
+                  role_id: '',
+                  user: {}
+                }));
+
+                setLimitData({
+                  count: currentCount,
+                  price: data?.data?.per_user_price || '0',
+                  limit: totalAllowed,
+                  quantity: 1,
+                  months: 1,
+                  totalPrice: parseFloat(data?.data?.per_user_price || 0)
+                });
+                setShowLimitModal(true);
+                return;
+              }
+
+              // Limit OK - checkbox already checked above
+
+            } catch (error) {
+              console.error("Failed to check user limit:", error);
+              toast.error("Failed to check user limit");
+              // Revert checkbox on error
+              setEmployee((prev) => ({
+                ...prev,
+                create_account: false,
+                role_id: '',
+                user: {}
+              }));
+            } finally {
+              setLoadingLimitCheck(false);
+            }
+          };
+          performLimitCheck();
+          return; // Exit early as we handle state inside async block
+        }
+      }
+
+      // Default behavior for unchecking or if account already exists
+      setEmployee((prev) => ({
+        ...prev,
+        create_account: checked,
+        role_id: checked ? prev.role_id : '',
+        user: checked ? (prev.user || {}) : {}
+      }));
+      return;
+    }
+
+    // Handle country/state/city cascading
+    if (name === 'country') {
+      let countryCode = '';
+      if (newValue === 'United States' || newValue === 'Canada') {
+        countryCode = '+1';
+      }
+      setEmployee((prev) => ({ ...prev, country: newValue, country_code: countryCode, state: '', city: '', other_city: '' }));
+      validateField('country', newValue);
+
+      // Find code based on Name
+      const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === newValue);
+      const code = countryEntry ? countryEntry[0] : null;
+
+      if (code && locationData[code]) {
+        const stateOptions = Object.keys(locationData[code].states).map((key) => ({
+          label: locationData[code].states[key].name,
+          value: locationData[code].states[key].name
+        }));
+        setStates(stateOptions);
+        setCities([]);
+      } else {
+        setStates([]);
+        setCities([]);
+      }
+    } else if (name === 'state') {
+      setEmployee((prev) => ({ ...prev, state: newValue, city: '', other_city: '' }));
+      validateField('state', newValue);
+
+      const countryName = employee.country;
+      const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === countryName);
+      const countryCode = countryEntry ? countryEntry[0] : null;
+
+      if (countryCode && locationData[countryCode]) {
+        const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === newValue);
+        const stateCode = sEntry ? sEntry[0] : null;
+
+        if (stateCode) {
+          const cityList = locationData[countryCode].states[stateCode].cities;
+          const cityOptions = cityList.map((city) => ({ label: city, value: city }));
+          setCities(cityOptions);
+        } else {
+          setCities([]);
+        }
+      } else {
+        setCities([]);
+      }
+    } else if (name === 'city') {
+      // If city is not "Others", clear other_city
+      if (newValue !== 'Others') {
+        setEmployee((prev) => ({ ...prev, city: newValue, other_city: '' }));
+      } else {
+        setEmployee((prev) => ({ ...prev, city: newValue }));
+      }
+      validateField('city', newValue);
+    } else if (name === 'image' && type === 'file') {
+      // Image file validation
+      const file = newValue;
+      if (file) {
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+          setErrors(prev => ({ ...prev, image: 'Only JPG, JPEG, and PNG image formats are allowed.' }));
+          return;
+        }
+
+        // Validate file size (1MB)
+        const maxSize = 1 * 1024 * 1024; // 1MB
+        if (file.size > maxSize) {
+          setErrors(prev => ({ ...prev, image: 'Image size must be less than 1 MB.' }));
+          return;
+        }
+
+        // Clear any previous errors
+        setErrors(prev => ({ ...prev, image: null }));
+        setEmployee((prev) => ({ ...prev, image: file }));
+
+        // Matches partner pattern for immediate preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setProfileImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+      }
+      return;
+    } else {
+      setEmployee((prev) => ({
+        ...prev,
+        [name]: newValue
+      }));
+    }
+
+    validateField(name, newValue);
+  };
+
+  const handleDepartmentSuccess = async () => {
+    const data = await fetchDepartments();
+    setDepartments(data);
+  };
+
+  const handleLimitProceed = (months, totalPrice) => {
+    setLimitData(prev => ({ ...prev, months, quantity: 1, totalPrice }));
+    setShowLimitModal(false);
+    setIsPurchaseFlow(true);
+    setEmployee(prev => ({ ...prev, create_account: true }));
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    toast.success('Payment completed successfully!');
+    // Delay reload to allow toast to be seen
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  };
+
+  const handleSave = async () => {
+    setErrors({});
+    setIsSaving(true);
+
+    // Frontend validation disabled - rely on backend validation
+    /* COMMENTED OUT - CLIENT-SIDE VALIDATION DISABLED
+    const newErrors = {};
+    let isValid = true;
+
+    Object.keys(employee).forEach((field) => {
+      const error = validateField(field, employee[field]);
+      if (error) {
+        newErrors[field] = error;
+        isValid = false;
+      }
+    });
+
+    if (!isValid) {
+      setErrors(newErrors);
+      return;
+    }
+    */
+
+    try {
+      const formData = new FormData();
+      Object.entries(employee).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (key === 'image') {
+            if (value instanceof File) {
+              formData.append(key, value);
+            } else if (typeof value === 'string' && value.trim() !== '' && !value.startsWith('http')) {
+              formData.append(key, value);
+            }
+          } else if (key === 'create_account') {
+            formData.append(key, value ? '1' : '0');
+          } else if (key === 'user') {
+            // Skip user object
+          } else if (key === 'city') {
+            // If city is "Others", save the other_city value to city column
+            if (value === 'Others' && employee.other_city) {
+              formData.append('city', employee.other_city);
+            } else if (value !== 'Others') {
+              // Otherwise, save the selected city
+              formData.append('city', value);
+            }
+          } else if (key === 'other_city') {
+            // Don't send other_city as a separate field to backend
+          } else if (key === 'country_code') {
+            // Always send country_code if it exists
+            if (value) {
+              formData.append('country_code', value);
+            }
+          } else if (value !== '') {
+            formData.append(key, value);
+          }
+        }
+      });
+
+      if (isPurchaseFlow) {
+        formData.append('is_paid', 'true');
+        formData.append('months', limitData.months);
+      }
+
+      if (id) {
+        await updateEmployee(id, formData);
+        toast.success('Employee updated successfully');
+      } else {
+        const res = await createEmployee(formData);
+        toast.success('Employee created successfully');
+
+        if (isPurchaseFlow) {
+          const invoiceId = res.data?.invoice_id || res.data?.user?.invoice_id;
+          const userId = res.data?.user_id || res.data?.user?.id || res.data?.id;
+          const entityId = res.data?.user?.entity_id;
+          const entityType = res.data?.user?.entity_type;
+          setLimitData(prev => ({ ...prev, invoiceId, userId, entityId, entityType }));
+          if (invoiceId) {
+            try {
+              const invoiceRes = await fetchInvoiceDetails(invoiceId);
+              if (invoiceRes.status) {
+                setLimitData(prev => ({ ...prev, invoice: invoiceRes.data }));
+              }
+            } catch (error) {
+              console.error('Failed to fetch invoice details:', error);
+            }
+          }
+          setIsSaving(false);
+          setShowPaymentModal(true);
+          return;
+        }
+      }
+
+      setTimeout(() => navigate('/employees'), 800);
+    } catch (error) {
+      console.error('Save error:', error);
+
+      // Handle backend validation errors
+      if (error.response?.data?.errors) {
+        const backendErrors = error.response.data.errors;
+        const mappedErrors = {};
+
+        Object.keys(backendErrors).forEach(key => {
+          mappedErrors[key] = Array.isArray(backendErrors[key])
+            ? backendErrors[key][0]
+            : backendErrors[key];
+        });
+
+        setErrors(mappedErrors);
+        scrollToFirstError(mappedErrors);
+
+        // No toast notifications for validation errors - errors shown inline only
+        // toast.error for validation errors removed as per requirement
+      } else if (error.response?.data?.message) {
+        // No toast here to avoid double messages (handled by global interceptor)
+      } else if (error.response?.status !== 403) {
+        toast.error(id ? 'Failed to update employee' : 'Failed to save employee');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="page-content">
       <div className="container-fluid">
-        <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
-          <div className="col-12">
-            <div className="d-flex align-items-center justify-content-between flex-row">
-              <div className="flex-grow-1">
-                <h4 className="fs-20 mb-1">Employee Details</h4>
-                <nav aria-label="breadcrumb" className="d-none d-sm-block">
-                  <ol className="breadcrumb m-0">
-                    <li className="breadcrumb-item"><a href="index.html">Dashboard</a></li>
-                    <li className="breadcrumb-item"><a href="employees.html">Employees</a></li>
-                    <li className="breadcrumb-item active" aria-current="page">Employee Details</li>
-                  </ol>
-                </nav>
-              </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-0">
-                <a href="employees.html" className="btn btn-outline-secondary w-lg waves-effect">
-                  <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                </a>
-                <button type="submit" className="btn btn-primary w-lg waves-effect">
-                  <i className="ri-save-3-line align-middle me-1"></i> Save
-                </button>
-              </div>
-            </div>
+        {/* Header */}
+        <PageHeader 
+          title="Employee Details" 
+          breadcrumbs={[
+            { label: 'Employees', path: '/employees' },
+            { label: 'Employee Details' }
+          ]} 
+        >
+          <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+            <Link to="/employees" className="btn btn-outline-secondary w-lg waves-effect">
+              <i className="ri-arrow-left-line align-middle me-1"></i> Back
+            </Link>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="btn btn-primary w-lg waves-effect"
+              disabled={isSaving || loading}
+            >
+              {isSaving ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                  {id ? 'Updating...' : 'Saving...'}
+                </>
+              ) : (
+                <>
+                  <i className="ri-save-3-line align-middle me-1"></i>
+                  {id ? 'Update' : 'Save'}
+                </>
+              )}
+            </button>
           </div>
-        </div>
+        </PageHeader>
 
+        {/* Main Content */}
         <div className="row">
-          <div className="col-xxl-8">
+          <div className="col-xxl-12">
             <div className="card">
               <div className="card-header">
                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
                   <li className="nav-item" role="presentation">
-                    <a className="nav-link active" data-bs-toggle="tab" href="#personalDetails" role="tab" aria-selected="true">
+                    <a
+                      className="nav-link active"
+                      data-bs-toggle="tab"
+                      href="#personalDetails"
+                      role="tab"
+                      aria-selected="true"
+                    >
                       <i className="fas fa-home"></i> Personal information
-                    </a>
-                  </li>
-                  <li className="nav-item" role="presentation">
-                    <a className="nav-link" data-bs-toggle="tab" href="#changePassword" role="tab" aria-selected="false" tabIndex={-1}>
-                      <i className="far fa-user"></i> Change Password
-                    </a>
-                  </li>
-                  <li className="nav-item" role="presentation">
-                    <a className="nav-link" data-bs-toggle="tab" href="#privacy" role="tab" aria-selected="false" tabIndex={-1}>
-                      <i className="far fa-envelope"></i> Settings
                     </a>
                   </li>
                 </ul>
               </div>
+
               <div className="card-body p-4">
                 <div className="tab-content">
                   <div className="tab-pane active show" id="personalDetails" role="tabpanel">
-                    <form action="javascript:void(0);">
-                      <div className="row">
-                        <div className="col-lg-12">
-                          <div className="card">
-                            <div className="profile-user position-relative d-inline-block mx-auto  mb-4">
-                              <img src="assets/images/users/avatar-1.jpg" className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow" alt="user-profile" />
-                              <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
-                                <input id="profile-img-file-input" type="file" className="profile-img-file-input" />
-                                <label htmlFor="profile-img-file-input" className="profile-photo-edit avatar-xs">
-                                  <span className="avatar-title rounded-circle bg-light text-body material-shadow">
-                                    <i className="ri-camera-fill"></i>
-                                  </span>
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="fullNameInput" className="form-label">Name</label>
-                            <input type="text" className="form-control" id="fullNameInput" placeholder="Enter full name" defaultValue="Anna Adame" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="deptInput" className="form-label">Department</label>
-                            <input type="text" className="form-control" id="deptInput" placeholder="Enter department" defaultValue="Sales" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="positionInput" className="form-label">Position</label>
-                            <input type="text" className="form-control" id="positionInput" placeholder="Enter position" defaultValue="Sales Manager" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="jobStatusInput" className="form-label">Job Status</label>
-                            <input type="text" className="form-control" id="jobStatusInput" placeholder="Enter job status" defaultValue="Full Time" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="workPhoneInput" className="form-label">Work Phone</label>
-                            <input type="text" className="form-control" id="workPhoneInput" placeholder="Enter phone number" defaultValue="+(1) 987 6543" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="workMobileInput" className="form-label">Work Mobile</label>
-                            <input type="text" className="form-control" id="workMobileInput" placeholder="Enter mobile number" defaultValue="+(1) 987 6543" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="workEmailInput" className="form-label">Work Email</label>
-                            <input type="email" className="form-control" id="workEmailInput" placeholder="Enter email address" defaultValue="daveadame@proop.com" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="companyInput" className="form-label">Company</label>
-                            <input type="text" className="form-control" id="companyInput" placeholder="Enter company name" defaultValue="Proop" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="managerSelect" className="form-label">Manger</label>
-                            <select className="form-select mb-3" aria-label="Default select example" id="managerSelect">
-                              <option defaultValue="">Select Manger </option>
-                              <option value="1">David Run</option>
-                              <option value="2">Craig Rice</option>
-                              <option value="3">Washinto Sondor</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="joiningDateInput" className="form-label">Joining Date</label>
-                            <input type="text" className="form-control flatpickr-input" data-provider="flatpickr" id="joiningDateInput" data-date-format="d M, Y" placeholder="Select date" defaultValue="24 Nov 2021" readOnly />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="nationalityInput" className="form-label">Country</label>
-                            <select className="form-select" id="nationalityInput" name="nationality" data-choices>
-                              <option value="">Select country</option>
-                              <option value="United States">United States</option>
-                              <option value="Canada">Canada</option>
-                              <option value="United Kingdom">United Kingdom</option>
-                              <option value="Australia">Australia</option>
-                              <option value="India">India</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="stateInput" className="form-label">State</label>
-                            <input type="text" className="form-control" id="stateInput" name="state" placeholder="Enter state" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="zipCodeInput" className="form-label">Zip Code</label>
-                            <input type="text" className="form-control" id="zipCodeInput" placeholder="Enter zip code" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="identificationInput" className="form-label">Identification No</label>
-                            <input type="text" className="form-control" id="identificationInput" placeholder="Enter Identification No" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="ssnInput" className="form-label">SSN No</label>
-                            <input type="text" className="form-control" id="ssnInput" placeholder="Enter SSN No" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="passportInput" className="form-label">Passport No</label>
-                            <input type="text" className="form-control" id="passportInput" placeholder="Enter Passport No" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="genderInput" className="form-label">Gender</label>
-                            <select className="form-select" id="genderInput" name="gender" data-choices>
-                              <option value="">Select gender</option>
-                              <option value="male">Male</option>
-                              <option value="female">Female</option>
-                              <option value="other">Other</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="bloodGroupInput" className="form-label">Blood Group</label>
-                            <input type="text" className="form-control" id="bloodGroupInput" placeholder="Enter Blood Group" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="dobInput" className="form-label">Date of Birth</label>
-                            <input type="text" className="form-control flatpickr-input" data-provider="flatpickr" id="dobInput" data-date-format="d M, Y" placeholder="Select date" defaultValue="24 Nov 2021" readOnly />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="birthPlaceInput" className="form-label">Place of Birth</label>
-                            <input type="text" className="form-control" id="birthPlaceInput" placeholder="Enter Place of Birth" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3 pt-3">
-                            <div className="form-check">
-                              <input className="form-check-input" type="checkbox" id="createAccountCheckbox" />
-                              <label className="form-check-label" htmlFor="createAccountCheckbox">Create account</label>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3 d-none" id="roleSelectContainer">
-                            <label htmlFor="roleSelect" className="form-label">Assign role</label>
-                            <select className="form-select" id="roleSelect" name="role" data-choices>
-                              <option value="">Select role</option>
-                              <option value="Admin">Admin</option>
-                              <option value="Manager">Manager</option>
-                              <option value="Staff">Staff</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="col-lg-12">
-                          <div className="mb-3 mt-3">
-                            <h5 className="border-bottom pb-2 mb-3">Emergency Contact</h5>
-                            <div className="row g-4">
-                              <div className="col-lg-6">
-                                <div className="mb-3">
-                                  <label htmlFor="emergencyNameInput" className="form-label">Name</label>
-                                  <input type="text" className="form-control" id="emergencyNameInput" placeholder="Enter name" />
-                                </div>
-                              </div>
-                              <div className="col-lg-6">
-                                <div className="mb-3">
-                                  <label htmlFor="emergencyPhoneInput" className="form-label">Phone</label>
-                                  <input type="text" className="form-control" id="emergencyPhoneInput" placeholder="Enter phone number" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="col-lg-12">
-                          <div className="mb-3 mt-3">
-                            <h5 className="border-bottom pb-2 mb-3">Family Status</h5>
-                            <div className="row g-4">
-                              <div className="col-lg-6">
-                                <div className="mb-3">
-                                  <label htmlFor="maritalStatusInput" className="form-label">Marital Status</label>
-                                  <select className="form-select" id="maritalStatusInput" name="maritalStatus" data-choices>
-                                    <option value="">Select marital status</option>
-                                    <option value="single">Single</option>
-                                    <option value="married">Married</option>
-                                    <option value="divorced">Divorced</option>
-                                    <option value="widowed">Widowed</option>
-                                  </select>
-                                </div>
-                              </div>
-                              <div className="col-lg-6">
-                                <div className="mb-3">
-                                  <label htmlFor="numberOfChildrenInput" className="form-label">Number of Children</label>
-                                  <input type="text" className="form-control" id="numberOfChildrenInput" placeholder="Enter number of children" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </form>
-                  </div>
-
-                  <div className="tab-pane" id="changePassword" role="tabpanel">
-                    <form action="javascript:void(0);">
-                      <div className="row g-2">
-                        <div className="col-lg-4">
-                          <div>
-                            <label htmlFor="oldpasswordInput" className="form-label">Old Password*</label>
-                            <input type="password" className="form-control" id="oldpasswordInput" placeholder="Enter current password" />
-                          </div>
-                        </div>
-                        <div className="col-lg-4">
-                          <div>
-                            <label htmlFor="newpasswordInput" className="form-label">New Password*</label>
-                            <input type="password" className="form-control" id="newpasswordInput" placeholder="Enter new password" />
-                          </div>
-                        </div>
-                        <div className="col-lg-4">
-                          <div>
-                            <label htmlFor="confirmpasswordInput" className="form-label">Confirm Password*</label>
-                            <input type="password" className="form-control" id="confirmpasswordInput" placeholder="Confirm password" />
-                          </div>
-                        </div>
-                      </div>
-                    </form>
-                  </div>
-
-                  <div className="tab-pane" id="privacy" role="tabpanel">
-                    <div className="mb-4 pb-2">
-                      <div className="d-flex flex-column flex-sm-row mb-4 mb-sm-0">
-                        <div className="flex-grow-1">
-                          <h6 className="fs-14 mb-1">Two-factor Authentication</h6>
-                          <p className="text-muted">Two-factor authentication is an enhanced security meansur. Once enabled, you'll be required to give two types of identification when you log into Google Authentication and SMS are Supported.</p>
-                        </div>
-                        <div className="flex-shrink-0 ms-sm-3">
-                          <a href="javascript:void(0);" className="btn btn-sm btn-primary">Enable Two-facor Authentication</a>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mb-3">
-                      <ul className="list-unstyled mb-0">
-                        <li className="d-flex">
-                          <div className="flex-grow-1">
-                            <label htmlFor="directMessage" className="form-check-label fs-14">Direct messages</label>
-                            <p className="text-muted">Messages from people you follow</p>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <div className="form-check form-switch">
-                              <input className="form-check-input" type="checkbox" role="switch" id="directMessage" defaultChecked />
-                            </div>
-                          </div>
-                        </li>
-                        <li className="d-flex mt-2">
-                          <div className="flex-grow-1">
-                            <label className="form-check-label fs-14" htmlFor="desktopNotification">Show desktop notifications</label>
-                            <p className="text-muted">Choose the option you want as your default setting. Block a site: Next to "Not allowed to send notifications," click Add.</p>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <div className="form-check form-switch">
-                              <input className="form-check-input" type="checkbox" role="switch" id="desktopNotification" defaultChecked />
-                            </div>
-                          </div>
-                        </li>
-                        <li className="d-flex mt-2">
-                          <div className="flex-grow-1">
-                            <label className="form-check-label fs-14" htmlFor="emailNotification">Show email notifications</label>
-                            <p className="text-muted"> Under Settings, choose Notifications. Under Select an account, choose the account to enable notifications for. </p>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <div className="form-check form-switch">
-                              <input className="form-check-input" type="checkbox" role="switch" id="emailNotification" />
-                            </div>
-                          </div>
-                        </li>
-                        <li className="d-flex mt-2">
-                          <div className="flex-grow-1">
-                            <label className="form-check-label fs-14" htmlFor="chatNotification">Show chat notifications</label>
-                            <p className="text-muted">To prevent duplicate mobile notifications from the Gmail and Chat apps, in settings, turn off Chat notifications.</p>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <div className="form-check form-switch">
-                              <input className="form-check-input" type="checkbox" role="switch" id="chatNotification" />
-                            </div>
-                          </div>
-                        </li>
-                        <li className="d-flex mt-2">
-                          <div className="flex-grow-1">
-                            <label className="form-check-label fs-14" htmlFor="purchaesNotification">Show purchase notifications</label>
-                            <p className="text-muted">Get real-time purchase alerts to protect yourself from fraudulent charges.</p>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <div className="form-check form-switch">
-                              <input className="form-check-input" type="checkbox" role="switch" id="purchaesNotification" />
-                            </div>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
+                    {loading ? (
+                      <FormLoader count={10} />
+                    ) : (
+                      <EmployeeForm
+                        employee={employee}
+                        errors={errors}
+                        onChange={handleChange}
+                        departments={departments}
+                        roles={roles}
+                        countries={countries}
+                        states={states}
+                        cities={cities}
+                        phonePrefix={phonePrefix}
+                        onPhonePrefixChange={setPhonePrefix}
+                        onAddDepartment={() => setShowDepartmentModal(true)}
+                        onOpenFileManager={() => { }} // Local modal now handled in component
+                        profileImage={profileImage}
+                        isEditMode={!!id}
+                        employeeId={id || employee.employee_code}
+                        loadingLimitCheck={loadingLimitCheck}
+                        isPurchaseFlow={isPurchaseFlow}
+                        purchaseMonths={limitData.months}
+                        purchasePrice={limitData.totalPrice}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="col-xxl-4">
+          {/* <div className="col-xxl-4">
             <div className="card">
-              <div className="card-header px-2 py-2 align-items-center justify-content-between d-flex">
-                <h4 style={{ padding: '8px 0px' }} className="card-title mb-0 me-2"><i className="ri-history-line align-middle me-2"></i>Activity</h4>
-                <div className="d-flex flex-wrap gap-2 chip-actions">
-                  <button type="button" className="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#emailComposeModal"><i className="ri-mail-line align-middle me-1"></i>New Email</button>
-                  <button type="button" className="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#activityCreateModal"><i className="ri-calendar-line align-middle me-1"></i>New Event</button>
+              <div className="card-header">
+                <div className="d-flex align-items-center mb-4">
+                  <h5 className="flex-grow-1 mb-0">Activity Log</h5>
+                  <div className="flex-shrink-0">
+                    <button
+                      type="button"
+                      className="btn btn-soft-primary btn-sm"
+                      data-bs-toggle="modal"
+                      data-bs-target="#emailComposeModal"
+                    >
+                      New Email
+                    </button>
+                    <div
+                      className="btn text-light bg-primary btn-sm ms-2"
+                      data-bs-toggle="modal"
+                      data-bs-target="#activityCreateModal"
+                    >
+                      New Event
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="card-body">
-                <div className="tab-content text-muted">
-                  <div className="tab-pane active show" id="today" role="tabpanel">
-                    <div className="profile-timeline">
-                      <div className="accordion accordion-flush" id="todayExample">
-                        <div className="accordion-item border-0">
-                          <div className="accordion-header" id="headingOne">
-                            <a className="accordion-button p-2 shadow-none" data-bs-toggle="collapse" href="#collapseOne" aria-expanded="true">
-                              <div className="d-flex">
-                                <div className="flex-shrink-0">
-                                  <img src="assets/images/users/avatar-2.jpg" alt="" className="avatar-xs rounded-circle material-shadow" />
-                                </div>
-                                <div className="flex-grow-1 ms-3">
-                                  <h6 className="fs-14 mb-1">Jacqueline Steve</h6>
-                                  <small className="text-muted">Lead status updated: moved to “Proposal” — 05:16 PM</small>
-                                </div>
-                              </div>
-                            </a>
-                          </div>
-                          <div id="collapseOne" className="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-                            <div className="accordion-body ms-2 ps-5">
-                              <p className="text-muted mb-0">Lead update: changed stage from “Qualified” to “Proposal”. Next: follow-up call scheduled.</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="accordion-item border-0">
-                          <div className="accordion-header" id="headingTwo">
-                            <a className="accordion-button p-2 shadow-none" data-bs-toggle="collapse" href="#collapseTwo" aria-expanded="false">
-                              <div className="d-flex">
-                                <div className="flex-shrink-0 avatar-xs">
-                                  <div className="avatar-title bg-light text-success rounded-circle material-shadow">M</div>
-                                </div>
-                                <div className="flex-grow-1 ms-3">
-                                  <h6 className="fs-14 mb-1">Megan Elmore</h6>
-                                  <small className="text-muted">Adding a new event with attachments - 04:45PM</small>
-                                </div>
-                              </div>
-                            </a>
-                          </div>
-                          <div id="collapseTwo" className="accordion-collapse collapse show" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-                            <div className="accordion-body ms-2 ps-5">
-                              <div className="row g-2">
-                                <div className="col-auto">
-                                  <div className="d-flex border border-dashed p-2 rounded position-relative">
-                                    <div className="flex-shrink-0"><i className="ri-image-2-line fs-17 text-danger"></i></div>
-                                    <div className="flex-grow-1 ms-2">
-                                      <h6><a href="javascript:void(0);" className="stretched-link">Business Template - UI/UX design</a></h6>
-                                      <small>685 KB</small>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="col-auto">
-                                  <div className="d-flex border border-dashed p-2 rounded position-relative">
-                                    <div className="flex-shrink-0"><i className="ri-file-zip-line fs-17 text-info"></i></div>
-                                    <div className="flex-grow-1 ms-2">
-                                      <h6 className="mb-0"><a href="javascript:void(0);" className="stretched-link">Bank Management System - PSD</a></h6>
-                                      <small>8.78 MB</small>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="accordion-item border-0">
-                          <div className="accordion-header" id="headingEmail">
-                            <a className="accordion-button p-2 shadow-none" data-bs-toggle="collapse" href="#collapseEmail" aria-expanded="false">
-                              <div className="d-flex">
-                                <div className="flex-shrink-0 avatar-xs">
-                                  <div className="avatar-title bg-light text-primary rounded-circle material-shadow"><i className="ri-mail-send-line"></i></div>
-                                </div>
-                                <div className="flex-grow-1 ms-3">
-                                  <h6 className="fs-14 mb-1"> Email Sent </h6>
-                                  <small className="text-muted">To: in@mail.com • Subject: Proposal Update • 04:50PM</small>
-                                </div>
-                              </div>
-                            </a>
-                          </div>
-                          <div id="collapseEmail" className="accordion-collapse collapse" aria-labelledby="headingEmail" data-bs-parent="#accordionExample">
-                            <div className="accordion-body ms-2 ps-5">
-                              <p className="text-muted mb-2">Message preview: “Hi team, please find the updated proposal attached. Let me know your thoughts.”</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="accordion-item border-0">
-                          <div className="accordion-header" id="headingEvent">
-                            <a className="accordion-button p-2 shadow-none" data-bs-toggle="collapse" href="#collapseEvent" aria-expanded="false">
-                              <div className="d-flex">
-                                <div className="flex-shrink-0 avatar-xs">
-                                  <div className="avatar-title bg-light text-info rounded-circle material-shadow"><i className="ri-calendar-event-line"></i></div>
-                                </div>
-                                <div className="flex-grow-1 ms-3">
-                                  <h6 className="fs-14 mb-1"> Event Created </h6>
-                                  <small className="text-muted">Demo with client • Tomorrow, 11:00 AM</small>
-                                </div>
-                              </div>
-                            </a>
-                          </div>
-                          <div id="collapseEvent" className="accordion-collapse collapse" aria-labelledby="headingEvent" data-bs-parent="#accordionExample">
-                            <div className="accordion-body ms-2 ps-5">
-                              <div className="row g-2">
-                                <div className="col-auto">
-                                  <div className="d-flex border border-dashed p-2 rounded position-relative">
-                                    <div className="flex-shrink-0"><i className="ri-image-2-line fs-17 text-danger"></i></div>
-                                    <div className="flex-grow-1 ms-2">
-                                      <h6><a href="javascript:void(0);" className="stretched-link">Business Template - UI/UX design</a></h6>
-                                      <small>685 KB</small>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="col-auto">
-                                  <div className="d-flex border border-dashed p-2 rounded position-relative">
-                                    <div className="flex-shrink-0"><i className="ri-file-zip-line fs-17 text-info"></i></div>
-                                    <div className="flex-grow-1 ms-2">
-                                      <h6 className="mb-0"><a href="javascript:void(0);" className="stretched-link">Bank Management System - PSD</a></h6>
-                                      <small>8.78 MB</small>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
+                <div className="acitivity-timeline acitivity-main">
+                  <div className="acitivity-item d-flex">
+                    <div className="flex-shrink-0 avatar-xs acitivity-avatar">
+                      <div className="avatar-title bg-soft-success text-success rounded-circle">
+                        <i className="ri-shopping-cart-2-line"></i>
                       </div>
+                    </div>
+                    <div className="flex-grow-1 ms-3">
+                      <h6 className="mb-1">New ticket received <span className="badge bg-soft-danger text-danger align-middle">High</span></h6>
+                      <p className="text-muted mb-2">User <span className="text-primary">Erica245</span> submitted a ticket</p>
+                      <small className="mb-0 text-muted">26 Dec, 2024</small>
+                    </div>
+                  </div>
+                  <div className="acitivity-item py-3 d-flex">
+                    <div className="flex-shrink-0 avatar-xs acitivity-avatar">
+                      <div className="avatar-title bg-soft-danger text-danger rounded-circle">
+                        <i className="ri-user-3-line"></i>
+                      </div>
+                    </div>
+                    <div className="flex-grow-1 ms-3">
+                      <h6 className="mb-1">Employee Created <span className="badge bg-soft-primary text-primary align-middle">New</span></h6>
+                      <p className="text-muted mb-2">Profile created by <span className="text-primary">Admin</span></p>
+                      <small className="mb-0 text-muted">25 Dec, 2024</small>
+                    </div>
+                  </div>
+                  <div className="acitivity-item py-3 d-flex">
+                    <div className="flex-shrink-0">
+                      <img src={avatarDefault} alt="" className="avatar-xs rounded-circle acitivity-avatar" />
+                    </div>
+                    <div className="flex-grow-1 ms-3">
+                      <h6 className="mb-1">Jacqueline Steve</h6>
+                      <p className="text-muted mb-2">Lead status updated: moved to "Proposal" - 05:16 PM</p>
+                      <small className="mb-0 text-muted">18 Dec, 2024</small>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
-        {/* Email Compose Modal */}
-        <div className="modal fade" id="emailComposeModal" tabIndex={-1} aria-labelledby="emailComposeLabel" aria-hidden="true">
-          <div className="modal-dialog modal-lg modal-dialog-scrollable">
-            <div className="modal-content border-0">
-              <div className="modal-header bg-primary">
-                <h5 className="modal-title text-white d-flex align-items-center gap-2" id="emailComposeLabel"><i className="ri-mail-send-line fs-18"></i> New Email</h5>
-                <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div className="modal-body p-4">
-                <form>
-                  <div className="mb-3">
-                    <label className="form-label">To</label>
-                    <select id="emailTo" className="form-select" data-choices data-choices-removeitems="true" multiple>
-                      <option value="in@mail.com" defaultValue>in@mail.com</option>
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Subject <span className="text-danger">*</span></label>
-                    <input type="text" className="form-control" placeholder="Subject" required />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Message</label>
-                    <textarea id="emailMessageEditor" className="form-control" rows={8}></textarea>
-                  </div>
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Select Attachments</label>
-                      <div className="d-flex align-items-center gap-2">
-                        <button type="button" id="emailAttachmentBtn" className="btn btn-light btn-sm">+ Add Attachment</button>
-                        <input type="file" id="emailAttachmentInput" className="d-none" multiple />
-                      </div>
-                      <div id="emailAttachmentList" className="mt-2"></div>
-                    </div>
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-soft-secondary" data-bs-dismiss="modal"><i className="ri-close-line align-middle me-1"></i> Discard</button>
-                <button type="button" className="btn btn-primary"><i className="ri-send-plane-line align-middle me-1"></i> Send</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Department Modal */}
+        <DepartmentModal
+          visible={showDepartmentModal}
+          onHide={() => setShowDepartmentModal(false)}
+          onSuccess={handleDepartmentSuccess}
+          departments={departments}
+        />
 
-        {/* New Activity Modal */}
-        <div className="modal fade" id="activityCreateModal" tabIndex={-1} aria-labelledby="activityCreateLabel" aria-hidden="true">
-          <div className="modal-dialog modal-lg modal-dialog-scrollable">
-            <div className="modal-content border-0">
-              <div className="modal-header p-3 ps-4 bg-primary">
-                <h5 className="modal-title text-white" id="activityCreateLabel"><i className="ri-calendar-event-line align-middle me-2"></i>New Activity</h5>
-                <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div className="modal-body p-4">
-                <form>
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Reference <span className="text-danger">*</span></label>
-                      <select className="form-select" id="activityReference" required>
-                        <option value="Event" defaultValue>Event</option>
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Date <span className="text-danger">*</span></label>
-                      <input type="datetime-local" className="form-control" id="activityDate" required />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Category</label>
-                      <select className="form-select" id="activityCategory">
-                        <option value="Event" defaultValue>Event</option>
-                        <option value="Meeting">Meeting</option>
-                        <option value="Call">Call</option>
-                        <option value="Sent/Received Email">Sent/Received Email</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Assigned To</label>
-                      <input type="text" className="form-control" id="activityAssignedTo" placeholder="Assignee" />
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label">Summary <span className="text-danger">*</span></label>
-                      <input type="text" className="form-control" id="activitySummary" required />
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label">Message</label>
-                      <textarea id="activityMessageEditor" className="form-control" rows={10}></textarea>
-                    </div>
-                  </div>
-                  <div className="row mt-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Select Attachments</label>
-                      <div className="d-flex align-items-center gap-2">
-                        <button type="button" id="activityAttachmentBtn" className="btn btn-light btn-sm">+ Add Attachment</button>
-                        <input type="file" id="activityAttachmentInput" className="d-none" multiple />
-                      </div>
-                      <div id="activityAttachmentList" className="mt-2"></div>
-                    </div>
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" className="btn btn-primary"><i className="ri-check-line align-middle me-1"></i> Create</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UserLimitModal
+          show={showLimitModal}
+          onHide={() => setShowLimitModal(false)}
+          onProceed={handleLimitProceed}
+          userCount={limitData.count}
+          freeLimit={limitData.limit}
+          perUserPrice={limitData.price}
+        />
 
+        <InvoicePaymentModal
+          show={showPaymentModal}
+          onHide={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+          invoice={limitData.invoice}
+        />
+
+        <EmailComposeModal />
+
+        <ActivityCreateModal />
       </div>
     </div>
-  )
+  );
 }

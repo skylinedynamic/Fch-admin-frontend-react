@@ -1,0 +1,41 @@
+/* PrimeReact Dropdown validation styles - red border for invalid state */
+.p-dropdown.p-invalid,
+.p-dropdown.p-invalid>.p-hidden-accessible>input,
+.p-dropdown.p-invalid.p-component {
+    border: 1px solid #f06548 !important;
+    border-radius: 0.25rem !important;
+}
+
+.p-dropdown.p-invalid:not(.p-disabled):hover {
+    border-color: #f06548 !important;
+}
+
+.p-dropdown.p-invalid:not(.p-disabled).p-focus,
+.p-dropdown.p-invalid:not(.p-disabled):focus {
+    border-color: #f06548 !important;
+}
+
+/* Ensure the dropdown trigger icon area also has red border */
+.p-dropdown.p-invalid .p-dropdown-trigger {
+    border-left: 1px solid #f06548 !important;
+}
+
+/* Target the actual dropdown element more specifically */
+.p-dropdown.p-invalid.p-component.p-inputwrapper {
+    border: 1px solid #f06548 !important;
+}
+
+/* Ensure error messages below dropdowns are visible and styled correctly */
+.invalid-feedback.d-block {
+    display: block !important;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #f06548;
+}
+
+/* Make sure the error text is red and visible */
+.p-dropdown.p-invalid+.invalid-feedback {
+    display: block !important;
+    color: #f06548;
+}

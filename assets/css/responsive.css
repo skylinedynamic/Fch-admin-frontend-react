@@ -1,0 +1,2714 @@
+/* ============================================================
+   SIDEBAR LOGO — Responsive
+   Desktop defaults + mobile scale-downs
+   ============================================================ */
+
+/* Desktop base sizes */
+.sidebar-logo-lg {
+    width: 200px;
+    height: 60px;
+    object-fit: contain;
+}
+
+.sidebar-logo-sm {
+    height: 22px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Header topbar desktop logo base */
+header#page-topbar .navbar-header .logo-lg .sidebar-logo-lg {
+    height: 40px;
+    width: auto;
+    max-width: 180px;
+    object-fit: contain;
+}
+
+header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
+    height: 26px;
+    width: auto;
+    object-fit: contain;
+}
+
+:root {
+    --primary-color: var(--primary-color);
+    --secondary-color: var(--secondary-color);
+}
+
+/* ============================================================
+   FCH Admin Dashboard — Full Mobile Responsive CSS
+   FIXED: Sidebar nav gaps (padding-bottom, last-child margin)
+   ONLY @media queries — zero desktop style changes
+   ============================================================ */
+
+
+/* ============================================================
+   BREAKPOINT 1: Tablets & Mobile (max-width: 991.98px)
+   ============================================================ */
+@media (max-width: 991.98px) {
+
+    /* ────────────────────────────────────────────────────────
+       1. BODY & LAYOUT WRAPPER
+    ──────────────────────────────────────────────────────── */
+    body.table-page-fit-active {
+        overflow: auto !important;
+        height: auto !important;
+    }
+
+    body.table-page-fit-active #layout-wrapper {
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    body.table-page-fit-active .main-content {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    #layout-wrapper {
+        overflow-x: hidden !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       2. SIDEBAR
+    ──────────────────────────────────────────────────────── */
+
+    .app-menu.navbar-menu {
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 0 !important;
+        /* FIX: was 50px — caused bottom gap */
+        z-index: 1050 !important;
+    }
+
+    .app-menu .navbar-brand-box {
+        display: none !important;
+    }
+
+    .vertical-sidebar-enable .app-menu .navbar-brand-box {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+        padding: 12px 16px !important;
+        height: 70px !important;
+        background: var(--primary-color) !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .app-menu .navbar-brand-box .logo {
+        display: none !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-light {
+        display: block !important;
+        text-align: left !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-light .logo-sm {
+        display: none !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-light .logo-lg {
+        display: block !important;
+        text-align: left !important;
+    }
+
+    .vertical-sidebar-enable .app-menu .navbar-brand-box .logo-light {
+        text-align: left !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-lg img,
+    .app-menu .navbar-brand-box .logo-lg .sidebar-logo-lg {
+        max-width: 220px !important;
+        width: auto !important;
+        height: auto !important;
+        max-height: 60px !important;
+        display: block !important;
+        margin: 0 !important;
+        object-fit: contain !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-sm img,
+    .app-menu .navbar-brand-box .logo-sm .sidebar-logo-sm {
+        height: 32px !important;
+        width: auto !important;
+        object-fit: contain !important;
+    }
+
+    #scrollbar {
+        height: calc(100vh - 70px) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .navbar-nav {
+        height: auto !important;
+        padding-bottom: 20px !important;
+        /* FIX: was 120px — caused huge gap between items */
+        overflow: visible !important;
+    }
+
+    .navbar-nav .nav-item {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .navbar-nav .nav-item:last-child {
+        margin-bottom: 0 !important;
+        /* FIX: was 50px — caused gap after "Settings" */
+    }
+
+    .navbar-nav .nav-link {
+        display: flex !important;
+        align-items: center !important;
+        white-space: nowrap !important;
+        padding: 10px 16px !important;
+    }
+
+    .navbar-nav .sub-menu {
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    .sidebar-footer,
+    .menu-bottom,
+    .sidebar-bottom {
+        position: relative !important;
+        bottom: auto !important;
+        display: block !important;
+        visibility: visible !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       3. TOPBAR / HEADER
+    ──────────────────────────────────────────────────────── */
+
+    header#page-topbar {
+        left: 0 !important;
+        width: 100% !important;
+        z-index: 1040 !important;
+    }
+
+    header#page-topbar .navbar-header .navbar-brand-box,
+    header#page-topbar .navbar-header .horizontal-logo,
+    header#page-topbar .navbar-header .logo {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+        padding: 0 10px !important;
+        width: auto !important;
+        min-width: 150px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    header#page-topbar .navbar-header .logo-sm {
+        display: none !important;
+    }
+
+    header#page-topbar .navbar-header .logo-lg,
+    header#page-topbar .navbar-header .logo-dark .logo-lg,
+    header#page-topbar .navbar-header .logo-light .logo-lg {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        text-align: left !important;
+    }
+
+    header#page-topbar .navbar-header .logo-lg img,
+    header#page-topbar .navbar-header .logo-lg .sidebar-logo-lg {
+        height: 36px !important;
+        width: auto !important;
+        max-width: 160px !important;
+        display: block !important;
+        object-fit: contain !important;
+        margin: 0 !important;
+    }
+
+    header#page-topbar .navbar-header .logo-sm img,
+    header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
+        height: 28px !important;
+        width: auto !important;
+        object-fit: contain !important;
+    }
+
+    .topbar-user,
+    .header-item {
+        padding: 0 6px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       4. PAGE CONTENT AREA
+    ──────────────────────────────────────────────────────── */
+
+    .page-content,
+    .page-content-fit {
+        padding: 85px 12px 20px 2px !important;
+        margin-top: 75px !important;
+
+        /* Increased top padding further */
+    }
+
+    .resource-page-content {
+        padding: 85px 12px 20px 2px !important;
+        margin-top: 0px !important;
+    }
+
+    .container-fluid {
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+    }
+
+    .card-header {
+        padding: 12px 10px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        /* Better for wrapping titles */
+        justify-content: space-between !important;
+        gap: 8px !important;
+    }
+
+    .card-title {
+        font-size: 13px !important;
+        /* Slightly smaller to fit */
+        margin-bottom: 0 !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        flex: 1 !important;
+        /* Take remaining space */
+    }
+
+    .card-title i {
+        font-size: 15px !important;
+    }
+
+    .card-header .flex-shrink-0 {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+        padding-top: 2px !important;
+    }
+
+    .page-title-box {
+        padding: 8px 0 !important;
+    }
+
+    .table-responsive {
+        width: 100% !important;
+        overflow-x: auto !important;
+        display: block !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin: 0 !important;
+    }
+
+    .table-card {
+        margin: 0 !important;
+    }
+
+    .table {
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+
+    .dashboard-header {
+        margin-top: 12px !important;
+        margin-bottom: 10px !important;
+        padding: 0 5px !important;
+    }
+
+    .dashboard-header h4 {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+    }
+
+    .dashboard-header p {
+        font-size: 13px !important;
+    }
+
+
+    .dashboard-header .btn,
+    .card-body .btn {
+        font-size: 12px !important;
+        padding: 6px 12px !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       5. CARDS & GRID ALIGNMENT
+    ──────────────────────────────────────────────────────── */
+
+    /* Ensure uniform column padding so all cards are the same width */
+    .row>[class*="col-"] {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .row {
+        margin-left: -8px !important;
+        margin-right: -8px !important;
+    }
+
+    .card {
+        margin-bottom: 16px !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .card-body {
+        overflow: visible !important;
+    }
+
+    .list-fluid-card {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       6. STATISTICS CARDS
+    ──────────────────────────────────────────────────────── */
+
+    .statistics-card,
+    .card-animate {
+        margin-bottom: 16px !important;
+    }
+
+    .card-animate .fs-22 {
+        font-size: 18px !important;
+    }
+
+    .card-animate .text-muted {
+        font-size: 11px !important;
+    }
+
+    .card-animate .avatar-sm {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .card-animate a.text-decoration-underline,
+    .card-animate .cursor-pointer {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+    }
+
+    .card-animate .avatar-title {
+        font-size: 16px !important;
+    }
+
+    /* Table within cards on dashboard */
+    .table thead th {
+        font-size: 10px !important;
+        padding: 8px 5px !important;
+        letter-spacing: 0.1px !important;
+        background-color: #f3f6f9 !important;
+        border-bottom: 1px solid #e9ebec !important;
+    }
+
+    .table tbody td {
+        font-size: 11px !important;
+        padding: 8px 5px !important;
+    }
+
+    /* Fix "No data found" alignment on mobile */
+    .table td.text-center {
+        text-align: left !important;
+        padding-left: 10px !important;
+    }
+
+    .table-nowrap td,
+    .table-nowrap th {
+        white-space: nowrap !important;
+    }
+
+    .badge {
+        font-size: 10px !important;
+        padding: 4px 6px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       7. FILTER ROW
+    ──────────────────────────────────────────────────────── */
+
+    .row.g-3 .col-xxl-3,
+    .row.g-3 .col-xxl-4,
+    .row.g-3 .col-xxl-2 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+    .row.g-3 .col-xxl-3:last-child,
+    .row.g-3 .col-xxl-4:last-child {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    .employee-filter-dropdown {
+        width: 100% !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       8. DATA TABLE — HORIZONTAL SCROLL
+    ──────────────────────────────────────────────────────── */
+
+    .table-responsive,
+    .table-responsive.table-card {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
+        border: none !important;
+    }
+
+    .p-datatable.p-datatable-scrollable {
+        height: auto !important;
+    }
+
+    .p-datatable-wrapper {
+        height: auto !important;
+        max-height: none !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .p-datatable-scrollable-body {
+        height: auto !important;
+        max-height: 55vh !important;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .p-datatable-scrollable-header,
+    .p-datatable-scrollable-header-box {
+        overflow: hidden !important;
+    }
+
+    .p-datatable-thead>tr>th,
+    .p-datatable-tbody>tr>td {
+        white-space: nowrap !important;
+    }
+
+    .p-datatable-sm .p-datatable-tbody>tr>td,
+    .p-datatable-sm .p-datatable-thead>tr>th {
+        font-size: 13px !important;
+        padding: 8px 10px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       9. PAGINATOR
+       Layout: [<< < 1 > >>] .............. [10 ▾]
+       Pagination left — rows-per-page dropdown right
+    ──────────────────────────────────────────────────────── */
+
+    .p-paginator {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 10px 8px !important;
+        gap: 3px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-first,
+    .p-paginator .p-paginator-last {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-prev,
+    .p-paginator .p-paginator-next {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-pages {
+        display: inline-flex !important;
+        align-items: center !important;
+        flex-shrink: 0 !important;
+        gap: 3px !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-pages .p-paginator-page {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        line-height: 1 !important;
+        border-radius: 4px !important;
+        overflow: visible !important;
+        white-space: nowrap !important;
+        box-sizing: border-box !important;
+        text-overflow: clip !important;
+    }
+
+    .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options,
+    .p-paginator .p-dropdown.p-paginator-rpp-options,
+    .p-paginator .p-inputwrapper {
+        margin-left: auto !important;
+        margin-top: 0 !important;
+        flex-shrink: 0 !important;
+        min-width: 72px !important;
+        width: auto !important;
+        max-width: none !important;
+        height: 34px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options.p-dropdown,
+    .p-dropdown.p-paginator-rpp-options {
+        display: inline-flex !important;
+        align-items: center !important;
+        min-width: 72px !important;
+        width: auto !important;
+        height: 34px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-label,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-label {
+        display: flex !important;
+        align-items: center !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        padding: 0 28px 0 10px !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 34px !important;
+        height: 34px !important;
+        min-width: 0 !important;
+        flex: 1 !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-trigger,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-trigger {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 24px !important;
+        min-width: 24px !important;
+        height: 34px !important;
+        flex-shrink: 0 !important;
+        overflow: visible !important;
+    }
+
+    .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+        white-space: nowrap !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       10. BREADCRUMB
+    ──────────────────────────────────────────────────────── */
+
+    .breadcrumb {
+        font-size: 12px !important;
+        flex-wrap: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       11. MODALS
+    ──────────────────────────────────────────────────────── */
+
+    .modal-dialog {
+        margin: 10px !important;
+        max-width: calc(100% - 20px) !important;
+    }
+
+    .modal-body {
+        padding: 16px !important;
+    }
+
+}
+
+
+/* ============================================================
+   BREAKPOINT 2: Small phones (max-width: 576px)
+   ============================================================ */
+@media (max-width: 576px) {
+
+    /* ────────────────────────────────────────────────────────
+       1. LAYOUT & SPACING
+    ──────────────────────────────────────────────────────── */
+
+    .container-fluid {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .page-content,
+    .page-content-fit {
+        padding: 65px 10px 30px 10px !important;
+    }
+
+    .fs-20 {
+        font-size: 17px !important;
+    }
+
+    /* Auth page logo */
+    .auth-logo-img {
+        max-width: 180px !important;
+        height: 45px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       2. PAGE HEADER (title left, button right)
+    ──────────────────────────────────────────────────────── */
+
+    .d-flex.align-items-center.justify-content-between.flex-row {
+        flex-direction: row !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+    }
+
+    .d-flex.align-items-center.justify-content-between.flex-row .flex-grow-1 {
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .d-flex.align-items-center.justify-content-between.flex-row h4 {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 16px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .d-flex.align-items-center.justify-content-between.flex-row .mt-0 {
+        flex-shrink: 0 !important;
+        width: auto !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       3. ACTION BUTTONS
+    ──────────────────────────────────────────────────────── */
+
+    .btn-group {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        justify-content: flex-end !important;
+    }
+
+    .btn-group>.btn {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        font-size: 13px !important;
+        padding: 6px 10px !important;
+        border-radius: 0.25rem !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       4. FILTER ROW
+    ──────────────────────────────────────────────────────── */
+
+    .row.g-3>[class*="col-"] {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 12px !important;
+    }
+
+    .row.g-3>[class*="col-"]:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    .row.g-3 {
+        --vz-gutter-y: 0.75rem !important;
+        --bs-gutter-y: 0.75rem !important;
+    }
+
+    .employee-filter-dropdown {
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+
+    .d-flex.gap-2 .btn {
+        flex: 1 !important;
+        font-size: 13px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       5. CONTACTS PAGE — search + filter stacking
+    ──────────────────────────────────────────────────────── */
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3 {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3>.flex-grow-1 {
+        width: 100% !important;
+    }
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3>.flex-shrink-0 {
+        width: 100% !important;
+    }
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3>.flex-shrink-0>.d-flex {
+        width: 100% !important;
+    }
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3>.flex-shrink-0>.d-flex>button {
+        flex: 1 !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       6. CARDS
+    ──────────────────────────────────────────────────────── */
+
+    .card-body {
+        padding: 12px 10px !important;
+    }
+
+    .row>.col-xxl-3.col-md-6,
+    .row>[class*="col-md-6"] {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       7. TABLE
+    ──────────────────────────────────────────────────────── */
+
+    .table-responsive,
+    .table-responsive.table-card {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .p-datatable-sm .p-datatable-tbody>tr>td,
+    .p-datatable-sm .p-datatable-thead>tr>th {
+        font-size: 12px !important;
+        padding: 7px 8px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       8. PAGINATOR — compact, numbers + dropdown fully visible
+    ──────────────────────────────────────────────────────── */
+
+    .p-paginator {
+        padding: 8px 6px !important;
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+
+    .p-paginator .p-paginator-first,
+    .p-paginator .p-paginator-prev,
+    .p-paginator .p-paginator-next,
+    .p-paginator .p-paginator-last {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-pages .p-paginator-page,
+    .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+        font-weight: 700 !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options,
+    .p-paginator .p-dropdown.p-paginator-rpp-options,
+    .p-paginator .p-inputwrapper {
+        margin-left: auto !important;
+        flex-shrink: 0 !important;
+        min-width: 70px !important;
+        width: auto !important;
+        max-width: none !important;
+        height: 30px !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options.p-dropdown,
+    .p-dropdown.p-paginator-rpp-options {
+        display: inline-flex !important;
+        align-items: center !important;
+        min-width: 70px !important;
+        width: auto !important;
+        height: 30px !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-label,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-label {
+        display: flex !important;
+        align-items: center !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        padding: 0 26px 0 8px !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 30px !important;
+        height: 30px !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-trigger,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-trigger {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 22px !important;
+        min-width: 22px !important;
+        height: 30px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+        white-space: nowrap !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       9. SIDEBAR
+    ──────────────────────────────────────────────────────── */
+
+    .navbar-nav {
+        padding-bottom: 20px !important;
+        /* FIX: was 140px — caused huge gap between items */
+    }
+
+    .navbar-nav .nav-item:last-child {
+        margin-bottom: 0 !important;
+        /* FIX: ensure no gap after last item */
+    }
+
+    .app-menu.navbar-menu {
+        padding-bottom: 0 !important;
+        /* FIX: was 80px — caused bottom dead space */
+    }
+
+    /* Sidebar logo on small phones */
+    .app-menu .navbar-brand-box .logo-lg img,
+    .app-menu .navbar-brand-box .logo-lg .sidebar-logo-lg {
+        max-width: 200px !important;
+        max-height: 55px !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-sm img,
+    .app-menu .navbar-brand-box .logo-sm .sidebar-logo-sm {
+        height: 28px !important;
+    }
+
+    /* Header topbar logo on small phones */
+    header#page-topbar .navbar-header .logo-lg img,
+    header#page-topbar .navbar-header .logo-lg .sidebar-logo-lg {
+        max-width: 140px !important;
+        height: 32px !important;
+    }
+
+    header#page-topbar .navbar-header .logo-sm img,
+    header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
+        height: 26px !important;
+    }
+
+    #scrollbar {
+        height: calc(100svh - 70px) !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       10. FORMS & INPUTS
+    ──────────────────────────────────────────────────────── */
+
+    .form-control,
+    .form-select,
+    .p-inputtext,
+    .p-dropdown {
+        font-size: 14px !important;
+    }
+
+    .input-group .btn {
+        padding: 6px 10px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       11. BADGES
+    ──────────────────────────────────────────────────────── */
+
+    .badge {
+        font-size: 11px !important;
+        padding: 3px 7px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       12. MODALS
+    ──────────────────────────────────────────────────────── */
+
+    .modal-dialog {
+        margin: 8px !important;
+        max-width: calc(100% - 16px) !important;
+    }
+
+    .modal-footer {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .modal-footer .btn {
+        width: 100% !important;
+    }
+
+}
+
+
+/* ============================================================
+   BREAKPOINT 3: Very small phones (max-width: 400px)
+   ============================================================ */
+@media (max-width: 400px) {
+
+    .container-fluid {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .card-body {
+        padding: 10px 8px !important;
+    }
+
+    .d-flex.align-items-center.justify-content-between.flex-row h4 {
+        font-size: 15px !important;
+    }
+
+    /* Auth page logo */
+    .auth-logo-img {
+        max-width: 150px !important;
+        height: 38px !important;
+    }
+
+    .btn-group>.btn {
+        font-size: 12px !important;
+        padding: 5px 8px !important;
+    }
+
+    /* Page number buttons */
+    .p-paginator .p-paginator-pages .p-paginator-page,
+    .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px !important;
+        font-size: 11px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-first,
+    .p-paginator .p-paginator-prev,
+    .p-paginator .p-paginator-next,
+    .p-paginator .p-paginator-last {
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px !important;
+        font-size: 11px !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options,
+    .p-paginator .p-dropdown.p-paginator-rpp-options,
+    .p-paginator .p-inputwrapper {
+        min-width: 65px !important;
+        width: auto !important;
+        max-width: none !important;
+        height: 26px !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-label,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-label {
+        font-size: 11px !important;
+        padding: 0 22px 0 7px !important;
+        line-height: 26px !important;
+        height: 26px !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-trigger,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-trigger {
+        width: 20px !important;
+        min-width: 20px !important;
+        height: 26px !important;
+    }
+
+    /* Stats cards — single column on tiny phones */
+    .row>.col-xxl-3.col-md-6,
+    .row>[class*="col-md-6"] {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Sidebar — minimal bottom padding on tiny phones */
+    .navbar-nav {
+        padding-bottom: 10px !important;
+    }
+
+    .navbar-nav .nav-item:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    .app-menu.navbar-menu {
+        padding-bottom: 0 !important;
+    }
+
+    /* Sidebar logo on tiny phones */
+    .app-menu .navbar-brand-box .logo-lg img,
+    .app-menu .navbar-brand-box .logo-lg .sidebar-logo-lg {
+        max-width: 170px !important;
+        max-height: 48px !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-sm img,
+    .app-menu .navbar-brand-box .logo-sm .sidebar-logo-sm {
+        height: 26px !important;
+    }
+
+    /* Header topbar logo on tiny phones */
+    header#page-topbar .navbar-header .logo-lg img,
+    header#page-topbar .navbar-header .logo-lg .sidebar-logo-lg {
+        max-width: 120px !important;
+        height: 28px !important;
+    }
+
+    header#page-topbar .navbar-header .logo-sm img,
+    header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
+        height: 24px !important;
+    }
+
+}
+
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .custom-datepicker .p-calendar {
+        height: 36px !important;
+    }
+
+    .custom-datepicker .p-inputtext {
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.6rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-trigger {
+        flex: 0 0 36px !important;
+    }
+
+    .custom-datepicker .p-datepicker {
+        min-width: 250px !important;
+    }
+
+    .custom-datepicker table td>span {
+        width: 1.8rem !important;
+        height: 1.8rem !important;
+        font-size: 0.75rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-header {
+        padding: 0.4rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-header .p-datepicker-title {
+        font-size: 0.85rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-header .p-datepicker-prev,
+    .custom-datepicker .p-datepicker-header .p-datepicker-next {
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .custom-datepicker .p-datepicker {
+        min-width: 230px !important;
+    }
+
+    .custom-datepicker table td>span {
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+        font-size: 0.7rem !important;
+    }
+}
+
+
+
+/* Reliable Fixed Header for Mobile Navigation */
+@media (max-width: 991px) {
+    .page-subheader-sticky {
+        position: fixed !important;
+        top: 70px !important;
+        /* Standard Velzon Topbar Height */
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1040 !important;
+        /* Stay above activities and modals */
+        background-color: #f3f3f9 !important;
+        padding: 12px 1.5rem !important;
+        margin: 0 !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .page-subheader-sticky+.row,
+    .page-subheader-sticky+form,
+    .page-subheader-sticky+div,
+    .page-subheader-sticky+* {
+        margin-top: 100px !important;
+    }
+
+    .breadcrumb {
+        font-size: 11px !important;
+        flex-wrap: wrap !important;
+        overflow-x: visible !important;
+        white-space: normal !important;
+        padding-bottom: 2px !important;
+        margin-bottom: 0 !important;
+    }
+
+    .page-actions {
+        width: auto !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+        margin-top: 0 !important;
+    }
+
+    .page-actions .btn,
+    .page-actions .btn-group {
+        flex: 0 1 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+        display: flex !important;
+    }
+
+    .page-actions .btn {
+        padding: 8px 10px !important;
+        font-size: 13px !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+}
+
+
+/* Mobile Fixed subheader */
+@media (max-width: 991.98px) {
+    .mobile-sticky-header {
+        position: fixed !important;
+        top: 60px !important;
+        /* Fixed below the mobile topbar */
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1001 !important;
+        background-color: #f3f3f9 !important;
+        padding: 10px 20px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06) !important;
+    }
+
+    .mobile-sticky-header+.row,
+    .mobile-sticky-header+div,
+    .mobile-sticky-header+* {
+        margin-top: 80px !important;
+    }
+}
+
+/* ================================================================
+   PARTNERS & CLIENTS PAGES — Mobile margin-top fix
+   Ensures statistics cards don't get hidden behind the sticky header.
+   ================================================================= */
+
+@media (max-width: 991px) {
+
+    .partner-section,
+    .client-section,
+    .commission-section,
+    .change-request-section,
+    .funding-section,
+    .subscription-section,
+    .pre-qual-section,
+    .blog-section,
+    .payment-section,
+    .invoice-section,
+    .tier-section,
+    .verification-section,
+    .credit-account-section,
+    .lenders-account-section,
+    .funding-sequnce-section,
+    .lead-section {
+        margin-top: 80px !important;
+    }
+
+    .resource-section {
+        margin-top: 45px !important;
+    }
+
+    .appointment-section {
+        margin-top: 45px !important;
+    }
+
+    .appointments-page .upcoming-event-list-scroll {
+        height: 230px !important;
+    }
+
+    /* 2 COLUMNS FOR STATISTICS CARDS (PARTNERS/CLIENTS/LEADS LIST) */
+    .partner-section,
+    .client-section,
+    .commission-section,
+    .change-request-section,
+    .subscription-section,
+    .blog-section,
+    .payment-section,
+    .invoice-section,
+    .pre-qual-section,
+    .tier-section,
+    .verification-section,
+    .credit-account-section,
+    .lenders-account-section,
+    .funding-sequnce-section,
+    .lead-section,
+    .resource-section .row.g-2 {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0 !important;
+        margin-left: -2px !important;
+        margin-right: -2px !important;
+    }
+
+    .partner-section>div,
+    .client-section>div,
+    .lead-section>div,
+    .commission-section>div,
+    .change-request-section>div,
+    .blog-section>div,
+    .funding-section>div,
+    .subscription-section>div,
+    .payment-section>div,
+    .invoice-section>div,
+    .pre-qual-section>div,
+    .partner-section [class*="col-"],
+    .client-section [class*="col-"],
+    .lead-section [class*="col-"],
+    .commission-section [class*="col-"],
+    .change-request-section [class*="col-"],
+    .funding-section [class*="col-"],
+    .subscription-section [class*="col-"],
+    .payment-section [class*="col-"],
+    .invoice-section [class*="col-"],
+    .pre-qual-section [class*="col-"],
+    .blog-section [class*="col-"],
+    .resource-section .row.g-2>[class*="col-"] {
+        flex: 0 0 50% !important;
+        width: 50% !important;
+        max-width: 50% !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .partner-section .card-body,
+    .client-section .card-body {
+        padding: 12px !important;
+    }
+
+    .partner-section .avatar-sm,
+    .client-section .avatar-sm {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .partner-section .ms-3,
+    .client-section .ms-3 {
+        margin-left: 0.5rem !important;
+    }
+
+    .partner-section h4,
+    .client-section h4 {
+        font-size: 16px !important;
+    }
+
+    .partner-section .kpi-title,
+    .client-section .kpi-title,
+    .resource-section .card-body {
+        padding: 10px 8px !important;
+    }
+
+    .resource-section .avatar-md {
+        width: 34px !important;
+        height: 34px !important;
+        margin-right: 8px !important;
+    }
+
+    .resource-section .resource-card-icon {
+        font-size: 16px !important;
+    }
+
+    .resource-section h4 {
+        font-size: 18px !important;
+    }
+
+    .resource-section p.text-muted {
+        font-size: 10px !important;
+    }
+
+    .resource-section .scrollable-container-training {
+        height: 280px !important;
+        min-height: 280px !important;
+    }
+}
+
+/* Profile Metrics 2-Column Responsive Fix — Robust Grid */
+@media (max-width: 991px) {
+    .metrics-strip {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 auto 10px auto !important;
+        width: 100% !important;
+    }
+
+    .metrics-strip .metrics-item {
+        flex: 0 0 calc(50% - 4px) !important;
+        width: calc(50% - 4px) !important;
+        max-width: calc(50% - 4px) !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 10px 8px !important;
+        box-sizing: border-box !important;
+    }
+
+    .metrics-strip .metrics-item i {
+        font-size: 1.1rem !important;
+        margin-right: 6px !important;
+    }
+
+    .metrics-strip .metrics-content .metrics-label {
+        font-size: 10px !important;
+        color: #878a99 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .metrics-strip .metrics-content .metrics-value {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+    }
+}
+
+/* ================================================================
+   SITE SETTINGS PAGE — Mobile margin-top fix
+   The sticky subheader is position:fixed so it's out of normal flow.
+   The form/skeleton directly after it needs explicit margin-top to
+   push content below the fixed header on mobile devices.
+
+   The .page-subheader-sticky + .row rule above does NOT apply here
+   because SiteSettings renders <form> / <div class="mt-n3"> directly,
+   NOT a .row, after the sticky header.
+   ================================================================ */
+
+/* Tablets (576px–991px): sticky header = ~1 row → ~80px tall */
+@media (max-width: 991px) and (min-width: 576px) {
+    #site-settings-form {
+        margin-top: 80px !important;
+    }
+
+    /* Loading skeleton state */
+    .page-content .container-fluid>.mt-n3 {
+        margin-top: 80px !important;
+    }
+
+    /* Inner negative margin inside form pulls content up — neutralise it */
+    #site-settings-form>.mt-n3 {
+        margin-top: 0 !important;
+        padding-top: 12px !important;
+    }
+}
+
+/* Small phones (<576px): button wraps → sticky header grows to ~2 rows (~130px) */
+@media (max-width: 575.98px) {
+    #site-settings-form {
+        margin-top: 120px !important;
+    }
+
+    .page-content .container-fluid>.mt-n3 {
+        margin-top: 168px !important;
+    }
+
+
+    /* .page-content .container-fluid>.mt-n3:first-child {
+        margin-top: 168px !important;
+    } */
+
+    /* Neutralise mt-n3 that pulls form content upward into the fixed header */
+    #site-settings-form>.mt-n3 {
+        margin-top: 0 !important;
+        padding-top: 14px !important;
+    }
+}
+
+/* ────────────────────────────────────────────────────────
+   RESOURCE PAGE SPECIFIC REFINEMENTS
+   Ensures 2-column layout with larger cards and reduced gaps.
+   ──────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+    .resource-section .row.g-2 {
+        margin-left: -5px !important;
+        margin-right: -5px !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }
+
+    .resource-section .row.g-2>[class*="col-"] {
+        flex: 0 0 50% !important;
+        width: 50% !important;
+        max-width: 50% !important;
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .resource-section .card {
+        margin-bottom: 0 !important;
+    }
+
+    .resource-section .card-body {
+        padding: 16px 12px !important;
+    }
+
+    .resource-section .avatar-md {
+        width: 44px !important;
+        height: 44px !important;
+        margin-right: 12px !important;
+    }
+
+    .resource-section .resource-card-icon {
+        font-size: 22px !important;
+    }
+
+    .resource-section h4 {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+    }
+
+    .resource-section p.text-muted {
+        font-size: 11px !important;
+        margin-bottom: 3px !important;
+        letter-spacing: 0.2px !important;
+    }
+
+    /* Training Academy Mobile Height Fix */
+    .resource-section .scrollable-container-training {
+        height: 280px !important;
+        min-height: 280px !important;
+    }
+}
+
+/* ────────────────────────────────────────────────────────
+   USERS PAGE SPECIFIC REFINEMENTS
+   Ensures the search box and filters are not hidden behind
+   the fixed mobile header.
+   ──────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+
+    .user-section .row-table-fit,
+    .employee-section .row-table-fit {
+        margin-top: 90px !important;
+    }
+
+    .user-section .card,
+    .employee-section .card {
+        margin-bottom: 10px !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGE-SUBHEADER-STICKY MOBILE FIXES
+   For detail/form pages (Site Settings, Blog Edit, etc.)
+   The sticky header is fixed on mobile, so we need to push
+   the form content down to prevent it hiding behind it.
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 991px) {
+
+
+    .site-settings-section form.mt-n3,
+    .site-settings-section div.mt-n3 {
+        margin-top: 0 !important;
+    }
+
+    /* Blog Edit — reduce gap between sticky header and first card */
+    .blog-edit-section .container-fluid {
+        padding-top: 90px !important;
+    }
+
+    .blog-edit-section .row.mt-n3 {
+        margin-top: 0 !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SEO SETTINGS PAGE MOBILE FIXES
+   Ensures search bar and table are visible below the fixed
+   mobile sticky header.
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 991px) {
+    .seo-section .row-table-fit {
+        margin-top: 85px !important;
+    }
+
+    .seo-section .card {
+        margin-bottom: 10px !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .site-settings-section {
+        padding: 85px 12px 20px 2px !important;
+        margin-top: -14px !important;
+    }
+}
+
+
+/* ============================================================
+   INVOICE MOBILE OPTIMIZATION
+   Added dynamic buttons and improved preview layout
+   ============================================================ */
+
+
+@media (max-width: 991.98px) {
+    .invoice-action-btns {
+        gap: 6px !important;
+    }
+
+    .btn-pay-now {
+        padding: 5px 12px !important;
+        font-size: 12px !important;
+        border-radius: 6px !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .btn-pay-now {
+        padding: 5px 8px !important;
+        min-width: 35px !important;
+    }
+
+    .btn-pay-now .btn-text {
+        display: none !important;
+    }
+
+    .btn-pay-now .icon-pay {
+        margin-right: 0 !important;
+        font-size: 16px !important;
+    }
+
+    /* Accurate Desktop-like Layout on Mobile */
+    #demo .card-body {
+        padding: 12px !important;
+    }
+
+    #demo .text-center.text-sm-start {
+        text-align: left !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }
+
+    #demo .text-center.text-sm-start .col-6 {
+        width: 50% !important;
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+        margin-bottom: 15px !important;
+    }
+
+    #demo .card-header .d-flex {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    #demo .card-logo {
+        height: 35px !important;
+        /* Scale down logo to prevent overlap */
+        width: auto !important;
+    }
+
+    #demo .card-header .flex-grow-1 {
+        text-align: left !important;
+    }
+
+    #demo .card-header .flex-shrink-0 {
+        margin-top: 0 !important;
+        text-align: right !important;
+        max-width: 50% !important;
+    }
+
+    #demo .card-header h6 {
+        font-size: 10px !important;
+        white-space: nowrap !important;
+    }
+
+    #demo .card-body p,
+    #demo .card-body h5,
+    #demo .card-body h6 {
+        font-size: 10px !important;
+    }
+
+    #demo .table-responsive table {
+        font-size: 10px !important;
+    }
+
+    #demo .hstack.gap-2 {
+        flex-direction: row !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    #demo .hstack.gap-2 .btn {
+        flex: 1 1 0 !important;
+        /* Force equal width */
+        padding: 8px 4px !important;
+        font-size: 11px !important;
+        min-width: 0 !important;
+    }
+}
+
+/* ============================================================
+   Settings Page — Breadcrumb & Body Responsive Polish
+   ============================================================ */
+
+/* Desktop baseline: ensure breadcrumb section has good vertical rhythm */
+.settings-breadcrumb-row {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+.settings-page-title {
+    font-size: 18px;
+    margin-bottom: 2px !important;
+}
+
+.settings-breadcrumb {
+    flex-wrap: wrap;
+    overflow: visible;
+}
+
+/* Body section top padding */
+.settings-body-section {
+    padding-top: 0px;
+}
+
+/* ---- Tablet (≤ 991px) ---- */
+@media (max-width: 991.98px) {
+
+    /* Breadcrumb row: compact on tablet */
+    .settings-page-wrapper .page-subheader-sticky {
+        padding: 6px 12px !important;
+        height: auto !important;
+    }
+
+    /* Reduce gap below the sticky header */
+    .settings-body-section {
+        padding-top: 12px !important;
+    }
+
+    /* Settings menu card: no sticky on tablet */
+    .settings-menu-card {
+        position: static !important;
+    }
+
+    .settings-menu-card {
+        margin-top: 0 !important;
+    }
+
+    /* Agreement Dashboard Row - Stacking for Mobile Accuracy */
+    .agreement-row-mobile {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    .agreement-row-mobile .flex-grow-1 {
+        width: 100% !important;
+    }
+
+    .agreement-row-mobile .action-container {
+        width: 100% !important;
+        justify-content: space-between !important;
+        margin-top: 0px !important;
+    }
+
+    .agreement-row-mobile .btn-edit {
+        flex-grow: 1 !important;
+        justify-content: center !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+
+    .table-filter .btn,
+    .table-filter .btn-clear {
+        flex: 1 1 0 !important;
+        /* Force equal width */
+        margin-top: 5px;
+        min-width: 0 !important;
+    }
+
+    .table-filter .d-flex.gap-2 {
+        flex-direction: row !important;
+        width: 100%;
+    }
+}
+
+/* Stats Cards Mobile Adjustments */
+@media (max-width: 767.98px) {
+    .funding-section .card-animate .card-body {
+        padding: 12px !important;
+    }
+
+    .funding-section .card-animate .kpi-title {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .funding-section .card-animate .counter-value {
+        font-size: 15px !important;
+    }
+
+    .funding-section .card-animate .avatar-sm {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .funding-section .card-animate .avatar-title {
+        font-size: 16px !important;
+    }
+}
+
+/* ============================================================
+   Client Funding Options — Responsive Adjustments
+   ============================================================ */
+@media (max-width: 767.98px) {
+    .client-funding-options .ca-filter-bar {
+        padding: 12px 16px !important;
+    }
+
+    .client-funding-options .ca-filter-bar>div {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    .client-funding-options .ca-search-input-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .client-funding-options .ca-category-dropdown-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .client-funding-options .ca-filter-bar .d-flex.align-items-center.gap-2.flex-shrink-0 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    .client-funding-options .ca-filter-btn {
+        width: 100% !important;
+        border-radius: 4px !important;
+        height: 38px !important;
+    }
+
+    .client-funding-options .ca-btn-clear {
+        width: 100% !important;
+        border-radius: 4px !important;
+        height: 38px !important;
+    }
+}
+
+/* ============================================================
+   Partner Details Section — Responsive Styles
+   ============================================================ */
+@media (max-width: 991.98px) {
+    .partner-info-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 16px !important;
+    }
+
+    .partner-info-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 16px !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .partner-details-section {
+        padding: 16px !important;
+    }
+
+    .partner-section-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    .partner-status-badge {
+        align-self: flex-start !important;
+    }
+
+    .partner-info-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* Payment Method responsive rows */
+    .payment-method-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+        padding: 1.25rem !important;
+    }
+
+    .payment-method-row .payment-method-switch {
+        margin-top: 4px;
+    }
+}
+
+/* ============================================================
+   Installment Details Modal — Responsive Styles
+   ============================================================ */
+@media (max-width: 991.98px) {
+
+    /* Inputs and result panel stack instead of sitting side-by-side,
+     so the result panel switches from a left border to a top border. */
+    .installment-result-card {
+        height: auto;
+        border-left: 0;
+        border-top: 1px solid rgba(10, 179, 156, 0.15);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .installment-details-modal .modal-dialog {
+        margin: 0.75rem;
+    }
+
+    .installment-modal-header,
+    .installment-modal-footer {
+        padding: 1rem;
+    }
+
+    .installment-icon-avatar {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        font-size: 1.05rem;
+    }
+
+    .installment-inputs-col {
+        padding: 1.25rem;
+    }
+
+    .installment-result-card {
+        padding: 1.25rem;
+    }
+
+    .installment-result-amount {
+        font-size: 1.8rem;
+    }
+
+    .installment-modal-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        gap: 0.6rem;
+    }
+
+    .installment-modal-footer .btn {
+        width: 100%;
+    }
+
+    .installment-footer-hint {
+        text-align: center;
+    }
+
+    .installment-trigger-btn {
+        width: 100%;
+    }
+}
+
+/* ============================================================
+   Payment Provider Modal (pps) — Responsive Styles
+   ============================================================ */
+@media (max-width: 767.98px) {
+    .ppm-card-header {
+        padding: 1rem 1.25rem;
+    }
+
+    .ppm-card-body {
+        padding: 1rem;
+    }
+
+    .pps-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.625rem;
+    }
+
+    .pps-card {
+        padding: 1.15rem 0.75rem 1rem;
+    }
+
+    .pps-card-logo {
+        width: 84px;
+        height: 54px;
+        padding: 8px;
+    }
+
+    .pps-card-icon {
+        width: 54px;
+        height: 54px;
+    }
+
+    .pps-skeleton-logo {
+        width: 84px;
+        height: 54px;
+    }
+
+    .card-detail-row {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .pps-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .card-detail-row {
+        ============================================================*/ @media (max-width: 767.98px) {
+            .client-funding-options .ca-filter-bar {
+                padding: 12px 16px !important;
+            }
+
+            .client-funding-options .ca-filter-bar>div {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px !important;
+            }
+
+            .client-funding-options .ca-search-input-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .client-funding-options .ca-category-dropdown-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .client-funding-options .ca-filter-bar .d-flex.align-items-center.gap-2.flex-shrink-0 {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                width: 100% !important;
+                margin-left: 0 !important;
+            }
+
+            .client-funding-options .ca-filter-btn {
+                width: 100% !important;
+                border-radius: 4px !important;
+                height: 38px !important;
+            }
+
+            .client-funding-options .ca-btn-clear {
+                width: 100% !important;
+                border-radius: 4px !important;
+                height: 38px !important;
+            }
+        }
+
+        /* ============================================================
+   Partner Details Section — Responsive Styles
+   ============================================================ */
+        @media (max-width: 991.98px) {
+            .partner-info-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 16px !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .partner-details-section {
+                padding: 16px !important;
+            }
+
+            .partner-section-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+
+            .partner-status-badge {
+                align-self: flex-start !important;
+            }
+
+            .partner-info-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+
+            /* Payment Method responsive rows */
+            .payment-method-row {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 1rem !important;
+                padding: 1.25rem !important;
+            }
+
+            .payment-method-row .payment-method-switch {
+                margin-top: 4px;
+            }
+        }
+
+        /* ============================================================
+   Installment Details Modal — Responsive Styles
+   ============================================================ */
+        @media (max-width: 991.98px) {
+
+            /* Inputs and result panel stack instead of sitting side-by-side,
+     so the result panel switches from a left border to a top border. */
+            .installment-result-card {
+                height: auto;
+                border-left: 0;
+                border-top: 1px solid rgba(10, 179, 156, 0.15);
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .installment-details-modal .modal-dialog {
+                margin: 0.75rem;
+            }
+
+            .installment-modal-header,
+            .installment-modal-footer {
+                padding: 1rem;
+            }
+
+            .installment-icon-avatar {
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                font-size: 1.05rem;
+            }
+
+            .installment-inputs-col {
+                padding: 1.25rem;
+            }
+
+            .installment-result-card {
+                padding: 1.25rem;
+            }
+
+            .installment-result-amount {
+                font-size: 1.8rem;
+            }
+
+            .installment-modal-footer {
+                flex-direction: column-reverse;
+                align-items: stretch;
+                gap: 0.6rem;
+            }
+
+            .installment-modal-footer .btn {
+                width: 100%;
+            }
+
+            .installment-result-card {
+                height: auto;
+                border-left: 0;
+                border-top: 1px solid rgba(10, 179, 156, 0.15);
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .installment-details-modal .modal-dialog {
+                margin: 0.75rem;
+            }
+
+            .installment-modal-header,
+            .installment-modal-footer {
+                padding: 1rem;
+            }
+
+            .installment-icon-avatar {
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                font-size: 1.05rem;
+            }
+
+            .installment-inputs-col {
+                padding: 1.25rem;
+            }
+
+            .installment-result-card {
+                padding: 1.25rem;
+            }
+
+            .installment-result-amount {
+                font-size: 1.8rem;
+            }
+
+            .installment-modal-footer {
+                flex-direction: column-reverse;
+                align-items: stretch;
+                gap: 0.6rem;
+            }
+
+            .installment-modal-footer .btn {
+                width: 100%;
+            }
+
+            .installment-footer-hint {
+                text-align: center;
+            }
+
+            .installment-trigger-btn {
+                width: 100%;
+            }
+        }
+
+        /* ============================================================
+   Payment Provider Modal (pps) — Responsive Styles
+   ============================================================ */
+        @media (max-width: 767.98px) {
+            .ppm-card-header {
+                padding: 1rem 1.25rem;
+            }
+
+            .ppm-card-body {
+                padding: 1rem;
+            }
+
+            .pps-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.625rem;
+            }
+
+            .pps-card {
+                padding: 1.15rem 0.75rem 1rem;
+            }
+
+            .pps-card-logo {
+                width: 84px;
+                height: 54px;
+                padding: 8px;
+            }
+
+            .pps-card-icon {
+                width: 54px;
+                height: 54px;
+            }
+
+            .pps-skeleton-logo {
+                width: 84px;
+                height: 54px;
+            }
+
+            .card-detail-row {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .pps-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-detail-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .stripe-payment-modal.ppm-modal .modal-dialog {
+                margin: 0.5rem;
+            }
+        }
+
+        /* ============================================================
+   Payment Gateway Configuration Responsive Styles
+   ============================================================ */
+        @media (max-width: 767.98px) {
+            .payment-config-card-header {
+                padding: 12px 16px !important;
+            }
+
+            .payment-config-card-body {
+                padding: 16px !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .payment-config-input-group .input-group-text {
+                min-width: 110px !important;
+                font-size: 11px !important;
+            }
+        }
+
+        /* ============================================================
+   Settings Menu Card — Mobile: no sticky on small screens
+   ============================================================ */
+    }
+}
+}
+}
+
+/* ============================================================
+   Settings Module — Mobile & Tablet Responsive
+   (Bootstrap grid handles col stacking, these polish the inner UI)
+   ============================================================ */
+
+/* Mobile: compact padding on payment form card body */
+@media (max-width: 767.98px) {
+    .payment-method-card .card-body {
+        padding: 16px !important;
+    }
+
+    /* Status & env rows: stack vertically */
+    .payment-status-toggle-row,
+    .payment-provider-status-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    /* Env dropdown: full width */
+    .payment-provider-status-row>div:last-child {
+        width: 100% !important;
+    }
+
+    .payment-provider-status-row .p-dropdown {
+        width: 100% !important;
+    }
+
+    /* Save/back buttons: full width */
+    .payment-config-save-btn {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+}
+
+/* ============================================================
+   Settings Page — Breadcrumb & Body Responsive Polish
+   ============================================================ */
+
+/* Desktop defaults */
+.settings-breadcrumb-row {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+.settings-breadcrumb-row .py-2 {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+.settings-page-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.settings-breadcrumb {
+    font-size: 12px !important;
+    margin-bottom: 0 !important;
+}
+
+.settings-breadcrumb-row .breadcrumb {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* ---- Tablet (≤ 991.98px) ---- */
+@media (max-width: 991.98px) {
+
+    /* Push the body section down just enough to clear the fixed subheader, eliminating the huge white gap */
+    .settings-page-wrapper .settings-body-section {
+        margin-top: 0px !important;
+        padding-top: 0 !important;
+    }
+
+    /* Shrink title and breadcrumb padding to reduce height further */
+    .settings-page-wrapper .page-subheader-sticky {
+        padding: 4px 12px !important;
+        height: auto !important;
+    }
+
+    .settings-breadcrumb-row .py-2 {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+    }
+
+    .settings-page-title {
+        font-size: 14px !important;
+        margin-bottom: 0 !important;
+    }
+
+    .settings-breadcrumb {
+        font-size: 11px !important;
+    }
+
+    /* Polish Settings Menu buttons into a nice horizontal row on tablet */
+    .settings-menu-card .list-group {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 8px !important;
+    }
+
+    .settings-menu-card .list-group button {
+        flex: 1 1 auto !important;
+        margin-bottom: 0 !important;
+        justify-content: center !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+
+    /* Hide arrow indicators on tablet layout */
+    .settings-menu-card .list-group button i.ri-arrow-right-s-line {
+        display: none !important;
+    }
+
+    /* Reduce gap between menu card and active configuration cards on tablet/mobile */
+    .settings-page-wrapper .settings-menu-card {
+        margin-bottom: 0px !important;
+    }
+
+    .settings-page-wrapper .row.g-3 {
+        row-gap: 12px !important;
+    }
+}
+
+/* ---- Mobile (≤ 767.98px) ---- */
+@media (max-width: 767.98px) {
+    .settings-page-wrapper .settings-body-section {
+        margin-top: 0px !important;
+        margin-bottom: 40px !important;
+    }
+
+    /* Polish details form layout to stack input-group labels vertically on mobile */
+    .settings-page-wrapper .input-group {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0 !important;
+    }
+
+    .settings-page-wrapper .input-group-text {
+        width: 100% !important;
+        min-width: 0 !important;
+        border-radius: 4px 4px 0 0 !important;
+        border-bottom: 0 !important;
+        justify-content: flex-start !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+        font-size: 12px !important;
+        text-align: left !important;
+    }
+
+    .settings-page-wrapper .form-control,
+    .settings-page-wrapper .p-dropdown {
+        width: 100% !important;
+        border-radius: 0 0 4px 4px !important;
+    }
+
+    /* If validation error is shown inside input-group, make it look clean */
+    .settings-page-wrapper .input-group .invalid-feedback {
+        display: block !important;
+        margin-top: 4px !important;
+        padding-left: 4px !important;
+    }
+
+    /* Stack info banner rows inside settings on mobile */
+    .settings-page-wrapper .bg-info-subtle.d-flex,
+    .settings-page-wrapper .bg-primary-subtle.d-flex,
+    .settings-page-wrapper .bg-success-subtle.d-flex,
+    .settings-page-wrapper .bg-danger-subtle.d-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    .settings-page-wrapper .bg-info-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-primary-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-success-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-danger-subtle .flex-shrink-0 {
+        margin-right: 0 !important;
+        margin-bottom: 4px !important;
+    }
+
+    /* Make save/actions button wrappers stack on mobile (target container div only, not button element) */
+    .settings-page-wrapper .border-top div.d-flex {
+        flex-direction: column-reverse !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    .settings-page-wrapper .border-top div.d-flex button {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+}
+
+/* ---- Small Mobile (≤ 575.98px) ---- */
+@media (max-width: 575.98px) {
+
+    /* More space for breadcrumbs if they wrap on small mobile */
+    .settings-page-wrapper .settings-body-section {
+        margin-top: 0px !important;
+        margin-bottom: 40px !important;
+    }
+
+    /* Shrink font size for breadcrumbs to fit cleanly */
+    .settings-breadcrumb {
+        font-size: 11px !important;
+    }
+
+    /* Stack buttons vertically on small mobile */
+    .settings-menu-card .list-group {
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+    }
+
+    .settings-menu-card .list-group button {
+        justify-content: flex-start !important;
+        border: 0 !important;
+        padding: 10px 14px !important;
+    }
+
+    .settings-menu-card .list-group button i.ri-arrow-right-s-line {
+        display: inline-block !important;
+    }
+
+    /* Force all input-group-texts to scale down to fit small screens */
+    .settings-page-wrapper .input-group-text {
+        min-width: 100px !important;
+        font-size: 11px !important;
+    }
+
+    /* Stack all info banners on small mobile */
+    .settings-page-wrapper .bg-info-subtle.d-flex,
+    .settings-page-wrapper .bg-primary-subtle.d-flex,
+    .settings-page-wrapper .bg-success-subtle.d-flex,
+    .settings-page-wrapper .bg-danger-subtle.d-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    .settings-page-wrapper .bg-info-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-primary-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-success-subtle .flex-shrink-0,
+    .settings-page-wrapper .bg-danger-subtle .flex-shrink-0 {
+        margin-right: 0 !important;
+    }
+
+    /* Card bodies tighter on small mobile */
+    .settings-page-wrapper .card-body {
+        padding: 14px !important;
+    }
+
+    /* Cash note panel compact */
+    .cash-note-panel {
+        padding: 12px !important;
+    }
+}
+
+/* ============================================================
+   Payment List & Config Pages — Responsive Tweaks
+   (layout is handled via Bootstrap flex-column/flex-sm-row in JSX)
+   ============================================================ */
+
+/* ─── TABLET (≤ 991px) ─── */
+@media (max-width: 991.98px) {
+    .payment-method-row {
+        padding: 1rem 1.25rem !important;
+    }
+
+    .payment-method-card .card-body {
+        padding: 1.25rem !important;
+    }
+}
+
+/* ─── MOBILE (≤ 767px) ─── */
+@media (max-width: 767.98px) {
+    .payment-method-row {
+        padding: 0.875rem 1rem !important;
+    }
+
+    .payment-method-logo-box {
+        width: 72px !important;
+        height: 48px !important;
+    }
+
+    .payment-method-card .card-body {
+        padding: 1rem !important;
+    }
+
+    .payment-method-card .card-header {
+        padding: 0.75rem 1rem !important;
+    }
+}
+
+/* ─── SMALL MOBILE (≤ 575px) ─── */
+@media (max-width: 575.98px) {
+    .payment-method-row {
+        padding: 0.75rem !important;
+    }
+
+    .payment-method-logo-box {
+        width: 60px !important;
+        height: 40px !important;
+    }
+
+    .payment-method-card .card-body {
+        padding: 0.875rem !important;
+    }
+
+    .payment-method-row .badge {
+        font-size: 10px !important;
+    }
+}

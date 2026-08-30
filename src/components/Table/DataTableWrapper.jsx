@@ -1,0 +1,37 @@
+import React from 'react'
+import { DataTable as PrimeDataTable } from '@primereact/datatable'
+import TableLoader from '../Loader/TableLoader'
+
+export const DataTable = (props) => {
+  const { value, loading, className, children } = props
+  const showSkeleton = !!loading
+
+  if (showSkeleton) {
+    const count = typeof props.skeletonRows === 'number' ? props.skeletonRows : 8
+
+    // Attempt to determine column count from children
+    let columns = 6
+    if (children) {
+      if (Array.isArray(children)) {
+        columns = children.length
+      } else if (children.type) {
+        // Single child
+        columns = 1
+      }
+    }
+
+    return (
+      <div className={className || ''}>
+        <TableLoader rows={count} columns={columns} />
+      </div>
+    )
+  }
+
+  const defaultProps = {
+    scrollable: true,
+    scrollHeight: "calc(100vh - 420px)",
+    ...props
+  }
+
+  return <PrimeDataTable {...defaultProps} />
+}

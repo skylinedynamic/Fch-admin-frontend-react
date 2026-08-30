@@ -1,0 +1,100 @@
+﻿/* ========================================
+   Fund Application Wizard - application.css
+   Partner-Assisted Funding Application Styles
+   ======================================== */
+
+.fundapplication-page .min-vh-70 { min-height: 70vh; }
+
+.fundapplication-page .side-tabs { list-style: none; padding: 0; margin: 0; }
+.fundapplication-page .sidebar-li { list-style: none; }
+
+.fundapplication-page .side-tab {
+    display: flex; align-items: center; width: 100%; text-align: left;
+    padding: 10px 14px; background: transparent; border: none; border-radius: 0;
+    cursor: pointer; font-size: 0.875rem; color: var(--vz-body-color, #495057);
+    transition: background 0.18s, color 0.18s; position: relative;
+}
+
+.fundapplication-page .side-tab:hover:not(:disabled):not(.disabled) {
+    background: rgba(var(--vz-primary-rgb, 64,81,137), 0.06);
+    color: var(--vz-primary, #405189);
+}
+
+.fundapplication-page .side-tab.active-step {
+    background: rgba(var(--vz-primary-rgb, 64,81,137), 0.10);
+    color: var(--vz-primary, #405189); font-weight: 600;
+}
+
+.fundapplication-page .side-tab.disabled,
+.fundapplication-page .side-tab:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.fundapplication-page .sidebar-step-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; min-width: 24px; border-radius: 50%;
+    background: #e9ecef; color: #495057; font-size: 0.75rem;
+    font-weight: 600; margin-right: 10px; transition: background 0.18s, color 0.18s;
+}
+
+.fundapplication-page .sidebar-step-badge.completed,
+.fundapplication-page .active-step .sidebar-step-badge {
+    background: var(--vz-primary, #405189); color: #fff;
+}
+
+.fundapplication-page .sidebar-step-label { font-size: 0.85rem; flex: 1; }
+
+.fundapplication-page .sidebar-step-notch {
+    position: absolute; right: -1px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 8px solid transparent; border-bottom: 8px solid transparent;
+    border-right: 8px solid #fff; opacity: 0; transition: opacity 0.15s;
+}
+.fundapplication-page .sidebar-step-notch.show { opacity: 1; }
+
+.fundapplication-page .progress-badge {
+    font-size: 0.8rem; font-weight: 700; color: var(--vz-primary, #405189);
+    background: rgba(var(--vz-primary-rgb, 64,81,137), 0.10);
+    padding: 2px 8px; border-radius: 10px;
+}
+
+.fundapplication-page .progress-micro {
+    display: block; width: 100%; height: 4px; margin-top: 6px;
+    border-radius: 2px; appearance: none; background: #e9ecef; overflow: hidden;
+}
+.fundapplication-page .progress-micro::-webkit-progress-bar { background: #e9ecef; }
+.fundapplication-page .progress-micro::-webkit-progress-value {
+    background: var(--vz-primary, #405189); border-radius: 2px; transition: width 0.4s;
+}
+.fundapplication-page .progress-micro::-moz-progress-bar {
+    background: var(--vz-primary, #405189); border-radius: 2px;
+}
+
+.fundapplication-page .card-header { background: transparent; border-bottom: 1px solid rgba(0,0,0,0.08); padding: 14px 20px; }
+.fundapplication-page .card-body { padding: 20px; }
+
+.fundapplication-page .skeleton-line {
+    height: 14px; background: #e9ecef; border-radius: 4px;
+    margin-bottom: 10px; position: relative; overflow: hidden;
+}
+.fundapplication-page .skeleton-circle {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #e9ecef; position: relative; overflow: hidden;
+}
+.fundapplication-page .skeleton-circle.small-circle { width: 24px; height: 24px; }
+.fundapplication-page .skeleton-line::after,
+.fundapplication-page .skeleton-circle::after {
+    content: ''; position: absolute; top: 0; left: -150%;
+    width: 150%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: skeleton-shimmer 1.2s infinite;
+}
+@keyframes skeleton-shimmer { 0% { left: -150%; } 100% { left: 150%; } }
+
+@media (max-width: 991px) {
+    .fundapplication-page { padding: 10px 0; }
+    .fundapplication-page .container-fluid { padding-left: 10px; padding-right: 10px; }
+    .fundapplication-page h4 { font-size: 1.1rem; }
+    .fundapplication-page .text-muted { font-size: 0.85rem; }
+    .fundapplication-page .progress-section { padding: 10px 14px; }
+    .fundapplication-page .progress-badge { font-size: 0.75rem; }
+    .fundapplication-page .progress-micro { height: 3px; }
+}

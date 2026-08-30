@@ -1,0 +1,1014 @@
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { Calendar } from 'primereact/calendar';
+import { parseDate } from '../../../utils/formatters';
+
+import Modal from 'bootstrap/js/dist/modal';
+import $ from 'jquery';
+import { toast } from 'react-toastify';
+import { Dropdown } from 'primereact/dropdown';
+import { Skeleton } from 'primereact/skeleton';
+
+// API Services
+import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
+import { useAuthStore } from '../../../store/auth/authStore';
+import { usePermissions } from '../../../lib/auth/usePermissions';
+import { useSummernote } from '../../../hooks/useSummernote';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
+
+// Config
+import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../../config';
+
+// Styles
+import "../../../../assets/css/appointment-modal.css";
+
+const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
+    const eventModalRef = useRef(null);
+    const descriptionEditorRef = useRef(null); // This ref will be passed to the useSummernote hook
+
+    const [modalInstance, setModalInstance] = useState(null);
+    const [viewMode, setViewMode] = useState(true);
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+    const [isNewEvent, setIsNewEvent] = useState(false);
+    const [selectedEventId, setSelectedEventId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [formErrors, setFormErrors] = useState({});
+
+    const currentUser = useAuthStore((state) => state.user);
+    const { hasPermission } = usePermissions();
+    const isHost = currentUser?.is_host == 1;
+    const hostEntityId = currentUser?.entity_id;
+
+    const [assignedForType, setAssignedForType] = useState('');
+    const [selectableUsers, setSelectableUsers] = useState([]);
+    const [loadingAssignedFor, setLoadingAssignedFor] = useState(false);
+    const [isMeetingWithChecked, setIsMeetingWithChecked] = useState(false);
+
+    // Form Data
+    const [formData, setFormData] = useState({
+        subject: '',
+        category: 'Business Review',
+        location: 'UTC (GMT+00:00)',
+        description: '',
+        date: '',
+        timeStart: '09:00',
+        timeEnd: '09:30',
+        entity_id: '',
+        assigned_for: '',
+        entity_type: 'partner',
+    });
+
+    // Display Data
+    const [displayData, setDisplayData] = useState({
+        title: '',
+        date: '',
+        timeStart: '',
+        timeEnd: '',
+        location: '',
+        description: '',
+        scheduledById: '',
+        scheduledBy: '',
+        assignedFor: '',
+        appointmentCode: '',
+        category: '',
+    });
+
+    const [originalData, setOriginalData] = useState(null);
+
+    const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+    const [showDateSkeleton, setShowDateSkeleton] = useState(false);
+    const [availabilityConflicts, setAvailabilityConflicts] = useState(null);
+    const [lastConflictingAttempt, setLastConflictingAttempt] = useState(null);
+    const [conflictError, setConflictError] = useState(null);
+    const [isConflictVisible, setIsConflictVisible] = useState(false);
+    const conflictTimeoutRef = useRef(null);
+    const isSystemShiftRef = useRef(false);
+    const prevDateRef = useRef(formData.date);
+    const prevTimeStartRef = useRef(formData.timeStart);
+    const prevTimeEndRef = useRef(formData.timeEnd);
+
+    // Initialize Modal
+    useEffect(() => {
+        if (eventModalRef.current && !modalInstance) {
+            const mod = new Modal(eventModalRef.current, { keyboard: false });
+            setModalInstance(mod);
+        }
+    }, []);
+
+    // Check Availability
+    useEffect(() => {
+        const check = async () => {
+            if (!formData.date || !formData.entity_id || viewMode) {
+                setAvailabilityConflicts(null);
+                setConflictError(null);
+                return;
+            }
+
+            try {
+                // User Request: Only show skeleton when time slot changes
+                const timeChanged = prevTimeStartRef.current !== formData.timeStart ||
+                    prevTimeEndRef.current !== formData.timeEnd;
+                const isFirstCheck = !prevDateRef.current;
+
+                if (timeChanged && !isFirstCheck) {
+                    setIsCheckingAvailability(true);
+                }
+
+                setAvailabilityConflicts(null);
+                const response = await checkAvailability({
+                    assigned_for: formData.entity_id,
+                    entity_type: formData.entity_type,
+                    appointment_date: `${formData.date} ${formData.timeStart}:00`,
+                    id: isNewEvent ? undefined : selectedEventId
+                });
+
+                if (response.data && response.data.available === false) {
+                    setAvailabilityConflicts(response.data);
+
+                    const allConflicts = [
+                        ...(response.data.assignee_conflicts || []),
+                        ...(response.data.scheduler_conflicts || [])
+                    ];
+
+                    const matchingConflict = allConflicts.find(c => {
+                        const cStart = c.start_time || "";
+                        const cEnd = c.end_time || "";
+                        // Standard overlap check: (StartA < EndB) && (EndA > StartB)
+                        // AND exclude the CURRENT appointment itself by ID
+                        const isSelf = !isNewEvent && String(c.id) === String(selectedEventId);
+                        return (formData.timeStart < cEnd && formData.timeEnd > cStart) && !isSelf;
+                    });
+
+                    // Logic: If we are EDITING and the user has NOT changed the time/date, ignore conflicts (it's likely the current appointment)
+                    const hasChanged = isNewEvent ||
+                        formData.date !== originalData?.date ||
+                        formData.timeStart !== originalData?.timeStart ||
+                        formData.timeEnd !== originalData?.timeEnd;
+
+                    if (matchingConflict) {
+                        setLastConflictingAttempt({
+                            attemptedStart: formData.timeStart,
+                            attemptedEnd: formData.timeEnd,
+                            conflict: matchingConflict
+                        });
+                        setIsConflictVisible(true);
+                    } else {
+                        setIsConflictVisible(false);
+                        setLastConflictingAttempt(null);
+                    }
+                } else {
+                    setAvailabilityConflicts(null);
+                    setLastConflictingAttempt(null);
+                    setIsConflictVisible(false);
+                }
+            } catch (error) {
+                console.error("Failed to check availability", error);
+            } finally {
+                setIsCheckingAvailability(false);
+                isSystemShiftRef.current = false;
+                // Update refs after check
+                prevDateRef.current = formData.date;
+                prevTimeStartRef.current = formData.timeStart;
+                prevTimeEndRef.current = formData.timeEnd;
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            if (!viewMode) check();
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [formData.date, formData.timeStart, formData.timeEnd, formData.entity_id, formData.entity_type, viewMode, originalData]);
+
+    // Helper functions (tConvert, formatDate, etc.) should be here or imported
+    const tConvert = (timeStr) => {
+        if (!timeStr) return '';
+        let [h, m] = timeStr.split(':');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h}:${m} ${ampm}`;
+    };
+
+    const formatDate = (dateObj) => {
+        const d = new Date(dateObj);
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        return `${d.getDate() < 10 ? '0' + d.getDate() : d.getDate()} ${months[d.getMonth()]}, ${d.getFullYear()}`;
+    };
+
+    const getShortType = (fullType) => {
+        if (!fullType) return 'partners';
+        const segments = fullType.split('\\\\');
+        const last = segments[segments.length - 1].toLowerCase();
+        if (last === 'employee') return 'employee-details';
+        if (last === 'partner') return 'partners';
+        if (last === 'borrower') return 'clients';
+        return last + 's';
+    };
+
+    const isSlotBlocked = (timeValue, isEnd = false) => {
+        if (!availabilityConflicts) return false;
+        const allConflicts = [
+            ...(availabilityConflicts.assignee_conflicts || []),
+            ...(availabilityConflicts.scheduler_conflicts || [])
+        ];
+        return allConflicts.some(c => {
+            const cStart = (c.start_time || "").substring(0, 5);
+            const cEnd = (c.end_time || "").substring(0, 5);
+            if (isEnd) {
+                // Block if this end time is inside a conflict
+                if (timeValue > cStart && timeValue <= cEnd) return true;
+                // Block if this end time "jumps over" the conflict 
+                // (i.e. starts after the conflict but our selected start is before it)
+                if (formData.timeStart < cStart && timeValue > cStart) return true;
+                return false;
+            } else {
+                // Start time cannot be inside a conflict
+                return timeValue >= cStart && timeValue < cEnd;
+            }
+        });
+    };
+
+    // Load Options
+    const loadSelectableUsers = async () => {
+        try {
+            setLoadingAssignedFor(true);
+            const payload = {
+                [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
+            };
+            const response = await fetchSelectableUsers(payload);
+            if (response.status) {
+                setSelectableUsers(response.data || []);
+            }
+        } catch (error) {
+            console.error("Failed to load selectable users", error);
+        } finally {
+            setLoadingAssignedFor(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!viewMode) {
+            loadSelectableUsers();
+        }
+    }, [viewMode, isMeetingWithChecked]);
+
+    // Exposure
+    useImperativeHandle(ref, () => ({
+        show: async (id) => {
+            setIsNewEvent(false);
+            setViewMode(true);
+            setIsDescriptionExpanded(false);
+            setSelectedEventId(id);
+            setFormErrors({});
+            setAvailabilityConflicts(null);
+            if (modalInstance) modalInstance.show();
+            await fetchDetails(id);
+        },
+        create: (dateStr) => {
+            setIsNewEvent(true);
+            setViewMode(false);
+            setSelectedEventId(null);
+            setAssignedForType('');
+            setAvailabilityConflicts(null);
+            setIsConflictVisible(false);
+            setLastConflictingAttempt(null);
+            setConflictError(null);
+            setIsMeetingWithChecked(false);
+            const defaultDate = dateStr || new Date().toISOString().split('T')[0];
+            setFormData({
+                subject: '',
+                category: 'Business Review',
+                location: 'UTC (GMT+00:00)',
+                description: '',
+                date: defaultDate,
+                timeStart: '09:00',
+                timeEnd: '09:30',
+                entity_id: '',
+                assigned_for: '',
+                entity_type: '',
+            });
+            setFormErrors({});
+
+
+
+            if (modalInstance) modalInstance.show();
+        }
+    }));
+
+    const fetchDetails = async (id) => {
+        try {
+            setLoadingDetails(true);
+            const apt = await fetchAppointmentById(id);
+            const dateStr = apt.appointment_date ? apt.appointment_date.replace(' ', 'T') : '';
+            const start = dateStr ? new Date(dateStr) : new Date();
+            const duration = apt.duration_minutes || 30;
+            const end = new Date(start.getTime() + duration * 60000);
+
+            setDisplayData({
+                title: apt.subject,
+                date: formatDate(start),
+                timeStart: tConvert(start.toTimeString().slice(0, 5)),
+                timeEnd: tConvert(end.toTimeString().slice(0, 5)),
+                location: apt.timezone || "Virtual",
+                description: apt.description || "No Description",
+                scheduledById: apt.scheduled_by?.id,
+                scheduledBy: apt.scheduled_by?.name || "FCH Admin",
+                assignedFor: apt.assigned_for?.name || "N/A",
+                assignedForId: apt.assigned_for?.entity_id || apt.assigned_for?.id,
+                assignedForType: apt.assigned_for?.entity_type || null,
+                assignedForAvatar: apt.assigned_for?.image || apt.assigned_for?.avatar || apt.assigned_for?.profile_picture || null,
+                appointmentCode: apt.appointment_code || '',
+                category: apt.meeting_type || 'Business Review',
+            });
+
+            const h_full = start.getHours().toString().padStart(2, '0');
+            const m_full = start.getMinutes().toString().padStart(2, '0');
+            const hh_mm_full = `${h_full}:${m_full}`;
+
+            const h_end_full = end.getHours().toString().padStart(2, '0');
+            const m_end_full = end.getMinutes().toString().padStart(2, '0');
+            const hh_mm_end_full = `${h_end_full}:${m_end_full}`;
+
+            // Set Form Data for Editing
+            setFormData({
+                subject: apt.subject,
+                category: apt.meeting_type || 'Business Review',
+                location: apt.timezone || "UTC (GMT+00:00)",
+                description: apt.description || "",
+                date: start.toISOString().split('T')[0],
+                timeStart: hh_mm_full,
+                timeEnd: hh_mm_end_full,
+                entity_id: '',
+                assigned_for: '',
+                entity_type: ''
+            });
+
+            // Set meeting_with checkbox state FIRST
+            // Auto-check if:
+            // - Host user and assigned to Partner
+            // - Partner user and assigned to Borrower/Host
+            let meetingWithValue = apt.meeting_with === 1 || apt.meeting_with_host === 1;
+
+            console.log('[AppointmentModal] Checkbox logic:', {
+                isHost,
+                assigned_for: apt.assigned_for,
+                entity_type: apt.assigned_for?.entity_type,
+                initial_meetingWithValue: meetingWithValue
+            });
+
+            if (apt.assigned_for && apt.assigned_for.entity_type) {
+                const entityType = apt.assigned_for.entity_type.toLowerCase();
+                console.log('[AppointmentModal] Checking entity_type:', entityType);
+
+                if (isHost && entityType === 'partner') {
+                    console.log('[AppointmentModal] Host + Partner detected - checking checkbox');
+                    meetingWithValue = true;
+                } else if (!isHost && (entityType === 'borrower' || entityType === 'host')) {
+                    console.log('[AppointmentModal] Partner + Borrower/Host detected - checking checkbox');
+                    meetingWithValue = true;
+                }
+            }
+
+            console.log('[AppointmentModal] Final meetingWithValue:', meetingWithValue);
+            setIsMeetingWithChecked(meetingWithValue);
+
+            // Load selectable users with the correct meeting_with state
+            if (apt.assigned_for) {
+                try {
+                    setLoadingAssignedFor(true);
+                    const payload = {
+                        [isHost ? 'meeting_with' : 'meeting_with_host']: meetingWithValue ? 1 : 0
+                    };
+                    const response = await fetchSelectableUsers(payload);
+                    if (response.status) {
+                        setSelectableUsers(response.data || []);
+                    }
+
+                    // NOW set the assigned_for data after users are loaded
+                    const rawType = apt.assigned_for.entity_type || '';
+                    const formattedType = rawType.toLowerCase();
+                    setAssignedForType(formattedType);
+
+                    console.log('[AppointmentModal] Setting assigned_for:', {
+                        entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                        assigned_for: apt.assigned_for.id,
+                        entity_type: formattedType,
+                        raw_assigned_for: apt.assigned_for,
+                        loaded_users: response.data
+                    });
+
+                    setFormData(p => ({
+                        ...p,
+                        entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                        assigned_for: apt.assigned_for.id,
+                        entity_type: formattedType
+                    }));
+
+                    // Set Original Data for Comparison
+                    setOriginalData({
+                        subject: apt.subject,
+                        category: apt.meeting_type || 'Business Review',
+                        location: apt.timezone || "UTC (GMT+00:00)",
+                        description: apt.description || "",
+                        date: start.toISOString().split('T')[0],
+                        timeStart: hh_mm_full,
+                        timeEnd: hh_mm_end_full,
+                        entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                        assigned_for: apt.assigned_for.id,
+                        entity_type: formattedType
+                    });
+                } catch (error) {
+                    console.error("Failed to load selectable users", error);
+                } finally {
+                    setLoadingAssignedFor(false);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch details", error);
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setFormErrors({});
+        setConflictError(null);
+        if (isNewEvent) {
+            if (modalInstance) modalInstance.hide();
+        } else {
+            setViewMode(true);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        if (e) e.preventDefault();
+        setFormErrors({});
+
+        const toMySQLDate = (date) => {
+            const pad = (num) => (num < 10 ? '0' + num : num);
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        };
+
+        // Fetch description
+        const descVal = formData.description;
+
+        const startDateTime = new Date(`${formData.date}T${formData.timeStart}`);
+        const durationMinutes = (new Date(`${formData.date}T${formData.timeEnd}`) - startDateTime) / 60000;
+
+        if (!formData.date) {
+            setFormErrors({ appointment_date: "Event date is required" });
+            return;
+        }
+
+        // Check for conflicts before submission
+        if (availabilityConflicts && availabilityConflicts.available === false) {
+            const allConflicts = [
+                ...(availabilityConflicts.assignee_conflicts || []),
+                ...(availabilityConflicts.scheduler_conflicts || [])
+            ];
+            const matchingConflict = allConflicts.find(c => {
+                const cStart = c.start_time || "";
+                const cEnd = c.end_time || "";
+                const isOverlap = (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                const isSelf = !isNewEvent && String(c.id) === String(selectedEventId);
+                return isOverlap && !isSelf;
+            });
+
+            if (matchingConflict) {
+                toast.error('Cannot save appointment: Time slot conflicts with another appointment');
+                setIsConflictVisible(true);
+                return;
+            }
+        }
+
+        // FIXED PAYLOAD as requested
+        const payload = {
+            subject: formData.subject,
+            description: descVal,
+            appointment_date: toMySQLDate(startDateTime),
+            timezone: formData.location,
+            duration_minutes: durationMinutes,
+            meeting_type: formData.category,
+            entity_type: assignedForType || null,
+            entity_id: assignedForType ? (formData.entity_id ? parseInt(formData.entity_id) : null) : null,
+            assigned_for: formData.assigned_for ? parseInt(formData.assigned_for) : null,
+            [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
+        };
+
+        try {
+            setIsSubmitting(true);
+            let response;
+            if (selectedEventId && !isNewEvent) {
+                response = await updateAppointment(selectedEventId, payload);
+            } else {
+                response = await createAppointment(payload);
+            }
+
+            if (response && response.status) {
+                toast.success(response.message || `Appointment ${isNewEvent ? 'created' : 'updated'} successfully`);
+                if (modalInstance) modalInstance.hide();
+                if (onSuccess) onSuccess();
+            } else {
+                toast.error(response?.message || `Failed to ${isNewEvent ? 'create' : 'update'} appointment`);
+            }
+        } catch (error) {
+            if (error.response?.data?.errors) {
+                setFormErrors(error.response.data.errors);
+            } else if (error.response?.status !== 403) {
+                toast.error(error.response?.data?.message || 'Failed to save appointment');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleConfirmClose = () => {
+        setShowDeleteConfirm(false);
+        if (modalInstance) modalInstance.show();
+    };
+
+    const confirmDelete = () => {
+        if (!selectedEventId) return;
+        if (modalInstance) modalInstance.hide();
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDelete = async () => {
+        try {
+            setIsDeleting(true);
+            const response = await deleteAppointment(selectedEventId);
+            if (response && response.status) {
+                toast.success(response.message || "Appointment deleted successfully");
+                setShowDeleteConfirm(false);
+                if (modalInstance) modalInstance.hide();
+                if (onSuccess) onSuccess();
+            } else {
+                toast.error(response?.message || "Failed to delete appointment");
+            }
+        } catch (error) {
+            if (error.response?.status !== 403) {
+                toast.error(error.response?.data?.message || "Failed to delete appointment");
+            }
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+
+
+
+    // Use global Summernote hook
+    const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
+        const { value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            description: value
+        }));
+    }, {
+        height: 150,
+        placeholder: 'Enter description here...',
+        dialogsInBody: true
+    }, !viewMode); // Pass !viewMode as the enabled state
+
+    const assignedOptions = selectableUsers.map(u => ({
+        label: u.name,
+        value: u.id, // User ID is unique and should be used as the value for selection
+        entity_id: u.entity_id,
+        entity_type: u.entity_type
+    }));
+
+    // Debug logging
+    if (assignedOptions.length > 0 && formData.assigned_for) {
+        console.log('[AppointmentModal] Dropdown state:', {
+            formData_assigned_for: formData.assigned_for,
+            assignedOptions,
+            match: assignedOptions.find(opt => opt.value === formData.assigned_for)
+        });
+    }
+
+    return (
+        <>
+            <div className="modal fade appointment-modal-theme" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
+                <div className="modal-dialog modal-dialog-centered modal-lg">
+                    <div className="modal-content border-0 shadow-lg">
+                        <div className="modal-header p-3 bg-info-subtle">
+                            <h5 className="modal-title">
+                                {viewMode ? "Appointment Details" : (isNewEvent ? "Add Appointment" : "Edit Appointment")}
+                            </h5>
+                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+
+                        <div className="modal-body p-4" style={{ backgroundColor: '#fdfdfd' }}>
+                            {/* Details View */}
+                            {viewMode ? (
+                                loadingDetails ? (
+                                    <div className="event-details-skeleton">
+                                        <div className="mb-4">
+                                            <Skeleton width="120px" height="12px" className="mb-2" />
+                                            <Skeleton width="70%" height="28px" />
+                                        </div>
+                                        <div className="mb-4">
+                                            <Skeleton width="100px" height="12px" className="mb-2" />
+                                            <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                                <Skeleton width="100%" height="14px" className="mb-2" />
+                                                <Skeleton width="90%" height="14px" className="mb-2" />
+                                                <Skeleton width="40%" height="14px" />
+                                            </div>
+                                        </div>
+                                        <div className="row g-4 mb-4">
+                                            {[1, 2, 3, 4].map(i => (
+                                                <div className="col-md-6" key={i}>
+                                                    <div className="d-flex align-items-center">
+                                                        <Skeleton shape="circle" size="32px" className="me-3" />
+                                                        <div className="flex-grow-1">
+                                                            <Skeleton width="60px" height="10px" className="mb-2" />
+                                                            <Skeleton width="100px" height="14px" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                            <Skeleton shape="circle" size="60px" className="me-3" />
+                                            <div className="flex-grow-1">
+                                                <Skeleton width="80px" height="10px" className="mb-2" />
+                                                <Skeleton width="150px" height="18px" />
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                                            <Skeleton width="80px" height="35px" borderRadius="4px" />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="event-details position-relative">
+                                        <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
+                                            {(hasPermission('update appointments') && currentUser?.id == displayData.scheduledById) && (
+                                                <button
+                                                    className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
+                                                    onClick={() => setViewMode(false)}
+                                                    style={{
+                                                        fontWeight: "600",
+                                                        transition: "all 0.2s ease"
+                                                    }}
+                                                >
+                                                    <i className="ri-pencil-fill fs-14 me-1"></i> Edit
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <div className="d-flex align-items-center justify-content-between mb-1">
+                                                <label className="text-muted fs-11 text-uppercase fw-bold mb-0 letter-spacing-1">Appointment Title</label>
+                                            </div>
+                                            <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
+                                            <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                                <div className="text-dark fs-14" style={{ lineHeight: "1.7", letterSpacing: "0.2px" }}>
+                                                    {(() => {
+                                                        const description = displayData.description || "No Description";
+                                                        // Extract text and properly decode common entities for the preview
+                                                        const rawText = description
+                                                            .replace(/<[^>]*>/g, '')
+                                                            .replace(/&nbsp;/g, ' ')
+                                                            .replace(/&amp;/g, '&')
+                                                            .replace(/&lt;/g, '<')
+                                                            .replace(/&gt;/g, '>')
+                                                            .replace(/&quot;/g, '"');
+
+                                                        const limit = 180;
+
+                                                        if (!isDescriptionExpanded && rawText.length > limit) {
+                                                            return (
+                                                                <div className="description-content">
+                                                                    {rawText.substring(0, limit)}...
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                        onClick={() => setIsDescriptionExpanded(true)}
+                                                                    >
+                                                                        See more <i className="ri-arrow-down-s-line align-middle"></i>
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <div className="description-content">
+                                                                <div
+                                                                    className="rich-text-content"
+                                                                    dangerouslySetInnerHTML={{ __html: description }}
+                                                                ></div>
+                                                                {isDescriptionExpanded && rawText.length > limit && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                        onClick={() => setIsDescriptionExpanded(false)}
+                                                                    >
+                                                                        See less <i className="ri-arrow-up-s-line align-middle"></i>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="row g-4 mb-2">
+                                            <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} className="detail-item-col" />
+                                            <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} className="detail-item-col" />
+                                            <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} className="detail-item-col" />
+                                            <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} className="detail-item-col" />
+                                        </div>
+
+                                        <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                            <div className="flex-shrink-0 me-3">
+                                                <div className="avatar-md">
+                                                    {displayData.assignedForAvatar ? (
+                                                        <img src={displayData.assignedForAvatar} alt="" className="rounded-circle img-thumbnail avatar-title" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <div className="avatar-title rounded-circle bg-primary text-white">
+                                                            <i className="ri-user-follow-line fs-24"></i>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex-grow-1 d-flex align-items-center gap-2">
+                                                <p className="text-primary-emphasis mb-0 fs-12 uppercase-label">
+                                                    Appointment With:
+                                                </p>
+
+                                                <h5 className="mb-0 fs-16 fw-bold">
+                                                    {displayData.assignedForType ? (
+                                                        <a
+                                                            href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
+                                                            className="text-primary text-decoration-none hover-primary"
+                                                        >
+                                                            {displayData.assignedFor}
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-dark">{displayData.assignedFor}</span>
+                                                    )}
+                                                </h5>
+
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+                                            {(hasPermission('delete appointments') && currentUser?.id == displayData.scheduledById) && (
+                                                <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
+                                                    <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            ) : (
+                                /* Form View */
+                                <form onSubmit={handleSubmit}>
+
+                                    <div className="row">
+
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label">Appointment Title <span className="text-danger">*</span></label>
+                                            <input type="text" className={`form-control ${formErrors.subject ? "is-invalid" : ""}`}
+                                                value={formData.subject} onChange={(e) => setFormData(p => ({ ...p, subject: e.target.value }))} placeholder="Enter appointment title" />
+                                            {formErrors.subject && <div className="invalid-feedback">{formErrors.subject}</div>}
+                                        </div>
+
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label">Type <span className="text-danger">*</span></label>
+                                            <Dropdown value={formData.category} options={APPOINTMENT_TYPE_OPTIONS}
+                                                onChange={(e) => setFormData(p => ({ ...p, category: e.value }))}
+                                                className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
+                                                placeholder="Select Type" appendTo="self" />
+                                            {formErrors.meeting_type && <div className="text-danger fs-11 mt-1">{formErrors.meeting_type}</div>}
+                                        </div>
+
+                                        <div className="col-12 mb-3">
+                                            <div className="d-flex align-items-center justify-content-between mb-2 mt-1">
+                                                <label className="form-label mb-0">
+                                                    {isHost ? "Appointment With" : "Appointment With"} <span className="text-danger">*</span>
+                                                </label>
+                                                {(!isHost || (isHost && hostEntityId == currentUser?.partner_id)) && (
+                                                    <div className="form-check">
+                                                        <input
+                                                            className="form-check-input"
+                                                            type="checkbox"
+                                                            id="meeting-with-toggle"
+                                                            checked={isMeetingWithChecked}
+                                                            onChange={(e) => setIsMeetingWithChecked(e.target.checked)}
+                                                            name={isHost ? "meeting_with" : "meeting_with_host"}
+                                                            value="1"
+                                                        />
+                                                        <label className="form-check-label ms-1" htmlFor="meeting-with-toggle">
+                                                            {isHost ? "Meeting with partner" : "Meeting with host"}
+                                                        </label>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="position-relative" style={{ minHeight: '38px' }}>
+                                                {loadingAssignedFor ? (
+                                                    <Skeleton width="100%" height="38px" className="rounded-2" />
+                                                ) : (
+                                                    <Dropdown value={formData.assigned_for} options={assignedOptions}
+                                                        onChange={(e) => {
+                                                            const selected = assignedOptions.find(opt => opt.value === e.value);
+                                                            const newType = selected?.entity_type?.toLowerCase() || '';
+                                                            setAssignedForType(newType);
+                                                            setFormData(p => ({
+                                                                ...p,
+                                                                entity_id: selected?.entity_id || e.value,
+                                                                assigned_for: e.value,
+                                                                entity_type: newType
+                                                            }));
+                                                        }}
+                                                        placeholder="Select Users"
+                                                        className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
+                                                        appendTo="self"
+                                                        filter
+                                                        filterPlaceholder="Search users..." />
+                                                )}
+                                                {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
+                                            </div>
+                                        </div>
+
+                                        <div className="col-12 position-relative px-0 mb-2" style={{ minHeight: '38px' }}>
+                                            <div className="row mx-0">
+                                                <div className="col-md-6 col-12 mb-3 px-2">
+                                                    <label className="form-label fs-13 fw-semibold">Event Date <span className="text-danger">*</span></label>
+                                                    <div className="custom-datepicker">
+                                                        <Calendar
+                                                            value={parseDate(formData.date)}
+                                                            onChange={(e) => {
+                                                                const date = e.value;
+                                                                const dateString = date
+                                                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                                    : "";
+                                                                setFormData(prev => ({ ...prev, date: dateString }));
+                                                            }}
+                                                            minDate={new Date()}
+                                                            dateFormat="yy-mm-dd"
+                                                            placeholder="Select date"
+                                                            showIcon
+                                                            className="w-100"
+                                                            appendTo="self"
+                                                            readOnlyInput
+                                                        />
+                                                        {formErrors.appointment_date && <div className="text-danger mt-1" style={{ fontSize: '10px' }}>{formErrors.appointment_date}</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-6 col-12 mb-3 px-2">
+                                                    <label className="form-label fs-13 fw-semibold">Time Slot <span className="text-danger">*</span></label>
+                                                    <div className="d-flex align-items-center gap-2 time-slot-container">
+                                                        <Dropdown value={formData.timeStart} options={TIME_SLOTS}
+                                                            onChange={(e) => {
+                                                                const startVal = e.value;
+                                                                setFormData(p => {
+                                                                    const newData = { ...p, timeStart: startVal };
+                                                                    // Automatically select the next 30-minute slot for timeEnd
+                                                                    const [h, m] = startVal.split(':').map(Number);
+                                                                    let endM = m + 30;
+                                                                    let endH = h;
+                                                                    if (endM >= 60) {
+                                                                        endH += 1;
+                                                                        endM = 0;
+                                                                    }
+                                                                    if (endH < 24) {
+                                                                        newData.timeEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                    } else {
+                                                                        // Fallback if it's the last slot of the day
+                                                                        newData.timeEnd = startVal;
+                                                                    }
+                                                                    return newData;
+                                                                });
+                                                            }}
+                                                            className="flex-grow-1" placeholder="Start" appendTo="self" />
+                                                        <span className="text-muted fw-bold">to</span>
+                                                        <Dropdown value={formData.timeEnd}
+                                                            options={TIME_SLOTS.filter(slot => slot.value > formData.timeStart)}
+                                                            onChange={(e) => {
+                                                                setFormData(p => ({ ...p, timeEnd: e.value }));
+                                                            }}
+                                                            className="flex-grow-1" placeholder="End" appendTo="self" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Availability Alert - Animated Collapse */}
+                                        <div className="col-12 px-2 overflow-hidden"
+                                            style={{ transition: 'all 0.4s ease', maxHeight: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: isConflictVisible ? 1 : 0, marginBottom: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
+                                            {(availabilityConflicts || lastConflictingAttempt) && (
+                                                <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 position-relative" role="alert">
+                                                    <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
+                                                    <div className="flex-grow-1 pe-4">
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <strong className="text-danger fs-13 text-uppercase">Scheduling Conflict</strong>
+                                                            <span className="badge bg-danger text-white fs-10 px-2 py-1">CONFLICTED</span>
+                                                        </div>
+                                                        <span className="fs-12 text-muted d-block mt-1">
+                                                            {(() => {
+                                                                const attempt = lastConflictingAttempt;
+                                                                if (attempt) {
+                                                                    const { attemptedStart, attemptedEnd, conflict } = attempt;
+                                                                    return (
+                                                                        <>
+                                                                            Your selected <span className="fw-bold">{tConvert(attemptedStart)} - {tConvert(attemptedEnd)}</span> conflicts with an existing appointment on <span className="fw-bold">{conflict.date}</span> from <span className="fw-bold">{tConvert(conflict.start_time)} to {tConvert(conflict.end_time)}</span>.
+                                                                        </>
+                                                                    );
+                                                                }
+                                                                return "Conflicting appointment found on this date.";
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                    <button type="button" className="btn-close fs-10 position-absolute"
+                                                        style={{ right: '8px', top: '8px' }}
+                                                        onClick={() => setIsConflictVisible(false)} aria-label="Close"></button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Skeleton Loader for Availability Check */}
+                                        {isCheckingAvailability && (
+                                            <div className="col-12 px-2 mt-2">
+                                                <Skeleton width="100%" height="40px" className="rounded-2" />
+                                            </div>
+                                        )}
+
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label fs-13 fw-semibold">Time Zone</label>
+                                            <Dropdown value={formData.location} options={TIMEZONE_OPTIONS}
+                                                onChange={(e) => setFormData(p => ({ ...p, location: e.value }))}
+                                                className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`} placeholder="Select Time Zone" appendTo="self" />
+                                            {formErrors.timezone && <div className="text-danger fs-11 mt-1">{formErrors.timezone}</div>}
+                                        </div>
+
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label fs-13 fw-semibold">Description</label>
+                                            <div ref={descriptionRef}></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
+                                        <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
+                                        {((isNewEvent && hasPermission('create appointments')) || (!isNewEvent && hasPermission('update appointments'))) && (
+                                            <button type="submit" className="btn btn-primary"
+                                                disabled={isSubmitting || isCheckingAvailability || isConflictVisible}>
+                                                {isSubmitting ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                        Loading...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
+                                                        {isNewEvent ? "Confirm Appointment" : "Save Changes"}
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+            </div >
+            <DeleteConfirmationModal
+                show={showDeleteConfirm}
+                onConfirm={handleDelete}
+                onClose={handleConfirmClose}
+                loading={isDeleting}
+                text="Are you sure you want to delete this appointment? This action cannot be undone."
+            />
+        </>
+    );
+});
+
+const DetailItem = ({ icon, label, value, className }) => (
+    <div className={`col-md-6 ${className || ''}`}>
+        <div className="d-flex align-items-center">
+            <div className="flex-shrink-0 me-3">
+                <div className="avatar-xs">
+                    <div className="avatar-title rounded-circle bg-light text-primary">
+                        <i className={`${icon} fs-16`}></i>
+                    </div>
+                </div>
+            </div>
+            <div className="flex-grow-1">
+                <p className="text-muted mb-0 fs-12 uppercase-label">{label}</p>
+                <h6 className="mb-0 fs-14 fw-bold text-dark">{value}</h6>
+            </div>
+        </div>
+    </div>
+);
+
+export default AppointmentModal;

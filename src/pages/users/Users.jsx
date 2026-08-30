@@ -1,427 +1,792 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import PageHeader from '../common/PageHeader';
+import { usePermissions } from '../../lib/auth/usePermissions';
+import { DataTable } from '../../components/Table/DataTableWrapper'
+import { Column } from 'primereact/column'
+import { Dropdown } from 'primereact/dropdown'
+import { FilterMatchMode, FilterOperator } from 'primereact/api'
+import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers, getUserCount, purchaseUserSeats } from '../../modules/user/services';
+import { fetchInvoiceDetails } from '../../modules/invoice/services';
+import { getUserDetails } from '../../lib/auth/authApi';
+import { formatPhoneNumber } from '../../utils/formatters';
+import { USER_STATUS } from '../../config/statusOptions';
+import "../../../assets/css/bootstrap.min.css";
+import { toast } from "react-toastify";
+import UserModal from './components/UserModal';
+import TableLoader from '../../components/Loader/TableLoader';
+import FilterLoader from '../../components/Loader/FilterLoader';
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import { useAuthStore } from '../../store/auth/authStore';
+import UserLimitModal from './components/UserLimitModal';
+import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
+import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
+import { ENTITY_TYPE_PARTNER } from '../../config/appConfig';
 
 export default function Users() {
-  useEffect(() => {
-    // Row click: navigate to a details page (placeholder for now)
-    const tbody = document.getElementById('users-list-data')
-    if (tbody) {
-      Array.prototype.forEach.call(tbody.querySelectorAll('tr'), (tr) => {
-        tr.classList.add('cursor-pointer')
-      })
-      const onTbodyClick = (e) => {
-        const target = e.target
-        if (target.closest('a, button, input, label, [data-bs-toggle], .remove-item-btn')) return
-        const row = target.closest('tr')
-        if (!row) return
-        // Navigate to details (could be /user-details in future)
-        window.location.href = '/employees' // keep navigation consistent until user-details exists
-      }
-      tbody.addEventListener('click', onTbodyClick)
-      return () => tbody.removeEventListener('click', onTbodyClick)
-    }
-  }, [])
+  const [filters, setFilters] = useState({})
+  const [globalFilterValue, setGlobalFilterValue] = useState('')
+  const [selection, setSelection] = useState([])
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
+  const [sortField, setSortField] = useState('id')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [appliedFilters, setAppliedFilters] = useState({})
+  const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const [appliedRoleFilter, setAppliedRoleFilter] = useState('')
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
 
-  useEffect(() => {
-    // Initialize Choices.js for selects when available
-    const selects = document.querySelectorAll('[data-choices]')
-    selects.forEach((el) => {
-      try {
-        if (window.Choices && typeof window.Choices === 'function') {
-          if (!el._choicesInstance) {
-            const instance = new window.Choices(el, { searchEnabled: false })
-            el._choicesInstance = instance
-          }
-        }
-      } catch (_) {}
-    })
-  }, [])
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [roles, setRoles] = useState([]);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [deletingUserId, setDeletingUserId] = useState(null);
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { hasPermission } = usePermissions();
+  const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const userSubscription = useAuthStore((state) => state.userSubscription);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0 });
+  const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
 
-  useEffect(() => {
-    // Select All checkbox and actions dropdown
-    const headerCheck = document.getElementById('checkAllUsers')
-    let tbody = document.getElementById('users-list-data') || document.querySelector('.form-check-all-users')
-    let rowChecks = (tbody
-      ? tbody.querySelectorAll('input.form-check-input[name="chk_child_users"]')
-      : document.querySelectorAll('.form-check-all-users input.form-check-input[name="chk_child_users"]'))
-    const primaryBtn = document.getElementById('primaryActionBtnUsers')
-    const originalHref = primaryBtn ? primaryBtn.getAttribute('href') : null
-    const toggleBtn = document.getElementById('primaryActionToggleBtnUsers')
-    const actionMenu = document.getElementById('primaryActionMenuUsers')
+  // Free Trial User Limit Modal States
+  const [showFreeTrialLimitModal, setShowFreeTrialLimitModal] = useState(false);
+  const [allowedFreeTrialCount, setAllowedFreeTrialCount] = useState(0);
 
-    const preventPrimaryNavigate = (e) => e.preventDefault()
-
-    const syncHeaderState = () => {
-      if (!tbody || !headerCheck) return
-      const total = rowChecks.length
-      const checked = (tbody
-        ? tbody.querySelectorAll('input.form-check-input[name="chk_child_users"]:checked').length
-        : document.querySelectorAll('.form-check-all-users input.form-check-input[name="chk_child_users"]:checked').length)
-      headerCheck.checked = checked === total && total > 0
-      headerCheck.indeterminate = checked > 0 && checked < total
+  const handleAddUserClick = async () => {
+    // Check if current user is host from store (no API call needed)
+    if (user?.is_host == 1) {
+      setShowAddUser(true);
+      setEditingUserId(null);
+      setIsPurchaseFlow(false);
+      setBackendErrors({});
+      setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+      return;
     }
 
-    const updatePrimaryBtnLabel = () => {
-      if (!primaryBtn) return
-      const selected = (tbody
-        ? tbody.querySelectorAll('input.form-check-input[name="chk_child_users"]:checked').length
-        : document.querySelectorAll('.form-check-all-users input.form-check-input[name="chk_child_users"]:checked').length)
-      if (selected > 0) {
-        primaryBtn.innerHTML = ' Actions'
-        primaryBtn.classList.remove('btn-primary')
-        primaryBtn.classList.add('bg-success', 'text-white', 'fw-medium')
-        primaryBtn.addEventListener('click', preventPrimaryNavigate)
-        if (toggleBtn) {
-          toggleBtn.classList.remove('d-none', 'btn-primary')
-          toggleBtn.classList.add('bg-success', 'text-white', 'fw-medium')
-        }
-        if (actionMenu) actionMenu.classList.remove('d-none')
+    try {
+      setLoadingLimitCheck(true);
+
+      const data = await getUserCount();
+      const currentCount = data.data.count || 0;
+      const totalAllowed = data.data.seat_limit || data.data.user_seats || userSubscription?.user_seats || 3;
+
+      if (currentCount < totalAllowed) {
+        setShowAddUser(true);
+        setEditingUserId(null);
+        setIsPurchaseFlow(false);
+        setBackendErrors({});
+        setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
       } else {
-        primaryBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Add User'
-        if (originalHref) primaryBtn.setAttribute('href', originalHref)
-        primaryBtn.classList.remove('bg-success', 'text-white')
-        primaryBtn.classList.add('btn-primary')
-        primaryBtn.removeEventListener('click', preventPrimaryNavigate)
-        if (toggleBtn) {
-          toggleBtn.classList.add('d-none')
-          toggleBtn.setAttribute('aria-expanded', 'false')
-          toggleBtn.classList.remove('bg-success', 'text-white', 'fw-medium')
-          toggleBtn.classList.add('btn-primary')
+        const isPartner = user?.entity_type === ENTITY_TYPE_PARTNER;
+        const isFreeTrial = !!userSubscription?.is_free_trail;
+
+        if (isPartner && isFreeTrial) {
+          setAllowedFreeTrialCount(totalAllowed);
+          setShowFreeTrialLimitModal(true);
+        } else {
+          setLimitData({
+            count: currentCount,
+            price: data.data.per_user_price,
+            limit: totalAllowed,
+            quantity: 1,
+            totalPrice: parseFloat(data.data.per_user_price || 0)
+          });
+          setShowLimitModal(true);
         }
-        if (actionMenu) actionMenu.classList.add('d-none')
       }
+    } catch (error) {
+      console.error("Failed to check user limit:", error);
+      toast.error("Failed to check user limit");
+    } finally {
+      setLoadingLimitCheck(false);
     }
+  };
 
-    const onHeaderChange = () => {
-      const on = headerCheck.checked
-      rowChecks.forEach((cb) => { cb.checked = on })
-      syncHeaderState(); updatePrimaryBtnLabel()
+  const handleLimitProceed = (months, totalPrice) => {
+    setLimitData(prev => ({ ...prev, months, quantity: 1, totalPrice }));
+    setShowLimitModal(false);
+    setIsPurchaseFlow(true);
+    setEditingUserId(null);
+    setNewUser({
+      user_id: '',
+      name: '',
+      email: '',
+      phone_number: '',
+      role_id: '',
+      password: '',
+      new_password: '',
+      confirm_password: '',
+      is_paid: true
+    });
+    setShowAddUser(true);
+  };
+
+  const handlePaymentSuccess = async () => {
+    setShowPaymentModal(false);
+    toast.success("Payment completed successfully!");
+    // Delay reload to allow toast to be seen
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  };
+
+  const [newUser, setNewUser] = useState({
+    user_id: '',
+    name: '',
+    email: '',
+    phone_number: '',
+    role_id: '',
+    status: '',
+    password: '',
+    new_password: '',
+    confirm_password: '',
+  });
+
+  const [backendErrors, setBackendErrors] = useState({});
+
+  const statusOptions = [
+    { label: 'All Status', value: '' },
+    ...USER_STATUS
+  ]
+
+  const initFilters = () => {
+    const initial = {
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+      phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      entity_type: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      role_name: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      end_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
     }
-    const onRowChange = () => { syncHeaderState(); updatePrimaryBtnLabel() }
-
-    if (headerCheck) headerCheck.addEventListener('change', onHeaderChange)
-    rowChecks.forEach((cb) => cb.addEventListener('change', onRowChange))
-    syncHeaderState(); updatePrimaryBtnLabel()
-
-    // Export/Delete actions (IDs scoped for Users)
-    const getSelectedRows = () => {
-      const scope = tbody || document
-      const selector = tbody
-        ? 'input.form-check-input[name="chk_child_users"]:checked'
-        : '.form-check-all-users input.form-check-input[name="chk_child_users"]:checked'
-      return Array.from(scope.querySelectorAll(selector)).map((cb) => cb.closest('tr'))
-    }
-    const getRowData = (tr) => Array.from(tr.querySelectorAll('td')).map((td) => td.innerText.trim().replace(/\s+/g, ' '))
-    const download = (filename, text) => {
-      const a = document.createElement('a')
-      a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text))
-      a.setAttribute('download', filename)
-      a.style.display = 'none'
-      document.body.appendChild(a); a.click(); document.body.removeChild(a)
-    }
-    const exportCsvBtn = document.getElementById('exportCsvUsers')
-    const exportExcelBtn = document.getElementById('exportExcelUsers')
-    const exportPdfBtn = document.getElementById('exportPdfUsers')
-    const deleteSelectedBtn = document.getElementById('deleteSelectedUsers')
-
-    const onExportCsv = (e) => { e.preventDefault(); const rows = getSelectedRows(); if (!rows.length) return; const csv = rows.map((tr) => getRowData(tr).join(',')).join('\n'); download('users.csv', csv) }
-    const onExportExcel = (e) => { e.preventDefault(); const rows = getSelectedRows(); if (!rows.length) return; const tsv = rows.map((tr) => getRowData(tr).join('\t')).join('\n'); download('users.xls', tsv) }
-    const onExportPdf = (e) => { e.preventDefault(); const rows = getSelectedRows(); if (!rows.length) return; const text = rows.map((tr) => getRowData(tr).join(' | ')).join('\n'); download('users.txt', text) }
-    const onDeleteSelected = (e) => { e.preventDefault(); const rows = getSelectedRows(); if (!rows.length) return; const modalEl = document.getElementById('deleteOrder'); if (!modalEl || !window.bootstrap) return; const modal = new window.bootstrap.Modal(modalEl); modal.show(); const confirmBtn = document.getElementById('delete-record'); const closeBtn = document.getElementById('deleteRecord-close'); const onConfirm = () => { rows.forEach((tr) => tr.remove()); tbody = document.getElementById('users-list-data') || document.querySelector('.form-check-all-users'); rowChecks = (tbody ? tbody.querySelectorAll('input.form-check-input[name="chk_child_users"]') : document.querySelectorAll('.form-check-all-users input.form-check-input[name="chk_child_users"]')); syncHeaderState(); updatePrimaryBtnLabel(); modal.hide(); confirmBtn && confirmBtn.removeEventListener('click', onConfirm); closeBtn && closeBtn.removeEventListener('click', onClose) }; const onClose = () => { modal.hide(); confirmBtn && confirmBtn.removeEventListener('click', onConfirm); closeBtn && closeBtn.removeEventListener('click', onClose) }; confirmBtn && confirmBtn.addEventListener('click', onConfirm); closeBtn && closeBtn.addEventListener('click', onClose) }
-
-    exportCsvBtn && exportCsvBtn.addEventListener('click', onExportCsv)
-    exportExcelBtn && exportExcelBtn.addEventListener('click', onExportExcel)
-    exportPdfBtn && exportPdfBtn.addEventListener('click', onExportPdf)
-    deleteSelectedBtn && deleteSelectedBtn.addEventListener('click', onDeleteSelected)
-
-    // Sticky subheader
-    const sticky = document.querySelector('.page-subheader-sticky')
-    let observer
-    if (sticky) {
-      let topOffset = parseInt(getComputedStyle(sticky).top, 10)
-      if (isNaN(topOffset)) topOffset = 70
-      const sentinel = document.createElement('div')
-      sentinel.className = 'sticky-sentinel'
-      sentinel.setAttribute('aria-hidden', 'true')
-      sentinel.style.position = 'relative'; sentinel.style.height = '1px'
-      sticky.parentNode && sticky.parentNode.insertBefore(sentinel, sticky)
-      observer = new IntersectionObserver((entries) => {
-        const e = entries[0]
-        if (e.isIntersecting) sticky.classList.remove('is-stuck')
-        else sticky.classList.add('is-stuck')
-      }, { rootMargin: '-' + topOffset + 'px 0px 0px 0px', threshold: [0, 1] })
-      observer.observe(sentinel)
-    }
-
-    return () => {
-      if (headerCheck) headerCheck.removeEventListener('change', onHeaderChange)
-      rowChecks.forEach((cb) => cb.removeEventListener('change', onRowChange))
-      exportCsvBtn && exportCsvBtn.removeEventListener('click', onExportCsv)
-      exportExcelBtn && exportExcelBtn.removeEventListener('click', onExportExcel)
-      exportPdfBtn && exportPdfBtn.removeEventListener('click', onExportPdf)
-      deleteSelectedBtn && deleteSelectedBtn.removeEventListener('click', onDeleteSelected)
-      observer && observer.disconnect()
-    }
-  }, [])
+    setFilters(initial)
+    setAppliedFilters(initial)
+    setGlobalFilterValue('')
+    setAppliedGlobalFilterValue('')
+  }
 
   useEffect(() => {
-    // Sorting and search using List.js; alias classes to header data-sort
-    const initSorting = () => {
-      const valueNames = ['name', 'email', 'phone', 'role', 'status']
-      try {
-        const list = new window.List('usersTable', {
-          listClass: 'list',
-          valueNames,
-          searchClass: 'search'
+    initFilters()
+    loadRoles();
+
+    // Add class to body to prevent global scroll
+    document.body.classList.add('table-page-fit-active');
+
+    return () => {
+      document.body.classList.remove('table-page-fit-active');
+    };
+  }, [])
+
+  const loadRoles = async () => {
+    const roleList = await fetchRoles();
+    setRoles(roleList);
+  };
+
+  const resolveRoleId = (rowData) => {
+    if (!rowData) return '';
+    if (rowData.role_id != null) return String(rowData.role_id);
+    if (rowData.role) {
+      const found = roles.find(r => r.name === rowData.role || String(r.id) === String(rowData.role));
+      if (found) return String(found.id);
+    }
+    return '';
+  };
+
+  const loadUsers = async () => {
+    setLoading(true)
+    try {
+      const payload = {
+        role: appliedRoleFilter || '',
+        status: appliedStatusFilter || '',
+        search: appliedGlobalFilterValue || '',
+        filters: appliedFilters,
+        page,
+        per_page: perPage,
+        sort_field: sortField,
+        sort_order: sortOrder,
+      }
+      const res = await fetchUsers(payload)
+      const next = Array.isArray(res) ? res : (res?.data ?? [])
+      const meta = Array.isArray(res) ? undefined : res?.meta
+
+      setRows(next)
+      if (meta) {
+        setTotalRecords(typeof meta.total === 'number' ? meta.total : next.length)
+        if (typeof meta.current_page === 'number') setPage(meta.current_page)
+        if (typeof meta.per_page === 'number') setPerPage(meta.per_page)
+      } else {
+        setTotalRecords(next.length)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!appliedFilters || Object.keys(appliedFilters).length === 0) return
+    const timeout = setTimeout(() => {
+      loadUsers()
+    }, 300)
+    return () => clearTimeout(timeout)
+  }, [appliedRoleFilter, appliedStatusFilter, appliedGlobalFilterValue, appliedFilters, page, perPage, sortField, sortOrder])
+
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    setFilters(prev => ({ ...prev, global: { ...prev.global, value } }))
+    setGlobalFilterValue(value)
+  }
+
+  const onStatusChange = (e) => {
+    const val = e.target.value
+    setStatusFilter(val)
+  }
+
+  const onRoleChange = (e) => {
+    const val = e.target.value
+    setRoleFilter(val)
+  }
+
+  const onApplyFilters = () => {
+    setLoading(true)
+    setAppliedGlobalFilterValue(globalFilterValue || '')
+    setAppliedStatusFilter(statusFilter || '')
+    setAppliedRoleFilter(roleFilter || '')
+    setAppliedFilters(filters)
+    setPage(1)
+  }
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onApplyFilters();
+      const params = new URLSearchParams(location.search);
+      if (globalFilterValue) params.set('search', globalFilterValue);
+      else params.delete('search');
+      if (statusFilter) params.set('status', statusFilter);
+      else params.delete('status');
+      if (roleFilter) params.set('role', roleFilter);
+      else params.delete('role');
+      navigate(`/users?${params.toString()}`);
+    }
+  };
+
+  const onClearFilters = () => {
+    setLoading(true)
+    initFilters()
+    setAppliedRoleFilter('')
+    setAppliedStatusFilter('')
+    setRoleFilter('')
+    setStatusFilter('')
+    setPage(1)
+  }
+
+  const nameBody = (rowData) => (
+    <span
+      className="link-primary"
+      style={{ cursor: 'pointer' }}
+      onClick={() => {
+        if (!hasPermission('update users')) return;
+        setEditingUserId(rowData.id);
+        setBackendErrors({});
+        setNewUser({
+          user_id: rowData.user_id || '',
+          name: rowData.name || '',
+          email: rowData.email || '',
+          phone_number: rowData.phone_number || '',
+          role_id: resolveRoleId(rowData),
+          status: rowData.status || '',
+          password: rowData.password || '',
+          new_password: '',
+          confirm_password: '',
+        });
+        setShowAddUser(true);
+      }}
+    >
+      {rowData.name}
+    </span>
+  )
+
+  const dateBodyTemplate = (rowData, field) => {
+    return rowData[field] || '-';
+  };
+
+  const statusBodyTemplate = (rowData) => {
+    const active = rowData?.status === 'active';
+    return (
+      <span className={`badge ${active ? 'border border-success text-success' : 'badge border border-danger text-danger'}`}>
+        {active ? 'Active' : 'Inactive'}
+      </span>
+    );
+  }
+
+  const onPage = (event) => {
+    setPerPage(event.rows)
+    setPage(Math.floor(event.first / event.rows) + 1)
+  }
+  const onSort = (event) => {
+    setSortField(event.sortField || sortField)
+    setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
+  }
+
+  const handleAddUserSubmit = async (e) => {
+    e.preventDefault();
+
+
+
+    // Clear previous backend errors
+    setBackendErrors({});
+
+    if (editingUserId && newUser.new_password && newUser.new_password !== newUser.confirm_password) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+
+    const payload = {
+      user_id: newUser.user_id,
+      name: newUser.name,
+      email: newUser.email,
+      phone_number: newUser.phone_number,
+      role_id: newUser.role_id ? Number(newUser.role_id) : null,
+      status: newUser.status,
+      ...(editingUserId
+        ? {
+          change_password: showPasswordFields && newUser.new_password ? true : false,
+          ...(showPasswordFields && newUser.new_password
+            ? {
+              new_password: newUser.new_password,
+              confirm_password: newUser.confirm_password,
+            }
+            : {})
+        }
+        : {
+          password: newUser.password,
+          // If purchase flow, include these fields. 
+          // Note: Backend must accept is_paid:true or handle it appropriately.
+          // If backend rejects 'is_paid' for creation without payment, this flow might fail.
+          ...(isPurchaseFlow ? { is_paid: true, months: limitData.months } : {})
         })
-        const container = document.getElementById('usersTable')
-        if (container) container._listInstance = list
-      } catch (_) {}
-    }
-    if (window.List) { initSorting(); return }
-    const script = document.createElement('script')
-    script.src = '/assets/libs/list.js/list.min.js'
-    script.async = true
-    script.onload = initSorting
-    document.body.appendChild(script)
-    return () => { try { document.body.removeChild(script) } catch(_) {} }
-  }, [])
-
-  useEffect(() => {
-    // Role/Status filters: show rows matching selected values (or all)
-    const roleSelect = document.getElementById('userRole')
-    const statusSelect = document.getElementById('userStatus')
-    const tbody = document.getElementById('users-list-data')
-    if (!tbody) return
-
-    const applyFilters = () => {
-      const role = roleSelect ? roleSelect.value : 'all'
-      const status = statusSelect ? statusSelect.value : 'all'
-      Array.from(tbody.querySelectorAll('tr')).forEach((tr) => {
-        const roleText = (tr.querySelector('.role')?.textContent || '').trim()
-        const statusText = (tr.querySelector('.status')?.textContent || '').trim()
-        const roleOk = role === 'all' || roleText === role
-        // status badge may contain extra text; check includes
-        const statusOk = status === 'all' || statusText.includes(status)
-        tr.style.display = roleOk && statusOk ? '' : 'none'
-      })
     }
 
-    const onChange = () => applyFilters()
-    roleSelect && roleSelect.addEventListener('change', onChange)
-    statusSelect && statusSelect.addEventListener('change', onChange)
-    applyFilters()
+    try {
+      setLoadingSave(true);
+      if (editingUserId) {
+        await updateUser(editingUserId, payload)
+        toast.success(`User updated successfully`);
+        setShowAddUser(false)
+        setEditingUserId(null)
+        setBackendErrors({});
+        loadUsers()
+      } else {
+        const res = await createUser(payload)
+        toast.success(`User created successfully`);
 
-    return () => {
-      roleSelect && roleSelect.removeEventListener('change', onChange)
-      statusSelect && statusSelect.removeEventListener('change', onChange)
+        if (isPurchaseFlow) {
+          const invoiceId = res.data?.invoice_id;
+          const userId = res.data?.id;
+          setLimitData(prev => ({ ...prev, invoiceId, userId }));
+          if (invoiceId) {
+            try {
+              const invoiceRes = await fetchInvoiceDetails(invoiceId);
+              if (invoiceRes.status) {
+                setLimitData(prev => ({ ...prev, invoice: invoiceRes.data }));
+              }
+            } catch (error) {
+              console.error('Failed to fetch invoice details:', error);
+            }
+          }
+          // User created, now proceed to payment
+          setShowAddUser(false);
+          setShowPaymentModal(true);
+        } else {
+          setShowAddUser(false)
+          setEditingUserId(null)
+          setBackendErrors({});
+          loadUsers()
+        }
+      }
+    } catch (error) {
+      // Handle backend validation errors
+      if (error?.response?.data?.errors) {
+        // Backend returned field-specific validation errors
+        const errors = error.response.data.errors;
+        setBackendErrors(errors);
+
+        // Show the first error message as a toast
+        const firstErrorMessage = error.response.data.message || Object.values(errors)[0];
+        // toast.error(firstErrorMessage);
+      } else if (error?.response?.data?.message) {
+        // Backend returned a general error message
+        // toast.error(error.response.data.message);
+      } else {
+        // Generic error
+        toast.error("Failed to save user");
+      }
+      console.error(error)
     }
-  }, [])
+    finally {
+      setLoadingSave(false);
+    }
+  };
+
+  const handleAddUserInput = (e) => {
+    const { name, value } = e.target;
+    if (name === 'phone_number') {
+      setNewUser({ ...newUser, [name]: formatPhoneNumber(value) });
+    } else {
+      setNewUser({ ...newUser, [name]: value });
+    }
+  };
+
+  const handleDeleteUsers = async () => {
+    const idsToDelete = deletingUserId ? [deletingUserId] : selection.map(u => u.id);
+
+    if (idsToDelete.length === 0) {
+      toast.warn("No users selected for deletion");
+      return;
+    }
+
+    try {
+      setLoadingDelete(true);
+      await deleteUsers(idsToDelete);
+      toast.success("Users deleted successfully");
+      setSelection([]);
+      setDeletingUserId(null);
+      setShowDeleteModal(false);
+      await getUserDetails();
+      loadUsers();
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to delete users");
+    } finally {
+      setLoadingDelete(false);
+    }
+  };
 
   return (
-    <div className="page-content">
+    <div className="page-content page-content-fit user-section">
       <div className="container-fluid">
-        <div className="row mb-3 pb-1 bg-body">
-          <div className="col">
-            <div className="h-100">
-              <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
-                <div className="col-12">
-                  <div className="d-flex align-items-center justify-content-between flex-row">
-                    <div className="flex-grow-1">
-                      <h4 className="fs-20 mb-1">Users</h4>
-                      <nav aria-label="breadcrumb" className="d-none d-sm-block">
-                        <ol className="breadcrumb m-0">
-                          <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
-                          <li className="breadcrumb-item active" aria-current="page">Users</li>
-                        </ol>
-                      </nav>
-                    </div>
-                    <div className="mt-0">
-                      <form onSubmit={(e) => e.preventDefault()}>
-                        <div className="row g-3 mb-0 align-items-center">
-                          <div className="col-sm-auto">
-                            <div className="btn-group">
-                              <a href="/employees" id="primaryActionBtnUsers" className="btn btn-primary fw-medium waves-effect waves-light">
-                                <i className="ri-add-fill me-1 align-bottom"></i> Add User
-                              </a>
-                              <button type="button" id="primaryActionToggleBtnUsers" className="btn btn-primary waves-effect waves-light dropdown-toggle dropdown-toggle-split d-none" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span className="visually-hidden">Toggle dropdown</span>
-                              </button>
-                              <ul className="dropdown-menu dropdown-menu-end d-none" id="primaryActionMenuUsers">
-                                <li><a className="dropdown-item" href="#" id="exportCsvUsers"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
-                                <li><a className="dropdown-item" href="#" id="exportExcelUsers"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
-                                <li><a className="dropdown-item" href="#" id="exportPdfUsers"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
-                                <li><hr className="dropdown-divider" /></li>
-                                <li><a className="dropdown-item text-danger" href="#" id="deleteSelectedUsers"><i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected</a></li>
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
+        <PageHeader
+          title="Users"
+          breadcrumbs={[{ label: 'Users' }]}
+        >
+          <form onSubmit={(e) => e.preventDefault()}>
+            <div className="row g-3 mb-0 align-items-center">
+              <div className="col-sm-auto">
+                <div className="btn-group">
+                  {hasPermission('delete users') && Array.isArray(selection) && selection.length > 0 ? (
+                    <>
+                      <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                        Actions
+                      </button>
+                      <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span className="visually-hidden">Toggle dropdown</span>
+                      </button>
+                      <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                        <li>
+                          <button
+                            className="dropdown-item text-danger"
+                            type="button"
+                            onClick={() => {
+                              if (!selection || selection.length === 0) {
+                                toast.warn("No users selected for deletion");
+                                return;
+                              }
+                              setDeletingUserId(null);
+                              setShowDeleteModal(true);
+                            }}
+                          >
+                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                          </button>
+                        </li>
+                      </ul>
+                    </>
+                  ) : hasPermission('create users') ? (
+                    <button
+                      className="btn btn-primary fw-medium"
+                      onClick={handleAddUserClick}
+                      disabled={loadingLimitCheck}
+                    >
+                      {loadingLimitCheck ? (
+                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                      ) : (
+                        <i className="ri-add-fill me-1 align-bottom"></i>
+                      )}
+                      Add User
+                    </button>
+                  ) : null}
                 </div>
               </div>
+            </div>
+          </form>
+        </PageHeader>
 
-              <div className="row">
-                <div className="col-lg-12">
-                  <div className="card">
-                    <div className="card-body">
-                      <form>
-                        <div className="row g-3 mb-3">
-                          <div className="col-xxl-4 col-sm-12">
-                            <div className="search-box">
-                              <input type="text" className="form-control search bg-light border-light" id="searchUser" autoComplete="off" placeholder="Search here..." />
-                              <i className="ri-search-line search-icon"></i>
-                            </div>
-                          </div>
-                          <div className="col-xxl-3 col-sm-4">
-                            <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-userRole" id="userRole">
-                                <option value="all" defaultValue>Select Role</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Manager">Manager</option>
-                                <option value="Staff">Staff</option>
-                                <option value="Guest">Guest</option>
-                              </select>
-                            </div>
-                          </div>
-                          <div className="col-xxl-3 col-sm-4">
-                            <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-userStatus" id="userStatus">
-                                <option value="all" defaultValue>Select Status</option>
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="Suspended">Suspended</option>
-                              </select>
-                            </div>
-                          </div>
-                          <div className="col-xxl-2 col-sm-4">
-                            <button type="button" className="btn btn-warning w-100">
-                              <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                            </button>
-                          </div>
-                        </div>
-                      </form>
-                      <div>
-                        <div className="table-responsive table-card mt-1">
-                          <style>{`
-      /* Increase users table row height by ~10px total */
-      #usersTable > :not(caption) > * > * {
-        padding-top: calc(.75rem + 5px);
-        padding-bottom: calc(.75rem + 5px);
-      }
-    `}</style>
-                          <table className="table align-middle table-nowrap table-hover table-striped" id="usersTable">
-                            <thead className="table-light">
-                              <tr>
-                                <th scope="col" style={{ width: '50px' }}>
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" id="checkAllUsers" value="option" />
-                                  </div>
-                                </th>
-                                <th className="text-uppercase" data-sort="name">Name</th>
-                                <th className="text-uppercase" data-sort="email">Email</th>
-                                <th className="text-uppercase" data-sort="phone">Phone Number</th>
-                                <th className="text-uppercase" data-sort="role">Role</th>
-                                <th className="text-uppercase" data-sort="status">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody className="list form-check-all-users" id="users-list-data">
-                              <tr>
-                                <th scope="row">
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" name="chk_child_users" value="#USR0001" />
-                                  </div>
-                                </th>
-                                <td className="name"><a href="/employees" className="fw-medium link-primary">Alex Johnson</a></td>
-                                <td className="email">alex.johnson@example.com</td>
-                                <td className="phone">(415) 555-1001</td>
-                                <td className="role">Admin</td>
-                                <td className="status"><span className="badge rounded-pill bg-success text-white text-uppercase fw-semibold px-3 py-1">Active</span></td>
-                              </tr>
-                              <tr>
-                                <th scope="row">
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" name="chk_child_users" value="#USR0002" />
-                                  </div>
-                                </th>
-                                <td className="name"><a href="/employees" className="fw-medium link-primary">Maria Gomez</a></td>
-                                <td className="email">maria.gomez@example.com</td>
-                                <td className="phone">(312) 555-2235</td>
-                                <td className="role">Manager</td>
-                                <td className="status"><span className="badge rounded-pill bg-success text-white text-uppercase fw-semibold px-3 py-1">Active</span></td>
-                              </tr>
-                              <tr>
-                                <th scope="row">
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" name="chk_child_users" value="#USR0003" />
-                                  </div>
-                                </th>
-                                <td className="name"><a href="/employees" className="fw-medium link-primary">Chen Wu</a></td>
-                                <td className="email">chen.wu@example.com</td>
-                                <td className="phone">(206) 555-7803</td>
-                                <td className="role">Staff</td>
-                                <td className="status"><span className="badge rounded-pill bg-warning text-dark text-uppercase fw-semibold px-3 py-1">Inactive</span></td>
-                              </tr>
-                              <tr>
-                                <th scope="row">
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" name="chk_child_users" value="#USR0004" />
-                                  </div>
-                                </th>
-                                <td className="name"><a href="/employees" className="fw-medium link-primary">Nora Patel</a></td>
-                                <td className="email">nora.patel@example.com</td>
-                                <td className="phone">(512) 555-5523</td>
-                                <td className="role">Guest</td>
-                                <td className="status"><span className="badge rounded-pill bg-danger text-white text-uppercase fw-semibold px-3 py-1">Suspended</span></td>
-                              </tr>
-                            </tbody>
-                          </table>
+        <div className="row row-table-fit">
+          <div className="col-lg-12">
+            <div className="card">
+              <div className="card-body list-fluid-card">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  onApplyFilters();
+                }}>
+                  {loading ? (
+                    <FilterLoader config={[
+                      { col: "col-xxl-4 col-sm-12" }, // Search
+                      { col: "col-xxl-3 col-sm-4" },  // Status
+                      { col: "col-xxl-3 col-sm-4" },  // Role
+                      { col: "col-xxl-2 col-sm-4", isButton: true } // Buttons
+                    ]} />
+                  ) : (
+                    <div className="row g-3 mb-3">
+                      <div className="col-xxl-4 col-sm-12">
+                        <div className="search-box">
+                          <input
+                            type="text"
+                            className="form-control search bg-light border-light"
+                            id="searchStatus"
+                            autoComplete="off"
+                            placeholder="Search here..."
+                            value={globalFilterValue}
+                            onChange={(e) => setGlobalFilterValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                onApplyFilters();
+                              }
+                            }}
+                          />
+                          <i className="ri-search-line search-icon"></i>
                         </div>
                       </div>
-
-                      {/* Footer / Pagination placeholder to match design */}
-                      <div className="row align-items-center mt-4">
-                        <div className="col-sm-6">
-                          <div className="text-muted">
-                            <p className="mb-sm-0 text-muted">Showing <span className="fw-semibold">1</span> to <span className="fw-semibold">4</span> of <span className="fw-semibold text-decoration-underline">4</span> entries</p>
-                          </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="d-flex justify-content-center justify-content-sm-end align-items-baseline gap-2">
-                            <div className="datatable me-2">
-                              <label className="mb-0 text-muted d-flex align-items-baseline gap-2 fw-normal">Show
-                                <select name="users-rows_length" className="form-select form-select-sm d-inline-block w-auto align-middle pt-1 pb-1">
-                                  <option value="10" defaultValue>10</option>
-                                  <option value="25">25</option>
-                                  <option value="50">50</option>
-                                  <option value="100">100</option>
-                                </select>
-                                entries
-                              </label>
-                            </div>
-                            <ul className="pagination pagination-separated justify-content-center justify-content-sm-end mb-0">
-                              <li className="page-item disabled">
-                                <a href="#" className="page-link">Previous</a>
-                              </li>
-                              <li className="page-item active">
-                                <a href="#" className="page-link">1</a>
-                              </li>
-                              <li className="page-item">
-                                <a href="#" className="page-link">Next</a>
-                              </li>
-                            </ul>
-                          </div>
+                      <div className="col-xxl-2 col-sm-4">
+                        <Dropdown
+                          value={statusFilter}
+                          onChange={(e) => onStatusChange({ target: { value: e.value } })}
+                          options={statusOptions}
+                          optionLabel="label"
+                          optionValue="value"
+                          placeholder="All Status"
+                          className="w-100 employee-filter-dropdown"
+                        />
+                      </div>
+                      <div className="col-xxl-2 col-sm-4">
+                        <Dropdown
+                          value={roleFilter || ''}
+                          onChange={(e) => onRoleChange({ target: { value: e.value } })}
+                          options={[{ id: '', name: 'All Roles' }, ...roles]}
+                          optionLabel="name"
+                          optionValue="id"
+                          placeholder="All Roles"
+                          className="w-100 employee-filter-dropdown"
+                        />
+                      </div>
+                      <div className="col-xxl-4 col-sm-4">
+                        <div className="d-flex gap-2">
+                          <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
+                            <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                          </button>
+                          <button type="button" className="btn btn-default flex-grow-1" onClick={onClearFilters}>
+                            <i className="ri-close-line me-1 align-bottom"></i> Clear
+                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
+                  )}
+                </form>
 
+                {loading ? (
+                  <TableLoader
+                    rows={12}
+                    columns={[
+                      { style: { width: '3rem' } }, // Selection
+                      { style: { minWidth: '' } }, // Name
+                      { style: { minWidth: '' } }, // Phone
+                      { style: { minWidth: '' } }, // Email
+                      { style: { minWidth: '' } }, // Entity Type
+                      { style: { minWidth: '' } }, // Role
+                      { style: { minWidth: '' } }, // End Date
+                      { style: { minWidth: '' } }, // Status
+                      { style: { width: '12rem' } } // Action
+                    ]}
+                  />
+                ) : (
+                  <div className="table-responsive table-card mt-1">
+                    <DataTable
+                      scrollable
+                      scrollHeight="flex"
+                      value={rows}
+                      paginator
+                      lazy
+                      totalRecords={totalRecords}
+                      first={(page - 1) * perPage}
+                      rows={perPage}
+                      rowsPerPageOptions={[10, 25, 50, 100]}
+                      sortMode="single"
+                      sortField={sortField}
+                      sortOrder={sortOrder === 'asc' ? 1 : -1}
+                      filterDisplay="menu"
+                      filters={filters}
+                      onFilter={(e) => { setFilters(e.filters); setAppliedFilters(e.filters); setPage(1); }}
+                      onPage={onPage}
+                      onSort={onSort}
+                      globalFilterFields={[
+                        'name',
+                        'phone_number',
+                        'email',
+                        'role_name',
+                        'status',
+                        'end_date',
+                      ]}
+                      selection={selection}
+                      onSelectionChange={(e) => setSelection(e.value)}
+                      dataKey="id"
+                      responsiveLayout="scroll"
+                      className="p-datatable-sm"
+                      emptyMessage="No Users found"
+                      isDataSelectable={(e) => e.data.entity_type !== ENTITY_TYPE_PARTNER}
+                    >
+                      {hasPermission('delete users') && (
+                        <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                      )}
+                      <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                      <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
+                      <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
+                      <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
+                      <Column field="end_date" header="Subscription End Date" sortable filter showFilterMatchModes filterPlaceholder="Search End Date" body={(rowData) => dateBodyTemplate(rowData, 'end_date')}></Column>
+                      <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
+                      {/* {(hasPermission('update users') || hasPermission('delete users')) && (
+                        <Column
+                          header="Action"
+                          body={(rowData) => (
+                            <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
+                              {hasPermission('update users') && (
+                                <button
+                                  className="btn btn-sm btn-primary"
+                                  aria-label="Edit user"
+                                  onClick={() => {
+                                    setEditingUserId(rowData.id);
+                                    setBackendErrors({});
+                                    setNewUser({
+                                      user_id: rowData.user_id || '',
+                                      name: rowData.name || '',
+                                      email: rowData.email || '',
+                                      phone_number: rowData.phone_number || '',
+                                      role_id: resolveRoleId(rowData),
+                                      password: rowData.password || '',
+                                      status: rowData.status || '',
+                                      new_password: '',
+                                      confirm_password: '',
+                                    });
+                                    setShowAddUser(true);
+                                  }}
+                                >
+                                  <i className="ri-edit-2-fill align-bottom"></i>
+                                  <span className="d-none d-sm-inline ms-1">Edit</span>
+                                </button>
+                              )}
+                              {hasPermission('delete users') && rowData.entity_type !== ENTITY_TYPE_PARTNER && (
+                                <button
+                                  className="btn btn-sm btn-danger"
+                                  aria-label="Delete user"
+                                  onClick={() => {
+                                    setDeletingUserId(rowData.id);
+                                    setShowDeleteModal(true);
+                                  }}
+                                >
+                                  <i className="ri-delete-bin-6-fill align-bottom"></i>
+                                  <span className="d-none d-sm-inline ms-1">Delete</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          style={{ textAlign: 'center', width: '12rem' }}
+                        />
+                      )} */}
+
+                    </DataTable>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        <UserModal
+          show={showAddUser}
+          onHide={() => {
+            setShowAddUser(false);
+            setEditingUserId(null);
+            setIsPurchaseFlow(false);
+            setShowPasswordFields(false);
+            setBackendErrors({});
+          }}
+          onSubmit={handleAddUserSubmit}
+          user={newUser}
+          onChange={handleAddUserInput}
+          roles={roles}
+          isEdit={!!editingUserId}
+          loadingSave={loadingSave}
+          showPasswordFields={showPasswordFields}
+          onPasswordFieldsToggle={setShowPasswordFields}
+          backendErrors={backendErrors}
+          isPurchaseFlow={isPurchaseFlow}
+          purchaseMonths={limitData.months}
+          purchasePrice={limitData.totalPrice}
+        />
+
+        <DeleteConfirmationModal
+          show={showDeleteModal}
+          onConfirm={handleDeleteUsers}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setDeletingUserId(null);
+          }}
+          loading={loadingDelete}
+          text={
+            deletingUserId
+              ? "Deleting this user will remove all information."
+              : "Deleting selected users will remove all information."
+          }
+        />
+        <UserLimitModal
+          show={showLimitModal}
+          onHide={() => setShowLimitModal(false)}
+          onProceed={handleLimitProceed}
+          userCount={limitData.count}
+          freeLimit={limitData.limit}
+          perUserPrice={limitData.price}
+        />
+
+        <InvoicePaymentModal
+          show={showPaymentModal}
+          onHide={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+          invoice={limitData.invoice}
+        />
+
+        <PaidVersionOnlyModal
+          show={showFreeTrialLimitModal}
+          onHide={() => setShowFreeTrialLimitModal(false)}
+          message={
+            <>
+              This feature is available in Paid version. You can only add <strong>{allowedFreeTrialCount}</strong> users in Free trial.
+            </>
+          }
+        />
       </div>
     </div>
   )

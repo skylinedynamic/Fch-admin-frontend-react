@@ -1,0 +1,66 @@
+/* Statistics Card Skeleton Loader Styles */
+
+.statistics-skeleton {
+    position: relative;
+}
+
+.skeleton-shimmer {
+    background: #e9ecef;
+    background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 37%, #f0f2f5 63%);
+    background-size: 400% 100%;
+    animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    border-radius: 4px;
+}
+
+.skeleton-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+}
+
+.skeleton-title {
+    width: 70%;
+    height: 14px;
+    margin-bottom: 8px;
+}
+
+.skeleton-count {
+    width: 45%;
+    height: 28px;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0 50%;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .skeleton-shimmer {
+        background: #2a2a2a;
+        background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 37%, #f0f2f5 63%);
+        background-size: 400% 100%;
+    }
+}
+
+/* Pulse animation alternative */
+.skeleton-pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}

@@ -1,0 +1,27 @@
+.p-datatable.p-datatable-sm .p-datatable-tbody > tr > td:not(:first-child)
+ {
+    padding: 1rem 0.5rem;
+}
+.link-primary{
+    color: #3F51B5 !important;
+    font-weight: 400 !important;
+}
+
+.p-dropdown-panel ul.p-dropdown-items{
+    padding-left: 0 !important;
+}
+
+.p-column-filter-add-rule, .p-column-filter-operator{
+    display: none !important;
+}
+ .p-column-filter-remove-button{
+    margin-top: 1rem !important;
+ }
+
+ .p-column-filter-remove-button .p-button-label{
+    margin-left: 5px !important;
+ }
+
+ .p-column-filter-constraint{
+    padding-bottom: 0!important;
+ }
