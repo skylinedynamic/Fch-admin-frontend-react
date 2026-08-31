@@ -218,12 +218,12 @@ const menuItems = [
       {
         to: "/embed-form/settings",
         label: "Configuration",
-        permission: "",
+        permission: "view configuration",
       },
       {
         to: "/embed-form/submissions",
         label: "Submissions",
-        permission: "",
+        permission: "view application",
       },
     ],
   },

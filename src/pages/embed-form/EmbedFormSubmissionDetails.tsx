@@ -10,6 +10,7 @@ import {
     downloadEmbedFormAttachment
 } from '../../modules/embed-form/services';
 import { handleFileDownload } from '../../utils/fileDownload';
+import { usePermissions } from '../../lib/auth/usePermissions';
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 
@@ -159,6 +160,8 @@ const SectionCard = ({
 export default function EmbedFormSubmissionDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
+    const canConvert = hasPermission('convert application');
 
     const [submission, setSubmission] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -498,7 +501,7 @@ export default function EmbedFormSubmissionDetails() {
                                                     <span>View Borrower</span>
                                                 </button>
                                             )
-                                        ) : (
+                                        ) : canConvert ? (
                                             <button
                                                 type="button"
                                                 className="btn btn-primary ef-convert-btn ef-convert-btn--lg"
@@ -508,7 +511,7 @@ export default function EmbedFormSubmissionDetails() {
                                                 <i className="ri-vip-crown-2-line" />
                                                 <span>Convert to Free Trial Borrower</span>
                                             </button>
-                                        )}
+                                        ) : null}
                                     </div>
                                 </div>
 

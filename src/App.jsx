@@ -391,8 +391,10 @@ export default function App() {
 
 
             {/* Embed Form Module */}
-            <Route element={<ProtectedRoute />}>
+            <Route element={<PermissionRoute permission="view configuration" />}>
               <Route path="embed-form/settings" element={<EmbedFormSettings />} />
+            </Route>
+            <Route element={<PermissionRoute permission="view application" />}>
               <Route path="embed-form/submissions" element={<EmbedFormSubmissions />} />
               <Route path="embed-form/submissions/:id" element={<EmbedFormSubmissionDetails />} />
             </Route>

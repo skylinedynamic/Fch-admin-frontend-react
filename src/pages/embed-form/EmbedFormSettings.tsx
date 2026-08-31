@@ -7,6 +7,7 @@ import {
     updateEmbedFormConfig,
     regenerateEmbedKey,
 } from '../../modules/embed-form/services';
+import { usePermissions } from '../../lib/auth/usePermissions';
 
 const CardHeader = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
     <div className="card-header ef-card__header">
@@ -23,6 +24,9 @@ const CardHeader = ({ icon, title, subtitle }: { icon: string; title: string; su
 );
 
 export default function EmbedFormSettings() {
+    const { hasPermission } = usePermissions();
+    const canUpdate = hasPermission('update configuration');
+
     const [config, setConfig] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -309,24 +313,26 @@ export default function EmbedFormSettings() {
                                         </div>
 
                                         {/* Submit Button */}
-                                        <div className="d-flex justify-content-end pt-2 border-top">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary px-4 fw-semibold mt-3"
-                                                disabled={saving}
-                                            >
-                                                {saving ? (
-                                                    <>
-                                                        <span className="spinner-border spinner-border-sm me-2" role="status" />
-                                                        Saving Changes...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <i className="ri-save-line me-1" /> Save Configuration
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
+                                        {canUpdate && (
+                                            <div className="d-flex justify-content-end pt-2 border-top">
+                                                <button
+                                                    type="submit"
+                                                    className="btn btn-primary px-4 fw-semibold mt-3"
+                                                    disabled={saving}
+                                                >
+                                                    {saving ? (
+                                                        <>
+                                                            <span className="spinner-border spinner-border-sm me-2" role="status" />
+                                                            Saving Changes...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="ri-save-line me-1" /> Save Configuration
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </form>
@@ -430,33 +436,35 @@ export default function EmbedFormSettings() {
                                     </div>
 
                                     {/* Security / Key Regeneration Card */}
-                                    <div className="alert alert-warning border-0 p-3 mb-0" style={{ borderRadius: 'var(--ef-radius)' }} role="alert">
-                                        <div className="d-flex align-items-start gap-2">
-                                            <div className="flex-grow-1">
-                                                <h6 className="alert-heading fw-bold fs-13 mb-1">Key Management</h6>
-                                                <p className="fs-12 text-muted mb-2">
-                                                    If you need to revoke existing embeds, you can regenerate your key.
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-outline-danger btn-sm fw-semibold"
-                                                    onClick={handleRegenerate}
-                                                    disabled={regenerating}
-                                                >
-                                                    {regenerating ? (
-                                                        <>
-                                                            <span className="spinner-border spinner-border-sm me-1" />
-                                                            Regenerating...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <i className="ri-refresh-line me-1" /> Regenerate Public Key
-                                                        </>
-                                                    )}
-                                                </button>
+                                    {canUpdate && (
+                                        <div className="alert alert-warning border-0 p-3 mb-0" style={{ borderRadius: 'var(--ef-radius)' }} role="alert">
+                                            <div className="d-flex align-items-start gap-2">
+                                                <div className="flex-grow-1">
+                                                    <h6 className="alert-heading fw-bold fs-13 mb-1">Key Management</h6>
+                                                    <p className="fs-12 text-muted mb-2">
+                                                        If you need to revoke existing embeds, you can regenerate your key.
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-danger btn-sm fw-semibold"
+                                                        onClick={handleRegenerate}
+                                                        disabled={regenerating}
+                                                    >
+                                                        {regenerating ? (
+                                                            <>
+                                                                <span className="spinner-border spinner-border-sm me-1" />
+                                                                Regenerating...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <i className="ri-refresh-line me-1" /> Regenerate Public Key
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

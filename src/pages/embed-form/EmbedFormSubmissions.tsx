@@ -7,6 +7,7 @@ import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode } from 'primereact/api';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
+import { usePermissions } from '../../lib/auth/usePermissions';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
 import StatisticsCard from '../../components/Common/StatisticsCard';
@@ -69,6 +70,7 @@ const formatDateLocal = (date: Date) => {
 
 export default function EmbedFormSubmissions() {
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
 
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -358,7 +360,7 @@ export default function EmbedFormSubmissions() {
                     >
                         <i className="ri-vip-crown-2-fill" /> Free Trial
                     </span>
-                ) : (
+                ) : hasPermission('convert application') ? (
                     <button
                         type="button"
                         className="btn btn-sm btn-soft-primary ef-convert-btn"
@@ -371,6 +373,8 @@ export default function EmbedFormSubmissions() {
                         <i className="ri-vip-crown-2-line" />
                         <span>Convert to Free Trial Borrower</span>
                     </button>
+                ) : (
+                    <span className="text-muted fs-11">—</span>
                 )}
             </div>
         );
