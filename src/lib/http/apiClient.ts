@@ -26,9 +26,45 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
+// Endpoints that must never trigger a refresh check themselves — checking
+// after their own responses would recurse (user-details/refresh-user) or
+// fire before a token even exists (auth endpoints).
+const REFRESH_CHECK_EXCLUDED_PATHS = [
+  '/common/user-details',
+  '/common/refresh-user',
+  '/auth/login',
+  '/auth/logout',
+  '/auth/forgot',
+  '/auth/reset',
+]
+
+let refreshCheckInFlight = false
+
+// Whenever a role's/user's permissions change on the backend, `is_refresh`
+// is flagged on the user row. Rather than waiting for the next page load,
+// check for that flag after every authenticated API call and, if set, pull
+// fresh permissions immediately (getUserDetails() itself calls refresh-user
+// when needed). Concurrent requests are coalesced into a single check.
+function triggerUserRefreshCheck(url?: string) {
+  if (!url || refreshCheckInFlight) return
+  if (REFRESH_CHECK_EXCLUDED_PATHS.some((path) => url.includes(path))) return
+  if (!getToken()) return
+
+  refreshCheckInFlight = true
+  import('../auth/authApi')
+    .then(({ getUserDetails }) => getUserDetails())
+    .catch(() => {})
+    .finally(() => {
+      refreshCheckInFlight = false
+    })
+}
+
 // Global 401/403 handling: 401 => logout + redirect; 403 => toast only
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    triggerUserRefreshCheck(response.config?.url)
+    return response
+  },
   (error: AxiosError) => {
     const status = error?.response?.status
     const skipToast = (error.config as any)?._skipToast

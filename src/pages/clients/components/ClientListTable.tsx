@@ -9,6 +9,7 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import type { Client, ClientFilterParams, ClientListStatistics } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
 import { BORROWER_STATUS, BORROWER_STATUS_CLASS_MAP } from '../../../config/statusOptions';
+import { getTrialBadgeConfig } from '../../../utils/badgeHelper';
 
 
 import FilterLoader from '../../../components/Loader/FilterLoader';
@@ -207,16 +208,19 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     };
 
     // Templates
-    const fullNameBody = (rowData: Client) => (
-        <div className="d-flex align-items-center gap-2">
-            <span className="fw-medium">{rowData.full_name || `${rowData.first_name} ${rowData.last_name}`}</span>
-            {rowData.is_free_trail && (
-                <span className="badge bg-danger-subtle text-danger fs-10 px-2 py-1">
-                    <i className="ri-vip-crown-line me-1"></i>Trial
-                </span>
-            )}
-        </div>
-    );
+    const fullNameBody = (rowData: Client) => {
+        const trialBadge = rowData.is_free_trail ? getTrialBadgeConfig(rowData.free_trail_end_date) : null;
+        return (
+            <div className="d-flex align-items-center gap-2">
+                <span className="fw-medium">{rowData.full_name || `${rowData.first_name} ${rowData.last_name}`}</span>
+                {trialBadge && (
+                    <span className={`badge ${trialBadge.badgeClass} fs-10 px-2 py-1`}>
+                        <i className="ri-vip-crown-line me-1"></i>{trialBadge.label}
+                    </span>
+                )}
+            </div>
+        );
+    };
 
     const businessNameBody = (rowData: Client) => (
         <span className="fw-medium">{rowData.business_name}</span>

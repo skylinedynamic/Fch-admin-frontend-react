@@ -15,6 +15,7 @@ import { toast } from 'react-toastify';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { BORROWER_STATUS_CLASS_MAP } from '../../config/statusOptions';
 import { PARTNER_STATUS } from '../../config';
+import { getTrialBadgeConfig } from '../../utils/badgeHelper';
 
 
 
@@ -243,14 +244,15 @@ export default function Partners() {
 
     // Body templates
     const companyNameBody = (rowData) => {
+        const trialBadge = rowData.is_free_trail ? getTrialBadgeConfig(rowData.free_trail_end_date) : null;
         return (
             <div className="d-flex align-items-center gap-2">
                 <span className="fw-medium">
                     {rowData.company_name}
                 </span>
-                {rowData.is_free_trail && (
-                    <span className="badge bg-danger-subtle text-danger fs-10 px-2 py-1">
-                        <i className="ri-vip-crown-line me-1"></i>Trial
+                {trialBadge && (
+                    <span className={`badge ${trialBadge.badgeClass} fs-10 px-2 py-1`}>
+                        <i className="ri-vip-crown-line me-1"></i>{trialBadge.label}
                     </span>
                 )}
             </div>

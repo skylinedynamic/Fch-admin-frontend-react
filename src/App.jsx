@@ -80,6 +80,10 @@ import FundingList from './pages/funding/FundingList';
 import FundingSequencingForm from './pages/funding/components/FundingSequencingForm';
 import LendersList from './pages/lenders/LendersList';
 import LenderForm from './pages/lenders/LenderForm';
+import EmbedFormSettings from './pages/embed-form/EmbedFormSettings.tsx';
+import EmbedFormSubmissions from './pages/embed-form/EmbedFormSubmissions.tsx';
+import EmbedFormSubmissionDetails from './pages/embed-form/EmbedFormSubmissionDetails.tsx';
+
 import PaymentMethods from './pages/payment-methods/PaymentMethods.tsx';
 
 
@@ -403,6 +407,15 @@ export default function App() {
               <Route path="manage-resources" element={<ManageResources />} />
             </Route>
 
+
+            {/* Embed Form Module */}
+            <Route element={<PermissionRoute permission="view configuration" />}>
+              <Route path="embed-form/settings" element={<EmbedFormSettings />} />
+            </Route>
+            <Route element={<PermissionRoute permission="view application" />}>
+              <Route path="embed-form/submissions" element={<EmbedFormSubmissions />} />
+              <Route path="embed-form/submissions/:id" element={<EmbedFormSubmissionDetails />} />
+            </Route>
 
 
             {/* Under Construction - accessible to all authenticated users */}
