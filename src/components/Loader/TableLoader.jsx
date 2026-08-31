@@ -40,8 +40,15 @@ export default function TableLoader({ rows = 8, columns = 6, showHeader = true }
 
     return (
         <div className="fade-panel">
-            <div className="">
-                <DataTable value={skeletonItems} className="p-datatable-sm" showGridlines={false} stripedRows={false}>
+            <div className="table-responsive table-card">
+                <DataTable
+                    scrollable
+                    scrollHeight="flex"
+                    value={skeletonItems}
+                    className="p-datatable-sm"
+                    showGridlines={false}
+                    stripedRows={false}
+                >
                     {columnDefinitions}
                 </DataTable>
             </div>

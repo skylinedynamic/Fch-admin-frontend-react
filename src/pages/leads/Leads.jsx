@@ -441,7 +441,7 @@ export default function Leads() {
                 {/* Filters and Table mirrored from Clients.jsx */}
                 <div className="row row-table-fit">
                     <div className="col-lg-12">
-                        <div className="card">
+                        <div className="card list-page-card">
                             <div className="card-body">
                                 <form onSubmit={(e) => {
                                     e.preventDefault();

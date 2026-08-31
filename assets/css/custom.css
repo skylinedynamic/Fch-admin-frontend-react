@@ -7149,3 +7149,56 @@ File: Custom Css File
   font-size: 14px;
   line-height: 1;
 }
+
+/* ==========================================================================
+   Partners & Leads — top stat cards, table card, and skeleton loaders
+   ========================================================================== */
+
+/* Stat cards row: give each StatisticsCard a clean 4px-radius bordered
+   look instead of the theme's default heavier shadow-only card, and make
+   sure the row never collapses/squishes inside the flex "page-content-fit"
+   layout (belt-and-braces alongside the generic row:not(.row-table-fit)
+   rule, since this is the exact spot that keeps regressing per page). */
+.page-content-fit .partner-section,
+.page-content-fit .lead-section {
+  flex-shrink: 0 !important;
+  margin-bottom: 1rem !important;
+}
+
+.partner-section .card,
+.lead-section .card {
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius) !important;
+  box-shadow: none !important;
+}
+
+.partner-section .avatar-title,
+.lead-section .avatar-title {
+  border-radius: var(--ef-radius);
+}
+
+/* Skeleton stat cards must match the same 4px-radius bordered shape so
+   there's no visual jump when the real cards replace them. */
+.partner-section .statistics-skeleton,
+.lead-section .statistics-skeleton {
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius) !important;
+  box-shadow: none !important;
+}
+
+.partner-section .skeleton-icon,
+.lead-section .skeleton-icon {
+  border-radius: var(--ef-radius);
+}
+
+/* Filter + table card: consistent 4px radius and a visible border instead
+   of a shadow-only edge, matching the rest of the app's list pages. */
+.list-page-card {
+  border: 1px solid var(--ef-border) !important;
+  border-radius: var(--ef-radius) !important;
+  box-shadow: none !important;
+}
+
+.list-page-card .table-responsive.table-card {
+  border-radius: var(--ef-radius);
+}
