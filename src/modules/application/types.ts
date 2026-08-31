@@ -187,7 +187,10 @@ export interface FundingApplicationDetails {
     self_reported_business_credit_score: string;
     has_business_debt: boolean;
     debt_balance: string;
+    /** Formatted for display (e.g. "$25,000.00") - not parseable as a number. */
     requested_amount: string;
+    /** Raw numeric value - use this for calculations and form inputs. */
+    requested_amount_original: number | null;
     purpose_of_funds: string;
     purpose_note: string | null;
     preferred_funding_type: string;

@@ -1,20 +1,15 @@
 import React from 'react';
+import PageHeader from '../../pages/common/PageHeader';
 
-export default function ApplicationDetailsLoader() {
+export default function ApplicationDetailsLoader({ title = 'Application Details', breadcrumbs = [], children }) {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                {/* Header Skeleton */}
-                <div className="row mb-3 pb-1">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
-                            <div className="flex-grow-1">
-                                <div className="skeleton-line mb-1" style={{ width: '220px', height: '24px', borderRadius: '6px' }}></div>
-                                <div className="skeleton-line" style={{ width: '350px', height: '14px', borderRadius: '4px' }}></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Real header - the title and breadcrumbs are known up front, so they
+                    render immediately instead of skeletons while the data loads. */}
+                <PageHeader title={title} breadcrumbs={breadcrumbs}>
+                    {children}
+                </PageHeader>
 
                 {/* Commission Section Skeleton */}
                 <div className="row">

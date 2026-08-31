@@ -103,7 +103,21 @@ export default function PreQualificationDetails() {
     }, [error, details, isLoading]);
 
     if (isLoading) {
-        return <ApplicationDetailsLoader />;
+        return (
+            <ApplicationDetailsLoader
+                title="Application Details"
+                breadcrumbs={[
+                    { label: 'Pre-Qualification Applications', path: '/intake-review/pre-qualification' },
+                    { label: 'Details' }
+                ]}
+            >
+                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                    <Link to="/intake-review/pre-qualification" className="btn btn-outline-secondary w-lg waves-effect">
+                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                    </Link>
+                </div>
+            </ApplicationDetailsLoader>
+        );
     }
 
     if (error || !details) {
