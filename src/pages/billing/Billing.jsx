@@ -5,6 +5,8 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchUpcomingBilling } from '../../modules/billing';
 import BillingTable from './components/BillingTable';
 import BillingFilters from './components/BillingFilters';
+import BillingStats from './components/BillingStats';
+import { BILLING_VIEW_ALL, BILLING_ENTITY_TYPE_ALL } from './components/BillingFilters';
 import { toast } from 'react-toastify';
 
 export default function Billing() {
@@ -15,6 +17,16 @@ export default function Billing() {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
+    const [windowDays, setWindowDays] = useState(null);
+    const [summary, setSummary] = useState(null);
+
+    // Draft filter values — edited freely, only committed to the applied* state
+    // when the Filters button is clicked, so no dropdown change or Enter keypress
+    // fires a request on its own.
+    const [view, setView] = useState(BILLING_VIEW_ALL);
+    const [entityType, setEntityType] = useState(BILLING_ENTITY_TYPE_ALL);
+    const [appliedView, setAppliedView] = useState(BILLING_VIEW_ALL);
+    const [appliedEntityType, setAppliedEntityType] = useState(BILLING_ENTITY_TYPE_ALL);
 
     // Sorting state
     const [sortField, setSortField] = useState('upcoming_billing_date');
@@ -61,13 +73,21 @@ export default function Billing() {
                 page,
                 per_page: perPage,
                 sort_field: sortField,
-                sort_order: sortOrder
+                sort_order: sortOrder,
+                view: appliedView,
+                // 'all' is a UI-only sentinel — omit the key so the API applies no
+                // entity filter at all.
+                entity_type: appliedEntityType === BILLING_ENTITY_TYPE_ALL ? undefined : appliedEntityType
             };
 
             const response = await fetchUpcomingBilling(payload);
             if (response.status) {
                 setBillings(response.data || []);
                 setTotalRecords(response.meta?.total || 0);
+                // Comes from config('subscription.upcoming_window_days') so the note
+                // below cannot drift from the window the query actually uses.
+                setWindowDays(response.window_days ?? null);
+                setSummary(response.summary ?? null);
             } else {
                 toast.error(response.message || 'Failed to fetch upcoming billing');
             }
@@ -83,17 +103,23 @@ export default function Billing() {
         if (Object.keys(appliedFilters).length > 0) {
             loadData();
         }
-    }, [appliedSearchText, appliedFilters, page, perPage, sortField, sortOrder]);
+    }, [appliedSearchText, appliedFilters, page, perPage, sortField, sortOrder, appliedView, appliedEntityType]);
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
         setAppliedFilters(filters);
+        setAppliedView(view);
+        setAppliedEntityType(entityType);
         setPage(1);
     };
 
     const handleClearFilters = () => {
         setSearchText('');
         setAppliedSearchText('');
+        setView(BILLING_VIEW_ALL);
+        setEntityType(BILLING_ENTITY_TYPE_ALL);
+        setAppliedView(BILLING_VIEW_ALL);
+        setAppliedEntityType(BILLING_ENTITY_TYPE_ALL);
         initFilters();
         setPage(1);
     };
@@ -122,12 +148,16 @@ export default function Billing() {
                     breadcrumbs={[{ label: 'Upcoming Billings' }]}
                 />
 
+                <BillingStats summary={summary} loading={loading} />
+
                 <div className="row row-table-fit">
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
                                 <BillingFilters
                                     searchText={searchText} setSearchText={setSearchText}
+                                    view={view} setView={setView}
+                                    entityType={entityType} setEntityType={setEntityType}
                                     onApply={handleApplyFilters}
                                     onClear={handleClearFilters}
                                     loading={loading}
@@ -136,7 +166,7 @@ export default function Billing() {
                                 <div className="alert alert-info bg-info-subtle border-0 text-dark p-3 rounded-3 mb-3 fs-13 shadow-xs d-flex align-items-center gap-2.5" role="alert">
                                     <i className="ri-information-fill fs-20 text-info flex-shrink-0 me-2"></i>
                                     <div>
-                                        <strong>Note:</strong> This Upcoming Billing list only includes <strong>Active Subscribers</strong> whose subscription ends within the next <strong>10 days</strong>.
+                                        <strong>Note:</strong> This list shows <strong>Active Subscribers</strong> whose next charge falls within the next <strong>{windowDays ?? '…'} days</strong>, plus anyone still awaiting their first payment. Rows marked <span className="text-danger fw-medium">Overdue</span> have a missed cycle the system has not been able to collect, and <span className="text-warning fw-medium">Billing paused</span> means the subscriber is not Active so nothing is being charged.
                                     </div>
                                 </div>
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
+import { SUBSCRIPTION_STATUS_COLORS } from '../../../config/subscriptionConfig';
 
 export default function BillingTable({
     data, loading, totalRecords, page, perPage,
@@ -13,6 +14,24 @@ export default function BillingTable({
     const amountBodyTemplate = (rowData) => {
         const value = rowData.upcoming_billing_amount;
         return value ? `$${parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-';
+    };
+
+    // What has already been invoiced and is still owed — the number that was
+    // previously invisible for anyone whose billing is paused.
+    const outstandingBodyTemplate = (rowData) => {
+        const value = Number(rowData.outstanding_amount || 0);
+
+        if (!value) {
+            return <span className="text-muted">-</span>;
+        }
+
+        const tone = rowData.is_billing_paused ? 'warning' : 'danger';
+
+        return (
+            <span className={`fw-semibold text-${tone}`}>
+                ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
+        );
     };
 
     const typeBodyTemplate = (rowData) => {
@@ -46,12 +65,48 @@ export default function BillingTable({
     };
 
     const dateBodyTemplate = (rowData) => {
-        return rowData.upcoming_billing_date || <span className="text-muted">-</span>;
+        // Paused wins over everything else: the cron will not bill this subscriber
+        // at all while their account is not Active, so showing a date would be a lie.
+        if (rowData.is_billing_paused) {
+            return (
+                <div>
+                    <span className="badge bg-warning-subtle text-warning">Billing paused</span>
+                    {rowData.billing_paused_reason && (
+                        <div className="text-muted small">{rowData.billing_paused_reason}</div>
+                    )}
+                    {rowData.paid_through_date && (
+                        <div className="text-muted small">Paid through {rowData.paid_through_date}</div>
+                    )}
+                </div>
+            );
+        }
+
+        if (!rowData.upcoming_billing_date) {
+            return <span className="text-muted">Awaiting first payment</span>;
+        }
+
+        // A billing date in the past means the cycle is overdue and the cron has not
+        // been able to collect — worth calling out rather than showing a plain date
+        // that reads as "upcoming".
+        const isOverdue = new Date(rowData.upcoming_billing_date) < new Date(new Date().toDateString());
+
+        return (
+            <div>
+                <span className={isOverdue ? 'text-danger fw-medium' : ''}>{rowData.upcoming_billing_date}</span>
+                {isOverdue && <div className="text-danger small">Overdue</div>}
+                {rowData.paid_through_date && (
+                    <div className="text-muted small">Paid through {rowData.paid_through_date}</div>
+                )}
+            </div>
+        );
     };
 
     const statusBodyTemplate = (rowData) => {
         const status = rowData.status;
-        return <span className="badge bg-success-subtle text-success">{status}</span>;
+        // Colour by the actual status — hardcoding success rendered a Past Due
+        // subscription in green.
+        const color = SUBSCRIPTION_STATUS_COLORS[status] || 'secondary';
+        return <span className={`badge bg-${color}-subtle text-${color}`}>{status}</span>;
     };
 
     return (
@@ -85,7 +140,8 @@ export default function BillingTable({
                 <Column field="partner_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by Name" style={{ minWidth: '200px' }} />
                 <Column field="upcoming_billing_type" header="Billing Type" body={typeBodyTemplate} sortable filter filterPlaceholder="Search by type" style={{ minWidth: '150px' }} />
                 <Column field="upcoming_billing_amount" header="Amount" body={amountBodyTemplate} sortable filter filterPlaceholder="Search by amount" style={{ minWidth: '130px' }} />
-                <Column field="upcoming_billing_date" header="Upcoming Billing Date" body={dateBodyTemplate} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '180px' }} />
+                <Column field="upcoming_billing_date" header="Upcoming Billing Date" body={dateBodyTemplate} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '200px' }} />
+                <Column field="outstanding_amount" header="Outstanding" body={outstandingBodyTemplate} style={{ minWidth: '130px' }} />
                 <Column field="enrollment_type" header="Enrollment Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '180px' }} />
                 <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '120px' }} />
             </DataTable>
