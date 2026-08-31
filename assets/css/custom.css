@@ -7202,3 +7202,13 @@ File: Custom Css File
 .list-page-card .table-responsive.table-card {
   border-radius: var(--ef-radius);
 }
+
+/* The filter <form> and the table below it are flex-column siblings inside
+   .card-body under .page-content-fit. .table-responsive gets flex:1 (grow
+   aggressively to fill remaining space) but the <form> has no matching rule
+   granting it flex-shrink:0 the way a bare .row does — so it gets squeezed
+   toward zero height by its greedy sibling and the filter controls end up
+   collapsed underneath/behind the table instead of sitting above it. */
+.page-content-fit .card-body > form {
+  flex-shrink: 0 !important;
+}
