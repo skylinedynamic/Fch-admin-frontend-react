@@ -2173,3 +2173,76 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         max-width: 140px;
     }
 }
+
+/* ==========================================================================
+   Embedded Form — submission details & list responsive rules
+   ========================================================================== */
+
+@media (max-width: 1199.98px) {
+    .ef-status-select {
+        min-width: 150px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .ef-avatar--lg {
+        width: 52px;
+        height: 52px;
+        font-size: 17px;
+    }
+
+    .ef-status-select {
+        min-width: 140px;
+        flex: 1 1 140px;
+    }
+
+    .ef-convert-btn--lg {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .ef-hero__meta {
+        gap: 0.25rem 0.75rem;
+        font-size: 12px;
+    }
+
+    .ef-stat {
+        padding: 0.6rem 0.7rem;
+    }
+
+    .ef-stat__icon {
+        width: 32px;
+        height: 32px;
+        font-size: 15px;
+    }
+
+    .ef-stat__value {
+        font-size: 14px;
+    }
+
+    .ef-field__copy {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ef-status-select,
+    .ef-convert-btn--lg {
+        width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .ef-convert-btn--lg {
+        justify-content: center;
+    }
+
+    .ef-card__header {
+        padding: 0.65rem 0.75rem;
+    }
+
+    .ef-doc__name {
+        font-size: 12px;
+    }
+}

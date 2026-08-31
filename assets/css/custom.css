@@ -4313,4 +4313,523 @@ File: Custom Css File
 .embed-stats-section {
   flex-shrink: 0 !important;
   margin-bottom: 1rem !important;
-}
+}
+
+/* ==========================================================================
+   Embedded Form — submissions list, details page & free trial conversion
+   ========================================================================== */
+
+:root {
+  --ef-border: var(--vz-border-color, #e9ebec);
+  --ef-surface: var(--vz-card-bg, #fff);
+  --ef-muted: var(--vz-secondary-color, #878a99);
+  --ef-heading: var(--vz-heading-color, #495057);
+  --ef-soft: rgba(0, 31, 63, 0.04);
+  --ef-radius: 4px;
+}
+
+/* ── Avatars ─────────────────────────────────────────────────────────────── */
+.ef-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--primary-color);
+  background: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.1);
+}
+
+.ef-avatar--sm {
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+}
+
+.ef-avatar--md {
+  width: 44px;
+  height: 44px;
+  font-size: 14px;
+}
+
+.ef-avatar--lg {
+  width: 64px;
+  height: 64px;
+  font-size: 20px;
+}
+
+/* ── Status pills, score chips, doc chips ────────────────────────────────── */
+.ef-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 50rem;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.ef-uid {
+  font-family: var(--vz-font-monospace, monospace);
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.ef-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+  padding: 1px 7px;
+  border-radius: 50rem;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ef-score--good {
+  color: #0a8f7d;
+  background: rgba(10, 179, 156, 0.12);
+}
+
+.ef-score--fair {
+  color: #b8860b;
+  background: rgba(247, 184, 75, 0.16);
+}
+
+.ef-score--poor {
+  color: #d94f3d;
+  background: rgba(240, 101, 72, 0.12);
+}
+
+.ef-score--muted {
+  color: var(--ef-muted);
+  background: var(--ef-soft);
+}
+
+.ef-doc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--ef-border);
+  border-radius: 50rem;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ef-muted);
+  white-space: nowrap;
+}
+
+.ef-doc-chip--has {
+  color: var(--primary-color);
+  border-color: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.2);
+  background: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.05);
+}
+
+/* ── Buttons — radius/sizing inherited from the theme's .btn ─────────────── */
+.ef-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.ef-convert-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ef-convert-btn i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ef-convert-btn--lg i {
+  font-size: 16px;
+}
+
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.ef-card {
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius);
+  box-shadow: 0 1px 2px rgba(56, 65, 74, 0.06);
+  background-color: #fff;
+}
+
+.ef-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border-bottom: 1px solid var(--ef-border);
+}
+
+.ef-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ef-heading);
+}
+
+.ef-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ef-radius);
+  font-size: 15px;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.ef-hero {
+  background-color: #fff;
+}
+
+.ef-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: 12.5px;
+  color: var(--ef-muted);
+}
+
+.ef-hero__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ef-status-select {
+  min-width: 170px;
+}
+
+.ef-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  height: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius);
+  background: #fff;
+}
+
+.ef-stat__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ef-radius);
+  font-size: 17px;
+}
+
+.ef-stat__label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ef-muted);
+}
+
+.ef-stat__value {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--vz-dark, #212529);
+  line-height: 1.35;
+}
+
+/* Larger stat tile — used where a card should carry more visual weight
+   (e.g. the Form Configuration summary metrics). */
+.ef-stat--lg {
+  gap: 0.9rem;
+  padding: 1.15rem 1.25rem;
+}
+
+.ef-stat--lg .ef-stat__icon {
+  width: 52px;
+  height: 52px;
+  font-size: 24px;
+}
+
+.ef-stat--lg .ef-stat__label {
+  font-size: 11.5px;
+}
+
+.ef-stat--lg .ef-stat__value {
+  font-size: 22px;
+}
+
+/* ── Detail fields ───────────────────────────────────────────────────────── */
+.ef-field {
+  height: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--ef-radius);
+  background: var(--ef-soft);
+}
+
+.ef-field__label {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ef-muted);
+}
+
+.ef-field__value {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vz-dark, #212529);
+}
+
+.ef-field__empty {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ef-muted);
+}
+
+.ef-field__copy {
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ef-muted);
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.ef-field:hover .ef-field__copy,
+.ef-field__copy:focus-visible {
+  opacity: 1;
+}
+
+.ef-field__copy:hover {
+  color: var(--primary-color);
+}
+
+/* ── Application timeline ────────────────────────────────────────────────── */
+.ef-timeline {
+  position: relative;
+}
+
+.ef-timeline__item {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  padding-bottom: 1.35rem;
+}
+
+.ef-timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.ef-timeline__item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: 0;
+  width: 2px;
+  background: var(--ef-border);
+}
+
+.ef-timeline__item.is-done:not(:last-child)::before {
+  background: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.35);
+}
+
+.ef-timeline__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  color: var(--ef-muted);
+  background: var(--ef-soft);
+  border: 1px solid var(--ef-border);
+}
+
+.ef-timeline__item.is-done .ef-timeline__dot {
+  color: #fff;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.ef-timeline__item.is-current .ef-timeline__dot {
+  color: var(--primary-color);
+  background: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.12);
+  border-color: var(--primary-color);
+}
+
+.ef-timeline__item.is-rejected .ef-timeline__dot {
+  color: #fff;
+  background: var(--vz-danger, #f06548);
+  border-color: var(--vz-danger, #f06548);
+}
+
+.ef-timeline__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vz-dark, #212529);
+}
+
+.ef-timeline__item:not(.is-done):not(.is-current):not(.is-rejected) .ef-timeline__title {
+  color: var(--ef-muted);
+  font-weight: 500;
+}
+
+.ef-timeline__meta {
+  font-size: 11px;
+  color: var(--ef-muted);
+  margin-top: 1px;
+}
+
+/* ── Documents ───────────────────────────────────────────────────────────── */
+.ef-doc-group + .ef-doc-group {
+  margin-top: 1rem;
+}
+
+.ef-doc-group__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ef-muted);
+}
+
+.ef-doc-group__count {
+  padding: 0 6px;
+  border-radius: 50rem;
+  background: var(--ef-soft);
+  font-size: 10.5px;
+}
+
+.ef-doc {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  height: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ef-doc:hover {
+  border-color: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.28);
+  box-shadow: 0 2px 6px rgba(56, 65, 74, 0.08);
+}
+
+.ef-doc__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ef-radius);
+  font-size: 17px;
+}
+
+.ef-doc__name {
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--vz-dark, #212529);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ef-doc__meta {
+  font-size: 11px;
+  color: var(--ef-muted);
+}
+
+.ef-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2.25rem 1rem;
+  font-size: 13px;
+  color: var(--ef-muted);
+}
+
+.ef-empty i {
+  font-size: 26px;
+  opacity: 0.45;
+}
+
+/* ── Conversion modal ────────────────────────────────────────────────────── */
+.ef-convert-modal .modal-content {
+  border-radius: var(--ef-radius);
+}
+
+.ef-convert-modal .modal-header,
+.ef-convert-modal .modal-footer {
+  background: #fff;
+}
+
+.ef-convert-modal__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ef-radius);
+  font-size: 22px;
+  color: #fff;
+  background: var(--primary-color);
+}
+
+.ef-convert-modal__applicant {
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius);
+  background: var(--ef-soft);
+}
+
+.ef-convert-modal__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.35rem 0;
+  font-size: 12.5px;
+  color: var(--ef-muted);
+}
+
+.ef-convert-modal__list i {
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1;
+}

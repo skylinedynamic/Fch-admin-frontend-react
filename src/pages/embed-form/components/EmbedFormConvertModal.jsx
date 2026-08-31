@@ -1,32 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
-import { Dropdown } from 'primereact/dropdown';
-import { fetchNonHostBorrowerPlans, fetchBorrowerPlans } from '../../../modules/client/services';
-import { apiClient } from '../../../lib/http/apiClient';
-import { useAuthStore } from '../../../store/auth/authStore';
-import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 
+// Embed form applicants are always enrolled on a free trial — no plan, no
+// enrollment payment, and no end date until the account is manually upgraded.
 export default function EmbedFormConvertModal({
     show,
     onHide,
     onConfirm,
     submission,
     loading,
-    isHost,
 }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
-
-    const [borrowerPlans, setBorrowerPlans] = useState([]);
-    const [fetching, setFetching] = useState(false);
-    const [planId, setPlanId] = useState(null);
-    const [enrollmentType, setEnrollmentType] = useState('');
-    const [customEnrollmentAmount, setCustomEnrollmentAmount] = useState('');
-
-    const currentUser = useAuthStore((state) => state.user);
-    const userSubscription = useAuthStore((state) => state.userSubscription);
-    const isPartnerOnFreeTrial = currentUser?.entity_type === ENTITY_TYPE_PARTNER && !!userSubscription?.is_free_trail;
-    const [isFreeTrail, setIsFreeTrail] = useState(false);
 
     useEffect(() => {
         if (!modalRef.current) return;
@@ -51,72 +36,24 @@ export default function EmbedFormConvertModal({
     }, []);
 
     useEffect(() => {
-        if (show) {
-            setIsFreeTrail(isPartnerOnFreeTrial);
-        }
-    }, [show, isPartnerOnFreeTrial]);
-
-    useEffect(() => {
         const modal = modalInstanceRef.current;
         if (!modal) return;
         if (show) {
             modal.show();
-
-            if (!isHost) {
-                setFetching(true);
-                const loadData = async () => {
-                    try {
-                        const plansRes = await fetchNonHostBorrowerPlans();
-                        if (plansRes?.status) {
-                            const plans = plansRes.data || [];
-                            setBorrowerPlans(plans);
-                            if (plans.length > 0) {
-                                setPlanId(plans[0].id);
-                                setEnrollmentType(plans[0].enrollment_type);
-                                setCustomEnrollmentAmount(plans[0].payment_amount || '');
-                            }
-                        }
-                    } catch (err) {
-                        console.error('Failed to load conversion plans:', err);
-                    } finally {
-                        setFetching(false);
-                    }
-                };
-                loadData();
-            }
         } else {
             const modalElement = modalRef.current;
             if (modalElement && modalElement.classList.contains('show')) {
                 modal.hide();
             }
-            setPlanId(null);
-            setEnrollmentType('');
-            setCustomEnrollmentAmount('');
         }
-    }, [show, isHost]);
-
-    const handlePlanChange = (selectedId) => {
-        setPlanId(selectedId);
-        const selected = borrowerPlans.find(p => p.id === selectedId);
-        if (selected) {
-            setEnrollmentType(selected.enrollment_type);
-            setCustomEnrollmentAmount(selected.payment_amount || '');
-        }
-    };
-
-    const selectedBorrowerPlan = borrowerPlans.find(p => p.id === planId);
+    }, [show]);
 
     const handleConfirm = () => {
-        const payload = {
-            plan_id: planId,
-            enrollment_type: enrollmentType,
-            enrollment_amount: customEnrollmentAmount !== '' ? Number(customEnrollmentAmount) : (selectedBorrowerPlan?.payment_amount || 0),
-            payment_amount: customEnrollmentAmount !== '' ? Number(customEnrollmentAmount) : (selectedBorrowerPlan?.payment_amount || 0),
-            is_free_trail: isFreeTrail,
-        };
-
         if (onConfirm) {
-            onConfirm(payload);
+            onConfirm({
+                is_free_trail: true,
+                free_trail_end_date: null,
+            });
         }
     };
 
@@ -126,85 +63,103 @@ export default function EmbedFormConvertModal({
         }
     };
 
-    const applicantName = submission ? `${submission.first_name || ''} ${submission.last_name || ''}`.trim() || 'Applicant' : 'Applicant';
+    const applicantName = submission
+        ? `${submission.first_name || ''} ${submission.last_name || ''}`.trim() || 'Applicant'
+        : 'Applicant';
+    const initials = submission
+        ? `${submission.first_name?.[0] || ''}${submission.last_name?.[0] || ''}`.toUpperCase() || 'AP'
+        : 'AP';
 
     return (
-        <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
+        <div className="modal fade flip ef-convert-modal" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
                 <div className="modal-content border-0 shadow-lg">
-                    <div className="modal-body p-4 text-center">
-                        <i className="ri-user-add-line text-success display-4 mb-3 d-block" />
-                        <h4 className="mb-2">Convert Application to Borrower</h4>
-                        
-                        <p className="text-muted mb-3 fs-13">
-                            Are you sure you want to convert <strong className="text-dark">{applicantName}</strong> into an active Borrower account?
-                        </p>
+                    <div className="modal-header">
+                        <div className="d-flex align-items-center gap-3">
+                            <div className="ef-convert-modal__icon flex-shrink-0">
+                                <i className="ri-vip-crown-2-line" />
+                            </div>
+                            <div>
+                                <h5 className="modal-title mb-0">Convert to Free Trial Borrower</h5>
+                                <p className="text-muted fs-12 mb-0">No plan or payment required</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn-close"
+                            onClick={handleClose}
+                            disabled={loading}
+                            aria-label="Close"
+                        />
+                    </div>
 
-                        {!isHost && (
-                            <div className="text-start bg-light p-3 rounded mb-3">
-                                {fetching ? (
-                                    <div className="text-center py-2">
-                                        <span className="spinner-border spinner-border-sm text-primary me-2" role="status" />
-                                        <span className="text-muted fs-12">Loading enrollment plans...</span>
+                    <div className="modal-body">
+                        <div className="ef-convert-modal__applicant d-flex align-items-center gap-3 p-3 mb-3">
+                            <div className="ef-avatar ef-avatar--md flex-shrink-0">{initials}</div>
+                            <div className="min-w-0">
+                                <div className="fw-semibold text-dark fs-14 text-truncate">{applicantName}</div>
+                                {submission?.email && (
+                                    <div className="text-muted fs-12 text-truncate">
+                                        <i className="ri-mail-line me-1" />
+                                        {submission.email}
                                     </div>
-                                ) : (
-                                    <>
-                                        <label className="form-label fs-12 fw-semibold mb-1 text-dark">
-                                            Select Borrower Plan <span className="text-danger">*</span>
-                                        </label>
-                                        <Dropdown
-                                            value={planId}
-                                            options={borrowerPlans.map(p => ({
-                                                label: `${p.name || p.enrollment_type || 'Plan'} — $${Number(p.payment_amount || 0).toLocaleString()} ${p.total_installments_count > 1 ? `(${p.total_installments_count} mos)` : '(One Time)'}`,
-                                                value: p.id
-                                            }))}
-                                            onChange={(e) => handlePlanChange(e.value)}
-                                            optionLabel="label"
-                                            optionValue="value"
-                                            placeholder="Select enrollment plan"
-                                            className="w-100 mb-2"
-                                        />
-                                        {selectedBorrowerPlan && (
-                                            <div className="d-flex justify-content-between align-items-center pt-1 border-top mt-2">
-                                                <span className="text-muted fs-12">Enrollment Fee:</span>
-                                                <span className="text-success fw-bold fs-13">
-                                                    ${Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedBorrowerPlan.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </>
                                 )}
                             </div>
-                        )}
-
-                        <div className="hstack gap-2 justify-content-center mt-4">
-                            <button
-                                type="button"
-                                className="btn btn-light"
-                                onClick={handleClose}
-                                disabled={loading}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-success"
-                                onClick={handleConfirm}
-                                disabled={loading || (!isHost && fetching)}
-                            >
-                                {loading ? (
-                                    <>
-                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />
-                                        Processing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="ri-check-line me-1 align-bottom" />
-                                        {!isHost ? 'Continue to Payment' : 'Yes, Convert to Borrower'}
-                                    </>
-                                )}
-                            </button>
                         </div>
+
+                        <ul className="ef-convert-modal__list list-unstyled mb-0">
+                            <li>
+                                <i className="ri-checkbox-circle-fill text-primary" />
+                                <span>
+                                    An <strong className="text-dark">active borrower account</strong> is created and
+                                    welcome credentials are emailed to the applicant.
+                                </span>
+                            </li>
+                            <li>
+                                <i className="ri-infinity-line text-primary" />
+                                <span>
+                                    The free trial has <strong className="text-dark">no end date</strong> — access
+                                    stays active until the account is upgraded or suspended.
+                                </span>
+                            </li>
+                            <li>
+                                <i className="ri-bank-card-line text-muted" />
+                                <span>No invoice is generated and nothing is charged.</span>
+                            </li>
+                            <li>
+                                <i className="ri-information-line text-warning" />
+                                <span>This submission is marked as converted and cannot be converted again.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className="modal-footer">
+                        <button
+                            type="button"
+                            className="btn btn-light"
+                            onClick={handleClose}
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-primary d-inline-flex align-items-center gap-1"
+                            onClick={handleConfirm}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                                    Converting...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-user-follow-line align-bottom" />
+                                    Convert to Free Trial Borrower
+                                </>
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>

@@ -15,11 +15,8 @@ import {
     fetchEmbedFormSubmissions,
     convertEmbedFormSubmissionToBorrower,
 } from '../../modules/embed-form/services';
-import { useAuthStore } from '../../store/auth/authStore';
-import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
-import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 // @ts-ignore
-import LeadPaymentModal from '../leads/components/LeadPaymentModal';
+import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 
 const STATUS_OPTIONS = [
     { label: 'New', value: 'new' },
@@ -27,6 +24,35 @@ const STATUS_OPTIONS = [
     { label: 'Converted', value: 'converted' },
     { label: 'Rejected', value: 'rejected' },
 ];
+
+const STATUS_META: Record<string, { label: string; badge: string; icon: string }> = {
+    new: { label: 'New', badge: 'bg-primary-subtle text-primary', icon: 'ri-flashlight-line' },
+    reviewing: { label: 'Reviewing', badge: 'bg-warning-subtle text-warning', icon: 'ri-time-line' },
+    converted: { label: 'Converted', badge: 'bg-success-subtle text-success', icon: 'ri-checkbox-circle-line' },
+    rejected: { label: 'Rejected', badge: 'bg-danger-subtle text-danger', icon: 'ri-close-circle-line' },
+};
+
+const creditScoreBand = (score: number | string) => {
+    const value = Number(score);
+    if (!value) return 'muted';
+    if (value >= 740) return 'good';
+    if (value >= 670) return 'fair';
+    return 'poor';
+};
+
+const relativeTime = (value: string) => {
+    const then = new Date(value).getTime();
+    if (Number.isNaN(then)) return '';
+    const minutes = Math.round((Date.now() - then) / 60000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.round(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    const months = Math.round(days / 30);
+    return months < 12 ? `${months}mo ago` : `${Math.round(months / 12)}y ago`;
+};
 
 const extractValue = (val: any) => {
     if (val === undefined || val === null || val === '') return undefined;
@@ -43,9 +69,6 @@ const formatDateLocal = (date: Date) => {
 
 export default function EmbedFormSubmissions() {
     const navigate = useNavigate();
-    const currentUser = useAuthStore((state) => state.user);
-    const isHost = Boolean(currentUser?.is_host == 1 || currentUser?.is_host == true);
-    const isWLOrCP = currentUser?.partner_type === PARTNER_TYPES.WHITE_LABEL || currentUser?.partner_type === PARTNER_TYPES.CERTIFIED;
 
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -73,15 +96,10 @@ export default function EmbedFormSubmissions() {
         status: { value: null, matchMode: FilterMatchMode.EQUALS },
     });
 
-    // Conversion Modal & Payment Modal states
+    // Free trial conversion modal state
     const [targetSubmission, setTargetSubmission] = useState<any>(null);
     const [showConvertModal, setShowConvertModal] = useState(false);
     const [conversionLoading, setConversionLoading] = useState(false);
-
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [paymentBorrowerId, setPaymentBorrowerId] = useState<any>(null);
-    const [paymentInvoiceId, setPaymentInvoiceId] = useState<any>(null);
-    const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
     // Statistics state
     const [stats, setStats] = useState({
@@ -217,42 +235,25 @@ export default function EmbedFormSubmissions() {
         try {
             const res = await convertEmbedFormSubmissionToBorrower(targetSubmission.id, payload);
             if (res.status) {
-                const data = res.data?.data || res.data || {};
-                const borrowerId = data.id || data.borrower_id || data.borrower?.id;
-                const invoiceId = data.invoice_id;
-                const amount = Number(payload.payment_amount || payload.enrollment_amount || data.payment_amount || 0);
-
+                const previousStatus = targetSubmission.status;
                 setSubmissions(prev => prev.map(s => s.id === targetSubmission.id ? { ...s, status: 'converted' } : s));
                 setStats(prev => ({
                     ...prev,
                     converted_count: prev.converted_count + 1,
+                    new_count: previousStatus === 'new' ? Math.max(prev.new_count - 1, 0) : prev.new_count,
+                    reviewing_count: previousStatus === 'reviewing' ? Math.max(prev.reviewing_count - 1, 0) : prev.reviewing_count,
                 }));
 
                 setShowConvertModal(false);
-
-                if (!isHost && !isWLOrCP && borrowerId && amount > 0 && !payload.is_free_trail) {
-                    setPaymentBorrowerId(borrowerId);
-                    setPaymentInvoiceId(invoiceId);
-                    setPaymentAmount(amount);
-                    setShowPaymentModal(true);
-                    toast.success(res?.message || "Borrower created. Please complete the enrollment payment.");
-                } else {
-                    toast.success(res?.message || 'Submission successfully converted to Borrower!');
-                }
+                toast.success(res?.message || 'Submission converted to a Free Trial Borrower!');
             } else {
-                toast.error(res?.message || 'Failed to convert to borrower.');
+                toast.error(res?.message || 'Failed to convert to free trial borrower.');
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to borrower.');
+            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free trial borrower.');
         } finally {
             setConversionLoading(false);
         }
-    };
-
-    const handlePaymentSuccess = () => {
-        setShowPaymentModal(false);
-        toast.success("Payment completed successfully!");
-        loadData();
     };
 
     // ── Table Column Templates ──
@@ -260,18 +261,17 @@ export default function EmbedFormSubmissions() {
         const initials = `${rowData.first_name?.[0] || ''}${rowData.last_name?.[0] || ''}`.toUpperCase() || 'AP';
         return (
             <div className="d-flex align-items-center gap-2">
-                <div className="avatar-xs flex-shrink-0 d-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle fw-bold fs-12">
-                    {initials}
-                </div>
+                <div className="ef-avatar ef-avatar--sm flex-shrink-0">{initials}</div>
                 <div className="min-w-0">
-                    <span className="fw-medium text-dark fs-13 d-block text-truncate">
+                    <span className="fw-semibold text-dark fs-13 d-block text-truncate">
                         {rowData.first_name} {rowData.last_name}
                     </span>
-                    {rowData.occupation ? (
-                        <span className="text-muted fs-11 d-block text-truncate">{rowData.occupation}</span>
-                    ) : (
-                        <span className="text-muted fs-11">Applicant</span>
-                    )}
+                    <span className="text-muted fs-11 d-block text-truncate">
+                        {rowData.occupation || 'Applicant'}
+                        {rowData.submission_uid && (
+                            <span className="ef-uid ms-1">#{String(rowData.submission_uid).slice(0, 8)}</span>
+                        )}
+                    </span>
                 </div>
             </div>
         );
@@ -279,13 +279,13 @@ export default function EmbedFormSubmissions() {
 
     const contactBodyTemplate = (rowData: any) => {
         return (
-            <div>
+            <div className="min-w-0">
                 <div className="text-dark fs-13 text-truncate" title={rowData.email}>
                     <i className="ri-mail-line text-muted me-1 fs-12" />
                     {rowData.email || '—'}
                 </div>
                 {rowData.phone && (
-                    <div className="text-muted fs-11 mt-0.5">
+                    <div className="text-muted fs-11 text-truncate">
                         <i className="ri-phone-line me-1 fs-11" />
                         {rowData.phone}
                     </div>
@@ -304,39 +304,45 @@ export default function EmbedFormSubmissions() {
         return (
             <div>
                 <div className="fw-semibold text-success fs-13">{amount}</div>
-                {rowData.credit_score && (
-                    <div className="text-muted fs-11">Score: {rowData.credit_score}</div>
+                {rowData.credit_score ? (
+                    <span className={`ef-score ef-score--${creditScoreBand(rowData.credit_score)}`}>
+                        <i className="ri-speed-up-line" /> {rowData.credit_score}
+                    </span>
+                ) : (
+                    <span className="text-muted fs-11">No credit score</span>
                 )}
             </div>
         );
     };
 
     const statusBodyTemplate = (rowData: any) => {
-        const statusMap: Record<string, string> = {
-            new: 'bg-primary-subtle text-primary',
-            reviewing: 'bg-warning-subtle text-warning',
-            converted: 'bg-success-subtle text-success',
-            rejected: 'bg-danger-subtle text-danger',
-        };
-        const className = statusMap[rowData.status?.toLowerCase()] || 'bg-light text-body';
-        return <span className={`badge ${className} px-2.5 py-1 rounded-pill text-uppercase fs-11`}>{rowData.status}</span>;
+        const meta = STATUS_META[rowData.status?.toLowerCase()] || STATUS_META.new;
+        return (
+            <span className={`badge ${meta.badge} ef-status-pill`}>
+                <i className={meta.icon} /> {meta.label}
+            </span>
+        );
     };
 
     const docsBodyTemplate = (rowData: any) => {
         const count = rowData.attachments?.length ?? 0;
         return (
-            <span className="text-muted fs-12">
-                <i className="ri-attachment-line me-1 text-primary" />
-                {count} {count === 1 ? 'file' : 'files'}
+            <span className={`ef-doc-chip ${count ? 'ef-doc-chip--has' : ''}`}>
+                <i className={count ? 'ri-attachment-2' : 'ri-file-forbid-line'} />
+                {count ? `${count} ${count === 1 ? 'file' : 'files'}` : 'None'}
             </span>
         );
     };
 
     const dateBodyTemplate = (rowData: any) => {
+        if (!rowData.created_at) return <span className="text-muted fs-12">—</span>;
+        const date = new Date(rowData.created_at);
         return (
-            <div className="text-muted fs-12">
-                <i className="ri-calendar-line me-1 fs-11" />
-                {rowData.created_at ? new Date(rowData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+            <div>
+                <div className="text-dark fs-13">
+                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+                <div className="text-muted fs-11">{relativeTime(rowData.created_at)}</div>
             </div>
         );
     };
@@ -344,23 +350,26 @@ export default function EmbedFormSubmissions() {
     const actionBodyTemplate = (rowData: any) => {
         const isConverted = rowData.status === 'converted';
         return (
-            <div className="d-flex align-items-center justify-content-center">
+            <div className="d-flex align-items-center justify-content-center gap-1">
                 {isConverted ? (
-                    <span className="badge bg-success-subtle text-success fs-11 px-2.5 py-1 rounded-pill text-nowrap d-inline-flex align-items-center gap-1">
-                        <i className="ri-checkbox-circle-fill" /> Converted
+                    <span
+                        className="badge bg-success-subtle text-success ef-status-pill"
+                        title="Already converted to a free trial borrower"
+                    >
+                        <i className="ri-vip-crown-2-fill" /> Free Trial
                     </span>
                 ) : (
                     <button
                         type="button"
-                        className="btn btn-sm btn-soft-success d-inline-flex align-items-center gap-1 fs-12 fw-semibold px-2.5 py-1 text-nowrap"
+                        className="btn btn-sm btn-soft-primary ef-convert-btn"
                         onClick={(e) => {
                             e.stopPropagation();
                             handleOpenConvertModal(rowData);
                         }}
-                        title="Convert this applicant to a Borrower"
+                        title="Convert this applicant to a Free Trial Borrower"
                     >
-                        <i className="ri-user-add-line" />
-                        <span className="text-nowrap">Convert to Borrower</span>
+                        <i className="ri-vip-crown-2-line" />
+                        <span>Convert to Free Trial Borrower</span>
                     </button>
                 )}
             </div>
@@ -371,7 +380,7 @@ export default function EmbedFormSubmissions() {
         { title: 'Total Submissions', count: stats.total, icon: 'ri-file-list-3-line', colorVariant: 'primary' },
         { title: 'New Applications', count: stats.new_count, icon: 'ri-flashlight-line', colorVariant: 'warning' },
         { title: 'In Review', count: stats.reviewing_count, icon: 'ri-time-line', colorVariant: 'info' },
-        { title: 'Converted', count: stats.converted_count, icon: 'ri-user-follow-line', colorVariant: 'success' },
+        { title: 'Free Trial Borrowers', count: stats.converted_count, icon: 'ri-vip-crown-2-line', colorVariant: 'success' },
     ];
 
     const filterLoaderConfig = [
@@ -391,17 +400,7 @@ export default function EmbedFormSubmissions() {
                         { label: 'Embedded Form', path: '/embed-form/settings' },
                         { label: 'Submissions' },
                     ]}
-                >
-                    <div className="btn-group">
-                        <button
-                            type="button"
-                            className="btn btn-primary fw-medium waves-effect waves-light"
-                            onClick={() => navigate('/embed-form/settings')}
-                        >
-                            <i className="ri-settings-4-line me-1 align-bottom" /> Form Settings
-                        </button>
-                    </div>
-                </PageHeader>
+                />
 
                 {/* Statistics Cards Row mirrored from Partners.jsx */}
                 <div className="row embed-stats-section partner-section">
@@ -587,7 +586,7 @@ export default function EmbedFormSubmissions() {
                                                 align="center"
                                                 headerClassName="text-center"
                                                 bodyClassName="text-center"
-                                                style={{ width: '180px', minWidth: '180px' }}
+                                                style={{ width: '270px', minWidth: '270px' }}
                                             />
                                         </DataTable>
                                     </div>
@@ -597,36 +596,15 @@ export default function EmbedFormSubmissions() {
                     </div>
                 </div>
 
-                {/* Conversion Confirmation & Plan Modal */}
+                {/* Free Trial Borrower Conversion Modal */}
                 <EmbedFormConvertModal
                     show={showConvertModal}
                     onHide={() => setShowConvertModal(false)}
                     onConfirm={handleConvertConfirm}
                     submission={targetSubmission}
                     loading={conversionLoading}
-                    isHost={isHost}
                 />
 
-                {/* Non-Host Borrower Payment Modal */}
-                <LeadPaymentModal
-                    show={showPaymentModal}
-                    onHide={() => setShowPaymentModal(false)}
-                    amount={paymentAmount}
-                    lead={{
-                        contact_person: targetSubmission
-                            ? `${targetSubmission.first_name || ''} ${targetSubmission.last_name || ''}`.trim()
-                            : 'Borrower',
-                        email: targetSubmission?.email,
-                        phone_number: targetSubmission?.phone,
-                        partner_id: targetSubmission?.partner_id,
-                        invoice_id: paymentInvoiceId,
-                        entity_type: 'Borrower',
-                    }}
-                    borrowerId={paymentBorrowerId}
-                    invoiceId={paymentInvoiceId}
-                    onPaymentSuccess={handlePaymentSuccess}
-                    loading={conversionLoading}
-                />
             </div>
         </div>
     );
