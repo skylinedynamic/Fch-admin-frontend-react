@@ -85,11 +85,15 @@ import EmbedFormSubmissions from './pages/embed-form/EmbedFormSubmissions.tsx';
 import EmbedFormSubmissionDetails from './pages/embed-form/EmbedFormSubmissionDetails.tsx';
 
 import PaymentMethods from './pages/payment-methods/PaymentMethods.tsx';
-
+import ReminderModal from './components/Common/ReminderModal';
+import ReminderList from './pages/reminders/ReminderList';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
 window.jQuery = window.$ = $;
+
+import { initEcho } from './lib/echo';
+import { clearAuth } from './lib/auth';
 
 // Import Summernote CSS globally
 import 'summernote/dist/summernote-lite.css';
@@ -128,8 +132,25 @@ export default function App() {
     if (token) {
       refreshSubscription();
       queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
+
+      // Initialize Reverb WebSocket listener for Trial Expiration
+      if (user) {
+        const echo = initEcho();
+        if (echo) {
+          echo.private(`App.Models.User.${user.id}`)
+            .listen('.trial.expired', () => {
+              clearAuth();
+              toast.error('Your free trial has expired. You have been logged out.', { toastId: 'reverb-trial-expired' });
+              window.location.assign('/login');
+            });
+            
+          return () => {
+            echo.leave(`App.Models.User.${user.id}`);
+          };
+        }
+      }
     }
-  }, [token]);
+  }, [token, user]);
 
   // Fetch authenticated global configurations (branding + status flags)
   const { data: globalConfigData } = useGlobalConfigurations(!!user);
@@ -189,6 +210,7 @@ export default function App() {
   return (
     <>
       <ConfigurationGuardModal />
+      <ReminderModal />
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         <Route element={<GuestRoute />}>
@@ -202,6 +224,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="fund-application/:id" element={<FundApplication />} />
+            <Route path="reminders" element={<ReminderList />} />
 
             {/* Commissions Routes */}
             <Route element={<PermissionRoute permission="view commission" />}>
