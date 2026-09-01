@@ -74,7 +74,7 @@ describe('updateChangeRequestStatus', () => {
             field_name: 'email',
             old_value: 'old@x.com',
             new_value: 'new@x.com',
-            status: 'approved',
+            status: 'Approved',
             updated_by: 9,
             note: 'looks good',
             created_at: '2026-01-01',
@@ -88,8 +88,8 @@ describe('updateChangeRequestStatus', () => {
       })
     )
 
-    const result = await updateChangeRequestStatus(5, { status: 'approved', note: 'looks good' })
-    expect(receivedBody).toEqual({ status: 'approved', note: 'looks good' })
-    expect(result.data.status).toBe('approved')
+    const result = await updateChangeRequestStatus(5, { status: 'Approved', note: 'looks good' })
+    expect(receivedBody).toEqual({ status: 'Approved', note: 'looks good' })
+    expect(result.data.status).toBe('Approved')
   })
 })

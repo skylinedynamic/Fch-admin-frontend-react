@@ -42,7 +42,7 @@ describe('useUpdateChangeRequestStatus', () => {
             field_name: 'phone',
             old_value: '1',
             new_value: '2',
-            status: 'rejected',
+            status: 'Rejected',
             updated_by: 1,
             note: null,
             created_at: '2026-01-01',
@@ -64,7 +64,7 @@ describe('useUpdateChangeRequestStatus', () => {
     }
 
     const { result } = renderHook(() => useUpdateChangeRequestStatus(), { wrapper: wrapperFor(queryClient) })
-    result.current.mutate({ id: 3, payload: { status: 'rejected' } })
+    result.current.mutate({ id: 3, payload: { status: 'Rejected' } })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(invalidated).toContainEqual(['change-requests'])
