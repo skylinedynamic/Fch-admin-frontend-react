@@ -35,14 +35,6 @@ import {
   type Attestation,
 } from './types'
 
-export const computeIsApplicationSubmitted = (status: string | null | undefined): boolean => {
-  return Boolean(
-    status &&
-    status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
-    status !== FUNDING_APPLICATION_STATUS.DRAFT
-  )
-}
-
 const matchPurpose = (raw: string | null | undefined): string => {
   if (!raw) return ''
   const trimmed = raw.trim()
@@ -439,7 +431,11 @@ export default function FundApplication() {
     setHighestVisitedStep(prev => Math.max(prev, activeStep))
   }, [activeStep])
 
-  const isApplicationSubmitted = computeIsApplicationSubmitted(fundingData?.status)
+  const isApplicationSubmitted = Boolean(
+    fundingData?.status &&
+    fundingData.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
+    fundingData.status !== FUNDING_APPLICATION_STATUS.DRAFT
+  )
 
   // Check if a step is complete (for progress display)
   const isStepComplete = useCallback(
