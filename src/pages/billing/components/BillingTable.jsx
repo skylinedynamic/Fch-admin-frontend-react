@@ -41,25 +41,29 @@ export default function BillingTable({
     };
 
     const nameBodyTemplate = (rowData) => {
+        // Seat subscriptions (User / Employee) carry no partner_id/borrower_id, so
+        // those two used to be the only branches checked here and a seat row fell
+        // through to the "Partner" branch with nothing to show. subscriber_name/
+        // subscriber_email/subscriber_type cover all four entity kinds uniformly.
+        const name = rowData.subscriber_name
+            || rowData.borrower_name
+            || rowData.partner_name
+            || rowData.user_name
+            || rowData.employee_name;
+        const email = rowData.subscriber_email
+            || rowData.borrower_email
+            || rowData.partner_email
+            || rowData.user_email
+            || rowData.employee_email;
+        const typeLabel = rowData.subscriber_type || (rowData.borrower_id ? 'Borrower' : 'Partner');
+
         return (
             <div>
-                {rowData.borrower_id ? (
-                    <>
-                        <span className="fw-medium text-primary-emphasis">
-                            {rowData.borrower_name}
-                        </span>
-                        <span className="text-muted small ms-1">(Borrower)</span>
-                        <div className="text-muted small">{rowData.borrower_email}</div>
-                    </>
-                ) : (
-                    <>
-                        <span className="fw-medium text-primary-emphasis">
-                            {rowData.partner_name}
-                        </span>
-                        <span className="text-muted small ms-1">(Partner)</span>
-                        <div className="text-muted small">{rowData.partner_email}</div>
-                    </>
-                )}
+                <span className="fw-medium text-primary-emphasis">
+                    {name || '-'}
+                </span>
+                <span className="text-muted small ms-1">({typeLabel})</span>
+                {email && <div className="text-muted small">{email}</div>}
             </div>
         );
     };

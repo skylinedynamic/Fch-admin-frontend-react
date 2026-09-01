@@ -1,7 +1,12 @@
 import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import FilterLoader from '../../../components/Loader/FilterLoader';
-import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../../config/appConfig';
+import {
+    ENTITY_TYPE_PARTNER,
+    ENTITY_TYPE_BORROWER,
+    ENTITY_TYPE_USER_MODEL,
+    ENTITY_TYPE_EMPLOYEE,
+} from '../../../config/appConfig';
 
 export const BILLING_VIEW_ALL = 'all';
 export const BILLING_VIEW_SCHEDULED = 'scheduled';
@@ -22,22 +27,41 @@ export const BILLING_ENTITY_TYPE_ALL = 'all';
 
 // The real values come from appConfig so the frontend and the API share one
 // vocabulary — the API maps them onto the model classes stored in entity_type.
+// A non-host partner only ever sees its own borrowers here (see BillingService::
+// fetchUpcoming) so Partner/User/Employee are never in its results — the whole
+// dropdown is skipped for it below rather than offering choices that always
+// return the same rows.
 export const BILLING_ENTITY_TYPE_OPTIONS = [
     { label: 'All Types', value: BILLING_ENTITY_TYPE_ALL },
     { label: ENTITY_TYPE_PARTNER, value: ENTITY_TYPE_PARTNER },
     { label: ENTITY_TYPE_BORROWER, value: ENTITY_TYPE_BORROWER },
 ];
 
+// Host-only: the host also sees every other partner's paid User/Employee seats,
+// so it gets those two extra types to filter by.
+export const BILLING_ENTITY_TYPE_HOST_OPTIONS = [
+    ...BILLING_ENTITY_TYPE_OPTIONS,
+    { label: ENTITY_TYPE_USER_MODEL, value: ENTITY_TYPE_USER_MODEL },
+    { label: ENTITY_TYPE_EMPLOYEE, value: ENTITY_TYPE_EMPLOYEE },
+];
+
 export default function BillingFilters({
     searchText, setSearchText,
     view, setView,
     entityType, setEntityType,
-    onApply, onClear, loading
+    onApply, onClear, loading,
+    isHost
 }) {
-    // Layout config (4 items: Search, Entity Type, View, Buttons)
-    const loaderConfig = [
+    // Layout config: non-host drops the Entity Type column entirely (it only ever
+    // sees borrowers, so the filter has nothing to offer) and gives that width to
+    // Search instead.
+    const loaderConfig = isHost ? [
         { col: 'col-xxl-4 col-sm-12' },   // Search
         { col: 'col-xxl-3 col-sm-6' },    // Entity type
+        { col: 'col-xxl-2 col-sm-6' },    // View
+        { col: 'col-xxl-3 col-sm-12', isButton: true } // Filters & Clear
+    ] : [
+        { col: 'col-xxl-7 col-sm-12' },   // Search
         { col: 'col-xxl-2 col-sm-6' },    // View
         { col: 'col-xxl-3 col-sm-12', isButton: true } // Filters & Clear
     ];
@@ -51,7 +75,7 @@ export default function BillingFilters({
                 <FilterLoader config={loaderConfig} />
             ) : (
                 <div className="row g-3 mb-3">
-                    <div className="col-xxl-4 col-sm-12">
+                    <div className={isHost ? 'col-xxl-4 col-sm-12' : 'col-xxl-7 col-sm-12'}>
                         <div className="search-box">
                             <input
                                 type="text"
@@ -70,15 +94,17 @@ export default function BillingFilters({
                         </div>
                     </div>
 
-                    <div className="col-xxl-3 col-sm-6">
-                        <Dropdown
-                            value={entityType}
-                            options={BILLING_ENTITY_TYPE_OPTIONS}
-                            onChange={(e) => setEntityType(e.value ?? BILLING_ENTITY_TYPE_ALL)}
-                            placeholder="All Types"
-                            className="w-100 employee-filter-dropdown"
-                        />
-                    </div>
+                    {isHost && (
+                        <div className="col-xxl-3 col-sm-6">
+                            <Dropdown
+                                value={entityType}
+                                options={BILLING_ENTITY_TYPE_HOST_OPTIONS}
+                                onChange={(e) => setEntityType(e.value ?? BILLING_ENTITY_TYPE_ALL)}
+                                placeholder="All Types"
+                                className="w-100 employee-filter-dropdown"
+                            />
+                        </div>
+                    )}
 
                     <div className="col-xxl-2 col-sm-6">
                         <Dropdown
