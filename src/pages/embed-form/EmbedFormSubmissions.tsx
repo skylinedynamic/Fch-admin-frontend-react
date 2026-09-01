@@ -381,7 +381,7 @@ export default function EmbedFormSubmissions() {
     };
 
     const statisticsConfig = [
-        { title: 'Total Submissions', count: stats.total, icon: 'ri-file-list-3-line', colorVariant: 'primary' },
+        { title: 'Total Applications', count: stats.total, icon: 'ri-file-list-3-line', colorVariant: 'primary' },
         { title: 'New Applications', count: stats.new_count, icon: 'ri-flashlight-line', colorVariant: 'warning' },
         { title: 'In Review', count: stats.reviewing_count, icon: 'ri-time-line', colorVariant: 'info' },
         { title: 'Free Trial Borrowers', count: stats.converted_count, icon: 'ri-vip-crown-2-line', colorVariant: 'success' },
@@ -399,10 +399,10 @@ export default function EmbedFormSubmissions() {
             <div className="container-fluid">
                 {/* Header Section */}
                 <PageHeader
-                    title="Form Submissions"
+                    title="Loan Applications"
                     breadcrumbs={[
                         { label: 'Embedded Form', path: '/embed-form/settings' },
-                        { label: 'Submissions' },
+                        { label: 'Loan Applications' },
                     ]}
                 />
 
@@ -531,7 +531,7 @@ export default function EmbedFormSubmissions() {
                                             rowClassName={() => 'cursor-pointer'}
                                             onRowClick={(e) => {
                                                 const isButton = (e.originalEvent.target as HTMLElement)?.closest('button');
-                                                if (!isButton) navigate(`/embed-form/submissions/${e.data.id}`);
+                                                if (!isButton) navigate(`/embed-form/loan-applications/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"

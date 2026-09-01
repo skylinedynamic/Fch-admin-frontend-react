@@ -244,8 +244,8 @@ const menuItems = [
         permission: "view configuration",
       },
       {
-        to: "/embed-form/submissions",
-        label: "Submissions",
+        to: "/embed-form/loan-applications",
+        label: "Loan Applications",
         permission: "view application",
       },
     ],

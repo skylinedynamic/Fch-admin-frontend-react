@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import Layout from '../src/components/Layout/Layout.jsx';
 import Dashboard from '../src/pages/dashboard/Dashboard.jsx';
 import Employees from '../src/pages/employees/Employees.jsx';
@@ -101,6 +101,13 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 
 // Icon Libraries
+
+// Preserves the :id param when redirecting the old /embed-form/submissions/:id
+// bookmark to its renamed route.
+function RedirectToLoanApplication() {
+  const { id } = useParams();
+  return <Navigate to={`/embed-form/loan-applications/${id}`} replace />;
+}
 
 export default function App() {
   const token = useAuthStore((state) => state.token);
@@ -413,8 +420,11 @@ export default function App() {
               <Route path="embed-form/settings" element={<EmbedFormSettings />} />
             </Route>
             <Route element={<PermissionRoute permission="view application" />}>
-              <Route path="embed-form/submissions" element={<EmbedFormSubmissions />} />
-              <Route path="embed-form/submissions/:id" element={<EmbedFormSubmissionDetails />} />
+              <Route path="embed-form/loan-applications" element={<EmbedFormSubmissions />} />
+              <Route path="embed-form/loan-applications/:id" element={<EmbedFormSubmissionDetails />} />
+              {/* Renamed from /embed-form/submissions - keep old links/bookmarks working. */}
+              <Route path="embed-form/submissions" element={<Navigate to="/embed-form/loan-applications" replace />} />
+              <Route path="embed-form/submissions/:id" element={<RedirectToLoanApplication />} />
             </Route>
 
 

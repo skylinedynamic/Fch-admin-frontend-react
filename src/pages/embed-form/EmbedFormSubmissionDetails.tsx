@@ -351,14 +351,14 @@ export default function EmbedFormSubmissionDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 <PageHeader
-                    title="Submission Details"
+                    title="Loan Application Details"
                     breadcrumbs={[
                         { label: 'Embedded Form', path: '/embed-form/settings' },
-                        { label: 'Submissions', path: '/embed-form/submissions' },
+                        { label: 'Loan Applications', path: '/embed-form/loan-applications' },
                         { label: submission ? `${submission.first_name} ${submission.last_name}` : 'Details' }
                     ]}
                 >
-                    <Link to="/embed-form/submissions" className="btn btn-outline-secondary waves-effect">
+                    <Link to="/embed-form/loan-applications" className="btn btn-outline-secondary waves-effect">
                         <i className="ri-arrow-left-line align-middle me-1" /> Back
                     </Link>
                 </PageHeader>
@@ -424,12 +424,12 @@ export default function EmbedFormSubmissionDetails() {
                 ) : !submission ? (
                     <div className="card ef-card text-center p-5">
                         <i className="ri-error-warning-line display-5 text-warning mb-3" />
-                        <h5 className="fw-semibold">Submission Not Found</h5>
+                        <h5 className="fw-semibold">Application Not Found</h5>
                         <p className="text-muted fs-13">
                             The requested application could not be found or you do not have permission to view it.
                         </p>
-                        <Link to="/embed-form/submissions" className="btn btn-primary mx-auto">
-                            Back to Submissions
+                        <Link to="/embed-form/loan-applications" className="btn btn-primary mx-auto">
+                            Back to Loan Applications
                         </Link>
                     </div>
                 ) : (
