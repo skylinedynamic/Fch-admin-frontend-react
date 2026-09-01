@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { MultiSelect } from 'primereact/multiselect';
-import { RESTRICTED_INDUSTRIES_OPTIONS } from '../../../config/funding';
+import { INDUSTRIES_OPTIONS } from '../../../config/funding';
 
 interface LenderAdvancedVisibilityModalProps {
     visible: boolean;
@@ -107,7 +107,7 @@ export const LenderAdvancedVisibilityModal: React.FC<LenderAdvancedVisibilityMod
                             <label className="form-label text-dark fw-medium mb-1">Restricted Industries</label>
                             <MultiSelect
                                 value={visibility.restricted_industries || []}
-                                options={RESTRICTED_INDUSTRIES_OPTIONS}
+                                options={INDUSTRIES_OPTIONS}
                                 onChange={(e) => onChange(index, 'restricted_industries', e.value)}
                                 optionLabel="label"
                                 optionValue="value"

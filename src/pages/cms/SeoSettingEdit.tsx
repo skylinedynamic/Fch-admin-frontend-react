@@ -18,6 +18,8 @@ interface SeoFormData {
     meta_title: string;
     meta_description: string;
     keywords: string;
+    entity_type?: string;
+    entity_id?: number;
 }
 
 export default function SeoSettingEdit() {
@@ -37,7 +39,7 @@ export default function SeoSettingEdit() {
 
     // Combine static pages with dynamic blog posts
     const pageOptions = useMemo(() => {
-        const blogOptions = (blogsData?.data?.data || []).map((blog: any) => ({
+        const blogOptions = (blogsData?.data || []).map((blog: any) => ({
             label: `Blog: ${blog.title} — /blog/${blog.slug}`,
             value: `Blog: ${blog.title}`,
             path: `/blog/${blog.slug}`

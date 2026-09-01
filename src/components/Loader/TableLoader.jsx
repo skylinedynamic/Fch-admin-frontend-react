@@ -2,6 +2,12 @@ import React from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 
+/**
+ * @param {Object} props
+ * @param {number} [props.rows=8]
+ * @param {number | Array<{ style?: object, headerStyle?: object }>} [props.columns=6]
+ * @param {boolean} [props.showHeader=true]
+ */
 export default function TableLoader({ rows = 8, columns = 6, showHeader = true }) {
 
     // Create skeleton data for rows

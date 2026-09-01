@@ -175,7 +175,7 @@ export default function FundingSequencingForm() {
     const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
         setFormData(prev => ({ ...prev, description: e.target.value }));
         if (errors.description) {
-            setErrors(prev => ({ ...prev, description: null }));
+            setErrors((prev: any) => ({ ...prev, description: null }));
         }
     }, {
         height: 200,
@@ -364,7 +364,7 @@ export default function FundingSequencingForm() {
         });
 
         if (Array.isArray(cleanData.readiness_factors)) {
-            cleanData.readiness_factors = cleanData.readiness_factors.filter(item => typeof item === 'string' && item.trim() !== '');
+            cleanData.readiness_factors = cleanData.readiness_factors.filter((item: any) => typeof item === 'string' && item.trim() !== '');
         }
 
         const unifiedPayload = {

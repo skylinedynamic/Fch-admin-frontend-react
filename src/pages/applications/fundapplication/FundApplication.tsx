@@ -90,6 +90,7 @@ const STEP_INDICES = {
   DOCUMENT_UPLOAD: 4,
   DISCLOSURES: 5,
   FEDERAL_COMPLIANCE: 6,
+  ATTESTATION: 7,
 } as const
 
 const INITIAL_LOADING_DELAY_MS = 700
@@ -429,6 +430,12 @@ export default function FundApplication() {
   useEffect(() => {
     setHighestVisitedStep(prev => Math.max(prev, activeStep))
   }, [activeStep])
+
+  const isApplicationSubmitted = Boolean(
+    fundingData?.status &&
+    fundingData.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
+    fundingData.status !== FUNDING_APPLICATION_STATUS.DRAFT
+  )
 
   // Check if a step is complete (for progress display)
   const isStepComplete = useCallback(

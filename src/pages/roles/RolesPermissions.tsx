@@ -358,6 +358,7 @@ export default function RolesPermissions() {
         onConfirm={confirmDelete}
         onClose={closeDeleteModal}
         loading={deletingRole}
+        text="Deleting employees will remove all information."
       />
     </div>
   )

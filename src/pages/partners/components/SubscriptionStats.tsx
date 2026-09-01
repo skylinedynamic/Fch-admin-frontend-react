@@ -52,7 +52,7 @@ const SubscriptionStats: React.FC = () => {
         return (
             <div className="row">
                 {statisticsConfig.map((_, index) => (
-                    <StatisticsCardSkeleton key={`skeleton-${index}`} />
+                    <StatisticsCardSkeleton key={`skeleton-${index}`} colSize="col-xl-3 col-md-6" />
                 ))}
             </div>
         );
@@ -73,6 +73,7 @@ const SubscriptionStats: React.FC = () => {
                         count={displayValue}
                         icon={config.icon}
                         colorVariant={config.colorVariant}
+                        colSize="col-xl-3 col-md-6"
                     />
                 );
             })}

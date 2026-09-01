@@ -14,6 +14,12 @@ export interface FundingSequencing {
     action_url?: string;
 }
 
+export interface FundingSequencingListItem extends FundingSequencing {
+    id: number;
+    group?: { id: number; name: string } | null;
+    type?: { id: number; name: string } | null;
+}
+
 export interface FundingFilterParams {
     page?: number;
     per_page?: number;

@@ -61,7 +61,9 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                 style={{ width: '30px', height: '30px' }}
                 onClick={(e) => {
                     e.stopPropagation();
-                    openModal(rowData.id);
+                    if (rowData.id !== undefined) {
+                        openModal(rowData.id);
+                    }
                 }}
                 title="View Details"
             >

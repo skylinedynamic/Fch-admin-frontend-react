@@ -12,7 +12,7 @@ import { formatCurrency, unformatCurrency } from '../../../../../utils/borrowerF
 
 interface FinancialInformationStepProps {
   financial: FinancialInfo
-  setFinancial: (data: FinancialInfo) => void
+  setFinancial: React.Dispatch<React.SetStateAction<FinancialInfo>>
   onNext: () => void
   onBack: () => void
   loading: boolean

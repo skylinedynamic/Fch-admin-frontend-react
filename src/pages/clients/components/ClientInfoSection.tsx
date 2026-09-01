@@ -93,6 +93,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
     const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
+
+    // `formData.is_free_trail` is typed as `boolean`, but is defensively checked
+    // against legacy wire formats (0/1, "true"/"1") some sources may still send.
+    const rawFormIsFreeTrail = formData.is_free_trail as unknown;
+    const isFormFreeTrailActive = rawFormIsFreeTrail == 1 || rawFormIsFreeTrail === true || rawFormIsFreeTrail === 'true' || rawFormIsFreeTrail === '1';
     const [isSynced, setIsSynced] = useState(false); // Track if data has been synced from API
     const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
     const [showInstallmentModal, setShowInstallmentModal] = useState(false);
@@ -1258,7 +1263,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 className="form-check-input"
                                                 id="is_free_trail"
                                                 name="is_free_trail"
-                                                checked={formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1'}
+                                                checked={isFormFreeTrailActive}
                                                 style={isPartnerOnFreeTrial ? { opacity: 1, pointerEvents: 'none' } : undefined}
                                                 onChange={(e) => {
                                                     if (isPartnerOnFreeTrial) return;
@@ -1292,7 +1297,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 )}
 
-                {!(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1') && (
+                {!isFormFreeTrailActive && (
                     <>
                         {/* Enrollment Type Dropdown — shown when creating or when converting from free trial */}
                         {!(!!clientId && !wasFreeTrial) && (
@@ -1696,8 +1701,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <InstallmentDetailsModal
                     show={showInstallmentModal}
                     onHide={() => setShowInstallmentModal(false)}
+                    onHidden={undefined}
                     defaultMonths={selectedOption?.total_installments_count || formData.installment_months || 12}
                     totalAmount={Number(selectedOption?.total_amount || formData.enrollment_amount || formData.total_subscription_amount || 0)}
+                    planLabel={undefined}
+                    partnerType={undefined}
                     appliedTotalAmount={formData.enrollment_amount}
                     appliedDownPayment={formData.installment_down_payment}
                     appliedMonths={formData.installment_months}

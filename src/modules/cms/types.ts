@@ -1,14 +1,20 @@
+import type { PaginatedApiResponse, SingleApiResponse } from '../application/types';
+
 export interface Category {
     id: number;
     name: string;
     slug?: string;
+    description?: string;
+    blogs_count?: number;
     created_at?: string;
+    updated_at?: string;
 }
 
 export interface Tag {
     id: number;
     name: string;
     slug?: string;
+    blogs_count?: number;
 }
 
 export interface Blog {
@@ -21,6 +27,7 @@ export interface Blog {
     is_published: boolean | number;
     is_featured: boolean | number;
     featured_image?: string;
+    og_image?: string;
     meta_title?: string;
     meta_description?: string;
     keywords?: string;
@@ -43,6 +50,76 @@ export interface BlogFormData {
     keywords: string;
     blog_tag_id: (string | number)[];
 }
+
+// ─── Blog list / mutation payloads ───────────────────────────────────────────
+
+export interface BlogListParams {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    category_id?: string | number;
+    status?: string;
+    is_featured?: boolean | string;
+    sort_field?: string;
+    sort_order?: string;
+}
+
+export interface BlogStatistics {
+    total: number;
+    published: number;
+    featured: number;
+    categories: number;
+}
+
+export interface BlogListResponse extends PaginatedApiResponse<Blog> {
+    statistics: BlogStatistics;
+}
+
+export interface CategoryPayload {
+    name: string;
+    slug?: string;
+}
+
+export interface TagPayload {
+    name: string;
+    slug?: string;
+}
+
+// ─── SEO Settings ─────────────────────────────────────────────────────────────
+
+export interface SeoSetting {
+    id?: number;
+    partner_id?: number;
+    page_name: string;
+    path: string;
+    meta_title?: string;
+    meta_description?: string;
+    keywords?: string;
+    og_image?: string;
+    // Not present in the current seo_settings schema/resource (see BlogController/SeoRequest
+    // in fch-backend-api) — kept optional here only because SeoSettingEdit.tsx still reads/writes
+    // them; they are always undefined coming back from the API today.
+    entity_type?: string;
+    entity_id?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface SeoListParams {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    sort_field?: string;
+    sort_order?: string;
+}
+
+export type SeoListResponse = PaginatedApiResponse<SeoSetting>;
+export type BlogResponse = SingleApiResponse<Blog>;
+export type CategoryResponse = SingleApiResponse<Category>;
+export type CategoryListResponse = SingleApiResponse<Category[]>;
+export type TagResponse = SingleApiResponse<Tag>;
+export type TagListResponse = SingleApiResponse<Tag[]>;
+export type SeoSettingResponse = SingleApiResponse<SeoSetting>;
 
 // ─── Site Settings ───────────────────────────────────────────────────────────
 

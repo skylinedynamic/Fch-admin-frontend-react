@@ -6,6 +6,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { useFundingRequests, useUpdateFundingRequestStatus } from '../../../modules/application';
+import type { PaginatedApiResponse } from '../../../modules/application/types';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { Dialog } from 'primereact/dialog';
@@ -71,7 +72,7 @@ export default function FundingSequence() {
     const { data: apiResponse, isLoading, isFetching } = useFundingRequests(queryParams);
     const reviews = apiResponse?.data || [];
     const totalRecords = apiResponse?.meta?.total || 0;
-    const fundingTypes = apiResponse?.funding_types || [];
+    const fundingTypes = (apiResponse as (PaginatedApiResponse<any> & { funding_types?: { id: number; name: string }[] }) | undefined)?.funding_types || [];
     const loading = isLoading || isFetching;
 
     const initFilters = () => {
@@ -284,7 +285,7 @@ export default function FundingSequence() {
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm p-datatable-hoverable-rows"
                                             emptyMessage="No funding requests found"
-                                            onRowClick={(e) => navigate(`/intake-review/funding-request/${e.data.id}`)}
+                                            onRowClick={(e: any) => navigate(`/intake-review/funding-request/${e.data.id}`)}
                                             rowClassName={() => 'cursor-pointer'}
                                         >
                                             <Column field="borrower_name" header="Borrower Name" body={(r) => `${r.borrower?.first_name || ''} ${r.borrower?.last_name || ''}`} sortable style={{ minWidth: '160px' }} />

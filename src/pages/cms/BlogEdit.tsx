@@ -38,7 +38,7 @@ export default function BlogEdit() {
     const [showSeoInputs, setShowSeoInputs] = useState<boolean>(true);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showFileManager, setShowFileManager] = useState<boolean>(false);
-    const [featuredImage, setFeaturedImage] = useState<string | null>(null);
+    const [featuredImage, setFeaturedImage] = useState<string | File | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [ogImage, setOgImage] = useState<string | null>(null);
     const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
@@ -637,13 +637,13 @@ export default function BlogEdit() {
                     </div>
 
                     {/* Category List */}
-                    {categoriesData?.data?.length > 0 && (
+                    {(categoriesData?.data?.length ?? 0) > 0 && (
                         <>
                             <hr className="my-4" />
                             <div className="field">
                                 <label className="mb-3">Existing Categories</label>
                                 <div className="d-flex flex-wrap gap-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                    {categoriesData.data.map((cat: any) => (
+                                    {categoriesData?.data?.map((cat: any) => (
                                         <span
                                             key={cat.id}
                                             className="badge bg-light text-dark border d-inline-flex align-items-center"
@@ -727,13 +727,13 @@ export default function BlogEdit() {
                     </div>
 
                     {/* Tag List */}
-                    {tagsData?.data?.length > 0 && (
+                    {(tagsData?.data?.length ?? 0) > 0 && (
                         <>
                             <hr className="my-4" />
                             <div className="field">
                                 <label className="mb-3">Existing Tags</label>
                                 <div className="d-flex flex-wrap gap-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                    {tagsData.data.map((tag: any) => (
+                                    {tagsData?.data?.map((tag: any) => (
                                         <span
                                             key={tag.id}
                                             className="badge bg-light text-dark border d-inline-flex align-items-center"

@@ -1,11 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FUNDING_ICON_MAP, FUNDING_COLOR_MAP } from '../../../config/funding';
+import { FundingSequencingListItem } from '../../../modules/funding/types';
 
-const FundingCard = ({ item }) => {
+interface FundingCardProps {
+    item: FundingSequencingListItem;
+}
+
+const FundingCard = ({ item }: FundingCardProps) => {
     const navigate = useNavigate();
-    const iconName = FUNDING_ICON_MAP[item.icon] || item.icon || 'file-list-3';
-    const colorName = FUNDING_COLOR_MAP[item.icon_color] || item.icon_color || 'primary';
+    const iconName = (item.icon && FUNDING_ICON_MAP[item.icon]) || item.icon || 'file-list-3';
+    const colorName = (item.icon_color && FUNDING_COLOR_MAP[item.icon_color]) || item.icon_color || 'primary';
 
     return (
         <div 
