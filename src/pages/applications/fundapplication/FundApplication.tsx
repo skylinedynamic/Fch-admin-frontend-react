@@ -11,7 +11,6 @@ import FundingRequestStep from './components/steps/FundingRequestStep'
 import DocumentUploadStep from './components/steps/DocumentUploadStep'
 import DisclosuresStep from './components/steps/DisclosuresStep'
 import FederalComplianceStep from './components/steps/FederalComplianceStep'
-import AttestationStep from './components/steps/AttestationStep'
 import CoBorrowerModal from './components/shared/CoBorrowerModal'
 
 // Hooks
@@ -32,7 +31,6 @@ import {
   type FundingRequest,
   type DisclosureConsent,
   type FederalCompliance,
-  type Attestation,
 } from './types'
 
 const matchPurpose = (raw: string | null | undefined): string => {
@@ -248,16 +246,6 @@ export default function FundApplication() {
     marketingOptIn: false,
   })
 
-  const [attestation, setAttestation] = useState<Attestation>({
-    certify: false,
-    signature_name: '',
-    esign_consent: false,
-    terms_consent: false,
-    privacy_consent: false,
-    credit_consent: false,
-    legal_binding_consent: false
-  })
-
   // Fetch funding request and documents (tab-wise lazy loading)
   const currentReqId = fundingRequestId || id || null
   const { data: fundingData } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
@@ -398,22 +386,11 @@ export default function FundApplication() {
           return allAnswered && (!anyYes || federal.explanation.trim().length > 0)
         }
 
-        case STEP_INDICES.ATTESTATION:
-          return Boolean(
-            attestation.signature_name &&
-            attestation.signature_name.trim().length >= 3 &&
-            attestation.esign_consent &&
-            attestation.terms_consent &&
-            attestation.privacy_consent &&
-            attestation.credit_consent &&
-            attestation.legal_binding_consent
-          )
-
         default:
           return false
       }
     },
-    [canProceedFromBusinessInfo, owner, financial, funding, disclosure, federal, attestation]
+    [canProceedFromBusinessInfo, owner, financial, funding, disclosure, federal]
   )
 
   const initializedRef = React.useRef(false)
@@ -454,9 +431,9 @@ export default function FundApplication() {
         if (activeStep === i && !isStepValid(i)) return false;
       }
 
-      // Document upload shows checkmark ONLY if it has files
+      // Document upload shows checkmark if it has files or user progressed past this step
       if (stepIndex === STEP_INDICES.DOCUMENT_UPLOAD) {
-        return Boolean(documentsData && documentsData.length > 0)
+        return Boolean((documentsData && documentsData.length > 0) || highestVisitedStep > STEP_INDICES.DOCUMENT_UPLOAD || activeStep > STEP_INDICES.DOCUMENT_UPLOAD)
       }
 
       if (!isStepSaved(stepIndex)) return false;
@@ -464,10 +441,11 @@ export default function FundApplication() {
 
       return true;
     },
-    [activeStep, highestVisitedStep, documentsData, isStepValid, fundingApplicationId, owner.isSaved, financial.isSaved, fundingData]
+    [activeStep, highestVisitedStep, documentsData, isStepValid, fundingApplicationId, fundingData]
   )
 
   // Progress calculations
+  const isApplicationSubmitted = fundingData?.status && !['Draft', 'On Hold', 'Pending'].includes(fundingData.status) ? true : false;
   const stepsTotal = tabs.length
   const completedCount = isApplicationSubmitted ? stepsTotal : tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
   const progressPct = isApplicationSubmitted ? 100 : Math.round((completedCount / stepsTotal) * 100)
@@ -526,7 +504,6 @@ export default function FundApplication() {
       loading,
       onNext: () => {
         if (activeStep === tabs.length - 1) {
-          toast.success('Application completed successfully!')
           navigate('/')
         } else {
           setActiveStep(activeStep + 1)
@@ -675,14 +652,17 @@ export default function FundApplication() {
         {/* Page Header */}
         <div className="text-center mb-4">
           <h4 className="mb-1">
-            {funding.approvedFunding
-              ? `Complete Your ${funding.approvedFunding} Application`
-              : 'Start Your Business Funding Application'}
+            {completedCount > 0 ? 'Complete' : 'Start'} Your Business Funding Application
+            {funding.approvedFunding && ` (${funding.approvedFunding.replace(/\s+Application$/i, '')})`}
           </h4>
           <div className="text-muted">
             {funding.approvedFunding
-              ? 'Please complete the final steps below to process your approved funding request and finalize your funds.'
-              : 'Apply now to unlock working capital, equipment financing, SBA loans, or credit-building options tailored to your goals.'}
+              ? (completedCount > 0
+                  ? 'Please complete the final steps below to process your approved funding request and finalize your funds.'
+                  : 'Please complete the steps below to start processing your approved funding sequence and finalize your funds.')
+              : (completedCount > 0
+                  ? 'Please complete the remaining steps below to finalize your business funding application.'
+                  : 'Apply now to unlock working capital, equipment financing, SBA loans, or credit-building options tailored to your goals.')}
           </div>
         </div>
 
