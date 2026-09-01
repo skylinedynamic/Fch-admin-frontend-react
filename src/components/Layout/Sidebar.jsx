@@ -69,6 +69,7 @@ const menuItems = [
       {
         to: '/intake-review/credit-profile-requests',
         label: 'Request Credit Profile',
+        isHostOnly: true,
         permission: '',
       }
     ]

@@ -365,8 +365,10 @@ export default function App() {
                 <Route path="change-requests" element={<ChangeRequests />} />
               </Route>
 
-              <Route path="credit-profile-requests" element={<CreditProfileRequests />} />
-              <Route path="credit-profile-requests/:id" element={<CreditProfileRequestDetails />} />
+              <Route element={<HostRoute />}>
+                <Route path="credit-profile-requests" element={<CreditProfileRequests />} />
+                <Route path="credit-profile-requests/:id" element={<CreditProfileRequestDetails />} />
+              </Route>
 
             </Route>
 
