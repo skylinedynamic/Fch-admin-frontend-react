@@ -57,7 +57,6 @@ export default function ReminderList() {
             console.error('Failed to check pending reminders:', error);
         }
     };
-
     // Bumped whenever a filter is applied (search submit, type/status change,
     // a completed date-range pick, or Clear) so the fetch effect below always
     // re-runs — even when the filter values themselves land back on their
