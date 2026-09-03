@@ -3,3 +3,6 @@ node_modules/
 .env
 templete/
 .agents/
+playwright-report/
+test-results/
+coverage/
