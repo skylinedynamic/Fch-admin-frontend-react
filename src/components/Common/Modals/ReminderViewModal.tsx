@@ -4,6 +4,8 @@ import { toast } from 'react-toastify';
 import { apiClient as api } from '../../../lib/http/apiClient';
 import { Skeleton } from 'primereact/skeleton';
 import '../../../assets/css/reminder.css';
+import { isReminderMissed, getEffectiveReminderStatusLabel } from '../../../config/reminders';
+import { ReminderRescheduleForm } from '../ReminderRescheduleForm';
 
 interface Reminder {
     id: number;
@@ -64,6 +66,8 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
     const [loadingDismiss, setLoadingDismiss] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const [downloadingFiles, setDownloadingFiles] = useState<Record<number, boolean>>({});
+    const [showReschedule, setShowReschedule] = useState(false);
+    const [loadingReschedule, setLoadingReschedule] = useState(false);
 
     /* Bootstrap modal lifecycle */
     useEffect(() => {
@@ -80,6 +84,7 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
     useEffect(() => {
         // reset state when reminder changes
         setExpanded(false);
+        setShowReschedule(false);
     }, [reminder?.id]);
 
     useEffect(() => {
@@ -94,6 +99,11 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
 
     /* derived values */
     const typeStr = reminder?.reference || 'Activity';
+    // Same "missed" definition as the due-reminder popup: the activity's own
+    // date/time already passed, and only an actionable (pending/sent)
+    // reminder can be missed — a dismissed one is just dismissed.
+    const missed = reminder ? isReminderMissed(reminder) : false;
+    const actionable = reminder?.status === 'pending' || reminder?.status === 'sent';
 
     // Activity date: when the actual task/call/event is scheduled
     const activityDate = fmt(reminder?.set_date_time) ?? fmt(reminder?.send_at);
@@ -118,6 +128,31 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
             toast.error(err.response?.data?.message || 'Failed to dismiss reminder');
         } finally {
             setLoadingDismiss(false);
+        }
+    };
+
+    /* reschedule — same endpoint/payload as the due-reminder popup's
+       ReminderModal, so a missed reminder rescheduled from this details page
+       behaves identically to one rescheduled from the popup. */
+    const rescheduleReminder = async (rescheduleAt: string, leadMinutes: number) => {
+        if (!reminder) return;
+        setLoadingReschedule(true);
+        try {
+            const res = await api.post(`/common/reminders/${reminder.id}/snooze`, {
+                reschedule_at: rescheduleAt,
+                lead_minutes: leadMinutes,
+            });
+            toast.success(res.data?.message || 'Reminder rescheduled successfully');
+            setShowReschedule(false);
+            if (onSuccess) onSuccess();
+            onHide();
+        } catch (err: any) {
+            // Keep the form open with the picked date/time intact on failure —
+            // closing here would discard what the user just entered right
+            // after telling them it failed.
+            toast.error(err.response?.data?.message || 'Failed to reschedule reminder');
+        } finally {
+            setLoadingReschedule(false);
         }
     };
 
@@ -259,7 +294,7 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                                     <DetailItem icon="ri-time-line"           label="Activity Time" value={activityTimeStr} />
                                     <DetailItem icon="ri-alarm-line"          label="Reminder Date" value={reminderDateStr} />
                                     <DetailItem icon="ri-alarm-line"          label="Reminder Time" value={reminderTimeStr} />
-                                    <DetailItem icon="ri-checkbox-circle-line" label="Status" value={<span className="text-capitalize">{reminder.status}</span>} />
+                                    <DetailItem icon="ri-checkbox-circle-line" label="Status" value={<span className={missed ? 'text-danger' : ''}>{getEffectiveReminderStatusLabel(reminder)}</span>} />
                                     {reminder.attachments && reminder.attachments.length > 0 && (
                                         <DetailItem icon="ri-attachment-2" label="Attachments" value={reminder.attachments.length === 1 ? '1 file' : `${reminder.attachments.length} files`} />
                                     )}
@@ -295,17 +330,36 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                                     </div>
                                 )}
 
+                                {/* Only a missed reminder can be rescheduled — an upcoming
+                                    one has nothing to reschedule away from yet. */}
+                                {missed && showReschedule && (
+                                    <ReminderRescheduleForm
+                                        loading={loadingReschedule}
+                                        onConfirm={rescheduleReminder}
+                                    />
+                                )}
+
                                 {/* Footer actions */}
                                 <div className="mt-3 pt-3 border-top d-flex flex-wrap justify-content-end gap-2">
                                     <button type="button" className="btn btn-light px-4" onClick={onHide}>
                                         <i className="ri-close-line me-1"></i> Close
                                     </button>
-                                    {reminder.status === 'pending' && (
+                                    {missed && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-warning fw-medium d-flex align-items-center px-4"
+                                            onClick={() => setShowReschedule((v) => !v)}
+                                            disabled={loadingDismiss || loadingReschedule}
+                                        >
+                                            <i className="ri-calendar-event-line me-1"></i> Reschedule
+                                        </button>
+                                    )}
+                                    {actionable && (
                                         <button
                                             type="button"
                                             className="btn btn-danger fw-medium d-flex align-items-center px-4"
                                             onClick={dismissReminder}
-                                            disabled={loadingDismiss}
+                                            disabled={loadingDismiss || loadingReschedule}
                                         >
                                             {loadingDismiss
                                                 ? <><span className="spinner-border spinner-border-sm me-2"></span>Dismissing...</>

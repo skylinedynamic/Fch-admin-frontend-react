@@ -15,8 +15,9 @@ import {
     REMINDER_TYPES,
     REMINDER_STATUS_OPTIONS,
     REMINDER_STATUS_PENDING,
-    getReminderStatusBadgeClasses,
-    getReminderStatusLabel,
+    REMINDER_STATUS_SENT,
+    getEffectiveReminderStatusBadgeClasses,
+    getEffectiveReminderStatusLabel,
     getReminderTypeIcon
 } from '../../config/reminders';
 
@@ -42,17 +43,16 @@ export default function ReminderList() {
     const [dismissModal, setDismissModal] = useState({ show: false, loading: false });
     const [viewModal, setViewModal] = useState({ show: false, data: null });
     const [selectedReminders, setSelectedReminders] = useState([]);
-    // Server-side truth for "does this user have ANY pending reminder at all",
+    // Server-side truth for "does this user have ANY dismissable (pending or
+    // sent — sent includes ones showing as Missed) reminder at all",
     // independent of the table's current page/date/type/status filters.
     const [hasPendingReminders, setHasPendingReminders] = useState(true);
 
     const checkPendingReminders = async () => {
         try {
-            const res = await api.get('/common/reminders?status=pending&per_page=1');
-            if (res.data?.status) {
-                const total = res.data.data.reminders.meta?.total ?? res.data.data.reminders.total ?? 0;
-                setHasPendingReminders(total > 0);
-            }
+            const res = await api.get('/common/reminders?status=dismissable&per_page=1');
+            const total = res.data?.status ? (res.data.data.reminders.meta?.total ?? res.data.data.reminders.total ?? 0) : 0;
+            setHasPendingReminders(total > 0);
         } catch (error) {
             console.error('Failed to check pending reminders:', error);
         }
@@ -94,12 +94,15 @@ export default function ReminderList() {
                 const list = res.data.data.reminders.data || [];
                 setReminders(list);
                 setTotalRecords(res.data.data.reminders.meta?.total || res.data.data.reminders.total || 0);
-                // Drop any selected rows that are no longer pending (dismissed via
-                // another action, another tab, or no longer in this filtered/paged
-                // view) so "Dismiss Selected" never targets a stale, already-
-                // dismissed row.
+                // Drop any selected rows that are no longer dismissable (dismissed
+                // via another action, another tab, or no longer in this filtered/
+                // paged view) so "Dismiss Selected" never targets a stale,
+                // already-dismissed row. Sent is included alongside pending since
+                // a "Missed" row is just a sent one whose date has passed —
+                // still fully actionable, not merely selectable when literally
+                // "pending".
                 setSelectedReminders(prev => prev.filter(sel =>
-                    list.some(r => r.id === sel.id && r.status === REMINDER_STATUS_PENDING)
+                    list.some((r: any) => r.id === sel.id && (r.status === REMINDER_STATUS_PENDING || r.status === REMINDER_STATUS_SENT))
                 ));
             }
         } catch (error) {
@@ -165,9 +168,9 @@ export default function ReminderList() {
             const res = await api.post(`/common/reminders/dismiss-all`);
             const count = res.data?.data?.count ?? 0;
             if (count > 0) {
-                toast.success(`${count} pending reminder${count > 1 ? 's' : ''} dismissed successfully`);
+                toast.success(`${count} reminder${count > 1 ? 's' : ''} dismissed successfully`);
             } else {
-                toast.info('There are no pending reminders to dismiss');
+                toast.info('There are no reminders to dismiss');
             }
             setDismissModal({ show: false, loading: false });
             setSelectedReminders([]);
@@ -206,10 +209,10 @@ export default function ReminderList() {
 
     const STATUS_OPTIONS = REMINDER_STATUS_OPTIONS;
 
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (rowData) => {
         return (
-            <span className={`badge text-uppercase px-3 py-1 rounded-pill fw-medium ${getReminderStatusBadgeClasses(status)}`}>
-                {getReminderStatusLabel(status)}
+            <span className={`badge text-uppercase px-3 py-1 rounded-pill fw-medium ${getEffectiveReminderStatusBadgeClasses(rowData)}`}>
+                {getEffectiveReminderStatusLabel(rowData)}
             </span>
         );
     };
@@ -245,12 +248,17 @@ export default function ReminderList() {
     };
 
     const activityDateBodyTemplate = (rowData) => {
-        // Fallback to send_at if set_date_time is missing
-        const dateObj = rowData.set_date_time ? new Date(rowData.set_date_time) : (rowData.send_at ? new Date(rowData.send_at) : null);
-        if (!dateObj) return <span>—</span>;
+        // set_date_time/send_at from the API are already full ISO-8601 strings
+        // with an offset (ReminderResource converts to X-Timezone server-side)
+        // — pass them straight to parseDateTime. Round-tripping through
+        // `new Date(...).toISOString()` first converts to UTC and drops the
+        // offset, so parseDateTime's own `new Date(...)` re-parses that naive
+        // string as local time again — shifting the displayed time by the
+        // browser's UTC offset instead of showing the correct local time.
+        const dateStr = rowData.set_date_time || rowData.send_at;
+        if (!dateStr) return <span>—</span>;
 
-        // Convert back to string for parseDateTime helper
-        return <span className="fw-medium">{parseDateTime(dateObj.toISOString().slice(0, 19).replace('T', ' '))}</span>;
+        return <span className="fw-medium">{parseDateTime(dateStr)}</span>;
     };
 
     const onPage = (event) => {
@@ -303,7 +311,7 @@ export default function ReminderList() {
                                         disabled={!hasPendingReminders}
                                         onClick={() => setDismissModal({ show: true, type: 'all', loading: false })}
                                     >
-                                        <i className="ri-check-double-line me-1 align-bottom"></i> Dismiss All Pending
+                                        <i className="ri-check-double-line me-1 align-bottom"></i> Dismiss All
                                     </button>
                                 </li>
                             </ul>
@@ -409,7 +417,7 @@ export default function ReminderList() {
                                             selectionMode="checkbox"
                                             selection={selectedReminders}
                                             onSelectionChange={(e) => setSelectedReminders(e.value)}
-                                            isDataSelectable={(e) => e.data.status === REMINDER_STATUS_PENDING}
+                                            isDataSelectable={(e) => e.data.status === REMINDER_STATUS_PENDING || e.data.status === REMINDER_STATUS_SENT}
                                             onRowClick={(e) => {
                                                 const target = e.originalEvent.target as HTMLElement;
                                                 // Do not open modal if clicking the checkbox column
@@ -425,7 +433,7 @@ export default function ReminderList() {
                                             <Column field="reference" header="Reference" body={(rowData) => <span className="badge bg-primary-subtle text-primary px-2 py-1">{rowData.reference}</span>} style={{ minWidth: '120px' }} sortable></Column>
                                             <Column field="summary" header="Subject" body={subjectBodyTemplate} style={{ minWidth: '350px' }} sortable></Column>
                                             <Column field="set_date_time" header="Activity Date & Time" body={activityDateBodyTemplate} style={{ minWidth: '180px' }} sortable></Column>
-                                            <Column field="status" header="Status" body={(rowData) => getStatusBadge(rowData.status)} style={{ minWidth: '120px' }} sortable></Column>
+                                            <Column field="status" header="Status" body={(rowData) => getStatusBadge(rowData)} style={{ minWidth: '120px' }} sortable></Column>
                                         </DataTable>
                                     </div>
                                 </div>
@@ -441,7 +449,7 @@ export default function ReminderList() {
                 onConfirm={handleConfirmDismiss}
                 loading={dismissModal.loading}
                 title={dismissModal.type === 'all' ? "Dismiss All Reminders" : "Dismiss Selected Reminders"}
-                message={dismissModal.type === 'all' ? "Are you sure? All pending reminders will be dismissed." : "Are you sure? The selected pending reminders will be dismissed."}
+                message={dismissModal.type === 'all' ? "Are you sure? All pending, sent, and missed reminders will be dismissed." : "Are you sure? The selected reminders will be dismissed."}
                 confirmText="Yes, Dismiss"
                 variant="danger"
             />

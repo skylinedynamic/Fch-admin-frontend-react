@@ -70,6 +70,8 @@ export const PASSWORD_GENERATE_LENGTH = 14;
 export const FUTURE_ACTIVITY_REFERENCES = ['Task', 'Meeting'];
 
 export const REMINDER_PRESETS = [
+    { value: '5_minutes', label: '5 Minutes Before' },
+    { value: '10_minutes', label: '10 Minutes Before' },
     { value: '15_minutes', label: '15 Minutes Before' },
     { value: '30_minutes', label: '30 Minutes Before' },
     { value: '1_hour', label: '1 Hour Before' },
@@ -96,6 +98,8 @@ export const getReminderMsToSubtract = (preset, value, unit) => {
         }
     } else {
         switch (preset) {
+            case '5_minutes': ms = 5 * 60000; break;
+            case '10_minutes': ms = 10 * 60000; break;
             case '15_minutes': ms = 15 * 60000; break;
             case '30_minutes': ms = 30 * 60000; break;
             case '1_hour': ms = 60 * 60000; break;

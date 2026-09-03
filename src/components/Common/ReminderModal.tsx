@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Modal,
     UncontrolledDropdown,
@@ -12,13 +12,22 @@ import { apiClient as api } from '../../lib/http/apiClient';
 import { useAuthStore } from '../../store/auth/authStore';
 import '../../assets/css/reminder.css';
 import { initEcho } from '../../lib/echo';
+import { ReminderRescheduleForm, ReminderRescheduleFormHandle } from './ReminderRescheduleForm';
 
 const ReminderModal = () => {
     const { token } = useAuthStore();
 
-    const [reminders, setReminders] = useState([]);
+    const [reminders, setReminders] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [loadingAction, setLoadingAction] = useState(null);
+    const [showCustomReschedule, setShowCustomReschedule] = useState(false);
+    // Only meaningful when showCustomReschedule is true — drive the
+    // ReminderRescheduleForm's Confirm button from outside it (combined with
+    // the "All Reminders" link below) when the lead time is a simple preset;
+    // custom mode keeps Confirm grouped inside the form with Value/Unit.
+    const rescheduleFormRef = useRef<ReminderRescheduleFormHandle>(null);
+    const [canConfirmReschedule, setCanConfirmReschedule] = useState(false);
+    const [isCustomLeadReschedule, setIsCustomLeadReschedule] = useState(false);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -35,8 +44,9 @@ const ReminderModal = () => {
                 response.data.data &&
                 response.data.data.reminders
             ) {
-                const fetchedReminders =
-                    response.data.data.reminders;
+                const fetchedReminders = (response.data.data.reminders || []).filter(
+                    (r: any) => r && r.status !== 'cancelled'
+                );
 
                 if (fetchedReminders.length > 0) {
                     setReminders(fetchedReminders);
@@ -54,10 +64,24 @@ const ReminderModal = () => {
         }
     };
 
-    // Fetch on mount and on route change
+    // Fetch once on mount/login to catch reminders that were already due
+    // before the socket connected. Reverb (.reminder.due, queued broadcast)
+    // pushes anything that becomes due afterward, and the 30s poll below
+    // covers dropped connections — no need to refetch on every route change.
     useEffect(() => {
         fetchDueReminders();
-    }, [token, location.pathname]);
+    }, [token]);
+
+    // Periodically re-check so if you just closed the popup (X) without dismissing,
+    // it resurfaces again and again until actually dismissed or rescheduled.
+    useEffect(() => {
+        if (!token) return;
+
+        const interval = setInterval(() => {
+            if (!isOpen) fetchDueReminders();
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [token, isOpen]);
 
     // WebSocket listener (only initialize once per user session)
     useEffect(() => {
@@ -70,11 +94,12 @@ const ReminderModal = () => {
                     echo.private(`App.Models.User.${userId}`)
                         .listen('.reminder.due', (e) => {
                             if (e && e.reminder) {
-                                // Add the new reminder to the top of the list and open modal
+                                // Only process if not cancelled
+                                if (e.reminder.status === 'cancelled') return;
+
                                 setReminders(prev => {
-                                    // Avoid duplicates
                                     if (prev.find(r => r.id === e.reminder.id)) return prev;
-                                    return [e.reminder, ...prev];
+                                    return [e.reminder, ...prev.filter(r => r.status !== 'cancelled')];
                                 });
                                 setIsOpen(true);
                             } else {
@@ -90,9 +115,10 @@ const ReminderModal = () => {
         }
     }, [token]);
 
-    // Toggle modal
+    // Toggle modal. Closing (X) hides the popup.
     const toggle = () => {
-        setIsOpen(!isOpen);
+        setIsOpen(false);
+        setShowCustomReschedule(false);
     };
 
     // Dismiss reminder
@@ -109,13 +135,13 @@ const ReminderModal = () => {
                 'Reminder dismissed successfully'
             );
 
-            setIsOpen(false);
-
-            setTimeout(() => {
-                setReminders((prev) =>
-                    prev.filter((r) => r.id !== id)
-                );
-            }, 300);
+            setReminders((prev) => {
+                const next = prev.filter((r) => r.id !== id);
+                if (next.length === 0) {
+                    setIsOpen(false);
+                }
+                return next;
+            });
         } catch (error) {
             toast.error(
                 error.response?.data?.message ||
@@ -136,16 +162,12 @@ const ReminderModal = () => {
         setLoadingAction('dismissAll');
 
         try {
-            const ids = reminders.map(r => r.id);
-            await api.post('/common/reminders/bulk-dismiss', { ids });
+            await api.post('/common/reminders/dismiss-all');
 
             toast.success('All reminders dismissed successfully');
 
+            setReminders([]);
             setIsOpen(false);
-
-            setTimeout(() => {
-                setReminders([]);
-            }, 300);
         } catch (error) {
             toast.error('Failed to dismiss reminders');
             console.error('Failed to dismiss all reminders:', error);
@@ -154,55 +176,83 @@ const ReminderModal = () => {
         }
     };
 
-    // Snooze reminder
-    const snoozeReminder = async (id, minutes) => {
+    // Snooze reminder by a fixed number of minutes
+    const snoozeReminder = async (id: any, minutes: number) => {
+        await postSnooze(id, { minutes }, 'Reminder snoozed successfully', 'Failed to snooze reminder');
+    };
+
+    // Reschedule reminder to an exact date & time, alerting the given number
+    // of minutes before it (matching the "Remind me X before" dropdown used
+    // when creating an activity, instead of silently preserving whatever the
+    // reminder's lead time happened to be before).
+    const rescheduleReminder = async (id: any, rescheduleAt: string, leadMinutes: number) => {
+        const succeeded = await postSnooze(id, { reschedule_at: rescheduleAt, lead_minutes: leadMinutes }, 'Reminder rescheduled successfully', 'Failed to reschedule reminder');
+        // Only collapse the picker once the reschedule actually saved — on
+        // failure, closing here would silently discard what the user just
+        // entered right after telling them it failed, forcing them to redo it.
+        if (succeeded) {
+            setShowCustomReschedule(false);
+        }
+    };
+
+    const postSnooze = async (id: any, payload: any, successMessage: string, failureMessage: string): Promise<boolean> => {
         setLoadingAction('snooze');
 
         try {
             const response = await api.post(
                 `/common/reminders/${id}/snooze`,
-                { minutes }
+                payload
             );
 
-            toast.success(
-                response.data?.message ||
-                'Reminder snoozed successfully'
-            );
+            toast.success(response.data?.message || successMessage);
 
-            setIsOpen(false);
+            setReminders((prev) => {
+                const next = prev.filter((r) => r.id !== id);
+                if (next.length === 0) {
+                    setIsOpen(false);
+                }
+                return next;
+            });
 
-            setTimeout(() => {
-                setReminders((prev) =>
-                    prev.filter((r) => r.id !== id)
-                );
-            }, 300);
+            return true;
         } catch (error) {
             toast.error(
-                error.response?.data?.message ||
-                'Failed to snooze reminder'
+                error.response?.data?.message || failureMessage
             );
 
-            console.error(
-                'Failed to snooze reminder:',
-                error
-            );
+            console.error(failureMessage, error);
+
+            return false;
         } finally {
             setLoadingAction(null);
         }
     };
 
+    const activeReminders = reminders.filter((r: any) => r && r.status !== 'cancelled');
+
     // Don't show if there are no reminders
-    if (reminders.length === 0) return null;
+    if (activeReminders.length === 0) return null;
 
     // Don't show on reminders page
     if (location.pathname.startsWith('/reminders')) {
         return null;
     }
 
-    const isMultiple = reminders.length > 1;
+    const isMultiple = activeReminders.length > 1;
+
+    // Multi-reminder header: same "missed" definition as the single-reminder
+    // view and the per-item badges below (the activity's own date/time, not
+    // whether the alert already fired) so the summary text at the top
+    // actually matches what the list underneath shows.
+    const missedCount = activeReminders.reduce((count, r) => {
+        const d = r.set_date_time || r.send_at || r.reminder_date_time;
+        return d && new Date(d).getTime() < Date.now() ? count + 1 : count;
+    }, 0);
+    const allMissed = isMultiple && missedCount === activeReminders.length;
+    const someMissed = isMultiple && missedCount > 0 && !allMissed;
 
     // For single view
-    const mainReminder = reminders[0];
+    const mainReminder = activeReminders[0];
     // Calendar box + header: the activity's own date/time
     const remindDateSource = mainReminder.set_date_time || mainReminder.send_at || mainReminder.reminder_date_time;
     const remindDate = remindDateSource
@@ -223,6 +273,11 @@ const ReminderModal = () => {
     const reminderTimeStr = reminderTimeDate.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     const typeStr = mainReminder.reference_type || 'Meeting';
     const lowerType = typeStr.toLowerCase();
+    // Whether the activity itself (the call/meeting, i.e. remindDate) already
+    // happened — NOT whether the alert already fired. reminder_date_time is
+    // deliberately earlier than set_date_time (e.g. "10 minutes before"), so
+    // a due-but-still-upcoming reminder must not read as "missed".
+    const isPastDue = remindDate.getTime() < Date.now();
 
     const stripHtml = (html) => {
         if (!html) return '';
@@ -264,9 +319,23 @@ const ReminderModal = () => {
                                     </div>
                                 </div>
                                 <div className="flex-grow-1 text-white">
-                                    <span className="badge fw-bold mb-2 reminder-badge">PENDING REMINDERS</span>
-                                    <h5 className="mb-1 text-white fw-bold fs-18">You Have {reminders.length} Pending Reminders</h5>
-                                    <p className="mb-0 fs-13 reminder-desc-text">Stay on track and never miss important activities.</p>
+                                    <span className="badge fw-bold mb-2 reminder-badge">
+                                        {allMissed ? 'MISSED REMINDERS' : someMissed ? 'REMINDERS' : 'PENDING REMINDERS'}
+                                    </span>
+                                    <h5 className="mb-1 text-white fw-bold fs-18">
+                                        {allMissed
+                                            ? `You Have ${reminders.length} Missed Reminders!`
+                                            : someMissed
+                                                ? `You Have ${reminders.length} Reminders (${missedCount} Missed)`
+                                                : `You Have ${reminders.length} Pending Reminders`}
+                                    </h5>
+                                    <p className="mb-0 fs-13 reminder-desc-text">
+                                        {allMissed
+                                            ? 'These activities have already passed — reschedule or dismiss them.'
+                                            : someMissed
+                                                ? 'Some of these activities have already passed — review them below.'
+                                                : 'Stay on track and never miss important activities.'}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -274,14 +343,17 @@ const ReminderModal = () => {
                         <div className="bg-white px-4 py-3">
                             {/* Last 5 reminder items list */}
                             <div className="mb-3">
-                                {reminders.slice(0, 5).map((r, idx) => {
-                                    const d = r.reminder_date_time || r.set_date_time || r.send_at;
+                                {activeReminders.slice(0, 5).map((r, idx) => {
+                                    // Same as the single-reminder view: the activity's own
+                                    // date/time decides "missed", not when the alert fired.
+                                    const d = r.set_date_time || r.send_at || r.reminder_date_time;
                                     const dateObj = d ? new Date(d) : null;
                                     const dateLabel = dateObj
                                         ? dateObj.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
                                         : '—';
+                                    const itemIsPastDue = dateObj ? dateObj.getTime() < Date.now() : false;
                                     return (
-                                        <div key={r.id} className={`d-flex align-items-center gap-3 py-2 ${idx < Math.min(reminders.length, 5) - 1 ? 'border-bottom' : ''}`}>
+                                        <div key={r.id} className={`d-flex align-items-center gap-3 py-2 ${idx < Math.min(activeReminders.length, 5) - 1 ? 'border-bottom' : ''}`}>
                                             <div className="avatar-xs flex-shrink-0">
                                                 <span className="avatar-title rounded-circle reminder-feature-icon fs-14">
                                                     <i className="ri-notification-3-line"></i>
@@ -293,13 +365,17 @@ const ReminderModal = () => {
                                                     <i className="ri-time-line me-1"></i>{dateLabel}
                                                 </span>
                                             </div>
-                                            <span className="badge bg-warning-subtle text-warning fs-11 fw-medium">Pending</span>
+                                            {itemIsPastDue ? (
+                                                <span className="badge bg-danger-subtle text-danger fs-11 fw-medium">Missed</span>
+                                            ) : (
+                                                <span className="badge bg-warning-subtle text-warning fs-11 fw-medium">Pending</span>
+                                            )}
                                         </div>
                                     );
                                 })}
-                                {reminders.length > 5 && (
+                                {activeReminders.length > 5 && (
                                     <div className="reminder-more-badge">
-                                        + {reminders.length - 5} more reminders
+                                        + {activeReminders.length - 5} more reminders
                                     </div>
                                 )}
                             </div>
@@ -349,9 +425,13 @@ const ReminderModal = () => {
                                     </div>
                                 </div>
                                 <div className="flex-grow-1 text-white">
-                                    <span className="badge fw-bold mb-2 reminder-badge">REMINDER</span>
-                                    <h5 className="mb-1 text-white fw-bold fs-18">You Have an Upcoming {typeStr}!</h5>
-                                    <p className="mb-0 fs-13 reminder-desc-text">Stay on track and never miss important activities.</p>
+                                    <span className="badge fw-bold mb-2 reminder-badge">{isPastDue ? 'MISSED' : 'REMINDER'}</span>
+                                    <h5 className="mb-1 text-white fw-bold fs-18">
+                                        {isPastDue ? `You Missed a ${typeStr}!` : `You Have an Upcoming ${typeStr}!`}
+                                    </h5>
+                                    <p className="mb-0 fs-13 reminder-desc-text">
+                                        {isPastDue ? 'This activity has already passed — reschedule it or dismiss it.' : 'Stay on track and never miss important activities.'}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -373,7 +453,9 @@ const ReminderModal = () => {
                                         <h5 className="mb-0 text-dark fw-bold fs-16">{mainReminder.summary || mainReminder.title || 'Reminder'}</h5>
                                         <span className="badge fw-bold rounded-pill px-2 reminder-type-badge">{typeStr.toUpperCase()}</span>
                                     </div>
-                                    <p className="fs-13 mb-2 reminder-desc-text">You have an upcoming {lowerType}</p>
+                                    <p className="fs-13 mb-2 reminder-desc-text">
+                                        {isPastDue ? `You missed a ${lowerType}` : `You have an upcoming ${lowerType}`}
+                                    </p>
                                     <div className="d-flex align-items-center fs-13 fw-medium reminder-meta-text">
                                         <i className="ri-time-line me-1"></i> {timeStr} <span className="mx-2">•</span> {fullDateStr}
                                     </div>
@@ -431,26 +513,37 @@ const ReminderModal = () => {
                             </div>
 
                             <div className="d-flex gap-3 mb-2">
-                                <UncontrolledDropdown className="w-50">
-                                    <DropdownToggle
-                                        caret={false}
-                                        className="btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary"
+                                {isPastDue ? (
+                                    <button
+                                        type="button"
+                                        className="btn w-50 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary"
+                                        onClick={() => setShowCustomReschedule((v) => !v)}
                                         disabled={loadingAction === 'snooze' || loadingAction === 'dismiss'}
                                     >
-                                        {loadingAction === 'snooze' ? (
-                                            <><span className="spinner-border spinner-border-sm me-2"></span> Snoozing...</>
-                                        ) : (
-                                            <><i className="ri-timer-line me-2 fs-16"></i> Snooze <i className="ri-arrow-down-s-line ms-1"></i></>
-                                        )}
-                                    </DropdownToggle>
+                                        <i className="ri-calendar-event-line me-2 fs-16"></i> Reschedule
+                                    </button>
+                                ) : (
+                                    <UncontrolledDropdown className="w-50">
+                                        <DropdownToggle
+                                            caret={false}
+                                            className="btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary"
+                                            disabled={loadingAction === 'snooze' || loadingAction === 'dismiss'}
+                                        >
+                                            {loadingAction === 'snooze' ? (
+                                                <><span className="spinner-border spinner-border-sm me-2"></span> Snoozing...</>
+                                            ) : (
+                                                <><i className="ri-timer-line me-2 fs-16"></i> Snooze <i className="ri-arrow-down-s-line ms-1"></i></>
+                                            )}
+                                        </DropdownToggle>
 
-                                    <DropdownMenu className="w-100 shadow-lg border-0 mt-1">
-                                        <DropdownItem onClick={() => snoozeReminder(mainReminder.id, 5)} className="py-2 fs-14 fw-medium text-dark">Snooze for 5 mins</DropdownItem>
-                                        <DropdownItem onClick={() => snoozeReminder(mainReminder.id, 15)} className="py-2 fs-14 fw-medium text-dark">Snooze for 15 mins</DropdownItem>
-                                        <DropdownItem onClick={() => snoozeReminder(mainReminder.id, 60)} className="py-2 fs-14 fw-medium text-dark">Snooze for 1 hour</DropdownItem>
-                                        <DropdownItem onClick={() => snoozeReminder(mainReminder.id, 1440)} className="py-2 fs-14 fw-medium text-dark">Snooze for 1 day</DropdownItem>
-                                    </DropdownMenu>
-                                </UncontrolledDropdown>
+                                        <DropdownMenu className="w-100 shadow-lg border-0 mt-1">
+                                            <DropdownItem onClick={() => snoozeReminder(mainReminder.id, 5)} className="py-2 fs-14 fw-medium text-dark">Snooze for 5 mins</DropdownItem>
+                                            <DropdownItem onClick={() => snoozeReminder(mainReminder.id, 15)} className="py-2 fs-14 fw-medium text-dark">Snooze for 15 mins</DropdownItem>
+                                            <DropdownItem onClick={() => snoozeReminder(mainReminder.id, 60)} className="py-2 fs-14 fw-medium text-dark">Snooze for 1 hour</DropdownItem>
+                                            <DropdownItem onClick={() => snoozeReminder(mainReminder.id, 1440)} className="py-2 fs-14 fw-medium text-dark">Snooze for 1 day</DropdownItem>
+                                        </DropdownMenu>
+                                    </UncontrolledDropdown>
+                                )}
 
                                 <button
                                     type="button"
@@ -466,15 +559,56 @@ const ReminderModal = () => {
                                 </button>
                             </div>
 
-                            <div className="text-center mt-3">
-                                <Link
-                                    to="/reminders"
-                                    onClick={toggle}
-                                    className="d-inline-flex align-items-center fw-semibold fs-14 text-decoration-none reminder-meta-text"
-                                >
-                                    <i className="ri-list-check-2 me-1 fs-18"></i> All Reminders
-                                </Link>
-                            </div>
+                            {isPastDue && showCustomReschedule && (
+                                <ReminderRescheduleForm
+                                    ref={rescheduleFormRef}
+                                    externalConfirm
+                                    loading={loadingAction === 'snooze'}
+                                    onConfirm={(rescheduleAt, leadMinutes) => rescheduleReminder(mainReminder.id, rescheduleAt, leadMinutes)}
+                                    onValidityChange={setCanConfirmReschedule}
+                                    onModeChange={setIsCustomLeadReschedule}
+                                />
+                            )}
+
+                            {isPastDue && showCustomReschedule && !isCustomLeadReschedule ? (
+                                <div className="row g-2 mt-3">
+                                    <div className="col-6">
+                                        <button
+                                            type="button"
+                                            className="btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary"
+                                            style={{ height: '38px' }}
+                                            disabled={!canConfirmReschedule}
+                                            onClick={() => rescheduleFormRef.current?.confirm()}
+                                        >
+                                            {loadingAction === 'snooze' ? (
+                                                <span className="spinner-border spinner-border-sm"></span>
+                                            ) : (
+                                                <><i className="ri-check-line me-1 fs-16"></i> Confirm</>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <div className="col-6">
+                                        <Link
+                                            to="/reminders"
+                                            onClick={toggle}
+                                            className="btn w-100 fw-bold d-flex align-items-center justify-content-center btn-light"
+                                            style={{ height: '38px' }}
+                                        >
+                                            <i className="ri-list-check-2 me-2 fs-16"></i> All Reminders
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="mt-3">
+                                    <Link
+                                        to="/reminders"
+                                        onClick={toggle}
+                                        className="btn w-100 fw-bold d-flex align-items-center justify-content-center btn-light"
+                                    >
+                                        <i className="ri-list-check-2 me-2 fs-16"></i> All Reminders
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     </>
                 )}

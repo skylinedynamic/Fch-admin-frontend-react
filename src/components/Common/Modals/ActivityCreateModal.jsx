@@ -6,6 +6,7 @@ import { parseDate } from '../../../utils/formatters';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
+import { TimeInputs } from '../TimeInputs';
 import {
     ENTITY_TYPE_LEAD,
     ENTITY_TYPE_BORROWER,
@@ -527,30 +528,45 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         .custom-datepicker.is-invalid .p-calendar .p-button {
                                             border-color: #dc3545 !important;
                                         }
+                                        .custom-datepicker .p-timepicker {
+                                            display: none;
+                                        }
                                     `}</style>
                                     <div className={`custom-datepicker ${(errors.activity_date || realTimeDateError) ? 'is-invalid' : ''}`}>
                                         <Calendar
                                             value={formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : null}
                                             onChange={(e) => {
-                                                const date = e.value;
-                                                if (date) {
-                                                    const tzOffset = date.getTimezoneOffset() * 60000;
-                                                    const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
-                                                    setFormData(prev => ({ ...prev, activity_date: localISOTime }));
+                                                const pickedDate = e.value;
+                                                if (pickedDate) {
+                                                    const prev = formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : new Date();
+                                                    const merged = new Date(pickedDate);
+                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                                                    const tzOffset = merged.getTimezoneOffset() * 60000;
+                                                    const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                                                    setFormData(prev2 => ({ ...prev2, activity_date: localISOTime }));
                                                 } else {
-                                                    setFormData(prev => ({ ...prev, activity_date: "" }));
+                                                    setFormData(prev2 => ({ ...prev2, activity_date: "" }));
                                                 }
                                             }}
                                             minDate={(FUTURE_ACTIVITY_REFERENCES.includes(formData.reference) || formData.remind_me) ? new Date() : null}
+                                            dateFormat="dd M, yy"
                                             showTime
                                             hourFormat="12"
-                                            dateFormat="dd M, yy"
-                                            placeholder="Select date"
+                                            placeholder="Select date & time"
                                             showIcon
                                             className={`w-100 ${(errors.activity_date || realTimeDateError) ? 'p-invalid' : ''}`}
                                             inputClassName={`form-control ${(errors.activity_date || realTimeDateError) ? 'is-invalid' : ''}`}
                                             appendTo="self"
-                                            readOnlyInput
+                                            footerTemplate={() => (
+                                                <TimeInputs
+                                                    value={formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : null}
+                                                    onChange={(newDateTime) => {
+                                                        const tzOffset = newDateTime.getTimezoneOffset() * 60000;
+                                                        const localISOTime = (new Date(newDateTime - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                                                        setFormData(prev => ({ ...prev, activity_date: localISOTime }));
+                                                    }}
+                                                />
+                                            )}
                                         />
                                     </div>
                                     {errors.activity_date && <div className="text-danger mt-1 small">{errors.activity_date[0]}</div>}
@@ -647,23 +663,35 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                                         <Calendar
                                                             value={formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : null}
                                                             onChange={(e) => {
-                                                                const date = e.value;
-                                                                if (date) {
-                                                                    const tzOffset = date.getTimezoneOffset() * 60000;
-                                                                    const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
-                                                                    setFormData(prev => ({ ...prev, remind_at: localISOTime }));
+                                                                const pickedDate = e.value;
+                                                                if (pickedDate) {
+                                                                    const prev = formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : new Date();
+                                                                    const merged = new Date(pickedDate);
+                                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                                                                    const tzOffset = merged.getTimezoneOffset() * 60000;
+                                                                    const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                                                                    setFormData(prev2 => ({ ...prev2, remind_at: localISOTime }));
                                                                 } else {
-                                                                    setFormData(prev => ({ ...prev, remind_at: '' }));
+                                                                    setFormData(prev2 => ({ ...prev2, remind_at: '' }));
                                                                 }
                                                             }}
+                                                            dateFormat="dd M, yy"
                                                             showTime
                                                             hourFormat="12"
-                                                            dateFormat="dd M, yy"
                                                             placeholder="Select date & time"
                                                             showIcon
                                                             className="w-100"
                                                             appendTo="self"
-                                                            readOnlyInput
+                                                            footerTemplate={() => (
+                                                                <TimeInputs
+                                                                    value={formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : null}
+                                                                    onChange={(newDateTime) => {
+                                                                        const tzOffset = newDateTime.getTimezoneOffset() * 60000;
+                                                                        const localISOTime = (new Date(newDateTime - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                                                                        setFormData(prev => ({ ...prev, remind_at: localISOTime }));
+                                                                    }}
+                                                                />
+                                                            )}
                                                         />
                                                     </div>
                                                 )}
