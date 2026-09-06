@@ -92,6 +92,12 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
         payload.free_trail_end_date = normalizeDate(payload.free_trail_end_date);
     }
 
+    // SSN is optional on create — an empty/untouched field must not be sent
+    // as '' (fails the backend's format validation).
+    if (!payload.ssn) {
+        delete payload.ssn;
+    }
+
     payload.entity_type = ENTITY_TYPE_BORROWER;
     payload.status = formData.status;
     payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
@@ -192,6 +198,17 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFre
     if (payload.free_trail_end_date) {
         payload.free_trail_end_date = normalizeDate(payload.free_trail_end_date);
     }
+
+    // SSN: only submit when the user actually typed a new one. The real value
+    // is never sent back from the API (masked_ssn/last_4_ssn are display-only),
+    // so an empty/untouched field must NOT be sent — that would either fail
+    // validation or (worse) wipe the SSN already on file.
+    if (!payload.ssn) {
+        delete payload.ssn;
+    }
+    delete payload.masked_ssn;
+    delete payload.has_ssn;
+    delete payload.last_4_ssn;
 
     if (formData.status) {
         payload.status = formData.status;

@@ -5,6 +5,7 @@ import { Calendar } from 'primereact/calendar';
 
 import { toast } from 'react-toastify';
 import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS } from '../../../utils/formatters';
+import { formatSSN } from '../../../utils/borrowerFormatters';
 import {
     useClient,
     useUpdateClient,
@@ -828,18 +829,26 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 </div>
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="last_4_ssn" className="form-label">SSN Last 4</label>
+                        <label htmlFor="ssn" className="form-label">Social Security Number</label>
                         <input
                             type="text"
-                            className={`form-control ${errors.last_4_ssn ? 'is-invalid' : ''}`}
-                            id="last_4_ssn"
-                            name="last_4_ssn"
-                            placeholder="Enter last 4 digits of SSN"
-                            maxLength={4}
-                            value={formData.last_4_ssn || ''}
-                            onChange={handleInputChange}
+                            className={`form-control ${errors.ssn ? 'is-invalid' : ''}`}
+                            id="ssn"
+                            name="ssn"
+                            placeholder="XXX-XX-XXXX"
+                            value={formData.ssn || ''}
+                            onChange={(e) => {
+                                const formatted = formatSSN(e.target.value);
+                                handleInputChange({ target: { name: 'ssn', value: formatted } });
+                            }}
                         />
-                        {errors.last_4_ssn && <div className="invalid-feedback">{errors.last_4_ssn}</div>}
+                        {/* The real SSN is never sent back from the API — only this masked
+                            form. Typing a new number replaces it; leaving this blank keeps
+                            whatever is already on file. */}
+                        {formData.masked_ssn && !formData.ssn && (
+                            <div className="form-text">On file: {formData.masked_ssn} — enter a new number to replace it.</div>
+                        )}
+                        {errors.ssn && <div className="invalid-feedback">{errors.ssn}</div>}
                     </div>
                 </div>
 

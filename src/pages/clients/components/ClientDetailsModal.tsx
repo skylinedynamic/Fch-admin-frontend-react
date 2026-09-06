@@ -152,7 +152,7 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle,
                                     </div>
                                     <InfoItem label="Phone Number" value={client.phone_number} />
                                     <InfoItem label="Date of Birth" value={client.date_of_birth} />
-                                    <InfoItem label="Last 4 SSN" value={client.last_4_ssn} />
+                                    <InfoItem label="Social Security Number" value={client.masked_ssn} />
                                     <InfoItem label="Address" value={client.home_address} />
 
                                 </CardBody>

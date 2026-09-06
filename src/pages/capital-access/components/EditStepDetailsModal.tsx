@@ -79,7 +79,7 @@ export default function EditStepDetailsModal({
                                 to={`/credit-accounts/${cardId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="btn btn-sm btn-soft-primary d-flex align-items-center gap-1 flex-shrink-0"
+                                className="btn btn-sm btn-primary d-flex align-items-center gap-1 flex-shrink-0"
                             >
                                 Go To Card <i className="ri-external-link-line"></i>
                             </Link>

@@ -193,15 +193,20 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     },
                     onError: (error: any) => {
                         console.error("[BusinessFinancialsSection] Save ERROR:", error);
-                        toast.error("Failed to update business financials");
-                        if (error.response && error.response.data && error.response.data.errors && setErrors) {
-                            const backendErrors = error.response.data.errors;
+                        const responseData = error?.response?.data;
+
+                        // Map field-level validation errors to the form
+                        if (responseData?.errors && setErrors) {
+                            const backendErrors = responseData.errors;
                             const mappedErrors: Record<string, string> = {};
                             Object.keys(backendErrors).forEach(key => {
                                 mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                             });
                             setErrors(mappedErrors);
                             scrollToFirstError(mappedErrors);
+                            // Inline field errors are already visible — no toast needed
+                        } else {
+                            toast.error(responseData?.message || "Failed to update business financials");
                         }
                         reject(error);
                     }
