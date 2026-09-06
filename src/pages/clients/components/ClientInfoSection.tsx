@@ -193,6 +193,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 apiData.business_start_date = normalizeDate(apiData.business_start_date);
             }
 
+            // Format the raw digits the API returns into XXX-XX-XXXX for display/editing
+            if (apiData.ssn) {
+                apiData.ssn = formatSSN(apiData.ssn);
+            }
+
             // Ensure country uses full name for mapping to dropdown value
             if (apiData.country) {
                 const entry = Object.entries(locationData).find(([key, val]) => key === apiData.country || val.name === apiData.country);
@@ -484,10 +489,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         console.error("[ClientInfoSection] Save ERROR:", error);
 
                         const responseData = error?.response?.data;
+                        const isValidationError = error?.response?.status === 422;
 
-                        // Map field-level validation errors to the form
-                        if (responseData?.errors && setErrors) {
-                            const backendErrors = responseData.errors;
+                        // 422 = server-side validation. Always shown as field-level
+                        // danger + under-field messages — never a toast, even if the
+                        // errors payload is missing/oddly shaped for some field.
+                        if (isValidationError && setErrors) {
+                            const backendErrors = responseData?.errors || {};
                             const mappedErrors: Record<string, string> = {};
 
                             // Remap enrollment.* dotted keys → flat UI field names
@@ -511,8 +519,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             setErrors(mappedErrors);
                             scrollToFirstError(mappedErrors);
                             // Inline field errors are already visible — no toast needed
-                        } else {
-                            // No field-level errors: show generic or backend message in toast
+                        } else if (!isValidationError) {
+                            // Real server/network error: no inline errors possible, so a toast is the only feedback
                             const toastMessage = responseData?.message || "Failed to update client details";
                             toast.error(toastMessage);
                         }
@@ -528,13 +536,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     if ((isFetching && clientId) || (clientId && !isSynced)) {
         return (
-            <div className="row">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                    <div className="col-lg-6 mb-3" key={i}>
-                        <div className="placeholder-glow">
-                            <span className="placeholder col-4 mb-2"></span>
-                            <span className="placeholder col-12 p-3"></span>
+            <div className="row g-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(i => (
+                    <div className="col-lg-6" key={i}>
+                        <div className="mb-2">
+                            <div className="skeleton-line" style={{ width: '30%', height: 14, borderRadius: 4 }}></div>
                         </div>
+                        <div className="skeleton-line w-100" style={{ height: 42, borderRadius: 6 }}></div>
                     </div>
                 ))}
             </div>
@@ -842,12 +850,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                 handleInputChange({ target: { name: 'ssn', value: formatted } });
                             }}
                         />
-                        {/* The real SSN is never sent back from the API — only this masked
-                            form. Typing a new number replaces it; leaving this blank keeps
-                            whatever is already on file. */}
-                        {formData.masked_ssn && !formData.ssn && (
-                            <div className="form-text">On file: {formData.masked_ssn} — enter a new number to replace it.</div>
-                        )}
                         {errors.ssn && <div className="invalid-feedback">{errors.ssn}</div>}
                     </div>
                 </div>

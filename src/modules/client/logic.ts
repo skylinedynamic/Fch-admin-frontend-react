@@ -199,15 +199,12 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFre
         payload.free_trail_end_date = normalizeDate(payload.free_trail_end_date);
     }
 
-    // SSN: only submit when the user actually typed a new one. The real value
-    // is never sent back from the API (masked_ssn/last_4_ssn are display-only),
-    // so an empty/untouched field must NOT be sent — that would either fail
-    // validation or (worse) wipe the SSN already on file.
+    // SSN: the field is pre-filled with the real, formatted value and edited
+    // directly. Only omit it if it's been cleared entirely — sending '' would
+    // fail the backend's format validation.
     if (!payload.ssn) {
         delete payload.ssn;
     }
-    delete payload.masked_ssn;
-    delete payload.has_ssn;
     delete payload.last_4_ssn;
 
     if (formData.status) {

@@ -4,6 +4,7 @@ import { Skeleton } from 'primereact/skeleton';
 import { fetchClientById } from '../../../modules/client/services';
 import type { Client } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
+import { formatSSN } from '../../../utils/borrowerFormatters';
 
 interface ClientDetailsModalProps {
     isOpen: boolean;
@@ -152,7 +153,7 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle,
                                     </div>
                                     <InfoItem label="Phone Number" value={client.phone_number} />
                                     <InfoItem label="Date of Birth" value={client.date_of_birth} />
-                                    <InfoItem label="Social Security Number" value={client.masked_ssn} />
+                                    <InfoItem label="Social Security Number" value={client.ssn ? formatSSN(client.ssn) : undefined} />
                                     <InfoItem label="Address" value={client.home_address} />
 
                                 </CardBody>

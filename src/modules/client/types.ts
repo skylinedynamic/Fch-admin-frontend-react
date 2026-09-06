@@ -4,12 +4,9 @@ export type Client = {
     first_name: string;
     last_name: string;
     date_of_birth?: string;
-    // Full SSN is write-only — typing a new value replaces what's on file.
-    // The API only ever returns last_4_ssn (legacy) and masked_ssn (XXX-XX-1234).
+    // Full SSN, decrypted — shown and editable as-is (formatted XXX-XX-XXXX).
     ssn?: string;
     last_4_ssn?: string;
-    masked_ssn?: string;
-    has_ssn?: boolean;
     phone_number: string;
     country_code?: string;
     email: string;

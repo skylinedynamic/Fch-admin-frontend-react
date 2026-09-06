@@ -320,11 +320,14 @@ export default function ClientDetails() {
         } catch (error: any) {
             console.error("Save erroraaaa:", error);
 
-            // Handle backend validation errors
+            // 422 = server-side validation. Always shown as field-level danger +
+            // under-field messages — never a toast, even if the errors payload
+            // is missing/oddly shaped for some field.
+            const isValidationError = error?.response?.status === 422;
             if (error.response && error.response.data) {
                 const { errors: backendErrors, message } = error.response.data;
 
-                if (backendErrors) {
+                if (isValidationError) {
                     const mappedErrors: Record<string, string> = {};
 
                     // Remap enrollment.* dotted keys → flat UI field names
@@ -339,7 +342,7 @@ export default function ClientDetails() {
                         'enrollment.remaining_balance': 'installment_remaining_balance',
                     };
 
-                    Object.keys(backendErrors).forEach(key => {
+                    Object.keys(backendErrors || {}).forEach(key => {
                         const mappedKey = enrollmentKeyMap[key] ?? key;
                         mappedErrors[mappedKey] = Array.isArray(backendErrors[key])
                             ? backendErrors[key][0]
@@ -350,7 +353,7 @@ export default function ClientDetails() {
                 } else if (message) {
                     toast.error(message);
                 }
-            } else {
+            } else if (!isValidationError) {
                 toast.error("An error occurred while saving.");
             }
         } finally {

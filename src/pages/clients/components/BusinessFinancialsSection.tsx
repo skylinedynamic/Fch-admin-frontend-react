@@ -194,10 +194,13 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     onError: (error: any) => {
                         console.error("[BusinessFinancialsSection] Save ERROR:", error);
                         const responseData = error?.response?.data;
+                        const isValidationError = error?.response?.status === 422;
 
-                        // Map field-level validation errors to the form
-                        if (responseData?.errors && setErrors) {
-                            const backendErrors = responseData.errors;
+                        // 422 = server-side validation. Always shown as field-level
+                        // danger + under-field messages — never a toast, even if the
+                        // errors payload is missing/oddly shaped for some field.
+                        if (isValidationError && setErrors) {
+                            const backendErrors = responseData?.errors || {};
                             const mappedErrors: Record<string, string> = {};
                             Object.keys(backendErrors).forEach(key => {
                                 mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
@@ -205,7 +208,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                             setErrors(mappedErrors);
                             scrollToFirstError(mappedErrors);
                             // Inline field errors are already visible — no toast needed
-                        } else {
+                        } else if (!isValidationError) {
                             toast.error(responseData?.message || "Failed to update business financials");
                         }
                         reject(error);
