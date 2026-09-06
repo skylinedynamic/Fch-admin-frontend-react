@@ -513,6 +513,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         } else {
                             // No field-level errors: show generic or backend message in toast
                             const toastMessage = responseData?.message || "Failed to update client details";
+                            toast.error(toastMessage);
                         }
 
                         reject(error);
@@ -1244,11 +1245,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
                                 <div className="d-flex align-items-center mb-3">
                                     <i className="ri-gift-line text-warning fs-3 me-2"></i>
-                                    <h5 className="mb-0 text-primary fw-semibold">Allow Limited Free Edition (Funding Readiness Assessment)</h5>
+                                    <h5 className="mb-0 text-primary fw-semibold">Allow Limited Free Plan (Funding Readiness Assessment)</h5>
                                 </div>
 
                                 <p className="text-muted fs-13 mb-4">
-                                    Enable the Limited Free Edition for this client. Please note that features including Capital Access, Invoicing, Payments, the Resource Hub, and Credit Builder will be disabled in this version.
+                                    Enable the Limited Free Plan for this client. Please note that features including Capital Access, Invoicing, Payments, the Resource Hub, and Credit Builder will be disabled in this version.
                                 </p>
                                 <div className="row align-items-center g-3">
                                     <div className="col-md-6">
@@ -1281,7 +1282,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 }}
                                             />
                                             <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
-                                                Activate Limited Free Edition
+                                                Activate Limited Free Plan
                                             </label>
                                         </div>
                                     </div>

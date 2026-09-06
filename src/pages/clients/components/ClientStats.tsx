@@ -11,7 +11,7 @@ interface ClientStatsProps {
     isLoading?: boolean;
 }
 
-const ClientStats: React.FC<ClientStatsProps> = ({ stats, filteredTotal, isLoading }) => {
+const ClientStats: React.FC<ClientStatsProps> = ({ stats, isLoading }) => {
     if (isLoading || !stats) {
         return (
             <div className="row client-section">
@@ -22,7 +22,9 @@ const ClientStats: React.FC<ClientStatsProps> = ({ stats, filteredTotal, isLoadi
         );
     }
 
-    // Derived Stats
+    // These always come straight from the (partner-scoped) API totals — they must NOT be
+    // overridden by the table's current search/filter/pagination state, or the cards would
+    // show misleading counts (e.g. "Active Clients" dropping to match a search filter).
     const derivedStats = {
         active_count: stats?.active_borrowers || 0,
         new_this_month: stats?.new_this_month || 0,
@@ -30,34 +32,28 @@ const ClientStats: React.FC<ClientStatsProps> = ({ stats, filteredTotal, isLoadi
         inactive_count: stats?.inactive_borrowers || 0
     };
 
-    // Use filtered total if provided, otherwise use fetched total
-    const finalStats = {
-        ...derivedStats,
-        total_clients: filteredTotal !== undefined ? filteredTotal : derivedStats.total_clients
-    };
-
     const statisticsConfig = [
         {
             title: "Active Clients",
-            count: finalStats.active_count,
+            count: derivedStats.active_count,
             icon: "ri-user-line",
             colorVariant: "primary"
         },
         {
             title: "New This Month",
-            count: finalStats.new_this_month,
+            count: derivedStats.new_this_month,
             icon: "ri-user-add-line",
             colorVariant: "warning"
         },
         {
             title: "Total Clients",
-            count: finalStats.total_clients,
+            count: derivedStats.total_clients,
             icon: "ri-group-line",
             colorVariant: "info"
         },
         {
             title: "Inactive Clients",
-            count: finalStats.inactive_count,
+            count: derivedStats.inactive_count,
             icon: "ri-user-unfollow-line",
             colorVariant: "danger"
         }

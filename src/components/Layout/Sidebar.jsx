@@ -5,7 +5,7 @@ import { useAuthStore } from "../../store/auth/authStore";
 import { useConfigStore } from "../../store/config";
 import faviconImg from "../../../assets/images/Favicon.png";
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
-import { ENTITY_TYPE_PARTNER } from "../../config/appConfig";
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from "../../config/appConfig";
 
 // Menu item configuration with required permissions
 const menuItems = [
@@ -719,7 +719,7 @@ export default function Sidebar() {
               <i className="ri-vip-crown-2-fill"></i>
             </div>
             <div className="trial-text-wrap">
-              <span className="trial-label">Free Trial</span>
+              <span className="trial-label">{currentUser?.entity_type === ENTITY_TYPE_BORROWER ? 'Free Plan' : 'Free Trial'}</span>
               {trialEndDate && (
                 <span className="trial-expires">Expires {formatTrialDate(trialEndDate)}</span>
               )}

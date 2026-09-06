@@ -348,10 +348,10 @@ export default function ClientDetails() {
                     setErrors(mappedErrors);
                     scrollToFirstError(mappedErrors);
                 } else if (message) {
-                    // toast.error(message);
+                    toast.error(message);
                 }
             } else {
-                // toast.error("An error occurred while saving.");
+                toast.error("An error occurred while saving.");
             }
         } finally {
             setIsSaving(false);

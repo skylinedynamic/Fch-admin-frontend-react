@@ -14,6 +14,7 @@ import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
 import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
+import { ENTITY_TYPE_BORROWER } from './config/appConfig';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
@@ -140,7 +141,10 @@ export default function App() {
           echo.private(`App.Models.User.${user.id}`)
             .listen('.trial.expired', () => {
               clearAuth();
-              toast.error('Your free trial has expired. You have been logged out.', { toastId: 'reverb-trial-expired' });
+              const expiredMessage = user.entity_type === ENTITY_TYPE_BORROWER
+                ? 'Your free plan has expired. You have been logged out.'
+                : 'Your free trial has expired. You have been logged out.';
+              toast.error(expiredMessage, { toastId: 'reverb-trial-expired' });
               window.location.assign('/login');
             });
             

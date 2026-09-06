@@ -9,7 +9,7 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import type { Client, ClientFilterParams, ClientListStatistics } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
 import { BORROWER_STATUS, BORROWER_STATUS_CLASS_MAP } from '../../../config/statusOptions';
-import { getTrialBadgeConfig } from '../../../utils/badgeHelper';
+import { getBorrowerFreeEditionBadgeConfig } from '../../../utils/badgeHelper';
 
 
 import FilterLoader from '../../../components/Loader/FilterLoader';
@@ -209,7 +209,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
 
     // Templates
     const fullNameBody = (rowData: Client) => {
-        const trialBadge = rowData.is_free_trail ? getTrialBadgeConfig(rowData.free_trail_end_date) : null;
+        const trialBadge = rowData.is_free_trail ? getBorrowerFreeEditionBadgeConfig(rowData.free_trail_end_date) : null;
         return (
             <div className="d-flex align-items-center gap-2">
                 <span className="fw-medium">{rowData.full_name || `${rowData.first_name} ${rowData.last_name}`}</span>
@@ -393,12 +393,12 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                 )}
             </form>
 
-            {clientsLoading ? (
+            {clientsLoading || clientsFetching ? (
                 <TableLoader rows={11} />
             ) : (
                 <div className="table-responsive table-card mt-1">
                     <DataTable<Client[]>
-                        loading={clientsFetching}
+                        loading={false}
                         value={clients as Client[]} paginator lazy totalRecords={totalRecords}
                         first={(page - 1) * perPage} rows={perPage} rowsPerPageOptions={[10, 25, 50, 100]}
                         sortMode="single" sortField={sortField} sortOrder={sortOrder === 'asc' ? 1 : -1}

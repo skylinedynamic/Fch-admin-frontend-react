@@ -233,12 +233,12 @@ export default function EmbedFormSubmissionDetails() {
                     },
                 }));
                 setShowConvertModal(false);
-                toast.success(res?.message || 'Submission converted to a Free Trial Borrower!');
+                toast.success(res?.message || 'Submission converted to a Free Plan Borrower!');
             } else {
-                toast.error(res?.message || 'Failed to convert to free trial borrower.');
+                toast.error(res?.message || 'Failed to convert to free plan borrower.');
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free trial borrower.');
+            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free plan borrower.');
         } finally {
             setConversionLoading(false);
         }
@@ -332,7 +332,7 @@ export default function EmbedFormSubmissionDetails() {
               {
                   key: 'decision',
                   title: isConverted
-                      ? 'Converted to Free Trial Borrower'
+                      ? 'Converted to Free Plan Borrower'
                       : isRejected
                       ? 'Application Rejected'
                       : 'Decision Pending',
@@ -450,7 +450,7 @@ export default function EmbedFormSubmissionDetails() {
                                                 </span>
                                                 {isConverted && (
                                                     <span className="badge bg-success-subtle text-success ef-status-pill">
-                                                        <i className="ri-vip-crown-2-fill" /> Free Trial Borrower
+                                                        <i className="ri-vip-crown-2-fill" /> Free Plan Borrower
                                                     </span>
                                                 )}
                                             </div>
@@ -509,7 +509,7 @@ export default function EmbedFormSubmissionDetails() {
                                                 disabled={conversionLoading}
                                             >
                                                 <i className="ri-vip-crown-2-line" />
-                                                <span>Convert to Free Trial Borrower</span>
+                                                <span>Convert to Free Plan Borrower</span>
                                             </button>
                                         ) : null}
                                     </div>
@@ -695,7 +695,7 @@ export default function EmbedFormSubmissionDetails() {
                                                     {convertedBorrower?.full_name || `${submission.first_name} ${submission.last_name}`}
                                                 </div>
                                                 <span className="badge bg-primary-subtle text-primary ef-status-pill mt-1">
-                                                    <i className="ri-vip-crown-2-fill" /> Free Trial
+                                                    <i className="ri-vip-crown-2-fill" /> Free Plan
                                                 </span>
                                             </div>
                                             {convertedBorrowerId && (
