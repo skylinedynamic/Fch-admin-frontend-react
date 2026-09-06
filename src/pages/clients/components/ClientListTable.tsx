@@ -86,6 +86,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     const [selectedAssignedUser, setSelectedAssignedUser] = useState<string | number>('');
     const [selectedTier, setSelectedTier] = useState<string | number>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [selectedFreePlan, setSelectedFreePlan] = useState<string>('');
 
     // Applied filters (for query)
     const [appliedSearchText, setAppliedSearchText] = useState<string>('');
@@ -93,6 +94,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     const [appliedAssignedUser, setAppliedAssignedUser] = useState<string | number>('');
     const [appliedTier, setAppliedTier] = useState<string | number>('');
     const [appliedStatus, setAppliedStatus] = useState<string>('');
+    const [appliedFreePlan, setAppliedFreePlan] = useState<string>('');
     const [appliedFilters, setAppliedFilters] = useState<DataTableFilterMeta>({});
 
     // Initialize filters
@@ -112,6 +114,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         assigned_user_id: appliedAssignedUser || '',
         current_tier: appliedTier || '',
         status: appliedStatus || '',
+        is_free_trail: appliedFreePlan || '',
         filters: appliedFilters,
         page,
         per_page: perPage,
@@ -170,6 +173,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         setAppliedAssignedUser(selectedAssignedUser);
         setAppliedTier(selectedTier);
         setAppliedStatus(selectedStatus);
+        setAppliedFreePlan(selectedFreePlan);
         setAppliedFilters(filters);
         setPage(1);
     };
@@ -180,11 +184,13 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         setSelectedAssignedUser('');
         setSelectedTier('');
         setSelectedStatus('');
+        setSelectedFreePlan('');
         setAppliedSearchText('');
         setAppliedPartner('');
         setAppliedAssignedUser('');
         setAppliedTier('');
         setAppliedStatus('');
+        setAppliedFreePlan('');
         initFilters();
         setPage(1);
         setSortField('id');
@@ -278,21 +284,26 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     );
 
     // Dynamic loader config for Clients
+    // "col-xxl" (no number) is Bootstrap's equal-width auto column — every field
+    // (and the buttons group) ends up the same width and shares the row evenly,
+    // however many filters are visible, so the bar always renders as one line.
     const loaderConfig = isHost
         ? [
-            { col: !partnerId ? "col-xxl-2 col-sm-12" : "col-xxl-2 col-sm-12" }, // Search
-            ...(!partnerId ? [{ col: "col-xxl-2 col-sm-4" }] : []), // Partner filter
-            { col: "col-xxl-2 col-sm-4" }, // Sales Person
-            { col: "col-xxl-2 col-sm-4" }, // Tiers
-            { col: "col-xxl-2 col-sm-4" }, // Status
-            { col: "col-xxl-2 col-sm-12", isButton: true } // Buttons
+            { col: "col-xxl col-sm-12" }, // Search
+            ...(!partnerId ? [{ col: "col-xxl col-sm-4" }] : []), // Partner filter
+            { col: "col-xxl col-sm-4" }, // Sales Person
+            { col: "col-xxl col-sm-4" }, // Tiers
+            { col: "col-xxl col-sm-4" }, // Status
+            { col: "col-xxl col-sm-4" }, // Free Plan / Regular Plan
+            { col: "col-xxl col-sm-12", isButton: true } // Buttons
         ]
         : [
-            { col: "col-xxl-3 col-sm-12" }, // Search
-            { col: "col-xxl-2 col-sm-4" }, // Sales Person
-            { col: "col-xxl-2 col-sm-4" }, // Tiers
-            { col: "col-xxl-2 col-sm-4" }, // Status
-            { col: "col-xxl-3 col-sm-12", isButton: true } // Buttons
+            { col: "col-xxl col-sm-12" }, // Search
+            { col: "col-xxl col-sm-4" }, // Sales Person
+            { col: "col-xxl col-sm-4" }, // Tiers
+            { col: "col-xxl col-sm-4" }, // Status
+            { col: "col-xxl col-sm-4" }, // Free Plan / Regular Plan
+            { col: "col-xxl col-sm-12", isButton: true } // Buttons
         ];
 
     return (
@@ -302,7 +313,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                     <FilterLoader config={loaderConfig} />
                 ) : (
                     <div className="row g-3 mb-3">
-                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-12" : "col-xxl-3 col-sm-12"}>
+                        <div className="col-xxl col-sm-12">
                             <div className="search-box">
                                 <input
                                     type="text"
@@ -317,7 +328,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                         </div>
 
                         {!partnerId && isHost && (
-                            <div className="col-xxl-2 col-sm-4">
+                            <div className="col-xxl col-sm-4">
                                 <Dropdown
                                     value={selectedPartner}
                                     onChange={(e) => setSelectedPartner(e.value)}
@@ -332,7 +343,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             </div>
                         )}
 
-                        <div className="col-xxl-2 col-sm-4">
+                        <div className="col-xxl col-sm-4">
                             <Dropdown
                                 value={selectedAssignedUser}
                                 onChange={(e) => setSelectedAssignedUser(e.value)}
@@ -346,7 +357,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             />
                         </div>
 
-                        <div className="col-xxl-2 col-sm-4">
+                        <div className="col-xxl col-sm-4">
                             <Dropdown
                                 value={selectedTier}
                                 onChange={(e) => setSelectedTier(e.value)}
@@ -360,7 +371,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             />
                         </div>
 
-                        <div className="col-xxl-2 col-sm-4">
+                        <div className="col-xxl col-sm-4">
                             <Dropdown
                                 value={selectedStatus}
                                 onChange={(e) => setSelectedStatus(e.value)}
@@ -374,21 +385,28 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             />
                         </div>
 
-                        {!isHost ? (
-                            <div className="col-xxl-3 col-sm-12">
-                                <div className="d-flex gap-2">
-                                    <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
-                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
-                                </div>
+                        <div className="col-xxl col-sm-4">
+                            <Dropdown
+                                value={selectedFreePlan}
+                                onChange={(e) => setSelectedFreePlan(e.value)}
+                                options={[
+                                    { label: 'All Plans', value: '' },
+                                    { label: 'Free Plan', value: '1' },
+                                    { label: 'Regular Plan', value: '0' }
+                                ]}
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="All Plans"
+                                className="w-100 bg-light border-light"
+                            />
+                        </div>
+
+                        <div className="col-xxl col-sm-12">
+                            <div className="d-flex gap-2">
+                                <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
+                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
                             </div>
-                        ) : (
-                            <div className="col-xxl-2 col-sm-12">
-                                <div className="d-flex gap-2">
-                                    <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
-                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
-                                </div>
-                            </div>
-                        )}
+                        </div>
                     </div>
                 )}
             </form>

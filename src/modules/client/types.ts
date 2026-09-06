@@ -110,6 +110,7 @@ export type ClientFilterParams = {
     assign_id?: string | number; // Used in Clients.jsx
     current_tier?: string | number; // Used in Clients.jsx
     status?: string;
+    is_free_trail?: string | number; // Filter by Free Plan ('1') / Regular Plan ('0')
 };
 
 export type ClientProfileStats = {
