@@ -459,6 +459,11 @@ export default function CapitalAccessForm() {
         }
     };
 
+    // The card currently shown in the Edit Step Details modal — either a card
+    // pending being added, or an already-selected card being re-edited.
+    const modalCard: SelectedPlayCard | null = pendingAddCard
+        || selectedAccounts.find(acc => acc.id === editingCardId)
+        || null;
 
     return (
         <div className="page-content">
@@ -908,6 +913,10 @@ export default function CapitalAccessForm() {
                 editDetailsForm={editDetailsForm}
                 setEditDetailsForm={setEditDetailsForm}
                 modalValidationErrors={modalValidationErrors}
+                cardId={modalCard?.id}
+                cardName={modalCard?.card_name}
+                cardIssuer={modalCard?.issuer}
+                cardImageUrl={modalCard ? buildStorageUrl(modalCard.full_image_url || modalCard.image_url) || undefined : undefined}
             />
         </div>
     );
