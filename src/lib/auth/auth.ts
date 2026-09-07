@@ -2,6 +2,7 @@
 import { getAuthState, setAuthState, clearAuthState, AuthUser, setUserSubscriptionState, UserSubscription, getUserSubscriptionState } from '../../store/auth'
 import { getUserDetails, refreshUser } from './authApi'
 import { fetchGlobalConfigurations } from '../../modules/settings/services'
+import { clearBrandTheme } from '../../utils/brandingTheme'
 
 const COOKIE_NAME = 'auth_session_active'
 
@@ -71,6 +72,10 @@ export function setAuth(token?: string | null, user?: AuthUser | null, rememberM
 export function clearAuth(): void {
   clearAuthState()
   eraseCookie(COOKIE_NAME)
+
+  // Drop the paint-ahead brand cache, otherwise the boot script repaints the
+  // previous tenant's colours for whoever logs in next on this browser.
+  clearBrandTheme()
 }
 
 export function isAuthenticated(): boolean {

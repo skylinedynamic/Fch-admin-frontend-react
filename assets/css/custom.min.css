@@ -61,12 +61,14 @@
   align-items: center;
   gap: 10px;
   padding: 6px 18px;
-  color: #d3d8e5;
+  /* Brand setting; see assets/css/sidebar-theme.css */
+  color: var(--sidebar-text-color, #d3d8e5);
 }
 
 .partner-sidebar .nav-item .menu-link i {
   font-size: 20px;
-  color: var(--secondary-color);
+  /* Brand setting, no longer tied to the secondary colour */
+  color: var(--sidebar-icon-color, #d3d8e5);
 }
 
 .partner-sidebar .nav-item .menu-link .badge {
@@ -77,31 +79,27 @@
 }
 
 .partner-sidebar .nav-item .menu-link:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
+  background: rgba(var(--sidebar-text-color-rgb, 255, 255, 255), 0.06);
+  color: var(--sidebar-text-hover-color, #ffffff);
 }
 
 .partner-sidebar .nav-item .menu-link:hover i {
-  color: #ffffff;
+  color: var(--sidebar-icon-hover-color, #ffffff);
 }
 
-.partner-sidebar .nav-item .menu-link.active {
-  background: var(--secondary-color);
-  color: #ffffff;
-}
-
-.partner-sidebar .nav-item .menu-link.active i {
-  color: #ffffff;
-}
+/* The selected menu item is styled in brand-tokens.css. It used to pin its
+   background to --secondary-color here, which is what made the accent colour
+   silently double as "the selected menu background" with no way to set one
+   without moving the other. */
 
 /* Nested dropdowns (if present) */
 .partner-sidebar .menu-dropdown .nav-link {
   padding: 8px 18px 8px 42px;
-  color: #cbd3e2;
+  color: var(--sidebar-text-color, #cbd3e2);
 }
 
 .partner-sidebar .menu-dropdown .nav-link:hover {
-  color: #ffffff;
+  color: var(--sidebar-text-hover-color, #ffffff);
 }
 
 /* Section spacing tweaks */

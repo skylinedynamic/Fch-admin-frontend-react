@@ -2,6 +2,7 @@ import React from 'react'
 import logoImg from "../../../assets/images/fch-logo-wide.png"
 import { APP_CONFIG, MODULE_BRANDING } from '../../config/appConfig'
 import { fetchThemeConfigurations } from '../../modules/settings/services'
+import { applyBrandTheme } from '../../utils/brandingTheme'
 
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
   const [settings, setSettings] = React.useState(null);
@@ -12,12 +13,10 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
         if (res.status && res.data) {
           setSettings(res.data);
           
-          if (res.data.primary_color) {
-            document.documentElement.style.setProperty('--primary-color', res.data.primary_color);
-          }
-          if (res.data.secondary_color) {
-            document.documentElement.style.setProperty('--secondary-color', res.data.secondary_color);
-          }
+          // One call for every brand variable. The login page used to set only
+          // --primary-color/--secondary-color, so Bootstrap's primary stayed the
+          // stock theme colour here while the dashboard was branded.
+          applyBrandTheme(res.data);
           const faviconUrl = res.data.favicon_full_url || res.data.favicon;
           if (faviconUrl && faviconUrl !== 'null') {
             document.querySelectorAll("link[rel~='icon']").forEach(el => el.remove());

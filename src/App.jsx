@@ -71,6 +71,7 @@ import SiteSettings from './pages/cms/SiteSettings.tsx';
 import { useSiteSettings } from './modules/cms/queries';
 import { useGlobalConfigurations } from './modules/settings/queries';
 import { useConfigStore } from './store/config';
+import { applyBrandTheme } from './utils/brandingTheme';
 import { useQueryClient } from '@tanstack/react-query';
 import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
@@ -169,7 +170,11 @@ export default function App() {
       // Persist global config in Zustand
       setGlobalConfigs(activeBranding, activeFlags);
 
-      const { site_name, favicon_full_url, primary_color, secondary_color } = activeBranding;
+      const { site_name, favicon_full_url } = activeBranding;
+
+      // Every brand colour, including the derived contrast tokens that keep text
+      // readable on a light brand colour.
+      applyBrandTheme(activeBranding);
 
       // 1. Dynamic Browser Title
       if (site_name) {
@@ -183,30 +188,6 @@ export default function App() {
         favLink.rel = 'icon';
         favLink.href = favicon_full_url.includes('?') ? `${favicon_full_url}&_t=${Date.now()}` : `${favicon_full_url}?_t=${Date.now()}`;
         document.head.appendChild(favLink);
-      }
-
-      // 3. Dynamic CSS Variables
-      if (primary_color && primary_color !== 'null') {
-        const secondary = secondary_color || '#F7B84B';
-
-        // Dynamic CSS variables set on :root
-        document.documentElement.style.setProperty('--primary-color', primary_color);
-        document.documentElement.style.setProperty('--secondary-color', secondary);
-
-        // Also dynamically set Bootstrap/Velzon primary variables
-        document.documentElement.style.setProperty('--vz-primary', primary_color, 'important');
-
-        const hexToRgb = (hex) => {
-          const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-          const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
-          return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
-        };
-
-        const rgbVal = hexToRgb(primary_color);
-        if (rgbVal) {
-          document.documentElement.style.setProperty('--vz-primary-rgb', rgbVal, 'important');
-        }
       }
     }
   }, [globalConfigData, user, setGlobalConfigs]);

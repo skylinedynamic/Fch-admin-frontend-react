@@ -1,0 +1,422 @@
+/*
+  Brand tokens
+  ============
+  The single place where the tenant's brand colours meet the Velzon/Bootstrap
+  theme. Must be the LAST stylesheet in index.html.
+
+  Every value here is published on :root by applyBrandTheme() in
+  src/utils/brandingTheme.ts. The declarations below are cold-load fallbacks —
+  they render the default brand before JS runs, so a slow network shows the
+  default theme rather than black-on-black.
+
+  Why the derived tokens exist
+  ----------------------------
+  The sidebar canvas and every .btn-primary background are the tenant's brand
+  colour, but the text on top used to be hard coded white. That made a light
+  brand colour unusable. Two DIFFERENT derived colours are needed, and
+  conflating them is why light themes broke in two separate ways:
+
+    --brand-on-primary   text ON the brand colour   (buttons, bands)
+    --brand-primary-ink  the brand colour AS text on white  (.text-primary)
+
+  For a dark brand colour on-primary resolves to #FFFFFF and ink resolves to the
+  brand colour itself, i.e. exactly what shipped before — so dark themes are
+  unchanged and only light themes start working.
+*/
+
+:root {
+  /* Primary */
+  --brand-primary: #001f3f;
+  --brand-primary-rgb: 0, 31, 63;
+  --brand-primary-hover: #1f3a56;
+  --brand-primary-ink: #001f3f;
+  --brand-primary-subtle: #e0e4e8;
+  --brand-on-primary: #ffffff;
+  --brand-on-primary-rgb: 255, 255, 255;
+
+  /* Secondary */
+  --brand-secondary: #d4af37;
+  --brand-secondary-rgb: 212, 175, 55;
+  --brand-secondary-hover: #bf9e31;
+  --brand-secondary-ink: #7a6420;
+  --brand-secondary-subtle: #fbf7eb;
+  --brand-on-secondary: #1b1f2b;
+
+  /* Buttons — settable independently of the brand colour, because "our brand is
+     navy" and "our call to action is gold" are two different decisions. Unset,
+     they resolve back to the brand colours above. */
+  --brand-btn-primary-bg: #001f3f;
+  --brand-btn-primary-rgb: 0, 31, 63;
+  --brand-btn-primary-color: #ffffff;
+  --brand-btn-primary-hover-bg: #1f3a56;
+  --brand-btn-secondary-bg: #d4af37;
+  --brand-btn-secondary-rgb: 212, 175, 55;
+  --brand-btn-secondary-color: #1b1f2b;
+  --brand-btn-secondary-hover-bg: #bf9e31;
+
+  /* Sidebar canvas — its own colour, so the accent is not forced to double as it */
+  --brand-sidebar-bg: #001f3f;
+  --brand-sidebar-bg-rgb: 0, 31, 63;
+  --brand-on-sidebar: #d3d8e5;
+  --brand-on-sidebar-rgb: 211, 216, 229;
+  --sidebar-hover-bg: #1a3550;
+  --sidebar-active-bg: #d4af37;
+
+  /* Top bar — its own canvas, defaulting to the white bar the theme shipped with */
+  --brand-topbar-bg: #ffffff;
+  --brand-topbar-bg-rgb: 255, 255, 255;
+  --brand-topbar-color: #495057;
+  --brand-topbar-color-rgb: 73, 80, 87;
+
+  /* Names the existing stylesheets already use, resolved from the tokens above.
+     applyBrandTheme() also sets these inline, which wins; these cover a cold load. */
+  --primary-color: var(--brand-primary);
+  --secondary-color: var(--brand-secondary);
+  --sidebar-text-color: var(--brand-on-sidebar);
+  --sidebar-icon-color: var(--brand-on-sidebar);
+  --sidebar-text-hover-color: var(--brand-on-sidebar);
+  --sidebar-icon-hover-color: var(--brand-on-sidebar);
+  --sidebar-active-text-color: var(--brand-on-secondary);
+  --sidebar-active-icon-color: var(--brand-on-secondary);
+  --sidebar-text-color-rgb: var(--brand-on-sidebar-rgb);
+
+  /* Velzon's own primary follows the brand */
+  --vz-primary: var(--brand-primary);
+  --vz-primary-rgb: var(--brand-primary-rgb);
+}
+
+/* ==========================================================================
+   Bootstrap / Velzon bridge
+   Bootstrap hard codes --vz-btn-color:#fff on a --vz-primary background, which
+   is unreadable for a light brand. Re-point the button variables at the derived
+   contrast token instead. This one block covers every .btn-primary in the app.
+   ========================================================================== */
+
+.btn-primary {
+  --vz-btn-bg: var(--brand-btn-primary-bg);
+  --vz-btn-border-color: var(--brand-btn-primary-bg);
+  --vz-btn-color: var(--brand-btn-primary-color);
+  --vz-btn-hover-color: var(--brand-btn-primary-color);
+  --vz-btn-hover-bg: var(--brand-btn-primary-hover-bg);
+  --vz-btn-hover-border-color: var(--brand-btn-primary-hover-bg);
+  --vz-btn-active-color: var(--brand-btn-primary-color);
+  --vz-btn-active-bg: var(--brand-btn-primary-hover-bg);
+  --vz-btn-active-border-color: var(--brand-btn-primary-hover-bg);
+  --vz-btn-disabled-color: var(--brand-btn-primary-color);
+  --vz-btn-disabled-bg: var(--brand-btn-primary-bg);
+  --vz-btn-disabled-border-color: var(--brand-btn-primary-bg);
+}
+
+.btn-secondary {
+  --vz-btn-bg: var(--brand-btn-secondary-bg);
+  --vz-btn-border-color: var(--brand-btn-secondary-bg);
+  --vz-btn-color: var(--brand-btn-secondary-color);
+  --vz-btn-hover-color: var(--brand-btn-secondary-color);
+  --vz-btn-hover-bg: var(--brand-btn-secondary-hover-bg);
+  --vz-btn-hover-border-color: var(--brand-btn-secondary-hover-bg);
+  --vz-btn-active-color: var(--brand-btn-secondary-color);
+  --vz-btn-active-bg: var(--brand-btn-secondary-hover-bg);
+  --vz-btn-active-border-color: var(--brand-btn-secondary-hover-bg);
+  --vz-btn-disabled-color: var(--brand-btn-secondary-color);
+  --vz-btn-disabled-bg: var(--brand-btn-secondary-bg);
+  --vz-btn-disabled-border-color: var(--brand-btn-secondary-bg);
+}
+
+/* .btn-warning is wired to the secondary button in this app rather than used as a
+   semantic amber — it predates these tokens and is applied to ordinary actions.
+   Genuinely semantic variants (success, danger, info) keep their fixed meaning:
+   a delete button must stay red whatever the brand colour is. */
+.btn-warning {
+  --vz-btn-bg: var(--brand-btn-secondary-bg);
+  --vz-btn-border-color: var(--brand-btn-secondary-bg);
+  --vz-btn-color: var(--brand-btn-secondary-color);
+  --vz-btn-hover-color: var(--brand-btn-secondary-color);
+  --vz-btn-hover-bg: var(--brand-btn-secondary-hover-bg);
+  --vz-btn-hover-border-color: var(--brand-btn-secondary-hover-bg);
+  --vz-btn-active-color: var(--brand-btn-secondary-color);
+  --vz-btn-active-bg: var(--brand-btn-secondary-hover-bg);
+  --vz-btn-active-border-color: var(--brand-btn-secondary-hover-bg);
+  --vz-btn-disabled-color: var(--brand-btn-secondary-color);
+  --vz-btn-disabled-bg: var(--brand-btn-secondary-bg);
+}
+
+.btn-warning i {
+  color: var(--brand-btn-secondary-color);
+}
+
+/* Outline buttons draw the fill colour as a border and as text on white, so the
+   label needs the darkened ink rather than the raw fill. */
+.btn-outline-primary {
+  --vz-btn-color: var(--brand-primary-ink);
+  --vz-btn-border-color: var(--brand-btn-primary-bg);
+  --vz-btn-hover-bg: var(--brand-btn-primary-bg);
+  --vz-btn-hover-color: var(--brand-btn-primary-color);
+  --vz-btn-hover-border-color: var(--brand-btn-primary-bg);
+  --vz-btn-active-bg: var(--brand-btn-primary-bg);
+  --vz-btn-active-color: var(--brand-btn-primary-color);
+  --vz-btn-active-border-color: var(--brand-btn-primary-bg);
+}
+
+.btn-outline-secondary {
+  --vz-btn-color: var(--brand-secondary-ink);
+  --vz-btn-border-color: var(--brand-btn-secondary-bg);
+  --vz-btn-hover-bg: var(--brand-btn-secondary-bg);
+  --vz-btn-hover-color: var(--brand-btn-secondary-color);
+  --vz-btn-hover-border-color: var(--brand-btn-secondary-bg);
+  --vz-btn-active-bg: var(--brand-btn-secondary-bg);
+  --vz-btn-active-color: var(--brand-btn-secondary-color);
+  --vz-btn-active-border-color: var(--brand-btn-secondary-bg);
+}
+
+/* Soft buttons: a wash of the fill with the ink on top */
+.btn-soft-primary {
+  --vz-btn-color: var(--brand-primary-ink);
+  --vz-btn-bg: rgba(var(--brand-btn-primary-rgb), 0.1);
+  --vz-btn-hover-bg: var(--brand-btn-primary-bg);
+  --vz-btn-hover-color: var(--brand-btn-primary-color);
+  --vz-btn-active-bg: var(--brand-btn-primary-bg);
+  --vz-btn-active-color: var(--brand-btn-primary-color);
+}
+
+.btn-soft-secondary {
+  --vz-btn-color: var(--brand-secondary-ink);
+  --vz-btn-bg: rgba(var(--brand-btn-secondary-rgb), 0.1);
+  --vz-btn-hover-bg: var(--brand-btn-secondary-bg);
+  --vz-btn-hover-color: var(--brand-btn-secondary-color);
+  --vz-btn-active-bg: var(--brand-btn-secondary-bg);
+  --vz-btn-active-color: var(--brand-btn-secondary-color);
+}
+
+/* Text-only buttons carry the brand as text on a white page, so they take the ink */
+.btn-ghost-primary,
+.btn-link {
+  --vz-btn-color: var(--brand-primary-ink);
+  --vz-btn-hover-color: var(--brand-btn-primary-bg);
+  --vz-btn-active-color: var(--brand-btn-primary-bg);
+}
+
+.btn-ghost-secondary {
+  --vz-btn-color: var(--brand-secondary-ink);
+  --vz-btn-hover-color: var(--brand-btn-secondary-bg);
+  --vz-btn-active-color: var(--brand-btn-secondary-bg);
+}
+
+/* Filled brand surfaces carry their own readable text colour */
+.bg-primary {
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-on-primary) !important;
+}
+
+.bg-secondary {
+  background-color: var(--brand-secondary) !important;
+  color: var(--brand-on-secondary) !important;
+}
+
+/* Brand colour used AS text on a white page needs the darkened ink, not the raw
+   brand colour — otherwise a light brand is invisible here. */
+.text-primary {
+  color: var(--brand-primary-ink) !important;
+}
+
+.text-secondary {
+  color: var(--brand-secondary-ink) !important;
+}
+
+.bg-primary-subtle {
+  background-color: var(--brand-primary-subtle) !important;
+}
+
+.bg-secondary-subtle {
+  background-color: var(--brand-secondary-subtle) !important;
+}
+
+.link-primary {
+  color: var(--brand-primary-ink) !important;
+}
+
+.border-primary {
+  border-color: var(--brand-primary) !important;
+}
+
+/* ==========================================================================
+   Top bar
+   Velzon ships a dozen [data-topbar=*] presets that each pin --vz-header-bg to a
+   fixed hex. Re-pointing the variables here lets the tenant's colour win over
+   whichever preset is active, without having to know which one that is.
+   ========================================================================== */
+
+#page-topbar,
+#page-topbar.topbar-shadow,
+[data-topbar] #page-topbar,
+[data-topbar=light] #page-topbar.topbar-shadow {
+  background-color: var(--brand-topbar-bg) !important;
+  --vz-header-bg: var(--brand-topbar-bg);
+  --vz-header-item-color: var(--brand-topbar-color);
+  --vz-header-item-sub-color: var(--brand-topbar-color);
+  --vz-header-item-bg: rgba(var(--brand-topbar-color-rgb), 0.1);
+  --vz-topbar-search-bg: rgba(var(--brand-topbar-color-rgb), 0.08);
+  --vz-topbar-search-color: var(--brand-topbar-color);
+  --vz-topbar-user-bg: transparent;
+}
+
+/* The bar's own chrome, listed element by element rather than as a blanket rule.
+   Dropdown menus hang off this bar but render on their own white surface, so
+   anything inside one must keep its normal colours. */
+#page-topbar .navbar-header > div > .btn,
+#page-topbar .topnav-hamburger,
+#page-topbar .topnav-hamburger > i,
+#page-topbar .vertical-menu-btn,
+#page-topbar .btn-topbar,
+#page-topbar .btn-topbar > i,
+#page-topbar .user-name-text,
+#page-topbar .user-name-sub-text,
+#page-topbar .topbar-user > .btn,
+#page-topbar .topbar-user > .btn > span {
+  color: var(--brand-topbar-color) !important;
+}
+
+/* The hamburger bars are drawn with background colour, not text colour */
+#page-topbar .hamburger-icon span {
+  background-color: var(--brand-topbar-color) !important;
+}
+
+/* ==========================================================================
+   Sidebar canvas
+   ========================================================================== */
+
+.app-menu,
+.app-menu .navbar-brand-box,
+.navbar-menu {
+  background: var(--brand-sidebar-bg) !important;
+}
+
+/* The mobile brand box lives inside the top bar, not the sidebar, so it takes
+   the top bar's colour. It used to be caught by the blanket .navbar-brand-box
+   rule above and painted with the sidebar colour while sitting in the top bar. */
+#page-topbar .navbar-brand-box,
+#page-topbar .horizontal-logo {
+  background: var(--brand-topbar-bg) !important;
+}
+
+/* Velzon menu variables, so sidebar chrome not targeted below follows along */
+[data-theme=default][data-sidebar=dark] {
+  --vz-vertical-menu-bg: var(--brand-sidebar-bg);
+  --vz-vertical-menu-border: var(--brand-sidebar-bg);
+  --vz-vertical-menu-item-color: var(--sidebar-text-color);
+  --vz-vertical-menu-item-hover-color: var(--sidebar-text-hover-color);
+  --vz-vertical-menu-item-active-color: var(--sidebar-active-text-color);
+  --vz-vertical-menu-sub-item-color: var(--sidebar-text-color);
+  --vz-vertical-menu-sub-item-hover-color: var(--sidebar-text-hover-color);
+  --vz-vertical-menu-sub-item-active-color: var(--sidebar-active-text-color);
+  --vz-vertical-menu-title-color: var(--sidebar-text-color);
+  --vz-sidebar-user-name-text: var(--sidebar-text-color);
+  --vz-sidebar-user-name-sub-text: var(--sidebar-text-color);
+}
+
+/* ---------- Top level items ---------- */
+/* Text and icon are separately configurable but never diverge by accident:
+   each has one source, applied identically at rest and on hover. */
+
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link {
+  color: var(--sidebar-text-color) !important;
+}
+
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link i {
+  color: var(--sidebar-icon-color) !important;
+}
+
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link:hover,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link:focus {
+  color: var(--sidebar-text-hover-color) !important;
+}
+
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link:hover i,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link:focus i {
+  color: var(--sidebar-icon-hover-color) !important;
+}
+
+/* Hover and selected backgrounds are settings in their own right. Their defaults
+   reproduce the previous wash, so leaving them unset changes nothing. */
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link:hover,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link:focus {
+  background-color: var(--sidebar-hover-bg) !important;
+}
+
+.navbar-menu .navbar-nav .menu-link.active,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link.active,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link.active:hover {
+  background-color: var(--sidebar-active-bg) !important;
+}
+
+.navbar-menu .navbar-nav .menu-link.active,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link.active,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link.active:hover {
+  color: var(--sidebar-active-text-color) !important;
+}
+
+/* The selected item's icon is separately settable, like the resting one */
+.navbar-menu .navbar-nav .menu-link.active i,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link.active i,
+.navbar-menu .navbar-nav.partner-sidebar .nav-item .menu-link.active:hover i {
+  color: var(--sidebar-active-icon-color) !important;
+}
+
+/* ---------- Sub menu items ---------- */
+/* .menu-dropdown in the partner portal, .subitem in the borrower portal */
+
+.navbar-menu .navbar-nav.partner-sidebar .menu-dropdown .nav-link,
+.navbar-menu .navbar-nav.partner-sidebar .subitem {
+  color: var(--sidebar-text-color) !important;
+}
+
+.navbar-menu .navbar-nav.partner-sidebar .menu-dropdown .nav-link i,
+.navbar-menu .navbar-nav.partner-sidebar .subitem i {
+  color: var(--sidebar-icon-color) !important;
+}
+
+.navbar-menu .navbar-nav.partner-sidebar .menu-dropdown .nav-link:hover,
+.navbar-menu .navbar-nav.partner-sidebar .menu-dropdown .nav-link.active,
+.navbar-menu .navbar-nav.partner-sidebar .subitem:hover,
+.navbar-menu .navbar-nav.partner-sidebar .subitem.active {
+  color: var(--sidebar-text-hover-color) !important;
+}
+
+.navbar-menu .navbar-nav.partner-sidebar .menu-dropdown .nav-link:hover i,
+.navbar-menu .navbar-nav.partner-sidebar .menu-dropdown .nav-link.active i,
+.navbar-menu .navbar-nav.partner-sidebar .subitem:hover i,
+.navbar-menu .navbar-nav.partner-sidebar .subitem.active i {
+  color: var(--sidebar-icon-hover-color) !important;
+}
+
+/* Sub-items share the hover colour but stay flat when selected — the parent item
+   already carries the selected background, so filling both reads as a double
+   highlight. The label colour is what marks a selected sub-item. */
+.navbar-menu .navbar-nav.partner-sidebar .menu-dropdown .nav-link:hover,
+.navbar-menu .navbar-nav.partner-sidebar .menu-dropdown .nav-link.active,
+.navbar-menu .navbar-nav.partner-sidebar .subitem:hover,
+.navbar-menu .navbar-nav.partner-sidebar .subitem.active {
+  background-color: var(--sidebar-hover-bg) !important;
+}
+
+/* Sub-menu bullet indicators follow the label colour rather than a fixed white */
+.navbar-menu .navbar-nav .nav-sm .nav-link::before {
+  background-color: rgba(var(--sidebar-text-color-rgb), 0.5) !important;
+}
+
+.navbar-menu .navbar-nav .nav-sm .nav-link.active::before {
+  background-color: var(--sidebar-text-hover-color) !important;
+}
+
+/* ---------- Section headings and separators ---------- */
+
+.navbar-menu .navbar-nav.partner-sidebar .menu-title,
+.navbar-menu .navbar-nav.partner-sidebar .menu-title span {
+  color: var(--sidebar-text-color) !important;
+  opacity: 0.7;
+}
+
+/* Separators only carry a colour here; whether they are drawn stays with the base styles */
+.navbar-menu .navbar-nav.partner-sidebar .nav-item,
+.navbar-menu .navbar-nav.partner-sidebar .submenu-collapse .nav-item {
+  border-bottom-color: rgba(var(--sidebar-text-color-rgb), 0.08);
+}

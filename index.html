@@ -6,21 +6,32 @@
   <meta charset="utf-8" />
   <script>
     (function () {
+      // Paints the tenant's brand before React mounts.
+      //
+      // The variable map is precomputed and persisted by applyBrandTheme() in
+      // src/utils/brandingTheme.ts, so there is deliberately no colour maths and
+      // no knowledge of the branding schema here - an earlier version duplicated
+      // both and drifted out of sync. Applying a map blindly cannot drift.
       try {
+        var cached = localStorage.getItem('brand-css-vars');
+        if (cached) {
+          var brand = JSON.parse(cached);
+          if (brand && brand.v === 1 && brand.vars) {
+            var style = document.documentElement.style;
+            for (var name in brand.vars) {
+              if (Object.prototype.hasOwnProperty.call(brand.vars, name)) {
+                style.setProperty(name, brand.vars[name]);
+              }
+            }
+          }
+        }
+
+        // Title and favicon still come from the persisted config store.
         var storeStr = localStorage.getItem('app-config-store');
         if (storeStr) {
           var parsed = JSON.parse(storeStr);
-          if (parsed && parsed.state && parsed.state.branding) {
-            var branding = parsed.state.branding;
-            var primary = branding.primary_color;
-            var secondary = branding.secondary_color || '#F7B84B';
-            if (primary && primary !== 'null') {
-              document.documentElement.style.setProperty('--primary-color', primary);
-            }
-            if (secondary && secondary !== 'null') {
-              document.documentElement.style.setProperty('--secondary-color', secondary);
-            }
-            // Dynamic favicon from cached branding
+          var branding = parsed && parsed.state && parsed.state.branding;
+          if (branding) {
             var fav = branding.favicon_full_url || branding.favicon;
             if (fav && fav !== 'null') {
               var existing = document.querySelector("link[rel~='icon']");
@@ -67,6 +78,8 @@
   <!-- Partner Sidebar Overrides -->
   <!-- Mobile Responsive Fixes -->
   <link href="assets/css/responsive.css" rel="stylesheet" type="text/css" />
+  <!-- Brand tokens: must stay LAST so tenant colours win over the theme defaults -->
+  <link href="/assets/css/brand-tokens.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body>

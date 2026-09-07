@@ -104,6 +104,10 @@ export interface ThemeConfigurations {
     secondary_color: string | null;
     secondary_logo: string | null;
     secondary_logo_full_url: string | null;
+    sidebar_text_color: string | null;
+    sidebar_icon_color: string | null;
+    sidebar_text_hover_color: string | null;
+    sidebar_icon_hover_color: string | null;
     site_name: string | null;
     site_slogan: string | null;
 }

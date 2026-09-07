@@ -275,9 +275,11 @@ export default function Sidebar() {
   const location = useLocation();
   const { branding: settings } = useConfigStore();
 
-  const dynamicLogoWide = settings?.primary_logo_full_url;
-  const dynamicLogo = settings?.secondary_logo_full_url;
-  const dynamicFavicon = settings?.favicon_full_url;
+  // Logos are chosen by the background they sit on. The legacy keys are read as a
+  // fallback so a partner who has not re-uploaded keeps their existing logo.
+  const dynamicLogoWide = settings?.logo_sidebar_full_url || settings?.logo_on_dark_full_url || settings?.primary_logo_full_url;
+  const dynamicLogo = settings?.logo_document_full_url || settings?.logo_on_light_full_url || settings?.secondary_logo_full_url;
+  const dynamicFavicon = settings?.logo_mark_full_url || settings?.favicon_full_url;
 
   // Auto-expand menu on route change
   useEffect(() => {

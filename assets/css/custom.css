@@ -6,18 +6,11 @@ Contact: support@themesbrand.com
 File: Custom Css File
 */
 
-:root {
-  --primary-color: #001f3f;
-  --secondary-color: #f7b84b;
-  --vz-primary: var(--primary-color) !important;
-  --vz-primary-rgb: 0, 31, 63 !important;
-}
-
-/* SIDEBAR BACKGROUND */
-.app-menu,
-.navbar-brand-box {
-  background: var(--primary-color) !important;
-}
+/* Brand colours (palette, sidebar background, button and menu contrast) now live
+   in assets/css/brand-tokens.css, which is loaded last and derives readable text
+   colours instead of hard coding them. The :root palette that used to sit here
+   pinned --vz-primary-rgb to the FCH navy with !important, which is why the
+   login page rendered off-brand for every tenant. */
 
 /* Auth page logo base */
 .auth-logo-img {
@@ -28,81 +21,15 @@ File: Custom Css File
   object-fit: contain;
 }
 
-/* NAVIGATION TEXT (WHITE) */
-.navbar-menu .navbar-nav .nav-link,
-.navbar-menu .navbar-nav .nav-sm .nav-link,
-.navbar-menu .navbar-title {
-  color: #ffffff !important;
-}
+/* Sidebar text, icons, hover and the .btn-primary palette moved to
+   assets/css/brand-tokens.css. They hard coded white labels and secondary-coloured
+   icons with !important, which beat the variable-driven rules at any specificity —
+   that is why sidebar icons stayed the secondary colour. */
 
-/* NAVIGATION ICONS (SECONDARY COLOR) */
-.navbar-menu .navbar-nav .nav-link i {
-  color: var(--secondary-color) !important;
-}
-
-/* ACTIVE STATE (SECONDARY BG + WHITE TEXT/ICON) */
-/* HOVER & ACTIVE EFFECTS (SECONDARY COLOR) */
-.navbar-menu .navbar-nav .nav-link:hover,
-.navbar-menu .navbar-nav .nav-sm .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
-}
-
-/* DYNAMIC UI BUTTONS (PRIMARY & SECONDARY) */
-.btn-primary {
-  background-color: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
-}
-
-.btn-primary:hover,
-.btn-primary:active,
-.btn-primary:focus {
-  background-color: var(--primary-color) !important;
-  filter: brightness(90%);
-  border-color: var(--primary-color) !important;
-}
-
-.btn-warning {
-  background-color: var(--secondary-color) !important;
-  border-color: var(--secondary-color) !important;
-  color: #ffffff !important;
-}
-
-.btn-warning:hover,
-.btn-warning:active,
-.btn-warning:focus {
-  background-color: var(--secondary-color) !important;
-  filter: brightness(90%);
-  border-color: var(--secondary-color) !important;
-  color: #ffffff !important;
-}
-
-/* Ensure filter icon stays white */
-.btn-warning i {
-  color: #ffffff !important;
-}
-
-.navbar-menu .navbar-nav .menu-link.active {
-  background-color: var(--secondary-color) !important;
-  color: #ffffff !important;
-}
-
-.navbar-menu .navbar-nav .menu-link.active i {
-  color: #ffffff !important;
-}
-
-/* Ensure sub-menu indicators also follow white/secondary theme */
-.navbar-menu .navbar-nav .nav-sm .nav-link::before {
-  background-color: rgba(255, 255, 255, 0.5) !important;
-}
-
-.navbar-menu .navbar-nav .nav-sm .nav-link.active::before {
-  background-color: #ffffff !important;
-}
-
-.navbar-menu {
-  background: var(--primary-color);
-}
+/* .btn-warning and the selected menu item moved to brand-tokens.css. Both pinned
+   themselves to --secondary-color with !important, which is what made the accent
+   colour silently double as "the selected menu background" and "the amber button"
+   with no way to set either on its own. */
 
 .border {
   border: 1px solid #ced4da !important;
@@ -493,20 +420,11 @@ File: Custom Css File
   align-items: center;
 }
 
-/* Sub-menu link hover effect */
-.menu-dropdown .nav-link:hover {
-  color: #fff;
-  background: transparent;
-}
-
+/* Sub-menu link hover and selected state. Colours come from brand-tokens.css;
+   only the weight is set here. These used to hard code white, which made a light
+   sidebar unreadable. */
 .menu-dropdown .nav-link.active {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1) !important;
   font-weight: 600;
-}
-
-.menu-dropdown .nav-link.active i {
-  color: #fff !important;
 }
 
 /* Arrow icon styling - Positioned absolutely or flexed before text */

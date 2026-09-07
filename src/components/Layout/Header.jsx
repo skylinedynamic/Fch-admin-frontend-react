@@ -23,9 +23,11 @@ export default function Header() {
   const menuRef = useRef(null)          // the portal menu
 
 
-  const dynamicLogo = settings?.secondary_logo_full_url;
-  const dynamicLogoLight = settings?.primary_logo_full_url;
-  const dynamicFavicon = settings?.favicon_full_url;
+  // The horizontal logo only appears on narrow screens, where the sidebar is
+  // hidden, so it takes the mobile logo before falling back to the light one.
+  const dynamicLogo = settings?.logo_mobile_full_url || settings?.logo_document_full_url || settings?.logo_on_light_full_url || settings?.secondary_logo_full_url;
+  const dynamicLogoLight = settings?.logo_sidebar_full_url || settings?.logo_on_dark_full_url || settings?.primary_logo_full_url;
+  const dynamicFavicon = settings?.logo_mark_full_url || settings?.favicon_full_url;
   const siteName = settings?.site_name || ''
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
