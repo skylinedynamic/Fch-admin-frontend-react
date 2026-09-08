@@ -60,7 +60,7 @@ interface BrandingState {
     logo_document: string;
     logo_mail: string;
     logo_mobile: string;
-    logo_mark: string;
+    favicon: string;
     // Colours
     primary_color: string;
     secondary_color: string;
@@ -79,7 +79,7 @@ interface BrandingState {
     sidebar_active_icon_color: string;
 }
 
-type LogoFieldKey = 'logo_sidebar' | 'logo_document' | 'logo_mail' | 'logo_mobile' | 'logo_mark';
+type LogoFieldKey = 'logo_sidebar' | 'logo_document' | 'logo_mail' | 'logo_mobile' | 'favicon';
 
 /** The shape every logo slot is designed around; shown on each slot. */
 const RECOMMENDED_LOGO_SIZE = '420 x 127 px';
@@ -92,7 +92,7 @@ const EMPTY_BRANDING: BrandingState = {
     logo_document: '',
     logo_mail: '',
     logo_mobile: '',
-    logo_mark: '',
+    favicon: '',
     primary_color: DEFAULT_PRIMARY_COLOR,
     secondary_color: DEFAULT_SECONDARY_COLOR,
     sidebar_bg_color: '',
@@ -728,14 +728,15 @@ const BrandingForm: React.FC = () => {
             setBranding({
                 site_name: clean(saved.site_name),
                 site_slogan: clean(saved.site_slogan),
-                // Each surface key falls back through the name it replaced, so a
-                // partner who has not re-uploaded still sees their existing logo
-                // rather than an empty slot.
-                logo_sidebar: clean(saved.logo_sidebar) || clean(saved.logo_on_dark) || clean(saved.primary_logo),
-                logo_document: clean(saved.logo_document) || clean(saved.logo_on_light) || clean(saved.secondary_logo),
-                logo_mail: clean(saved.logo_mail) || clean(saved.logo_on_dark) || clean(saved.primary_logo),
-                logo_mobile: clean(saved.logo_mobile) || clean(saved.logo_on_light) || clean(saved.secondary_logo),
-                logo_mark: clean(saved.logo_mark) || clean(saved.favicon),
+                // One key per surface. The legacy names (primary_logo,
+                // secondary_logo, logo_on_light, logo_on_dark, logo_mark) were
+                // backfilled into these and removed, so there is nothing left to
+                // fall back through here.
+                logo_sidebar: clean(saved.logo_sidebar),
+                logo_document: clean(saved.logo_document),
+                logo_mail: clean(saved.logo_mail),
+                logo_mobile: clean(saved.logo_mobile),
+                favicon: clean(saved.favicon),
                 primary_color: clean(saved.primary_color, DEFAULT_PRIMARY_COLOR),
                 secondary_color: clean(saved.secondary_color, DEFAULT_SECONDARY_COLOR),
                 sidebar_bg_color: clean(saved.sidebar_bg_color),
@@ -807,7 +808,7 @@ const BrandingForm: React.FC = () => {
         const file = selectedFiles[0];
 
         const allowed = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
-        const isMark = activeField === 'logo_mark';
+        const isMark = activeField === 'favicon';
         const ext = file.name.split('.').pop()?.toLowerCase();
 
         if (ext && !allowed.includes(ext) && !(isMark && ext === 'ico')) {
@@ -888,13 +889,6 @@ const BrandingForm: React.FC = () => {
                 // Unchecking "match primary" is what makes the sidebar independent;
                 // an empty value means "follow the primary colour".
                 sidebar_bg_color: matchSidebarToPrimary ? '' : branding.sidebar_bg_color,
-                // Keep the earlier key names in step so anything still reading them —
-                // the invoice PDF, the mail templates — stays correct until they migrate.
-                logo_on_dark: branding.logo_sidebar || branding.logo_mail,
-                logo_on_light: branding.logo_document || branding.logo_mobile,
-                primary_logo: branding.logo_sidebar || branding.logo_mail,
-                secondary_logo: branding.logo_document || branding.logo_mobile,
-                favicon: branding.logo_mark,
             };
 
             // Blank overrides mean "derive from the brand colours", which is what an
@@ -1113,10 +1107,10 @@ const BrandingForm: React.FC = () => {
                                             title="Square mark"
                                             usedFor="Browser tab and collapsed menu. Must read on both backgrounds."
                                             recommended={RECOMMENDED_MARK_SIZE}
-                                            value={branding.logo_mark}
+                                            value={branding.favicon}
                                             previewBg={`linear-gradient(90deg, ${sidebarBg} 0 50%, #FFFFFF 50% 100%)`}
-                                            error={errors.logo_mark}
-                                            field="logo_mark"
+                                            error={errors.favicon}
+                                            field="favicon"
                                             onSelect={openLogoPicker}
                                             onClear={clearLogo}
                                         />

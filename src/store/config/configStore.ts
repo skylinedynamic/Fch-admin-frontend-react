@@ -11,13 +11,8 @@ export type BrandingConfig = {
   logo_mail_full_url?: string | null;
   logo_mobile?: string | null;
   logo_mobile_full_url?: string | null;
-  logo_mark?: string | null;
-  logo_mark_full_url?: string | null;
-  // Superseded names, still served while partners migrate
-  logo_on_light?: string | null;
-  logo_on_light_full_url?: string | null;
-  logo_on_dark?: string | null;
-  logo_on_dark_full_url?: string | null;
+  favicon?: string | null;
+  favicon_full_url?: string | null;
   // Identity
   site_name?: string | null;
   site_slogan?: string | null;
@@ -37,13 +32,6 @@ export type BrandingConfig = {
   // Top bar — unset keeps the white bar the theme ships with
   topbar_bg_color?: string | null;
   topbar_text_color?: string | null;
-  // Legacy names, still served while partners migrate
-  primary_logo?: string | null;
-  primary_logo_full_url?: string | null;
-  secondary_logo?: string | null;
-  secondary_logo_full_url?: string | null;
-  favicon?: string | null;
-  favicon_full_url?: string | null;
 };
 
 export type StatusFlags = {

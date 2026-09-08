@@ -145,7 +145,13 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
         };
         window.addEventListener('refreshActivities', handleRefresh);
         return () => window.removeEventListener('refreshActivities', handleRefresh);
-    }, [entityId, entityType, partnerEmail, borrowerEmail, hostEmail]);
+        // Deps are the entity identity ONLY. The email props are deliberately not
+        // listed: fetchActivities() never reads them (the request is keyed purely
+        // off entityId/entityType), and callers pass live form state
+        // (borrowerEmail={formData.email}), so including them re-ran this effect on
+        // every keystroke in the email field - refetching the list and flashing the
+        // loading state. They are still used by the context effect below.
+    }, [entityId, entityType]);
 
     useEffect(() => {
         window._activityEntityContext = {
