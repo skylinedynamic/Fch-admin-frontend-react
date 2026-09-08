@@ -364,7 +364,13 @@ export const buildBrandVars = (branding: SidebarBranding): Record<string, string
     const onSecondary = contrastColor(secondary, ON_BRAND_LIGHT, ON_BRAND_DARK);
 
     const primaryButton = resolveButtonColors(primary);
-    const secondaryButton = resolveButtonColors(secondary);
+
+    // The secondary button's label is pinned to white rather than derived. The
+    // accent is the call-to-action colour and the design wants a white label on
+    // it in every state, so resting and hover both read from this one value.
+    // This deliberately overrides the contrast pick: on a light accent the label
+    // will fall below AA, which is the chosen look rather than a bug here.
+    const secondaryButton = { ...resolveButtonColors(secondary), text: ON_BRAND_LIGHT };
     const topbar = resolveTopbarColors(branding);
 
     return {

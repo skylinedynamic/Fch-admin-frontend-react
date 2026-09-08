@@ -51,7 +51,9 @@
   --brand-btn-primary-hover-bg: #1f3a56;
   --brand-btn-secondary-bg: #d4af37;
   --brand-btn-secondary-rgb: 212, 175, 55;
-  --brand-btn-secondary-color: #1b1f2b;
+  /* Pinned white, not contrast-derived — see buildBrandVars() in brandingTheme.ts.
+     Every .btn-secondary/.btn-warning state reads this one value, so hover matches. */
+  --brand-btn-secondary-color: #ffffff;
   --brand-btn-secondary-hover-bg: #bf9e31;
 
   /* Sidebar canvas — its own colour, so the accent is not forced to double as it */
@@ -145,8 +147,24 @@
   --vz-btn-disabled-bg: var(--brand-btn-secondary-bg);
 }
 
-.btn-warning i {
-  color: var(--brand-btn-secondary-color);
+/* An icon inside a button takes the button's own text colour.
+
+   Remix icons are empty <i> elements with no colour of their own, so any rule
+   that coloured the label without also colouring the glyph (or vice versa) left
+   one button showing two colours. The filter row was the visible case: a page
+   stylesheet pinned .btn-warning's label to white while the icon still resolved
+   to the brand token's dark ink.
+
+   Deliberately coloured icons are unaffected: Bootstrap's .text-* utilities
+   carry !important, and inline styles win outright.
+
+   Bare `button` is listed next to `.btn` because several buttons in this app
+   (the Clear beside Filters, for one) use .btn-clear WITHOUT .btn. */
+.btn i,
+.btn svg,
+button i,
+button svg {
+  color: inherit;
 }
 
 /* Outline buttons draw the fill colour as a border and as text on white, so the
