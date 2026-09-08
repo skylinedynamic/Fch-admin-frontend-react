@@ -42,6 +42,11 @@ import "../assets/css/custom.min.css"
 import "../assets/css/custom.css"
 import "../assets/css/responsive.css"
 import "../assets/css/datepicker.css"
+// MUST be the last stylesheet imported. Vite emits JS-imported CSS after the
+// <link> tags in index.html, so a brand-tokens.css that is only linked there
+// loses to any !important rule in custom.css - which is what pinned the
+// sidebar border to the primary colour.
+import "../assets/css/brand-tokens.css"
 
 const isLocal = import.meta.env.VITE_DEVELOPMENT_MODE == 'local'
 

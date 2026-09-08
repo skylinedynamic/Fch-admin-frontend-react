@@ -181,7 +181,19 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             <div className="d-flex flex-column flex-sm-row align-items-center">
                                                 {displayInvoice.branding?.primary_logo && (
                                                     <div className="flex-grow-1 text-center text-sm-start">
-                                                        <img src={displayInvoice.branding?.primary_logo} className="card-logo card-logo-dark" alt="Logo" height="65" />
+                                                        {/* Fixed 200x60 box with object-fit, matching the borrower
+                                                            portal and the sidebar, so a logo is the same size
+                                                            everywhere. Partner logos arrive in every aspect ratio -
+                                                            a height-only cap let a wide logo run across the header,
+                                                            and `contain` keeps them all inside one box undistorted. */}
+                                                        <img
+                                                            src={displayInvoice.branding?.logo_document_full_url
+                                                                || displayInvoice.branding?.logo_sidebar_full_url
+                                                                || displayInvoice.branding?.primary_logo}
+                                                            className="card-logo card-logo-dark"
+                                                            alt="Logo"
+                                                            style={{ width: '200px', height: '60px', objectFit: 'contain', objectPosition: 'left center' }}
+                                                        />
                                                     </div>
                                                 )}
                                                 <div className="flex-shrink-0 mt-sm-0 mt-4 text-center text-sm-end">

@@ -1,22 +1,28 @@
 import React from 'react'
 import logoImg from "../../../assets/images/fch-logo-wide.png"
 import { APP_CONFIG, MODULE_BRANDING } from '../../config/appConfig'
-import { fetchThemeConfigurations } from '../../modules/settings/services'
+import { fetchBranding } from '../../modules/settings/services'
 import { applyBrandTheme } from '../../utils/brandingTheme'
 
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
   const [settings, setSettings] = React.useState(null);
 
   React.useEffect(() => {
-    fetchThemeConfigurations()
-      .then((res) => {
+    // Branding only. The login screen needs nothing from get-theme's email and
+    // payment freshness flags, and waiting on those queries delayed the brand.
+    fetchBranding()
+      .then((payload) => {
+        const res = { status: payload?.success, data: payload?.data?.branding };
         if (res.status && res.data) {
           setSettings(res.data);
-          
+
           // One call for every brand variable. The login page used to set only
           // --primary-color/--secondary-color, so Bootstrap's primary stayed the
           // stock theme colour here while the dashboard was branded.
-          applyBrandTheme(res.data);
+          //
+          // The server's precomputed map is passed through so this matches what
+          // /api/branding.css already painted before React mounted.
+          applyBrandTheme(res.data, payload?.data?.css_vars);
           const faviconUrl = res.data.favicon_full_url || res.data.favicon;
           if (faviconUrl && faviconUrl !== 'null') {
             document.querySelectorAll("link[rel~='icon']").forEach(el => el.remove());

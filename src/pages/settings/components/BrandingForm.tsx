@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     fetchAppConfigurations,
     saveAppConfigurations
@@ -26,6 +26,17 @@ const HEX_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
 /** Below this a WCAG AA body-text pairing is considered failing. */
 const AA_CONTRAST = 4.5;
+
+/* Email chrome. Mirrors resources/views/emails/layouts/mail.blade.php, where the
+   header and footer are white with a hairline rule rather than a brand band. */
+const MAIL_SURFACE = '#FFFFFF';
+const MAIL_RULE = '#F0F0F0';
+const MAIL_FOOTER_TEXT = '#605D5D';
+
+/* The top bar keeps the stock white chrome below 992px, so the phone preview
+   must not show the tenant colour. Mirrors brand-tokens.css. */
+const TOPBAR_DEFAULT_BG = '#FFFFFF';
+const TOPBAR_DEFAULT_COLOR = '#495057';
 
 function resolveLogoUrl(path: string | null | undefined) {
     if (!path || path === 'null' || path === 'undefined') return null;
@@ -68,7 +79,11 @@ interface BrandingState {
     sidebar_active_icon_color: string;
 }
 
-type LogoField = 'logo_sidebar' | 'logo_document' | 'logo_mail' | 'logo_mobile' | 'logo_mark';
+type LogoFieldKey = 'logo_sidebar' | 'logo_document' | 'logo_mail' | 'logo_mobile' | 'logo_mark';
+
+/** The shape every logo slot is designed around; shown on each slot. */
+const RECOMMENDED_LOGO_SIZE = '420 x 127 px';
+const RECOMMENDED_MARK_SIZE = '60 x 60 px';
 
 const EMPTY_BRANDING: BrandingState = {
     site_name: '',
@@ -194,7 +209,7 @@ const SectionCard: React.FC<{
     subtitle: string;
     children: React.ReactNode;
     aside?: React.ReactNode;
-}> = ({ icon, title, subtitle, children, aside }) => (
+}> = React.memo(({ icon, title, subtitle, children, aside }) => (
     <div className="card border shadow-none mb-3">
         <div className="card-header bg-light-subtle border-bottom-dashed py-2 d-flex align-items-center gap-2">
             <i className={`${icon} fs-16 text-primary`}></i>
@@ -206,22 +221,27 @@ const SectionCard: React.FC<{
         </div>
         <div className="card-body p-3">{children}</div>
     </div>
-);
+));
+SectionCard.displayName = 'SectionCard';
 
 /**
  * A colour field. `onBackground` turns on a live contrast read-out, which is the
  * only way an admin can tell before saving that a colour pairing will be illegible.
  */
 const ColorField: React.FC<{
+    /** Which branding key this edits. Passed back to a stable onChange so the
+        component can be memoised - an inline arrow per field would give every
+        render a new prop identity and defeat memo entirely. */
+    name: keyof BrandingState;
     label?: string;
     hint?: string;
     value: string;
     placeholder: string;
     error?: string;
     disabled?: boolean;
-    onChange: (value: string) => void;
+    onChange: (name: keyof BrandingState, value: string) => void;
     onBackground?: string;
-}> = ({ label, hint, value, placeholder, error, disabled, onChange, onBackground }) => {
+}> = React.memo(({ name, label, hint, value, placeholder, error, disabled, onChange, onBackground }) => {
     const shown = value || placeholder;
     const ratio = onBackground ? contrastRatio(shown, onBackground) : null;
 
@@ -259,7 +279,6 @@ const ColorField: React.FC<{
                         className="d-block w-100 h-100 rounded-1 position-relative overflow-hidden"
                         style={{
                             border: '1px solid rgba(0,0,0,.28)',
-                            opacity: disabled ? 0.5 : 1,
                             // Checkerboard sits under the colour so white and pale
                             // shades still read as a chosen value.
                             backgroundImage:
@@ -281,17 +300,23 @@ const ColorField: React.FC<{
                         style={{ border: 0, padding: 0, cursor: 'inherit' }}
                         value={swatch}
                         disabled={disabled}
-                        onChange={e => onChange(e.target.value.toUpperCase())}
+                        onChange={e => onChange(name, e.target.value.toUpperCase())}
                     />
                 </label>
                 <input
                     type="text"
                     className="form-control border-0 rounded-0 shadow-none font-monospace px-2"
-                    style={{ fontSize: '12.5px', minHeight: '36px' }}
+                    style={{
+                        fontSize: '12.5px',
+                        minHeight: '36px',
+                        // Read-only, not faded: the value shown is the one in use.
+                        background: disabled ? '#f8f9fa' : undefined,
+                        cursor: disabled ? 'not-allowed' : undefined,
+                    }}
                     placeholder={placeholder}
                     value={shown}
-                    disabled={disabled}
-                    onChange={e => onChange(e.target.value)}
+                    readOnly={disabled}
+                    onChange={e => onChange(name, e.target.value)}
                 />
             </div>
 
@@ -308,14 +333,15 @@ const ColorField: React.FC<{
             {!error && ratio === null && hint && <div className="text-muted fs-11 mt-1">{hint}</div>}
         </div>
     );
-};
+});
+ColorField.displayName = 'ColorField';
 
 /**
  * Explains the contrast numbers shown under every colour field. Without this the
  * "9.8:1" reads as noise, and the one number on the page that predicts whether a
  * theme is usable gets ignored.
  */
-const ContrastLegend: React.FC = () => (
+const ContrastLegend: React.FC = React.memo(() => (
     <div className="border rounded bg-light-subtle p-3 mt-1">
         <div className="fw-semibold fs-12 mb-1">
             <i className="ri-question-line align-middle me-1"></i>
@@ -340,22 +366,26 @@ const ContrastLegend: React.FC = () => (
             You can still save a low score if you want to — nothing is blocked.
         </div>
     </div>
-);
+));
+ContrastLegend.displayName = 'ContrastLegend';
 
 /**
  * A logo slot. The preview sits on the background the logo will actually be used
  * on, so a white-on-transparent logo can never look fine here and vanish in the app.
  */
 const LogoField: React.FC<{
+    field: LogoFieldKey;
     title: string;
     usedFor: string;
     value: string;
     previewBg: string;
+    /** Defaults to the wordmark size; the square mark overrides it. */
+    recommended?: string;
     required?: boolean;
     error?: string;
-    onSelect: () => void;
-    onClear: () => void;
-}> = ({ title, usedFor, value, previewBg, required, error, onSelect, onClear }) => {
+    onSelect: (field: LogoFieldKey) => void;
+    onClear: (field: LogoFieldKey) => void;
+}> = React.memo(({ field, title, usedFor, value, previewBg, recommended, required, error, onSelect, onClear }) => {
     const [imgError, setImgError] = useState(false);
     const preview = resolveLogoUrl(value);
 
@@ -372,7 +402,7 @@ const LogoField: React.FC<{
                 here and then vanish in the app. */}
             <button
                 type="button"
-                onClick={onSelect}
+                onClick={() => onSelect(field)}
                 className="border-0 rounded p-0 flex-shrink-0 d-flex align-items-center justify-content-center position-relative"
                 style={{ background: previewBg, width: '96px', height: '58px', cursor: 'pointer' }}
                 title="Choose a file"
@@ -394,16 +424,17 @@ const LogoField: React.FC<{
                     {title} {required && <span className="text-danger">*</span>}
                 </div>
                 <div className="text-muted fs-11 lh-sm">{usedFor}</div>
+                <div className="text-muted fs-11 lh-sm">Recommended {recommended || RECOMMENDED_LOGO_SIZE}</div>
 
                 <div className="d-flex align-items-center gap-2 mt-1">
-                    <button type="button" className="btn btn-sm btn-light py-0 px-2 fs-11" onClick={onSelect}>
+                    <button type="button" className="btn btn-sm btn-light py-0 px-2 fs-11" onClick={() => onSelect(field)}>
                         {preview && !imgError ? 'Change' : 'Choose'}
                     </button>
                     {preview && !imgError && (
                         <button
                             type="button"
                             className="btn btn-sm btn-link text-danger p-0 fs-11 text-decoration-none"
-                            onClick={onClear}
+                            onClick={() => onClear(field)}
                         >
                             Remove
                         </button>
@@ -414,7 +445,8 @@ const LogoField: React.FC<{
             </div>
         </div>
     );
-};
+});
+LogoField.displayName = 'LogoField';
 
 /* -------------------------------------------------------------------------- */
 /* Live preview                                                               */
@@ -425,21 +457,33 @@ const LogoField: React.FC<{
  * portals use at runtime. Everything here is driven by `vars`, so what an admin
  * sees is what both portals, the emails and the documents will render.
  */
-const BrandPreview: React.FC<{ branding: BrandingState; vars: Record<string, string> }> = ({ branding, vars }) => {
+/** Declared at module scope: nesting this inside BrandPreview gave it a fresh
+    identity on every render, which remounted each caption's DOM on every keystroke. */
+const Caption: React.FC<{ icon: string; children: React.ReactNode }> = React.memo(({ icon, children }) => (
+    <div className="fs-11 text-muted mb-1 d-flex align-items-center gap-1">
+        <i className={icon}></i>
+        <span>{children}</span>
+    </div>
+));
+Caption.displayName = 'Caption';
+
+const BrandPreview: React.FC<{ branding: BrandingState; vars: Record<string, string> }> = React.memo(({ branding, vars }) => {
     // Each surface prefers its own logo and borrows a sibling only when unset, so
     // the preview shows what actually renders rather than an idealised setup.
-    const anyLogo = branding.logo_sidebar || branding.logo_document || branding.logo_mail;
+    const anyLogo = branding.logo_sidebar || branding.logo_document || branding.logo_mail || branding.logo_mobile;
     const logoSidebar = resolveLogoUrl(branding.logo_sidebar || branding.logo_mail || anyLogo);
-    const logoDocument = resolveLogoUrl(branding.logo_document || anyLogo);
+    const logoDocument = resolveLogoUrl(branding.logo_document || branding.logo_mobile || anyLogo);
     const logoMail = resolveLogoUrl(branding.logo_mail || branding.logo_sidebar || anyLogo);
-    const mark = resolveLogoUrl(branding.logo_mark);
+    const logoMobile = resolveLogoUrl(branding.logo_mobile || branding.logo_document || anyLogo);
 
     const sidebarBg = vars['--brand-sidebar-bg'];
     const onSidebar = vars['--sidebar-text-color'];
     const onSidebarIcon = vars['--sidebar-icon-color'];
     const primary = vars['--brand-primary'];
+    const onPrimary = vars['--brand-on-primary'];
     const ink = vars['--brand-primary-ink'];
-    const secondary = vars['--brand-secondary'];
+    const topbarBg = vars['--brand-topbar-bg'];
+    const topbarText = vars['--brand-topbar-color'];
     const btnPrimaryBg = vars['--brand-btn-primary-bg'];
     const btnPrimaryText = vars['--brand-btn-primary-color'];
     const btnSecondaryBg = vars['--brand-btn-secondary-bg'];
@@ -447,131 +491,204 @@ const BrandPreview: React.FC<{ branding: BrandingState; vars: Record<string, str
 
     const name = branding.site_name || 'Your company';
 
+    const menu = [
+        { icon: 'ri-dashboard-2-line', label: 'Dashboard', state: 'active' },
+        { icon: 'ri-file-list-3-line', label: 'Applications', state: 'hover' },
+        { icon: 'ri-bill-line', label: 'Invoices', state: 'normal' },
+        { icon: 'ri-group-line', label: 'Clients', state: 'normal' },
+    ];
+
+    /** Resolves one menu item to the colours its state actually renders in. */
+    const menuColors = (state: string) => ({
+        bg: state === 'active' ? vars['--sidebar-active-bg']
+            : state === 'hover' ? vars['--sidebar-hover-bg'] : 'transparent',
+        text: state === 'active' ? vars['--sidebar-active-text-color']
+            : state === 'hover' ? vars['--sidebar-text-hover-color'] : onSidebar,
+        icon: state === 'active' ? vars['--sidebar-active-icon-color']
+            : state === 'hover' ? vars['--sidebar-icon-hover-color'] : onSidebarIcon,
+    });
+
     return (
         <div className="row g-3">
-            {/* Portal shell — the sidebar and topbar both portals share */}
-            <div className="col-lg-7">
-                <div className="fs-11 text-muted mb-1">Partner &amp; borrower portal</div>
-                <div className="rounded overflow-hidden border d-flex" style={{ height: '208px' }}>
-                    <div style={{ background: sidebarBg, width: '38%', padding: '10px 0' }}>
-                        <div className="px-3 pb-2 mb-1 d-flex align-items-center" style={{ minHeight: '30px' }}>
+            {/* ---------- Desktop portal ---------- */}
+            <div className="col-xl-8">
+                <Caption icon="ri-computer-line">Partner &amp; borrower portal</Caption>
+
+                <div className="rounded overflow-hidden border d-flex" style={{ height: '272px' }}>
+                    <div style={{ background: sidebarBg, width: '36%', minWidth: '148px', padding: '10px 0' }}>
+                        <div className="px-3 pb-3 d-flex align-items-center" style={{ minHeight: '34px' }}>
                             {logoSidebar
-                                ? <img src={logoSidebar} alt="" style={{ maxHeight: '22px', maxWidth: '100%', objectFit: 'contain' }} />
+                                ? <img src={logoSidebar} alt="" style={{ maxHeight: '26px', maxWidth: '100%', objectFit: 'contain' }} />
                                 : <span className="fw-semibold fs-12 text-truncate" style={{ color: onSidebar }}>{name}</span>}
                         </div>
-                        {/* One item per state, so the selected and hover colours are visible
-                            in the preview rather than only discoverable by mousing around. */}
-                        {[
-                            { icon: 'ri-dashboard-2-line', label: 'Dashboard', state: 'active' },
-                            { icon: 'ri-file-list-3-line', label: 'Applications (hover)', state: 'hover' },
-                            { icon: 'ri-bill-line', label: 'Invoices', state: 'normal' },
-                        ].map(item => {
-                            const bg = item.state === 'active' ? vars['--sidebar-active-bg']
-                                : item.state === 'hover' ? vars['--sidebar-hover-bg']
-                                    : 'transparent';
-                            const text = item.state === 'active' ? vars['--sidebar-active-text-color']
-                                : item.state === 'hover' ? vars['--sidebar-text-hover-color']
-                                    : onSidebar;
-                            const icon = item.state === 'active' ? vars['--sidebar-active-icon-color']
-                                : item.state === 'hover' ? vars['--sidebar-icon-hover-color']
-                                    : onSidebarIcon;
-
+                        {menu.map(item => {
+                            const c = menuColors(item.state);
                             return (
                                 <div
                                     key={item.label}
-                                    className="d-flex align-items-center gap-2 px-3 py-1"
-                                    style={{ background: bg, color: text }}
+                                    className="d-flex align-items-center gap-2 px-3 py-2"
+                                    style={{ background: c.bg }}
                                 >
-                                    <i className={`${item.icon} fs-14`} style={{ color: icon }}></i>
-                                    <span className="fs-11">{item.label}</span>
+                                    <i className={`${item.icon} fs-14`} style={{ color: c.icon }}></i>
+                                    <span className="fs-11 text-truncate" style={{ color: c.text }}>{item.label}</span>
                                 </div>
                             );
                         })}
                     </div>
-                    <div className="flex-grow-1 bg-body">
+
+                    <div className="flex-grow-1 d-flex flex-column bg-body">
                         <div
-                            className="border-bottom px-2 py-1 d-flex align-items-center justify-content-between"
-                            style={{ minHeight: '30px', background: vars['--brand-topbar-bg'] }}
+                            className="d-flex align-items-center justify-content-between px-3 border-bottom"
+                            style={{ background: topbarBg, minHeight: '38px' }}
                         >
-                            {logoDocument
-                                ? <img src={logoDocument} alt="" style={{ maxHeight: '18px', maxWidth: '90px', objectFit: 'contain' }} />
-                                : <span className="fs-11 fw-semibold" style={{ color: vars['--brand-topbar-color'] }}>{name}</span>}
-                            <span className="d-flex align-items-center gap-1">
-                                <span className="fs-11" style={{ color: vars['--brand-topbar-color'] }}>Alex</span>
-                                {mark && <img src={mark} alt="" style={{ height: '18px', width: '18px', objectFit: 'contain' }} />}
+                            <i className="ri-menu-line fs-16" style={{ color: topbarText }}></i>
+                            <span className="d-flex align-items-center gap-2">
+                                <span className="fs-11" style={{ color: topbarText }}>Alex Morgan</span>
+                                <span
+                                    className="rounded-circle d-inline-flex align-items-center justify-content-center"
+                                    style={{ width: '22px', height: '22px', background: 'rgba(128,128,128,.18)' }}
+                                >
+                                    <i className="ri-user-3-fill fs-12" style={{ color: topbarText }}></i>
+                                </span>
                             </span>
                         </div>
-                        <div className="p-2">
-                            <div className="fw-semibold fs-12 mb-1" style={{ color: ink }}>Funding overview</div>
-                            <p className="fs-11 text-muted mb-2">Body text stays neutral for readability.</p>
+
+                        <div className="p-3 flex-grow-1">
+                            <div className="fw-semibold fs-13 mb-1" style={{ color: ink }}>Funding overview</div>
+                            <p className="fs-11 text-muted mb-2">
+                                Body text stays neutral so it reads on any theme.
+                            </p>
+
+                            <div className="d-flex gap-2 mb-3">
+                                <div className="border rounded p-2 flex-grow-1">
+                                    <div className="fs-11 text-muted">Approved</div>
+                                    <div className="fw-semibold fs-14" style={{ color: ink }}>$1.2M</div>
+                                </div>
+                                <div className="rounded p-2 flex-grow-1" style={{ background: vars['--brand-primary-subtle'] }}>
+                                    <div className="fs-11" style={{ color: ink, opacity: 0.75 }}>Pending</div>
+                                    <div className="fw-semibold fs-14" style={{ color: ink }}>$340K</div>
+                                </div>
+                            </div>
+
                             <span
-                                className="d-inline-block rounded px-2 py-1 fs-11 fw-medium"
+                                className="d-inline-block rounded px-3 py-1 fs-11 fw-medium"
                                 style={{ background: btnPrimaryBg, color: btnPrimaryText }}
                             >
-                                Primary button
+                                Submit application
                             </span>
                             <span
-                                className="d-inline-block rounded px-2 py-1 fs-11 fw-medium ms-1"
+                                className="d-inline-block rounded px-3 py-1 fs-11 fw-medium ms-2"
                                 style={{ background: btnSecondaryBg, color: btnSecondaryText }}
                             >
-                                Secondary
+                                View details
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Mail and document surfaces, previewed separately because they use
-                different logos on different backgrounds */}
-            <div className="col-lg-5 d-flex flex-column gap-2">
-                <div>
-                    <div className="fs-11 text-muted mb-1">Email</div>
-                    <div className="rounded overflow-hidden border">
-                        <div className="px-2 py-2 text-center" style={{ background: primary }}>
-                            {logoMail
-                                ? <img src={logoMail} alt="" style={{ maxHeight: '20px', maxWidth: '60%', objectFit: 'contain' }} />
-                                : <span className="fs-12 fw-semibold" style={{ color: vars['--brand-on-primary'] }}>{name}</span>}
-                        </div>
-                        <div className="p-2 bg-body">
-                            <div className="fs-11 mb-2">Hi Alex, your invoice is ready.</div>
-                            <span
-                                className="d-inline-block rounded px-2 py-1 fs-11 fw-medium"
-                                style={{ background: btnPrimaryBg, color: btnPrimaryText }}
-                            >
-                                Pay invoice
-                            </span>
-                            <div className="fs-11 text-muted mt-2 pt-1 border-top">
-                                © {new Date().getFullYear()} {name}. All rights reserved.
+            {/* ---------- Mobile ---------- */}
+            <div className="col-xl-4">
+                <Caption icon="ri-smartphone-line">On a phone — the bar stays white</Caption>
+                <div
+                    className="rounded overflow-hidden border mx-auto d-flex flex-column"
+                    style={{ height: '272px', maxWidth: '196px' }}
+                >
+                    <div
+                        className="d-flex align-items-center justify-content-between px-2 border-bottom"
+                        style={{ background: TOPBAR_DEFAULT_BG, minHeight: '38px' }}
+                    >
+                        <i className="ri-menu-line fs-15" style={{ color: TOPBAR_DEFAULT_COLOR }}></i>
+                        {logoMobile
+                            ? <img src={logoMobile} alt="" style={{ maxHeight: '22px', maxWidth: '94px', objectFit: 'contain' }} />
+                            : <span className="fs-11 fw-semibold text-truncate" style={{ color: TOPBAR_DEFAULT_COLOR }}>{name}</span>}
+                        <i className="ri-user-3-line fs-15" style={{ color: TOPBAR_DEFAULT_COLOR }}></i>
+                    </div>
+                    <div className="p-2 flex-grow-1 bg-body">
+                        <div className="fw-semibold fs-12 mb-2" style={{ color: ink }}>Applications</div>
+                        {['Acme Ltd', 'Northwind'].map(row => (
+                            <div key={row} className="border rounded p-2 mb-2">
+                                <div className="fs-11 fw-medium">{row}</div>
+                                <div className="fs-11 text-muted">Under review</div>
                             </div>
-                        </div>
+                        ))}
+                        <span
+                            className="d-block text-center rounded px-2 py-1 fs-11 fw-medium"
+                            style={{ background: btnPrimaryBg, color: btnPrimaryText }}
+                        >
+                            New application
+                        </span>
                     </div>
                 </div>
+            </div>
 
-                <div>
-                    <div className="fs-11 text-muted mb-1">Invoice &amp; documents</div>
-                    <div className="rounded overflow-hidden border p-2" style={{ background: '#FFFFFF' }}>
-                        <div className="d-flex align-items-center justify-content-between mb-2">
-                            {logoDocument
-                                ? <img src={logoDocument} alt="" style={{ maxHeight: '20px', maxWidth: '50%', objectFit: 'contain' }} />
-                                : <span className="fs-12 fw-semibold" style={{ color: ink }}>{name}</span>}
-                            <span className="fs-11 fw-semibold" style={{ color: ink }}>INVOICE</span>
-                        </div>
-                        <div className="d-flex justify-content-between fs-11 border-top pt-1" style={{ color: '#495057' }}>
-                            <span>Invoice #1042</span>
-                            <span className="fw-semibold" style={{ color: ink }}>$1,250.00</span>
-                        </div>
-                        <div
-                            className="rounded mt-2 px-2 py-1 fs-11"
-                            style={{ background: vars['--brand-primary-subtle'], color: ink }}
+            {/* ---------- Email ---------- */}
+            <div className="col-lg-6">
+                <Caption icon="ri-mail-line">Email</Caption>
+                {/* Header and footer are plain white with a hairline rule; only the
+                    button and headings carry the brand. */}
+                <div className="rounded overflow-hidden border" style={{ background: '#FFFFFF' }}>
+                    <div
+                        className="px-2 py-3 text-center"
+                        style={{ background: MAIL_SURFACE, borderBottom: `1px solid ${MAIL_RULE}` }}
+                    >
+                        {logoMail
+                            ? <img src={logoMail} alt="" style={{ maxHeight: '24px', maxWidth: '55%', objectFit: 'contain' }} />
+                            : <span className="fs-12 fw-semibold" style={{ color: ink }}>{name}</span>}
+                        {branding.site_slogan && (
+                            <div className="fs-11 mt-1" style={{ color: MAIL_FOOTER_TEXT }}>
+                                {branding.site_slogan}
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-3" style={{ background: MAIL_SURFACE }}>
+                        <div className="fs-11 mb-2" style={{ color: '#495057' }}>Hi Alex, your invoice is ready.</div>
+                        <span
+                            className="d-inline-block rounded px-3 py-1 fs-11 fw-medium"
+                            style={{ background: btnPrimaryBg, color: btnPrimaryText }}
                         >
-                            Due 30 September
-                        </div>
+                            Pay invoice
+                        </span>
+                    </div>
+                    <div
+                        className="px-3 py-2 text-center fs-11"
+                        style={{ background: MAIL_SURFACE, color: MAIL_FOOTER_TEXT, borderTop: `1px solid ${MAIL_RULE}` }}
+                    >
+                        © {new Date().getFullYear()} {name}. All rights reserved.
+                    </div>
+                </div>
+            </div>
+
+            {/* ---------- Invoice / documents ---------- */}
+            <div className="col-lg-6">
+                <Caption icon="ri-file-text-line">Invoice &amp; documents</Caption>
+                <div className="rounded overflow-hidden border p-3" style={{ background: '#FFFFFF' }}>
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                        {logoDocument
+                            ? <img src={logoDocument} alt="" style={{ maxHeight: '26px', maxWidth: '50%', objectFit: 'contain' }} />
+                            : <span className="fs-12 fw-semibold" style={{ color: ink }}>{name}</span>}
+                        <span className="fs-12 fw-semibold" style={{ color: ink }}>INVOICE</span>
+                    </div>
+                    <div className="d-flex justify-content-between fs-11 border-top pt-2" style={{ color: '#495057' }}>
+                        <span>Invoice #1042</span>
+                        <span className="fw-semibold" style={{ color: ink }}>$1,250.00</span>
+                    </div>
+                    <div className="d-flex justify-content-between fs-11 pt-1" style={{ color: '#495057' }}>
+                        <span>Service fee</span>
+                        <span>$95.00</span>
+                    </div>
+                    <div
+                        className="rounded mt-3 px-3 py-2 fs-11"
+                        style={{ background: vars['--brand-primary-subtle'], color: ink }}
+                    >
+                        Due 30 September
                     </div>
                 </div>
             </div>
         </div>
     );
-};
+});
+BrandPreview.displayName = 'BrandPreview';
 
 /* -------------------------------------------------------------------------- */
 /* The page                                                                   */
@@ -585,7 +702,7 @@ const BrandingForm: React.FC = () => {
     const [fetching, setFetching] = useState<boolean>(true);
     const [saving, setSaving] = useState<boolean>(false);
     const [showFileManager, setShowFileManager] = useState<boolean>(false);
-    const [activeField, setActiveField] = useState<LogoField | null>(null);
+    const [activeField, setActiveField] = useState<LogoFieldKey | null>(null);
     const [errors, setErrors] = useState<any>({});
     const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
     const [matchSidebarToPrimary, setMatchSidebarToPrimary] = useState<boolean>(true);
@@ -644,10 +761,24 @@ const BrandingForm: React.FC = () => {
         }
     };
 
-    const set = <K extends keyof BrandingState>(key: K, value: BrandingState[K]) => {
+    const set = useCallback(<K extends keyof BrandingState>(key: K, value: BrandingState[K]) => {
         setBranding(prev => ({ ...prev, [key]: value }));
         setErrors((prev: any) => ({ ...prev, [key]: null }));
-    };
+    }, []);
+
+    /** Passed straight to every ColorField, so their memo holds across renders. */
+    const setColor = useCallback((name: keyof BrandingState, value: string) => {
+        set(name, value);
+    }, [set]);
+
+    const openLogoPicker = useCallback((field: LogoFieldKey) => {
+        setActiveField(field);
+        setShowFileManager(true);
+    }, []);
+
+    const clearLogo = useCallback((field: LogoFieldKey) => {
+        set(field, '');
+    }, [set]);
 
     /** The effective palette, with every unset value resolved exactly as the portals resolve it. */
     const vars = useMemo(
@@ -826,7 +957,7 @@ const BrandingForm: React.FC = () => {
      * every field, so a blank field always displays the value it would inherit
      * rather than leaving the admin guessing.
      */
-    const resolved = resolveSidebarColors({
+    const resolved = useMemo(() => resolveSidebarColors({
         primary_color: branding.primary_color,
         secondary_color: branding.secondary_color,
         sidebar_bg_color: matchSidebarToPrimary ? '' : branding.sidebar_bg_color,
@@ -840,9 +971,9 @@ const BrandingForm: React.FC = () => {
             sidebar_active_text_color: branding.sidebar_active_text_color,
             sidebar_active_icon_color: branding.sidebar_active_icon_color,
         } : {}),
-    });
+    }), [branding, matchSidebarToPrimary, showAdvanced]);
 
-    const autoSidebar: SidebarAuto = {
+    const autoSidebar: SidebarAuto = useMemo(() => ({
         bg: vars['--brand-sidebar-bg'],
         text: resolved.text,
         icon: resolved.icon,
@@ -852,7 +983,7 @@ const BrandingForm: React.FC = () => {
         activeBg: resolved.activeBg,
         active: resolved.active,
         activeIcon: resolved.activeIcon,
-    };
+    }), [resolved, vars]);
 
     return (
         <div className="animate__animated animate__fadeIn">
@@ -936,8 +1067,9 @@ const BrandingForm: React.FC = () => {
                                             value={branding.logo_sidebar}
                                             previewBg={sidebarBg}
                                             error={errors.logo_sidebar}
-                                            onSelect={() => { setActiveField('logo_sidebar'); setShowFileManager(true); }}
-                                            onClear={() => set('logo_sidebar', '')}
+                                            field="logo_sidebar"
+                                            onSelect={openLogoPicker}
+                                            onClear={clearLogo}
                                         />
                                     </div>
                                     <div>
@@ -945,10 +1077,11 @@ const BrandingForm: React.FC = () => {
                                             title="Mobile"
                                             usedFor="Phones and tablets, where the logo moves into the top bar."
                                             value={branding.logo_mobile}
-                                            previewBg={vars['--brand-topbar-bg']}
+                                            previewBg={TOPBAR_DEFAULT_BG}
                                             error={errors.logo_mobile}
-                                            onSelect={() => { setActiveField('logo_mobile'); setShowFileManager(true); }}
-                                            onClear={() => set('logo_mobile', '')}
+                                            field="logo_mobile"
+                                            onSelect={openLogoPicker}
+                                            onClear={clearLogo}
                                         />
                                     </div>
                                     <div>
@@ -958,30 +1091,34 @@ const BrandingForm: React.FC = () => {
                                             value={branding.logo_document}
                                             previewBg="#FFFFFF"
                                             error={errors.logo_document}
-                                            onSelect={() => { setActiveField('logo_document'); setShowFileManager(true); }}
-                                            onClear={() => set('logo_document', '')}
+                                            field="logo_document"
+                                            onSelect={openLogoPicker}
+                                            onClear={clearLogo}
                                         />
                                     </div>
                                     <div>
                                         <LogoField
                                             title="Email"
-                                            usedFor="The coloured band at the top of every email you send."
+                                            usedFor="The header of every email you send. On white, so usually your dark version."
                                             value={branding.logo_mail}
-                                            previewBg={vars['--brand-primary']}
+                                            previewBg="#FFFFFF"
                                             error={errors.logo_mail}
-                                            onSelect={() => { setActiveField('logo_mail'); setShowFileManager(true); }}
-                                            onClear={() => set('logo_mail', '')}
+                                            field="logo_mail"
+                                            onSelect={openLogoPicker}
+                                            onClear={clearLogo}
                                         />
                                     </div>
                                     <div>
                                         <LogoField
                                             title="Square mark"
                                             usedFor="Browser tab and collapsed menu. Must read on both backgrounds."
+                                            recommended={RECOMMENDED_MARK_SIZE}
                                             value={branding.logo_mark}
                                             previewBg={`linear-gradient(90deg, ${sidebarBg} 0 50%, #FFFFFF 50% 100%)`}
                                             error={errors.logo_mark}
-                                            onSelect={() => { setActiveField('logo_mark'); setShowFileManager(true); }}
-                                            onClear={() => set('logo_mark', '')}
+                                            field="logo_mark"
+                                            onSelect={openLogoPicker}
+                                            onClear={clearLogo}
                                         />
                                     </div>
                                 </div>
@@ -1033,7 +1170,8 @@ const BrandingForm: React.FC = () => {
                                                 value={branding.primary_color}
                                                 placeholder={DEFAULT_PRIMARY_COLOR}
                                                 error={errors.primary_color}
-                                                onChange={v => set('primary_color', v)}
+                                                name="primary_color"
+                                                onChange={setColor}
                                                 onBackground={vars['--brand-on-primary']}
                                             />
                                             <div className="fs-11 text-muted mt-2">
@@ -1048,7 +1186,8 @@ const BrandingForm: React.FC = () => {
                                                 value={branding.secondary_color}
                                                 placeholder={DEFAULT_SECONDARY_COLOR}
                                                 error={errors.secondary_color}
-                                                onChange={v => set('secondary_color', v)}
+                                                name="secondary_color"
+                                                onChange={setColor}
                                                 onBackground={vars['--brand-on-secondary']}
                                             />
                                             <div className="fs-11 text-muted mt-2">
@@ -1069,7 +1208,7 @@ const BrandingForm: React.FC = () => {
                             <SectionCard
                                 icon="ri-layout-top-line"
                                 title="Top bar"
-                                subtitle="The bar across the top of both portals"
+                                subtitle="The bar across the top of both portals, on desktop. On phones and tablets it always stays white."
                             >
                                 <div className="row g-3 align-items-start">
                                     <div className="col-sm-6 col-lg-3">
@@ -1078,7 +1217,8 @@ const BrandingForm: React.FC = () => {
                                             value={branding.topbar_bg_color}
                                             placeholder={vars['--brand-topbar-bg']}
                                             error={errors.topbar_bg_color}
-                                            onChange={v => set('topbar_bg_color', v)}
+                                            name="topbar_bg_color"
+                                            onChange={setColor}
                                             onBackground={vars['--brand-topbar-color']}
                                         />
                                         <div className="text-muted fs-11 mt-1">Leave blank to keep it white.</div>
@@ -1089,7 +1229,8 @@ const BrandingForm: React.FC = () => {
                                             value={branding.topbar_text_color}
                                             placeholder={vars['--brand-topbar-color']}
                                             error={errors.topbar_text_color}
-                                            onChange={v => set('topbar_text_color', v)}
+                                            name="topbar_text_color"
+                                            onChange={setColor}
                                             onBackground={vars['--brand-topbar-bg']}
                                         />
                                         <div className="text-muted fs-11 mt-1">
@@ -1097,7 +1238,7 @@ const BrandingForm: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="col-lg-6">
-                                        <div className="fs-11 text-muted mb-1">Preview</div>
+                                        <div className="fs-11 text-muted mb-1">Preview (desktop)</div>
                                         <div
                                             className="rounded border d-flex align-items-center justify-content-between px-3 py-2"
                                             style={{ background: vars['--brand-topbar-bg'], minHeight: '46px' }}
@@ -1159,7 +1300,8 @@ const BrandingForm: React.FC = () => {
                                                 placeholder={DEFAULT_PRIMARY_COLOR}
                                                 error={errors.sidebar_bg_color}
                                                 disabled={matchSidebarToPrimary}
-                                                onChange={v => set('sidebar_bg_color', v)}
+                                                name="sidebar_bg_color"
+                                                onChange={setColor}
                                                 onBackground={autoSidebar.text}
                                             />
                                             <div className="form-check mt-1">
@@ -1226,7 +1368,8 @@ const BrandingForm: React.FC = () => {
                                                                                 value={String(branding[row.bgKey] || '')}
                                                                                 placeholder={rowBg}
                                                                                 error={errors[row.bgKey]}
-                                                                                onChange={v => set(row.bgKey!, v)}
+                                                                                name={row.bgKey!}
+                                                                                onChange={setColor}
                                                                             />
                                                                         ) : (
                                                                             <span className="text-muted fs-11">
@@ -1239,7 +1382,8 @@ const BrandingForm: React.FC = () => {
                                                                             value={String(branding[row.textKey] || '')}
                                                                             placeholder={rowText}
                                                                             error={errors[row.textKey]}
-                                                                            onChange={v => set(row.textKey, v)}
+                                                                            name={row.textKey!}
+                                                                            onChange={setColor}
                                                                             onBackground={rowBg}
                                                                         />
                                                                     </td>
@@ -1249,7 +1393,8 @@ const BrandingForm: React.FC = () => {
                                                                                 value={String(branding[row.iconKey] || '')}
                                                                                 placeholder={rowIcon}
                                                                                 error={errors[row.iconKey]}
-                                                                                onChange={v => set(row.iconKey!, v)}
+                                                                                name={row.iconKey!}
+                                                                                onChange={setColor}
                                                                                 onBackground={rowBg}
                                                                             />
                                                                         )}

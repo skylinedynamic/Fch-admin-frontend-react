@@ -1252,8 +1252,10 @@ File: Custom Css File
   background-color: rgba(240, 101, 72, 0.1) !important;
 }
 
+/* Brand colour used AS text on a white page needs the darkened ink, or a light
+   brand colour is invisible here. */
 .text-primary-custom {
-  color: var(--primary-color) !important;
+  color: var(--brand-primary-ink) !important;
 }
 
 .bg-primary-custom-subtle {
@@ -1427,9 +1429,11 @@ File: Custom Css File
   border-color: var(--primary-color) !important;
 }
 
-.navbar-menu {
-  border-right: 1px solid var(--primary-color) !important;
-}
+/* The sidebar's right edge is set in brand-tokens.css, which follows the menu
+   background. It used to be pinned to --primary-color here with !important, and
+   because this file is imported from main.jsx it is emitted AFTER the linked
+   stylesheets - so it beat the token layer and drew a primary-coloured line down
+   the side of every sidebar. */
 
 .logo {
   line-height: 60px !important;
@@ -1836,9 +1840,11 @@ File: Custom Css File
   border-color: var(--primary-color) !important;
 }
 
-.navbar-menu {
-  border-right: 1px solid var(--primary-color) !important;
-}
+/* The sidebar's right edge is set in brand-tokens.css, which follows the menu
+   background. It used to be pinned to --primary-color here with !important, and
+   because this file is imported from main.jsx it is emitted AFTER the linked
+   stylesheets - so it beat the token layer and drew a primary-coloured line down
+   the side of every sidebar. */
 
 .logo {
   line-height: 60px !important;

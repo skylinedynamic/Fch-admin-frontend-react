@@ -13,6 +13,28 @@
       // no knowledge of the branding schema here - an earlier version duplicated
       // both and drifted out of sync. Applying a map blindly cannot drift.
       try {
+        // A COLD visit - nothing in localStorage yet - is the case that used to
+        // flash the packaged default brand until the theme request landed. Ask
+        // the API for this tenant's brand as a stylesheet, first thing: a <link>
+        // appended while the head is still parsing blocks the first paint, so the
+        // right colours are there before anything renders.
+        //
+        // Inserted from script rather than written statically because the API has
+        // to be told which portal is asking, and only the browser knows the
+        // hostname. Vite substitutes the API base at build time.
+        //
+        // Ordering with the cached map below is deliberate: that path sets inline
+        // styles on :root, which outrank this stylesheet, so a repeat visitor
+        // still paints instantly from localStorage and this only decides the
+        // cold case.
+        var apiBase = '%VITE_BASE_API_URL%';
+        if (apiBase && apiBase.charAt(0) !== '%') {
+          var brandLink = document.createElement('link');
+          brandLink.rel = 'stylesheet';
+          brandLink.href = apiBase + '/api/branding.css?d=' + encodeURIComponent(location.hostname);
+          document.head.appendChild(brandLink);
+        }
+
         var cached = localStorage.getItem('brand-css-vars');
         if (cached) {
           var brand = JSON.parse(cached);
@@ -79,7 +101,7 @@
   <!-- Mobile Responsive Fixes -->
   <link href="assets/css/responsive.css" rel="stylesheet" type="text/css" />
   <!-- Brand tokens: must stay LAST so tenant colours win over the theme defaults -->
-  <link href="/assets/css/brand-tokens.css" rel="stylesheet" type="text/css" />
+  <!-- brand-tokens.css is imported last from src/main.jsx so it wins the cascade -->
 </head>
 
 <body>

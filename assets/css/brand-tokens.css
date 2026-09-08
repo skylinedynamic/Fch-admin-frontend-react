@@ -62,6 +62,11 @@
   --sidebar-hover-bg: #1a3550;
   --sidebar-active-bg: #d4af37;
 
+  /* The stock bar, used on phones where tenant colour is deliberately not applied.
+     applyBrandTheme() never sets these, so they cannot be overridden per tenant. */
+  --topbar-default-bg: #ffffff;
+  --topbar-default-color: #495057;
+
   /* Top bar — its own canvas, defaulting to the white bar the theme shipped with */
   --brand-topbar-bg: #ffffff;
   --brand-topbar-bg-rgb: 255, 255, 255;
@@ -243,41 +248,117 @@
    Velzon ships a dozen [data-topbar=*] presets that each pin --vz-header-bg to a
    fixed hex. Re-pointing the variables here lets the tenant's colour win over
    whichever preset is active, without having to know which one that is.
+
+   DESKTOP ONLY. Below 992px the bar keeps the theme's plain white chrome: on a
+   phone the bar is mostly the menu button and the brand box, the sidebar drawer
+   slides over it, and a tenant colour there reads as a flash of colour rather
+   than branding.
    ========================================================================== */
 
+@media (min-width: 992px) {
+
+  header#page-topbar,
+  header#page-topbar.topbar-shadow,
+  #page-topbar,
+  #page-topbar.topbar-shadow,
+  [data-topbar] #page-topbar,
+  [data-topbar=light] #page-topbar.topbar-shadow {
+    background-color: var(--brand-topbar-bg) !important;
+    --vz-header-bg: var(--brand-topbar-bg);
+    --vz-header-item-color: var(--brand-topbar-color);
+    --vz-header-item-sub-color: var(--brand-topbar-color);
+    --vz-header-item-bg: rgba(var(--brand-topbar-color-rgb), 0.1);
+    --vz-topbar-search-bg: rgba(var(--brand-topbar-color-rgb), 0.08);
+    --vz-topbar-search-color: var(--brand-topbar-color);
+    --vz-topbar-user-bg: transparent;
+  }
+
+  /* Children stay transparent so the bar's own background is the only thing
+     painting that colour - a child with its own fill can leave a band behind
+     while a fixed header is composited during scroll. They are listed here
+     only to cancel the fills other stylesheets give them. */
+  header#page-topbar .navbar-brand-box,
+  header#page-topbar .horizontal-logo,
+  header#page-topbar .navbar-header,
+  #page-topbar .navbar-brand-box,
+  #page-topbar .horizontal-logo {
+    background: transparent !important;
+  }
+
+  /* The bar's own chrome, listed element by element rather than as a blanket
+     rule. Dropdown menus hang off this bar but render on their own white
+     surface, so anything inside one must keep its normal colours. */
+  header#page-topbar .navbar-header > div > .btn,
+  header#page-topbar .topnav-hamburger,
+  header#page-topbar .topnav-hamburger > i,
+  header#page-topbar .vertical-menu-btn,
+  header#page-topbar .btn-topbar,
+  header#page-topbar .btn-topbar > i,
+  header#page-topbar .user-name-text,
+  header#page-topbar .user-name-sub-text,
+  header#page-topbar .topbar-user > .btn,
+  header#page-topbar .topbar-user > .btn > span,
+  header#page-topbar .navbar-header .header-item > i {
+    color: var(--brand-topbar-color) !important;
+  }
+
+  /* The hamburger bars are drawn with background colour, not text colour */
+  header#page-topbar .hamburger-icon span {
+    background-color: var(--brand-topbar-color) !important;
+  }
+}
+
+/* Phones and tablets keep the stock white bar, whatever the tenant has chosen. */
+@media (max-width: 991.98px) {
+
+  header#page-topbar,
+  header#page-topbar.topbar-shadow,
+  #page-topbar,
+  #page-topbar.topbar-shadow {
+    background-color: var(--topbar-default-bg) !important;
+  }
+
+  header#page-topbar .navbar-brand-box,
+  header#page-topbar .horizontal-logo,
+  header#page-topbar .navbar-header {
+    background: transparent !important;
+  }
+
+  header#page-topbar,
+  header#page-topbar.topbar-shadow {
+    --vz-header-bg: var(--topbar-default-bg);
+    --vz-header-item-color: var(--topbar-default-color);
+    --vz-header-item-sub-color: var(--topbar-default-color);
+  }
+
+  header#page-topbar .navbar-header > div > .btn,
+  header#page-topbar .topnav-hamburger,
+  header#page-topbar .topnav-hamburger > i,
+  header#page-topbar .vertical-menu-btn,
+  header#page-topbar .btn-topbar,
+  header#page-topbar .btn-topbar > i,
+  header#page-topbar .user-name-text,
+  header#page-topbar .user-name-sub-text,
+  header#page-topbar .navbar-header .header-item > i {
+    color: var(--topbar-default-color) !important;
+  }
+
+  header#page-topbar .hamburger-icon span {
+    background-color: var(--topbar-default-color) !important;
+  }
+}
+
+/* The theme transitions `all` on the bar, so toggling .topbar-shadow while
+   scrolling re-animated background-color and flashed the colour in. Only the
+   shadow needs to animate. */
 #page-topbar,
-#page-topbar.topbar-shadow,
-[data-topbar] #page-topbar,
-[data-topbar=light] #page-topbar.topbar-shadow {
-  background-color: var(--brand-topbar-bg) !important;
-  --vz-header-bg: var(--brand-topbar-bg);
-  --vz-header-item-color: var(--brand-topbar-color);
-  --vz-header-item-sub-color: var(--brand-topbar-color);
-  --vz-header-item-bg: rgba(var(--brand-topbar-color-rgb), 0.1);
-  --vz-topbar-search-bg: rgba(var(--brand-topbar-color-rgb), 0.08);
-  --vz-topbar-search-color: var(--brand-topbar-color);
-  --vz-topbar-user-bg: transparent;
-}
-
-/* The bar's own chrome, listed element by element rather than as a blanket rule.
-   Dropdown menus hang off this bar but render on their own white surface, so
-   anything inside one must keep its normal colours. */
-#page-topbar .navbar-header > div > .btn,
-#page-topbar .topnav-hamburger,
-#page-topbar .topnav-hamburger > i,
-#page-topbar .vertical-menu-btn,
-#page-topbar .btn-topbar,
-#page-topbar .btn-topbar > i,
-#page-topbar .user-name-text,
-#page-topbar .user-name-sub-text,
-#page-topbar .topbar-user > .btn,
-#page-topbar .topbar-user > .btn > span {
-  color: var(--brand-topbar-color) !important;
-}
-
-/* The hamburger bars are drawn with background colour, not text colour */
-#page-topbar .hamburger-icon span {
-  background-color: var(--brand-topbar-color) !important;
+header#page-topbar {
+  transition: box-shadow 0.1s ease-out !important;
+  /* Own compositing layer: a fixed bar repainted against scrolling content is
+     what flashed a band of its colour underneath itself. */
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* ==========================================================================
@@ -290,12 +371,14 @@
   background: var(--brand-sidebar-bg) !important;
 }
 
-/* The mobile brand box lives inside the top bar, not the sidebar, so it takes
-   the top bar's colour. It used to be caught by the blanket .navbar-brand-box
-   rule above and painted with the sidebar colour while sitting in the top bar. */
-#page-topbar .navbar-brand-box,
-#page-topbar .horizontal-logo {
-  background: var(--brand-topbar-bg) !important;
+/* The menu's own edge follows the menu colour instead of the theme's fixed grey,
+   which otherwise draws a pale line down the side of a dark sidebar (and a dark
+   one down a light sidebar). */
+.navbar-menu,
+.app-menu,
+.app-menu .navbar-brand-box {
+  border-right-color: var(--brand-sidebar-bg) !important;
+  border-bottom-color: var(--brand-sidebar-bg) !important;
 }
 
 /* Velzon menu variables, so sidebar chrome not targeted below follows along */
@@ -419,4 +502,47 @@
 .navbar-menu .navbar-nav.partner-sidebar .nav-item,
 .navbar-menu .navbar-nav.partner-sidebar .submenu-collapse .nav-item {
   border-bottom-color: rgba(var(--sidebar-text-color-rgb), 0.08);
+}
+
+
+/* ==========================================================================
+   Settings menu
+   The base theme gives .list-group-item-action `transition: all .25s` plus a
+   hover transform and box-shadow. Animating `all` made the hover background
+   fade in over a quarter second, and the competing translate rules shifted the
+   row under the cursor - which read as lag. Only colour transitions here, and
+   only briefly.
+   ========================================================================== */
+
+.settings-menu-card .list-group-item-action {
+  transition: background-color 0.1s linear, color 0.1s linear !important;
+}
+
+.settings-menu-card .list-group-item-action:hover,
+.settings-menu-card .list-group-item-action:focus {
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-on-primary) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.settings-menu-card .list-group-item-action:hover i,
+.settings-menu-card .list-group-item-action:focus i {
+  color: var(--brand-on-primary) !important;
+}
+
+/* The selected entry keeps the brand colour, with derived text so a light
+   brand stays readable. */
+.settings-menu-card .list-group-item.active,
+.settings-menu-card .list-group-item-action.active {
+  background-color: var(--brand-primary) !important;
+  border-color: var(--brand-primary) !important;
+  color: var(--brand-on-primary) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.settings-menu-card .list-group-item.active i,
+.settings-menu-card .list-group-item-action.active i {
+  color: var(--brand-on-primary) !important;
 }

@@ -209,34 +209,57 @@ export const hslToHex = (h: number, s: number, l: number): string => {
     return toHex([(r + m) * 255, (g + m) * 255, (b + m) * 255]);
 };
 
+/** Relative luminance of a hex colour, 0 (black) to 1 (white). */
+const lumOf = (hex: string): number => {
+    const rgb = hexToRgb(hex);
+    return rgb ? luminance(rgb) : 0;
+};
+
+/**
+ * The palette generator will not return anything above this. It is the line
+ * between "a deep brand colour" and "a pale wash", and it is what stops the
+ * shuffle offering pastels and off-whites that no one would ship.
+ */
+const MAX_BRAND_LUMINANCE = 0.28;
+
 /**
  * A random but deliberately safe brand pair.
  *
  * Random hex values produce muddy, unreadable themes, so the hue is the only
  * thing genuinely random here. Saturation and lightness are pinned to ranges
- * that read as a brand: a deep, rich main colour that white text sits on
- * comfortably, and an accent rotated well away from it so the two never look
- * like a mistake. The pair is re-rolled if it lands too close together.
+ * that read as a brand: a deep main colour and a richer accent rotated well
+ * away from it. Both are deliberately dark and saturated — no pastels, no
+ * whites, nothing washed out — so white text always sits on them comfortably
+ * and the pair reads as a considered choice rather than a random draw.
  */
 export const randomBrandPalette = (): { primary: string; secondary: string } => {
-    for (let attempt = 0; attempt < 12; attempt++) {
+    for (let attempt = 0; attempt < 40; attempt++) {
         const hue = Math.floor(Math.random() * 360);
-        // Deep and saturated: dark enough that white labels clear AA on it.
-        const primary = hslToHex(hue, 0.45 + Math.random() * 0.35, 0.14 + Math.random() * 0.12);
 
-        // Rotate 140-220 degrees away, then lift it so it reads as a highlight.
-        const accentHue = hue + 140 + Math.random() * 80;
-        const secondary = hslToHex(accentHue, 0.5 + Math.random() * 0.35, 0.45 + Math.random() * 0.15);
+        // Deep and saturated.
+        const primary = hslToHex(hue, 0.5 + Math.random() * 0.35, 0.13 + Math.random() * 0.10);
 
-        // The two must be clearly different, and each must carry readable text.
-        if (
-            contrastRatio(primary, secondary) >= 2.5 &&
+        // Rotated 130-230 degrees away and kept in the same dark register, so it
+        // contrasts by hue rather than by being lighter.
+        const accentHue = hue + 130 + Math.random() * 100;
+        const secondary = hslToHex(accentHue, 0.55 + Math.random() * 0.35, 0.24 + Math.random() * 0.11);
+
+        const primaryLum = lumOf(primary);
+        const secondaryLum = lumOf(secondary);
+
+        const bothAreDeep =
+            primaryLum <= MAX_BRAND_LUMINANCE && secondaryLum <= MAX_BRAND_LUMINANCE;
+
+        // The accent has to be visibly lighter than the main colour, or the two
+        // read as the same colour once they sit next to each other.
+        const accentReadsAsDistinct = secondaryLum > primaryLum * 1.35 + 0.01;
+
+        // Both must carry white text, which is what rules out anything pale.
+        const bothCarryWhiteText =
             contrastRatio(primary, '#FFFFFF') >= AA_CONTRAST &&
-            Math.max(
-                contrastRatio(secondary, '#FFFFFF'),
-                contrastRatio(secondary, ON_BRAND_DARK)
-            ) >= AA_CONTRAST
-        ) {
+            contrastRatio(secondary, '#FFFFFF') >= AA_CONTRAST;
+
+        if (bothAreDeep && accentReadsAsDistinct && bothCarryWhiteText) {
             return { primary, secondary };
         }
     }
@@ -413,11 +436,22 @@ export const BRAND_VARS_VERSION = 1;
  * Every entry point calls this and nothing else, so the login page can no longer
  * drift from the dashboard the way it did when only App.jsx set --vz-primary.
  */
-export const applyBrandTheme = (branding: SidebarBranding): void => {
+export const applyBrandTheme = (
+    branding: SidebarBranding,
+    serverVars?: Record<string, string> | null
+): void => {
     if (typeof document === 'undefined') return;
 
     const root = document.documentElement;
-    const vars = buildBrandVars(branding);
+
+    // Prefer the map the API computed. app/Support/Branding/BrandVars.php is a
+    // mirror of buildBrandVars() and is what /api/branding.css paints with before
+    // this code runs, so taking the server's map keeps the pre-paint stylesheet
+    // and the running app from ever disagreeing. Falls back to computing locally
+    // when the response predates css_vars.
+    const vars = serverVars && Object.keys(serverVars).length
+        ? serverVars
+        : buildBrandVars(branding);
 
     Object.entries(vars).forEach(([name, value]) => root.style.setProperty(name, value));
 
