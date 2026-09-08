@@ -1,15 +1,11 @@
 import { UserSubscription } from './auth';
 import { STATUS_ACTIVE, STATUS_CANCELLED, STATUS_COMPLETED } from '../../config/subscriptionConfig';
+import { parseDateOnly, startOfToday } from '../../utils/helper';
 
-/**
- * Helper: convert string date to midnight Date object, or null
- */
-const toDate = (d?: string | null) => {
-    if (!d) return null;
-    const x = new Date(d);
-    x.setHours(0, 0, 0, 0);
-    return x;
-};
+// These API fields are date-only ("YYYY-MM-DD") and carry no timezone, so they
+// must be read as local calendar dates - see parseDateOnly(). Using new Date()
+// on them parses midnight UTC and locks users behind UTC out a day early.
+const toDate = parseDateOnly;
 
 /**
  * Determine if a user is restricted from using the platform
@@ -26,11 +22,9 @@ export function isSubscriptionRestricted(subscription: UserSubscription | null |
 
     if (isFreeTrial) {
         if (trialEndDate) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const end = new Date(trialEndDate);
-            end.setHours(0, 0, 0, 0);
-            if (today > end) {
+            const today = startOfToday();
+            const end = toDate(trialEndDate);
+            if (end && today > end) {
                 return true; // Expired → restricted
             }
         }
@@ -47,8 +41,7 @@ export function isSubscriptionRestricted(subscription: UserSubscription | null |
         return true;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfToday();
 
     const endDate = toDate(subscription.subscription_end_date);
 
