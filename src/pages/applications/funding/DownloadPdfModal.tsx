@@ -393,9 +393,9 @@ export default function DownloadPdfModal({ show, hasSignature = true, onHide, on
 
 
       {/* Custom Confirm Modal */}
-    <div className="modal fade zoomIn" id="confirmPdfModal" ref={confirmModalRef} tabIndex={-1} aria-hidden="true" style={{ zIndex: 1060 }}>
+    <div className="modal fade flip" id="confirmPdfModal" ref={confirmModalRef} tabIndex={-1} aria-hidden="true" style={{ zIndex: 1060 }}>
       <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '500px' }}>
-        <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+        <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '4px', overflow: 'hidden' }}>
           
           <div className="position-absolute top-0 end-0 p-3" style={{ zIndex: 10 }}>
             <button type="button" className="btn btn-sm btn-icon text-muted border-0 bg-transparent" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowConfirmModal(false); }}>
