@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { SUBSCRIPTION_STATUS_COLORS } from '../../../config/subscriptionConfig';
+import { parseDateOnly, startOfToday } from '../../../utils/helper';
 
 export default function BillingTable({
     data, loading, totalRecords, page, perPage,
@@ -92,7 +93,10 @@ export default function BillingTable({
         // A billing date in the past means the cycle is overdue and the cron has not
         // been able to collect — worth calling out rather than showing a plain date
         // that reads as "upcoming".
-        const isOverdue = new Date(rowData.upcoming_billing_date) < new Date(new Date().toDateString());
+        // upcoming_billing_date is date-only; new Date() would read it as midnight
+        // UTC and flag a bill due today as overdue for any user behind UTC.
+        const billingDate = parseDateOnly(rowData.upcoming_billing_date);
+        const isOverdue = !!billingDate && billingDate < startOfToday();
 
         return (
             <div>
