@@ -41,3 +41,6 @@ export { APP_CONFIG } from './appConfig';
 export { STATIC_TIER_LABELS, SCORE_CATEGORIES, SCORE_MODELS, SCORE_FACTORS, type ScoreTierLabel } from './capitalAccessOptions';
 // Payment descriptions
 export { getProviderDesc } from './paymentDesc';
+
+// OpenAI configuration options
+export { DEFAULT_FALLBACK_MODELS, DEFAULT_EFFORT_OPTIONS } from './openaiConfig';
