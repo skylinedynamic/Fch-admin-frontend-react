@@ -69,7 +69,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         sections.push({ id: 'score_calculation', label: 'Score Calculation', icon: 'ri-percent-line' });
     }
 
-    if (hasPermission('update openai settings') && (user && (user.is_host == 1 || user.is_host == true))) {
+    if ((hasPermission('update openai settings') || user?.is_host == 1 || user?.is_host == true) && (user && (user.is_host == 1 || user.is_host == true))) {
         sections.push({ id: 'openai', label: 'OpenAI Configuration', icon: 'ri-sparkling-2-line' });
     }
 
