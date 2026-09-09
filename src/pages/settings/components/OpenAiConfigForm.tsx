@@ -15,6 +15,21 @@ interface FormErrors {
     [key: string]: string | null;
 }
 
+/**
+ * Stand-in shown in the key field when the server already holds a key.
+ *
+ * The key itself never leaves the server, so there is nothing real to display —
+ * this fills the field so it reads as configured rather than empty. It is cleared
+ * the moment the field is focused, and is sent as a blank key (meaning "keep the
+ * stored one") if it is left untouched.
+ *
+ * Its length is that of a typical OpenAI project key, so a stored key renders the
+ * same full row of dots a freshly pasted one does. The characters themselves are
+ * never seen — the field is a password input — and never submitted.
+ */
+const STORED_KEY_MASK_CHAR = '•';
+const STORED_KEY_MASK = STORED_KEY_MASK_CHAR.repeat(164);
+
 const OpenAiConfigForm: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
@@ -25,6 +40,10 @@ const OpenAiConfigForm: React.FC = () => {
         DEFAULT_EFFORT_OPTIONS
     );
     const [modelsError, setModelsError] = useState<string | null>(null);
+    // Whether the server already holds a key. The key itself is never sent to the
+    // browser, so this is the only way to know — and it decides whether the field
+    // may be left blank to keep the stored key.
+    const [hasApiKey, setHasApiKey] = useState<boolean>(false);
     const [formData, setFormData] = useState<FormData>({
         api_key: '',
         aue_model: 'gpt-5.6-luna',
@@ -44,8 +63,12 @@ const OpenAiConfigForm: React.FC = () => {
 
             const savedModel = configData.aue_model || 'gpt-5.6-luna';
 
+            setHasApiKey(!!configData.has_api_key);
+
+            // The API key is deliberately never returned by the server, so when one
+            // is stored the field shows a stand-in instead of the real value.
             setFormData({
-                api_key: configData.api_key || '',
+                api_key: configData.has_api_key ? STORED_KEY_MASK : '',
                 aue_model: savedModel,
                 reasoning_effort: configData.reasoning_effort || 'medium'
             });
@@ -53,6 +76,7 @@ const OpenAiConfigForm: React.FC = () => {
             await loadModels(savedModel);
         } catch (error: any) {
             console.error('Failed to load OpenAI configuration:', error);
+            setHasApiKey(false);
             await loadModels('gpt-5.6-luna');
         } finally {
             setFetching(false);
@@ -90,21 +114,36 @@ const OpenAiConfigForm: React.FC = () => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+
+        // The key field starts out holding the stand-in. Clicking it leaves that
+        // alone — only an actual edit replaces it, and then the stand-in has to go
+        // rather than be typed onto. A real key never contains this character, so
+        // dropping every one of them leaves exactly what was typed or pasted; if
+        // the edit was a deletion, nothing is left and the field simply clears.
+        const next = name === 'api_key' && isKeyUntouched()
+            ? value.split(STORED_KEY_MASK_CHAR).join('')
+            : value;
+
+        setFormData(prev => ({ ...prev, [name]: next }));
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
 
+    /** True while the field still holds the stand-in, i.e. the key was not edited. */
+    const isKeyUntouched = (): boolean => formData.api_key === STORED_KEY_MASK;
+
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
-        const key = formData.api_key ? formData.api_key.trim() : '';
+        const key = isKeyUntouched() ? '' : (formData.api_key ? formData.api_key.trim() : '');
 
-        if (!key) {
+        // Mirrors the server rule: required only until a key has been stored.
+        // Once one is stored, blank means "keep the existing key".
+        if (!key && !hasApiKey) {
             newErrors.api_key = 'The API key is required.';
-        } else if (!key.startsWith('sk-')) {
+        } else if (key && !key.startsWith('sk-')) {
             newErrors.api_key = 'The API key must start with "sk-".';
-        } else if (formData.api_key.trim() !== formData.api_key) {
+        } else if (!isKeyUntouched() && formData.api_key.trim() !== formData.api_key) {
             newErrors.api_key = 'Remove leading or trailing spaces from the key.';
         }
 
@@ -127,7 +166,9 @@ const OpenAiConfigForm: React.FC = () => {
         setLoading(true);
         try {
             await saveOpenAiConfig({
-                api_key: formData.api_key.trim(),
+                // An untouched field sends a blank key, which the server reads as
+                // "keep the stored one" — the stand-in is never submitted.
+                api_key: isKeyUntouched() ? '' : formData.api_key.trim(),
                 aue_model: formData.aue_model,
                 reasoning_effort: formData.reasoning_effort
             });
@@ -190,7 +231,7 @@ const OpenAiConfigForm: React.FC = () => {
                             <div className="row g-3">
                                 <div className="col-12">
                                     <label htmlFor="openai-api-key" className="form-label fw-medium">
-                                        API Key <span className="text-danger">*</span>
+                                        API Key {!hasApiKey && <span className="text-danger">*</span>}
                                     </label>
                                     <div className="input-group">
                                         <span className={`input-group-text ${errors.api_key ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
@@ -215,7 +256,9 @@ const OpenAiConfigForm: React.FC = () => {
                                         </div>
                                     )}
                                     <small className="text-muted d-block mt-1">
-                                        Stored encrypted on the server and used for AI Underwriting and Validation.
+                                        {hasApiKey
+                                            ? 'A key is already stored, encrypted, on the server — it is never sent back to the browser, so this shows a placeholder rather than the key itself. Leave it as is to keep it, or type over it to replace it.'
+                                            : 'Stored encrypted on the server and used for AI Underwriting and Validation.'}
                                     </small>
                                 </div>
 
