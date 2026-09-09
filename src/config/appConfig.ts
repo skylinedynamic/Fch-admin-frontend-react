@@ -8,6 +8,7 @@ export const MODULE_MICROBILT = 'microbilt';
 export const MODULE_WEBSITE = 'website';
 export const MODULE_AGREEMENT = 'agreement';
 export const MODULE_CREDIT_PROFILE = 'credit_profile';
+export const MODULE_OPENAI = 'openai';
 
 export const ENTITY_TYPE_LEAD = 'Lead';
 export const ENTITY_TYPE_PARTNER = 'Partner';

@@ -77,9 +77,90 @@ export interface ApplicationStatistics {
     [key: string]: any;
 }
 
+export const GPT_STATUS = {
+    PENDING: 'PENDING',
+    COMPLETED: 'COMPLETED',
+    INCORRECT: 'INCORRECT',
+    FAILED: 'FAILED',
+} as const;
+
+export type GptStatus = typeof GPT_STATUS[keyof typeof GPT_STATUS];
+
+export const VALIDATION_STATUS = {
+    CORRECT: 'CORRECT',
+    INCORRECT: 'INCORRECT',
+} as const;
+
+export type ValidationStatus = typeof VALIDATION_STATUS[keyof typeof VALIDATION_STATUS];
+
+export const ISSUE_SEVERITY = {
+    INFO: 'INFO',
+    WARNING: 'WARNING',
+    BLOCKING: 'BLOCKING',
+    INCORRECT: 'INCORRECT',
+} as const;
+
+export type IssueSeverity = typeof ISSUE_SEVERITY[keyof typeof ISSUE_SEVERITY];
+
+export interface AiPrequalResult {
+    incorrect?: boolean;
+    blocked?: boolean;
+    /** The evaluation could not be produced; nothing was generated for this run. */
+    failed?: boolean;
+    failure_reason?: string | null;
+    validation_status?: string;
+    borrower_message?: string | null;
+    qualified_programs?: string[];
+    document_checklist?: string[];
+    borrower_summary?: string;
+    internal_summary?: string;
+    /** Short, lender-free note sized for the 1000-char Status Notes field. */
+    admin_status_note?: string;
+    source?: string;
+    model?: string;
+    latency_ms?: number;
+    is_fallback?: boolean;
+    fallback_notice?: string;
+}
+
+export const isIncorrectUnderwriting = (
+    app?: { gpt_status?: string | null; validation_status?: string | null } | null,
+    ai?: AiPrequalResult | null
+): boolean => {
+    const gpt = (app?.gpt_status || '').toUpperCase();
+    const val = (app?.validation_status || '').toUpperCase();
+
+    return Boolean(
+        ai?.incorrect ||
+        ai?.blocked ||
+        gpt === GPT_STATUS.INCORRECT ||
+        gpt === 'NEEDS_CORRECTION' ||
+        gpt === 'BLOCKED' ||
+        val === VALIDATION_STATUS.INCORRECT ||
+        val === 'NEEDS_CORRECTION' ||
+        val === 'BLOCKED' ||
+        val === 'INCORRECT INFORMATION'
+    );
+};
+
+export interface ValidationIssue {
+    code: string;
+    field: string;
+    category: string;
+    severity: 'INFO' | 'WARNING' | 'BLOCKING' | 'INCORRECT';
+    user_message: string;
+    internal_message: string;
+    suggested_action: string;
+    evidence_fields: string[];
+}
+
 export interface PreQualificationApplicationDetails {
     id: number;
     borrower_id: number;
+    validation_status?: string | null;
+    validation_summary?: string | null;
+    validation_issues?: ValidationIssue[] | null;
+    validated_at?: string | null;
     first_name: string;
     last_name: string;
     business_website: string;
@@ -104,6 +185,9 @@ export interface PreQualificationApplicationDetails {
     status_note: string | null;
     status: string;
     status_class: string;
+    gpt_status?: string | null;
+    gpt_generated_at?: string | null;
+    ai_result?: AiPrequalResult | null;
     created_at: string;
     updated_at: string;
 }

@@ -10,6 +10,7 @@ import MicroBiltConfigForm from './MicroBiltConfigForm';
 import BrandingForm from './BrandingForm';
 import CreditProfileConfigForm from './CreditProfileConfigForm';
 import ScoreCalculationConfigForm from './ScoreCalculationConfigForm';
+import OpenAiConfigForm from './OpenAiConfigForm';
 import PaymentMethodConfig from './PaymentMethodConfig/PaymentMethodConfig';
 import EmailConfigurationForm from './EmailConfigurationForm';
 // @ts-ignore
@@ -66,6 +67,10 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
 
     if (hasPermission('update score calculation settings') && (user && (user.is_host == 1 || user.is_host == true))) {
         sections.push({ id: 'score_calculation', label: 'Score Calculation', icon: 'ri-percent-line' });
+    }
+
+    if (hasPermission('update openai settings') && (user && (user.is_host == 1 || user.is_host == true))) {
+        sections.push({ id: 'openai', label: 'OpenAI Configuration', icon: 'ri-sparkling-2-line' });
     }
 
     // Test Mail — only for host partners or white-label partners
@@ -176,6 +181,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <CreditProfileConfigForm />
                 ) : activeSection === 'score_calculation' ? (
                     <ScoreCalculationConfigForm />
+                ) : activeSection === 'openai' ? (
+                    <OpenAiConfigForm />
                 ) : activeSection === 'email_configuration' ? (
                     <EmailConfigurationForm />
                 ) : activeSection === 'branding' ? (
