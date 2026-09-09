@@ -120,7 +120,7 @@ const OpenAiConfigForm: React.FC = () => {
         // rather than be typed onto. A real key never contains this character, so
         // dropping every one of them leaves exactly what was typed or pasted; if
         // the edit was a deletion, nothing is left and the field simply clears.
-        const next = name === 'api_key' && isKeyUntouched()
+        const next = name === 'api_key' && isKeyUntouched() && value !== STORED_KEY_MASK
             ? value.split(STORED_KEY_MASK_CHAR).join('')
             : value;
 
