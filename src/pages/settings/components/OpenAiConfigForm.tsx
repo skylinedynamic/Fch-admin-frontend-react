@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { Dropdown } from 'primereact/dropdown';
 import { fetchOpenAiConfig, fetchOpenAiModels, saveOpenAiConfig } from '../../../modules/settings/services';
 import { OpenAiConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
+import { DEFAULT_FALLBACK_MODELS, DEFAULT_EFFORT_OPTIONS } from '../../../config';
 
 interface FormData {
     api_key: string;
@@ -17,17 +18,19 @@ interface FormErrors {
 const OpenAiConfigForm: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
-    const [modelOptions, setModelOptions] = useState<Array<{ label: string; value: string }>>([]);
-    const [effortOptions, setEffortOptions] = useState<Array<{ label: string; value: string }>>([]);
+    const [modelOptions, setModelOptions] = useState<Array<{ label: string; value: string }>>(
+        DEFAULT_FALLBACK_MODELS.map(m => ({ label: m, value: m }))
+    );
+    const [effortOptions, setEffortOptions] = useState<Array<{ label: string; value: string }>>(
+        DEFAULT_EFFORT_OPTIONS
+    );
     const [modelsError, setModelsError] = useState<string | null>(null);
     const [formData, setFormData] = useState<FormData>({
         api_key: '',
-        aue_model: '',
+        aue_model: 'gpt-5.6-luna',
         reasoning_effort: 'medium'
     });
     const [errors, setErrors] = useState<FormErrors>({});
-    // Ciphertext of the stored key, as loaded from the server.
-    const [storedCipher, setStoredCipher] = useState<string>('');
 
     useEffect(() => {
         loadConfig();
@@ -37,62 +40,53 @@ const OpenAiConfigForm: React.FC = () => {
         try {
             setFetching(true);
             const response = await fetchOpenAiConfig();
-            const configData = response?.data || {};
+            const configData = response?.data || response || {};
 
             const savedModel = configData.aue_model || 'gpt-5.6-luna';
-            // The field shows the stored ciphertext, never the key itself. It is
-            // kept so an untouched field is recognised on save and the stored key
-            // is left alone rather than being encrypted a second time.
-            const encrypted = configData.api_key_encrypted || '';
-            setStoredCipher(encrypted);
 
             setFormData({
-                api_key: encrypted,
+                api_key: configData.api_key || '',
                 aue_model: savedModel,
                 reasoning_effort: configData.reasoning_effort || 'medium'
             });
 
             await loadModels(savedModel);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load OpenAI configuration:', error);
-            toast.error('Failed to load OpenAI configuration.');
+            await loadModels('gpt-5.6-luna');
         } finally {
             setFetching(false);
         }
     };
 
-    // The model list comes from OpenAI itself, so it always reflects what this
-    // API key can actually use rather than a list that goes stale in the code.
     const buildOptions = (models: string[], savedModel: string) => {
-        const options = models.map(id => ({ label: id, value: id }));
+        const sourceList = (models && models.length > 0) ? models : DEFAULT_FALLBACK_MODELS;
+        const options = sourceList.map(id => ({ label: id, value: id }));
 
-        // Keep a previously saved model selectable even if it is not in the list,
-        // so opening this screen can never silently clear it.
-        if (savedModel && !models.includes(savedModel)) {
+        if (savedModel && !sourceList.includes(savedModel)) {
             options.unshift({ label: `${savedModel} (currently saved)`, value: savedModel });
         }
 
         return options;
     };
 
-    // The API always returns a usable list — the live one from OpenAI, or the
-    // server's configured fallback when the key cannot enumerate models — so the
-    // model list is never hard-coded here.
     const loadModels = async (savedModel: string) => {
         try {
             const response = await fetchOpenAiModels();
-            setModelOptions(buildOptions(response?.data?.models || [], savedModel));
-            // Effort levels come from the same server config the save request
-            // validates against, so the two can never drift apart.
-            setEffortOptions(response?.data?.reasoning_efforts || []);
-            setModelsError(response?.data?.error || null);
+            const rawModels = response?.data?.models || response?.models || [];
+            const modelsList = rawModels.length > 0 ? rawModels : DEFAULT_FALLBACK_MODELS;
+            setModelOptions(buildOptions(modelsList, savedModel));
+
+            const rawEfforts = response?.data?.reasoning_efforts || response?.reasoning_efforts || [];
+            setEffortOptions(rawEfforts.length > 0 ? rawEfforts : DEFAULT_EFFORT_OPTIONS);
+            setModelsError(response?.data?.error || response?.error || null);
         } catch (error) {
             console.error('Failed to load OpenAI models:', error);
-            setModelOptions(buildOptions([], savedModel));
+            setModelOptions(buildOptions(DEFAULT_FALLBACK_MODELS, savedModel));
+            setEffortOptions(DEFAULT_EFFORT_OPTIONS);
             setModelsError('Could not load the model list from OpenAI. Check the API key.');
         }
     };
-
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -102,30 +96,24 @@ const OpenAiConfigForm: React.FC = () => {
         }
     };
 
-    // True while the field still holds the ciphertext that was loaded, i.e. the
-    // admin has not typed a replacement key.
-    const isUnchangedKey = formData.api_key === storedCipher && storedCipher !== '';
-
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
-        const key = formData.api_key;
+        const key = formData.api_key ? formData.api_key.trim() : '';
 
-        // The untouched ciphertext is not a new key, so skip the format checks —
-        // it is sent as blank ("keep the stored key") on save.
-        if (isUnchangedKey) {
-            setErrors({});
-            return true;
+        if (!key) {
+            newErrors.api_key = 'The API key is required.';
+        } else if (!key.startsWith('sk-')) {
+            newErrors.api_key = 'The API key must start with "sk-".';
+        } else if (formData.api_key.trim() !== formData.api_key) {
+            newErrors.api_key = 'Remove leading or trailing spaces from the key.';
         }
 
-        // A key is optional — blank keeps the server's .env value — but if one is
-        // entered it must look like an OpenAI key. A capitalised "Sk-" or a stray
-        // space is the classic paste error and fails with a 401 at run time.
-        if (key) {
-            if (key.trim() !== key) {
-                newErrors.api_key = 'Remove the leading or trailing spaces from the key.';
-            } else if (!key.startsWith('sk-')) {
-                newErrors.api_key = 'An OpenAI key starts with a lowercase "sk-". Check for a stray capital letter.';
-            }
+        if (!formData.aue_model || !formData.aue_model.trim()) {
+            newErrors.aue_model = 'The underwriting model is required.';
+        }
+
+        if (!formData.reasoning_effort || !formData.reasoning_effort.trim()) {
+            newErrors.reasoning_effort = 'The reasoning effort is required.';
         }
 
         setErrors(newErrors);
@@ -139,22 +127,16 @@ const OpenAiConfigForm: React.FC = () => {
         setLoading(true);
         try {
             await saveOpenAiConfig({
-                // Never send the ciphertext back as if it were a new key — blank
-                // tells the server to keep what it already has.
-                api_key: isUnchangedKey ? '' : formData.api_key,
+                api_key: formData.api_key.trim(),
                 aue_model: formData.aue_model,
                 reasoning_effort: formData.reasoning_effort
             });
 
             toast.success('OpenAI configuration saved successfully!');
-
-            // Reload so the field shows the ciphertext of whatever is now stored,
-            // and because a newly saved key can expose a different model list.
             await loadConfig();
         } catch (error: any) {
             console.error('Failed to save OpenAI config:', error);
 
-            // Surface per-field errors from the API validation.
             const apiErrors = error?.response?.data?.errors;
             if (apiErrors) {
                 const mapped: FormErrors = {};
@@ -163,7 +145,7 @@ const OpenAiConfigForm: React.FC = () => {
                 });
                 setErrors(mapped);
             }
-            toast.error(error.response?.data?.message || 'Failed to save configuration.');
+            toast.error(error?.response?.data?.message || 'Failed to save configuration.');
         } finally {
             setLoading(false);
         }
@@ -189,97 +171,142 @@ const OpenAiConfigForm: React.FC = () => {
                 {fetching ? (
                     <OpenAiConfigSkeleton />
                 ) : (
-                    <form onSubmit={handleSubmit}>
-                        <div className="row g-3">
-                            <div className="col-12">
-                                <label htmlFor="openai-api-key" className="form-label">API Key</label>
-                                <div className="input-group">
-                                    <input
-                                        id="openai-api-key"
-                                        // Always masked, matching the Payment Integration
-                                        // secret key field. The value behind the dots is
-                                        // the stored ciphertext, never the real key.
-                                        type="password"
-                                        name="api_key"
-                                        className={`form-control ${errors.api_key ? 'is-invalid' : ''}`}
-                                        placeholder="sk-..."
-                                        value={formData.api_key}
-                                        onChange={handleInputChange}
-                                        autoComplete="new-password"
+                    <>
+                        <div className="d-flex align-items-center bg-primary-subtle rounded-3 p-3 mb-4">
+                            <div className="avatar-sm flex-shrink-0 me-3">
+                                <div className="avatar-title bg-primary text-white rounded fs-20">
+                                    <i className="ri-sparkling-2-line"></i>
+                                </div>
+                            </div>
+                            <div className="flex-grow-1">
+                                <h6 className="mb-1 text-dark fw-semibold fs-14">AI Underwriting & Data Validation</h6>
+                                <p className="text-muted mb-0 fs-13">
+                                    Configure your OpenAI API credentials and AI models for Pre-Qualification underwriting calculations and borrower application integrity verification.
+                                </p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSubmit}>
+                            <div className="row g-3">
+                                <div className="col-12">
+                                    <label htmlFor="openai-api-key" className="form-label fw-medium">
+                                        API Key <span className="text-danger">*</span>
+                                    </label>
+                                    <div className="input-group">
+                                        <span className={`input-group-text ${errors.api_key ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                            <i className="ri-key-2-line"></i>
+                                        </span>
+                                        <input
+                                            id="openai-api-key"
+                                            type="password"
+                                            name="api_key"
+                                            className={`form-control ${errors.api_key ? 'is-invalid border-danger' : ''}`}
+                                            placeholder="sk-..."
+                                            value={formData.api_key}
+                                            onChange={handleInputChange}
+                                            autoComplete="new-password"
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                    {errors.api_key && (
+                                        <div className="text-danger fs-12 mt-1">
+                                            <i className="ri-error-warning-line me-1"></i>
+                                            {errors.api_key}
+                                        </div>
+                                    )}
+                                    <small className="text-muted d-block mt-1">
+                                        Stored encrypted on the server and used for AI Underwriting and Validation.
+                                    </small>
+                                </div>
+
+                                <div className="col-12 col-md-6">
+                                    <label htmlFor="openai-aue-model" className="form-label fw-medium">
+                                        Underwriting Model <span className="text-danger">*</span>
+                                    </label>
+                                    <Dropdown
+                                        inputId="openai-aue-model"
+                                        value={formData.aue_model}
+                                        options={modelOptions}
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        onChange={(e) => {
+                                            setFormData(prev => ({ ...prev, aue_model: e.value }));
+                                            if (errors.aue_model) {
+                                                setErrors(prev => ({ ...prev, aue_model: null }));
+                                            }
+                                        }}
+                                        placeholder="Select a model"
+                                        className={`w-100 ${errors.aue_model ? 'p-invalid border-danger' : ''}`}
+                                        filter
+                                        filterPlaceholder="Search models"
                                         disabled={loading}
                                     />
-                                    {errors.api_key && <div className="invalid-feedback">{errors.api_key}</div>}
+                                    {errors.aue_model && (
+                                        <div className="text-danger fs-12 mt-1">
+                                            <i className="ri-error-warning-line me-1"></i>
+                                            {errors.aue_model}
+                                        </div>
+                                    )}
+                                    <small className="text-muted d-block mt-1">
+                                        {modelsError ? (
+                                            <>
+                                                Showing the server&apos;s default models —{' '}
+                                                {modelsError.includes('api.model.read')
+                                                    ? 'the live list needs the api.model.read scope on this key.'
+                                                    : 'the live list could not be loaded.'}
+                                            </>
+                                        ) : (
+                                            'Live list from your OpenAI account. Used for the validator and both AUE generations.'
+                                        )}
+                                    </small>
                                 </div>
-                                <small className="text-muted d-block mt-1">
-                                    {isUnchangedKey
-                                        ? 'This is the encrypted stored value — the key itself is never sent to the browser. Type over it to replace the key, or leave it as-is to keep the current one.'
-                                        : 'Stored encrypted on the server and never returned by the API.'}
-                                </small>
+
+                                <div className="col-12 col-md-6">
+                                    <label htmlFor="openai-reasoning-effort" className="form-label fw-medium">
+                                        Reasoning Effort <span className="text-danger">*</span>
+                                    </label>
+                                    <Dropdown
+                                        inputId="openai-reasoning-effort"
+                                        value={formData.reasoning_effort}
+                                        options={effortOptions}
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        onChange={(e) => {
+                                            setFormData(prev => ({ ...prev, reasoning_effort: e.value }));
+                                            if (errors.reasoning_effort) {
+                                                setErrors(prev => ({ ...prev, reasoning_effort: null }));
+                                            }
+                                        }}
+                                        className={`w-100 ${errors.reasoning_effort ? 'p-invalid border-danger' : ''}`}
+                                        disabled={loading}
+                                    />
+                                    {errors.reasoning_effort && (
+                                        <div className="text-danger fs-12 mt-1">
+                                            <i className="ri-error-warning-line me-1"></i>
+                                            {errors.reasoning_effort}
+                                        </div>
+                                    )}
+                                    <small className="text-muted d-block mt-1">
+                                        Applied to the internal underwriting generation. Only the o-series and GPT-5 model
+                                        families support this; it is omitted automatically for any other model.
+                                    </small>
+                                </div>
                             </div>
 
-                            <div className="col-12 col-md-6">
-                                <label htmlFor="openai-aue-model" className="form-label">Underwriting Model</label>
-                                <Dropdown
-                                    inputId="openai-aue-model"
-                                    value={formData.aue_model}
-                                    options={modelOptions}
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    onChange={(e) => setFormData(prev => ({ ...prev, aue_model: e.value }))}
-                                    placeholder="Select a model"
-                                    className={`w-100 ${errors.aue_model ? 'p-invalid' : ''}`}
-                                    filter
-                                    filterPlaceholder="Search models"
-                                    disabled={loading}
-                                />
-                                {errors.aue_model && <div className="text-danger fs-12 mt-1">{errors.aue_model}</div>}
-                                <small className="text-muted d-block mt-1">
-                                    {modelsError ? (
+                            <div className="d-flex justify-content-end mt-4">
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
+                                    {loading ? (
                                         <>
-                                            Showing the server&apos;s default models —{' '}
-                                            {modelsError.includes('api.model.read')
-                                                ? 'the live list needs the api.model.read scope on this key.'
-                                                : 'the live list could not be loaded.'}
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            Saving...
                                         </>
                                     ) : (
-                                        'Live list from your OpenAI account. Used for the validator and both AUE generations.'
+                                        'Save Configuration'
                                     )}
-                                </small>
+                                </button>
                             </div>
-
-                            <div className="col-12 col-md-6">
-                                <label htmlFor="openai-reasoning-effort" className="form-label">Reasoning Effort</label>
-                                <Dropdown
-                                    inputId="openai-reasoning-effort"
-                                    value={formData.reasoning_effort}
-                                    options={effortOptions}
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    onChange={(e) => setFormData(prev => ({ ...prev, reasoning_effort: e.value }))}
-                                    className={`w-100 ${errors.reasoning_effort ? 'p-invalid' : ''}`}
-                                    disabled={loading}
-                                />
-                                {errors.reasoning_effort && <div className="text-danger fs-12 mt-1">{errors.reasoning_effort}</div>}
-                                <small className="text-muted d-block mt-1">
-                                    Applied to the internal underwriting generation. Only the o-series and GPT-5 model
-                                    families support this; it is omitted automatically for any other model.
-                                </small>
-                            </div>
-                        </div>
-
-                        <div className="d-flex justify-content-end mt-4">
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? (
-                                    <>
-                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    'Save Configuration'
-                                )}
-                            </button>
-                        </div>
-                    </form>
+                        </form>
+                    </>
                 )}
             </div>
         </div>
