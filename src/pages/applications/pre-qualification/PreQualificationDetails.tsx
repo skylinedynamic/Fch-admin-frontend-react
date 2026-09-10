@@ -40,9 +40,16 @@ export default function PreQualificationDetails() {
     const [currentStep, setCurrentStep] = useState<StepType>(1);
 
     const { user } = useAuthStore();
-    const isPartner = user?.is_host == false;
+    const isHost = Boolean(user?.is_host == 1 || user?.is_host === true);
     const { hasPermission } = usePermissions();
-    const visibleSteps = STEPS.filter(step => !step.hostOnly || !isPartner);
+    const visibleSteps = STEPS.filter(step => !step.hostOnly || isHost);
+
+    // If a non-host somehow navigates to step 4, reset to step 1
+    useEffect(() => {
+        if (!isHost && currentStep === 4) {
+            setCurrentStep(1);
+        }
+    }, [isHost, currentStep]);
 
     // Status update state
     const app = (details?.data || details || {}) as PreQualificationApplicationDetailsType;
@@ -60,7 +67,7 @@ export default function PreQualificationDetails() {
     }, [app]);
 
     const handleRunPrequal = () => {
-        if (!app.id) return;
+        if (!isHost || !app.id) return;
         runAiMutation.mutate(app.id, {
             onSuccess: (response: any) => {
                 const resData = response?.data || response;
@@ -97,6 +104,7 @@ export default function PreQualificationDetails() {
     // Inserts the short, lender-free note — never the full memo, which exceeds the
     // 1000-character limit on Status Notes and is visible to partners.
     const handleApplyMemoToNotes = () => {
+        if (!isHost) return;
         const note = app.ai_result?.admin_status_note;
         if (note) {
             setStatusNote(note);
@@ -212,6 +220,9 @@ export default function PreQualificationDetails() {
     );
 
     const renderAiEvaluation = () => {
+        if (!isHost) {
+            return null;
+        }
         const ai = app.ai_result;
 
         if (runAiMutation.isPending) {
@@ -238,7 +249,7 @@ export default function PreQualificationDetails() {
             return (
                 <div>
                     <div className="alert alert-warning d-flex align-items-start gap-2" role="alert">
-                        <i className="ri-error-warning-line fs-18 text-warning mt-1"></i>
+                        <i className="ri-alert-line fs-18 text-warning mt-1"></i>
                         <div>
                             <div className="fw-semibold fs-14">Corrections Needed Before AI Underwriting Can Run</div>
                             <div className="fs-13 text-muted">
@@ -336,7 +347,7 @@ export default function PreQualificationDetails() {
                     generated, so there is nothing to act on. */}
                 {ai.failed && (
                     <div className="alert alert-warning d-flex align-items-start gap-2 mb-4" role="alert">
-                        <i className="ri-error-warning-line fs-18 text-warning mt-1"></i>
+                        <i className="ri-alert-line fs-18 text-warning mt-1"></i>
                         <div>
                             <div className="fw-semibold fs-14">Automated Underwriting Did Not Complete</div>
                             <div className="fs-13 text-muted">
@@ -361,108 +372,351 @@ export default function PreQualificationDetails() {
                     </div>
                 )}
 
-                {/* Section 1: Recommended Qualified Programs */}
-                <div className="mb-4">
-                    <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-                        <i className="ri-checkbox-circle-fill text-success"></i>
-                        Recommended Funding Programs
-                    </h6>
-                    {ai.qualified_programs && ai.qualified_programs.length > 0 ? (
-                        <div className="row g-3">
-                            {ai.qualified_programs.map((program, idx) => (
-                                <div key={idx} className="col-md-6 col-lg-4">
-                                    <div className="card border shadow-none mb-0 h-100 bg-white hover-shadow">
-                                        <div className="card-body p-3 d-flex align-items-center gap-3">
-                                            <div className="avatar-sm flex-shrink-0">
-                                                <div className="avatar-title bg-success-subtle text-success rounded fs-18">
-                                                    <i className="ri-shield-check-line"></i>
+                {/* The FCH_Internal_Prequalification_AUE_v3 result. This whole block
+                    is internal: the API withholds ai_result from any non-host caller,
+                    and nothing here is repeated on a borrower or partner screen. */}
+                {ai.internal && (
+                    <>
+                        {/* Driven by the payload's own classification rather than a
+                            fixed string, so the banner cannot outlive a change to it. */}
+                        {ai.internal.classification && (
+                            <div className="alert alert-dark d-flex align-items-center gap-2 py-2 fs-13 mb-3" role="alert">
+                                <i className="ri-lock-2-line"></i>
+                                <span className="fw-semibold">{ai.internal.classification.replace(/_/g, ' ')}</span>
+                                <span>Do not distribute to borrowers, clients or partners.</span>
+                            </div>
+                        )}
+
+                        <div className="d-flex flex-wrap gap-2 mb-3 fs-12 text-muted">
+                            {ai.internal.prompt_version && <span className="badge bg-light text-muted">{ai.internal.prompt_version}</span>}
+                            {ai.internal.submission_id && <span className="badge bg-light text-muted">Submission {ai.internal.submission_id}</span>}
+                            {ai.internal.matrix_version && <span className="badge bg-light text-muted">Matrix {ai.internal.matrix_version}</span>}
+                        </div>
+
+                        <div className="d-flex flex-wrap gap-3 mb-4">
+                            {ai.internal.overall_stance && (
+                                <div className="p-2 px-3 bg-light rounded border">
+                                    <div className="fs-11 text-muted text-uppercase">Overall Stance</div>
+                                    <div className="fs-14 fw-semibold text-dark">{ai.internal.overall_stance.replace(/_/g, ' ')}</div>
+                                </div>
+                            )}
+                            {ai.internal.data_status && (
+                                <div className="p-2 px-3 bg-light rounded border">
+                                    <div className="fs-11 text-muted text-uppercase">Data Status</div>
+                                    <div className="fs-14 fw-semibold text-dark">{ai.internal.data_status}</div>
+                                </div>
+                            )}
+                            {ai.internal.manual_review?.required && (
+                                <div className="p-2 px-3 bg-warning-subtle rounded border border-warning-subtle">
+                                    <div className="fs-11 text-warning-emphasis text-uppercase">Manual Review</div>
+                                    <div className="fs-14 fw-semibold text-warning-emphasis">Required</div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Why a human has to look at this, not just that one must. */}
+                        {!!ai.internal.manual_review?.reasons?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                                    <i className="ri-user-search-line text-warning"></i>
+                                    Manual Review Reasons
+                                </h6>
+                                <ul className="mb-0 ps-3">
+                                    {ai.internal.manual_review.reasons.map((reason, idx) => (
+                                        <li key={idx} className="fs-13 text-dark py-1">{reason}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Every value the evaluation reasoned over, with how each was
+                            sourced — the record of what was verified vs merely stated. */}
+                        {!!ai.internal.borrower_request_snapshot?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-list-check-2 text-dark"></i>
+                                    Borrower Request Snapshot
+                                </h6>
+                                <div className="table-responsive">
+                                    <table className="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Field</th>
+                                                <th>Value</th>
+                                                <th>Source</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {ai.internal.borrower_request_snapshot.map((row, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="fw-medium">{(row.field || '').replace(/_/g, ' ')}</td>
+                                                    <td className="fs-13">{row.value === null || row.value === undefined ? '—' : String(row.value)}</td>
+                                                    <td>
+                                                        <span className="badge bg-light text-muted text-uppercase fs-11">
+                                                            {(row.source_status || '').replace(/_/g, ' ')}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {!!ai.internal.aus_model_determination?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-calculator-line text-dark"></i>
+                                    AUS Model Determination
+                                </h6>
+                                <ul className="list-unstyled mb-0">
+                                    {ai.internal.aus_model_determination.map((row, idx) => (
+                                        <li key={idx} className="py-2 border-bottom border-light-subtle">
+                                            <div className="d-flex align-items-center gap-2 mb-1">
+                                                <span className="fs-14 fw-medium text-dark">{row.product_path}</span>
+                                                <span className="badge bg-dark-subtle text-dark fs-11">{row.model?.replace(/_/g, ' ')}</span>
+                                            </div>
+                                            <div className="fs-13 text-muted">{row.rationale}</div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {!!ai.internal.strengths?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-thumb-up-line text-success"></i>
+                                    Strengths
+                                </h6>
+                                <ul className="list-unstyled mb-0">
+                                    {ai.internal.strengths.map((item, idx) => (
+                                        <li key={idx} className="d-flex align-items-start gap-2 py-2 border-bottom border-light-subtle">
+                                            <i className="ri-check-line text-success mt-1"></i>
+                                            <span className="fs-14 text-dark">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {ai.internal.executive_underwriting_conclusion && (
+                            <div className="mb-4">
+                                <div className="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 className="fs-15 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                        <i className="ri-file-text-line text-dark"></i>
+                                        Executive Underwriting Conclusion
+                                    </h6>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-light border py-1 px-2 fs-12 text-muted"
+                                        onClick={() => handleCopyText(ai.internal?.executive_underwriting_conclusion || '', 'Executive Underwriting Conclusion')}
+                                    >
+                                        <i className="ri-file-copy-line me-1"></i> Copy
+                                    </button>
+                                </div>
+                                <div className="p-3 bg-light rounded border">
+                                    <p className="fs-14 text-dark mb-0" style={{ whiteSpace: 'pre-line' }}>
+                                        {ai.internal.executive_underwriting_conclusion}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {!!ai.internal.recommended_funding_paths?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-route-line text-success"></i>
+                                    Recommended Funding Paths
+                                </h6>
+                                <div className="row g-3">
+                                    {ai.internal.recommended_funding_paths.map((path, idx) => (
+                                        <div key={idx} className="col-lg-6">
+                                            <div className="card border shadow-none mb-0 h-100">
+                                                <div className="card-body p-3">
+                                                    <div className="d-flex align-items-center justify-content-between mb-2">
+                                                        <h6 className="fs-14 fw-semibold text-dark mb-0">
+                                                            #{path.priority} {path.product_category}
+                                                        </h6>
+                                                        <span className="badge bg-light text-dark fs-11">{path.fit_status?.replace(/_/g, ' ')}</span>
+                                                    </div>
+                                                    <div className="fs-13 text-muted mb-2">{path.fit_rationale}</div>
+                                                    {(path.amount_min != null || path.amount_max != null) && (
+                                                        <div className="fs-13 text-dark mb-2">
+                                                            <strong>Amount:</strong> {path.amount_min ?? '—'} – {path.amount_max ?? '—'}
+                                                            {path.amount_basis ? <span className="text-muted"> ({path.amount_basis})</span> : null}
+                                                        </div>
+                                                    )}
+                                                    <div className="fs-12 text-muted">
+                                                        <span className="badge bg-dark-subtle text-dark me-1">{path.aus_model?.replace(/_/g, ' ')}</span>
+                                                        <span className="badge bg-info-subtle text-info">{path.execution_action?.replace(/_/g, ' ')}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="flex-grow-1">
-                                                <h6 className="fs-14 fw-semibold text-dark mb-1">{program}</h6>
-                                                <span className="badge bg-success-subtle text-success fs-11">Qualified</span>
-                                            </div>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-muted fs-14">No qualified programs identified.</p>
-                    )}
-                </div>
+                            </div>
+                        )}
 
-                {/* Section 2: Required Document Checklist */}
-                <div className="mb-4">
-                    <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-                        <i className="ri-file-list-3-line text-primary"></i>
-                        Required Document Checklist
-                    </h6>
-                    {ai.document_checklist && ai.document_checklist.length > 0 ? (
-                        <div className="bg-light p-3 rounded border">
-                            <ul className="list-unstyled mb-0">
-                                {ai.document_checklist.map((doc, idx) => (
-                                    <li key={idx} className="d-flex align-items-start gap-2 py-2 border-bottom border-light-subtle last:border-0">
-                                        <i className="ri-checkbox-circle-line text-primary fs-16 mt-1 flex-shrink-0"></i>
-                                        <span className="fs-14 text-dark">{doc}</span>
-                                    </li>
+                        {!!ai.internal.active_lender_matches?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-bank-line text-primary"></i>
+                                    Active Lender Matches
+                                </h6>
+                                <div className="table-responsive">
+                                    <table className="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Lender</th>
+                                                <th>Fit</th>
+                                                <th>Rationale</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {ai.internal.active_lender_matches.map((match, idx) => (
+                                                <tr key={idx}>
+                                                    <td>{match.priority}</td>
+                                                    <td className="fw-medium">{match.lender_name}</td>
+                                                    <td><span className="badge bg-light text-dark">{match.fit_status?.replace(/_/g, ' ')}</span></td>
+                                                    <td className="fs-13">{match.rationale}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {!!ai.internal.conditions_and_flags?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-flag-line text-warning"></i>
+                                    Conditions &amp; Flags
+                                </h6>
+                                <ul className="list-unstyled mb-0">
+                                    {ai.internal.conditions_and_flags.map((flag, idx) => (
+                                        <li key={idx} className="py-2 border-bottom border-light-subtle">
+                                            <div className="d-flex align-items-center gap-2 mb-1">
+                                                <span className={`badge fs-11 ${flag.severity === 'BLOCKING' ? 'bg-danger-subtle text-danger' : flag.severity === 'MATERIAL' ? 'bg-warning-subtle text-warning' : 'bg-light text-muted'}`}>
+                                                    {flag.severity}
+                                                </span>
+                                                <span className="fs-14 fw-medium text-dark">{flag.category}</span>
+                                            </div>
+                                            <div className="fs-13 text-dark mb-1">{flag.finding}</div>
+                                            {flag.required_action && (
+                                                <div className="fs-13 text-muted"><strong>Action:</strong> {flag.required_action}</div>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {!!ai.internal.underwriting_analysis?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-search-eye-line text-dark"></i>
+                                    Underwriting Analysis
+                                </h6>
+                                <ul className="list-unstyled mb-0">
+                                    {ai.internal.underwriting_analysis.map((row, idx) => (
+                                        <li key={idx} className="py-2 border-bottom border-light-subtle">
+                                            <div className="fs-14 fw-medium text-dark">{row.section}</div>
+                                            <div className="fs-13 text-dark">{row.finding}</div>
+                                            {!!row.evidence_fields?.length && (
+                                                <div className="fs-12 text-muted mt-1">Evidence: {row.evidence_fields.join(', ')}</div>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {ai.internal.routing_recommendation && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-direction-line text-info"></i>
+                                    Routing Recommendation
+                                </h6>
+                                <div className="p-3 bg-light rounded border fs-14 text-dark">
+                                    <div><strong>Primary product:</strong> {ai.internal.routing_recommendation.primary_product || '—'}</div>
+                                    <div><strong>Primary lender:</strong> {ai.internal.routing_recommendation.primary_lender || '—'}</div>
+                                    <div><strong>Next action:</strong> {ai.internal.routing_recommendation.next_action?.replace(/_/g, ' ') || '—'}</div>
+                                    {ai.internal.routing_recommendation.fallback_path && (
+                                        <div><strong>Fallback:</strong> {ai.internal.routing_recommendation.fallback_path}</div>
+                                    )}
+                                    {ai.internal.routing_recommendation.reason && (
+                                        <div className="text-muted mt-1">{ai.internal.routing_recommendation.reason}</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {!!ai.internal.required_documentation?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-file-list-3-line text-primary"></i>
+                                    Required Documentation
+                                </h6>
+                                {ai.internal.required_documentation.map((group, idx) => (
+                                    <div key={idx} className="mb-2">
+                                        <div className="fs-14 fw-medium text-dark mb-1">{group.path_or_lender}</div>
+                                        <ul className="mb-0 ps-3">
+                                            {(group.items || []).map((item, i) => (
+                                                <li key={i} className="fs-13 text-dark py-1">{item}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
                                 ))}
-                            </ul>
-                        </div>
-                    ) : (
-                        <p className="text-muted fs-14">No document requirements listed.</p>
-                    )}
-                </div>
+                            </div>
+                        )}
 
-                {/* Section 3: Borrower-Facing Summary */}
-                {ai.borrower_summary && (
-                    <div className="mb-4">
-                        <div className="d-flex align-items-center justify-content-between mb-2">
-                            <h6 className="fs-15 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                                <i className="ri-user-smile-line text-info"></i>
-                                Borrower-Facing Summary
-                            </h6>
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-light border py-0 px-2 fs-12 text-muted"
-                                onClick={() => handleCopyText(ai.borrower_summary || '', 'Borrower Summary')}
-                            >
-                                <i className="ri-file-copy-line me-1"></i> Copy
-                            </button>
-                        </div>
-                        <div className="p-3 bg-success-subtle rounded border border-success-subtle">
-                            <p className="fs-14 text-success-emphasis mb-0 fw-medium" style={{ whiteSpace: 'pre-line' }}>
-                                {ai.borrower_summary}
-                            </p>
-                        </div>
-                    </div>
-                )}
+                        {!!ai.internal.credit_building_pathway?.length && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    <i className="ri-seedling-line text-success"></i>
+                                    Credit Building Pathway
+                                </h6>
+                                <ul className="list-unstyled mb-0">
+                                    {ai.internal.credit_building_pathway.map((step, idx) => (
+                                        <li key={idx} className="d-flex align-items-start gap-2 py-2 border-bottom border-light-subtle">
+                                            <i className="ri-arrow-right-s-line text-success mt-1"></i>
+                                            <span className="fs-14 text-dark">{step}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
 
-                {/* Section 4: Internal Underwriting Memo */}
-                {ai.internal_summary && (
-                    <div className="mb-4">
-                        <div className="d-flex align-items-center justify-content-between mb-2">
-                            <h6 className="fs-15 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                                <i className="ri-file-text-line text-dark"></i>
-                                Internal Underwriting Memo (Admin-Only)
-                            </h6>
-                            {/* No "Apply to Status Notes" here: the memo is ~3KB and
-                                Status Notes is capped at 1000 characters and visible to
-                                partners. The short AI note is inserted there instead. */}
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-light border py-1 px-2 fs-12 text-muted"
-                                onClick={() => handleCopyText(ai.internal_summary || '', 'Internal Underwriting Memo')}
-                            >
-                                <i className="ri-file-copy-line me-1"></i> Copy Memo
-                            </button>
-                        </div>
-                        <div className="p-3 bg-light rounded border">
-                            <pre className="fs-13 text-dark mb-0" style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', lineHeight: '1.6' }}>
-                                {ai.internal_summary}
-                            </pre>
-                        </div>
-                    </div>
+                        {ai.internal.final_internal_disposition && (
+                            <div className="mb-4">
+                                <h6 className="fs-15 fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                                    <i className="ri-stamp-line text-dark"></i>
+                                    Final Internal Disposition
+                                </h6>
+                                <div className="p-3 bg-light rounded border">
+                                    <p className="fs-14 text-dark mb-0" style={{ whiteSpace: 'pre-line' }}>
+                                        {ai.internal.final_internal_disposition}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {(ai.internal.closing_tag || ai.internal.disclaimer) && (
+                            <div className="mb-4 pt-2 border-top">
+                                {ai.internal.closing_tag && (
+                                    <p className="fs-12 text-muted mb-1 fw-semibold">{ai.internal.closing_tag}</p>
+                                )}
+                                {ai.internal.disclaimer && (
+                                    <p className="fs-12 text-muted mb-0">{ai.internal.disclaimer}</p>
+                                )}
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {/* Section 5: Quick Decision Actions */}
@@ -522,7 +776,7 @@ export default function PreQualificationDetails() {
                         <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                             {/* Host-only: running an evaluation produces internal
                                 underwriting output. The API enforces this too. */}
-                            {!isPartner && (
+                            {isHost && (
                                 <button
                                     type="button"
                                     className="btn btn-primary d-flex align-items-center gap-2 waves-effect shadow-sm"
@@ -586,7 +840,7 @@ export default function PreQualificationDetails() {
                                 <div className="card-body">
                                     <h5 className="fs-15 fw-bold mb-3">Application Status</h5>
 
-                                    {!isPartner ? (
+                                    {isHost ? (
                                         <>
                                             {/* AI underwriting status summary */}
                                             <div className="mb-3 p-3 bg-light rounded border">
