@@ -1,7 +1,6 @@
 import React from 'react';
 import ClientInfoSection, { ClientInfoSectionRef } from './ClientInfoSection';
 import BusinessFinancialsSection, { BusinessFinancialsSectionRef } from './BusinessFinancialsSection';
-import DocumentChecklistSection, { DocumentChecklistSectionRef } from './DocumentChecklistSection';
 import ClientDocumentsSection from './ClientDocumentsSection';
 import TaskListSection from './TaskListSection';
 import CreditProfileSection from './CreditProfileSection';
@@ -20,7 +19,6 @@ interface ClientFormProps {
     // Refs
     personalRef?: React.Ref<ClientInfoSectionRef>;
     financialRef?: React.Ref<BusinessFinancialsSectionRef>;
-    checklistRef?: React.Ref<DocumentChecklistSectionRef>;
 
     // Logic / Data Props
     formData?: Client;
@@ -47,7 +45,6 @@ export default function ClientForm({
     activeTab,
     personalRef,
     financialRef,
-    checklistRef,
     formData,
     initialData,
     errors,
@@ -111,24 +108,6 @@ export default function ClientForm({
                 </div>
             )}
 
-            {/* Document Checklist Tab */}
-            {activeTab === ENROLLMENT_TABS.CHECKLIST && (
-                <div className="tab-pane active show" role="tabpanel">
-                    {isLoading ? (
-                        <FormLoader count={8} />
-                    ) : (
-                        clientId ? (
-                            <DocumentChecklistSection
-                                ref={checklistRef}
-                                clientId={clientId}
-                                isLoading={isLoading}
-                            />
-                        ) : (
-                            <div>Please create the client first to view checklist.</div>
-                        )
-                    )}
-                </div>
-            )}
 
             {/* Documents Tab */}
             {activeTab === ENROLLMENT_TABS.DOCUMENTS && (
