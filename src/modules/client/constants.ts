@@ -58,6 +58,7 @@ export const DEFAULT_CLIENT_STATE: Client = {
     notes: '',
     fico_score: '',
     paydex_score: '',
+    bank_accounts: [],
 };
 
 export const DATE_PICKER_OPTIONS = {
