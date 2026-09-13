@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import type { CoBorrower } from '../../types'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
-import { countries } from '../../../../../data/countries'
+import { countries } from '../../../../../modules/location'
 import { useValidateCoBorrower } from '../../../../../modules/funding-application/queries'
 import { getCountryCodeByName, getPhoneCodeByName } from '../../../../../utils/countryHelpers'
 import { formatPhoneNumber, formatSSN, unformatSSN } from '../../../../../utils/borrowerFormatters'

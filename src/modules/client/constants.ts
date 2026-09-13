@@ -73,7 +73,12 @@ export const ENROLLMENT_TABS: Record<string, string> = {
     AGREEMENT: 'agreement',
     CREDIT_PROFILE: 'creditProfile',
     CAPITAL_ACCESS: 'capitalAccess',
-    FUNDING_REQUESTS: 'fundingRequests'
+    // The funding catalog a client can apply from.
+    FUNDING_REQUESTS: 'fundingRequests',
+    // What the client has actually raised and submitted. Kept separate from the
+    // catalog above: one is what they could ask for, these are what they did.
+    FUNDING_REQUEST_LIST: 'fundingRequestList',
+    FUNDING_APPLICATIONS: 'fundingApplications'
 };
 
 // Re-exporting from config for easier module-level access if needed

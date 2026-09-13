@@ -13,6 +13,8 @@ import type { Client } from '../../../modules/client/types';
 // @ts-ignore
 import FormLoader from '../../../components/Loader/FormLoader';
 import ClientFundingSequences from './ClientFundingSequences';
+import ClientFundingRequestsSection from './ClientFundingRequestsSection';
+import ClientFundingApplicationsSection from './ClientFundingApplicationsSection';
 
 interface ClientFormProps {
     clientId?: string | null;
@@ -167,6 +169,28 @@ export default function ClientForm({
                         <ClientFundingSequences clientId={clientId} />
                     ) : (
                         <div>Please create the client first to view Funding Requests.</div>
+                    )}
+                </div>
+            )}
+
+            {/* Funding Requests raised for this client */}
+            {activeTab === ENROLLMENT_TABS.FUNDING_REQUEST_LIST && (
+                <div className="tab-pane active show" role="tabpanel">
+                    {clientId ? (
+                        <ClientFundingRequestsSection borrowerId={clientId} />
+                    ) : (
+                        <div>Please create the client first to view their funding requests.</div>
+                    )}
+                </div>
+            )}
+
+            {/* Funding Applications submitted by this client */}
+            {activeTab === ENROLLMENT_TABS.FUNDING_APPLICATIONS && (
+                <div className="tab-pane active show" role="tabpanel">
+                    {clientId ? (
+                        <ClientFundingApplicationsSection borrowerId={clientId} />
+                    ) : (
+                        <div>Please create the client first to view their funding applications.</div>
                     )}
                 </div>
             )}
