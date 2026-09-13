@@ -6,7 +6,7 @@ import { Calendar } from 'primereact/calendar';
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
-import { formatPhoneNumber } from '../../../utils/formatters';
+import { formatPhoneNumber, formatZipCode } from '../../../utils/formatters';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import InstallmentDetailsModal from '../../../components/Common/Payment/InstallmentDetailsModal';
@@ -148,6 +148,14 @@ export default function PartnerInformationSection({
 
         // 5. Default avatar
         return avatarDefault;
+    };
+
+    // A zip code is five digits. Cleaning the value here rather than in
+    // the parent's shared handler keeps the constraint next to the field
+    // it applies to, and catches a paste as well as typing.
+    const handleZipChange = (e) => {
+        e.target.value = formatZipCode(e.target.value);
+        handleInputChange(e);
     };
 
     return (
@@ -466,7 +474,7 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Zip Code</label>
-                    <input type="text" className="form-control" name="postal_code" placeholder="Enter zip code" value={formData.postal_code} onChange={handleInputChange} />
+                    <input type="text" inputMode="numeric" maxLength={5} className="form-control" name="postal_code" placeholder="Enter zip code" value={formData.postal_code} onChange={handleZipChange} />
                 </div>
             </div>
 

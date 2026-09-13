@@ -10,7 +10,7 @@ import { countries } from '../../../../../modules/location'
 import { useOwnershipInfo, useSaveOwnershipInfo } from '../../../../../modules/funding-application/queries'
 import { citizenshipOptions } from '../../../../../data/profile'
 import { toast } from 'react-toastify'
-import { formatPhoneNumber, formatSSN, unformatSSN } from '../../../../../utils/borrowerFormatters'
+import { formatPhoneNumber, formatSSN, unformatSSN, formatZipCode } from '../../../../../utils/borrowerFormatters'
 import { getCountryCodeByName, getPhoneCodeByName, getCountryNameByCode, getDefaultCountry } from '../../../../../utils/countryHelpers'
 import { yearDropdownPlugin } from '../../../../../utils/flatpickrPlugins'
 
@@ -508,14 +508,16 @@ export default function OwnershipInformationStep({
 
         <div className="col-md-6">
           <label className="form-label">
-            Zip Code <span className="text-danger">*</span>
+            Zip Code
           </label>
           <input
             type="text"
+            inputMode="numeric"
+            maxLength={5}
             className={`form-control ${hasError('zip_code') ? 'is-invalid' : ''}`}
             placeholder="Enter zip code"
             value={owner.zip}
-            onChange={(e) => setOwner({ ...owner, zip: e.target.value })}
+            onChange={(e) => setOwner({ ...owner, zip: formatZipCode(e.target.value) })}
           />
           {hasError('zip_code') && <div className="invalid-feedback">{getFieldError('zip_code')}</div>}
         </div>

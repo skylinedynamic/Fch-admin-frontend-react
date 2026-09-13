@@ -312,7 +312,6 @@ export default function FundApplication() {
       business.city &&
       business.state &&
       business.incorporationState &&
-      business.zip &&
       business.industryType &&
       business.entityType &&
       business.yearsInBusiness
@@ -353,7 +352,6 @@ export default function FundApplication() {
             owner.streetAddress &&
             owner.city &&
             owner.state &&
-            owner.zip &&
             owner.ownershipPct
           )
 

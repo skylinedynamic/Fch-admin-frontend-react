@@ -23,7 +23,7 @@ import {
     LEAD_INDUSTRY_TYPE_OPTIONS
 } from '../../config/leadOptions';
 import { locationData } from '../../config';
-import { formatPhoneNumber } from '../../utils/formatters';
+import { formatPhoneNumber, formatZipCode } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
 import { Calendar } from 'primereact/calendar';
 
@@ -157,6 +157,8 @@ export default function LeadDetails() {
             } else {
                 setFormData(prev => ({ ...prev, city: value }));
             }
+        } else if (name === 'zip_code') {
+            setFormData(prev => ({ ...prev, [name]: formatZipCode(value) }));
         } else if (name === 'duns_number') {
             // DUNS is strictly 9 digits
             const val = value.replace(/\D/g, '').slice(0, 9);
@@ -899,7 +901,7 @@ export default function LeadDetails() {
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Zip Code</label>
-                                                                    <input type="text" className={`form-control ${errors.zip_code ? 'is-invalid' : ''}`} name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
+                                                                    <input type="text" inputMode="numeric" maxLength={5} className={`form-control ${errors.zip_code ? 'is-invalid' : ''}`} name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
                                                                     {errors.zip_code && <div className="invalid-feedback d-block">{errors.zip_code}</div>}
                                                                 </div>
                                                             </div>

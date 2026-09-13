@@ -800,6 +800,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <label htmlFor="postal_code" className="form-label">Zip Code</label>
                         <input
                             type="text"
+                            inputMode="numeric"
+                            maxLength={5}
                             className={`form-control ${errors.postal_code ? 'is-invalid' : ''}`}
                             id="postal_code"
                             name="postal_code"
@@ -1037,6 +1039,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <label htmlFor="business_postal_code" className="form-label">Zip Code</label>
                         <input
                             type="text"
+                            inputMode="numeric"
+                            maxLength={5}
                             className={`form-control ${errors.business_postal_code ? 'is-invalid' : ''}`}
                             id="business_postal_code"
                             name="business_postal_code"
