@@ -252,7 +252,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                                 {errors.country && <div className="invalid-feedback d-block">{errors.country}</div>}
                             </div>
                             <div className="col-lg-6">
-                                <label className="form-label">State <span className="text-danger">*</span></label>
+                                <label className="form-label">State</label>
                                 <Dropdown
                                     value={extraData.state}
                                     options={states}
@@ -268,7 +268,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                                 {errors.state && <div className="invalid-feedback d-block">{errors.state}</div>}
                             </div>
                             <div className="col-lg-6">
-                                <label className="form-label">City <span className="text-danger">*</span></label>
+                                <label className="form-label">City</label>
                                 <Dropdown
                                     value={extraData.city}
                                     options={cities}

@@ -739,7 +739,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">State <span className="text-danger">*</span></label>
+                        <label className="form-label">State</label>
                         <Dropdown
                             inputId="state"
                             value={formData.state}
@@ -759,7 +759,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">City <span className="text-danger">*</span></label>
+                        <label className="form-label">City</label>
                         <Dropdown
                             inputId="city"
                             value={formData.city}
@@ -976,7 +976,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">State <span className="text-danger">*</span></label>
+                        <label className="form-label">State</label>
                         <Dropdown
                             inputId="business_state"
                             value={formData.business_state}
@@ -996,7 +996,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">City <span className="text-danger">*</span></label>
+                        <label className="form-label">City</label>
                         <Dropdown
                             inputId="business_city"
                             value={formData.business_city}

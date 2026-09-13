@@ -263,7 +263,11 @@ export default function LeadDetails() {
     };
 
     const handleConvertClick = () => {
-        const isMissingInfo = !formData.contact_person || !formData.email || !formData.phone_number || !formData.country || !formData.state || !formData.city;
+        // Address is optional on a lead, so a missing state or city no longer
+        // counts as incomplete - only the details needed to actually reach the
+        // person do. The borrower and partner records they convert into accept a
+        // blank address too.
+        const isMissingInfo = !formData.contact_person || !formData.email || !formData.phone_number || !formData.country;
         if (isMissingInfo) {
             setShowMissingInfoModal(true);
         } else {
@@ -852,7 +856,7 @@ export default function LeadDetails() {
                                                             </div>
                                                             <div className="col-lg-4">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">State <span className="text-danger">*</span></label>
+                                                                    <label className="form-label">State</label>
                                                                     <Dropdown
                                                                         value={formData.state}
                                                                         options={states}
@@ -868,7 +872,7 @@ export default function LeadDetails() {
                                                             </div>
                                                             <div className="col-lg-4">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">City <span className="text-danger">*</span></label>
+                                                                    <label className="form-label">City</label>
                                                                     <Dropdown
                                                                         value={formData.city}
                                                                         options={[...cities, { label: 'Others', value: 'Others' }]}

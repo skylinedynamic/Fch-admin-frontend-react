@@ -373,7 +373,7 @@ export default function PartnerInformationSection({
             {/* Address */}
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Address <span className="text-danger">*</span></label>
+                    <label className="form-label">Address</label>
                     <input
                         type="text"
                         className={`form-control ${errors.address_line_1 || errors.address ? 'is-invalid' : ''}`}
@@ -407,7 +407,7 @@ export default function PartnerInformationSection({
             {/* State - PrimeReact Dropdown */}
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">State <span className="text-danger">*</span></label>
+                    <label className="form-label">State</label>
                     <Dropdown
                         value={formData.state}
                         options={states || []}
@@ -427,7 +427,7 @@ export default function PartnerInformationSection({
             {/* City - PrimeReact Dropdown */}
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">City <span className="text-danger">*</span></label>
+                    <label className="form-label">City</label>
                     <Dropdown
                         value={formData.city}
                         options={[...(cities || []), { label: 'Others', value: 'Others' }]}
