@@ -11,6 +11,7 @@ import {
 } from '../../modules/embed-form/services';
 import { handleFileDownload } from '../../utils/fileDownload';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { formatApiDate } from '../../utils/dates';
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 
@@ -96,17 +97,10 @@ const formatMoney = (formatted?: string | null, raw?: string | number | null) =>
     return Number.isNaN(value) ? String(raw) : `$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 };
 
-const formatDate = (value?: string | null, withTime = false) => {
-    if (!value) return null;
-    const date = new Date(value.includes('T') ? value : value.replace(' ', 'T'));
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        ...(withTime ? { hour: 'numeric', minute: '2-digit' } : {}),
-    });
-};
+// Calendar dates (date_of_birth, business_checking_start_date, birthday) must
+// not be parsed as UTC midnight, or they render a day early behind UTC.
+const formatDate = (value?: string | null, withTime = false) =>
+    formatApiDate(value, withTime);
 
 const formatFileSize = (bytes?: number) => {
     if (!bytes) return '—';

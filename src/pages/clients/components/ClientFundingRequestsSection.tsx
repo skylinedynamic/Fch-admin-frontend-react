@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getFundingRequests } from '../../../modules/application/services';
 import TableLoader from '../../../components/Loader/TableLoader';
+import { formatApiDate } from '../../../utils/dates';
 
 /**
  * The funding requests raised for this client.
@@ -29,12 +30,7 @@ const formatMoney = (value: any) => {
     return Number.isNaN(num) ? String(value) : `$${num.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 };
 
-const formatDate = (value?: string | null) => {
-    if (!value) return '—';
-    const date = new Date(value.includes('T') ? value : value.replace(' ', 'T'));
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
+const formatDate = (value?: string | null) => formatApiDate(value, false, '—');
 
 interface Props {
     borrowerId: string | number;
