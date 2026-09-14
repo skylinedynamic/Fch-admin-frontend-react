@@ -5,10 +5,10 @@ export type BillingItem = {
     upcoming_billing_date: string | null;
     upcoming_billing_amount: number | string | null;
     upcoming_billing_type: string | null;
-    paid_through_date?: string | null;
+    /** 'completed' means nothing further is owed — no upcoming_billing_date. */
+    current_phase?: string | null;
     /** True while the subscriber is not Active — nothing will be charged. */
     is_billing_paused?: boolean;
-    billing_paused_at?: string | null;
     billing_paused_reason?: string | null;
     /** Already invoiced and still owed. */
     outstanding_amount?: number;
