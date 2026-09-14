@@ -1,0 +1,556 @@
+/* ==========================================================================
+   Blog rich-text content styles
+   --------------------------------------------------------------------------
+   SHARED FILE - keep the copies in these two projects identical:
+     - Fch-admin-frontend-react : src/assets/css/blog-content.css
+     - fch-website-react        : src/app/blog-content.css
+
+   The CMS applies `.blog-content` to the CKEditor editing root (see
+   BlogEdit.tsx `onReady`) and the website applies it to the wrapper around
+   `dangerouslySetInnerHTML`, so what an author writes is what a visitor sees.
+
+   Selectors are doubled (`.blog-content.blog-content`) on purpose: the public
+   theme resets `ul, li { list-style: none; padding: 0; margin: 0 }` globally
+   and CKEditor ships its own `.ck-content` rules. Two classes out-rank both
+   without scattering `!important` through the file.
+   ========================================================================== */
+
+.blog-content {
+  /* Falls back to the website palette when the host app (the CMS) does not
+     define the theme variables, so both sides render the same. */
+  --bc-text: var(--text-color, #646464);
+  --bc-heading: var(--headings-color, #0b3130);
+  --bc-accent: var(--theme-color1, #39bdbb);
+  --bc-accent-dark: var(--theme-color2, #103c3b);
+  --bc-border: #e6e6e6;
+  --bc-muted-bg: #f6f8f8;
+  --bc-code-bg: #f4f5f8;
+  --bc-font: var(--body-font-family, "Poppins", -apple-system, "Segoe UI", Roboto, sans-serif);
+  --bc-heading-font: var(--heading-font-family, var(--bc-font));
+}
+
+.blog-content.blog-content {
+  color: var(--bc-text);
+  font-family: var(--bc-font);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.9;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.blog-content.blog-content > *:first-child {
+  margin-top: 0;
+}
+
+.blog-content.blog-content > *:last-child {
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Block text
+   -------------------------------------------------------------------------- */
+
+.blog-content.blog-content p {
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0 0 1.1em;
+}
+
+.blog-content.blog-content h1,
+.blog-content.blog-content h2,
+.blog-content.blog-content h3,
+.blog-content.blog-content h4,
+.blog-content.blog-content h5,
+.blog-content.blog-content h6 {
+  color: var(--bc-heading);
+  font-family: var(--bc-heading-font);
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.6em 0 0.6em;
+}
+
+.blog-content.blog-content h1 { font-size: 34px; }
+.blog-content.blog-content h2 { font-size: 28px; }
+.blog-content.blog-content h3 { font-size: 24px; }
+.blog-content.blog-content h4 { font-size: 20px; }
+.blog-content.blog-content h5 { font-size: 18px; }
+.blog-content.blog-content h6 { font-size: 16px; font-weight: 700; }
+
+.blog-content.blog-content strong,
+.blog-content.blog-content b {
+  color: var(--bc-heading);
+  font-weight: 700;
+}
+
+.blog-content.blog-content em,
+.blog-content.blog-content i {
+  font-style: italic;
+}
+
+.blog-content.blog-content u { text-decoration: underline; }
+
+.blog-content.blog-content s,
+.blog-content.blog-content del { text-decoration: line-through; }
+
+.blog-content.blog-content sub,
+.blog-content.blog-content sup {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+}
+
+.blog-content.blog-content sub { bottom: -0.25em; }
+.blog-content.blog-content sup { top: -0.5em; }
+
+.blog-content.blog-content a {
+  color: var(--bc-accent-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.3s ease;
+}
+
+.blog-content.blog-content a:hover {
+  color: var(--bc-accent);
+}
+
+/* --------------------------------------------------------------------------
+   Lists - the reason bullets and numbers used to disappear on the public site
+   -------------------------------------------------------------------------- */
+
+.blog-content.blog-content ul,
+.blog-content.blog-content ol {
+  list-style-position: outside;
+  margin: 0 0 1.1em;
+  padding-left: 1.75em;
+}
+
+.blog-content.blog-content ul { list-style-type: disc; }
+.blog-content.blog-content ol { list-style-type: decimal; }
+
+.blog-content.blog-content li {
+  display: list-item;
+  list-style: inherit;
+  margin: 0 0 0.4em;
+  padding: 0;
+}
+
+.blog-content.blog-content li::marker {
+  color: var(--bc-accent-dark);
+}
+
+.blog-content.blog-content li > p {
+  margin-bottom: 0.4em;
+}
+
+.blog-content.blog-content ul ul { list-style-type: circle; }
+.blog-content.blog-content ul ul ul { list-style-type: square; }
+.blog-content.blog-content ol ol { list-style-type: lower-alpha; }
+.blog-content.blog-content ol ol ol { list-style-type: lower-roman; }
+
+.blog-content.blog-content ul ul,
+.blog-content.blog-content ul ol,
+.blog-content.blog-content ol ul,
+.blog-content.blog-content ol ol {
+  margin: 0.4em 0;
+}
+
+.blog-content.blog-content dl {
+  margin: 0 0 1.1em;
+}
+
+.blog-content.blog-content dt {
+  color: var(--bc-heading);
+  font-weight: 700;
+}
+
+.blog-content.blog-content dd {
+  margin: 0 0 0.6em 1.5em;
+}
+
+/* To-do lists (CKEditor `TodoList`) keep checkboxes instead of markers. */
+.blog-content.blog-content ul.todo-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.blog-content.blog-content ul.todo-list li {
+  display: block;
+  list-style: none;
+  margin-bottom: 0.4em;
+  position: relative;
+}
+
+.blog-content.blog-content ul.todo-list li .todo-list {
+  margin-top: 0.4em;
+  padding-left: 1.6em;
+}
+
+.blog-content.blog-content .todo-list__label {
+  align-items: flex-start;
+  display: inline-flex;
+  gap: 0.5em;
+}
+
+.blog-content.blog-content .todo-list__label > input[type="checkbox"] {
+  accent-color: var(--bc-accent);
+  flex-shrink: 0;
+  height: 16px;
+  margin-top: 0.45em;
+  width: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Quotes, rules, page breaks
+   -------------------------------------------------------------------------- */
+
+.blog-content.blog-content blockquote {
+  background: var(--bc-muted-bg);
+  border-left: 4px solid var(--bc-accent);
+  border-radius: 0 8px 8px 0;
+  color: var(--bc-heading);
+  font-size: 17px;
+  font-style: italic;
+  margin: 1.5em 0;
+  padding: 1.1em 1.4em;
+}
+
+.blog-content.blog-content blockquote > *:last-child {
+  margin-bottom: 0;
+}
+
+.blog-content.blog-content hr {
+  background: var(--bc-border);
+  border: 0;
+  height: 1px;
+  margin: 2em 0;
+  opacity: 1;
+  width: 100%;
+}
+
+.blog-content.blog-content .page-break {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: 0.6em 0;
+  position: relative;
+}
+
+.blog-content.blog-content .page-break::after {
+  background: var(--bc-border);
+  content: "";
+  height: 1px;
+  left: 0;
+  position: absolute;
+  top: 50%;
+  width: 100%;
+}
+
+.blog-content.blog-content .page-break__label {
+  background: #fff;
+  border: 1px solid var(--bc-border);
+  border-radius: 20px;
+  color: #888;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 2px 12px;
+  position: relative;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Images and media
+   -------------------------------------------------------------------------- */
+
+.blog-content.blog-content figure {
+  margin: 1.5em 0;
+}
+
+.blog-content.blog-content img {
+  border-radius: 8px;
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.blog-content.blog-content figure.image {
+  clear: both;
+  display: table;
+  margin: 1.5em auto;
+  min-width: 50px;
+  text-align: center;
+}
+
+.blog-content.blog-content figure.image img {
+  margin: 0 auto;
+  min-width: 100%;
+}
+
+.blog-content.blog-content figure.image > figcaption,
+.blog-content.blog-content figure.table > figcaption {
+  background: var(--bc-muted-bg);
+  caption-side: bottom;
+  color: #6b7280;
+  display: table-caption;
+  font-size: 13px;
+  padding: 0.6em 0.8em;
+  word-break: break-word;
+}
+
+.blog-content.blog-content figure.image.image_resized {
+  box-sizing: border-box;
+  display: block;
+}
+
+.blog-content.blog-content figure.image.image_resized img {
+  min-width: 0;
+  width: 100%;
+}
+
+.blog-content.blog-content figure.image.image_resized > figcaption {
+  display: block;
+}
+
+.blog-content.blog-content img.image_resized {
+  height: auto;
+}
+
+.blog-content.blog-content .image-style-block-align-left,
+.blog-content.blog-content .image-style-block-align-right {
+  max-width: calc(100% - 1.5em);
+}
+
+.blog-content.blog-content .image-style-align-left,
+.blog-content.blog-content .image-style-block-align-left {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.blog-content.blog-content .image-style-align-right,
+.blog-content.blog-content .image-style-block-align-right {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.blog-content.blog-content .image-style-align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.blog-content.blog-content figure.image.image-style-side {
+  float: right;
+  margin-left: 1.5em;
+  max-width: 50%;
+}
+
+.blog-content.blog-content figure.image.image-style-align-left {
+  float: left;
+  margin-right: 1.5em;
+}
+
+.blog-content.blog-content figure.image.image-style-align-right {
+  float: right;
+  margin-left: 1.5em;
+}
+
+.blog-content.blog-content .image-inline {
+  align-items: flex-start;
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.blog-content.blog-content .image-inline img {
+  display: inline;
+  flex-grow: 1;
+  flex-shrink: 1;
+  max-width: 100%;
+}
+
+/* Media embeds (YouTube, Vimeo, ...) stay 16:9 and responsive. */
+.blog-content.blog-content figure.media {
+  clear: both;
+  display: block;
+  margin: 1.5em 0;
+  min-width: 15em;
+}
+
+.blog-content.blog-content figure.media div[data-oembed-url] {
+  height: 0;
+  padding-bottom: 56.25%;
+  position: relative;
+  width: 100%;
+}
+
+.blog-content.blog-content figure.media div[data-oembed-url] > * {
+  border: 0;
+  border-radius: 8px;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.blog-content.blog-content iframe {
+  border: 0;
+  max-width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Tables
+   -------------------------------------------------------------------------- */
+
+.blog-content.blog-content figure.table {
+  display: table;
+  margin: 1.5em auto;
+  max-width: 100%;
+}
+
+.blog-content.blog-content figure.table > table,
+.blog-content.blog-content > table {
+  border: 1px solid var(--bc-border);
+  border-collapse: collapse;
+  border-spacing: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.blog-content.blog-content table td,
+.blog-content.blog-content table th {
+  border: 1px solid var(--bc-border);
+  min-width: 2em;
+  overflow-wrap: break-word;
+  padding: 0.6em 0.8em;
+  vertical-align: top;
+}
+
+.blog-content.blog-content table th {
+  background: var(--bc-muted-bg);
+  color: var(--bc-heading);
+  font-weight: 700;
+  text-align: left;
+}
+
+.blog-content.blog-content table td > p,
+.blog-content.blog-content table th > p {
+  margin-bottom: 0;
+}
+
+.blog-content.blog-content table > caption {
+  background: var(--bc-muted-bg);
+  caption-side: top;
+  color: #6b7280;
+  font-size: 13px;
+  padding: 0.6em 0.8em;
+  text-align: center;
+  word-break: break-word;
+}
+
+.blog-content.blog-content .table .ck-table-resized {
+  table-layout: fixed;
+}
+
+.blog-content.blog-content .table table {
+  overflow: hidden;
+}
+
+.blog-content.blog-content .table.table-style-align-left {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.blog-content.blog-content .table.table-style-align-right {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.blog-content.blog-content .table.table-style-align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Code
+   -------------------------------------------------------------------------- */
+
+.blog-content.blog-content code {
+  background: var(--bc-code-bg);
+  border-radius: 4px;
+  color: #b4316d;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  padding: 0.15em 0.4em;
+  white-space: pre-wrap;
+}
+
+.blog-content.blog-content pre {
+  background: #14261f;
+  border-radius: 8px;
+  color: #e6efe9;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 1.5em 0;
+  overflow-x: auto;
+  padding: 1.1em 1.3em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.blog-content.blog-content pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  white-space: pre-wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Inline formatting produced by the toolbar (highlight, font size)
+   -------------------------------------------------------------------------- */
+
+.blog-content.blog-content mark {
+  background: #fdfd77;
+  color: inherit;
+  padding: 0 2px;
+}
+
+.blog-content.blog-content .marker-yellow { background: #fdfd77; }
+.blog-content.blog-content .marker-green { background: #7ee287; }
+.blog-content.blog-content .marker-pink { background: #fc7899; }
+.blog-content.blog-content .marker-blue { background: #72ccfd; }
+.blog-content.blog-content .pen-red { background: transparent; color: #e71313; }
+.blog-content.blog-content .pen-green { background: transparent; color: #128a00; }
+
+.blog-content.blog-content .text-tiny { font-size: 0.7em; }
+.blog-content.blog-content .text-small { font-size: 0.85em; }
+.blog-content.blog-content .text-big { font-size: 1.4em; }
+.blog-content.blog-content .text-huge { font-size: 1.8em; }
+
+/* --------------------------------------------------------------------------
+   Small screens
+   -------------------------------------------------------------------------- */
+
+@media only screen and (max-width: 767px) {
+  .blog-content.blog-content { font-size: 15px; }
+  .blog-content.blog-content h1 { font-size: 28px; }
+  .blog-content.blog-content h2 { font-size: 24px; }
+  .blog-content.blog-content h3 { font-size: 21px; }
+  .blog-content.blog-content h4 { font-size: 18px; }
+
+  .blog-content.blog-content figure.image.image-style-side,
+  .blog-content.blog-content figure.image.image-style-align-left,
+  .blog-content.blog-content figure.image.image-style-align-right {
+    float: none;
+    margin: 1.5em auto;
+    max-width: 100%;
+  }
+
+  .blog-content.blog-content figure.table {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+  }
+}
