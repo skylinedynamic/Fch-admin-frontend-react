@@ -49,6 +49,21 @@ export const deleteClients = async (ids: (string | number)[]): Promise<any> => {
     return data;
 };
 
+/**
+ * Archiving takes a client out of the working list without deleting anything.
+ * The record, its documents and its history are untouched, it stays findable by
+ * search, and its access and billing are unaffected.
+ */
+export const archiveClients = async (ids: (string | number)[]): Promise<any> => {
+    const { data } = await apiClient.post(`/common/borrowers/archive`, { ids });
+    return data;
+};
+
+export const unarchiveClients = async (ids: (string | number)[]): Promise<any> => {
+    const { data } = await apiClient.post(`/common/borrowers/unarchive`, { ids });
+    return data;
+};
+
 export const fetchAllClients = async () => {
     const { data } = await apiClient.get(`/common/borrowers/all`);
     return data;

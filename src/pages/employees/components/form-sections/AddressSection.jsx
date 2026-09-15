@@ -3,7 +3,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 
 import { parseDate } from '../../../../utils/formatters';
-import { formatPhoneNumber } from '../../../../utils/formatters';
+import { formatPhoneNumber, formatZipCode } from '../../../../utils/formatters';
 
 export default function AddressSection({
     employee,
@@ -13,6 +13,14 @@ export default function AddressSection({
     states,
     cities
 }) {
+    // A zip code is five digits. Cleaning the value here rather than in
+    // the parent's shared handler keeps the constraint next to the field
+    // it applies to, and catches a paste as well as typing.
+    const handleZipChange = (e) => {
+        e.target.value = formatZipCode(e.target.value);
+        onChange(e);
+    };
+
     return (
         <>
             <div className="col-lg-6">
@@ -130,10 +138,12 @@ export default function AddressSection({
                             <label className="form-label">Zip Code</label>
                             <input
                                 type="text"
+                                inputMode="numeric"
+                                maxLength={5}
                                 className="form-control"
                                 name="postal_code"
                                 value={employee.postal_code}
-                                onChange={onChange}
+                                onChange={handleZipChange}
                                 placeholder="Enter zip code"
                             />
                         </div>
@@ -148,10 +158,12 @@ export default function AddressSection({
                         <label className="form-label">Zip Code</label>
                         <input
                             type="text"
+                            inputMode="numeric"
+                            maxLength={5}
                             className="form-control"
                             name="postal_code"
                             value={employee.postal_code}
-                            onChange={onChange}
+                            onChange={handleZipChange}
                             placeholder="Enter zip code"
                         />
                     </div>

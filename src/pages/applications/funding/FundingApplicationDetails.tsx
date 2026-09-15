@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatApiDate } from '../../../utils/dates';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import PageHeader from '../../common/PageHeader';
@@ -370,9 +371,9 @@ export default function FundingApplicationDetails() {
                                     <DetailRow label="Email" value={borrower.email} />
                                     <DetailRow label="Mobile Phone" value={borrower.mobile_phone} />
                                     <DetailRow label="Home Phone" value={borrower.home_phone} />
-                                    <DetailRow label="Date of Birth" value={borrower.date_of_birth ? new Date(borrower.date_of_birth).toLocaleDateString() : '-'} />
+                                    <DetailRow label="Date of Birth" value={borrower.date_of_birth ? formatApiDate(borrower.date_of_birth) : '-'} />
                                     <DetailRow label="Home Phone" value={borrower.home_phone} />
-                                    <DetailRow label="Date of Birth" value={borrower.date_of_birth ? new Date(borrower.date_of_birth).toLocaleDateString() : '-'} />
+                                    <DetailRow label="Date of Birth" value={borrower.date_of_birth ? formatApiDate(borrower.date_of_birth) : '-'} />
                                     <DetailRow label="SSN" value={formatSSN(borrower.ssn)} />
 
                                     <div className="col-12"><hr className="my-2" /></div>

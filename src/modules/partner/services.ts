@@ -81,6 +81,21 @@ export const deletePartners = async (ids: Array<number | string>) => {
   return res.data;
 };
 
+/**
+ * Archiving takes a partner out of the working list without deleting anything.
+ * The record, its documents and its history are untouched, it stays findable by
+ * search, and its access and billing are unaffected.
+ */
+export const archivePartners = async (ids: Array<number | string>) => {
+  const res = await apiClient.post('/admin/partners/archive', { ids });
+  return res.data;
+};
+
+export const unarchivePartners = async (ids: Array<number | string>) => {
+  const res = await apiClient.post('/admin/partners/unarchive', { ids });
+  return res.data;
+};
+
 export const fetchGlobalSubscriptions = async (payload: any = {}) => {
   const { data } = await apiClient.post(`/common/subscriptions/fetch-all`, payload);
   return data;

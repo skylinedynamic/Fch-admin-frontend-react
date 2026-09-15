@@ -1,4 +1,4 @@
-import { countries } from '../data/countries'
+import { countries } from '../modules/location'
 
 /**
  * Get country code by country name

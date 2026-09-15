@@ -21,7 +21,10 @@ export { PARTNER_STATUS, type PartnerStatusOption } from './partnerStatus';
 export { STATUS, type StatusOption } from './statusOptions';
 
 // Location configurations
-export { locationData, type LocationData, type Country, type StatesMap, type StateOrProvince } from './locations';
+// Location data is fetched from the API and lives in the location module;
+// re-exported here so existing `from '../../config'` imports keep working.
+export { locationData, loadLocations, type LocationData, type Country, type StatesMap, type StateOrProvince } from '../modules/location';
+export { COUNTRY_PHONE_CONFIG, getCountryPhoneInfo } from './locations';
 export { BILLING_OPTIONS } from './billingOptions';
 
 // Appointment related configurations

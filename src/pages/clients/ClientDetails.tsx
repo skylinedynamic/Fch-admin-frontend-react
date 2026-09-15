@@ -379,7 +379,7 @@ export default function ClientDetails() {
                     <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                     </Link>
-                    {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE, ENROLLMENT_TABS.CAPITAL_ACCESS, ENROLLMENT_TABS.FUNDING_REQUESTS].includes(activeTab as any) && (
+                    {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE, ENROLLMENT_TABS.CAPITAL_ACCESS, ENROLLMENT_TABS.FUNDING_REQUESTS, ENROLLMENT_TABS.FUNDING_REQUEST_LIST, ENROLLMENT_TABS.FUNDING_APPLICATIONS].includes(activeTab as any) && (
                         <button
                             type="button"
                             className="btn btn-primary w-lg waves-effect"
@@ -553,6 +553,30 @@ export default function ClientDetails() {
                                             <i className="fas fa-hand-holding-usd"></i> Funding Sequence
                                         </button>
                                     </li>
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.FUNDING_REQUEST_LIST ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.FUNDING_REQUEST_LIST)}
+                                            type="button"
+                                            role="tab"
+                                            disabled={!id}
+                                        >
+                                            Funding Requests
+                                        </button>
+                                    </li>
+
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.FUNDING_APPLICATIONS ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.FUNDING_APPLICATIONS)}
+                                            type="button"
+                                            role="tab"
+                                            disabled={!id}
+                                        >
+                                            Funding Applications
+                                        </button>
+                                    </li>
+
                                     {formData.has_sign && (
                                         <li className="nav-item">
                                             <button

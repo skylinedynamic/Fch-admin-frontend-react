@@ -2,6 +2,8 @@ export type Client = {
     id?: number | string;
     // Personal Details
     first_name: string;
+    /** Optional; first and last are the required parts of a name. */
+    middle_name?: string | null;
     last_name: string;
     date_of_birth?: string;
     // Full SSN, decrypted — shown and editable as-is (formatted XXX-XX-XXXX).
@@ -13,6 +15,9 @@ export type Client = {
     signup_id?: string;
     business_website?: string;
     is_free_trail?: boolean;
+    /** Archived: out of the working list, still findable by search. */
+    is_archived?: boolean;
+    archived_at?: string | null;
     free_trail_end_date?: string;
 
     // Business Info
@@ -114,6 +119,8 @@ export type ClientFilterParams = {
     current_tier?: string | number; // Used in Clients.jsx
     status?: string;
     is_free_trail?: string | number; // Filter by Free Plan ('1') / Regular Plan ('0')
+    /** '' working list (archived hidden) | '1' archived only | 'all' both. */
+    archived?: string;
 };
 
 export type ClientProfileStats = {

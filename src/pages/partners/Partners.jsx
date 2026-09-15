@@ -5,7 +5,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchPartners, allUsers, deletePartners, fetchPartnerStats } from '../../modules/partner/services';
+import { fetchPartners, allUsers, deletePartners, archivePartners, unarchivePartners, fetchPartnerStats } from '../../modules/partner/services';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
@@ -16,6 +16,7 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import { BORROWER_STATUS_CLASS_MAP } from '../../config/statusOptions';
 import { PARTNER_STATUS } from '../../config';
 import { getTrialBadgeConfig } from '../../utils/badgeHelper';
+import { TRIAL_FILTER_OPTIONS, ARCHIVE_FILTER_OPTIONS, PARTNER_STATUS_FILTER_OPTIONS } from '../../config/listFilterOptions';
 
 
 
@@ -44,11 +45,14 @@ export default function Partners() {
     const [selectedAssignedUser, setSelectedAssignedUser] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [selectedFreeTrial, setSelectedFreeTrial] = useState('');
+    const [selectedArchived, setSelectedArchived] = useState('');
+    const [archiving, setArchiving] = useState(false);
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedPartner, setAppliedPartner] = useState('');
     const [appliedAssignedUser, setAppliedAssignedUser] = useState('');
     const [appliedStatus, setAppliedStatus] = useState('');
     const [appliedFreeTrial, setAppliedFreeTrial] = useState('');
+    const [appliedArchived, setAppliedArchived] = useState('');
     const [appliedFilters, setAppliedFilters] = useState({});
 
 
@@ -62,6 +66,10 @@ export default function Partners() {
     const [assignedUsersList, setAssignedUsersList] = useState([]);
 
     // Statistics data
+    // True until the first list response lands. The stat cards key off this rather
+    // than `loading`, so filtering the table no longer blanks them into skeletons -
+    // the totals are the same either way.
+    const [statsLoaded, setStatsLoaded] = useState(false);
     const [stats, setStats] = useState({
         active_partners: 0,
         new_this_month: 0,
@@ -152,6 +160,10 @@ export default function Partners() {
                     assigned_user_id: appliedAssignedUser || '',
                     status: appliedStatus || '',
                     is_free_trail: appliedFreeTrial || '',
+                    // '' is the working list (archived hidden), '1' archived only,
+                    // 'all' both. A search overrides this server-side so an archived
+                    // partner is always findable by name, company or email.
+                    archived: appliedArchived || '',
                     filters: appliedFilters,
 
                     page,
@@ -172,15 +184,24 @@ export default function Partners() {
                     }
                     setError(null);
                 } else {
-
+                    // Clear the rows rather than leaving the previous result on
+                    // screen: a filter that returns nothing must show an empty
+                    // table, not the rows from the filter before it.
+                    setPartners([]);
+                    setTotalRecords(0);
                     setError(result.message || 'Failed to fetch partners');
                     toast.error(result.message || 'Failed to fetch partners');
                 }
             } catch (err) {
+                setPartners([]);
+                setTotalRecords(0);
                 setError(err.message || 'Failed to fetch partners');
                 toast.error(err.message || 'Failed to fetch partners');
             } finally {
                 setLoading(false);
+                // Flipped here, not only on success: a failed first load must still
+                // stop showing skeletons.
+                setStatsLoaded(true);
             }
         };
 
@@ -189,7 +210,10 @@ export default function Partners() {
         }, 300);
 
         return () => clearTimeout(timeout);
-    }, [appliedSearchText, appliedPartner, appliedAssignedUser, appliedFreeTrial, appliedFilters, page, perPage, sortField, sortOrder]);
+    // Every applied* value used in the payload above must be listed here, or
+    // changing that filter alone will not re-run the effect: no request, and no
+    // loading state either. appliedStatus and appliedArchived were both missing.
+    }, [appliedSearchText, appliedPartner, appliedAssignedUser, appliedStatus, appliedFreeTrial, appliedArchived, appliedFilters, page, perPage, sortField, sortOrder]);
 
     // Filter handlers
     const handleApplyFilters = () => {
@@ -198,6 +222,7 @@ export default function Partners() {
         setAppliedAssignedUser(selectedAssignedUser);
         setAppliedStatus(selectedStatus);
         setAppliedFreeTrial(selectedFreeTrial);
+        setAppliedArchived(selectedArchived);
         setAppliedFilters(filters);
         setPage(1);
     };
@@ -209,11 +234,13 @@ export default function Partners() {
         setSelectedAssignedUser('');
         setSelectedStatus('');
         setSelectedFreeTrial('');
+        setSelectedArchived('');
         setAppliedSearchText('');
         setAppliedPartner('');
         setAppliedAssignedUser('');
         setAppliedStatus('');
         setAppliedFreeTrial('');
+        setAppliedArchived('');
         initFilters();
         setPage(1);
     };
@@ -255,6 +282,13 @@ export default function Partners() {
                         <i className="ri-vip-crown-line me-1"></i>{trialBadge.label}
                     </span>
                 )}
+                {/* Archived records surface in search results, so they have to say
+                    so - otherwise staff act on a record they think is active. */}
+                {rowData.is_archived && (
+                    <span className="badge bg-secondary-subtle text-secondary fs-10 px-2 py-1">
+                        <i className="ri-archive-line me-1"></i>Archived
+                    </span>
+                )}
             </div>
         );
     };
@@ -274,6 +308,38 @@ export default function Partners() {
         }
         setDeleteRows(selectedPartners);
         setShowDeleteModal(true);
+    };
+
+    /**
+     * Archive or restore the selected partners.
+     *
+     * Archiving only takes them out of the working list - the record, its history
+     * and its access are untouched, and a search still finds them. That is why
+     * this needs no confirmation step the way deleting does.
+     */
+    const handleArchiveToggle = async (archive) => {
+        if (!Array.isArray(selectedPartners) || selectedPartners.length === 0) {
+            toast.warn(`Please select at least one partner to ${archive ? 'archive' : 'restore'}.`);
+            return;
+        }
+
+        const ids = selectedPartners.map(p => p.id);
+
+        // `loading` belongs to the list effect. Setting it here as well meant the
+        // spinner ran once for the archive call and again for the reload it
+        // triggers, which reads as the page loading twice. `archiving` drives the
+        // menu instead, so the two do not fight.
+        try {
+            setArchiving(true);
+            const res = archive ? await archivePartners(ids) : await unarchivePartners(ids);
+            toast.success(res?.message || `Partner(s) ${archive ? 'archived' : 'restored'}.`);
+            setSelectedPartners([]);
+            setAppliedFilters({ ...appliedFilters });
+        } catch (err) {
+            toast.error(err.response?.data?.message || `Failed to ${archive ? 'archive' : 'restore'} partners`);
+        } finally {
+            setArchiving(false);
+        }
     };
 
     const handleDeleteConfirm = async () => {
@@ -301,18 +367,35 @@ export default function Partners() {
                     breadcrumbs={[{ label: 'Partners' }]}
                 >
                     <div className="btn-group">
-                        {hasPermission('delete partners') && Array.isArray(selectedPartners) && selectedPartners.length > 0 ? (
+                        {(hasPermission('delete partners') || hasPermission('update partners'))
+                            && Array.isArray(selectedPartners) && selectedPartners.length > 0 ? (
                             <>
                                 <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
                                 <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span className="visually-hidden">Toggle Dropdown</span>
                                 </button>
                                 <ul className="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
-                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                        </button>
-                                    </li>
+                                    {hasPermission('update partners') && (
+                                        <>
+                                            <li>
+                                                <button type="button" className="dropdown-item" disabled={archiving} onClick={() => handleArchiveToggle(true)}>
+                                                    <i className="ri-archive-line me-1 align-bottom"></i> Archive Selected
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" className="dropdown-item" disabled={archiving} onClick={() => handleArchiveToggle(false)}>
+                                                    <i className="ri-inbox-unarchive-line me-1 align-bottom"></i> Restore Selected
+                                                </button>
+                                            </li>
+                                        </>
+                                    )}
+                                    {hasPermission('delete partners') && (
+                                        <li>
+                                            <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                                <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                            </button>
+                                        </li>
+                                    )}
                                 </ul>
                             </>
                         ) : hasPermission('create partners') ? (
@@ -329,7 +412,7 @@ export default function Partners() {
 
                 {/* Statistics Cards */}
                 <div className="row partner-section">
-                    {loading ? (
+                    {!statsLoaded ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (
                         statisticsConfig.map((config, index) => (
@@ -355,15 +438,17 @@ export default function Partners() {
                                 }}>
                                     {loading ? (
                                         <FilterLoader config={[
-                                            { col: "col-xxl-3 col-sm-6" }, // Search
-                                            { col: "col-xxl-2 col-sm-6" }, // Partners
-                                            { col: "col-xxl-2 col-sm-4" }, // Assigned Users
-                                            { col: "col-xxl-2 col-sm-4" }, // Free Trial
-                                            { col: "col-xxl-3 col-sm-4", isButton: true } // Buttons
+                                            { col: "col-xxl col-sm-6" },  // Search
+                                            { col: "col-xxl col-sm-6" },  // Partners
+                                            { col: "col-xxl col-sm-4" },  // Assigned Users
+                                            { col: "col-xxl col-sm-4" },  // Trials
+                                            { col: "col-xxl col-sm-4" },  // Archived
+                                            { col: "col-xxl col-sm-4" },  // Login status
+                                            { col: "col-xxl-auto col-sm-4", isButton: true } // Buttons
                                         ]} />
                                     ) : (
-                                        <div className="row g-3 mb-3">
-                                            <div className="col-xxl-3 col-sm-6">
+                                        <div className="row g-2 mb-3 align-items-center flex-xxl-nowrap">
+                                            <div className="col-xxl col-sm-6">
                                                 <div className="search-box">
                                                     <input
                                                         type="text"
@@ -376,7 +461,7 @@ export default function Partners() {
                                                     <i className="ri-search-line search-icon"></i>
                                                 </div>
                                             </div>
-                                            <div className="col-xxl-2 col-sm-6">
+                                            <div className="col-xxl col-sm-6">
                                                 <Dropdown
                                                     value={selectedPartner}
                                                     options={[{ label: 'All Partners', value: '' }, ...partnersList]}
@@ -385,7 +470,7 @@ export default function Partners() {
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>
-                                            <div className="col-xxl-2 col-sm-4">
+                                            <div className="col-xxl col-sm-4">
                                                 <Dropdown
                                                     value={selectedAssignedUser}
                                                     options={[{ label: 'Assigned Users', value: '' }, ...assignedUsersList]}
@@ -394,20 +479,34 @@ export default function Partners() {
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>
-                                            <div className="col-xxl-2 col-sm-4">
+                                            <div className="col-xxl col-sm-4">
                                                 <Dropdown
                                                     value={selectedFreeTrial}
-                                                    options={[
-                                                        { label: 'All Trial Status', value: '' },
-                                                        { label: 'Free Trial Only', value: '1' },
-                                                        { label: 'Regular Only', value: '0' }
-                                                    ]}
+                                                    options={TRIAL_FILTER_OPTIONS}
                                                     onChange={(e) => setSelectedFreeTrial(e.value)}
-                                                    placeholder="All Trial Status"
+                                                    placeholder="All Trials"
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>
-                                            <div className="col-xxl-3 col-sm-4">
+                                            <div className="col-xxl col-sm-4">
+                                                <Dropdown
+                                                    value={selectedArchived}
+                                                    options={ARCHIVE_FILTER_OPTIONS}
+                                                    onChange={(e) => setSelectedArchived(e.value)}
+                                                    placeholder="Active Only"
+                                                    className="w-100 employee-filter-dropdown"
+                                                />
+                                            </div>
+                                            <div className="col-xxl col-sm-4">
+                                                <Dropdown
+                                                    value={selectedStatus}
+                                                    options={PARTNER_STATUS_FILTER_OPTIONS}
+                                                    onChange={(e) => setSelectedStatus(e.value)}
+                                                    placeholder="All Status"
+                                                    className="w-100 employee-filter-dropdown"
+                                                />
+                                            </div>
+                                            <div className="col-xxl-auto col-sm-4">
                                                 <div className="d-flex gap-2">
                                                     <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                         <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
@@ -455,7 +554,7 @@ export default function Partners() {
                                             className="p-datatable-sm"
                                             emptyMessage="No partners found"
                                         >
-                                            {hasPermission('delete partners') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
+                                            {(hasPermission('delete partners') || hasPermission('update partners')) && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                                             <Column field="company_name" header="Company Name" body={companyNameBody} sortable filter filterPlaceholder="Search by company" style={{ minWidth: '200px' }} />
                                             <Column field="full_name" header="Partner Name" sortable filter filterPlaceholder="Search by name" style={{ minWidth: '160px' }} />
                                             <Column field="email" header="Email" sortable filter filterPlaceholder="Search by email" style={{ minWidth: '200px' }} />

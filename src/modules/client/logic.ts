@@ -1,5 +1,6 @@
 import type { Client, BorrowerPlan } from './types';
-import { locationData, getCountryPhoneInfo } from '../../config/locations';
+import { locationData } from '../location';
+import { getCountryPhoneInfo } from '../../config/locations';
 import { ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_ONE_TIME, FIXED_ENROLLMENT_FOR_BORROWER } from '../../config/subscriptionConfig';
 import { ENTITY_TYPE_BORROWER, OTHERS } from '../../config/appConfig';
 
