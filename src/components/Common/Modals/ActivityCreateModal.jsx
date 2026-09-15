@@ -144,6 +144,10 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
 
                 data.append('remind_me', '1');
                 data.append('remind_at', finalRemindAt || '');
+                // Saved so the Edit modal re-opens with the reminder option actually chosen
+                data.append('reminder_preset', formData.reminder_preset || '30_minutes');
+                data.append('reminder_time_value', formData.reminder_time_value || '30');
+                data.append('reminder_time_unit', formData.reminder_time_unit || 'Minutes');
             }
 
             const ctx = window._activityEntityContext || {};

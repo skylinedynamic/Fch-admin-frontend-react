@@ -68,6 +68,8 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (files.length > 0) {
+            // Uploading on edit replaces the saved attachments instead of adding to them
+            setExistingAttachments([]);
             setNewAttachments(prev => [...prev, ...files]);
         }
         e.target.value = '';
