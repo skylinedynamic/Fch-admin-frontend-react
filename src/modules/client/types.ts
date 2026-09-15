@@ -13,6 +13,9 @@ export type Client = {
     signup_id?: string;
     business_website?: string;
     is_free_trail?: boolean;
+    /** Archived: out of the working list, still findable by search. */
+    is_archived?: boolean;
+    archived_at?: string | null;
     free_trail_end_date?: string;
 
     // Business Info
@@ -114,6 +117,8 @@ export type ClientFilterParams = {
     current_tier?: string | number; // Used in Clients.jsx
     status?: string;
     is_free_trail?: string | number; // Filter by Free Plan ('1') / Regular Plan ('0')
+    /** '' working list (archived hidden) | '1' archived only | 'all' both. */
+    archived?: string;
 };
 
 export type ClientProfileStats = {

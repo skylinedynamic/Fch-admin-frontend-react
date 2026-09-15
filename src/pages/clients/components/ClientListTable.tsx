@@ -9,11 +9,11 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import type { Client, ClientFilterParams, ClientListStatistics } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
 import { BORROWER_STATUS, BORROWER_STATUS_CLASS_MAP } from '../../../config/statusOptions';
+import { ARCHIVE_FILTER_OPTIONS, FREE_PLAN_FILTER_OPTIONS, ALL_STATUS_OPTION } from '../../../config/listFilterOptions';
 import { getBorrowerFreeEditionBadgeConfig } from '../../../utils/badgeHelper';
 
 
 import FilterLoader from '../../../components/Loader/FilterLoader';
-import ClientDetailsModal from './ClientDetailsModal';
 
 interface ClientListTableProps {
     isHost: boolean;
@@ -44,32 +44,6 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
 }) => {
     const navigate = useNavigate();
 
-    // Modal state
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedClientId, setSelectedClientId] = useState<number | string | null>(null);
-
-    const openModal = (id: number | string) => {
-        setSelectedClientId(id);
-        setIsModalOpen(true);
-    };
-
-    const actionBody = (rowData: Client) => {
-        return (
-            <button
-                type="button"
-                className="btn btn-sm btn-icon btn-soft-primary waves-effect waves-light"
-                style={{ width: '30px', height: '30px' }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    openModal(rowData.id);
-                }}
-                title="View Details"
-            >
-                <i className="ri-eye-line fs-16"></i>
-            </button>
-        );
-    };
-
     // Pagination state
     const [page, setPage] = useState<number>(1);
     const [perPage, setPerPage] = useState<number>(10);
@@ -87,6 +61,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     const [selectedTier, setSelectedTier] = useState<string | number>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [selectedFreePlan, setSelectedFreePlan] = useState<string>('');
+    const [selectedArchived, setSelectedArchived] = useState<string>('');
 
     // Applied filters (for query)
     const [appliedSearchText, setAppliedSearchText] = useState<string>('');
@@ -95,6 +70,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     const [appliedTier, setAppliedTier] = useState<string | number>('');
     const [appliedStatus, setAppliedStatus] = useState<string>('');
     const [appliedFreePlan, setAppliedFreePlan] = useState<string>('');
+    const [appliedArchived, setAppliedArchived] = useState<string>('');
     const [appliedFilters, setAppliedFilters] = useState<DataTableFilterMeta>({});
 
     // Initialize filters
@@ -115,6 +91,10 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         current_tier: appliedTier || '',
         status: appliedStatus || '',
         is_free_trail: appliedFreePlan || '',
+        // '' is the working list (archived hidden), '1' archived only, 'all' both.
+        // A search overrides this server-side so an archived client is always
+        // findable by name, company or email.
+        archived: appliedArchived || '',
         filters: appliedFilters,
         page,
         per_page: perPage,
@@ -174,6 +154,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         setAppliedTier(selectedTier);
         setAppliedStatus(selectedStatus);
         setAppliedFreePlan(selectedFreePlan);
+        setAppliedArchived(selectedArchived);
         setAppliedFilters(filters);
         setPage(1);
     };
@@ -185,12 +166,14 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         setSelectedTier('');
         setSelectedStatus('');
         setSelectedFreePlan('');
+        setSelectedArchived('');
         setAppliedSearchText('');
         setAppliedPartner('');
         setAppliedAssignedUser('');
         setAppliedTier('');
         setAppliedStatus('');
         setAppliedFreePlan('');
+        setAppliedArchived('');
         initFilters();
         setPage(1);
         setSortField('id');
@@ -222,6 +205,13 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                 {trialBadge && (
                     <span className={`badge ${trialBadge.badgeClass} fs-10 px-2 py-1`}>
                         <i className="ri-vip-crown-line me-1"></i>{trialBadge.label}
+                    </span>
+                )}
+                {/* Archived records surface in search results, so they have to say
+                    so - otherwise staff act on a record they think is active. */}
+                {rowData.is_archived && (
+                    <span className="badge bg-secondary-subtle text-secondary fs-10 px-2 py-1">
+                        <i className="ri-archive-line me-1"></i>Archived
                     </span>
                 )}
             </div>
@@ -375,12 +365,12 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             <Dropdown
                                 value={selectedStatus}
                                 onChange={(e) => setSelectedStatus(e.value)}
-                                options={[{ label: 'All Statuses', value: '' }, ...BORROWER_STATUS]}
+                                options={[ALL_STATUS_OPTION, ...BORROWER_STATUS]}
                                 optionLabel="label"
                                 optionValue="value"
                                 filter
                                 filterBy="label"
-                                placeholder="All Statuses"
+                                placeholder="All Status"
                                 className="w-100 bg-light border-light"
                             />
                         </div>
@@ -389,14 +379,22 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             <Dropdown
                                 value={selectedFreePlan}
                                 onChange={(e) => setSelectedFreePlan(e.value)}
-                                options={[
-                                    { label: 'All Plans', value: '' },
-                                    { label: 'Free Plan', value: '1' },
-                                    { label: 'Regular Plan', value: '0' }
-                                ]}
+                                options={FREE_PLAN_FILTER_OPTIONS}
                                 optionLabel="label"
                                 optionValue="value"
                                 placeholder="All Plans"
+                                className="w-100 bg-light border-light"
+                            />
+                        </div>
+
+                        <div className="col-xxl col-sm-4">
+                            <Dropdown
+                                value={selectedArchived}
+                                onChange={(e) => setSelectedArchived(e.value)}
+                                options={ARCHIVE_FILTER_OPTIONS}
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Active Only"
                                 className="w-100 bg-light border-light"
                             />
                         </div>
@@ -440,16 +438,9 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                         {!partnerId && <Column field="partner_name" header="Partner Name" sortable filter showFilterMatchModes filterPlaceholder="Search by partner" style={{ minWidth: '150px' }} />}
                         <Column field="current_tier_name" header="Current Tier" body={tierBody} sortable filter filterElement={tierFilterElement} showFilterMatchModes={false} style={{ minWidth: '130px' }} />
                         <Column field="status" header="Status" body={statusBody} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '120px' }} />
-                        <Column header="Action" body={actionBody} style={{ minWidth: '100px' }} align="center" />
                     </DataTable>
                 </div>
             )}
-
-            <ClientDetailsModal
-                isOpen={isModalOpen}
-                toggle={() => setIsModalOpen(!isModalOpen)}
-                clientId={selectedClientId}
-            />
         </>
     );
 };
