@@ -12,6 +12,7 @@ import {
     ENTITY_TYPE_BORROWER,
     ENTITY_TYPE_PARTNER,
     ENTITY_TYPE_FUNDING_REQUEST,
+    ENTITY_TYPE_FUNDING_APPLICATION,
     FUTURE_ACTIVITY_REFERENCES,
     getReminderMsToSubtract,
     REMINDER_PRESETS
@@ -158,7 +159,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 }
             }
 
-            // Entity IDs - separate Lead, Client, Borrower, Partner, and Funding Request
+            // Entity IDs - separate Lead, Client, Borrower, Partner, Funding Request, and Funding Application
             if (resolvedEntityType === ENTITY_TYPE_LEAD) {
                 data.append('lead_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_BORROWER || resolvedEntityType === 'Client') {
@@ -167,6 +168,10 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 data.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 data.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+                if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
+                if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
+            } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_APPLICATION) {
+                data.append('funding_application_id', resolvedEntityId ? resolvedEntityId.toString() : '');
                 if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
                 if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
             }

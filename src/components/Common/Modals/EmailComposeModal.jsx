@@ -5,6 +5,7 @@ import { createActivityLog } from '../../../modules/activity-log/services';
 import { fetchPartners } from '../../../modules/partner/services';
 import { 
     ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST,
+    ENTITY_TYPE_FUNDING_APPLICATION,
     TARGET_RECIPIENT_HOST, TARGET_RECIPIENT_BORROWER
 } from '../../../config/appConfig';
 
@@ -135,7 +136,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 }
             }
 
-            // Entity IDs - separate Lead, Client, Borrower, Partner, and Funding Request
+            // Entity IDs - separate Lead, Client, Borrower, Partner, Funding Request, and Funding Application
             if (resolvedEntityType === ENTITY_TYPE_LEAD) {
                 payload.append('lead_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_BORROWER || resolvedEntityType === 'Client') {
@@ -144,6 +145,10 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 payload.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 payload.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+                if (formData.target_recipient === TARGET_RECIPIENT_HOST) payload.append('send_to_host', '1');
+                if (formData.target_recipient === TARGET_RECIPIENT_BORROWER) payload.append('send_to_borrower', '1');
+            } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_APPLICATION) {
+                payload.append('funding_application_id', resolvedEntityId ? resolvedEntityId.toString() : '');
                 if (formData.target_recipient === TARGET_RECIPIENT_HOST) payload.append('send_to_host', '1');
                 if (formData.target_recipient === TARGET_RECIPIENT_BORROWER) payload.append('send_to_borrower', '1');
             }
