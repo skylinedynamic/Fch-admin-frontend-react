@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getActivityLogs, downloadActivityAttachment } from '../../../modules/activity-log/services';
+import { getActivityLogs, downloadActivityAttachment, updateActivityLog, deleteActivityLog } from '../../../modules/activity-log/services';
 import { downloadBlob } from '../../../utils/fileDownload';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import '../StatisticsCardSkeleton.css';
+import { toast } from 'react-toastify';
+import DeleteConfirmationModal from '../Modals/DeleteConfirmationModal';
+import ActivityEditModal from '../Modals/ActivityEditModal';
 import {
     ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER,
     TYPE_EMAIL, TYPE_ACTIVITY, LOG_TYPE_EMAIL_UPDATE, LOG_TYPE_EMAIL_SENT,
@@ -27,6 +30,12 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [openIds, setOpenIds] = useState({});
+
+    // Edit/Delete state
+    const [editingActivity, setEditingActivity] = useState(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [deletingActivityId, setDeletingActivityId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const toggleOpen = (id) => {
         setOpenIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -170,6 +179,42 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
         const nextPage = page + 1;
         setPage(nextPage);
         fetchActivities(nextPage, true);
+    };
+
+    // Edit handlers
+    const openEdit = (activity) => {
+        setEditingActivity(activity);
+    };
+
+    const handleActivityUpdated = () => {
+        setLoading(true);
+        fetchActivities(1, false);
+        window.dispatchEvent(new CustomEvent('refreshActivities'));
+    };
+
+    const handleDeleteClick = (activityId) => {
+        setDeletingActivityId(activityId);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deletingActivityId) return;
+        setIsDeleting(true);
+        try {
+            await deleteActivityLog(deletingActivityId);
+            setDeleteModalOpen(false);
+            setDeletingActivityId(null);
+            toast.success('Activity deleted successfully');
+            // Trigger skeleton loader immediately while reloading activity list
+            setLoading(true);
+            fetchActivities(1, false);
+            window.dispatchEvent(new CustomEvent('refreshActivities'));
+        } catch (err) {
+            console.error('Delete failed:', err);
+            toast.error(err.response?.data?.message || 'Failed to delete activity');
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const formatTime = (dateStr) => {
@@ -513,6 +558,33 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                     </div>
                                                                 </div>
 
+                                                                {/* Edit/Delete for manual 'activity' entries only */}
+                                                                {(activity.log_type_raw === 'activity' || activity.log_name === 'activity') && (
+                                                                    <div
+                                                                        className="flex-shrink-0 ms-2 d-flex gap-1"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-ghost-secondary btn-icon btn-xs"
+                                                                            title="Edit"
+                                                                            onClick={() => openEdit(activity)}
+                                                                            style={{ padding: '2px 5px', fontSize: '12px' }}
+                                                                        >
+                                                                            <i className="ri-edit-line"></i>
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-ghost-danger btn-icon btn-xs"
+                                                                            title="Delete"
+                                                                            onClick={() => handleDeleteClick(itemId)}
+                                                                            style={{ padding: '2px 5px', fontSize: '12px' }}
+                                                                        >
+                                                                            <i className="ri-delete-bin-line"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+
                                                                 {/* Chevron */}
 
                                                             </div>
@@ -603,6 +675,28 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                     </div>
                 </div>
             </div>
+
+            {/* Edit Modal matching ActivityCreateModal */}
+            <ActivityEditModal
+                activity={editingActivity}
+                show={!!editingActivity}
+                onClose={() => setEditingActivity(null)}
+                onUpdated={handleActivityUpdated}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                show={deleteModalOpen}
+                onClose={() => {
+                    if (!isDeleting) {
+                        setDeleteModalOpen(false);
+                        setDeletingActivityId(null);
+                    }
+                }}
+                onConfirm={handleConfirmDelete}
+                loading={isDeleting}
+                text="Are you sure you want to delete this activity log? This cannot be undone."
+            />
 
             <style dangerouslySetInnerHTML={{
                 __html: `
