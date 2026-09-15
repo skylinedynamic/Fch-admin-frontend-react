@@ -18,6 +18,11 @@ import { usePermissions } from '../../../lib/auth/usePermissions';
 
 type StepType = 1 | 2 | 3 | 4;
 
+// Mirrors PreQualificationRequest::STATUS_NOTE_MAX_LENGTH on the server, which
+// the update endpoint validates against. Kept in step with it so the field can
+// say what the limit is before the request is sent, rather than after.
+const STATUS_NOTE_MAX_LENGTH = 200;
+
 const STEPS = [
     { id: 1, title: 'Personal Info', icon: 'ri-user-line' },
     { id: 2, title: 'Business Details', icon: 'ri-briefcase-line' },
@@ -81,6 +86,7 @@ export default function PreQualificationDetails() {
     const [status, setStatus] = useState<string>('');
     const [status_note, setStatusNote] = useState<string>('');
     const [notesError, setNotesError] = useState<string>('');
+    const [statusError, setStatusError] = useState<string>('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const updateMutation = useUpdateApplicationStatus();
     const runAiMutation = useRunAiPreQualification();
@@ -88,7 +94,20 @@ export default function PreQualificationDetails() {
     // Sync state with fetched data
     useEffect(() => {
         if (app?.status) setStatus(app.status);
-        if (app?.status_note) setStatusNote(app.status_note);
+
+        if (app?.status_note) {
+            setStatusNote(app.status_note);
+
+            // Notes written before the length limit can still be longer than it.
+            // Flagging that on load tells the reviewer to trim before they try to
+            // save, instead of letting them write a status update and only then
+            // find out the field will not go through.
+            if (app.status_note.trim().length > STATUS_NOTE_MAX_LENGTH) {
+                setNotesError(
+                    `This note is ${app.status_note.trim().length} characters and exceeds the ${STATUS_NOTE_MAX_LENGTH}-character limit. Shorten it before updating the status.`,
+                );
+            }
+        }
     }, [app]);
 
     // Safety fallback: if user cannot view AI underwriting (e.g. Certified Partner), fallback to Step 1
@@ -109,8 +128,8 @@ export default function PreQualificationDetails() {
                     setCurrentStep(4);
                     return;
                 }
-                // The short note, not the memo: Status Notes is capped at 1000
-                // characters and is visible to partners.
+                // The short note, not the memo: Status Notes is length-capped
+                // and is visible to partners.
                 if (aiResult?.admin_status_note) {
                     setStatusNote(aiResult.admin_status_note);
                 }
@@ -127,14 +146,41 @@ export default function PreQualificationDetails() {
         });
     };
 
+    // The note that will be sent has to clear the same rules whichever control
+    // starts the update, so the quick-action buttons validate it too rather than
+    // opening the confirm modal on a note the server will reject.
+    const statusNoteError = (note: string) => {
+        const trimmed = note.trim();
+
+        if (!trimmed) {
+            return 'Status notes are required.';
+        }
+
+        if (trimmed.length > STATUS_NOTE_MAX_LENGTH) {
+            return `Status notes may not be longer than ${STATUS_NOTE_MAX_LENGTH} characters. Currently ${trimmed.length}.`;
+        }
+
+        return '';
+    };
+
     const handleQuickStatusChange = (newStatus: string) => {
+        const noteError = statusNoteError(status_note);
+
+        if (noteError) {
+            setNotesError(noteError);
+            toast.error(noteError);
+
+            return;
+        }
+
         setStatus(newStatus);
         setNotesError('');
+        setStatusError('');
         setShowConfirmModal(true);
     };
 
     // Inserts the short, lender-free note — never the full memo, which exceeds the
-    // 1000-character limit on Status Notes and is visible to partners.
+    // length limit on Status Notes and is visible to partners.
     const handleApplyMemoToNotes = () => {
         if (!isHost) return;
         const note = app.ai_result?.admin_status_note;
@@ -152,8 +198,32 @@ export default function PreQualificationDetails() {
         toast.success(`${label} copied to clipboard!`);
     };
 
+    // Checked here rather than only on the server, so a note that is too long is
+    // caught against the field the moment Update is pressed instead of after a
+    // round trip that could only report itself as a toast.
+    const validateStatusForm = () => {
+        let valid = true;
+
+        if (!status) {
+            setStatusError('Select a status before updating.');
+            valid = false;
+        } else {
+            setStatusError('');
+        }
+
+        const noteError = statusNoteError(status_note);
+        setNotesError(noteError);
+
+        if (noteError) {
+            valid = false;
+        }
+
+        return valid;
+    };
+
     const handleUpdateClick = () => {
-        setNotesError('');
+        if (!validateStatusForm()) return;
+
         setShowConfirmModal(true);
     };
 
@@ -168,20 +238,40 @@ export default function PreQualificationDetails() {
                 toast.success('Status updated successfully');
                 setShowConfirmModal(false);
                 setNotesError('');
+                setStatusError('');
             },
             onError: (error: any) => {
                 setShowConfirmModal(false);
-                if (error?.response?.data?.errors) {
-                    const backendErrors = error.response.data.errors;
-                    if (backendErrors.status_note) {
-                        const message = Array.isArray(backendErrors.status_note)
-                            ? backendErrors.status_note[0]
-                            : backendErrors.status_note;
-                        setNotesError(message);
-                    }
-                } else {
-                    toast.error('Failed to update status. Please try again.');
+
+                const backendErrors = error?.response?.data?.errors;
+                const firstMessage = (value: unknown) =>
+                    Array.isArray(value) ? String(value[0]) : String(value);
+
+                // Every field error is put against its own field. Previously only
+                // status_note was read, so an error on any other field closed the
+                // modal and showed nothing at all.
+                let shown = false;
+
+                if (backendErrors?.status_note) {
+                    setNotesError(firstMessage(backendErrors.status_note));
+                    shown = true;
                 }
+
+                if (backendErrors?.status) {
+                    setStatusError(firstMessage(backendErrors.status));
+                    shown = true;
+                }
+
+                if (shown) return;
+
+                // Anything with no field to attach to — a rejected id, a server
+                // fault — falls back to a toast, but carries the server's own
+                // message instead of a fixed string that says nothing.
+                const message = backendErrors
+                    ? Object.values(backendErrors).map(firstMessage).join(' ')
+                    : error?.response?.data?.message;
+
+                toast.error(message || 'Failed to update status. Please try again.');
             }
         });
     };
@@ -1430,17 +1520,21 @@ export default function PreQualificationDetails() {
                                             </div>
 
                                             <div className="mb-3">
-                                                <label htmlFor="status-select" className="form-label text-muted">Status</label>
+                                                <label htmlFor="status-select" className="form-label text-muted">Status <span className="text-danger">*</span></label>
                                                 <Dropdown
                                                     value={status}
                                                     options={APPLICATION_STATUS_OPTIONS}
-                                                    onChange={(e) => setStatus(e.value)}
+                                                    onChange={(e) => {
+                                                        setStatus(e.value);
+                                                        if (statusError) setStatusError('');
+                                                    }}
                                                     optionLabel="label"
                                                     optionValue="value"
                                                     placeholder="Select status..."
-                                                    className="w-100"
+                                                    className={`w-100 ${statusError ? 'p-invalid' : ''}`}
                                                     disabled={!hasPermission("update pre qualification")}
                                                 />
+                                                {statusError && <div className="text-danger fs-12 mt-1">{statusError}</div>}
                                             </div>
                                             <div className="mb-3">
                                                 <div className="d-flex align-items-center justify-content-between mb-1">
@@ -1462,6 +1556,7 @@ export default function PreQualificationDetails() {
                                                     rows={4}
                                                     placeholder="Add notes..."
                                                     value={status_note}
+                                                    maxLength={STATUS_NOTE_MAX_LENGTH}
                                                     onChange={(e) => {
                                                         setStatusNote(e.target.value);
                                                         if (notesError) setNotesError('');
@@ -1469,6 +1564,12 @@ export default function PreQualificationDetails() {
                                                     disabled={!hasPermission("update pre qualification")}
                                                 ></textarea>
                                                 {notesError && <div className="invalid-feedback">{notesError}</div>}
+                                                {/* The limit is shown while typing rather than only on rejection —
+                                                    the AI note can be long, and the field silently stopping at the
+                                                    cap is worse than saying where the cap is. */}
+                                                <div className={`fs-11 mt-1 text-end ${status_note.length >= STATUS_NOTE_MAX_LENGTH ? 'text-danger' : 'text-muted'}`}>
+                                                    {status_note.length} / {STATUS_NOTE_MAX_LENGTH} characters
+                                                </div>
                                             </div>
 
                                             {hasPermission("update pre qualification") && (
