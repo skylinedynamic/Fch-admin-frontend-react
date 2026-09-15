@@ -79,15 +79,19 @@ export default function BillingTable({
                     {rowData.billing_paused_reason && (
                         <div className="text-muted small">{rowData.billing_paused_reason}</div>
                     )}
-                    {rowData.paid_through_date && (
-                        <div className="text-muted small">Paid through {rowData.paid_through_date}</div>
-                    )}
                 </div>
             );
         }
 
+        // There is one cycle date now, so no date covers two different situations:
+        // a borrower who has paid in full and owes nothing further, and a subscriber
+        // whose first payment has not landed yet. current_phase separates them —
+        // without this a borrower who finished paying was told they were still
+        // awaiting their first payment.
         if (!rowData.upcoming_billing_date) {
-            return <span className="text-muted">Awaiting first payment</span>;
+            return rowData.current_phase === 'completed'
+                ? <span className="text-success">Paid in full</span>
+                : <span className="text-muted">Awaiting first payment</span>;
         }
 
         // A billing date in the past means the cycle is overdue and the cron has not
@@ -102,9 +106,6 @@ export default function BillingTable({
             <div>
                 <span className={isOverdue ? 'text-danger fw-medium' : ''}>{rowData.upcoming_billing_date}</span>
                 {isOverdue && <div className="text-danger small">Overdue</div>}
-                {rowData.paid_through_date && (
-                    <div className="text-muted small">Paid through {rowData.paid_through_date}</div>
-                )}
             </div>
         );
     };
