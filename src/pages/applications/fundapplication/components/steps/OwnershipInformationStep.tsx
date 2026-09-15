@@ -70,6 +70,7 @@ export default function OwnershipInformationStep({
       id: owner.id ?? null,
       funding_request_id: fundingRequestId || null,
       first_name: owner.firstName,
+      middle_name: owner.middleName || null,
       last_name: owner.lastName,
       date_of_birth: owner.dob,
       ssn: unformatSSN(owner.ssn),
@@ -87,6 +88,7 @@ export default function OwnershipInformationStep({
         ? coBorrowers.map((cb) => ({
           id: cb.id,
           first_name: cb.firstName,
+          middle_name: cb.middleName || null,
           last_name: cb.lastName,
           role: cb.role,
           ownership: cb.ownershipPct,
@@ -138,6 +140,7 @@ export default function OwnershipInformationStep({
         ...prev,
         id: apiData.id || null,
         firstName: apiData.first_name || prev.firstName,
+        middleName: apiData.middle_name || prev.middleName,
         lastName: apiData.last_name || prev.lastName,
         dob: apiData.date_of_birth || prev.dob,
         ssn: apiData.ssn ? formatSSN(apiData.ssn) : prev.ssn,
@@ -158,6 +161,7 @@ export default function OwnershipInformationStep({
           apiData.co_borrowers.map((cb: any) => ({
             id: cb.id,
             firstName: cb.first_name,
+            middleName: cb.middle_name,
             lastName: cb.last_name,
             role: cb.role,
             ownershipPct: cb.ownership,
@@ -300,17 +304,31 @@ export default function OwnershipInformationStep({
     <>
       <form className="row g-3">
         <div className="col-md-6">
-          <label className="form-label">
-            First Name <span className="text-danger">*</span>
-          </label>
-          <input
-            type="text"
-            className={`form-control ${hasError('first_name') ? 'is-invalid' : ''}`}
-            placeholder="Enter first name"
-            value={owner.firstName}
-            onChange={(e) => setOwner({ ...owner, firstName: e.target.value })}
-          />
-          {hasError('first_name') && <div className="invalid-feedback">{getFieldError('first_name')}</div>}
+          <div className="row g-2">
+            <div className="col-7">
+              <label className="form-label">
+                First Name <span className="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                className={`form-control ${hasError('first_name') ? 'is-invalid' : ''}`}
+                placeholder="Enter first name"
+                value={owner.firstName}
+                onChange={(e) => setOwner({ ...owner, firstName: e.target.value })}
+              />
+              {hasError('first_name') && <div className="invalid-feedback">{getFieldError('first_name')}</div>}
+            </div>
+            <div className="col-5">
+              <label className="form-label">Middle Name</label>
+              <input
+                type="text"
+                className={`form-control ${hasError('middle_name') ? 'is-invalid' : ''}`}
+                placeholder="Optional"
+                value={owner.middleName || ''}
+                onChange={(e) => setOwner({ ...owner, middleName: e.target.value })}
+              />
+            </div>
+          </div>
         </div>
         <div className="col-md-6">
           <label className="form-label">

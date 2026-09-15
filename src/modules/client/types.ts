@@ -2,6 +2,8 @@ export type Client = {
     id?: number | string;
     // Personal Details
     first_name: string;
+    /** Optional; first and last are the required parts of a name. */
+    middle_name?: string | null;
     last_name: string;
     date_of_birth?: string;
     // Full SSN, decrypted — shown and editable as-is (formatted XXX-XX-XXXX).

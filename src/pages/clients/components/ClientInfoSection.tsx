@@ -625,19 +625,40 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <h5 className="text-primary fs-16 mb-1">Personal Information</h5>
                     <hr className="mt-1" />
                 </div>
+                {/* First + Middle share the left half, Last keeps the right, so the
+                    optional middle name costs no extra row. */}
                 <div className="col-lg-6">
-                    <div className="mb-3">
-                        <label htmlFor="first_name" className="form-label">First Name <span className="text-danger">*</span></label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.first_name ? 'is-invalid' : ''}`}
-                            id="first_name"
-                            name="first_name"
-                            placeholder="Enter first name"
-                            value={formData.first_name || ''}
-                            onChange={handleInputChange}
-                        />
-                        {errors.first_name && <div className="invalid-feedback">{errors.first_name}</div>}
+                    <div className="row g-2">
+                        <div className="col-7">
+                            <div className="mb-3">
+                                <label htmlFor="first_name" className="form-label">First Name <span className="text-danger">*</span></label>
+                                <input
+                                    type="text"
+                                    className={`form-control ${errors.first_name ? 'is-invalid' : ''}`}
+                                    id="first_name"
+                                    name="first_name"
+                                    placeholder="Enter first name"
+                                    value={formData.first_name || ''}
+                                    onChange={handleInputChange}
+                                />
+                                {errors.first_name && <div className="invalid-feedback">{errors.first_name}</div>}
+                            </div>
+                        </div>
+                        <div className="col-5">
+                            <div className="mb-3">
+                                <label htmlFor="middle_name" className="form-label">Middle Name</label>
+                                <input
+                                    type="text"
+                                    className={`form-control ${errors.middle_name ? 'is-invalid' : ''}`}
+                                    id="middle_name"
+                                    name="middle_name"
+                                    placeholder="Optional"
+                                    value={formData.middle_name || ''}
+                                    onChange={handleInputChange}
+                                />
+                                {errors.middle_name && <div className="invalid-feedback">{errors.middle_name}</div>}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="col-lg-6">
