@@ -226,3 +226,44 @@
     margin-top: 10px;
     margin-bottom: 4px;
 }
+
+/* Client the reminder is for (popup + details modal) */
+.reminder-client-card {
+    background-color: #f8fafc;
+    border-color: #e2e8f0 !important;
+}
+
+.reminder-client-avatar {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+.reminder-list-client {
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* Snooze-for-N-minutes panel */
+.reminder-snooze-panel {
+    background-color: #f8fafc;
+    border-color: #e2e8f0 !important;
+}
+
+.reminder-snooze-panel .reminder-lead-value::-webkit-outer-spin-button,
+.reminder-snooze-panel .reminder-lead-value::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.reminder-snooze-panel .reminder-lead-value {
+    -moz-appearance: textfield;
+}
+
+.reminder-list-item-clickable {
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.reminder-list-item-clickable:hover {
+    background-color: #f8fafc;
+}

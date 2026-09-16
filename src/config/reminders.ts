@@ -77,5 +77,63 @@ export const isReminderMissed = (reminder: ReminderLike): boolean => {
 export const getEffectiveReminderStatusLabel = (reminder: ReminderLike): string =>
     isReminderMissed(reminder) ? 'Missed' : getReminderStatusLabel(reminder.status);
 
+export interface ReminderClient {
+    type: 'borrower' | 'lead' | 'partner' | 'employee' | 'admin' | 'user' | null;
+    type_label: string;
+    id: number | null;
+    name: string | null;
+    business_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+}
+
+export interface ReminderRelated {
+    type: 'funding_request' | 'funding_application';
+    id: number;
+    label: string;
+}
+
+export interface ReminderSnoozeEntry {
+    action: 'snoozed' | 'rescheduled';
+    minutes?: number | null;
+    note?: string | null;
+    snoozed_at?: string | null;
+    snoozed_until?: string | null;
+    snoozed_by?: string | null;
+}
+
+export const SNOOZE_MAX_MINUTES = 1440;
+
+const CLIENT_ROUTES: Record<string, string> = {
+    borrower: '/clients',
+    lead: '/leads',
+    partner: '/partners',
+    employee: '/employee-details',
+    // admin/user accounts have no details page, so no "Go to Client" link
+};
+
+const RELATED_ROUTES: Record<string, string> = {
+    funding_request: '/intake-review/funding-request',
+    funding_application: '/intake-review/funding-application',
+};
+
+export const getReminderRelatedPath = (related?: ReminderRelated | null): string | null =>
+    related && RELATED_ROUTES[related.type] ? `${RELATED_ROUTES[related.type]}/${related.id}` : null;
+
+// Where "Go to Client" lands: the client's own file, or — for an application
+// that has no borrower account yet — the application itself.
+export const getReminderClientPath = (client?: ReminderClient | null, related?: ReminderRelated | null): string | null => {
+    if (client?.type && client.id && CLIENT_ROUTES[client.type]) {
+        return `${CLIENT_ROUTES[client.type]}/${client.id}`;
+    }
+    return getReminderRelatedPath(related);
+};
+
+export const formatSnoozeMinutes = (minutes: number): string => {
+    if (minutes % 1440 === 0) return `${minutes / 1440} day${minutes === 1440 ? '' : 's'}`;
+    if (minutes % 60 === 0) return `${minutes / 60} hour${minutes === 60 ? '' : 's'}`;
+    return `${minutes} min${minutes === 1 ? '' : 's'}`;
+};
+
 export const getEffectiveReminderStatusBadgeClasses = (reminder: ReminderLike): string =>
     isReminderMissed(reminder) ? 'bg-danger-subtle text-danger' : getReminderStatusBadgeClasses(reminder.status);

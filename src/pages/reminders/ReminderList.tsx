@@ -18,6 +18,7 @@ import {
     REMINDER_STATUS_SENT,
     getEffectiveReminderStatusBadgeClasses,
     getEffectiveReminderStatusLabel,
+    getReminderClientPath,
     getReminderTypeIcon
 } from '../../config/reminders';
 
@@ -246,6 +247,29 @@ export default function ReminderList() {
         );
     };
 
+    const clientBodyTemplate = (rowData) => {
+        const client = rowData.client;
+        if (!client) return <span className="text-muted">—</span>;
+
+        const clientPath = getReminderClientPath(client, rowData.related);
+        return (
+            <div className="overflow-hidden">
+                {clientPath ? (
+                    <Link to={clientPath} className="fw-semibold text-dark d-block text-truncate">{client.name || 'Unnamed'}</Link>
+                ) : (
+                    <span className="fw-semibold text-dark d-block text-truncate">{client.name || 'Unnamed'}</span>
+                )}
+                <div className="text-muted fs-12 text-truncate">
+                    {client.type_label}
+                    {client.business_name && client.business_name !== client.name ? ` · ${client.business_name}` : ''}
+                </div>
+                {rowData.related && (
+                    <div className="text-muted fs-12 text-truncate">{rowData.related.label}</div>
+                )}
+            </div>
+        );
+    };
+
     const activityDateBodyTemplate = (rowData) => {
         // set_date_time/send_at from the API are already full ISO-8601 strings
         // with an offset (ReminderResource converts to X-Timezone server-side)
@@ -336,7 +360,7 @@ export default function ReminderList() {
                                                     <input
                                                         type="text"
                                                         className="form-control search bg-light border-light"
-                                                        placeholder="Search here..."
+                                                        placeholder="Search subject or client..."
                                                         value={searchText}
                                                         onChange={(e) => setSearchText(e.target.value)}
                                                         onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
@@ -419,8 +443,8 @@ export default function ReminderList() {
                                             isDataSelectable={(e) => e.data.status === REMINDER_STATUS_PENDING || e.data.status === REMINDER_STATUS_SENT}
                                             onRowClick={(e) => {
                                                 const target = e.originalEvent.target as HTMLElement;
-                                                // Do not open modal if clicking the checkbox column
-                                                if (target.closest('.p-checkbox') || target.closest('.p-selection-column') || target.tagName.toLowerCase() === 'input') {
+                                                // Do not open modal if clicking the checkbox column or the client link
+                                                if (target.closest('.p-checkbox') || target.closest('.p-selection-column') || target.closest('a') || target.tagName.toLowerCase() === 'input') {
                                                     return;
                                                 }
                                                 setViewModal({ show: true, data: e.data });
@@ -430,7 +454,8 @@ export default function ReminderList() {
                                         >
                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                                             <Column field="reference" header="Reference" body={(rowData) => <span className="badge bg-primary-subtle text-primary px-2 py-1">{rowData.reference}</span>} style={{ minWidth: '120px' }} sortable></Column>
-                                            <Column field="summary" header="Subject" body={subjectBodyTemplate} style={{ minWidth: '350px' }} sortable></Column>
+                                            <Column field="summary" header="Subject" body={subjectBodyTemplate} style={{ minWidth: '300px' }} sortable></Column>
+                                            <Column header="Client" body={clientBodyTemplate} style={{ minWidth: '200px', maxWidth: '260px' }}></Column>
                                             <Column field="set_date_time" header="Activity Date & Time" body={activityDateBodyTemplate} style={{ minWidth: '180px' }} sortable></Column>
                                             <Column field="status" header="Status" body={(rowData) => getStatusBadge(rowData)} style={{ minWidth: '120px' }} sortable></Column>
                                         </DataTable>

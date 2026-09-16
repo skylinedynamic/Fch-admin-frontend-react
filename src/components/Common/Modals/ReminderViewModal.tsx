@@ -4,8 +4,19 @@ import { toast } from 'react-toastify';
 import { apiClient as api } from '../../../lib/http/apiClient';
 import { Skeleton } from 'primereact/skeleton';
 import '../../../assets/css/reminder.css';
-import { isReminderMissed, getEffectiveReminderStatusLabel } from '../../../config/reminders';
+import {
+    isReminderMissed,
+    getEffectiveReminderStatusLabel,
+    formatSnoozeMinutes,
+    ReminderClient,
+    ReminderRelated,
+    ReminderSnoozeEntry,
+} from '../../../config/reminders';
 import { ReminderRescheduleForm } from '../ReminderRescheduleForm';
+import ReminderClientCard from '../ReminderClientCard';
+import ReminderSnoozeForm, { ReminderSnoozeErrors } from '../ReminderSnoozeForm';
+import ActivityEditModal from './ActivityEditModal';
+import { getActivityLog } from '../../../modules/activity-log/services';
 
 interface Reminder {
     id: number;
@@ -19,6 +30,10 @@ interface Reminder {
     status: string;
     notes?: string;
     attachments?: Array<{ name: string; path: string }>;
+    activity_log_id?: number | null;
+    client?: ReminderClient | null;
+    related?: ReminderRelated | null;
+    snooze_history?: ReminderSnoozeEntry[];
 }
 
 interface ReminderViewModalProps {
@@ -68,6 +83,11 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
     const [downloadingFiles, setDownloadingFiles] = useState<Record<number, boolean>>({});
     const [showReschedule, setShowReschedule] = useState(false);
     const [loadingReschedule, setLoadingReschedule] = useState(false);
+    const [showSnooze, setShowSnooze] = useState(false);
+    const [loadingSnooze, setLoadingSnooze] = useState(false);
+    const [snoozeErrors, setSnoozeErrors] = useState<ReminderSnoozeErrors | null>(null);
+    const [loadingEdit, setLoadingEdit] = useState(false);
+    const [editingActivity, setEditingActivity] = useState<any>(null);
 
     /* Bootstrap modal lifecycle */
     useEffect(() => {
@@ -85,6 +105,8 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
         // reset state when reminder changes
         setExpanded(false);
         setShowReschedule(false);
+        setShowSnooze(false);
+        setSnoozeErrors(null);
     }, [reminder?.id]);
 
     useEffect(() => {
@@ -156,6 +178,46 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
         }
     };
 
+    /* snooze for N minutes, optionally noting why */
+    const snoozeReminder = async (minutes: number, note: string) => {
+        if (!reminder) return;
+        setLoadingSnooze(true);
+        setSnoozeErrors(null);
+        try {
+            const res = await api.post(`/common/reminders/${reminder.id}/snooze`, {
+                minutes,
+                note: note || null,
+            });
+            toast.success(res.data?.message || 'Reminder snoozed successfully');
+            setShowSnooze(false);
+            if (onSuccess) onSuccess();
+            onHide();
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to snooze reminder');
+            if (err.response?.status === 422 && err.response?.data?.errors) {
+                setSnoozeErrors(err.response.data.errors);
+            }
+        } finally {
+            setLoadingSnooze(false);
+        }
+    };
+
+    /* edit the activity behind the reminder — this modal closes first, since
+       the edit form can't take focus while a Bootstrap modal is open. */
+    const editReminder = async () => {
+        if (!reminder?.activity_log_id) return;
+        setLoadingEdit(true);
+        try {
+            const res: any = await getActivityLog(reminder.activity_log_id);
+            setEditingActivity(res?.data ?? res);
+            onHide();
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to load activity');
+        } finally {
+            setLoadingEdit(false);
+        }
+    };
+
     /* download */
     const handleDownload = async (attachment: { name: string; path: string }, idx: number) => {
         setDownloadingFiles(p => ({ ...p, [idx]: true }));
@@ -183,8 +245,17 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
     const rawDescription = reminder?.message || reminder?.notes || '';
     const plainText = rawDescription.replace(/<[^>]*>/g, '').trim();
     const needsExpansion = plainText.length > 220;
+    const busy = loadingDismiss || loadingReschedule || loadingSnooze || loadingEdit;
+    const snoozeHistory = reminder?.snooze_history || [];
 
     return (
+        <>
+        <ActivityEditModal
+            activity={editingActivity}
+            show={!!editingActivity}
+            onClose={() => setEditingActivity(null)}
+            onUpdated={onSuccess}
+        />
         <div className="modal fade flip" ref={modalRef} tabIndex={-1} aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable reminder-view-modal-dialog">
                 <div className="modal-content border-0 shadow-lg">
@@ -247,6 +318,12 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                                             {activityTimeStr}
                                         </span>
                                     </div>
+                                </div>
+
+                                {/* Who this reminder is for */}
+                                <div className="mt-3">
+                                    <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block">Client</label>
+                                    <ReminderClientCard client={reminder.client} related={reminder.related} onNavigate={onHide} />
                                 </div>
 
                                 <hr className="border-dashed my-3" />
@@ -330,6 +407,45 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                                     </div>
                                 )}
 
+                                {/* Snooze history with the notes on why */}
+                                {snoozeHistory.length > 0 && (
+                                    <div className="mb-3">
+                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block">Snooze History</label>
+                                        <div className="d-flex flex-column gap-2">
+                                            {[...snoozeHistory].reverse().map((entry, idx) => {
+                                                const at = fmt(entry.snoozed_at);
+                                                const until = fmt(entry.snoozed_until);
+                                                return (
+                                                    <div key={idx} className="bg-light rounded border border-light-subtle px-3 py-2">
+                                                        <div className="d-flex flex-wrap justify-content-between gap-2 fs-12">
+                                                            <span className="fw-semibold text-dark">
+                                                                <i className="ri-timer-line me-1 text-primary"></i>
+                                                                {entry.action === 'rescheduled'
+                                                                    ? 'Rescheduled'
+                                                                    : `Snoozed ${entry.minutes ? formatSnoozeMinutes(entry.minutes) : ''}`}
+                                                                {until && <span className="text-muted fw-normal"> · until {fmtDate(until)} {fmtTime(until)}</span>}
+                                                            </span>
+                                                            <span className="text-muted">
+                                                                {entry.snoozed_by ? `${entry.snoozed_by} · ` : ''}{at ? `${fmtDate(at)} ${fmtTime(at)}` : ''}
+                                                            </span>
+                                                        </div>
+                                                        {entry.note && <div className="fs-13 text-dark mt-1 text-break">{entry.note}</div>}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {actionable && showSnooze && (
+                                    <ReminderSnoozeForm
+                                        loading={loadingSnooze}
+                                        serverErrors={snoozeErrors}
+                                        onConfirm={snoozeReminder}
+                                        onCancel={() => { setShowSnooze(false); setSnoozeErrors(null); }}
+                                    />
+                                )}
+
                                 {/* Only a missed reminder can be rescheduled — an upcoming
                                     one has nothing to reschedule away from yet. */}
                                 {missed && showReschedule && (
@@ -344,12 +460,35 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                                     <button type="button" className="btn btn-light px-4" onClick={onHide}>
                                         <i className="ri-close-line me-1"></i> Close
                                     </button>
+                                    {reminder.activity_log_id && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-light fw-medium d-flex align-items-center px-4"
+                                            onClick={editReminder}
+                                            disabled={busy}
+                                        >
+                                            {loadingEdit
+                                                ? <><span className="spinner-border spinner-border-sm me-2"></span>Loading...</>
+                                                : <><i className="ri-edit-2-line me-1"></i> Edit</>
+                                            }
+                                        </button>
+                                    )}
+                                    {actionable && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-info fw-medium d-flex align-items-center px-4"
+                                            onClick={() => { setShowReschedule(false); setShowSnooze((v) => !v); }}
+                                            disabled={busy}
+                                        >
+                                            <i className="ri-timer-line me-1"></i> Snooze
+                                        </button>
+                                    )}
                                     {missed && (
                                         <button
                                             type="button"
                                             className="btn btn-warning fw-medium d-flex align-items-center px-4"
-                                            onClick={() => setShowReschedule((v) => !v)}
-                                            disabled={loadingDismiss || loadingReschedule}
+                                            onClick={() => { setShowSnooze(false); setShowReschedule((v) => !v); }}
+                                            disabled={busy}
                                         >
                                             <i className="ri-calendar-event-line me-1"></i> Reschedule
                                         </button>
@@ -359,7 +498,7 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                                             type="button"
                                             className="btn btn-danger fw-medium d-flex align-items-center px-4"
                                             onClick={dismissReminder}
-                                            disabled={loadingDismiss || loadingReschedule}
+                                            disabled={busy}
                                         >
                                             {loadingDismiss
                                                 ? <><span className="spinner-border spinner-border-sm me-2"></span>Dismissing...</>
@@ -374,5 +513,6 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                 </div>
             </div>
         </div>
+        </>
     );
 }
