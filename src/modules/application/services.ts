@@ -29,7 +29,7 @@ export const updateApplicationStatus = async (payload: { id: number | string; st
   return response.data;
 };
 
-export const runAiPreQualification = async (id: string | number): Promise<SingleApiResponse<{ application: PreQualificationApplicationDetails; ai_result: any }>> => {
+export const runAiPreQualification = async (id: string | number): Promise<SingleApiResponse<{ application: PreQualificationApplicationDetails }>> => {
   const response = await apiClient.post(`/common/request-application/pre-qualification/${id}/run-ai`);
   return response.data;
 };
