@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PageHeader from '../../common/PageHeader';
 import { PreQualificationApplicationDetails as PreQualificationApplicationDetailsType, GPT_STATUS, ISSUE_SEVERITY, isIncorrectUnderwriting, ClientAueResult } from '../../../modules/application/types';
@@ -117,31 +117,56 @@ export default function PreQualificationDetails() {
         }
     }, [canViewUnderwritingResult, currentStep]);
 
+    // run-ai only starts the evaluation; the details query polls while the
+    // server reports PENDING, so "running" covers both the request and the wait.
+    const isAiRunning = runAiMutation.isPending || app.gpt_status === GPT_STATUS.PENDING;
+
+    // Tracks a run this page started, so the outcome toast fires for that run
+    // only — not when a reviewer merely opens a file that is already evaluating.
+    // The result is only reported after PENDING has been seen, so a response that
+    // still carries the previous run's status cannot be announced as this one's.
+    const aiRunTracking = useRef<'idle' | 'started' | 'pending-seen'>('idle');
+
+    useEffect(() => {
+        if (aiRunTracking.current === 'idle' || !app.gpt_status) return;
+        if (app.gpt_status === GPT_STATUS.PENDING) {
+            aiRunTracking.current = 'pending-seen';
+            return;
+        }
+        if (aiRunTracking.current !== 'pending-seen') return;
+        aiRunTracking.current = 'idle';
+
+        const aiResult = app.ai_result;
+        if (isIncorrectUnderwriting(app, aiResult)) {
+            toast.warning(aiResult?.borrower_message || 'Data integrity check found corrections needed before AI underwriting can run.');
+            return;
+        }
+        // The short note, not the memo: Status Notes is length-capped
+        // and is visible to partners.
+        if (aiResult?.admin_status_note) {
+            setStatusNote(aiResult.admin_status_note);
+        }
+        if (app.gpt_status === GPT_STATUS.FAILED || aiResult?.failed) {
+            toast.error(aiResult?.failure_reason || 'Automated underwriting did not complete. This file needs manual review.');
+        } else {
+            toast.success('AI Pre-Qualification analysis completed!');
+        }
+    }, [app]);
+
     const handleRunPrequal = () => {
-        if (!isHostPartner || !app.id) return;
+        if (!isHostPartner || !app.id || isAiRunning) return;
+        aiRunTracking.current = 'started';
         runAiMutation.mutate(app.id, {
-            onSuccess: (response: any) => {
-                const resData = response?.data || response;
-                const aiResult = resData?.ai_result;
-                if (aiResult?.incorrect || aiResult?.blocked) {
-                    toast.warning(aiResult?.borrower_message || 'Data integrity check found corrections needed before AI underwriting can run.');
-                    setCurrentStep(4);
-                    return;
-                }
-                // The short note, not the memo: Status Notes is length-capped
-                // and is visible to partners.
-                if (aiResult?.admin_status_note) {
-                    setStatusNote(aiResult.admin_status_note);
-                }
-                if (aiResult?.failed) {
-                    toast.error(aiResult.failure_reason || 'Automated underwriting did not complete. This file needs manual review.');
-                } else {
-                    toast.success('AI Pre-Qualification analysis completed!');
-                }
+            onSuccess: () => {
+                toast.info('AI Pre-Qualification started. This can take a few minutes.');
                 setCurrentStep(4);
             },
             onError: (err: any) => {
-                toast.error(err?.response?.data?.message || 'Failed to run AI pre-qualification.');
+                aiRunTracking.current = 'idle';
+                // No response at all is already reported by the API client.
+                if (err?.response) {
+                    toast.error(err.response.data?.message || 'Failed to run AI pre-qualification.');
+                }
             }
         });
     };
@@ -832,7 +857,7 @@ export default function PreQualificationDetails() {
     const renderAiEvaluation = () => {
         const ai = app.ai_result;
 
-        if (runAiMutation.isPending) {
+        if (isAiRunning) {
             return (
                 <>
                     <div className="text-center mb-4">
@@ -1441,9 +1466,9 @@ export default function PreQualificationDetails() {
                                     type="button"
                                     className="btn btn-primary d-flex align-items-center gap-2 waves-effect shadow-sm"
                                     onClick={handleRunPrequal}
-                                    disabled={runAiMutation.isPending}
+                                    disabled={isAiRunning}
                                 >
-                                    {runAiMutation.isPending ? (
+                                    {isAiRunning ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                             <span>Running Pre-Qualification...</span>
