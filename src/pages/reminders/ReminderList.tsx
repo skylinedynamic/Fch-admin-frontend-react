@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient as api } from '../../lib/http/apiClient';
 import { toast } from 'react-toastify';
-import { parseDate, parseDateTime } from '../../utils/formatters';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from '../../components/Table/DataTableWrapper';
@@ -18,6 +17,8 @@ import {
     REMINDER_STATUS_SENT,
     getEffectiveReminderStatusBadgeClasses,
     getEffectiveReminderStatusLabel,
+    getReminderClientPath,
+    getReminderClientLinkLabel,
     getReminderTypeIcon
 } from '../../config/reminders';
 
@@ -228,7 +229,7 @@ export default function ReminderList() {
                 </div>
                 <div className="flex-grow-1">
                     <div className="fs-14 mb-1 d-flex align-items-center gap-2">
-                        <h5 className="fs-15 mb-0 text-dark">{rowData.summary}</h5>
+                        <h5 className="fs-15 mb-0 text-dark text-break">{rowData.summary}</h5>
                     </div>
                     <div className="text-muted mb-1 fs-12 d-flex flex-wrap gap-2">
                         {rowData.organizer && (
@@ -246,18 +247,42 @@ export default function ReminderList() {
         );
     };
 
+    const clientBodyTemplate = (rowData) => {
+        const client = rowData.client;
+        if (!client) return <span className="text-muted">—</span>;
+
+        const clientPath = getReminderClientPath(client);
+        return (
+            <div className="overflow-hidden">
+                {clientPath ? (
+                    <Link to={clientPath} className="fw-semibold text-dark d-block text-truncate">{client.name || 'Unnamed'}</Link>
+                ) : (
+                    <span className="fw-semibold text-dark d-block text-truncate">{client.name || 'Unnamed'}</span>
+                )}
+                <div className="text-muted fs-12 text-truncate">
+                    {client.type_label}
+                    {client.business_name && client.business_name !== client.name ? ` · ${client.business_name}` : ''}
+                </div>
+                {/* Same button as the reminder popup and details modal: Go to Client /
+                    Lead / Partner / Employee. A link, so it never opens the row's modal. */}
+                {clientPath && (
+                    <Link
+                        to={clientPath}
+                        className="btn btn-sm btn-soft-primary fw-semibold d-inline-flex align-items-center mt-1"
+                    >
+                        <i className="ri-user-shared-line me-1"></i> {getReminderClientLinkLabel(client)}
+                    </Link>
+                )}
+            </div>
+        );
+    };
+
     const activityDateBodyTemplate = (rowData) => {
-        // set_date_time/send_at from the API are already full ISO-8601 strings
-        // with an offset (ReminderResource converts to X-Timezone server-side)
-        // — pass them straight to parseDateTime. Round-tripping through
-        // `new Date(...).toISOString()` first converts to UTC and drops the
-        // offset, so parseDateTime's own `new Date(...)` re-parses that naive
-        // string as local time again — shifting the displayed time by the
-        // browser's UTC offset instead of showing the correct local time.
-        const dateStr = rowData.set_date_time || rowData.send_at;
+        // Formatted by the API's toTimezone() in the viewer's timezone — shown as-is.
+        const dateStr = rowData.display?.activity_datetime;
         if (!dateStr) return <span>—</span>;
 
-        return <span className="fw-medium">{parseDateTime(dateStr)}</span>;
+        return <span className="fw-medium">{dateStr}</span>;
     };
 
     const onPage = (event) => {
@@ -336,7 +361,7 @@ export default function ReminderList() {
                                                     <input
                                                         type="text"
                                                         className="form-control search bg-light border-light"
-                                                        placeholder="Search here..."
+                                                        placeholder="Search subject or client..."
                                                         value={searchText}
                                                         onChange={(e) => setSearchText(e.target.value)}
                                                         onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
@@ -419,8 +444,8 @@ export default function ReminderList() {
                                             isDataSelectable={(e) => e.data.status === REMINDER_STATUS_PENDING || e.data.status === REMINDER_STATUS_SENT}
                                             onRowClick={(e) => {
                                                 const target = e.originalEvent.target as HTMLElement;
-                                                // Do not open modal if clicking the checkbox column
-                                                if (target.closest('.p-checkbox') || target.closest('.p-selection-column') || target.tagName.toLowerCase() === 'input') {
+                                                // Do not open modal if clicking the checkbox column or the client link
+                                                if (target.closest('.p-checkbox') || target.closest('.p-selection-column') || target.closest('a') || target.tagName.toLowerCase() === 'input') {
                                                     return;
                                                 }
                                                 setViewModal({ show: true, data: e.data });
@@ -430,7 +455,8 @@ export default function ReminderList() {
                                         >
                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                                             <Column field="reference" header="Reference" body={(rowData) => <span className="badge bg-primary-subtle text-primary px-2 py-1">{rowData.reference}</span>} style={{ minWidth: '120px' }} sortable></Column>
-                                            <Column field="summary" header="Subject" body={subjectBodyTemplate} style={{ minWidth: '350px' }} sortable></Column>
+                                            <Column field="summary" header="Subject" body={subjectBodyTemplate} style={{ minWidth: '300px' }} sortable></Column>
+                                            <Column header="Client" body={clientBodyTemplate} style={{ minWidth: '200px', maxWidth: '260px' }}></Column>
                                             <Column field="set_date_time" header="Activity Date & Time" body={activityDateBodyTemplate} style={{ minWidth: '180px' }} sortable></Column>
                                             <Column field="status" header="Status" body={(rowData) => getStatusBadge(rowData)} style={{ minWidth: '120px' }} sortable></Column>
                                         </DataTable>
