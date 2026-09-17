@@ -349,7 +349,7 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
                                                     onChange={(e) => setFormData(prev => ({ ...prev, remind_me: e.target.checked }))}
                                                 />
                                                 <label className="form-check-label ms-2" htmlFor="editRemindMeSwitch">
-                                                    Set Remainder
+                                                    Set Reminder
                                                 </label>
                                             </div>
                                         </div>

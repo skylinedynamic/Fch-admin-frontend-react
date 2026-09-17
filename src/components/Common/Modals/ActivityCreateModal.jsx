@@ -619,7 +619,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                                     onChange={(e) => setFormData(prev => ({ ...prev, remind_me: e.target.checked }))}
                                                 />
                                                 <label className="form-check-label ms-2" htmlFor="remindMeSwitch">
-                                                    Set Remainder
+                                                    Set Reminder
                                                 </label>
                                             </div>
                                         </div>
