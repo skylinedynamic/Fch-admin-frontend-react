@@ -64,6 +64,30 @@ export const saveAppConfigurations = async (module: string, settings: object): P
     return data;
 };
 
+// Current OpenAI settings. Deliberately never includes the API key itself —
+// only whether one is stored — so the credential stays server-side.
+export const fetchOpenAiConfig = async (): Promise<any> => {
+    const { data } = await apiClient.get('/common/openai/config');
+    return data;
+};
+
+// Model ids available to the configured OpenAI key, for the Settings dropdown.
+export const fetchOpenAiModels = async (): Promise<any> => {
+    const { data } = await apiClient.get('/common/openai/models');
+    return data;
+};
+
+// Dedicated (validated) save — the generic app-configurations endpoint stores
+// whatever it is given, which would let a blank or malformed key through.
+export const saveOpenAiConfig = async (payload: {
+    api_key: string;
+    aue_model: string;
+    reasoning_effort: string;
+}): Promise<any> => {
+    const { data } = await apiClient.post('/common/openai/config', payload);
+    return data;
+};
+
 export const fetchScoreConfigurations = async (): Promise<ScoreConfigurationResponse> => {
     const { data } = await apiClient.get('/admin/app-configuration/score');
     return data;

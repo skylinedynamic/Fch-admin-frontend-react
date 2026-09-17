@@ -36,7 +36,7 @@ export default function PreQualificationApplication() {
     // const [totalRecords, setTotalRecords] = useState(0);
 
     // Sorting state
-    const [sortField, setSortField] = useState<string>('id');
+    const [sortField, setSortField] = useState<string>('date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     // Filter states (Inputs)

@@ -136,6 +136,95 @@ export const MicroBiltConfigSkeleton: React.FC = () => {
 /**
  * Custom skeleton loader for the Email Configuration Form
  */
+export const OpenAiConfigSkeleton: React.FC = () => {
+    return (
+        <div className="animate__animated animate__fadeIn">
+            <div className="row g-4">
+                {/* API key field (full width) + helper text */}
+                <div className="col-12">
+                    <div className="skeleton-line mb-2 sk-w-160 sk-h-12"></div>
+                    <div className="skeleton-line rounded w-100 sk-h-42"></div>
+                    <div className="skeleton-line mt-2 sk-w-450 sk-h-12"></div>
+                </div>
+
+                {/* Model field (half width) + helper text */}
+                <div className="col-lg-6">
+                    <div className="skeleton-line mb-2 sk-w-160 sk-h-12"></div>
+                    <div className="skeleton-line rounded w-100 sk-h-42"></div>
+                    <div className="skeleton-line mt-2 sk-w-280 sk-h-12"></div>
+                </div>
+
+                {/* Reasoning-effort info banner */}
+                <div className="col-12">
+                    <div className="d-flex align-items-center bg-info-subtle rounded-3 p-3">
+                        <div className="skeleton-line rounded sk-w-40 sk-h-40 me-4"></div>
+                        <div className="flex-grow-1">
+                            <div className="skeleton-line mb-2 sk-w-450 sk-h-12"></div>
+                            <div className="skeleton-line sk-w-280 sk-h-12"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="col-12 mt-5 pt-3 border-top">
+                <div className="d-flex justify-content-end">
+                    <div className="skeleton-line rounded sk-w-180 sk-h-40"></div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const AiUnderwritingResultSkeleton: React.FC = () => {
+    return (
+        <div className="animate__animated animate__fadeIn">
+            {/* Meta bar: model / status / latency / evaluated-at */}
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 mb-4 rounded-3 border bg-light">
+                <div className="d-flex align-items-center gap-2">
+                    <div className="skeleton-line rounded sk-w-160 sk-h-28"></div>
+                    <div className="skeleton-line rounded sk-w-160 sk-h-28"></div>
+                </div>
+                <div className="skeleton-line rounded sk-w-180 sk-h-16"></div>
+            </div>
+
+            {/* Recommended funding programs: three cards */}
+            <div className="skeleton-line mb-3 sk-w-280 sk-h-16"></div>
+            <div className="row g-3 mb-4">
+                {[1, 2, 3].map(i => (
+                    <div className="col-md-6 col-lg-4" key={i}>
+                        <div className="card border shadow-none mb-0">
+                            <div className="card-body p-3 d-flex align-items-center gap-3">
+                                <div className="skeleton-line rounded sk-w-40 sk-h-40"></div>
+                                <div className="flex-grow-1">
+                                    <div className="skeleton-line mb-2 sk-w-160 sk-h-16"></div>
+                                    <div className="skeleton-line sk-w-80 sk-h-12"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Required document checklist */}
+            <div className="skeleton-line mb-3 sk-w-280 sk-h-16"></div>
+            <div className="bg-light p-3 rounded border mb-4">
+                {[1, 2, 3, 4].map(i => (
+                    <div className="d-flex align-items-center gap-2 py-2" key={i}>
+                        <div className="skeleton-line rounded sk-w-16 sk-h-16"></div>
+                        <div className="skeleton-line sk-w-450 sk-h-12"></div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Borrower-facing summary, then the internal memo block */}
+            <div className="skeleton-line mb-3 sk-w-280 sk-h-16"></div>
+            <div className="skeleton-line rounded w-100 sk-h-60 mb-4"></div>
+            <div className="skeleton-line mb-3 sk-w-280 sk-h-16"></div>
+            <div className="skeleton-line rounded w-100 sk-h-120"></div>
+        </div>
+    );
+};
+
 export const EmailConfigSkeleton: React.FC = () => {
     return (
         <div className="animate__animated animate__fadeIn">
