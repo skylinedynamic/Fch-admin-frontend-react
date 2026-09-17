@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SNOOZE_MAX_MINUTES, formatSnoozeMinutes } from '../../config/reminders';
 
-export const SNOOZE_NOTE_MAX_LENGTH = 1000;
+export const SNOOZE_NOTE_MAX_LENGTH = 200;
 
 export interface ReminderSnoozeErrors {
     minutes?: string;
@@ -16,20 +16,33 @@ interface ReminderSnoozeFormProps {
     onCancel: () => void;
 }
 
-const SNOOZE_PRESETS = [5, 10, 15, 30, 60, 1440];
+const SNOOZE_PRESETS = [5, 10, 15, 30, 45, 60, 120, 240, 480, SNOOZE_MAX_MINUTES];
+const CUSTOM = 'custom';
 
-// Snooze a reminder for any number of minutes, with an optional note on why.
-// Shared by the due-reminder popup and the Task & Reminder Details modal.
+// Snooze a reminder for any length of time, with an optional note on why.
+// Shared by the due-reminder popup and the Task & Reminder Details modal, and
+// laid out like the Reschedule panel: the time on the first line, the note on
+// its own line, then Cancel / Snooze.
 export default function ReminderSnoozeForm({ loading, serverErrors, onConfirm, onCancel }: ReminderSnoozeFormProps) {
-    const [minutesInput, setMinutesInput] = useState('15');
+    const [preset, setPreset] = useState<string>('15');
+    const [customMinutes, setCustomMinutes] = useState('45');
     const [note, setNote] = useState('');
     // Server errors belong to the values that were submitted — hide each one
     // as soon as the user changes that field.
     const [dirty, setDirty] = useState<ReminderSnoozeErrors>({});
+    const panelRef = useRef<HTMLDivElement>(null);
 
-    const trimmedMinutes = minutesInput.trim();
-    const minutes = Number(trimmedMinutes);
-    const minutesError = trimmedMinutes === '' || !/^\d+$/.test(trimmedMinutes) || minutes < 1 || minutes > SNOOZE_MAX_MINUTES
+    // The panel opens below the action buttons — in the popup's scrolling body
+    // that can be off-screen, so bring it into view (never scrolling the page
+    // itself, only the nearest scrollable ancestor).
+    useEffect(() => {
+        panelRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, []);
+
+    const isCustom = preset === CUSTOM;
+    const rawMinutes = isCustom ? customMinutes.trim() : preset;
+    const minutes = Number(rawMinutes);
+    const minutesError = rawMinutes === '' || !/^\d+$/.test(rawMinutes) || minutes < 1 || minutes > SNOOZE_MAX_MINUTES
         ? `Enter a whole number of minutes between 1 and ${SNOOZE_MAX_MINUTES}.`
         : (!dirty.minutes && serverErrors?.minutes) || null;
 
@@ -41,10 +54,7 @@ export default function ReminderSnoozeForm({ loading, serverErrors, onConfirm, o
     // A server error also blocks resubmitting until that field is changed.
     const canSubmit = !minutesError && !noteError && !loading;
 
-    const setMinutes = (value: string) => {
-        setMinutesInput(value);
-        setDirty((d) => ({ ...d, minutes: 'changed' }));
-    };
+    const markMinutesDirty = () => setDirty((d) => ({ ...d, minutes: 'changed' }));
 
     const submit = () => {
         if (!canSubmit) return;
@@ -53,57 +63,70 @@ export default function ReminderSnoozeForm({ loading, serverErrors, onConfirm, o
     };
 
     return (
-        <div className="reminder-snooze-panel rounded border p-3 mb-3">
-            <label className="form-label fs-12 fw-semibold text-muted mb-2">Snooze for</label>
-            <div className="d-flex flex-wrap gap-2 mb-3">
-                {SNOOZE_PRESETS.map((preset) => (
-                    <button
-                        key={preset}
-                        type="button"
-                        className={`btn btn-sm ${trimmedMinutes !== '' && minutes === preset ? 'btn-primary' : 'btn-light'}`}
-                        onClick={() => setMinutes(String(preset))}
+        <div ref={panelRef} className="reminder-snooze-panel rounded border p-3">
+            <div className="row g-2">
+                <div className={isCustom ? 'col-6' : 'col-12'}>
+                    <label className="form-label fs-12 fw-semibold text-muted mb-1" htmlFor="reminder-snooze-for">
+                        Snooze for
+                    </label>
+                    <select
+                        id="reminder-snooze-for"
+                        className={`form-select reminder-control ${!isCustom && minutesError ? 'is-invalid' : ''}`}
+                        value={preset}
+                        onChange={(e) => { setPreset(e.target.value); markMinutesDirty(); }}
                         disabled={loading}
                     >
-                        {formatSnoozeMinutes(preset)}
-                    </button>
-                ))}
-            </div>
-
-            <div className="row g-2 mb-2">
-                <div className="col-5">
-                    <label className="form-label fs-12 fw-semibold text-muted mb-1">Custom minutes</label>
-                    <div className="input-group has-validation">
-                        <input
-                            type="number"
-                            inputMode="numeric"
-                            className={`form-control reminder-lead-value ${minutesError ? 'is-invalid' : ''}`}
-                            min={1}
-                            max={SNOOZE_MAX_MINUTES}
-                            step={1}
-                            value={minutesInput}
-                            onChange={(e) => setMinutes(e.target.value)}
-                            onKeyDown={(e) => {
-                                // Whole minutes only
-                                if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault();
-                                if (e.key === 'Enter') submit();
-                            }}
-                            disabled={loading}
-                        />
-                        <span className="input-group-text">min</span>
-                    </div>
+                        {SNOOZE_PRESETS.map((value) => (
+                            <option key={value} value={String(value)}>{formatSnoozeMinutes(value)}</option>
+                        ))}
+                        <option value={CUSTOM}>Custom…</option>
+                    </select>
+                    {!isCustom && minutesError && <div className="invalid-feedback d-block">{minutesError}</div>}
                 </div>
-                <div className="col-7">
+
+                {isCustom && (
+                    <div className="col-6">
+                        <label className="form-label fs-12 fw-semibold text-muted mb-1" htmlFor="reminder-snooze-minutes">
+                            Minutes
+                        </label>
+                        <div className="input-group has-validation">
+                            <input
+                                type="number"
+                                id="reminder-snooze-minutes"
+                                inputMode="numeric"
+                                className={`form-control reminder-control reminder-lead-value ${minutesError ? 'is-invalid' : ''}`}
+                                min={1}
+                                max={SNOOZE_MAX_MINUTES}
+                                step={1}
+                                value={customMinutes}
+                                onChange={(e) => { setCustomMinutes(e.target.value); markMinutesDirty(); }}
+                                onKeyDown={(e) => {
+                                    // Whole minutes only
+                                    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault();
+                                    if (e.key === 'Enter') submit();
+                                }}
+                                disabled={loading}
+                                autoFocus
+                            />
+                            <span className="input-group-text">min</span>
+                            {minutesError && <div className="invalid-feedback">{minutesError}</div>}
+                        </div>
+                    </div>
+                )}
+
+                <div className="col-12">
                     <div className="d-flex justify-content-between align-items-baseline">
-                        <label className="form-label fs-12 fw-semibold text-muted mb-1">
+                        <label className="form-label fs-12 fw-semibold text-muted mb-1" htmlFor="reminder-snooze-note">
                             Note <span className="fw-normal">(optional)</span>
                         </label>
                         <span className={`fs-11 ${trimmedNote.length > SNOOZE_NOTE_MAX_LENGTH ? 'text-danger' : 'text-muted'}`}>
                             {trimmedNote.length}/{SNOOZE_NOTE_MAX_LENGTH}
                         </span>
                     </div>
-                    <textarea
-                        className={`form-control ${noteError ? 'is-invalid' : ''}`}
-                        rows={2}
+                    <input
+                        type="text"
+                        id="reminder-snooze-note"
+                        className={`form-control reminder-control ${noteError ? 'is-invalid' : ''}`}
                         maxLength={SNOOZE_NOTE_MAX_LENGTH}
                         placeholder="Why are you snoozing this?"
                         value={note}
@@ -111,14 +134,14 @@ export default function ReminderSnoozeForm({ loading, serverErrors, onConfirm, o
                             setNote(e.target.value);
                             setDirty((d) => ({ ...d, note: 'changed' }));
                         }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
                         disabled={loading}
                     />
+                    {noteError && <div className="invalid-feedback">{noteError}</div>}
                 </div>
             </div>
-            {minutesError && <div className="text-danger small mb-1">{minutesError}</div>}
-            {noteError && <div className="text-danger small mb-1">{noteError}</div>}
 
-            <div className="d-flex justify-content-end gap-2 mt-2">
+            <div className="d-flex justify-content-end gap-2 mt-3">
                 <button type="button" className="btn btn-sm btn-light" onClick={onCancel} disabled={loading}>
                     Cancel
                 </button>

@@ -6,6 +6,12 @@ import { parseDate } from '../../../utils/formatters';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
+import {
+    ACTIVITY_SUMMARY_MAX_LENGTH,
+    ACTIVITY_CREATE_ERROR_FIELDS,
+    normalizeActivityFieldErrors,
+    getActivityValidationToast,
+} from '../../../modules/activity-log/constants';
 import { TimeInputs } from '../TimeInputs';
 import {
     ENTITY_TYPE_LEAD,
@@ -19,6 +25,7 @@ import {
 } from '../../../config/appConfig';
 
 const REFERENCE_OPTIONS = REMINDER_TYPES.map(t => t.value);
+
 
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
@@ -193,12 +200,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             if (response && response.status === false) {
                 const backendErrors = response.errors;
                 if (backendErrors && typeof backendErrors === 'object') {
-                    const normalizedErrors = {};
-                    Object.keys(backendErrors).forEach(key => {
-                        const error = backendErrors[key];
-                        normalizedErrors[key] = Array.isArray(error) ? error : [error];
-                    });
+                    const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
                     setErrors(normalizedErrors);
+                    toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS));
                 } else {
                     toast.error(response.message || 'Validation failed.');
                 }
@@ -258,13 +262,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             const backendErrors = responseData?.errors;
 
             if (backendErrors && typeof backendErrors === 'object') {
-                // Normalize: backend may send strings OR arrays for error values
-                const normalizedErrors = {};
-                Object.keys(backendErrors).forEach(key => {
-                    const error = backendErrors[key];
-                    normalizedErrors[key] = Array.isArray(error) ? error : [error];
-                });
+                const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
                 setErrors(normalizedErrors);
+                toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS));
             } else if (err.response?.status !== 403) {
                 toast.error(responseData?.message || 'Failed to create activity');
             }
@@ -582,9 +582,15 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                     {!errors.activity_date && realTimeDateError && <div className="text-danger mt-1 small">{realTimeDateError}</div>}
                                 </div>
                                 <div className="col-12">
-                                    <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
-                                        Summary <span className="text-danger">*</span>
-                                    </label>
+                                    <div className="d-flex justify-content-between align-items-baseline">
+                                        <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
+                                            Summary <span className="text-danger">*</span>
+                                        </label>
+                                        {/* The summary is the reminder's title too — capped at ACTIVITY_SUMMARY_MAX_LENGTH (the API enforces the same). */}
+                                        <span className={`fs-11 ${(formData.summary || '').length >= ACTIVITY_SUMMARY_MAX_LENGTH ? 'text-danger' : 'text-muted'}`}>
+                                            {(formData.summary || '').length}/{ACTIVITY_SUMMARY_MAX_LENGTH}
+                                        </span>
+                                    </div>
                                     <input
                                         type="text"
                                         className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
@@ -592,9 +598,10 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         name="summary"
                                         value={formData.summary}
                                         onChange={handleInputChange}
+                                        maxLength={ACTIVITY_SUMMARY_MAX_LENGTH}
                                         required
                                     />
-                                    {errors.subject && <div className="text-danger mt-1 small">{errors.subject[0]}</div>}
+                                    {errors.subject && <div className="invalid-feedback">{errors.subject[0]}</div>}
                                 </div>
                                 <div className="col-12">
                                     <label className={`form-label ${errors.description ? 'text-danger' : ''}`}>Message</label>

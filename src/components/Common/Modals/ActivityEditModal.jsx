@@ -10,9 +10,16 @@ import {
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { updateActivityLog } from '../../../modules/activity-log/services';
+import {
+    ACTIVITY_SUMMARY_MAX_LENGTH,
+    ACTIVITY_EDIT_ERROR_FIELDS,
+    normalizeActivityFieldErrors,
+    getActivityValidationToast,
+} from '../../../modules/activity-log/constants';
 import { TimeInputs } from '../TimeInputs';
 
 const REFERENCE_OPTIONS = REMINDER_TYPES.map(t => t.value);
+
 
 export default function ActivityEditModal({ activity, show, onClose, onUpdated }) {
     const textareaRef = useRef(null);
@@ -192,13 +199,11 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
             const backendErrors = responseData?.errors;
 
             if (backendErrors && typeof backendErrors === 'object') {
-                const normalizedErrors = {};
-                Object.keys(backendErrors).forEach(key => {
-                    const error = backendErrors[key];
-                    normalizedErrors[key] = Array.isArray(error) ? error : [error];
-                });
+                const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
                 setErrors(normalizedErrors);
-            } else {
+                toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_EDIT_ERROR_FIELDS));
+            } else if (err.response?.status !== 403) {
+                // 404, 500 — the server's own message (403 is already toasted by the API client).
                 toast.error(responseData?.message || 'Failed to update activity');
             }
         } finally {
@@ -224,7 +229,8 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
                 <div className="modal-content border-0">
                     <div className="modal-header p-3 ps-4 bg-primary">
                         <h5 className="modal-title text-white">
-                            <i className="ri-calendar-event-line align-middle me-2"></i>Edit Activity
+                            <i className="ri-calendar-event-line align-middle me-2"></i>
+                            {formData.remind_me ? 'Edit Reminder' : 'Edit Activity'}
                         </h5>
                         <button
                             type="button"
@@ -308,18 +314,27 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
                                 </div>
 
                                 <div className="col-12">
-                                    <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
-                                        Summary <span className="text-danger">*</span>
-                                    </label>
+                                    <div className="d-flex justify-content-between align-items-baseline">
+                                        <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
+                                            Subject <span className="text-danger">*</span>
+                                        </label>
+                                        {/* The subject is the reminder's title too — capped at ACTIVITY_SUMMARY_MAX_LENGTH (the API enforces the same). */}
+                                        <span className={`fs-11 ${(formData.summary || '').length >= ACTIVITY_SUMMARY_MAX_LENGTH ? 'text-danger' : 'text-muted'}`}>
+                                            {(formData.summary || '').length}/{ACTIVITY_SUMMARY_MAX_LENGTH}
+                                        </span>
+                                    </div>
                                     <input
                                         type="text"
-                                        className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
+                                        className={`form-control ${errors.subject || !(formData.summary || '').trim() ? 'is-invalid' : ''}`}
                                         name="summary"
                                         value={formData.summary}
                                         onChange={handleInputChange}
+                                        maxLength={ACTIVITY_SUMMARY_MAX_LENGTH}
                                         required
                                     />
-                                    {errors.subject && <div className="text-danger mt-1 small">{errors.subject[0]}</div>}
+                                    {errors.subject
+                                        ? <div className="invalid-feedback">{errors.subject[0]}</div>
+                                        : !(formData.summary || '').trim() && <div className="invalid-feedback d-block">Summary is required.</div>}
                                 </div>
 
                                 <div className="col-12">

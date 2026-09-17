@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient as api } from '../../lib/http/apiClient';
 import { toast } from 'react-toastify';
-import { parseDate, parseDateTime } from '../../utils/formatters';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from '../../components/Table/DataTableWrapper';
@@ -19,6 +18,7 @@ import {
     getEffectiveReminderStatusBadgeClasses,
     getEffectiveReminderStatusLabel,
     getReminderClientPath,
+    getReminderClientLinkLabel,
     getReminderTypeIcon
 } from '../../config/reminders';
 
@@ -229,7 +229,7 @@ export default function ReminderList() {
                 </div>
                 <div className="flex-grow-1">
                     <div className="fs-14 mb-1 d-flex align-items-center gap-2">
-                        <h5 className="fs-15 mb-0 text-dark">{rowData.summary}</h5>
+                        <h5 className="fs-15 mb-0 text-dark text-break">{rowData.summary}</h5>
                     </div>
                     <div className="text-muted mb-1 fs-12 d-flex flex-wrap gap-2">
                         {rowData.organizer && (
@@ -251,7 +251,7 @@ export default function ReminderList() {
         const client = rowData.client;
         if (!client) return <span className="text-muted">—</span>;
 
-        const clientPath = getReminderClientPath(client, rowData.related);
+        const clientPath = getReminderClientPath(client);
         return (
             <div className="overflow-hidden">
                 {clientPath ? (
@@ -263,25 +263,26 @@ export default function ReminderList() {
                     {client.type_label}
                     {client.business_name && client.business_name !== client.name ? ` · ${client.business_name}` : ''}
                 </div>
-                {rowData.related && (
-                    <div className="text-muted fs-12 text-truncate">{rowData.related.label}</div>
+                {/* Same button as the reminder popup and details modal: Go to Client /
+                    Lead / Partner / Employee. A link, so it never opens the row's modal. */}
+                {clientPath && (
+                    <Link
+                        to={clientPath}
+                        className="btn btn-sm btn-soft-primary fw-semibold d-inline-flex align-items-center mt-1"
+                    >
+                        <i className="ri-user-shared-line me-1"></i> {getReminderClientLinkLabel(client)}
+                    </Link>
                 )}
             </div>
         );
     };
 
     const activityDateBodyTemplate = (rowData) => {
-        // set_date_time/send_at from the API are already full ISO-8601 strings
-        // with an offset (ReminderResource converts to X-Timezone server-side)
-        // — pass them straight to parseDateTime. Round-tripping through
-        // `new Date(...).toISOString()` first converts to UTC and drops the
-        // offset, so parseDateTime's own `new Date(...)` re-parses that naive
-        // string as local time again — shifting the displayed time by the
-        // browser's UTC offset instead of showing the correct local time.
-        const dateStr = rowData.set_date_time || rowData.send_at;
+        // Formatted by the API's toTimezone() in the viewer's timezone — shown as-is.
+        const dateStr = rowData.display?.activity_datetime;
         if (!dateStr) return <span>—</span>;
 
-        return <span className="fw-medium">{parseDateTime(dateStr)}</span>;
+        return <span className="fw-medium">{dateStr}</span>;
     };
 
     const onPage = (event) => {
