@@ -45,19 +45,17 @@ export default function TableLoader({ rows = 8, columns = 6, showHeader = true }
     }
 
     return (
-        <div className="fade-panel">
-            <div className="table-responsive table-card">
-                <DataTable
-                    scrollable
-                    scrollHeight="flex"
-                    value={skeletonItems}
-                    className="p-datatable-sm"
-                    showGridlines={false}
-                    stripedRows={false}
-                >
-                    {columnDefinitions}
-                </DataTable>
-            </div>
+        <div className="table-responsive table-card mt-1 fade-panel">
+            <DataTable
+                scrollable
+                scrollHeight="flex"
+                value={skeletonItems}
+                className="p-datatable-sm"
+                showGridlines={false}
+                stripedRows={false}
+            >
+                {columnDefinitions}
+            </DataTable>
         </div>
     );
 }

@@ -1,0 +1,228 @@
+.reminder-modal-content {
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.reminder-premium-header {
+    background: linear-gradient(135deg, var(--primary-color, #001f3f) 0%, #000d1a 100%);
+    overflow: hidden;
+}
+
+.reminder-header-glow {
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(37,99,235,0.5) 0%, transparent 65%);
+    pointer-events: none;
+}
+
+.reminder-close-btn {
+    top: 16px;
+    right: 16px;
+    font-size: 20px;
+    opacity: 0.8;
+    z-index: 10;
+}
+
+.reminder-icon-wrapper {
+    background-color: transparent;
+    border: 1.5px solid #eab308;
+    color: #eab308;
+}
+
+.reminder-badge {
+    background-color: rgba(30, 58, 138, 0.6);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 4px;
+    font-size: 10px;
+    padding: 5px 8px;
+    letter-spacing: 0.5px;
+}
+
+.reminder-desc-text {
+    color: #94a3b8;
+}
+
+.reminder-calendar-box {
+    width: 64px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.reminder-calendar-header {
+    background-color: #2563eb;
+    color: #fff;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+}
+
+.reminder-calendar-day {
+    font-size: 24px;
+}
+
+.reminder-calendar-weekday {
+    color: #64748b;
+}
+
+.reminder-type-badge {
+    font-size: 10px;
+    background-color: #eff6ff;
+    color: #3b82f6;
+    border: 1px solid #bfdbfe;
+}
+
+.reminder-meta-text {
+    color: #64748b;
+}
+
+.reminder-border-dashed {
+    border-color: #e2e8f0;
+}
+
+.reminder-features-box {
+    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+}
+
+.reminder-feature-icon {
+    background-color: #eff6ff;
+    color: #3b82f6;
+}
+
+.reminder-feature-text {
+    font-size: 10px;
+    line-height: 1.2;
+}
+
+.reminder-action-btn {
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    box-shadow: none;
+}
+
+.reminder-action-dismiss {
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    color: #64748b;
+}
+
+/* Dismiss All button uses the app secondary color */
+.btn-reminder-secondary {
+    background-color: var(--secondary-color, #f7b84b);
+    border-color: var(--secondary-color, #f7b84b);
+    color: #fff;
+    font-weight: 600;
+}
+
+.btn-reminder-secondary:hover,
+.btn-reminder-secondary:focus {
+    background-color: color-mix(in srgb, var(--secondary-color, #f7b84b) 85%, #000);
+    border-color: color-mix(in srgb, var(--secondary-color, #f7b84b) 85%, #000);
+    color: #fff;
+}
+
+.btn-reminder-secondary:disabled {
+    background-color: var(--secondary-color, #f7b84b);
+    border-color: var(--secondary-color, #f7b84b);
+    opacity: 0.65;
+}
+
+/* Reminder View Details Modal */
+.reminder-view-modal-dialog {
+    margin: 0.5rem auto;
+    width: 100%;
+    max-width: min(680px, calc(100vw - 1rem));
+}
+
+.reminder-view-modal-body {
+    background-color: #fdfdfd;
+    padding: clamp(12px, 3vw, 24px);
+}
+
+.reminder-detail-icon-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #e8f0fe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.reminder-detail-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.reminder-detail-value {
+    font-size: 13px;
+    word-break: break-word;
+}
+
+.reminder-description-box {
+    padding: 14px 16px;
+}
+
+.reminder-description-collapsed {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.65;
+}
+
+.reminder-description-expanded {
+    line-height: 1.65;
+}
+
+/* Force WYSIWYG HTML to behave inside the modal */
+.reminder-description-expanded *,
+.reminder-description-collapsed * {
+    float: none !important;
+    max-width: 100% !important;
+    width: auto !important;
+}
+
+.reminder-attachment-item {
+    cursor: pointer;
+}
+
+.reminder-attachment-item.is-downloading {
+    cursor: default;
+}
+
+.reminder-attachment-name {
+    word-break: break-word;
+}
+
+.reminder-attachment-download-btn {
+    width: 30px;
+    height: 30px;
+    pointer-events: none;
+}
+
+.reminder-attachment-spinner {
+    width: 14px;
+    height: 14px;
+}
+
+/* Beautiful "+X more reminders" indicator box */
+.reminder-more-badge {
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}

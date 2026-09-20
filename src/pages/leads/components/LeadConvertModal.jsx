@@ -322,8 +322,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         <i className="ri-vip-crown-line fs-18"></i>
                                                     </div>
                                                     <div>
-                                                        <h6 className="mb-0 fw-semibold text-dark">Activate Lifetime Limited Free Edition</h6>
-                                                        <small className="text-muted trial-subtext">Your account is on a Free Trial. This client will automatically be converted to a Limited Free Edition account.</small>
+                                                        <h6 className="mb-0 fw-semibold text-dark">Activate Lifetime Limited Free Plan</h6>
+                                                        <small className="text-muted trial-subtext">Your account is on a Free Plan. This client will automatically be converted to a Limited Free Plan account.</small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -334,8 +334,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         <i className="ri-vip-crown-line fs-18"></i>
                                                     </div>
                                                     <div>
-                                                        <h6 className="mb-0 fw-semibold text-dark">Activate Lifetime Limited Free Edition</h6>
-                                                        <small className="text-muted trial-subtext">Converts lead as a free trial client with limited features.</small>
+                                                        <h6 className="mb-0 fw-semibold text-dark">Activate Lifetime Limited Free Plan</h6>
+                                                        <small className="text-muted trial-subtext">Converts lead as a free plan client with limited features.</small>
                                                     </div>
                                                 </div>
                                                 <div className="form-check form-switch form-switch-md me-1">

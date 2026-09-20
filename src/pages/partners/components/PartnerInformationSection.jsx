@@ -52,6 +52,7 @@ export default function PartnerInformationSection({
     const recurringAmount = formData.recurring_amount || formData.enrollment_details?.recurring_amount;
     const platformFee = formData.platform_fee || formData.enrollment_details?.platform_fee;
     const totalSubscriptionAmount = formData.total_subscription_amount || formData.enrollment_details?.total_subscription_amount;
+    const isFreeTrial = formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1';
 
     const selectedPlan = partnerPlans.find(
         plan => plan.partner_type === formData.partner_type &&
@@ -570,7 +571,7 @@ export default function PartnerInformationSection({
                                         <input
                                             id="is_free_trail"
                                             name="is_free_trail"
-                                            checked={formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1'}
+                                            checked={isFreeTrial}
                                             className="form-check-input"
                                             type="checkbox"
                                             disabled={!!partnerId && !wasFreeTrial}
@@ -605,7 +606,7 @@ export default function PartnerInformationSection({
                                     </div>
                                 </div>
 
-                                {formData.is_free_trail && (
+                                {isFreeTrial && (
                                     <div className="col-md-6">
                                         <div className="mb-0">
                                             <label className="form-label fw-medium text-dark fs-13 mb-1">Trial End Date <span className="text-danger">*</span></label>
@@ -639,7 +640,7 @@ export default function PartnerInformationSection({
                 </div>
             )}
 
-            {!(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1') && (
+            {!isFreeTrial && (
                 <>
                     {/* Enrollment Type — always visible */}
                     {!(!!partnerId && !wasFreeTrial) && (

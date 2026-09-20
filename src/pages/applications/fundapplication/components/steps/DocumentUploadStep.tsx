@@ -167,6 +167,11 @@ export default function DocumentUploadStep({
     return <DocumentUploadSkeleton />
   }
 
+  const handleNext = () => {
+    toast.success('Documents saved successfully')
+    onNext()
+  }
+
   return (
     <>
       <FileManagerModal
@@ -205,7 +210,7 @@ export default function DocumentUploadStep({
           </div>
         </div>
 
-        <StepNavigation onBack={onBack} onNext={onNext} loading={loading} />
+        <StepNavigation onBack={onBack} onNext={handleNext} loading={loading} />
       </div>
     </>  
   )

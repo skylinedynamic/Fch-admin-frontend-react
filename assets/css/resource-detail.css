@@ -1,7 +1,5 @@
-:root {
-    --primary-color: #001f3f;
-    --secondary-color: #f7b84b;
-}
+/* Palette intentionally not redeclared here — it comes from brand-tokens.css.
+   Pinning the FCH colours on :root would override the tenant's brand. */
 
 .resource-detail-container {
     animation: fadeIn 0.5s ease-out;

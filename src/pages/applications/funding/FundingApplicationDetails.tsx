@@ -86,7 +86,7 @@ export default function FundingApplicationDetails() {
     useEffect(() => {
         if (app?.status) setStatus(app.status);
         if (app?.status_note) setStatusNote(app.status_note);
-        if (app?.requested_amount) setRequestedAmountInput(app.requested_amount.toString());
+        if (app?.requested_amount_original != null) setRequestedAmountInput(app.requested_amount_original.toString());
 
         // Sync commission rates from response
         if (app) {
@@ -127,7 +127,7 @@ export default function FundingApplicationDetails() {
 
     const handleUpdateClick = () => {
         if (status === FUNDING_APPLICATION_STATUS.CLOSED) {
-            setFundedAmount(app.total_funded_amount?.toString() || app.requested_amount?.toString() || '');
+            setFundedAmount(app.total_funded_amount?.toString() || app.requested_amount_original?.toString() || '');
             setShowFundedModal(true);
         } else {
             setShowConfirmModal(true);
@@ -213,7 +213,7 @@ export default function FundingApplicationDetails() {
         : requestedAmount;
 
     // 1. Total Commission Amount
-    const totalCommissionAmount = (successFee === (app.total_commission?.toString() || '') && requestedAmountInput === (app.requested_amount?.toString() || '') && app.total_commission_amount && (!app.total_funded_amount || parseFloat(app.total_funded_amount.toString()) === 0))
+    const totalCommissionAmount = (successFee === (app.total_commission?.toString() || '') && requestedAmountInput === (app.requested_amount_original?.toString() || '') && app.total_commission_amount && (!app.total_funded_amount || parseFloat(app.total_funded_amount.toString()) === 0))
         ? parseCurrency(app.total_commission_amount)
         : baseCommissionAmount * (parseFloat(successFee || '0') / 100);
 
@@ -223,12 +223,12 @@ export default function FundingApplicationDetails() {
     const partnerShareVal = showPartnerCommission ? parseFloat(partnerCommissionRate || '0') : 0;
 
     // 2. Admin Commission Amount
-    const adminCommissionAmount = (adminCommissionRate === (app.admin_commission?.toString() || '') && requestedAmountInput === (app.requested_amount?.toString() || '') && app.admin_commission_amount)
+    const adminCommissionAmount = (adminCommissionRate === (app.admin_commission?.toString() || '') && requestedAmountInput === (app.requested_amount_original?.toString() || '') && app.admin_commission_amount)
         ? parseCurrency(app.admin_commission_amount)
         : totalCommissionAmount * (adminShareVal / 100);
 
     // 3. Partner Commission Amount
-    const partnerCommissionAmount = (partnerCommissionRate === (app.partner_commission?.toString() || '') && requestedAmountInput === (app.requested_amount?.toString() || '') && app.partner_commission_amount)
+    const partnerCommissionAmount = (partnerCommissionRate === (app.partner_commission?.toString() || '') && requestedAmountInput === (app.requested_amount_original?.toString() || '') && app.partner_commission_amount)
         ? parseCurrency(app.partner_commission_amount)
         : totalCommissionAmount * (partnerShareVal / 100);
 
@@ -275,7 +275,7 @@ export default function FundingApplicationDetails() {
         }
 
         // Only pass requested_amount if it has changed from the original app data
-        if (requestedAmountInput !== app.requested_amount?.toString()) {
+        if (requestedAmountInput !== app.requested_amount_original?.toString()) {
             payload.requested_amount = parseFloat(requestedAmountInput || '0');
         }
 
@@ -303,7 +303,15 @@ export default function FundingApplicationDetails() {
     };
 
     if (isLoading) {
-        return <ApplicationDetailsLoader />;
+        return (
+            <ApplicationDetailsLoader
+                title="Funding Application Details"
+                breadcrumbs={[
+                    { label: 'Funding Applications', path: '/intake-review/funding-application' },
+                    { label: 'Details' }
+                ]}
+            />
+        );
     }
 
     if (error || !apiResponse) {
@@ -389,8 +397,8 @@ export default function FundingApplicationDetails() {
 
     const renderFinancialInformation = () => (
         <div className="row">
-            <DetailRow label="Monthly Revenue" value={app.monthly_revenue ? `$${parseFloat(app.monthly_revenue).toLocaleString()}` : '-'} />
-            <DetailRow label="Annual Revenue" value={app.annual_revenue ? `$${parseFloat(app.annual_revenue).toLocaleString()}` : '-'} />
+            <DetailRow label="Monthly Revenue" value={app.monthly_revenue || '-'} />
+            <DetailRow label="Annual Revenue" value={app.annual_revenue || '-'} />
             <DetailRow label="Business Bank Name" value={app.business_bank_name} />
             <DetailRow label="Business Checking Start Date" value={app.business_checking_start_date} />
             <DetailRow label="Self-Reported Personal Credit Score" value={app.self_reported_personal_credit_score} />
@@ -400,14 +408,14 @@ export default function FundingApplicationDetails() {
                 <div className="text-muted fs-13">{app.has_business_debt ? 'Yes' : 'No'}</div>
             </div>
             {app.has_business_debt && (
-                <DetailRow label="Debt Balance" value={app.debt_balance ? `$${parseFloat(app.debt_balance).toLocaleString()}` : '-'} />
+                <DetailRow label="Debt Balance" value={app.debt_balance || '-'} />
             )}
         </div>
     );
 
     const renderFundingRequest = () => (
         <div className="row">
-            <DetailRow label="Requested Amount" value={app.requested_amount ? `$${parseFloat(app.requested_amount).toLocaleString()}` : '-'} />
+            <DetailRow label="Requested Amount" value={app.requested_amount || '-'} />
             <DetailRow label="Purpose of Funds" value={app.purpose_of_funds} />
             {app.purpose_note && <DetailRow label="Purpose of Funding Note" value={app.purpose_note} />}
             <DetailRow label="Preferred Funding Type" value={app.preferred_funding_type} />

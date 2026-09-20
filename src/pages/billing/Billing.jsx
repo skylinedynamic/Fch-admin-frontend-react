@@ -8,8 +8,11 @@ import BillingFilters from './components/BillingFilters';
 import BillingStats from './components/BillingStats';
 import { BILLING_VIEW_ALL, BILLING_ENTITY_TYPE_ALL } from './components/BillingFilters';
 import { toast } from 'react-toastify';
+import { useAuthStore } from '../../store/auth';
 
 export default function Billing() {
+    const user = useAuthStore((state) => state.user);
+    const isHost = user?.is_host == 1 || user?.is_host === true;
     const [loading, setLoading] = useState(true);
     const [billings, setBillings] = useState([]);
 
@@ -161,6 +164,7 @@ export default function Billing() {
                                     onApply={handleApplyFilters}
                                     onClear={handleClearFilters}
                                     loading={loading}
+                                    isHost={isHost}
                                 />
 
                                 <div className="alert alert-info bg-info-subtle border-0 text-dark p-3 rounded-3 mb-3 fs-13 shadow-xs d-flex align-items-center gap-2.5" role="alert">

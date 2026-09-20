@@ -247,12 +247,12 @@ export default function EmbedFormSubmissions() {
                 }));
 
                 setShowConvertModal(false);
-                toast.success(res?.message || 'Submission converted to a Free Trial Borrower!');
+                toast.success(res?.message || 'Submission converted to a Free Plan Borrower!');
             } else {
-                toast.error(res?.message || 'Failed to convert to free trial borrower.');
+                toast.error(res?.message || 'Failed to convert to free plan borrower.');
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free trial borrower.');
+            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free plan borrower.');
         } finally {
             setConversionLoading(false);
         }
@@ -356,9 +356,9 @@ export default function EmbedFormSubmissions() {
                 {isConverted ? (
                     <span
                         className="badge bg-success-subtle text-success ef-status-pill"
-                        title="Already converted to a free trial borrower"
+                        title="Already converted to a free plan borrower"
                     >
-                        <i className="ri-vip-crown-2-fill" /> Free Trial
+                        <i className="ri-vip-crown-2-fill" /> Free Plan
                     </span>
                 ) : hasPermission('convert application') ? (
                     <button
@@ -368,10 +368,10 @@ export default function EmbedFormSubmissions() {
                             e.stopPropagation();
                             handleOpenConvertModal(rowData);
                         }}
-                        title="Convert this applicant to a Free Trial Borrower"
+                        title="Convert this applicant to a Free Plan Borrower"
                     >
                         <i className="ri-vip-crown-2-line" />
-                        <span>Convert to Free Trial Borrower</span>
+                        <span>Convert to Free Plan Borrower</span>
                     </button>
                 ) : (
                     <span className="text-muted fs-11">—</span>
@@ -381,10 +381,10 @@ export default function EmbedFormSubmissions() {
     };
 
     const statisticsConfig = [
-        { title: 'Total Submissions', count: stats.total, icon: 'ri-file-list-3-line', colorVariant: 'primary' },
+        { title: 'Total Applications', count: stats.total, icon: 'ri-file-list-3-line', colorVariant: 'primary' },
         { title: 'New Applications', count: stats.new_count, icon: 'ri-flashlight-line', colorVariant: 'warning' },
         { title: 'In Review', count: stats.reviewing_count, icon: 'ri-time-line', colorVariant: 'info' },
-        { title: 'Free Trial Borrowers', count: stats.converted_count, icon: 'ri-vip-crown-2-line', colorVariant: 'success' },
+        { title: 'Free Plan Borrowers', count: stats.converted_count, icon: 'ri-vip-crown-2-line', colorVariant: 'success' },
     ];
 
     const filterLoaderConfig = [
@@ -399,10 +399,10 @@ export default function EmbedFormSubmissions() {
             <div className="container-fluid">
                 {/* Header Section */}
                 <PageHeader
-                    title="Form Submissions"
+                    title="Loan Applications"
                     breadcrumbs={[
                         { label: 'Embedded Form', path: '/embed-form/settings' },
-                        { label: 'Submissions' },
+                        { label: 'Loan Applications' },
                     ]}
                 />
 
@@ -532,7 +532,7 @@ export default function EmbedFormSubmissions() {
                                             rowClassName={() => 'cursor-pointer'}
                                             onRowClick={(e) => {
                                                 const isButton = (e.originalEvent.target as HTMLElement)?.closest('button');
-                                                if (!isButton) navigate(`/embed-form/submissions/${e.data.id}`);
+                                                if (!isButton) navigate(`/embed-form/loan-applications/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"

@@ -124,6 +124,15 @@ const EmailConfigurationForm: React.FC = () => {
                 return;
             }
 
+            if (provider === 'smtp') {
+                const port = Number(form.smtp_port);
+                if (!form.smtp_port || !Number.isInteger(port) || port < 1 || port > 65535) {
+                    setErrors({ smtp_port: 'The SMTP port must be a number between 1 and 65535.' });
+                    setSaving(false);
+                    return;
+                }
+            }
+
             const payload: any = {
                 ...form,
                 email_provider: provider,
@@ -286,10 +295,13 @@ const EmailConfigurationForm: React.FC = () => {
                                                         </span>
                                                         <input
                                                             type="text"
+                                                            inputMode="numeric"
+                                                            maxLength={5}
                                                             className={`form-control fs-14 ${errors.smtp_port ? 'is-invalid border-danger' : ''}`}
                                                             value={form.smtp_port}
                                                             onChange={(e) => {
-                                                                setForm({ ...form, smtp_port: e.target.value });
+                                                                const digitsOnly = e.target.value.replace(/\D/g, '');
+                                                                setForm({ ...form, smtp_port: digitsOnly });
                                                                 if (errors.smtp_port) {
                                                                     const newErrors = { ...errors };
                                                                     delete newErrors.smtp_port;

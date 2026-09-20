@@ -233,12 +233,12 @@ export default function EmbedFormSubmissionDetails() {
                     },
                 }));
                 setShowConvertModal(false);
-                toast.success(res?.message || 'Submission converted to a Free Trial Borrower!');
+                toast.success(res?.message || 'Submission converted to a Free Plan Borrower!');
             } else {
-                toast.error(res?.message || 'Failed to convert to free trial borrower.');
+                toast.error(res?.message || 'Failed to convert to free plan borrower.');
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free trial borrower.');
+            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free plan borrower.');
         } finally {
             setConversionLoading(false);
         }
@@ -332,7 +332,7 @@ export default function EmbedFormSubmissionDetails() {
               {
                   key: 'decision',
                   title: isConverted
-                      ? 'Converted to Free Trial Borrower'
+                      ? 'Converted to Free Plan Borrower'
                       : isRejected
                       ? 'Application Rejected'
                       : 'Decision Pending',
@@ -351,14 +351,14 @@ export default function EmbedFormSubmissionDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 <PageHeader
-                    title="Submission Details"
+                    title="Loan Application Details"
                     breadcrumbs={[
                         { label: 'Embedded Form', path: '/embed-form/settings' },
-                        { label: 'Submissions', path: '/embed-form/submissions' },
+                        { label: 'Loan Applications', path: '/embed-form/loan-applications' },
                         { label: submission ? `${submission.first_name} ${submission.last_name}` : 'Details' }
                     ]}
                 >
-                    <Link to="/embed-form/submissions" className="btn btn-outline-secondary waves-effect">
+                    <Link to="/embed-form/loan-applications" className="btn btn-outline-secondary waves-effect">
                         <i className="ri-arrow-left-line align-middle me-1" /> Back
                     </Link>
                 </PageHeader>
@@ -424,12 +424,12 @@ export default function EmbedFormSubmissionDetails() {
                 ) : !submission ? (
                     <div className="card ef-card text-center p-5">
                         <i className="ri-error-warning-line display-5 text-warning mb-3" />
-                        <h5 className="fw-semibold">Submission Not Found</h5>
+                        <h5 className="fw-semibold">Application Not Found</h5>
                         <p className="text-muted fs-13">
                             The requested application could not be found or you do not have permission to view it.
                         </p>
-                        <Link to="/embed-form/submissions" className="btn btn-primary mx-auto">
-                            Back to Submissions
+                        <Link to="/embed-form/loan-applications" className="btn btn-primary mx-auto">
+                            Back to Loan Applications
                         </Link>
                     </div>
                 ) : (
@@ -450,7 +450,7 @@ export default function EmbedFormSubmissionDetails() {
                                                 </span>
                                                 {isConverted && (
                                                     <span className="badge bg-success-subtle text-success ef-status-pill">
-                                                        <i className="ri-vip-crown-2-fill" /> Free Trial Borrower
+                                                        <i className="ri-vip-crown-2-fill" /> Free Plan Borrower
                                                     </span>
                                                 )}
                                             </div>
@@ -509,7 +509,7 @@ export default function EmbedFormSubmissionDetails() {
                                                 disabled={conversionLoading}
                                             >
                                                 <i className="ri-vip-crown-2-line" />
-                                                <span>Convert to Free Trial Borrower</span>
+                                                <span>Convert to Free Plan Borrower</span>
                                             </button>
                                         ) : null}
                                     </div>
@@ -695,7 +695,7 @@ export default function EmbedFormSubmissionDetails() {
                                                     {convertedBorrower?.full_name || `${submission.first_name} ${submission.last_name}`}
                                                 </div>
                                                 <span className="badge bg-primary-subtle text-primary ef-status-pill mt-1">
-                                                    <i className="ri-vip-crown-2-fill" /> Free Trial
+                                                    <i className="ri-vip-crown-2-fill" /> Free Plan
                                                 </span>
                                             </div>
                                             {convertedBorrowerId && (

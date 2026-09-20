@@ -80,7 +80,7 @@ export default function EmbedFormConvertModal({
                                 <i className="ri-vip-crown-2-line" />
                             </div>
                             <div>
-                                <h5 className="modal-title mb-0">Convert to Free Trial Borrower</h5>
+                                <h5 className="modal-title mb-0">Convert to Free Plan Borrower</h5>
                                 <p className="text-muted fs-12 mb-0">No plan or payment required</p>
                             </div>
                         </div>
@@ -118,7 +118,7 @@ export default function EmbedFormConvertModal({
                             <li>
                                 <i className="ri-infinity-line text-primary" />
                                 <span>
-                                    The free trial has <strong className="text-dark">no end date</strong> — access
+                                    The free plan has <strong className="text-dark">no end date</strong> — access
                                     stays active until the account is upgraded or suspended.
                                 </span>
                             </li>
@@ -156,7 +156,7 @@ export default function EmbedFormConvertModal({
                             ) : (
                                 <>
                                     <i className="ri-user-follow-line align-bottom" />
-                                    Convert to Free Trial Borrower
+                                    Convert to Free Plan Borrower
                                 </>
                             )}
                         </button>

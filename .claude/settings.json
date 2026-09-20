@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-handoff.sh",
+            "timeout": 180,
+            "statusMessage": "Writing session handoff note..."
+          }
+        ]
+      }
+    ]
+  }
+}

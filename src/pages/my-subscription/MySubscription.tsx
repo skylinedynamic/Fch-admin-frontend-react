@@ -74,7 +74,9 @@ export interface MySubscriptionData {
   upcoming_billing?: {
     amount?: string;
     next_date?: string;
+    type?: string;
     enrollment_type?: string;
+    current_phase?: string;
     status?: string;
   } | null;
   subscription?: {
@@ -86,6 +88,10 @@ export interface MySubscriptionData {
     enrollment_completed_at?: string;
     payable_amount?: string;
     subscription_amount_per_month?: string;
+    /** The recurring platform fee - distinct from subscription_amount_per_month,
+     *  which is the installment/enrollment amount and is null once enrollment
+     *  is complete. */
+    monthly_platform_fee?: string;
     subscription_start_date?: string;
     subscription_end_date?: string;
   } | null;
@@ -731,7 +737,7 @@ export default function MySubscription(): JSX.Element {
                           </div>
                           <div>
                             <i className="ri-shield-user-line text-info me-1"></i>
-                            <span>Plan: <strong>{upcoming.enrollment_type || 'N/A'}</strong></span>
+                            <span>Phase: <strong>{upcoming.current_phase || 'N/A'}</strong></span>
                           </div>
                         </div>
                       </div>
@@ -868,7 +874,7 @@ export default function MySubscription(): JSX.Element {
                       </div>
                       <div className="col-xl-3 col-md-6 col-12">
                         <span className="text-muted d-block fs-12">Monthly Platform Fee</span>
-                        <strong className="text-dark fs-14">{subscription?.subscription_amount_per_month || 'N/A'}</strong>
+                        <strong className="text-dark fs-14">{subscription?.monthly_platform_fee || 'N/A'}</strong>
                       </div>
                       <div className="col-xl-3 col-md-6 col-12">
                         <span className="text-muted d-block fs-12">Start Date</span>

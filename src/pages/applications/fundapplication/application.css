@@ -5393,10 +5393,13 @@ span.flatpickr-weekday {
 
 
 /* ====== BUTTON: FILTERS ====== */
+/* Metrics only — the colours are deliberately NOT set here. This file is
+   imported from a page component, but Vite bundles it into the global
+   stylesheet, so the hard coded `color: #fff` leaked onto every .btn-warning in
+   the app and fought brand-tokens.css. The label ended up white while the icon
+   kept the brand token's dark ink — the same button showing two colours. Fill
+   and text now come from brand-tokens.css so both follow the tenant. */
 .btn-warning {
-  background-color: var(--secondary-color) !important;
-  border-color: var(--secondary-color) !important;
-  color: #fff !important;
   font-weight: 500;
   padding-top: 0.45rem;
   padding-bottom: 0.45rem;

@@ -13,7 +13,15 @@ const ResourceServiceDetail: React.FC = () => {
     const { data: resourceResponse, isLoading, error } = useResource(id);
     const resource = resourceResponse?.data;
 
-    if (isLoading) return <ResourceDetailLoader />;
+    if (isLoading) {
+        return (
+            <ResourceDetailLoader breadcrumbs={[{ label: 'Resources', path: '/resources' }, { label: 'Details' }]}>
+                <Link to="/resources" className="btn btn-primary fw-medium">
+                    <i className="ri-arrow-left-line me-1 align-bottom"></i> Back
+                </Link>
+            </ResourceDetailLoader>
+        );
+    }
 
     if (error || !resource) {
         return (

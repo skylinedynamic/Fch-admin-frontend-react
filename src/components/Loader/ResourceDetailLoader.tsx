@@ -1,28 +1,25 @@
 import React from 'react';
 import { Container, Row, Col, Card, CardHeader, CardBody } from 'reactstrap';
+import PageHeader, { BreadcrumbItem } from '../../pages/common/PageHeader';
 
-const ResourceDetailLoader = () => {
+interface ResourceDetailLoaderProps {
+    title?: React.ReactNode;
+    breadcrumbs?: BreadcrumbItem[];
+    children?: React.ReactNode;
+}
+
+const ResourceDetailLoader = ({ title, breadcrumbs = [], children }: ResourceDetailLoaderProps) => {
     return (
         <div className="page-content resource-detail-container">
             <Container fluid>
-                {/* Page Header & Breadcrumbs Skeleton */}
-                <div className="row">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <div className="skeleton-line mb-3 sk-w-250 sk-h-24"></div>
-                                <div className="d-flex gap-2">
-                                    <div className="skeleton-line sk-w-80 sk-h-12"></div>
-                                    <div className="skeleton-line sk-w-80 sk-h-12"></div>
-                                    <div className="skeleton-line sk-w-80 sk-h-12"></div>
-                                </div>
-                            </div>
-                            <div className="mt-0">
-                                <div className="skeleton-line sk-w-100 sk-h-38 rounded"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Real breadcrumbs render immediately; only the title stays a skeleton
+                    because it is the resource name, which isn't known until it loads. */}
+                <PageHeader
+                    title={title ?? <span className="skeleton-line d-inline-block align-middle sk-w-250 sk-h-24" />}
+                    breadcrumbs={breadcrumbs}
+                >
+                    {children}
+                </PageHeader>
 
                 {/* Main Briefing Card Skeleton */}
                 <Card className="border-0 shadow-sm mb-4 rounded-0">

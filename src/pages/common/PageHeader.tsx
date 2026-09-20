@@ -7,7 +7,9 @@ export interface BreadcrumbItem {
 }
 
 export interface PageHeaderProps {
-    title: string;
+    /** Accepts a node so a loading page can pass a skeleton placeholder for a
+     *  data-dependent title while still rendering its real breadcrumbs. */
+    title: React.ReactNode;
     breadcrumbs: BreadcrumbItem[];
     children?: React.ReactNode;
     sticky?: boolean;

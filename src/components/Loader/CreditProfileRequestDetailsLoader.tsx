@@ -1,24 +1,26 @@
 import React from 'react';
 import { Card, CardBody } from 'reactstrap';
+import PageHeader, { BreadcrumbItem } from '../../pages/common/PageHeader';
 
-const CreditProfileRequestDetailsLoader = () => {
+interface CreditProfileRequestDetailsLoaderProps {
+    title?: React.ReactNode;
+    breadcrumbs?: BreadcrumbItem[];
+    children?: React.ReactNode;
+}
+
+const CreditProfileRequestDetailsLoader = ({
+    title = 'Application Details',
+    breadcrumbs = [],
+    children,
+}: CreditProfileRequestDetailsLoaderProps) => {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                {/* Header Skeleton */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <div className="skeleton-line mb-2 sk-w-250 sk-h-24"></div>
-                                <div className="skeleton-line sk-w-200 sk-h-14"></div>
-                            </div>
-                            <div className="mt-3 mt-lg-0">
-                                <div className="skeleton-line sk-w-100 sk-h-38 rounded"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Real header - the title and breadcrumbs are known up front, so they
+                    render immediately instead of skeletons while the data loads. */}
+                <PageHeader title={title} breadcrumbs={breadcrumbs}>
+                    {children}
+                </PageHeader>
 
                 <div className="row">
                     <div className="col-lg-12">

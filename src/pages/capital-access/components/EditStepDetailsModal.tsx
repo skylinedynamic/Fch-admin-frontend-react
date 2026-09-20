@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { Dropdown } from 'primereact/dropdown';
 import { ACCESS_TIME, ACCESS_TIME_OPTIONS, DAY_OPTIONS, DAY_TIME_OPTIONS } from '../../../config';
@@ -25,6 +26,10 @@ interface EditStepDetailsModalProps {
     editDetailsForm: EditDetailsForm;
     setEditDetailsForm: React.Dispatch<React.SetStateAction<EditDetailsForm>>;
     modalValidationErrors: Record<string, string>;
+    cardId?: number;
+    cardName?: string;
+    cardIssuer?: string;
+    cardImageUrl?: string;
 }
 
 export default function EditStepDetailsModal({
@@ -33,7 +38,11 @@ export default function EditStepDetailsModal({
     onSave,
     editDetailsForm,
     setEditDetailsForm,
-    modalValidationErrors
+    modalValidationErrors,
+    cardId,
+    cardName,
+    cardIssuer,
+    cardImageUrl
 }: EditStepDetailsModalProps) {
     const isDay = editDetailsForm.access_time === ACCESS_TIME.DAY;
 
@@ -45,10 +54,39 @@ export default function EditStepDetailsModal({
             centered
             size="lg"
         >
-            <ModalHeader toggle={onClose}>
+            <ModalHeader toggle={onClose} className="step-modal-header">
+                <i className="ri-file-edit-line align-middle me-2"></i>
                 Edit Step Details
             </ModalHeader>
             <ModalBody>
+                {(cardName || cardId) && (
+                    <div className="step-card-banner d-flex align-items-center justify-content-between gap-3 mb-4 bg-light-subtle">
+                        <div className="d-flex align-items-center gap-3 min-w-0">
+                            <div className="step-card-thumb d-flex align-items-center justify-content-center flex-shrink-0 bg-white">
+                                {cardImageUrl ? (
+                                    <img src={cardImageUrl} alt={cardName} className="img-fluid" />
+                                ) : (
+                                    <i className="ri-bank-card-2-line text-muted fs-18"></i>
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <h5 className="mb-0 fs-15 fw-semibold text-dark text-truncate">{cardName || 'Credit Card'}</h5>
+                                {cardIssuer && <p className="mb-0 text-muted fs-12 text-truncate">{cardIssuer}</p>}
+                            </div>
+                        </div>
+                        {cardId && (
+                            <Link
+                                to={`/credit-accounts/${cardId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm btn-primary d-flex align-items-center gap-1 flex-shrink-0"
+                            >
+                                Go To Card <i className="ri-external-link-line"></i>
+                            </Link>
+                        )}
+                    </div>
+                )}
+
                 <div className="row g-3">
                     <div className="col-12">
                         <label className="form-label">Why This Card? <span className="text-danger">*</span></label>

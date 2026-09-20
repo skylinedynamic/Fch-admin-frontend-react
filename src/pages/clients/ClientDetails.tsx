@@ -3,9 +3,8 @@ import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import ClientForm from './components/ClientForm';
-import { ClientInfoSectionRef } from './components/ClientInfoSection';
-import { BusinessFinancialsSectionRef } from './components/BusinessFinancialsSection';
-import { DocumentChecklistSectionRef } from './components/DocumentChecklistSection';
+import ClientInfoSection, { ClientInfoSectionRef } from './components/ClientInfoSection';
+import BusinessFinancialsSection, { BusinessFinancialsSectionRef } from './components/BusinessFinancialsSection';
 // @ts-ignore - JSX component imported in TSX file
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 // @ts-ignore - JSX component imported in TSX file
@@ -79,7 +78,6 @@ export default function ClientDetails() {
     // Refs for Child Components
     const clientInfoRef = useRef<ClientInfoSectionRef>(null);
     const financialsRef = useRef<BusinessFinancialsSectionRef>(null);
-    const checklistRef = useRef<DocumentChecklistSectionRef>(null);
 
     // Initial form state
     const [formData, setFormData] = useState<Client>(DEFAULT_CLIENT_STATE);
@@ -107,9 +105,19 @@ export default function ClientDetails() {
     // Check for activeTab in navigation state (redirect from create)
     useEffect(() => {
         if (location.state && location.state.activeTab) {
-            setActiveTab(location.state.activeTab);
+            const targetTab = location.state.activeTab === ENROLLMENT_TABS.CHECKLIST
+                ? ENROLLMENT_TABS.DOCUMENTS
+                : location.state.activeTab;
+            setActiveTab(targetTab);
         }
     }, [location.state]);
+
+    // Ensure activeTab never resolves to documentChecklist
+    useEffect(() => {
+        if (activeTab === ENROLLMENT_TABS.CHECKLIST) {
+            setActiveTab(ENROLLMENT_TABS.DOCUMENTS);
+        }
+    }, [activeTab]);
 
     // Profile Stats Query
     const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useClientProfileStats(id as string, !!id);
@@ -285,11 +293,6 @@ export default function ClientDetails() {
                     await financialsRef.current.save();
                     window.dispatchEvent(new Event('refreshActivities'));
                     updateSuccess = true;
-                } else if (activeTab === ENROLLMENT_TABS.CHECKLIST && checklistRef.current) {
-                    await checklistRef.current.save();
-                    toast.success("Document checklist saved successfully");
-                    window.dispatchEvent(new Event('refreshActivities'));
-                    updateSuccess = true;
                 } else if (activeTab === ENROLLMENT_TABS.DOCUMENTS) {
                     toast.info("Please upload documents using the specific upload buttons.");
                 } else if (activeTab === ENROLLMENT_TABS.CREDIT_PROFILE) {
@@ -301,30 +304,35 @@ export default function ClientDetails() {
                 }
 
                 if (updateSuccess) {
+                    handleRefresh();
+
                     const tabOrder = [
                         ENROLLMENT_TABS.PERSONAL,
                         ENROLLMENT_TABS.FINANCIALS,
-                        ENROLLMENT_TABS.CHECKLIST,
                         ENROLLMENT_TABS.DOCUMENTS
                     ];
                     const currentIndex = tabOrder.indexOf(activeTab);
                     const nextTab = tabOrder[currentIndex + 1];
 
                     if (nextTab) {
-                        setTimeout(() => navigate(`/clients/${id}`, { state: { activeTab: nextTab } }), 800);
-                    } else {
-                        setTimeout(() => navigate(`/clients/${id}`, { state: { activeTab: activeTab } }), 800);
+                        setTimeout(() => {
+                            setActiveTab(nextTab);
+                            navigate(`/clients/${id}`, { state: { activeTab: nextTab }, replace: true });
+                        }, 800);
                     }
                 }
             }
         } catch (error: any) {
             console.error("Save erroraaaa:", error);
 
-            // Handle backend validation errors
+            // 422 = server-side validation. Always shown as field-level danger +
+            // under-field messages — never a toast, even if the errors payload
+            // is missing/oddly shaped for some field.
+            const isValidationError = error?.response?.status === 422;
             if (error.response && error.response.data) {
                 const { errors: backendErrors, message } = error.response.data;
 
-                if (backendErrors) {
+                if (isValidationError) {
                     const mappedErrors: Record<string, string> = {};
 
                     // Remap enrollment.* dotted keys → flat UI field names
@@ -339,7 +347,7 @@ export default function ClientDetails() {
                         'enrollment.remaining_balance': 'installment_remaining_balance',
                     };
 
-                    Object.keys(backendErrors).forEach(key => {
+                    Object.keys(backendErrors || {}).forEach(key => {
                         const mappedKey = enrollmentKeyMap[key] ?? key;
                         mappedErrors[mappedKey] = Array.isArray(backendErrors[key])
                             ? backendErrors[key][0]
@@ -348,10 +356,10 @@ export default function ClientDetails() {
                     setErrors(mappedErrors);
                     scrollToFirstError(mappedErrors);
                 } else if (message) {
-                    // toast.error(message);
+                    toast.error(message);
                 }
-            } else {
-                // toast.error("An error occurred while saving.");
+            } else if (!isValidationError) {
+                toast.error("An error occurred while saving.");
             }
         } finally {
             setIsSaving(false);
@@ -485,17 +493,6 @@ export default function ClientDetails() {
                                             Business Financials
                                         </button>
                                     </li>
-                                    {/* <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.CHECKLIST ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.CHECKLIST)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            Document Checklist
-                                        </button>
-                                    </li> */}
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === ENROLLMENT_TABS.DOCUMENTS ? 'active' : ''}`}
@@ -577,7 +574,6 @@ export default function ClientDetails() {
                                     activeTab={activeTab}
                                     personalRef={clientInfoRef}
                                     financialRef={financialsRef}
-                                    checklistRef={checklistRef}
                                     formData={formData}
                                     errors={errors}
                                     handleInputChange={handleInputChange}

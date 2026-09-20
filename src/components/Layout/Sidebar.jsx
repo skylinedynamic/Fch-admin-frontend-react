@@ -5,7 +5,7 @@ import { useAuthStore } from "../../store/auth/authStore";
 import { useConfigStore } from "../../store/config";
 import faviconImg from "../../../assets/images/Favicon.png";
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
-import { ENTITY_TYPE_PARTNER } from "../../config/appConfig";
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from "../../config/appConfig";
 
 // Menu item configuration with required permissions
 const menuItems = [
@@ -69,6 +69,7 @@ const menuItems = [
       {
         to: '/intake-review/credit-profile-requests',
         label: 'Request Credit Profile',
+        isHostOnly: true,
         permission: '',
       }
     ]
@@ -159,6 +160,11 @@ const menuItems = [
     label: "Appointments",
     permission: "view appointments",
   },
+  {
+    to: "/reminders",
+    icon: "ri-alarm-warning-line",
+    label: "Task & Reminders",
+  },
   // {
   //   to: '/under-construction/training-courses',
   //   icon: 'ri-live-fill',
@@ -233,23 +239,26 @@ const menuItems = [
       },
     ],
   },
-  {
-    label: "Embedded Form",
-    icon: "ri-survey-line",
-    id: "embed-form-menu",
-    subItems: [
-      {
-        to: "/embed-form/settings",
-        label: "Configuration",
-        permission: "view configuration",
-      },
-      {
-        to: "/embed-form/submissions",
-        label: "Submissions",
-        permission: "view application",
-      },
-    ],
-  },
+  // Hidden for now: the Embedded Form feature is on hold pending the open
+  // defects (client IP, credit-score bands, form validation, conversion flow).
+  // Routes still exist, so this block is all that needs restoring.
+  // {
+  //   label: "Embedded Form",
+  //   icon: "ri-survey-line",
+  //   id: "embed-form-menu",
+  //   subItems: [
+  //     {
+  //       to: "/embed-form/settings",
+  //       label: "Configuration",
+  //       permission: "view configuration",
+  //     },
+  //     {
+  //       to: "/embed-form/loan-applications",
+  //       label: "Loan Applications",
+  //       permission: "view application",
+  //     },
+  //   ],
+  // },
   {
     to: "/admin/settings",
     icon: "ri-file-settings-fill",
@@ -269,8 +278,10 @@ export default function Sidebar() {
   const location = useLocation();
   const { branding: settings } = useConfigStore();
 
-  const dynamicLogoWide = settings?.primary_logo_full_url;
-  const dynamicLogo = settings?.secondary_logo_full_url;
+  // Logos are chosen by the background they sit on. The legacy keys are read as a
+  // fallback so a partner who has not re-uploaded keeps their existing logo.
+  const dynamicLogoWide = settings?.logo_sidebar_full_url;
+  const dynamicLogo = settings?.logo_document_full_url;
   const dynamicFavicon = settings?.favicon_full_url;
 
   // Auto-expand menu on route change
@@ -713,7 +724,7 @@ export default function Sidebar() {
               <i className="ri-vip-crown-2-fill"></i>
             </div>
             <div className="trial-text-wrap">
-              <span className="trial-label">Free Trial</span>
+              <span className="trial-label">{currentUser?.entity_type === ENTITY_TYPE_BORROWER ? 'Free Plan' : 'Free Trial'}</span>
               {trialEndDate && (
                 <span className="trial-expires">Expires {formatTrialDate(trialEndDate)}</span>
               )}

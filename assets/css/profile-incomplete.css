@@ -1,7 +1,5 @@
-:root {
-    --primary-color: #001f3f;
-    --secondary-color: #F7B84B;
-}
+/* Palette intentionally not redeclared here — it comes from brand-tokens.css.
+   Pinning the FCH colours on :root would override the tenant's brand. */
 
 .cgm-overlay {
     position: fixed;
