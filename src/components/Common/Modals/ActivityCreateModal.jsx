@@ -47,7 +47,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         summary: '',
         message_body: '',
         attachments: [],
-        target_visibility: 'borrower',
         remind_me: false,
         remind_at: '',
         reminder_preset: '30_minutes',
@@ -160,15 +159,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             const ctx = window._activityEntityContext || {};
             const resolvedEntityId = entityId ?? ctx.entityId;
             const resolvedEntityType = entityType ?? ctx.entityType;
-            const resolvedPartnerId = ctx.partnerId;
-
-            if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
-                if (!formData.target_visibility) {
-                    setErrors({ target_visibility: ['Please select Send to FCH or Send to Borrower'] });
-                    setIsSaving(false);
-                    return;
-                }
-            }
 
             // Entity IDs - separate Lead, Client, Borrower, Partner, Funding Request, and Funding Application
             if (resolvedEntityType === ENTITY_TYPE_LEAD) {
@@ -179,12 +169,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 data.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 data.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
-                if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
-                if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_APPLICATION) {
                 data.append('funding_application_id', resolvedEntityId ? resolvedEntityId.toString() : '');
-                if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
-                if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {
@@ -227,7 +213,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 summary: '',
                 message_body: '',
                 attachments: [],
-                target_visibility: 'borrower',
                 remind_me: false,
                 remind_at: '',
                 reminder_preset: '30_minutes',
@@ -356,7 +341,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 summary: '',
                 message_body: '',
                 attachments: [],
-                target_visibility: 'borrower',
                 remind_me: false,
                 remind_at: '',
                 reminder_preset: '30_minutes',
@@ -404,9 +388,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             }
         };
     }, []);
-    const ctx = window._activityEntityContext || {};
-    const resolvedEntityType = entityType ?? ctx.entityType;
-    const resolvedPartnerId = ctx.partnerId;
 
     // Real-time validations
     let realTimeDateError = null;
@@ -475,43 +456,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                         )}
                         <form>
                             <div className="row g-3">
-                                {/* Send to Partner / Borrower Radio Buttons - Moved to top as requested */}
-                                {resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1 && (
-                                    <div className="col-12 border-bottom pb-3 mb-1 mt-0">
-                                        <div className="d-flex gap-4">
-                                            <div className="form-check">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="radio"
-                                                    name="activity_target_visibility"
-                                                    id="activityVisibleToHost"
-                                                    value="host"
-                                                    checked={formData.target_visibility === 'host'}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
-                                                />
-                                                <label className="form-check-label" htmlFor="activityVisibleToHost">
-                                                    {ctx.isHost ? 'Send to Partner' : 'Send to FCH'}
-                                                </label>
-                                            </div>
-                                            <div className="form-check">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="radio"
-                                                    name="activity_target_visibility"
-                                                    id="activityVisibleToBorrower"
-                                                    value="borrower"
-                                                    checked={formData.target_visibility === 'borrower'}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
-                                                />
-                                                <label className="form-check-label" htmlFor="activityVisibleToBorrower">
-                                                    Send to Borrower
-                                                </label>
-                                            </div>
-                                        </div>
-                                        {errors.target_visibility && <div className="text-danger mt-1 small">{errors.target_visibility[0]}</div>}
-                                    </div>
-                                )}
-
                                 <div className="col-md-6">
                                     <label className="form-label">Reference <span className="text-danger">*</span></label>
                                     <select

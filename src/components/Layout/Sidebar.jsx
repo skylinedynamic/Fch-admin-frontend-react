@@ -124,7 +124,7 @@ const menuItems = [
   {
     to: "/commissions",
     icon: "bx bx-dollar",
-    label: "Commisions",
+    label: "Commissions",
     permission: "view commission",
   },
 
