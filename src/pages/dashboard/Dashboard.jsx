@@ -7,7 +7,7 @@ import { useDashboardData } from '../../modules/dashboard';
 import { formatCurrency } from '../../utils/helper';
 import TableLoader from '../../components/Loader/TableLoader';
 import { logout, clearAuth } from '../../lib/auth';
-import '../../assets/css/reminder.css';
+import '../../../assets/css/reminder.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -410,10 +410,10 @@ export default function Dashboard() {
                         <>
                           <ul className="list-group list-group-flush border-dashed">
                             {dashboardData.upcoming_tasks_reminders.map((reminder, index) => {
-                              const date = reminder.set_date_time ? new Date(reminder.set_date_time) : (reminder.reminder_date_time ? new Date(reminder.reminder_date_time) : (reminder.remind_at ? new Date(reminder.remind_at) : (reminder.send_at ? new Date(reminder.send_at) : new Date())));
-                              const day = isNaN(date.getTime()) ? '-' : date.getDate();
-                              const weekDay = isNaN(date.getTime()) ? '-' : date.toLocaleDateString('en-US', { weekday: 'short' });
-                              const time = isNaN(date.getTime()) ? '-' : date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                              // Formatted by the API's toTimezone() in the viewer's timezone — shown as-is.
+                              const day = reminder.display?.activity_day ?? '-';
+                              const weekDay = reminder.display?.activity_weekday_short ?? '-';
+                              const time = reminder.display?.activity_time ?? '-';
 
                               return (
                                 <li key={index} className="list-group-item ps-0">

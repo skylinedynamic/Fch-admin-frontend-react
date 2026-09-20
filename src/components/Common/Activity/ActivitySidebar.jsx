@@ -558,12 +558,15 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Edit/Delete for manual 'activity' entries only */}
-                                                                {(activity.log_type_raw === 'activity' || activity.log_name === 'activity') && (
+                                                                {/* Edit/Delete: your own manual 'activity' entries only —
+                                                                    the API refuses either on someone else's entry. */}
+                                                                {(activity.log_type_raw === 'activity' || activity.log_name === 'activity')
+                                                                    && (activity.can_edit || activity.can_delete) && (
                                                                     <div
                                                                         className="flex-shrink-0 ms-2 d-flex gap-1"
                                                                         onClick={(e) => e.stopPropagation()}
                                                                     >
+                                                                        {activity.can_edit && (
                                                                         <button
                                                                             type="button"
                                                                             className="btn btn-ghost-secondary btn-icon btn-xs"
@@ -573,6 +576,8 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                         >
                                                                             <i className="ri-edit-line"></i>
                                                                         </button>
+                                                                        )}
+                                                                        {activity.can_delete && (
                                                                         <button
                                                                             type="button"
                                                                             className="btn btn-ghost-danger btn-icon btn-xs"
@@ -582,6 +587,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                         >
                                                                             <i className="ri-delete-bin-line"></i>
                                                                         </button>
+                                                                        )}
                                                                     </div>
                                                                 )}
 
