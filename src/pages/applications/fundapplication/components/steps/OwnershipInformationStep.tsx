@@ -106,8 +106,12 @@ export default function OwnershipInformationStep({
     }
 
     try {
-      const response = await saveOwnershipInfo(payload)
-      toast.success(response?.message || 'Ownership information saved successfully!')
+      // saveOwnershipInfo resolves to the response's `data` payload, which
+      // carries no `message` — so the server message was never reachable here
+      // and this always fell through to the static text, as the sibling steps
+      // write it directly.
+      await saveOwnershipInfo(payload)
+      toast.success('Ownership information saved successfully!')
       setOwner((prev) => ({ ...prev, isSaved: true }))
       return true
     } catch (error: any) {

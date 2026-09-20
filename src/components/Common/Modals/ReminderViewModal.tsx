@@ -1,25 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+// bootstrap ships no type declarations for this subpath export
+// @ts-expect-error -- untyped third-party module, used only as a constructor below
 import Modal from 'bootstrap/js/dist/modal';
 import { toast } from 'react-toastify';
 import { apiClient as api } from '../../../lib/http/apiClient';
 import { Skeleton } from 'primereact/skeleton';
 import '../../../assets/css/reminder.css';
 import { isReminderMissed, getEffectiveReminderStatusLabel } from '../../../config/reminders';
+import type { Reminder } from '../../../config/reminders';
 import { ReminderRescheduleForm } from '../ReminderRescheduleForm';
-
-interface Reminder {
-    id: number;
-    reference: string;
-    reference_type?: string;
-    summary?: string;
-    message?: string;
-    set_date_time?: string;
-    reminder_date_time?: string;
-    send_at?: string;
-    status: string;
-    notes?: string;
-    attachments?: Array<{ name: string; path: string }>;
-}
 
 interface ReminderViewModalProps {
     show: boolean;
@@ -164,7 +153,12 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                 params: { path: attachment.path },
                 responseType: 'blob',
             });
-            const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/octet-stream' });
+            // axios types a header as string | number | boolean | string[] | AxiosHeaders;
+            // only a string is a usable MIME type, and an empty one still falls back.
+            const contentType = res.headers['content-type'];
+            const blob = new Blob([res.data], {
+                type: (typeof contentType === 'string' ? contentType : '') || 'application/octet-stream',
+            });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;

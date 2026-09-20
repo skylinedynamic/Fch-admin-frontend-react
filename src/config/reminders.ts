@@ -56,7 +56,7 @@ export const getReminderStatusLabel = (status: string | undefined): string => {
     }
 };
 
-interface ReminderLike {
+export interface ReminderLike {
     status?: string;
     set_date_time?: string;
     send_at?: string;
@@ -79,3 +79,17 @@ export const getEffectiveReminderStatusLabel = (reminder: ReminderLike): string 
 
 export const getEffectiveReminderStatusBadgeClasses = (reminder: ReminderLike): string =>
     isReminderMissed(reminder) ? 'bg-danger-subtle text-danger' : getReminderStatusBadgeClasses(reminder.status);
+
+/** A reminder row as returned by the /common/reminders list endpoint. */
+export interface Reminder extends ReminderLike {
+    id: number;
+    reference?: string;
+    reference_type?: string;
+    summary?: string;
+    organizer?: string;
+    duration?: string;
+    location?: string;
+    message?: string;
+    notes?: string;
+    attachments?: Array<{ name: string; path: string }>;
+}

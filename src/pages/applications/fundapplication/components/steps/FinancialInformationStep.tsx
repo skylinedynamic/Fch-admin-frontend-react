@@ -62,8 +62,12 @@ export default function FinancialInformationStep({
     }
 
     try {
-      const response = await saveFinancialInfo(payload)
-      toast.success(response?.message || 'Financial information saved successfully!')
+      // saveFinancialInfo resolves to the response's `data` payload, which
+      // carries no `message` — so the server message was never reachable here
+      // and this always fell through to the static text, as the sibling steps
+      // write it directly.
+      await saveFinancialInfo(payload)
+      toast.success('Financial information saved successfully!')
       setFinancial((prev) => ({ ...prev, isSaved: true }))
       return true
     } catch (error: any) {

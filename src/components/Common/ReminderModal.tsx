@@ -19,7 +19,7 @@ const ReminderModal = () => {
 
     const [reminders, setReminders] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
-    const [loadingAction, setLoadingAction] = useState(null);
+    const [loadingAction, setLoadingAction] = useState<'dismiss' | 'dismissAll' | 'snooze' | null>(null);
     const [showCustomReschedule, setShowCustomReschedule] = useState(false);
     // Only meaningful when showCustomReschedule is true — drive the
     // ReminderRescheduleForm's Confirm button from outside it (combined with
@@ -92,7 +92,7 @@ const ReminderModal = () => {
                 const echo = initEcho();
                 if (echo) {
                     echo.private(`App.Models.User.${userId}`)
-                        .listen('.reminder.due', (e) => {
+                        .listen('.reminder.due', (e: { reminder?: any }) => {
                             if (e && e.reminder) {
                                 // Only process if not cancelled
                                 if (e.reminder.status === 'cancelled') return;
@@ -122,7 +122,7 @@ const ReminderModal = () => {
     };
 
     // Dismiss reminder
-    const dismissReminder = async (id) => {
+    const dismissReminder = async (id: number) => {
         setLoadingAction('dismiss');
 
         try {
@@ -142,7 +142,7 @@ const ReminderModal = () => {
                 }
                 return next;
             });
-        } catch (error) {
+        } catch (error: any) {
             toast.error(
                 error.response?.data?.message ||
                 'Failed to dismiss reminder'
@@ -215,7 +215,7 @@ const ReminderModal = () => {
             });
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             toast.error(
                 error.response?.data?.message || failureMessage
             );
@@ -279,7 +279,7 @@ const ReminderModal = () => {
     // a due-but-still-upcoming reminder must not read as "missed".
     const isPastDue = remindDate.getTime() < Date.now();
 
-    const stripHtml = (html) => {
+    const stripHtml = (html?: string | null) => {
         if (!html) return '';
         const tmp = document.createElement('div');
         tmp.innerHTML = html;
