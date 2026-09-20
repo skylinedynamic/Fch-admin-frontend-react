@@ -6,6 +6,12 @@ export default mergeConfig(
   defineConfig({
     test: {
       pool: 'threads',
+      // 16 cores but only ~17GB RAM: each worker boots its own jsdom+MSW
+      // environment, so an unbounded thread pool oversubscribes memory and
+      // workers time out during startup ("Failed to start threads worker")
+      // before a single test in that file runs. Cap the pool.
+      maxWorkers: 4,
+      minWorkers: 1,
       environment: 'jsdom',
       globals: true,
       setupFiles: ['tests/setup.ts'],

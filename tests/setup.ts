@@ -51,3 +51,22 @@ if (!window.IntersectionObserver) {
   }
   window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver
 }
+
+// jsdom's Blob implementation has no `.stream()`. undici — which MSW uses to
+// build Response bodies — calls `object.stream()` on anything blob-like, so a
+// handler returning `new HttpResponse(new Blob([...]))` dies with
+// "object.stream is not a function". Node 24's undici tolerates the omission,
+// Node 22's does not, which is why this only bites on the older runtime.
+// Patch the method in rather than swapping the global for Node's native Blob,
+// so jsdom's Blob identity — and `expect(x).toBeInstanceOf(Blob)` — still holds.
+if (typeof Blob !== 'undefined' && typeof Blob.prototype.stream !== 'function') {
+  Blob.prototype.stream = function stream(this: Blob): ReadableStream<Uint8Array<ArrayBuffer>> {
+    const blob = this
+    return new ReadableStream<Uint8Array<ArrayBuffer>>({
+      async start(controller) {
+        controller.enqueue(new Uint8Array(await blob.arrayBuffer()))
+        controller.close()
+      },
+    })
+  }
+}
