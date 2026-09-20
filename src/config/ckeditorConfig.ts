@@ -56,7 +56,7 @@ export const editorToolbar = [
     'findAndReplace', 'showBlocks', 'sourceEditing'
 ];
 
-export const editorConfig: EditorConfig = {
+export const editorConfig = {
     licenseKey: 'GPL',
     plugins: editorPlugins,
     toolbar: {
@@ -106,7 +106,7 @@ export const editorConfig: EditorConfig = {
     },
     image: {
         insert: {
-            type: 'auto',
+            type: 'auto' as const,
             integrations: ['upload', 'url']
         },
         // `wrapText` / `breakText` are the grouped alignment dropdowns; they
@@ -149,4 +149,5 @@ export const editorConfig: EditorConfig = {
         showPreviews: true
     },
     placeholder: 'Start writing your post... Use the toolbar above, or type "* " for a bullet list, "1. " for a numbered list and "# " for a heading.'
-};
+} satisfies EditorConfig;
+

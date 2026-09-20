@@ -161,8 +161,17 @@ export interface Reminder extends ReminderLike {
     message?: string;
     notes?: string;
     attachments?: Array<{ name: string; path: string }>;
+    // Scheduling fields — the API returns these on detail/reminder endpoints.
+    set_date_time?: string;
+    send_at?: string;
+    reminder_date_time?: string;
+    // Activity link — present when the reminder was created from an activity log.
+    activity_log_id?: number | null;
+    activity_can_edit?: boolean;
     // Both come back on every reminder the API returns: who it concerns, and
     // the pre-formatted dates/times the list and the detail view render.
     client?: ReminderClient | null;
+    related?: ReminderRelated | null;
+    snooze_history?: ReminderSnoozeEntry[];
     display?: ReminderDisplay;
 }

@@ -14,7 +14,7 @@ import {
     ReminderRelated,
     ReminderSnoozeEntry,
     ReminderDisplay,
-    Reminder as ReminderBase,
+    Reminder,
 } from '../../../config/reminders';
 import { ReminderRescheduleForm } from '../ReminderRescheduleForm';
 import ReminderClientCard from '../ReminderClientCard';
@@ -22,20 +22,6 @@ import ReminderSnoozeForm, { ReminderSnoozeErrors } from '../ReminderSnoozeForm'
 import ReminderAttachments from '../ReminderAttachments';
 import ActivityEditModal from './ActivityEditModal';
 import { getActivityLog } from '../../../modules/activity-log/services';
-
-// The shared shape in config/reminders is the source of truth; this only adds
-// the extra fields the detail view needs, so the two cannot drift apart.
-interface Reminder extends ReminderBase {
-    set_date_time?: string;
-    reminder_date_time?: string;
-    send_at?: string;
-    activity_log_id?: number | null;
-    activity_can_edit?: boolean;
-    client?: ReminderClient | null;
-    related?: ReminderRelated | null;
-    snooze_history?: ReminderSnoozeEntry[];
-    display?: ReminderDisplay;
-}
 
 interface ReminderViewModalProps {
     show: boolean;
