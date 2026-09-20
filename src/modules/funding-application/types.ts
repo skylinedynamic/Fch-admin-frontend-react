@@ -32,6 +32,7 @@ export interface BusinessInfoResponse {
 export interface OwnershipInfoData {
   id: number | null
   first_name: string | null
+  middle_name: string | null
   last_name: string | null
   date_of_birth: string | null
   ssn: string | null

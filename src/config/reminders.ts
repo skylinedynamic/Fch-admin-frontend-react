@@ -161,4 +161,8 @@ export interface Reminder extends ReminderLike {
     message?: string;
     notes?: string;
     attachments?: Array<{ name: string; path: string }>;
+    // Both come back on every reminder the API returns: who it concerns, and
+    // the pre-formatted dates/times the list and the detail view render.
+    client?: ReminderClient | null;
+    display?: ReminderDisplay;
 }

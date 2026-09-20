@@ -8,7 +8,8 @@ import {
     Undo, Font, Strikethrough, Underline, Subscript, Superscript, Code, CodeBlock,
     HorizontalLine, PageBreak, SpecialCharacters, SpecialCharactersEssentials, RemoveFormat,
     Highlight, FindAndReplace, SourceEditing, ShowBlocks, WordCount,
-    Autoformat, PasteFromOffice, TextTransformation, SelectAll, AccessibilityHelp
+    Autoformat, PasteFromOffice, TextTransformation, SelectAll, AccessibilityHelp,
+    type EditorConfig
 } from 'ckeditor5';
 
 export const editorPlugins = [
@@ -55,7 +56,7 @@ export const editorToolbar = [
     'findAndReplace', 'showBlocks', 'sourceEditing'
 ];
 
-export const editorConfig = {
+export const editorConfig: EditorConfig = {
     licenseKey: 'GPL',
     plugins: editorPlugins,
     toolbar: {
