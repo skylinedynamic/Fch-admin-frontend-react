@@ -12,7 +12,6 @@ export const ACTIVITY_CREATE_ERROR_FIELDS = [
     'description',
     'attachments',
     'remind_at',
-    'target_visibility',
 ] as const;
 
 export const ACTIVITY_EDIT_ERROR_FIELDS = [
