@@ -215,7 +215,10 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFre
     payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
 
     // Detect free trial → regular conversion
-    const isConvertingFromFreeTrial = wasFreeTrial && !(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1');
+    // `is_free_trail` is typed as `boolean` but defensively checked against the
+    // legacy wire formats (0/1, "true"/"1") some callers may still pass in.
+    const rawIsFreeTrail = formData.is_free_trail as unknown;
+    const isConvertingFromFreeTrial = wasFreeTrial && !(rawIsFreeTrail == 1 || rawIsFreeTrail === true || rawIsFreeTrail === 'true' || rawIsFreeTrail === '1');
 
     // Strip all flat enrollment/billing fields always (they go into `enrollment` sub-object when needed)
     const flatEnrollmentFields = [

@@ -88,6 +88,7 @@ const STEP_INDICES = {
   DOCUMENT_UPLOAD: 4,
   DISCLOSURES: 5,
   FEDERAL_COMPLIANCE: 6,
+  ATTESTATION: 7,
 } as const
 
 const INITIAL_LOADING_DELAY_MS = 700
@@ -405,6 +406,8 @@ export default function FundApplication() {
     setHighestVisitedStep(prev => Math.max(prev, activeStep))
   }, [activeStep])
 
+
+
   // Check if a step is complete (for progress display)
   const isStepComplete = useCallback(
     (stepIndex: number): boolean => {
@@ -443,7 +446,14 @@ export default function FundApplication() {
   )
 
   // Progress calculations
-  const isApplicationSubmitted = fundingData?.status && !['Draft', 'On Hold', 'Pending'].includes(fundingData.status) ? true : false;
+  const isApplicationSubmitted = Boolean(
+      fundingData?.status &&
+      fundingData.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
+      fundingData.status !== FUNDING_APPLICATION_STATUS.DRAFT
+    )
+
+  // const isApplicationSubmitted = fundingData?.status && !['Draft', 'On Hold', 'Pending'].includes(fundingData.status) ? true : false;
+
   const stepsTotal = tabs.length
   const completedCount = isApplicationSubmitted ? stepsTotal : tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
   const progressPct = isApplicationSubmitted ? 100 : Math.round((completedCount / stepsTotal) * 100)

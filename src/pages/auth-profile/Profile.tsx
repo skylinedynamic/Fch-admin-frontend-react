@@ -9,6 +9,21 @@ import { FileManagerModal } from '../../components/FileManagerModal/FileManagerM
 import { formatPhoneNumber } from '../../utils/formatters';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_EMPLOYEE } from '../../config/appConfig';
 
+type ProfileFormErrors = {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone_number?: string;
+    [key: string]: string | undefined;
+};
+
+type PasswordFormErrors = {
+    current_password?: string;
+    new_password?: string;
+    new_password_confirmation?: string;
+    [key: string]: string | undefined;
+};
+
 const Profile = () => {
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
@@ -30,7 +45,7 @@ const Profile = () => {
         email: '',
         image: ''
     });
-    const [profileErrors, setProfileErrors] = useState({});
+    const [profileErrors, setProfileErrors] = useState<ProfileFormErrors>({});
     const [showFileManager, setShowFileManager] = useState(false);
 
     // Password Form State
@@ -39,7 +54,7 @@ const Profile = () => {
         new_password: '',
         new_password_confirmation: ''
     });
-    const [passwordErrors, setPasswordErrors] = useState({});
+    const [passwordErrors, setPasswordErrors] = useState<PasswordFormErrors>({});
     const [passwordStrength, setPasswordStrength] = useState(0);
 
     useEffect(() => {
@@ -51,14 +66,14 @@ const Profile = () => {
             setProfileData({
                 first_name: firstName,
                 last_name: lastName,
-                phone_number: formatPhoneNumber(user.phone_number) || '',
+                phone_number: formatPhoneNumber(user.phone_number as string | null | undefined) || '',
                 email: user.email || '',
                 image: user.image || ''
             });
         }
     }, [user]);
 
-    const calculatePasswordStrength = (password) => {
+    const calculatePasswordStrength = (password: string) => {
         let strength = 0;
         if (password.length >= 8) strength++;
         if (password.length >= 12) strength++;
@@ -68,11 +83,11 @@ const Profile = () => {
         return strength;
     };
 
-    const handleProfileChange = (e) => {
+    const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let { name, value } = e.target;
 
         if (name === 'phone_number') {
-            value = formatPhoneNumber(value);
+            value = formatPhoneNumber(value) ?? '';
         }
 
         setProfileData(prev => ({ ...prev, [name]: value }));
@@ -81,7 +96,7 @@ const Profile = () => {
         }
     };
 
-    const handlePasswordChange = (e) => {
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setPasswordData(prev => ({ ...prev, [name]: value }));
 
@@ -95,7 +110,7 @@ const Profile = () => {
     };
 
     const validateProfile = () => {
-        const newErrors = {};
+        const newErrors: ProfileFormErrors = {};
         if (!profileData.first_name) newErrors.first_name = 'First name is required';
         if (!profileData.last_name) newErrors.last_name = 'Last name is required';
         if (!profileData.email) newErrors.email = 'Email is required';
@@ -104,7 +119,7 @@ const Profile = () => {
     };
 
     const validatePassword = () => {
-        const newErrors = {};
+        const newErrors: PasswordFormErrors = {};
         if (!passwordData.current_password) newErrors.current_password = 'Current password is required';
         if (!passwordData.new_password) {
             newErrors.new_password = 'New password is required';
@@ -120,7 +135,7 @@ const Profile = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleProfileSubmit = async (e) => {
+    const handleProfileSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!validateProfile()) return;
 
@@ -133,7 +148,7 @@ const Profile = () => {
             } else {
                 toast.error(response.message || 'Failed to update profile');
             }
-        } catch (error) {
+        } catch (error: any) {
             if (error?.response?.data?.errors) {
                 setProfileErrors(error.response.data.errors);
             } else {
@@ -142,7 +157,7 @@ const Profile = () => {
         }
     };
 
-    const handlePasswordSubmit = async (e) => {
+    const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!validatePassword()) return;
 
@@ -159,7 +174,7 @@ const Profile = () => {
             } else {
                 toast.error(response.message);
             }
-        } catch (error) {
+        } catch (error: any) {
             if (error?.response?.data?.errors) {
                 setPasswordErrors(error.response.data.errors);
             } else {
@@ -277,7 +292,7 @@ const Profile = () => {
                                     </div>
                                     <div className="flex-grow-1 ms-3">
                                         <p className="text-muted fs-11 mb-0 text-uppercase">Phone Number</p>
-                                        <h6 className="mb-0 text-truncate" style={{ maxWidth: '160px' }}>{user?.phone_number ? formatPhoneNumber(user.phone_number) : 'N/A'}</h6>
+                                        <h6 className="mb-0 text-truncate" style={{ maxWidth: '160px' }}>{user?.phone_number ? formatPhoneNumber(user.phone_number as string | null | undefined) : 'N/A'}</h6>
                                     </div>
                                 </div>
                                 <div className="d-flex align-items-center">

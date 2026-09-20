@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
 import { fetchGroupedPermissions, createRole, updateRole, fetchRoles, deleteRole } from './services'
 import type { ApiModulePermissions, CreateRolePayload, Role } from './types'
@@ -16,7 +16,7 @@ export const useGroupedPermissions = (opts?: { fresh?: boolean }) => {
     refetchOnMount: fresh ? 'always' : false,
     refetchOnWindowFocus: fresh ? 'always' : false,
     refetchOnReconnect: fresh ? 'always' : false,
-    keepPreviousData: fresh ? false : true,
+    placeholderData: fresh ? undefined : keepPreviousData,
   })
 }
 

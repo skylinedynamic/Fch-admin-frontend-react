@@ -145,7 +145,7 @@ export default function FundingTypeModal({ visible, onHide, onSuccess, types = [
                         <hr className="my-3" />
                         <label className="form-label fw-semibold mb-2">Existing Types</label>
                         <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                            {types.map((item) => (
+                            {types.map((item: any) => (
                                 <div
                                     key={item.id}
                                     className="d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-light"

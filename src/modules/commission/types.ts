@@ -87,3 +87,8 @@ export interface CommissionFilters {
     sort_field?: string;
     sort_order?: string;
 }
+
+export interface ProcessPayoutPayload {
+    partner_payment_method: string;
+    note?: string;
+}

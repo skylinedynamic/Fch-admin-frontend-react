@@ -16,7 +16,7 @@ const ClientStats: React.FC<ClientStatsProps> = ({ stats, isLoading }) => {
         return (
             <div className="row client-section">
                 {[1, 2, 3, 4].map((index) => (
-                    <StatisticsCardSkeleton key={`skeleton-${index}`} />
+                    <StatisticsCardSkeleton key={`skeleton-${index}`} colSize="col-xl-3 col-md-6" />
                 ))}
             </div>
         );
@@ -68,6 +68,7 @@ const ClientStats: React.FC<ClientStatsProps> = ({ stats, isLoading }) => {
                     count={config.count}
                     icon={config.icon}
                     colorVariant={config.colorVariant}
+                    colSize="col-xl-3 col-md-6"
                 />
             ))}
         </div>

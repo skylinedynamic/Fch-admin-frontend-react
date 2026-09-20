@@ -616,13 +616,22 @@ export default function ClientDetails() {
                     {/* Activity Sidebar */}
                     {id && activeTab !== ENROLLMENT_TABS.CREDIT_PROFILE && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Client" loading={isSaving} borrowerEmail={formData.email} />
+                            <ActivitySidebar
+                                entityId={id}
+                                entityType="Client"
+                                loading={isSaving}
+                                borrowerEmail={formData.email}
+                                partnerId={undefined}
+                                partnerEmail={undefined}
+                                hostEmail={undefined}
+                                isHost={undefined}
+                            />
                         </div>
                     )}
                 </div>
             </div>
-            <EmailComposeModal entityId={id} entityType="Client" />
-            <ActivityCreateModal entityId={id} entityType="Client" />
+            <EmailComposeModal entityId={id} entityType="Client" lead={undefined} />
+            <ActivityCreateModal entityId={id} entityType="Client" onActivityCreated={undefined} />
 
             <LeadPaymentModal
                 show={showPaymentModal}

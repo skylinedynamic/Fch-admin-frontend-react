@@ -5,7 +5,7 @@ import {
   useGroupedResources,
   useDeleteResource
 } from '../../modules/resource/queries';
-import { ResourceItem } from '../../modules/resource/types';
+import { ResourceItem, GroupedResources } from '../../modules/resource/types';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
 import { handleFileDownload } from '../../utils/fileDownload';
@@ -14,7 +14,7 @@ import ResourceLoader from '../../components/Loader/ResourceLoader';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
 
-const getYoutubeThumbnail = (url: string) => {
+const getYoutubeThumbnail = (url: string | null | undefined) => {
   if (!url) return null;
   const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
@@ -70,7 +70,13 @@ const Resource: React.FC = () => {
   const { data: groupedData, isLoading } = useGroupedResources();
   const deleteMutation = useDeleteResource();
 
-  const resources = groupedData?.data || {};
+  const resources: GroupedResources = groupedData?.data || {
+    legal_registration: [],
+    business_services: [],
+    download_assets: [],
+    education_help: [],
+    training_academy: [],
+  };
 
   // Navigation handlers
   const [activeType, setActiveType] = useState<string>('legal_registration');

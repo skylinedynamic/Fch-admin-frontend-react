@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import { CommissionListItem, CommissionDetail, CommissionFilters, CommissionPaginatedResponse } from './types';
+import { CommissionListItem, CommissionDetail, CommissionFilters, CommissionPaginatedResponse, ProcessPayoutPayload } from './types';
 
 export const getCommissions = async (payload: CommissionFilters): Promise<CommissionPaginatedResponse> => {
     const response = await apiClient.post<CommissionPaginatedResponse>('/common/commissions', payload);
@@ -11,7 +11,7 @@ export const getCommissionById = async (id: string | number): Promise<Commission
     return response.data.data;
 };
 
-export const processPayout = async (id: string | number, payload: { partner_payment_method: string }): Promise<any> => {
+export const processPayout = async (id: string | number, payload: ProcessPayoutPayload): Promise<any> => {
     const response = await apiClient.post(`/admin/commission/${id}/payout`, payload);
     return response.data;
 };

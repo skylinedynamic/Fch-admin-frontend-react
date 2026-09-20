@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
 import { createAppointment, deleteAppointment, fetchAppointmentById, fetchAppointments, updateAppointment } from './services'
-import type { Appointment } from './types'
+import type { CreateAppointmentPayload } from './types'
 
 export const useAppointments = () => {
   return useQuery({
@@ -21,7 +21,7 @@ export const useAppointment = (id: string | number, enabled = true) => {
 export const useCreateAppointment = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (payload: Partial<Appointment>) => createAppointment(payload),
+    mutationFn: (payload: CreateAppointmentPayload) => createAppointment(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.appointment.list() })
     },
@@ -31,7 +31,7 @@ export const useCreateAppointment = () => {
 export const useUpdateAppointment = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string | number; payload: Partial<Appointment> }) => updateAppointment(id, payload),
+    mutationFn: ({ id, payload }: { id: string | number; payload: Partial<CreateAppointmentPayload> }) => updateAppointment(id, payload),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: queryKeys.appointment.detail(variables.id) })
       qc.invalidateQueries({ queryKey: queryKeys.appointment.list() })

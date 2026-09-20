@@ -19,6 +19,8 @@ export interface BusinessInfoData {
   industry_type: string | null
   years_in_business: string | null
   number_of_employees: string | null
+  funding_sequence_id?: number | null
+  funding_request_id?: number | null
 }
 
 export interface BusinessInfoResponse {
@@ -43,6 +45,9 @@ export interface OwnershipInfoData {
   has_co_borrower: boolean
   phone_number: string | null
   co_borrowers?: CoBorrowerApiData[]
+  funding_sequence_id?: number | null
+  funding_request_id?: number | null
+  is_ownership_info_saved?: boolean
 }
 
 export interface CoBorrowerApiData {
@@ -80,6 +85,9 @@ export interface FinancialInfoData {
   self_reported_business_credit_score: string | null
   has_business_debt: boolean
   debt_balance: string | null
+  funding_sequence_id?: number | null
+  funding_request_id?: number | null
+  is_financial_info_saved?: boolean
 }
 
 export interface FinancialInfoResponse {
@@ -101,12 +109,23 @@ export interface DisclosuresConsentResponse {
 }
 export interface FundingRequestData {
   id: number | null
+  funding_request_id?: number | null
+  funding_sequence_id?: number | null
   requested_amount: string | null
   purpose_of_funds: string | null
+  approved_funding?: string | null
   preferred_funding_type: string | null
   timeframe_needed: string | null
   collateral_available: string | null
   purpose_note: string | null
+  is_business_info_saved?: boolean
+  is_ownership_info_saved?: boolean
+  is_financial_info_saved?: boolean
+  is_funding_request_saved?: boolean
+  is_disclosures_saved?: boolean
+  is_federal_compliance_saved?: boolean
+  signature_data?: any
+  status?: string | null
 }
 
 export interface FundingRequestResponse {
@@ -142,7 +161,7 @@ export interface AttestationData {
   signature_data?: any
 }
 
-export interface AttestationPayload {
+export interface AttestationFormPayload {
   id: number | null
   attestation_authorization?: boolean
   signature_name: string

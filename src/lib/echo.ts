@@ -2,6 +2,14 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { getToken } from './auth/auth';
 
+// Laravel Echo looks up the Pusher constructor on `window` rather than taking
+// it as an argument, so the global has to be declared as well as assigned.
+declare global {
+  interface Window {
+    Pusher: typeof Pusher;
+  }
+}
+
 // Assign Pusher to window so Laravel Echo can use it
 window.Pusher = Pusher;
 

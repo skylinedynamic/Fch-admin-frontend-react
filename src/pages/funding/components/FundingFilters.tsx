@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import CustomDropdown from '../../../components/Common/CustomDropdown';
 import { FUNDING_STATUS_OPTIONS, FUNDING_CATEGORY_OPTIONS } from '../../../config/funding';
 
-const FundingFilters = ({ activeFilter, setActiveFilter }) => {
+interface FundingFiltersProps {
+    activeFilter: string;
+    setActiveFilter: (filter: string) => void;
+}
+
+const FundingFilters = ({ activeFilter, setActiveFilter }: FundingFiltersProps) => {
     
     // Internal state before applying
     const [localSearch, setLocalSearch] = useState('');

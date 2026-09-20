@@ -5,7 +5,13 @@ export type AuthUser = {
   id?: string | number
   name?: string
   email?: string
+  phone_number?: string | null
+  partner_id?: string | number | null
+  user_type?: string
   role?: string
+  role_id?: string | number | null
+  role_name?: string | null
+  status?: string
   image?: string
   entity_type?: string
   entity_id?: string | number

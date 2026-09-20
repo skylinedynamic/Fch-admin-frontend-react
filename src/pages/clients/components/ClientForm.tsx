@@ -177,7 +177,7 @@ export default function ClientForm({
             {/* Agreement Tab */}
             {activeTab === ENROLLMENT_TABS.AGREEMENT && (
                 <div className="tab-pane active show" role="tabpanel">
-                    <AgreementSection clientId={clientId} formData={formData} onRefresh={onRefresh} />
+                    <AgreementSection partnerId={undefined} clientId={clientId} formData={formData} onRefresh={onRefresh} />
                 </div>
             )}
 

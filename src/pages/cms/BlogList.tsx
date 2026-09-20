@@ -201,10 +201,10 @@ export default function BlogList() {
                 {/* Statistics Cards with Skeleton */}
                 <div className="row blog-section">
                     {isLoading ? (
-                        [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
+                        [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} colSize="col-xl-3 col-md-6" />)
                     ) : (
                         statisticsConfig.map((s, idx) => (
-                            <StatisticsCard key={idx} title={s.title} count={s.value} icon={s.icon} colorVariant={s.color} />
+                            <StatisticsCard key={idx} title={s.title} count={s.value} icon={s.icon} colorVariant={s.color} colSize="col-xl-3 col-md-6" />
                         ))
                     )}
                 </div>

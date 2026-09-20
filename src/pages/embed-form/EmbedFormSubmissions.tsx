@@ -411,7 +411,7 @@ export default function EmbedFormSubmissions() {
                 {/* Statistics Cards Row mirrored from Partners.jsx */}
                 <div className="row embed-stats-section partner-section">
                     {loading && !submissions.length ? (
-                        [1, 2, 3, 4].map((i) => <StatisticsCardSkeleton key={i} />)
+                        [1, 2, 3, 4].map((i) => <StatisticsCardSkeleton key={i} colSize="col-xl-3 col-md-6" />)
                     ) : (
                         statisticsConfig.map((config, index) => (
                             <StatisticsCard
@@ -420,6 +420,7 @@ export default function EmbedFormSubmissions() {
                                 count={config.count}
                                 icon={config.icon}
                                 colorVariant={config.colorVariant}
+                                colSize="col-xl-3 col-md-6"
                             />
                         ))
                     )}

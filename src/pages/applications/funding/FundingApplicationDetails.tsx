@@ -1230,9 +1230,12 @@ export default function FundingApplicationDetails() {
                             <ActivitySidebar
                                 entityId={id}
                                 entityType="Funding Application"
-                                style={{ marginBottom: '-100px' }}
                                 loading={isLoading}
-                                borrowerEmail={app?.borrower?.email}
+                                partnerId={undefined}
+                                partnerEmail={undefined}
+                                hostEmail={undefined}
+                                isHost={undefined}
+                                borrowerEmail={(app as FundingApplicationDetailsType & { borrower?: { email?: string | null } | null })?.borrower?.email}
                                 stickyTopOffset="133px"
                             />
                         </div>

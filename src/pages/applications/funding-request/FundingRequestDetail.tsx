@@ -5,7 +5,7 @@ import { useFundingRequestDetails, useUpdateFundingRequestStatus, useAssignLende
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 import FundingRequestDetailLoader from './components/FundingRequestDetailLoader';
 import { getFileConfig } from '../../../config/fileTypeConfig';
-import { handleFileDownload } from '../../../utils/fileDownload';
+import { handleFileDownload, downloadFromUrl } from '../../../utils/fileDownload';
 import { downloadBorrowerDocument } from '../../../modules/client/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';

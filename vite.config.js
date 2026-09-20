@@ -12,5 +12,11 @@ export default defineConfig({
   server: {
     port: 5174,
     open: false
+  },
+  preview: {
+    // Distinct from the sibling fch-borrower-react repo's preview port
+    // (4173, Vite's default) so both apps' E2E suites can run without a
+    // port collision if ever run at the same time.
+    port: 4174
   }
 })

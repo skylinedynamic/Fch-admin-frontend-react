@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+// bootstrap ships no type declarations for this subpath export
+// @ts-expect-error -- untyped third-party module, used only as a constructor below
 import Modal from 'bootstrap/js/dist/modal';
 import { toast } from 'react-toastify';
 import { apiClient as api } from '../../../lib/http/apiClient';

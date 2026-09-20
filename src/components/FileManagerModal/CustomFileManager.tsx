@@ -326,7 +326,6 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
           tree={folderTree}
           currentPath={currentPath}
           onNavigate={onNavigate}
-          rootLabel={rootLabel}
         />
       </div>
 

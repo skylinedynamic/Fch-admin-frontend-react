@@ -21,9 +21,11 @@ import {
     getReminderClientLinkLabel,
     getReminderTypeIcon
 } from '../../config/reminders';
+import type { Reminder } from '../../config/reminders';
+import type { DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 
 export default function ReminderList() {
-    const [reminders, setReminders] = useState([]);
+    const [reminders, setReminders] = useState<Reminder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [initialLoading, setInitialLoading] = useState(true);
 
@@ -34,16 +36,21 @@ export default function ReminderList() {
     const [sortOrder, setSortOrder] = useState('desc');
 
     const [searchText, setSearchText] = useState('');
-    const [selectedType, setSelectedType] = useState(null);
-    const [selectedStatus, setSelectedStatus] = useState(null);
-    const [dateRange, setDateRange] = useState(() => {
+    const [selectedType, setSelectedType] = useState<string | null>(null);
+    const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+    // PrimeReact's range Calendar hands back `(Date | null)[] | null | undefined`,
+    // and Clear resets the whole range to null — so the element type has to stay
+    // nullable rather than the plain `Date[]` the initial value alone infers.
+    const [dateRange, setDateRange] = useState<(Date | null)[] | null>(() => {
         const today = new Date();
         return [today, today];
     });
 
-    const [dismissModal, setDismissModal] = useState({ show: false, loading: false });
-    const [viewModal, setViewModal] = useState({ show: false, data: null });
-    const [selectedReminders, setSelectedReminders] = useState([]);
+    // `type` decides which confirmation copy the modal shows and which endpoint
+    // handleConfirmDismiss hits; it's absent while the modal is closed.
+    const [dismissModal, setDismissModal] = useState<{ show: boolean; type?: 'all' | 'selected'; loading: boolean }>({ show: false, loading: false });
+    const [viewModal, setViewModal] = useState<{ show: boolean; data: Reminder | null }>({ show: false, data: null });
+    const [selectedReminders, setSelectedReminders] = useState<Reminder[]>([]);
     // Server-side truth for "does this user have ANY dismissable (pending or
     // sent — sent includes ones showing as Missed) reminder at all",
     // independent of the table's current page/date/type/status filters.
@@ -209,7 +216,7 @@ export default function ReminderList() {
 
     const STATUS_OPTIONS = REMINDER_STATUS_OPTIONS;
 
-    const getStatusBadge = (rowData) => {
+    const getStatusBadge = (rowData: Reminder) => {
         return (
             <span className={`badge text-uppercase px-3 py-1 rounded-pill fw-medium ${getEffectiveReminderStatusBadgeClasses(rowData)}`}>
                 {getEffectiveReminderStatusLabel(rowData)}
@@ -217,7 +224,7 @@ export default function ReminderList() {
         );
     };
 
-    const subjectBodyTemplate = (rowData) => {
+    const subjectBodyTemplate = (rowData: Reminder) => {
         return (
             <div className="d-flex align-items-center">
                 <div className="flex-shrink-0 me-3">
@@ -285,12 +292,12 @@ export default function ReminderList() {
         return <span className="fw-medium">{dateStr}</span>;
     };
 
-    const onPage = (event) => {
+    const onPage = (event: DataTablePageEvent) => {
         setPerPage(event.rows);
         setPage(Math.floor(event.first / event.rows) + 1);
     };
 
-    const onSort = (event) => {
+    const onSort = (event: DataTableSortEvent) => {
         setSortField(event.sortField);
         setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc');
     };
@@ -393,7 +400,7 @@ export default function ReminderList() {
                                                 <div className="search-box">
                                                     <Calendar
                                                         value={dateRange}
-                                                        onChange={(e) => setDateRange(e.value)}
+                                                        onChange={(e) => setDateRange(e.value ?? null)}
                                                         placeholder="Date Range"
                                                         selectionMode="range"
                                                         readOnlyInput
@@ -440,9 +447,9 @@ export default function ReminderList() {
                                             emptyMessage="No reminders found"
                                             selectionMode="checkbox"
                                             selection={selectedReminders}
-                                            onSelectionChange={(e) => setSelectedReminders(e.value)}
-                                            isDataSelectable={(e) => e.data.status === REMINDER_STATUS_PENDING || e.data.status === REMINDER_STATUS_SENT}
-                                            onRowClick={(e) => {
+                                            onSelectionChange={(e: { value: Reminder[] }) => setSelectedReminders(e.value)}
+                                            isDataSelectable={(e: { data: Reminder }) => e.data.status === REMINDER_STATUS_PENDING || e.data.status === REMINDER_STATUS_SENT}
+                                            onRowClick={(e: { originalEvent: React.MouseEvent; data: Reminder }) => {
                                                 const target = e.originalEvent.target as HTMLElement;
                                                 // Do not open modal if clicking the checkbox column or the client link
                                                 if (target.closest('.p-checkbox') || target.closest('.p-selection-column') || target.closest('a') || target.tagName.toLowerCase() === 'input') {

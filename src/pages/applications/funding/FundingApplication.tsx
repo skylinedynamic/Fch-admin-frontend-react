@@ -200,7 +200,7 @@ export default function FundingApplication() {
                 {/* Statistics Cards */}
                 <div className="row funding-section">
                     {statsLoading ? (
-                        [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
+                        [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} colSize="col-xl-3 col-md-6" />)
                     ) : (
                         statisticsConfig.map((config, index) => (
                             <StatisticsCard
@@ -209,6 +209,7 @@ export default function FundingApplication() {
                                 count={config.dataKey.includes('rate') ? `${stats[config.dataKey]}` : stats[config.dataKey]}
                                 icon={config.icon}
                                 colorVariant={config.colorVariant}
+                                colSize="col-xl-3 col-md-6"
                             />
                         ))
                     )}
