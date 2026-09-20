@@ -2,13 +2,17 @@ import React from 'react';
 import { Skeleton } from 'primereact/skeleton';
 
 export default function MySubscriptionLoader(): JSX.Element {
+  // No wrapping container/padding here: this renders inside the page's own
+  // container-fluid (same spot as the loaded content), and the loaded content
+  // adds none of its own - a second nested container-fluid with py-3 padding
+  // shifted the skeleton's margins/padding out of sync with the real page.
   return (
-    <div className="container-fluid py-3">
+    <>
       {/* ── 1. Top 3 Metric Cards Skeleton ── */}
-      <div className="row g-3 mb-4">
+      <div className="row g-3 mb-3">
         {/* Card 1: Recent Bill */}
         <div className="col-xl-4 col-md-6 col-12">
-          <div className="card billing-card-wrapper h-100 mb-0 shadow-sm border-0">
+          <div className="card billing-card-wrapper h-100 mb-0">
             <div className="card-body p-3 d-flex flex-column justify-content-between">
               <div className="d-flex align-items-center justify-content-between mb-3">
                 <div className="d-flex align-items-center gap-2">
@@ -30,7 +34,7 @@ export default function MySubscriptionLoader(): JSX.Element {
 
         {/* Card 2: Upcoming Billing */}
         <div className="col-xl-4 col-md-6 col-12">
-          <div className="card billing-card-wrapper h-100 mb-0 shadow-sm border-0">
+          <div className="card billing-card-wrapper h-100 mb-0">
             <div className="card-body p-3 d-flex flex-column justify-content-between">
               <div className="d-flex align-items-center justify-content-between mb-3">
                 <div className="d-flex align-items-center gap-2">
@@ -52,7 +56,7 @@ export default function MySubscriptionLoader(): JSX.Element {
 
         {/* Card 3: Default Payment Gateway */}
         <div className="col-xl-4 col-md-12 col-12">
-          <div className="card billing-card-wrapper h-100 mb-0 shadow-sm border-0">
+          <div className="card billing-card-wrapper h-100 mb-0">
             <div className="card-body p-3 d-flex flex-column justify-content-between">
               <div className="d-flex align-items-center justify-content-between mb-3">
                 <div className="d-flex align-items-center gap-2">
@@ -76,9 +80,9 @@ export default function MySubscriptionLoader(): JSX.Element {
       </div>
 
       {/* ── 2. Active Subscription Plan Card Skeleton ── */}
-      <div className="row mb-4">
+      <div className="row mb-3">
         <div className="col-12">
-          <div className="card billing-card-wrapper mb-0 shadow-sm border-0">
+          <div className="card billing-card-wrapper mb-0">
             <div className="card-body p-4">
               <div className="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
                 <div className="d-flex align-items-center gap-3">
@@ -153,6 +157,6 @@ export default function MySubscriptionLoader(): JSX.Element {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Modal from 'bootstrap/js/dist/modal';
 
 export default function DeleteConfirmationModal({ show, onConfirm, onClose, loading, text }) {
@@ -38,10 +39,12 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
         } catch (_) { }
       }
       modalInstanceRef.current = null;
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
     };
   }, []);
 
-  return (
+  const modalContent = (
     <div
       className="modal fade flip"
       ref={modalRef}
@@ -64,6 +67,7 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
               </p>
               <div className="hstack gap-2 justify-content-center remove">
                 <button
+                  type="button"
                   className="btn btn-link link-success fw-medium"
                   onClick={onClose}
                   disabled={loading} // optional: disable close while loading
@@ -96,4 +100,7 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }

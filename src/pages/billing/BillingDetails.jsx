@@ -106,7 +106,7 @@ export default function BillingDetails() {
         </button>
     );
 
-    const { subscriber, subscription, entity_type } = billingDetails || {};
+    const { subscriber, subscription, entity_type, upcoming_billing: upcomingBilling } = billingDetails || {};
     const name = billingDetails
         ? (entity_type === ENTITY_TYPE_PARTNER ? subscriber?.full_name : `${subscriber?.first_name} ${subscriber?.last_name}`)
         : '';
@@ -115,6 +115,20 @@ export default function BillingDetails() {
     const company = subscriber?.company_name || 'N/A';
 
     const typeColor = entity_type === ENTITY_TYPE_PARTNER ? 'primary' : 'success';
+
+    // Where this subscriber's profile lives. Partners and borrowers (clients) have
+    // separate sections, so the route is chosen from entity_type rather than
+    // assumed. Null when the type is neither, which hides the button instead of
+    // linking somewhere that does not exist.
+    const profilePath = (() => {
+        const subscriberId = billingDetails?.entity_id;
+
+        if (!subscriberId) return null;
+        if (entity_type === ENTITY_TYPE_PARTNER) return `/partners/${subscriberId}`;
+        if (entity_type === ENTITY_TYPE_BORROWER) return `/clients/${subscriberId}`;
+
+        return null;
+    })();
 
     return (
         <div className="page-content">
@@ -156,7 +170,15 @@ export default function BillingDetails() {
                                             </div>
                                         </div>
                                         <div className="flex-grow-1 ms-3">
-                                            <h4 className="card-title text-primary mb-1 fs-18">{name}</h4>
+                                            {profilePath ? (
+                                                <h4 className="card-title mb-1 fs-18">
+                                                    <Link to={profilePath} className="text-primary text-decoration-underline">
+                                                        {name}
+                                                    </Link>
+                                                </h4>
+                                            ) : (
+                                                <h4 className="card-title text-primary mb-1 fs-18">{name}</h4>
+                                            )}
                                             <p className="text-muted mb-0 fs-13">{email}</p>
                                         </div>
                                         <div className="flex-shrink-0 text-end">
@@ -275,19 +297,21 @@ export default function BillingDetails() {
                                                         </div>
                                                     )}
 
-                                                    {/* Next Billing Due */}
+                                                    {/* Next Billing Due — sourced from upcoming_billing so this
+                                                        matches the Upcoming Billings list exactly. Both come from
+                                                        the field the cron actually schedules on. */}
                                                     <div className="col-sm-6">
                                                         <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Next Billing Due</p>
                                                         <h5 className="fs-14 mb-0 text-primary fw-semibold">
-                                                            {subscription.next_billing_date ? (
+                                                            {upcomingBilling?.upcoming_billing_date ? (
                                                                 <>
-                                                                    {subscription.next_billing_date}
-                                                                    {subscription.next_billing_type && (
-                                                                        <span className="fs-12 text-muted ms-1">({subscription.next_billing_type}: {subscription.next_billing_amount})</span>
-                                                                    )}
+                                                                    {upcomingBilling.upcoming_billing_date}
+                                                                    <span className="fs-12 text-muted ms-1">
+                                                                        ({upcomingBilling.upcoming_billing_type}: ${Number(upcomingBilling.upcoming_billing_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })})
+                                                                    </span>
                                                                 </>
                                                             ) : (
-                                                                subscription.subscription_end_date || 'N/A'
+                                                                <span className="text-muted fw-normal">Nothing scheduled</span>
                                                             )}
                                                         </h5>
                                                     </div>
@@ -300,7 +324,7 @@ export default function BillingDetails() {
                                                         </h5>
                                                     </div>
                                                     <div className="col-sm-6">
-                                                        <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">End Date</p>
+                                                        <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Paid Through</p>
                                                         <h5 className="fs-14 mb-0">
                                                             <i className="ri-calendar-event-line text-muted align-middle me-1"></i>
                                                             {subscription.subscription_end_date || 'N/A'}

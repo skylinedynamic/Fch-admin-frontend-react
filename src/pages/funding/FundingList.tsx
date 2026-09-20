@@ -262,9 +262,9 @@ export default function FundingList() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <PageHeader 
-                    title="Funding" 
-                    breadcrumbs={[{ label: 'Funding' }]} 
+                <PageHeader
+                    title="Funding"
+                    breadcrumbs={[{ label: 'Funding' }]}
                 >
                     <div className="btn-group">
                         {Array.isArray(selectedFundings) && selectedFundings.length > 0 ? (
@@ -283,7 +283,7 @@ export default function FundingList() {
                             </>
                         ) : (
                             <Link to="/funding/create" className="btn btn-primary fw-medium waves-effect waves-light">
-                                <i className="ri-add-fill me-1 align-bottom"></i> Add Funding
+                                <i className="ri-add-fill me-1 align-bottom"></i> Add Funding Sequence
                             </Link>
                         )}
                     </div>

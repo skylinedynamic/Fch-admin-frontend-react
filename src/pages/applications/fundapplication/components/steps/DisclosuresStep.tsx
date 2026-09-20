@@ -88,7 +88,6 @@ export default function DisclosuresStep({
   const handleSubmit = async () => {
     const success = await handleSave()
     if (success) {
-      toast.success('Disclosures saved successfully')
       onNext()
     }
   }

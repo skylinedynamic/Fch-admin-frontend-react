@@ -77,9 +77,204 @@ export interface ApplicationStatistics {
     [key: string]: any;
 }
 
+export const GPT_STATUS = {
+    PENDING: 'PENDING',
+    COMPLETED: 'COMPLETED',
+    INCORRECT: 'INCORRECT',
+    FAILED: 'FAILED',
+} as const;
+
+export type GptStatus = typeof GPT_STATUS[keyof typeof GPT_STATUS];
+
+export const VALIDATION_STATUS = {
+    CORRECT: 'CORRECT',
+    INCORRECT: 'INCORRECT',
+} as const;
+
+export type ValidationStatus = typeof VALIDATION_STATUS[keyof typeof VALIDATION_STATUS];
+
+export const ISSUE_SEVERITY = {
+    INFO: 'INFO',
+    WARNING: 'WARNING',
+    BLOCKING: 'BLOCKING',
+    INCORRECT: 'INCORRECT',
+} as const;
+
+export type IssueSeverity = typeof ISSUE_SEVERITY[keyof typeof ISSUE_SEVERITY];
+
+/**
+ * FCH_Internal_Prequalification_AUE_v3 — the internal half of an evaluation.
+ *
+ * Host-only. The API omits the whole ai_result for a non-host caller, so this
+ * shape must never be rendered on a borrower, client or partner surface.
+ */
+export interface InternalAueResult {
+    prompt_version?: string;
+    submission_id?: string;
+    matrix_version?: string | null;
+    classification?: string;
+    data_status?: string;
+    overall_stance?: string;
+    aus_model_determination?: Array<{
+        product_path?: string;
+        model?: string;
+        rationale?: string;
+    }>;
+    executive_underwriting_conclusion?: string;
+    borrower_request_snapshot?: Array<{
+        field?: string;
+        value?: string | number | boolean | null;
+        source_status?: string;
+    }>;
+    underwriting_analysis?: Array<{
+        section?: string;
+        finding?: string;
+        evidence_fields?: string[];
+    }>;
+    strengths?: string[];
+    conditions_and_flags?: Array<{
+        category?: string;
+        severity?: string;
+        finding?: string;
+        evidence_fields?: string[];
+        required_action?: string;
+    }>;
+    recommended_funding_paths?: Array<{
+        priority?: number;
+        product_category?: string;
+        aus_model?: string;
+        fit_status?: string;
+        fit_rationale?: string;
+        why_not_higher_priority?: string | null;
+        amount_min?: number | null;
+        amount_max?: number | null;
+        amount_basis?: string;
+        conditions?: string[];
+        required_documents?: string[];
+        execution_action?: string;
+        missing_inputs?: string[];
+    }>;
+    active_lender_matches?: Array<{
+        priority?: number;
+        lender_name?: string;
+        lender_status?: string;
+        fit_status?: string;
+        rationale?: string;
+        eligibility_checks?: string[];
+        restrictions_or_conditions?: string[];
+    }>;
+    required_documentation?: Array<{
+        path_or_lender?: string;
+        items?: string[];
+    }>;
+    routing_recommendation?: {
+        primary_product?: string | null;
+        primary_lender?: string | null;
+        aus_model?: string;
+        stance?: string;
+        next_action?: string;
+        fallback_path?: string | null;
+        reason?: string;
+    };
+    credit_building_pathway?: string[];
+    manual_review?: {
+        required?: boolean;
+        reasons?: string[];
+    };
+    final_internal_disposition?: string;
+    closing_tag?: string;
+    disclaimer?: string;
+}
+
+/** FCH_Client_AUE_v4 — the borrower-safe half, shown to the borrower verbatim. */
+export interface ClientAueResult {
+    prompt_version?: string;
+    submission_id?: string;
+    assessment_title?: string;
+    funding_readiness_summary?: string;
+    readiness_snapshot?: Array<{
+        area?: string;
+        assessment?: string;
+        source_status?: string;
+    }>;
+    estimated_funding_range?: {
+        available?: boolean;
+        minimum?: number | null;
+        maximum?: number | null;
+        basis?: string;
+    };
+    strengths?: string[];
+    areas_requiring_attention?: string[];
+    structuring_considerations?: string[];
+    submission_positioning_overview?: string;
+    required_next_steps?: {
+        complete_assessment?: string[];
+        underwriting_review?: string[];
+        submission_readiness?: string[];
+    };
+    important_notice?: string;
+    final_disclosure?: string;
+    disclaimer?: string;
+}
+
+export interface AiPrequalResult {
+    incorrect?: boolean;
+    blocked?: boolean;
+    /** The evaluation could not be produced; nothing was generated for this run. */
+    failed?: boolean;
+    failure_reason?: string | null;
+    validation_status?: string;
+    borrower_message?: string | null;
+    /** The two evaluations are kept whole and separate, never merged. */
+    internal?: InternalAueResult | null;
+    client?: ClientAueResult | null;
+    /** Short, partner-safe note sized for the 1000-char Status Notes field. */
+    admin_status_note?: string;
+    source?: string;
+    model?: string;
+    latency_ms?: number;
+    is_fallback?: boolean;
+    fallback_notice?: string;
+}
+
+export const isIncorrectUnderwriting = (
+    app?: { gpt_status?: string | null; validation_status?: string | null } | null,
+    ai?: AiPrequalResult | null
+): boolean => {
+    const gpt = (app?.gpt_status || '').toUpperCase();
+    const val = (app?.validation_status || '').toUpperCase();
+
+    return Boolean(
+        ai?.incorrect ||
+        ai?.blocked ||
+        gpt === GPT_STATUS.INCORRECT ||
+        gpt === 'NEEDS_CORRECTION' ||
+        gpt === 'BLOCKED' ||
+        val === VALIDATION_STATUS.INCORRECT ||
+        val === 'NEEDS_CORRECTION' ||
+        val === 'BLOCKED' ||
+        val === 'INCORRECT INFORMATION'
+    );
+};
+
+export interface ValidationIssue {
+    code: string;
+    field: string;
+    category: string;
+    severity: 'INFO' | 'WARNING' | 'BLOCKING' | 'INCORRECT';
+    user_message: string;
+    internal_message: string;
+    suggested_action: string;
+    evidence_fields: string[];
+}
+
 export interface PreQualificationApplicationDetails {
     id: number;
     borrower_id: number;
+    validation_status?: string | null;
+    validation_summary?: string | null;
+    validation_issues?: ValidationIssue[] | null;
+    validated_at?: string | null;
     first_name: string;
     last_name: string;
     business_website: string;
@@ -104,6 +299,9 @@ export interface PreQualificationApplicationDetails {
     status_note: string | null;
     status: string;
     status_class: string;
+    gpt_status?: string | null;
+    gpt_generated_at?: string | null;
+    ai_result?: AiPrequalResult | null;
     created_at: string;
     updated_at: string;
 }
@@ -187,7 +385,10 @@ export interface FundingApplicationDetails {
     self_reported_business_credit_score: string;
     has_business_debt: boolean;
     debt_balance: string;
+    /** Formatted for display (e.g. "$25,000.00") - not parseable as a number. */
     requested_amount: string;
+    /** Raw numeric value - use this for calculations and form inputs. */
+    requested_amount_original: number | null;
     purpose_of_funds: string;
     purpose_note: string | null;
     preferred_funding_type: string;

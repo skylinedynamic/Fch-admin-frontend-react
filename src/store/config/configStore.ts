@@ -2,16 +2,36 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type BrandingConfig = {
-  primary_logo?: string | null;
-  primary_logo_full_url?: string | null;
-  secondary_logo?: string | null;
-  secondary_logo_full_url?: string | null;
+  // Logos, one per surface they appear on
+  logo_sidebar?: string | null;
+  logo_sidebar_full_url?: string | null;
+  logo_document?: string | null;
+  logo_document_full_url?: string | null;
+  logo_mail?: string | null;
+  logo_mail_full_url?: string | null;
+  logo_mobile?: string | null;
+  logo_mobile_full_url?: string | null;
   favicon?: string | null;
   favicon_full_url?: string | null;
+  // Identity
   site_name?: string | null;
   site_slogan?: string | null;
+  is_white_label?: boolean | null;
+  // Colours
   primary_color?: string | null;
   secondary_color?: string | null;
+  sidebar_bg_color?: string | null;
+  sidebar_text_color?: string | null;
+  sidebar_icon_color?: string | null;
+  sidebar_hover_bg_color?: string | null;
+  sidebar_text_hover_color?: string | null;
+  sidebar_icon_hover_color?: string | null;
+  sidebar_active_bg_color?: string | null;
+  sidebar_active_text_color?: string | null;
+  sidebar_active_icon_color?: string | null;
+  // Top bar — unset keeps the white bar the theme ships with
+  topbar_bg_color?: string | null;
+  topbar_text_color?: string | null;
 };
 
 export type StatusFlags = {

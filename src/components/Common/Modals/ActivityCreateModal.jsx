@@ -1,28 +1,51 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Calendar } from 'primereact/calendar';
+import { REMINDER_TYPES } from '../../../config/reminders';
 import { parseDate } from '../../../utils/formatters';
 
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
-import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
+import { TimeInputs } from '../TimeInputs';
+import {
+    ENTITY_TYPE_LEAD,
+    ENTITY_TYPE_BORROWER,
+    ENTITY_TYPE_PARTNER,
+    ENTITY_TYPE_FUNDING_REQUEST,
+    ENTITY_TYPE_FUNDING_APPLICATION,
+    FUTURE_ACTIVITY_REFERENCES,
+    getReminderMsToSubtract,
+    REMINDER_PRESETS
+} from '../../../config/appConfig';
 
-const REFERENCE_OPTIONS = ['Event', 'Meeting', 'Call', 'Email', 'Other'];
+const REFERENCE_OPTIONS = REMINDER_TYPES.map(t => t.value);
 
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
     const textareaRef = useRef(null); // Local ref to capture the DOM node
 
+    const getDefaultDateTime = () => {
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+        const tzOffset = now.getTimezoneOffset() * 60000;
+        return (new Date(now - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+    };
+
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
         reference: 'Call',
-        activity_date: new Date().toISOString().split('T')[0],
+        activity_date: getDefaultDateTime(),
         assigned_to: '',
         summary: '',
         message_body: '',
         attachments: [],
-        target_visibility: 'borrower'
+        target_visibility: 'borrower',
+        remind_me: false,
+        remind_at: '',
+        reminder_preset: '30_minutes',
+        reminder_time_value: '30',
+        reminder_time_unit: 'Minutes'
     });
 
     const handleInputChange = (e) => {
@@ -58,8 +81,74 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             data.append('subject', formData.summary || '');         // maps to subject column
             data.append('description', formData.message_body || ''); // maps to description column
 
+            // Validate Future Date for Tasks and Meetings
+            if (FUTURE_ACTIVITY_REFERENCES.includes(formData.reference) && formData.activity_date) {
+                if (new Date(formData.activity_date.replace(' ', 'T')).getTime() < new Date().getTime()) {
+                    setErrors({ activity_date: [`${FUTURE_ACTIVITY_REFERENCES.join(' and ')} dates must be in the future.`] });
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
+            // Validate that we cannot set a reminder for a past activity
+            if (formData.remind_me && formData.activity_date) {
+                if (new Date(formData.activity_date.replace(' ', 'T')).getTime() < new Date().getTime()) {
+                    setErrors({ activity_date: ['Cannot set a reminder for a past activity date.'] });
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
             // Ensure to_emails and assigned_to are sent (as empty strings which Laravel converts to null)
             data.append('to_emails', formData.to_emails || '');
+
+            let finalRemindAt = formData.remind_at;
+
+            if (formData.remind_me) {
+                if (formData.reminder_preset && formData.activity_date) {
+                    const actDate = new Date(formData.activity_date.replace(' ', 'T'));
+                    if (formData.reminder_preset !== 'custom_date_time') {
+                        const msToSubtract = getReminderMsToSubtract(
+                            formData.reminder_preset,
+                            formData.reminder_time_value,
+                            formData.reminder_time_unit
+                        );
+
+                        const remindDate = new Date(actDate.getTime() - msToSubtract);
+
+                        if (remindDate.getTime() <= new Date().getTime()) {
+                            setErrors({ remind_at: ['Reminder time must be a future date.'] });
+                            setIsSaving(false);
+                            return;
+                        }
+
+                        const tzOffset = remindDate.getTimezoneOffset() * 60000;
+                        finalRemindAt = (new Date(remindDate - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                    } else {
+                        if (!finalRemindAt) {
+                            setErrors({ remind_at: ['Please select a reminder date and time.'] });
+                            setIsSaving(false);
+                            return;
+                        }
+                        if (new Date(finalRemindAt).getTime() <= new Date().getTime()) {
+                            setErrors({ remind_at: ['Reminder time must be a future date.'] });
+                            setIsSaving(false);
+                            return;
+                        }
+                    }
+                } else if (!formData.activity_date && formData.reminder_preset !== 'custom_date_time') {
+                    setErrors({ remind_at: ['Activity date is required to calculate reminder time.'] });
+                    setIsSaving(false);
+                    return;
+                }
+
+                data.append('remind_me', '1');
+                data.append('remind_at', finalRemindAt || '');
+                // Saved so the Edit modal re-opens with the reminder option actually chosen
+                data.append('reminder_preset', formData.reminder_preset || '30_minutes');
+                data.append('reminder_time_value', formData.reminder_time_value || '30');
+                data.append('reminder_time_unit', formData.reminder_time_unit || 'Minutes');
+            }
 
             const ctx = window._activityEntityContext || {};
             const resolvedEntityId = entityId ?? ctx.entityId;
@@ -74,7 +163,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 }
             }
 
-            // Entity IDs - separate Lead, Client, Borrower, Partner, and Funding Request
+            // Entity IDs - separate Lead, Client, Borrower, Partner, Funding Request, and Funding Application
             if (resolvedEntityType === ENTITY_TYPE_LEAD) {
                 data.append('lead_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_BORROWER || resolvedEntityType === 'Client') {
@@ -83,6 +172,10 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 data.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 data.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+                if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
+                if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
+            } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_APPLICATION) {
+                data.append('funding_application_id', resolvedEntityId ? resolvedEntityId.toString() : '');
                 if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
                 if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
             }
@@ -125,12 +218,17 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             setErrors({});
             setFormData({
                 reference: 'Call',
-                activity_date: new Date().toISOString().split('T')[0],
+                activity_date: getDefaultDateTime(),
                 assigned_to: '',
                 summary: '',
                 message_body: '',
                 attachments: [],
-                target_visibility: 'borrower'
+                target_visibility: 'borrower',
+                remind_me: false,
+                remind_at: '',
+                reminder_preset: '30_minutes',
+                reminder_time_value: '30',
+                reminder_time_unit: 'Minutes'
             });
 
             // Robust Close Modal
@@ -253,12 +351,17 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             setErrors({});
             setFormData({
                 reference: 'Call',
-                activity_date: new Date().toISOString().split('T')[0],
+                activity_date: getDefaultDateTime(),
                 assigned_to: '',
                 summary: '',
                 message_body: '',
                 attachments: [],
-                target_visibility: 'borrower'
+                target_visibility: 'borrower',
+                remind_me: false,
+                remind_at: '',
+                reminder_preset: '30_minutes',
+                reminder_time_value: '30',
+                reminder_time_unit: 'Minutes'
             });
 
             // Force Summernote HTML clear via jQuery, as a safety fallback
@@ -305,6 +408,33 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
     const resolvedEntityType = entityType ?? ctx.entityType;
     const resolvedPartnerId = ctx.partnerId;
 
+    // Real-time validations
+    let realTimeDateError = null;
+    let realTimeReminderError = null;
+
+    if (formData.activity_date) {
+        const actDate = new Date(formData.activity_date.replace(' ', 'T'));
+        if (actDate.getTime() < new Date().getTime()) {
+            if (FUTURE_ACTIVITY_REFERENCES.includes(formData.reference)) {
+                realTimeDateError = `${FUTURE_ACTIVITY_REFERENCES.join(' and ')} dates must be in the future.`;
+            } else if (formData.remind_me) {
+                realTimeDateError = 'Cannot set a reminder for a past activity date.';
+            }
+        }
+
+        if (formData.remind_me && formData.reminder_preset !== 'custom_date_time' && !realTimeDateError) {
+            const msToSubtract = getReminderMsToSubtract(
+                formData.reminder_preset,
+                formData.reminder_time_value,
+                formData.reminder_time_unit
+            );
+            const remindDate = new Date(actDate.getTime() - msToSubtract);
+            if (remindDate.getTime() < new Date().getTime()) {
+                realTimeReminderError = 'This reminder time calculates to a past date/time.';
+            }
+        }
+    }
+
     return (
         <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-focus="false">
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
@@ -315,6 +445,28 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                         </h5>
                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
+
+                    <style>{`
+                        /* Forcefully hide the native select that Bootstrap keeps making visible */
+                        .choices select.form-select,
+                        select#activityReference {
+                            display: none !important;
+                            opacity: 0 !important;
+                            visibility: hidden !important;
+                        }
+                        
+                        /* Fix dropdown overlapping the focus ring */
+                        .choices.is-open .choices__list--dropdown {
+                            margin-top: 5px !important;
+                            border-radius: 0.375rem !important;
+                            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+                            z-index: 1060 !important;
+                            /* Restoring your exact padding */
+                            padding-left: 16px !important;
+                            padding-bottom: 16px !important;
+                        }
+                    `}</style>
+
                     <div className="modal-body p-4">
                         {errors.log_type && (
                             <div className="alert alert-danger py-2 mb-3">
@@ -370,6 +522,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         value={formData.reference}
                                         onChange={handleInputChange}
                                         required
+                                        style={{ display: 'none' }}
                                     >
                                         {REFERENCE_OPTIONS.map(opt => (
                                             <option key={opt} value={opt}>{opt}</option>
@@ -379,25 +532,54 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label">Date <span className="text-danger">*</span></label>
-                                    <div className="custom-datepicker">
+                                    <style>{`
+                                        .custom-datepicker.is-invalid .p-calendar .p-inputtext,
+                                        .custom-datepicker.is-invalid .p-calendar .p-button {
+                                            border-color: #dc3545 !important;
+                                        }
+                                        .custom-datepicker .p-timepicker {
+                                            display: none;
+                                        }
+                                    `}</style>
+                                    <div className={`custom-datepicker ${(errors.activity_date || realTimeDateError) ? 'is-invalid' : ''}`}>
                                         <Calendar
-                                            value={parseDate(formData.activity_date)}
+                                            value={formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : null}
                                             onChange={(e) => {
-                                                const date = e.value;
-                                                const dateString = date
-                                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                                    : "";
-                                                setFormData(prev => ({ ...prev, activity_date: dateString }));
+                                                const pickedDate = e.value;
+                                                if (pickedDate) {
+                                                    const prev = formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : new Date();
+                                                    const merged = new Date(pickedDate);
+                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                                                    const tzOffset = merged.getTimezoneOffset() * 60000;
+                                                    const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                                                    setFormData(prev2 => ({ ...prev2, activity_date: localISOTime }));
+                                                } else {
+                                                    setFormData(prev2 => ({ ...prev2, activity_date: "" }));
+                                                }
                                             }}
+                                            minDate={(FUTURE_ACTIVITY_REFERENCES.includes(formData.reference) || formData.remind_me) ? new Date() : null}
                                             dateFormat="dd M, yy"
-                                            placeholder="Select date"
+                                            showTime
+                                            hourFormat="12"
+                                            placeholder="Select date & time"
                                             showIcon
-                                            className="w-100"
+                                            className={`w-100 ${(errors.activity_date || realTimeDateError) ? 'p-invalid' : ''}`}
+                                            inputClassName={`form-control ${(errors.activity_date || realTimeDateError) ? 'is-invalid' : ''}`}
                                             appendTo="self"
-                                            readOnlyInput
+                                            footerTemplate={() => (
+                                                <TimeInputs
+                                                    value={formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : null}
+                                                    onChange={(newDateTime) => {
+                                                        const tzOffset = newDateTime.getTimezoneOffset() * 60000;
+                                                        const localISOTime = (new Date(newDateTime - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                                                        setFormData(prev => ({ ...prev, activity_date: localISOTime }));
+                                                    }}
+                                                />
+                                            )}
                                         />
                                     </div>
                                     {errors.activity_date && <div className="text-danger mt-1 small">{errors.activity_date[0]}</div>}
+                                    {!errors.activity_date && realTimeDateError && <div className="text-danger mt-1 small">{realTimeDateError}</div>}
                                 </div>
                                 <div className="col-12">
                                     <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
@@ -423,6 +605,111 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         name="message_body"
                                     ></textarea>
                                     {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
+                                </div>
+                                <div className="col-12 mt-3">
+                                    <div className="row">
+                                        <div className="col-md-6">
+                                            <div className="form-check form-switch mt-md-4 mb-3">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    id="remindMeSwitch"
+                                                    checked={formData.remind_me}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, remind_me: e.target.checked }))}
+                                                />
+                                                <label className="form-check-label ms-2" htmlFor="remindMeSwitch">
+                                                    Set Remainder
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {formData.remind_me && (
+                                            <div className="col-md-6">
+                                            <label className="form-label text-muted small">Reminder Time <span className="text-danger">*</span></label>
+                                            <div className={`d-flex gap-2 ${formData.reminder_preset === 'custom_time_before' ? 'flex-column flex-xl-row' : 'flex-column'}`}>
+                                                <select
+                                                    className={`form-select flex-grow-1 ${errors.remind_at ? 'is-invalid' : ''}`}
+                                                    name="reminder_preset"
+                                                    value={formData.reminder_preset}
+                                                    onChange={handleInputChange}
+                                                >
+                                                    {REMINDER_PRESETS.map((preset) => (
+                                                        <option key={preset.value} value={preset.value}>
+                                                            {preset.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                {formData.reminder_preset === 'custom_time_before' && (
+                                                    <div className="d-flex gap-2" style={{ minWidth: 'fit-content' }}>
+                                                        <input
+                                                            type="number"
+                                                            className={`form-control ${errors.remind_at ? 'is-invalid' : ''}`}
+                                                            style={{ width: '70px' }}
+                                                            name="reminder_time_value"
+                                                            value={formData.reminder_time_value}
+                                                            onChange={handleInputChange}
+                                                            min="1"
+                                                        />
+                                                        <select
+                                                            className={`form-select ${errors.remind_at ? 'is-invalid' : ''}`}
+                                                            style={{ width: '120px' }}
+                                                            name="reminder_time_unit"
+                                                            value={formData.reminder_time_unit}
+                                                            onChange={handleInputChange}
+                                                        >
+                                                            <option value="Minutes">Minutes</option>
+                                                            <option value="Hours">Hours</option>
+                                                            <option value="Days">Days</option>
+                                                            <option value="Weeks">Weeks</option>
+                                                            <option value="Months">Months</option>
+                                                        </select>
+                                                    </div>
+                                                )}
+
+                                                {formData.reminder_preset === 'custom_date_time' && (
+                                                    <div className="custom-datepicker mt-1">
+                                                        <Calendar
+                                                            value={formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : null}
+                                                            onChange={(e) => {
+                                                                const pickedDate = e.value;
+                                                                if (pickedDate) {
+                                                                    const prev = formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : new Date();
+                                                                    const merged = new Date(pickedDate);
+                                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                                                                    const tzOffset = merged.getTimezoneOffset() * 60000;
+                                                                    const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                                                                    setFormData(prev2 => ({ ...prev2, remind_at: localISOTime }));
+                                                                } else {
+                                                                    setFormData(prev2 => ({ ...prev2, remind_at: '' }));
+                                                                }
+                                                            }}
+                                                            dateFormat="dd M, yy"
+                                                            showTime
+                                                            hourFormat="12"
+                                                            placeholder="Select date & time"
+                                                            showIcon
+                                                            className="w-100"
+                                                            appendTo="self"
+                                                            footerTemplate={() => (
+                                                                <TimeInputs
+                                                                    value={formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : null}
+                                                                    onChange={(newDateTime) => {
+                                                                        const tzOffset = newDateTime.getTimezoneOffset() * 60000;
+                                                                        const localISOTime = (new Date(newDateTime - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
+                                                                        setFormData(prev => ({ ...prev, remind_at: localISOTime }));
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {errors.remind_at && <div className="text-danger mt-1 small">{errors.remind_at[0]}</div>}
+                                            {!errors.remind_at && realTimeReminderError && <div className="text-danger mt-1 small">{realTimeReminderError}</div>}
+                                        </div>
+                                    )}
+                                    </div>
                                 </div>
                             </div>
                             <div className="row mt-3">
@@ -480,7 +767,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                     </div>
                     <div className="modal-footer">
                         <button type="button" className="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={isSaving}>
+                        <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={isSaving || realTimeDateError || realTimeReminderError}>
                             {isSaving ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>

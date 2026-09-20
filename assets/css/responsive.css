@@ -2712,3 +2712,264 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         font-size: 10px !important;
     }
 }
+
+/* ============================================================
+   Embed Form Settings — Styles & Responsive Rules
+   ============================================================ */
+.embed-avatar-48 {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+}
+
+.embed-avatar-stat {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+}
+
+.embed-action-btn {
+    width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 4px !important;
+}
+
+
+.embed-header-avatar {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    font-size: 18px !important;
+}
+
+.embed-input-addon {
+    width: 42px !important;
+    min-width: 42px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.embed-sticky-card {
+    position: sticky !important;
+    top: 80px !important;
+    z-index: 10 !important;
+}
+
+.embed-btn-secondary {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+    color: #ffffff !important;
+}
+
+.embed-btn-secondary:hover,
+.embed-btn-secondary:focus,
+.embed-btn-secondary:active {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+    color: #ffffff !important;
+    filter: brightness(90%);
+}
+
+.embed-text-secondary {
+    color: var(--secondary-color) !important;
+}
+
+.embed-btn-close-xs {
+    font-size: 8px !important;
+}
+
+.embed-textarea-no-resize {
+    resize: none !important;
+}
+
+.embed-cursor-pointer {
+    cursor: pointer !important;
+}
+
+.embed-domain-badge {
+    word-break: break-all;
+    max-width: 100%;
+}
+
+.embed-domain-text {
+    max-width: 220px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* Mobile Submit Button & Bottom Action Bar */
+.embed-mobile-submit-btn {
+    width: 100% !important;
+    padding: 11px 16px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+@media (max-width: 991.98px) {
+    .embed-sticky-card {
+        position: static !important;
+        top: auto !important;
+        z-index: auto !important;
+    }
+
+    .embed-mobile-submit-bar {
+        position: sticky !important;
+        bottom: 0 !important;
+        background: #ffffff !important;
+        padding: 10px 16px !important;
+        border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+        margin-left: -12px !important;
+        margin-right: -12px !important;
+        z-index: 1020 !important;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06) !important;
+    }
+
+    /* Fix the excessive top gap on mobile below breadcrumb/header */
+    .embed-form-settings-page .page-subheader-sticky {
+        position: static !important;
+        padding: 4px 0 8px 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-bottom: none !important;
+        background: transparent !important;
+        height: auto !important;
+    }
+
+    .embed-form-settings-page .page-subheader-sticky+.row,
+    .embed-form-settings-page .page-subheader-sticky+div,
+    .embed-form-settings-page .page-subheader-sticky+form,
+    .embed-form-settings-page .page-subheader-sticky+* {
+        margin-top: 8px !important;
+    }
+
+    .embed-form-settings-page .embed-main-grid {
+        margin-top: 0 !important;
+    }
+
+    .embed-form-settings-page .embed-metrics-row {
+        margin-bottom: 12px !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .embed-avatar-stat {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        font-size: 16px !important;
+    }
+
+    .embed-domain-input-group {
+        flex-direction: column !important;
+    }
+
+    .embed-domain-input-group .input-group-text {
+        display: none !important;
+    }
+
+    .embed-domain-input-group .form-control {
+        border-radius: 4px !important;
+        width: 100% !important;
+        margin-bottom: 6px !important;
+    }
+
+    .embed-domain-input-group .btn {
+        border-radius: 4px !important;
+        width: 100% !important;
+    }
+
+    .embed-share-footer {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+    }
+
+    .embed-domain-text {
+        max-width: 140px;
+    }
+}
+
+/* ==========================================================================
+   Embedded Form — submission details & list responsive rules
+   ========================================================================== */
+
+@media (max-width: 1199.98px) {
+    .ef-status-select {
+        min-width: 150px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .ef-avatar--lg {
+        width: 52px;
+        height: 52px;
+        font-size: 17px;
+    }
+
+    .ef-status-select {
+        min-width: 140px;
+        flex: 1 1 140px;
+    }
+
+    .ef-convert-btn--lg {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .ef-hero__meta {
+        gap: 0.25rem 0.75rem;
+        font-size: 12px;
+    }
+
+    .ef-stat {
+        padding: 0.6rem 0.7rem;
+    }
+
+    .ef-stat__icon {
+        width: 32px;
+        height: 32px;
+        font-size: 15px;
+    }
+
+    .ef-stat__value {
+        font-size: 14px;
+    }
+
+    .ef-field__copy {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ef-status-select,
+    .ef-convert-btn--lg {
+        width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .ef-convert-btn--lg {
+        justify-content: center;
+    }
+
+    .ef-card__header {
+        padding: 0.65rem 0.75rem;
+    }
+
+    .ef-doc__name {
+        font-size: 12px;
+    }
+}

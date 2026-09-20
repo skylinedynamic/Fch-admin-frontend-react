@@ -58,7 +58,21 @@ export default function CreditProfileRequestDetails() {
     const [showFullSSN, setShowFullSSN] = useState(false);
 
     if (isLoading) {
-        return <CreditProfileRequestDetailsLoader />;
+        return (
+            <CreditProfileRequestDetailsLoader
+                title="Application Details"
+                breadcrumbs={[
+                    { label: 'Credit Profile Requests', path: '/intake-review/credit-profile-requests' },
+                    { label: 'Details' }
+                ]}
+            >
+                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                    <Link to="/intake-review/credit-profile-requests" className="btn btn-outline-secondary w-lg waves-effect">
+                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                    </Link>
+                </div>
+            </CreditProfileRequestDetailsLoader>
+        );
     }
 
     const request = apiResponse?.data;

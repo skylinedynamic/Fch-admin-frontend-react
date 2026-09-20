@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import Layout from '../src/components/Layout/Layout.jsx';
 import Dashboard from '../src/pages/dashboard/Dashboard.jsx';
 import Employees from '../src/pages/employees/Employees.jsx';
@@ -14,6 +14,7 @@ import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
 import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
+import { ENTITY_TYPE_BORROWER } from './config/appConfig';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
@@ -70,6 +71,7 @@ import SiteSettings from './pages/cms/SiteSettings.tsx';
 import { useSiteSettings } from './modules/cms/queries';
 import { useGlobalConfigurations } from './modules/settings/queries';
 import { useConfigStore } from './store/config';
+import { applyBrandTheme } from './utils/brandingTheme';
 import { useQueryClient } from '@tanstack/react-query';
 import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
@@ -80,12 +82,20 @@ import FundingList from './pages/funding/FundingList';
 import FundingSequencingForm from './pages/funding/components/FundingSequencingForm';
 import LendersList from './pages/lenders/LendersList';
 import LenderForm from './pages/lenders/LenderForm';
-import PaymentMethods from './pages/payment-methods/PaymentMethods.tsx';
+import EmbedFormSettings from './pages/embed-form/EmbedFormSettings.tsx';
+import EmbedFormSubmissions from './pages/embed-form/EmbedFormSubmissions.tsx';
+import EmbedFormSubmissionDetails from './pages/embed-form/EmbedFormSubmissionDetails.tsx';
 
+import PaymentMethods from './pages/payment-methods/PaymentMethods.tsx';
+import ReminderModal from './components/Common/ReminderModal';
+import ReminderList from './pages/reminders/ReminderList';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
 window.jQuery = window.$ = $;
+
+import { initEcho } from './lib/echo';
+import { clearAuth } from './lib/auth';
 
 // Import Summernote CSS globally
 import 'summernote/dist/summernote-lite.css';
@@ -97,6 +107,13 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 
 // Icon Libraries
+
+// Preserves the :id param when redirecting the old /embed-form/submissions/:id
+// bookmark to its renamed route.
+function RedirectToLoanApplication() {
+  const { id } = useParams();
+  return <Navigate to={`/embed-form/loan-applications/${id}`} replace />;
+}
 
 export default function App() {
   const token = useAuthStore((state) => state.token);
@@ -117,8 +134,28 @@ export default function App() {
     if (token) {
       refreshSubscription();
       queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
+
+      // Initialize Reverb WebSocket listener for Trial Expiration
+      if (user) {
+        const echo = initEcho();
+        if (echo) {
+          echo.private(`App.Models.User.${user.id}`)
+            .listen('.trial.expired', () => {
+              clearAuth();
+              const expiredMessage = user.entity_type === ENTITY_TYPE_BORROWER
+                ? 'Your free plan has expired. You have been logged out.'
+                : 'Your free trial has expired. You have been logged out.';
+              toast.error(expiredMessage, { toastId: 'reverb-trial-expired' });
+              window.location.assign('/login');
+            });
+            
+          return () => {
+            echo.leave(`App.Models.User.${user.id}`);
+          };
+        }
+      }
     }
-  }, [token]);
+  }, [token, user]);
 
   // Fetch authenticated global configurations (branding + status flags)
   const { data: globalConfigData } = useGlobalConfigurations(!!user);
@@ -133,7 +170,11 @@ export default function App() {
       // Persist global config in Zustand
       setGlobalConfigs(activeBranding, activeFlags);
 
-      const { site_name, favicon_full_url, primary_color, secondary_color } = activeBranding;
+      const { site_name, favicon_full_url } = activeBranding;
+
+      // Every brand colour, including the derived contrast tokens that keep text
+      // readable on a light brand colour.
+      applyBrandTheme(activeBranding);
 
       // 1. Dynamic Browser Title
       if (site_name) {
@@ -148,36 +189,13 @@ export default function App() {
         favLink.href = favicon_full_url.includes('?') ? `${favicon_full_url}&_t=${Date.now()}` : `${favicon_full_url}?_t=${Date.now()}`;
         document.head.appendChild(favLink);
       }
-
-      // 3. Dynamic CSS Variables
-      if (primary_color && primary_color !== 'null') {
-        const secondary = secondary_color || '#F7B84B';
-
-        // Dynamic CSS variables set on :root
-        document.documentElement.style.setProperty('--primary-color', primary_color);
-        document.documentElement.style.setProperty('--secondary-color', secondary);
-
-        // Also dynamically set Bootstrap/Velzon primary variables
-        document.documentElement.style.setProperty('--vz-primary', primary_color, 'important');
-
-        const hexToRgb = (hex) => {
-          const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-          const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
-          return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
-        };
-
-        const rgbVal = hexToRgb(primary_color);
-        if (rgbVal) {
-          document.documentElement.style.setProperty('--vz-primary-rgb', rgbVal, 'important');
-        }
-      }
     }
   }, [globalConfigData, user, setGlobalConfigs]);
 
   return (
     <>
       <ConfigurationGuardModal />
+      <ReminderModal />
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         <Route element={<GuestRoute />}>
@@ -191,6 +209,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="fund-application/:id" element={<FundApplication />} />
+            <Route path="reminders" element={<ReminderList />} />
 
             {/* Commissions Routes */}
             <Route element={<PermissionRoute permission="view commission" />}>
@@ -354,8 +373,10 @@ export default function App() {
                 <Route path="change-requests" element={<ChangeRequests />} />
               </Route>
 
-              <Route path="credit-profile-requests" element={<CreditProfileRequests />} />
-              <Route path="credit-profile-requests/:id" element={<CreditProfileRequestDetails />} />
+              <Route element={<HostRoute />}>
+                <Route path="credit-profile-requests" element={<CreditProfileRequests />} />
+                <Route path="credit-profile-requests/:id" element={<CreditProfileRequestDetails />} />
+              </Route>
 
             </Route>
 
@@ -403,6 +424,18 @@ export default function App() {
               <Route path="manage-resources" element={<ManageResources />} />
             </Route>
 
+
+            {/* Embed Form Module */}
+            <Route element={<PermissionRoute permission="view configuration" />}>
+              <Route path="embed-form/settings" element={<EmbedFormSettings />} />
+            </Route>
+            <Route element={<PermissionRoute permission="view application" />}>
+              <Route path="embed-form/loan-applications" element={<EmbedFormSubmissions />} />
+              <Route path="embed-form/loan-applications/:id" element={<EmbedFormSubmissionDetails />} />
+              {/* Renamed from /embed-form/submissions - keep old links/bookmarks working. */}
+              <Route path="embed-form/submissions" element={<Navigate to="/embed-form/loan-applications" replace />} />
+              <Route path="embed-form/submissions/:id" element={<RedirectToLoanApplication />} />
+            </Route>
 
 
             {/* Under Construction - accessible to all authenticated users */}

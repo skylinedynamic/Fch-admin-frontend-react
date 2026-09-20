@@ -61,12 +61,14 @@
   align-items: center;
   gap: 10px;
   padding: 6px 18px;
-  color: #d3d8e5;
+  /* Brand setting; see assets/css/sidebar-theme.css */
+  color: var(--sidebar-text-color, #d3d8e5);
 }
 
 .partner-sidebar .nav-item .menu-link i {
   font-size: 20px;
-  color: var(--secondary-color);
+  /* Brand setting, no longer tied to the secondary colour */
+  color: var(--sidebar-icon-color, #d3d8e5);
 }
 
 .partner-sidebar .nav-item .menu-link .badge {
@@ -77,31 +79,27 @@
 }
 
 .partner-sidebar .nav-item .menu-link:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
+  background: rgba(var(--sidebar-text-color-rgb, 255, 255, 255), 0.06);
+  color: var(--sidebar-text-hover-color, #ffffff);
 }
 
 .partner-sidebar .nav-item .menu-link:hover i {
-  color: #ffffff;
+  color: var(--sidebar-icon-hover-color, #ffffff);
 }
 
-.partner-sidebar .nav-item .menu-link.active {
-  background: var(--secondary-color);
-  color: #ffffff;
-}
-
-.partner-sidebar .nav-item .menu-link.active i {
-  color: #ffffff;
-}
+/* The selected menu item is styled in brand-tokens.css. It used to pin its
+   background to --secondary-color here, which is what made the accent colour
+   silently double as "the selected menu background" with no way to set one
+   without moving the other. */
 
 /* Nested dropdowns (if present) */
 .partner-sidebar .menu-dropdown .nav-link {
   padding: 8px 18px 8px 42px;
-  color: #cbd3e2;
+  color: var(--sidebar-text-color, #cbd3e2);
 }
 
 .partner-sidebar .menu-dropdown .nav-link:hover {
-  color: #ffffff;
+  color: var(--sidebar-text-hover-color, #ffffff);
 }
 
 /* Section spacing tweaks */
@@ -3041,6 +3039,43 @@
 
 .row-table-fit .card {
   margin-bottom: 0 !important;
+}
+
+/* The generic ".page-content-fit .card" rule above (flex:1, overflow:hidden,
+   min-height:0) is meant for the one big table-wrapper card, but it matches
+   EVERY .card in the page - including each small StatisticsCard in a stats
+   row - forcing them to stretch/collapse instead of sizing to their content.
+   Opt those back out. (Also present, unloaded, in custom.css:6618/7162 -
+   this is the same fix, ported to the file index.html actually links.) */
+.page-content-fit .partner-section .card,
+.page-content-fit .lead-section .card,
+.page-content-fit .invoice-section .card,
+.page-content-fit .embed-stats-section .card {
+  min-height: auto !important;
+  height: auto !important;
+  flex: none !important;
+  overflow: visible !important;
+  margin-bottom: 0 !important;
+}
+
+.page-content-fit .partner-section,
+.page-content-fit .lead-section,
+.page-content-fit .invoice-section,
+.page-content-fit .embed-stats-section {
+  flex-shrink: 0 !important;
+  margin-bottom: 1rem !important;
+}
+
+/* .page-content-fit is set synchronously in JSX (present on first render);
+   .table-page-fit-active is added to <body> a tick later via useEffect.
+   Cover BOTH, and at every width, so a table-fit page's subheader is never
+   briefly `position: sticky` inside its `overflow:hidden` flex container,
+   which is what makes it disappear/overlap instead of just not sticking. */
+.page-content-fit .page-subheader-sticky,
+.table-page-fit-active .page-subheader-sticky {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
 }
 
 .page-content-fit .card-body {

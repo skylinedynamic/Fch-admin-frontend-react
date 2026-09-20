@@ -77,9 +77,28 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                 }
             });
 
+            if (dataToSet.bank_accounts && Array.isArray(dataToSet.bank_accounts)) {
+                dataToSet.bank_accounts = dataToSet.bank_accounts.map((b: any) => ({
+                    ...b,
+                    account_open_date: b.account_open_date ? String(b.account_open_date).slice(0, 10) : null
+                }));
+            } else {
+                dataToSet.bank_accounts = [];
+            }
+
             setFormData(prev => ({ ...prev, ...dataToSet }));
+        } else if (initialData) {
+            const dataToSet = { ...initialData };
+            CURRENCY_FIELDS.forEach(field => {
+                if (dataToSet[field]) {
+                    dataToSet[field] = formatNumber(dataToSet[field]);
+                }
+            });
+            if (Array.isArray(dataToSet.bank_accounts)) {
+                setFormData(prev => ({ ...prev, ...dataToSet }));
+            }
         }
-    }, [fetchedData]);
+    }, [fetchedData, initialData]);
 
     const handleInputChange = (e: any) => {
         const name = e.target ? e.target.name : e.name;
@@ -162,6 +181,20 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                 }
             });
 
+            // Map and sanitize bank accounts
+            const bankAccountsPayload = (apiData.bank_accounts || [])
+                .filter((acc: any) => acc && (acc.id || (acc.bank_name && String(acc.bank_name).trim() !== '') || acc.account_open_date))
+                .map((acc: any) => {
+                    const item: any = {
+                        bank_name: acc.bank_name ? String(acc.bank_name).trim() : '',
+                        account_open_date: acc.account_open_date || null
+                    };
+                    if (acc.id) {
+                        item.id = Number(acc.id);
+                    }
+                    return item;
+                });
+
             // Send only the business financials fields to the dedicated endpoint
             const payload = {
                 currency: apiData.currency,
@@ -174,34 +207,62 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                 current_business_debt: apiData.current_business_debt,
                 fico_score: apiData.fico_score,
                 paydex_score: apiData.paydex_score,
-                years_in_business: apiData.years_in_business,
                 number_of_employees: apiData.number_of_employees,
                 nsf_count: apiData.nsf_count,
                 negative_days: apiData.negative_days,
                 funding_urgency: apiData.funding_urgency,
+                bank_accounts: bankAccountsPayload
             };
             console.log('[BusinessFinancialsSection] Mapped payload:', payload);
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
                 updateMutation.mutate({ id: clientId, data: payload }, {
-                    onSuccess: (data) => {
-                        console.log('[BusinessFinancialsSection] Save SUCCESS!', data);
+                    onSuccess: (res: any) => {
+                        console.log('[BusinessFinancialsSection] Save SUCCESS!', res);
                         toast.success("Business financials updated successfully");
+
+                        const responseData = res?.data?.data || res?.data || res;
+                        if (responseData) {
+                            const updated = { ...responseData };
+                            CURRENCY_FIELDS.forEach(field => {
+                                if (updated[field]) {
+                                    updated[field] = formatNumber(updated[field]);
+                                }
+                            });
+                            if (Array.isArray(updated.bank_accounts)) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    ...updated,
+                                    bank_accounts: updated.bank_accounts
+                                }));
+                            } else {
+                                setFormData(prev => ({ ...prev, ...updated }));
+                            }
+                        }
+
                         if (onSaveSuccess) onSaveSuccess();
                         resolve();
                     },
                     onError: (error: any) => {
                         console.error("[BusinessFinancialsSection] Save ERROR:", error);
-                        toast.error("Failed to update business financials");
-                        if (error.response && error.response.data && error.response.data.errors && setErrors) {
-                            const backendErrors = error.response.data.errors;
+                        const responseData = error?.response?.data;
+                        const isValidationError = error?.response?.status === 422;
+
+                        // 422 = server-side validation. Always shown as field-level
+                        // danger + under-field messages — never a toast, even if the
+                        // errors payload is missing/oddly shaped for some field.
+                        if (isValidationError && setErrors) {
+                            const backendErrors = responseData?.errors || {};
                             const mappedErrors: Record<string, string> = {};
                             Object.keys(backendErrors).forEach(key => {
                                 mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                             });
                             setErrors(mappedErrors);
                             scrollToFirstError(mappedErrors);
+                            // Inline field errors are already visible — no toast needed
+                        } else if (!isValidationError) {
+                            toast.error(responseData?.message || "Failed to update business financials");
                         }
                         reject(error);
                     }

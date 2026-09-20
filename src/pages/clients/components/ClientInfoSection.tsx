@@ -5,6 +5,7 @@ import { Calendar } from 'primereact/calendar';
 
 import { toast } from 'react-toastify';
 import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS } from '../../../utils/formatters';
+import { formatSSN } from '../../../utils/borrowerFormatters';
 import {
     useClient,
     useUpdateClient,
@@ -190,6 +191,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             // Normalize date
             if (apiData.business_start_date) {
                 apiData.business_start_date = normalizeDate(apiData.business_start_date);
+            }
+
+            // Format the raw digits the API returns into XXX-XX-XXXX for display/editing
+            if (apiData.ssn) {
+                apiData.ssn = formatSSN(apiData.ssn);
             }
 
             // Ensure country uses full name for mapping to dropdown value
@@ -483,10 +489,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         console.error("[ClientInfoSection] Save ERROR:", error);
 
                         const responseData = error?.response?.data;
+                        const isValidationError = error?.response?.status === 422;
 
-                        // Map field-level validation errors to the form
-                        if (responseData?.errors && setErrors) {
-                            const backendErrors = responseData.errors;
+                        // 422 = server-side validation. Always shown as field-level
+                        // danger + under-field messages — never a toast, even if the
+                        // errors payload is missing/oddly shaped for some field.
+                        if (isValidationError && setErrors) {
+                            const backendErrors = responseData?.errors || {};
                             const mappedErrors: Record<string, string> = {};
 
                             // Remap enrollment.* dotted keys → flat UI field names
@@ -510,9 +519,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             setErrors(mappedErrors);
                             scrollToFirstError(mappedErrors);
                             // Inline field errors are already visible — no toast needed
-                        } else {
-                            // No field-level errors: show generic or backend message in toast
+                        } else if (!isValidationError) {
+                            // Real server/network error: no inline errors possible, so a toast is the only feedback
                             const toastMessage = responseData?.message || "Failed to update client details";
+                            toast.error(toastMessage);
                         }
 
                         reject(error);
@@ -526,13 +536,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     if ((isFetching && clientId) || (clientId && !isSynced)) {
         return (
-            <div className="row">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                    <div className="col-lg-6 mb-3" key={i}>
-                        <div className="placeholder-glow">
-                            <span className="placeholder col-4 mb-2"></span>
-                            <span className="placeholder col-12 p-3"></span>
+            <div className="row g-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(i => (
+                    <div className="col-lg-6" key={i}>
+                        <div className="mb-2">
+                            <div className="skeleton-line" style={{ width: '30%', height: 14, borderRadius: 4 }}></div>
                         </div>
+                        <div className="skeleton-line w-100" style={{ height: 42, borderRadius: 6 }}></div>
                     </div>
                 ))}
             </div>
@@ -827,18 +837,20 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 </div>
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="last_4_ssn" className="form-label">SSN Last 4</label>
+                        <label htmlFor="ssn" className="form-label">Social Security Number</label>
                         <input
                             type="text"
-                            className={`form-control ${errors.last_4_ssn ? 'is-invalid' : ''}`}
-                            id="last_4_ssn"
-                            name="last_4_ssn"
-                            placeholder="Enter last 4 digits of SSN"
-                            maxLength={4}
-                            value={formData.last_4_ssn || ''}
-                            onChange={handleInputChange}
+                            className={`form-control ${errors.ssn ? 'is-invalid' : ''}`}
+                            id="ssn"
+                            name="ssn"
+                            placeholder="XXX-XX-XXXX"
+                            value={formData.ssn || ''}
+                            onChange={(e) => {
+                                const formatted = formatSSN(e.target.value);
+                                handleInputChange({ target: { name: 'ssn', value: formatted } });
+                            }}
                         />
-                        {errors.last_4_ssn && <div className="invalid-feedback">{errors.last_4_ssn}</div>}
+                        {errors.ssn && <div className="invalid-feedback">{errors.ssn}</div>}
                     </div>
                 </div>
 
@@ -1244,11 +1256,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
                                 <div className="d-flex align-items-center mb-3">
                                     <i className="ri-gift-line text-warning fs-3 me-2"></i>
-                                    <h5 className="mb-0 text-primary fw-semibold">Allow Limited Free Edition (Funding Readiness Assessment)</h5>
+                                    <h5 className="mb-0 text-primary fw-semibold">Allow Limited Free Plan (Funding Readiness Assessment)</h5>
                                 </div>
 
                                 <p className="text-muted fs-13 mb-4">
-                                    Enable the Limited Free Edition for this client. Please note that features including Capital Access, Invoicing, Payments, the Resource Hub, and Credit Builder will be disabled in this version.
+                                    Enable the Limited Free Plan for this client. Please note that features including Capital Access, Invoicing, Payments, the Resource Hub, and Credit Builder will be disabled in this version.
                                 </p>
                                 <div className="row align-items-center g-3">
                                     <div className="col-md-6">
@@ -1281,7 +1293,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 }}
                                             />
                                             <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
-                                                Activate Limited Free Edition
+                                                Activate Limited Free Plan
                                             </label>
                                         </div>
                                     </div>

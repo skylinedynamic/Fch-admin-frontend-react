@@ -7,14 +7,16 @@ export interface BreadcrumbItem {
 }
 
 export interface PageHeaderProps {
-    title: string;
+    /** Accepts a node so a loading page can pass a skeleton placeholder for a
+     *  data-dependent title while still rendering its real breadcrumbs. */
+    title: React.ReactNode;
     breadcrumbs: BreadcrumbItem[];
     children?: React.ReactNode;
     sticky?: boolean;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumbs, children, sticky = true }) => {
-    const headerClass = sticky ? "row pb-1 page-subheader-sticky bg-body" : "row pb-1 page-header-static bg-body";
+const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumbs = [], children, sticky = true }) => {
+    const headerClass = sticky ? "row pb-1 page-subheader-sticky bg-body" : "row pb-1 mobile-sticky-header";
 
     return (
         <div className={headerClass}>

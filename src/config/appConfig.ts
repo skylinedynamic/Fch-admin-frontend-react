@@ -8,6 +8,7 @@ export const MODULE_MICROBILT = 'microbilt';
 export const MODULE_WEBSITE = 'website';
 export const MODULE_AGREEMENT = 'agreement';
 export const MODULE_CREDIT_PROFILE = 'credit_profile';
+export const MODULE_OPENAI = 'openai';
 
 export const ENTITY_TYPE_LEAD = 'Lead';
 export const ENTITY_TYPE_PARTNER = 'Partner';
@@ -66,3 +67,51 @@ export const LOG_TYPE_TASK_VERIFICATION = 'task_verification';
 
 export const PASSWORD_GENERATE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
 export const PASSWORD_GENERATE_LENGTH = 14;
+
+export const FUTURE_ACTIVITY_REFERENCES = ['Task', 'Meeting'];
+
+export const REMINDER_PRESETS = [
+    { value: '5_minutes', label: '5 Minutes Before' },
+    { value: '10_minutes', label: '10 Minutes Before' },
+    { value: '15_minutes', label: '15 Minutes Before' },
+    { value: '30_minutes', label: '30 Minutes Before' },
+    { value: '1_hour', label: '1 Hour Before' },
+    { value: '1_day', label: '1 Day Before' },
+    { value: '2_days', label: '2 Days Before' },
+    { value: '3_days', label: '3 Days Before' },
+    { value: '1_week', label: '1 Week Before' },
+    { value: '2_weeks', label: '2 Weeks Before' },
+    { value: '3_weeks', label: '3 Weeks Before' },
+    { value: '1_month', label: '1 Month Before' },
+    { value: 'custom_time_before', label: 'Custom Time Before' }
+];
+
+export const getReminderMsToSubtract = (preset, value, unit) => {
+    let ms = 0;
+    if (preset === 'custom_time_before') {
+        const val = parseInt(value);
+        if (!isNaN(val)) {
+            if (unit === 'Minutes') ms = val * 60000;
+            if (unit === 'Hours') ms = val * 3600000;
+            if (unit === 'Days') ms = val * 86400000;
+            if (unit === 'Weeks') ms = val * 604800000;
+            if (unit === 'Months') ms = val * 30 * 86400000;
+        }
+    } else {
+        switch (preset) {
+            case '5_minutes': ms = 5 * 60000; break;
+            case '10_minutes': ms = 10 * 60000; break;
+            case '15_minutes': ms = 15 * 60000; break;
+            case '30_minutes': ms = 30 * 60000; break;
+            case '1_hour': ms = 60 * 60000; break;
+            case '1_day': ms = 24 * 3600000; break;
+            case '2_days': ms = 48 * 3600000; break;
+            case '3_days': ms = 72 * 3600000; break;
+            case '1_week': ms = 7 * 24 * 3600000; break;
+            case '2_weeks': ms = 14 * 24 * 3600000; break;
+            case '3_weeks': ms = 21 * 24 * 3600000; break;
+            case '1_month': ms = 30 * 24 * 3600000; break;
+        }
+    }
+    return ms;
+};

@@ -53,7 +53,8 @@ export const buildPartnerFormDataPayload = (
 ): FormData => {
     const formDataToSend = new FormData();
     const isInstallmentEnrollment = (formData.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
-    const isConvertingFromFreeTrial = wasFreeTrial && !formData.is_free_trail;
+    const isFreeTrial = formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1';
+    const isConvertingFromFreeTrial = wasFreeTrial && !isFreeTrial;
 
     const enrollmentSubFields = [
         'plan_id',
@@ -88,8 +89,11 @@ export const buildPartnerFormDataPayload = (
         if (enrollmentSubFields.includes(key)) return;
         if (skipAlways.includes(key)) return;
 
-        if (id && !isConvertingFromFreeTrial) {
-            const updateSkipFields = ['partner_type', 'is_free_trail', 'free_trail_end_date', 'invoice'];
+        if (id) {
+            const updateSkipFields = ['partner_type', 'invoice'];
+            if (!wasFreeTrial) {
+                updateSkipFields.push('is_free_trail', 'free_trail_end_date');
+            }
             if (updateSkipFields.includes(key)) return;
         }
 
@@ -124,9 +128,9 @@ export const buildPartnerFormDataPayload = (
                 }
             }
         } else if (key === 'is_free_trail') {
-            formDataToSend.append('is_free_trail', value ? '1' : '0');
+            formDataToSend.append('is_free_trail', isFreeTrial ? '1' : '0');
         } else if (key === 'free_trail_end_date') {
-            formDataToSend.append('free_trail_end_date', formData.is_free_trail && value ? (value as string) : '');
+            formDataToSend.append('free_trail_end_date', isFreeTrial && value ? (value as string) : '');
         } else if (value !== '' && value !== null) {
             formDataToSend.append(key, value as string | Blob);
         }
@@ -134,7 +138,6 @@ export const buildPartnerFormDataPayload = (
 
     // Append enrollment sub-object
     const shouldSendEnrollment = !id || isConvertingFromFreeTrial;
-    const isFreeTrial = formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === '1';
 
     if (shouldSendEnrollment && !isFreeTrial) {
         const enrollmentAmount = formData.enrollment_amount;
