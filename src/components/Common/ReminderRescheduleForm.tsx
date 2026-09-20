@@ -1,29 +1,17 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { TimeInputs } from './TimeInputs';
 import { REMINDER_PRESETS, getReminderMsToSubtract } from '../../config/appConfig';
-
-export interface ReminderRescheduleFormHandle {
-    confirm: () => void;
-}
+import { SNOOZE_NOTE_MAX_LENGTH } from './ReminderSnoozeForm';
 
 interface ReminderRescheduleFormProps {
     loading?: boolean;
     // rescheduleAt is the naive 'Y-m-d H:i:s' string the backend expects
     // (interpreted server-side using the X-Timezone header); leadMinutes is
-    // how long before rescheduleAt to fire the alert.
-    onConfirm: (rescheduleAt: string, leadMinutes: number) => void;
-    // When the lead time is the simple preset dropdown (not "Custom Time
-    // Before"), the due-reminder popup wants Confirm to sit in its own row
-    // next to the unrelated "All Reminders" link rather than beside Date &
-    // Time/Remind Me — something only the caller can lay out. Set this to
-    // suppress the built-in Confirm button in that case; drive it instead via
-    // the forwarded ref's confirm() and the onValidityChange/onModeChange
-    // callbacks. Custom mode is unaffected — Confirm always stays grouped
-    // with Value/Unit there regardless of this prop.
-    externalConfirm?: boolean;
-    onValidityChange?: (canConfirm: boolean) => void;
-    onModeChange?: (isCustomLead: boolean) => void;
+    // how long before rescheduleAt to fire the alert; note is the optional
+    // reason, saved in the reminder's snooze history like a snooze note.
+    onConfirm: (rescheduleAt: string, leadMinutes: number, note: string) => void;
+    onCancel?: () => void;
 }
 
 // Convert a local Date into the naive 'Y-m-d H:i:s' string the backend
@@ -36,14 +24,9 @@ const toLocalDbString = (date: Date) => {
 // Shared custom date/time + "remind me X before" picker used both by the
 // due-reminder popup (ReminderModal) and the reminder details page
 // (ReminderViewModal) so the two Reschedule flows stay identical instead of
-// drifting apart as separate copies.
-export const ReminderRescheduleForm = forwardRef<ReminderRescheduleFormHandle, ReminderRescheduleFormProps>(({
-    loading,
-    onConfirm,
-    externalConfirm,
-    onValidityChange,
-    onModeChange,
-}, ref) => {
+// drifting apart as separate copies. Laid out like the snooze panel, with its
+// own Cancel / Confirm row at the bottom.
+export const ReminderRescheduleForm = ({ loading, onConfirm, onCancel }: ReminderRescheduleFormProps) => {
     // Default the picker to a sensible starting point instead of blank, so
     // there's less to fill in.
     const [customRescheduleDate, setCustomRescheduleDate] = useState<Date | null>(
@@ -52,6 +35,7 @@ export const ReminderRescheduleForm = forwardRef<ReminderRescheduleFormHandle, R
     const [rescheduleLeadPreset, setRescheduleLeadPreset] = useState('15_minutes');
     const [rescheduleLeadValue, setRescheduleLeadValue] = useState('1');
     const [rescheduleLeadUnit, setRescheduleLeadUnit] = useState('Hours');
+    const [note, setNote] = useState('');
 
     const isCustomLead = rescheduleLeadPreset === 'custom_time_before';
 
@@ -70,85 +54,43 @@ export const ReminderRescheduleForm = forwardRef<ReminderRescheduleFormHandle, R
 
     const rescheduleLeadMs = getReminderMsToSubtract(rescheduleLeadPreset, rescheduleLeadValue, rescheduleLeadUnit);
     const rescheduleAlertTime = customRescheduleDate ? new Date(customRescheduleDate.getTime() - rescheduleLeadMs) : null;
-    const rescheduleLeadError = isLeadValueInvalid
-        ? `Enter a value between 1 and ${MAX_CUSTOM_LEAD_VALUE}.`
-        : (rescheduleAlertTime && rescheduleAlertTime.getTime() < Date.now()
-            ? 'This reminder time calculates to a past date/time.'
-            : null);
-    const canConfirm = !!customRescheduleDate && !rescheduleLeadError && !loading;
+
+    // Each error is tied to the field that causes it and shown right under
+    // that field, so it is always clear what to fix. The backend rejects a
+    // past reschedule date too — this just says so before the request.
+    const dateError = !customRescheduleDate
+        ? 'Select a date and time.'
+        : (customRescheduleDate.getTime() <= Date.now() ? 'Choose a date and time in the future.' : null);
+    const leadValueError = isLeadValueInvalid ? `Enter a value between 1 and ${MAX_CUSTOM_LEAD_VALUE}.` : null;
+    const leadTimeError = !dateError && !leadValueError && rescheduleAlertTime && rescheduleAlertTime.getTime() < Date.now()
+        ? 'The reminder would be in the past — choose a shorter time before.'
+        : null;
+    const rescheduleLeadError = leadValueError || leadTimeError;
+    const trimmedNote = note.trim();
+    const noteError = trimmedNote.length > SNOOZE_NOTE_MAX_LENGTH
+        ? `The note may not be longer than ${SNOOZE_NOTE_MAX_LENGTH} characters.`
+        : null;
+    const canConfirm = !dateError && !rescheduleLeadError && !noteError && !loading;
 
     const doConfirm = () => {
-        if (!customRescheduleDate || rescheduleLeadError) return;
-        onConfirm(toLocalDbString(customRescheduleDate), Math.round(rescheduleLeadMs / 60000));
+        if (!customRescheduleDate || !canConfirm) return;
+        onConfirm(toLocalDbString(customRescheduleDate), Math.round(rescheduleLeadMs / 60000), trimmedNote);
     };
 
-    useImperativeHandle(ref, () => ({ confirm: doConfirm }), [customRescheduleDate, rescheduleLeadError, rescheduleLeadMs]);
-
+    // The panel opens below the action buttons — bring it into view within the
+    // popup's scrolling body (never scrolling the page itself).
+    const panelRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
-        onValidityChange?.(canConfirm);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [canConfirm]);
+        panelRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, []);
 
-    useEffect(() => {
-        onModeChange?.(isCustomLead);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isCustomLead]);
-
-    // Date & Time always gets more room than Remind Me on the first row — the
-    // date/time text (e.g. "03 Sep, 2026 12:39 PM") needs it to avoid
-    // clipping the AM/PM portion. Custom mode needs a second row for Value/
-    // Unit/Confirm below, split evenly (col-4/col-4/col-4).
-    //
-    // Without those extra fields: when externalConfirm is set, the caller
-    // renders Confirm itself (e.g. next to "All Reminders" in the due-
-    // reminder popup) and this component renders no Confirm button, so Date &
-    // Time/Remind Me split the row alone (col-7/col-5) — same split as custom
-    // mode's row 1. Otherwise (the Task & Reminder Details modal) Confirm
-    // renders inline here too, sharing the row (col-6/col-4/col-2).
-    //
-    // Plain col-* (not col-md-*) throughout — col-md-* only applies at/above
-    // a 768px browser viewport, which has nothing to do with this modal's
-    // actual pixel width, so below that breakpoint those columns had no
-    // width class at all and could overflow.
-    const dateTimeColClass = (isCustomLead || externalConfirm) ? 'col-7' : 'col-6';
-    const remindMeColClass = (isCustomLead || externalConfirm) ? 'col-5' : 'col-4';
-    const valueColClass = 'col-4';
-    const unitColClass = 'col-4';
-    const confirmColClass = isCustomLead ? 'col-4' : 'col-2';
-
-    const confirmButton = (
-        <button
-            type="button"
-            className="btn fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary w-100"
-            style={{ height: '38px' }}
-            disabled={!canConfirm}
-            onClick={doConfirm}
-        >
-            {loading ? (
-                <span className="spinner-border spinner-border-sm"></span>
-            ) : (
-                <><i className="ri-check-line me-1 fs-16"></i> Confirm</>
-            )}
-        </button>
-    );
-
+    // Date & Time gets more room than Remind Me: "03 Sep, 2026 12:39 PM" needs
+    // it to avoid clipping the AM/PM. Plain col-* (not col-md-*) because the
+    // breakpoints follow the browser viewport, not this panel's width.
     return (
-        <div className="mb-3">
-            <style>{`
-                .reminder-reschedule-picker .p-timepicker {
-                    display: none;
-                }
-                .reminder-lead-value::-webkit-outer-spin-button,
-                .reminder-lead-value::-webkit-inner-spin-button {
-                    -webkit-appearance: none;
-                    margin: 0;
-                }
-                .reminder-lead-value {
-                    -moz-appearance: textfield;
-                }
-            `}</style>
+        <div ref={panelRef} className="reminder-snooze-panel rounded border p-3">
             <div className="row g-2">
-                <div className={dateTimeColClass}>
+                <div className="col-7">
                     <label className="form-label fs-12 fw-semibold text-muted mb-1">Date &amp; Time</label>
                     <div className="custom-datepicker reminder-reschedule-picker">
                         <Calendar
@@ -170,7 +112,8 @@ export const ReminderRescheduleForm = forwardRef<ReminderRescheduleFormHandle, R
                             placeholder="Select date & time"
                             showIcon
                             className="w-100"
-                            inputStyle={{ height: '38px' }}
+                            inputClassName="reminder-control"
+                            invalid={!!dateError}
                             appendTo="self"
                             minDate={new Date()}
                             footerTemplate={() => (
@@ -181,43 +124,46 @@ export const ReminderRescheduleForm = forwardRef<ReminderRescheduleFormHandle, R
                             )}
                         />
                     </div>
+                    {dateError && <div className="invalid-feedback d-block">{dateError}</div>}
                 </div>
 
-                <div className={remindMeColClass}>
+                <div className="col-5">
                     <label className="form-label fs-12 fw-semibold text-muted mb-1">Remind Me</label>
                     <select
-                        className="form-select w-100"
-                        style={{ height: '38px' }}
+                        className={`form-select w-100 reminder-control ${!isCustomLead && leadTimeError ? 'is-invalid' : ''}`}
                         value={rescheduleLeadPreset}
                         onChange={(e) => setRescheduleLeadPreset(e.target.value)}
+                        disabled={loading}
                     >
                         {REMINDER_PRESETS.map((preset: any) => (
                             <option key={preset.value} value={preset.value}>{preset.label}</option>
                         ))}
                     </select>
+                    {!isCustomLead && leadTimeError && <div className="invalid-feedback d-block">{leadTimeError}</div>}
                 </div>
 
                 {isCustomLead && (
                     <>
-                        <div className={valueColClass}>
+                        <div className="col-6">
                             <label className="form-label fs-12 fw-semibold text-muted mb-1">Value</label>
                             <input
                                 type="number"
-                                className={`form-control w-100 reminder-lead-value ${isLeadValueInvalid ? 'is-invalid' : ''}`}
-                                style={{ height: '38px' }}
+                                className={`form-control w-100 reminder-control reminder-lead-value ${rescheduleLeadError ? 'is-invalid' : ''}`}
                                 min="1"
                                 max={MAX_CUSTOM_LEAD_VALUE}
                                 value={rescheduleLeadValue}
                                 onChange={(e) => setRescheduleLeadValue(e.target.value)}
+                                disabled={loading}
                             />
+                            {rescheduleLeadError && <div className="invalid-feedback">{rescheduleLeadError}</div>}
                         </div>
-                        <div className={unitColClass}>
+                        <div className="col-6">
                             <label className="form-label fs-12 fw-semibold text-muted mb-1">Unit</label>
                             <select
-                                className="form-select w-100"
-                                style={{ height: '38px' }}
+                                className="form-select w-100 reminder-control"
                                 value={rescheduleLeadUnit}
                                 onChange={(e) => setRescheduleLeadUnit(e.target.value)}
+                                disabled={loading}
                             >
                                 <option value="Minutes">Minutes</option>
                                 <option value="Hours">Hours</option>
@@ -226,28 +172,50 @@ export const ReminderRescheduleForm = forwardRef<ReminderRescheduleFormHandle, R
                                 <option value="Months">Months</option>
                             </select>
                         </div>
-                        <div className={confirmColClass}>
-                            {/* Confirm sits beside the labeled Value/Unit fields here,
-                                so it needs the same blank spacer label to stay
-                                aligned with their inputs. */}
-                            <label className="form-label fs-12 fw-semibold text-muted mb-1">&nbsp;</label>
-                            {confirmButton}
-                        </div>
                     </>
                 )}
 
-                {!isCustomLead && !externalConfirm && (
-                    <div className={confirmColClass}>
-                        <label className="form-label fs-12 fw-semibold text-muted mb-1">&nbsp;</label>
-                        {confirmButton}
+                <div className="col-12">
+                    <div className="d-flex justify-content-between align-items-baseline">
+                        <label className="form-label fs-12 fw-semibold text-muted mb-1" htmlFor="reminder-reschedule-note">
+                            Note <span className="fw-normal">(optional)</span>
+                        </label>
+                        <span className={`fs-11 ${noteError ? 'text-danger' : 'text-muted'}`}>
+                            {trimmedNote.length}/{SNOOZE_NOTE_MAX_LENGTH}
+                        </span>
                     </div>
-                )}
+                    <input
+                        type="text"
+                        id="reminder-reschedule-note"
+                        className={`form-control reminder-control ${noteError ? 'is-invalid' : ''}`}
+                        maxLength={SNOOZE_NOTE_MAX_LENGTH}
+                        placeholder="Why are you rescheduling this?"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') doConfirm(); }}
+                        disabled={loading}
+                    />
+                    {noteError && <div className="invalid-feedback">{noteError}</div>}
+                </div>
             </div>
-            {rescheduleLeadError && (
-                <div className="text-danger mt-2 small">{rescheduleLeadError}</div>
-            )}
+
+            <div className="d-flex justify-content-end gap-2 mt-3">
+                {onCancel && (
+                    <button type="button" className="btn btn-sm btn-light" onClick={onCancel} disabled={loading}>
+                        Cancel
+                    </button>
+                )}
+                <button
+                    type="button"
+                    className="btn btn-sm fw-semibold d-flex align-items-center btn-reminder-secondary"
+                    disabled={!canConfirm}
+                    onClick={doConfirm}
+                >
+                    {loading
+                        ? <><span className="spinner-border spinner-border-sm me-2"></span>Rescheduling...</>
+                        : <><i className="ri-check-line me-1"></i>Confirm</>}
+                </button>
+            </div>
         </div>
     );
-});
-
-ReminderRescheduleForm.displayName = 'ReminderRescheduleForm';
+};

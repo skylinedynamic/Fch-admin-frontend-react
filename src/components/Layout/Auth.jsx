@@ -41,8 +41,22 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
       });
   }, []);
 
-  const dynamicLogo = settings?.primary_logo_full_url;
-  const siteName = settings?.site_name ;
+  // Sidebar logo first, then mobile, then document. `primary_logo_full_url` used
+  // to be read here, but that key was retired when branding was renamed by
+  // surface (logo_sidebar / logo_document / logo_mail / logo_mobile / favicon),
+  // so the login page has been handing <img> an undefined src ever since.
+  //
+  // The server also sends `null` as a real string for an unset key, so the guard
+  // rejects that too rather than rendering a broken-image icon.
+  const pickLogo = (...urls) =>
+    urls.find((url) => typeof url === 'string' && url.trim() !== '' && url !== 'null') || null;
+
+  const dynamicLogo = pickLogo(
+    settings?.logo_sidebar_full_url,
+    settings?.logo_mobile_full_url,
+    settings?.logo_document_full_url,
+  );
+  const siteName = settings?.site_name;
   return (
     <div className="auth-page-wrapper pt-5">
 
@@ -67,7 +81,9 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
               <div className="text-center text-white-50 mt-5 mb-3">
                 <div>
                   <a href="/" className="d-inline-block auth-logo">
-                    <img src={dynamicLogo} alt={siteName} className="auth-logo-img" />
+                    {dynamicLogo
+                      ? <img src={dynamicLogo} alt={siteName || ''} className="auth-logo-img" />
+                      : <span className="auth-logo-text fs-3 fw-semibold text-white">{siteName}</span>}
                   </a>
                 </div>
               </div>

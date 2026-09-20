@@ -1,0 +1,97 @@
+/* ==========================================================================
+   Blog editor chrome (CMS only)
+   --------------------------------------------------------------------------
+   Everything here styles the CKEditor shell. The article styling itself lives
+   in `blog-content.css` (shared with the public site) and the Category / Tags
+   pickers use the app-wide `.taxonomy-field` styles in assets/css/custom.css.
+
+   The Velzon theme already frames CKEditor in assets/css/app.css (~L12840):
+   the toolbar carries the border and the rounded top corners, the editable
+   carries `border-top: 0` plus the rounded bottom corners, and the two meet as
+   one box. All of it is `!important`. So this file deliberately adds NO borders
+   or backgrounds of its own - a second frame around that theme border is what
+   made the toolbar look doubled up. It only sets the writing canvas and footer.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CKEditor shell
+   -------------------------------------------------------------------------- */
+
+/* Keep the toolbar in reach while writing long posts. */
+.blog-editor .ck.ck-editor__top .ck-sticky-panel .ck-sticky-panel__content_sticky {
+    box-shadow: 0 4px 12px rgba(30, 32, 37, 0.08);
+    z-index: 1002;
+}
+
+.blog-editor .ck.ck-editor__top .ck-toolbar {
+    padding: 6px 8px;
+}
+
+.blog-editor .ck.ck-editor__main > .ck-editor__editable {
+    /* Comfortable writing canvas: tall enough to keep context, resizable when
+       the author wants more room. */
+    min-height: 520px;
+    overflow-y: auto;
+    padding: 24px 28px;
+    resize: vertical;
+}
+
+.blog-editor .ck.ck-editor__main > .ck-editor__editable.ck-focused {
+    box-shadow: none;
+    outline: none;
+}
+
+.blog-editor .ck.ck-editor__editable_inline > :last-child {
+    margin-bottom: 0;
+}
+
+/* Source editing gets the same tall, readable canvas.
+
+   CKEditor sizes this view from an invisible `::after` pseudo-element holding
+   `content: attr(data-value)`; the textarea is absolutely positioned at
+   `height: 100%` inside an `overflow: hidden` container. Two consequences:
+     1. the min-height belongs on the CONTAINER - on the textarea it is simply
+        clipped by the collapsed container, which left an empty post showing a
+        single-line box;
+     2. the textarea and the `::after` must keep IDENTICAL font, line-height and
+        padding, or the measured height stops matching the real text and long
+        documents get cut off. Always style the two together. */
+.blog-editor .ck-source-editing-area {
+    min-height: 520px;
+}
+
+.blog-editor .ck-source-editing-area textarea,
+.blog-editor .ck-source-editing-area::after {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 24px 28px;
+}
+
+.blog-editor .ck-powered-by-balloon,
+.blog-editor .ck-powered-by {
+    display: none !important;
+}
+
+/* Live word/character count. Borderless on purpose - it hangs under the editor
+   rather than reading as yet another panel. */
+.blog-editor__footer {
+    align-items: center;
+    color: var(--vz-secondary-color, #878a99);
+    display: flex;
+    font-size: 12px;
+    gap: 16px;
+    justify-content: flex-end;
+    padding: 6px 2px 0;
+}
+
+.blog-editor__footer .ck-word-count {
+    display: flex;
+    gap: 16px;
+}
+
+/* Invalid state - `!important` to match the priority the theme sets these at. */
+.blog-editor.is-invalid .ck.ck-toolbar,
+.blog-editor.is-invalid .ck.ck-editor__main > .ck-editor__editable {
+    border-color: #f06548 !important;
+}

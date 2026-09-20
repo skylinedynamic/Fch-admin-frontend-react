@@ -33,13 +33,6 @@ const STATUS_META: Record<string, { label: string; badge: string; icon: string }
     rejected: { label: 'Rejected', badge: 'bg-danger-subtle text-danger', icon: 'ri-close-circle-line' },
 };
 
-const creditScoreBand = (score: number | string) => {
-    const value = Number(score);
-    if (!value) return 'muted';
-    if (value >= 740) return 'good';
-    if (value >= 670) return 'fair';
-    return 'poor';
-};
 
 const relativeTime = (value: string) => {
     const then = new Date(value).getTime();
@@ -269,7 +262,7 @@ export default function EmbedFormSubmissions() {
                         {rowData.first_name} {rowData.last_name}
                     </span>
                     <span className="text-muted fs-11 d-block text-truncate">
-                        {rowData.occupation || 'Applicant'}
+                        {rowData.business_name || rowData.occupation || 'Applicant'}
                         {rowData.submission_uid && (
                             <span className="ef-uid ms-1">#{String(rowData.submission_uid).slice(0, 8)}</span>
                         )}
@@ -297,18 +290,27 @@ export default function EmbedFormSubmissions() {
     };
 
     const amountBodyTemplate = (rowData: any) => {
-        const amount = rowData.desired_funding_amount_formatted
-            ? rowData.desired_funding_amount_formatted
-            : rowData.desired_funding_amount
-            ? `$${parseFloat(rowData.desired_funding_amount).toLocaleString()}`
-            : '—';
+        const rawAmount = rowData.requested_amount ?? rowData.desired_funding_amount;
+        const amount =
+            rowData.requested_amount_formatted ||
+            rowData.desired_funding_amount_formatted ||
+            (rawAmount ? `$${parseFloat(rawAmount).toLocaleString()}` : '—');
+
+        // Score and band both come from the API - this screen holds no
+        // thresholds of its own, so it can never disagree with the detail page.
+        const creditScore = rowData.credit_score_display ?? rowData.credit_score;
+        const bandLabel = rowData.credit_score_band_label;
+        const bandTone = rowData.credit_score_band_tone || 'secondary';
 
         return (
             <div>
                 <div className="fw-semibold text-success fs-13">{amount}</div>
-                {rowData.credit_score ? (
-                    <span className={`ef-score ef-score--${creditScoreBand(rowData.credit_score)}`}>
-                        <i className="ri-speed-up-line" /> {rowData.credit_score}
+                {creditScore ? (
+                    <span className="d-inline-flex align-items-center gap-1 fs-11">
+                        <i className="ri-speed-up-line" /> {creditScore}
+                        {bandLabel && (
+                            <span className={`badge bg-${bandTone}-subtle text-${bandTone} fs-11`}>{bandLabel}</span>
+                        )}
                     </span>
                 ) : (
                     <span className="text-muted fs-11">No credit score</span>

@@ -124,7 +124,7 @@ const menuItems = [
   {
     to: "/commissions",
     icon: "bx bx-dollar",
-    label: "Commisions",
+    label: "Commissions",
     permission: "view commission",
   },
 
@@ -242,23 +242,23 @@ const menuItems = [
   // Hidden for now: the Embedded Form feature is on hold pending the open
   // defects (client IP, credit-score bands, form validation, conversion flow).
   // Routes still exist, so this block is all that needs restoring.
-  // {
-  //   label: "Embedded Form",
-  //   icon: "ri-survey-line",
-  //   id: "embed-form-menu",
-  //   subItems: [
-  //     {
-  //       to: "/embed-form/settings",
-  //       label: "Configuration",
-  //       permission: "view configuration",
-  //     },
-  //     {
-  //       to: "/embed-form/loan-applications",
-  //       label: "Loan Applications",
-  //       permission: "view application",
-  //     },
-  //   ],
-  // },
+  {
+    label: "Embedded Form",
+    icon: "ri-survey-line",
+    id: "embed-form-menu",
+    subItems: [
+      {
+        to: "/embed-form/settings",
+        label: "Configuration",
+        permission: "view configuration",
+      },
+      {
+        to: "/embed-form/loan-applications",
+        label: "Loan Applications",
+        permission: "view application",
+      },
+    ],
+  },
   {
     to: "/admin/settings",
     icon: "ri-file-settings-fill",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent, FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
 import { Dialog } from 'primereact/dialog';
@@ -17,6 +17,9 @@ import { ClassicEditor } from 'ckeditor5';
 import { editorConfig } from '../../config/ckeditorConfig';
 
 import 'ckeditor5/ckeditor5.css';
+// Shared with the public site so the editor previews the real article styling.
+import '../../assets/css/blog-content.css';
+import '../../assets/css/blog-editor.css';
 
 const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 const WEBSITE_URL = import.meta.env.VITE_WEBSITE_URL?.replace(/\/$/, '') || '';
@@ -43,6 +46,7 @@ export default function BlogEdit() {
     const [ogImage, setOgImage] = useState<string | null>(null);
     const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
     const [activeFileTarget, setActiveFileTarget] = useState<'featured' | 'og'>('featured');
+    const wordCountRef = useRef<HTMLDivElement | null>(null);
 
     const [formData, setFormData] = useState<BlogFormData>({
         title: '',
@@ -304,29 +308,32 @@ export default function BlogEdit() {
                                             <div className="col-lg-12">
                                                 <div className="mb-3">
                                                     <label className="form-label">Main Content <span className="text-danger">*</span></label>
-                                                    {errors.content && (
-                                                        <style>{`
-                                                        .ckeditor-error-wrapper .ck.ck-toolbar,
-                                                        .ckeditor-error-wrapper .ck.ck-editor__main > .ck-editor__editable {
-                                                            border-color: #f06548 !important;
-                                                        }
-                                                    `}</style>
-                                                    )}
-                                                    <style>{`
-                                                        .ck-powered-by-balloon, .ck-powered-by {
-                                                            display: none !important;
-                                                        }
-                                                    `}</style>
-                                                    <div className={errors.content ? 'ckeditor-error-wrapper' : ''}>
+                                                    <div className={`blog-editor ${errors.content ? 'is-invalid' : ''}`}>
                                                         <CKEditor
                                                             editor={ClassicEditor}
                                                             data={formData.content || ''}
+                                                            onReady={(editor) => {
+                                                                // Render the editing area with the same stylesheet the public
+                                                                // blog uses, so the editor is a true preview.
+                                                                const view = editor.editing.view;
+                                                                view.change(writer => {
+                                                                    writer.addClass('blog-content', view.document.getRoot()!);
+                                                                });
+
+                                                                if (wordCountRef.current) {
+                                                                    const wordCount: any = editor.plugins.get('WordCount');
+                                                                    wordCountRef.current.replaceChildren(wordCount.wordCountContainer);
+                                                                }
+                                                            }}
                                                             onChange={(event, editor) => {
                                                                 const data = editor.getData();
                                                                 setFormData(prev => ({ ...prev, content: data }));
                                                             }}
                                                             config={editorConfig}
                                                         />
+                                                        <div className="blog-editor__footer">
+                                                            <div ref={wordCountRef}></div>
+                                                        </div>
                                                     </div>
                                                     {errors.content && <div className="invalid-feedback d-block">{errors.content}</div>}
                                                 </div>
@@ -488,7 +495,7 @@ export default function BlogEdit() {
                                     </div>
                                 </div>
                                 <div className="card-body p-4">
-                                    <div className="mb-4">
+                                    <div className="mb-4 taxonomy-field">
                                         <div className="d-flex justify-content-between align-items-center mb-1">
                                             <label className="form-label mb-0">Category</label>
                                             <button type="button" className="btn btn-link btn-sm p-0 text-primary" onClick={() => setShowCatModal(true)}>
@@ -501,13 +508,14 @@ export default function BlogEdit() {
                                             onChange={(e) => setFormData({ ...formData, category_id: e.value })}
                                             placeholder="Select Category"
                                             className={`w-100 ${errors.category_id ? 'p-invalid' : ''}`}
+                                            panelClassName="taxonomy-field-panel"
                                             filter
                                             showClear
                                         />
                                         {errors.category_id && <div className="text-danger fs-12 mt-1">{errors.category_id}</div>}
                                     </div>
 
-                                    <div className="mb-0">
+                                    <div className="mb-0 taxonomy-field">
                                         <div className="d-flex justify-content-between align-items-center mb-1">
                                             <label className="form-label mb-0">Tags</label>
                                             <button type="button" className="btn btn-link btn-sm p-0 text-primary" onClick={() => setShowTagModal(true)}>
@@ -518,13 +526,20 @@ export default function BlogEdit() {
                                             value={formData.blog_tag_id}
                                             options={tagsData?.data?.map((t: any) => ({ label: t.name, value: t.id.toString() })) || []}
                                             onChange={(e) => setFormData({ ...formData, blog_tag_id: e.value })}
-                                            placeholder="Select Tags"
+                                            placeholder="Select tags for this post"
                                             className={`w-100 ${errors.blog_tag_id ? 'p-invalid' : ''}`}
+                                            panelClassName="taxonomy-field-panel"
                                             filter
+                                            filterPlaceholder="Search tags"
                                             display="chip"
+                                            showSelectAll={false}
+                                            removeIcon="ri-close-line"
                                             maxSelectedLabels={20}
+                                            emptyFilterMessage="No matching tag - use Add New to create it"
                                         />
-                                        {errors.blog_tag_id && <div className="text-danger fs-12 mt-1">{errors.blog_tag_id}</div>}
+                                        {errors.blog_tag_id
+                                            ? <div className="text-danger fs-12 mt-1">{errors.blog_tag_id}</div>
+                                            : <div className="taxonomy-field__hint">Pick one or more tags, or create a new one with Add New.</div>}
                                     </div>
                                 </div>
                             </div>
@@ -772,25 +787,6 @@ export default function BlogEdit() {
                 entityId={id ? Number(id) : 0}
                 getAll={true}
             />
-            <style>{`
-                /* MultiSelect Chip wrapping styles */
-                .p-multiselect.p-multiselect-chip .p-multiselect-token {
-                    margin-right: 0.25rem;
-                    margin-bottom: 0.25rem;
-                }
-                .p-multiselect.p-multiselect-chip .p-multiselect-label {
-                    display: flex;
-                    flex-wrap: wrap;
-                    padding: 0.25rem 0.5rem;
-                }
-                .p-multiselect {
-                    height: auto !important;
-                    min-height: 40px;
-                }
-                .p-multiselect-label-container {
-                    overflow: visible;
-                }
-            `}</style>
         </div>
     );
 }

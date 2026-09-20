@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDeleteClients, usePartners, useAllUsers, useBorrowerTiers } from '../../modules/client/queries';
+import { useDeleteClients, useArchiveClients, useUnarchiveClients, usePartners, useAllUsers, useBorrowerTiers } from '../../modules/client/queries';
 import { getUser } from '../../lib/auth';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
@@ -47,6 +47,8 @@ export default function Clients() {
 
     // React Query Mutations
     const deleteClientsMutation = useDeleteClients();
+    const archiveClientsMutation = useArchiveClients();
+    const unarchiveClientsMutation = useUnarchiveClients();
 
     // Delete handlers
     const openDeleteModal = () => {
@@ -56,6 +58,35 @@ export default function Clients() {
         }
         setDeleteRows(selectedClients);
         setShowDeleteModal(true);
+    };
+
+    /**
+     * Archive or restore the selected clients.
+     *
+     * No confirmation step: unlike deleting, this changes nothing about the record
+     * or its access - it only takes it out of the working list, and it is
+     * reversible from the same menu.
+     */
+    const handleArchiveToggle = async (archive: boolean) => {
+        if (!selectedClients || selectedClients.length === 0) {
+            toast.warn(`Please select at least one client to ${archive ? 'archive' : 'restore'}.`);
+            return;
+        }
+
+        const ids = selectedClients
+            .map(c => c.id)
+            .filter((id): id is string | number => id !== undefined);
+
+        try {
+            const res = archive
+                ? await archiveClientsMutation.mutateAsync(ids)
+                : await unarchiveClientsMutation.mutateAsync(ids);
+
+            toast.success(res?.message || `Client(s) ${archive ? 'archived' : 'restored'}.`);
+            setSelectedClients([]);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || err.message || `Failed to ${archive ? 'archive' : 'restore'} clients.`);
+        }
     };
 
     const handleDeleteConfirm = async () => {
@@ -82,18 +113,34 @@ export default function Clients() {
                     breadcrumbs={[{ label: 'Clients' }]}
                 >
                     <div className="btn-group">
-                        {hasPermission('delete clients') && selectedClients.length > 0 ? (
+                        {(hasPermission('delete clients') || hasPermission('update clients')) && selectedClients.length > 0 ? (
                             <>
                                 <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
                                 <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span className="visually-hidden">Toggle dropdown</span>
                                 </button>
                                 <ul className="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
-                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                        </button>
-                                    </li>
+                                    {hasPermission('update clients') && (
+                                        <>
+                                            <li>
+                                                <button type="button" className="dropdown-item" onClick={() => handleArchiveToggle(true)}>
+                                                    <i className="ri-archive-line me-1 align-bottom"></i> Archive Selected
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" className="dropdown-item" onClick={() => handleArchiveToggle(false)}>
+                                                    <i className="ri-inbox-unarchive-line me-1 align-bottom"></i> Restore Selected
+                                                </button>
+                                            </li>
+                                        </>
+                                    )}
+                                    {hasPermission('delete clients') && (
+                                        <li>
+                                            <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                                <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                            </button>
+                                        </li>
+                                    )}
                                 </ul>
                             </>
                         ) : hasPermission('create clients') ? (
@@ -127,7 +174,7 @@ export default function Clients() {
                                     partnersList={partnersList}
                                     assignedUsersList={assignedUsersList}
                                     tiersList={tiersList}
-                                    deletePermission={hasPermission('delete clients')}
+                                    deletePermission={hasPermission('delete clients') || hasPermission('update clients')}
                                     selectedClients={selectedClients}
                                     onSelectionChange={setSelectedClients}
                                     onTotalRecordsChange={setTotalRecords}
