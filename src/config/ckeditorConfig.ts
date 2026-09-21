@@ -56,7 +56,7 @@ export const editorToolbar = [
     'findAndReplace', 'showBlocks', 'sourceEditing'
 ];
 
-export const editorConfig = {
+export const editorConfig: EditorConfig = {
     licenseKey: 'GPL',
     plugins: editorPlugins,
     toolbar: {
@@ -95,7 +95,7 @@ export const editorConfig = {
         defaultProtocol: 'https://',
         decorators: {
             openInNewTab: {
-                mode: 'manual',
+                mode: 'manual' as const,
                 label: 'Open in a new tab',
                 attributes: {
                     target: '_blank',
