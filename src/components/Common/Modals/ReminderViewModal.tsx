@@ -10,11 +10,11 @@ import {
     isReminderMissed,
     getEffectiveReminderStatusLabel,
     formatSnoozeMinutes,
-    ReminderClient,
-    ReminderRelated,
-    ReminderSnoozeEntry,
-    ReminderDisplay,
-    Reminder,
+    type Reminder,
+    type ReminderClient,
+    type ReminderRelated,
+    type ReminderSnoozeEntry,
+    type ReminderDisplay,
 } from '../../../config/reminders';
 import { ReminderRescheduleForm } from '../ReminderRescheduleForm';
 import ReminderClientCard from '../ReminderClientCard';
