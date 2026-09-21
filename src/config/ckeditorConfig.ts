@@ -149,4 +149,5 @@ export const editorConfig: EditorConfig = {
         showPreviews: true
     },
     placeholder: 'Start writing your post... Use the toolbar above, or type "* " for a bullet list, "1. " for a numbered list and "# " for a heading.'
-};
+} satisfies EditorConfig;
+

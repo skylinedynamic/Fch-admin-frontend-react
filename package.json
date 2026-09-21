@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run tests/utils tests/store tests/lib",
+    "test:feature": "vitest run tests/modules tests/pages",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
@@ -71,5 +73,8 @@
     "typescript": "^5.9.3",
     "vite": "^6.0.0",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "vite": "$vite"
   }
 }
