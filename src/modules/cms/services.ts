@@ -65,7 +65,7 @@ export const cmsService = {
 
   // SEO
   fetchSeoSettings: async (params) => {
-    const response = await apiClient.post("/admin/cms/seo-settings", { params });
+    const response = await apiClient.post("/admin/cms/seo-settings", params);
     return response.data;
   },
   fetchSeoSetting: async (id) => {
