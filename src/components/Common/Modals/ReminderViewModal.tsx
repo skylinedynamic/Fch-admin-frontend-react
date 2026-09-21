@@ -10,6 +10,7 @@ import {
     isReminderMissed,
     getEffectiveReminderStatusLabel,
     formatSnoozeMinutes,
+    Reminder,
     ReminderClient,
     ReminderRelated,
     ReminderSnoozeEntry,
@@ -21,27 +22,6 @@ import ReminderSnoozeForm, { ReminderSnoozeErrors } from '../ReminderSnoozeForm'
 import ReminderAttachments from '../ReminderAttachments';
 import ActivityEditModal from './ActivityEditModal';
 import { getActivityLog } from '../../../modules/activity-log/services';
-
-interface Reminder {
-    id: number;
-    reference: string;
-    reference_type?: string;
-    summary?: string;
-    message?: string;
-    set_date_time?: string;
-    reminder_date_time?: string;
-    send_at?: string;
-    status: string;
-    notes?: string;
-    attachments?: Array<{ name: string; path: string }>;
-    activity_log_id?: number | null;
-    activity_can_edit?: boolean;
-    client?: ReminderClient | null;
-    related?: ReminderRelated | null;
-    snooze_history?: ReminderSnoozeEntry[];
-    is_past_due?: boolean;
-    display?: ReminderDisplay;
-}
 
 interface ReminderViewModalProps {
     show: boolean;

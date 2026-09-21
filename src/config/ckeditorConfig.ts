@@ -8,7 +8,8 @@ import {
     Undo, Font, Strikethrough, Underline, Subscript, Superscript, Code, CodeBlock,
     HorizontalLine, PageBreak, SpecialCharacters, SpecialCharactersEssentials, RemoveFormat,
     Highlight, FindAndReplace, SourceEditing, ShowBlocks, WordCount,
-    Autoformat, PasteFromOffice, TextTransformation, SelectAll, AccessibilityHelp
+    Autoformat, PasteFromOffice, TextTransformation, SelectAll, AccessibilityHelp,
+    type EditorConfig
 } from 'ckeditor5';
 
 export const editorPlugins = [
@@ -55,7 +56,7 @@ export const editorToolbar = [
     'findAndReplace', 'showBlocks', 'sourceEditing'
 ];
 
-export const editorConfig = {
+export const editorConfig: EditorConfig = {
     licenseKey: 'GPL',
     plugins: editorPlugins,
     toolbar: {
@@ -94,7 +95,7 @@ export const editorConfig = {
         defaultProtocol: 'https://',
         decorators: {
             openInNewTab: {
-                mode: 'manual',
+                mode: 'manual' as const,
                 label: 'Open in a new tab',
                 attributes: {
                     target: '_blank',
@@ -105,7 +106,7 @@ export const editorConfig = {
     },
     image: {
         insert: {
-            type: 'auto',
+            type: 'auto' as const,
             integrations: ['upload', 'url']
         },
         // `wrapText` / `breakText` are the grouped alignment dropdowns; they

@@ -159,6 +159,16 @@ export interface Reminder extends ReminderLike {
     duration?: string;
     location?: string;
     message?: string;
+    set_date_time?: string;
+    reminder_date_time?: string;
+    send_at?: string;
+    status?: string;
     notes?: string;
     attachments?: Array<{ name: string; path: string }>;
+    activity_log_id?: number | null;
+    activity_can_edit?: boolean;
+    client?: ReminderClient | null;
+    related?: ReminderRelated | null;
+    snooze_history?: ReminderSnoozeEntry[];
+    display?: ReminderDisplay;
 }

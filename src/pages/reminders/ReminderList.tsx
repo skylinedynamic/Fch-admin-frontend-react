@@ -254,7 +254,7 @@ export default function ReminderList() {
         );
     };
 
-    const clientBodyTemplate = (rowData) => {
+    const clientBodyTemplate = (rowData: Reminder) => {
         const client = rowData.client;
         if (!client) return <span className="text-muted">—</span>;
 
@@ -284,7 +284,7 @@ export default function ReminderList() {
         );
     };
 
-    const activityDateBodyTemplate = (rowData) => {
+    const activityDateBodyTemplate = (rowData: Reminder) => {
         // Formatted by the API's toTimezone() in the viewer's timezone — shown as-is.
         const dateStr = rowData.display?.activity_datetime;
         if (!dateStr) return <span>—</span>;
