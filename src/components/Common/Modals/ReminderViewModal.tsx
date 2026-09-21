@@ -10,6 +10,7 @@ import {
     isReminderMissed,
     getEffectiveReminderStatusLabel,
     formatSnoozeMinutes,
+    Reminder,
     ReminderClient,
     ReminderRelated,
     ReminderSnoozeEntry,
