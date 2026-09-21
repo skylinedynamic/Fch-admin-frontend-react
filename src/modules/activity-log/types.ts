@@ -22,8 +22,15 @@ export interface ActivityLog {
     causer_name?: string;
     causer_image?: string;
     event_label?: string;
-    changes?: any;
-    old_values?: any;
+    remind_me?: boolean;
+    remind_at?: string;
+    reminder_id?: number | null;
+    reminder_status?: string | null;
+    reminder_status_raw?: string | null;
+    is_reminder_missed?: boolean;
+    can_edit?: boolean;
+    can_delete?: boolean;
+    is_edited?: boolean;
     created_at: string;
     updated_at: string;
 }
