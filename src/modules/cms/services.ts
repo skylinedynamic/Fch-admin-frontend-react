@@ -80,8 +80,8 @@ export const cmsService = {
   },
 
   // SEO
-  fetchSeoSettings: async (params?: SeoListParams): Promise<SeoListResponse> => {
-    const response = await apiClient.post("/admin/cms/seo-settings", { params });
+  fetchSeoSettings: async (params) => {
+    const response = await apiClient.post("/admin/cms/seo-settings", params);
     return response.data;
   },
   fetchSeoSetting: async (id: string | number): Promise<SeoSettingResponse> => {
