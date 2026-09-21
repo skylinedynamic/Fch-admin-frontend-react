@@ -164,6 +164,7 @@ const menuItems = [
     to: "/reminders",
     icon: "ri-alarm-warning-line",
     label: "Task & Reminders",
+    permission: "view reminders",
   },
   // {
   //   to: '/under-construction/training-courses',

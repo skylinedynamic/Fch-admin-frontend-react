@@ -209,7 +209,11 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="fund-application/:id" element={<FundApplication />} />
-            <Route path="reminders" element={<ReminderList />} />
+
+            {/* Reminders Route - requires 'view reminders' permission */}
+            <Route element={<PermissionRoute permission="view reminders" />}>
+              <Route path="reminders" element={<ReminderList />} />
+            </Route>
 
             {/* Commissions Routes */}
             <Route element={<PermissionRoute permission="view commission" />}>
