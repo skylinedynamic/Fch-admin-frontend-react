@@ -982,91 +982,67 @@ export default function FundingApplicationDetails() {
                                                             <div className="row g-2">
                                                                 {!showPartnerCommission ? (
                                                                     <div className="col-md-12">
-                                                                        <div className="alert alert-success border mb-0 py-3 bg-success-subtle">
-                                                                            <div className="d-flex justify-content-between align-items-center">
-                                                                                <div className="d-flex align-items-center">
-                                                                                    <div className="avatar-xs me-3">
-                                                                                        <div className="avatar-title bg-success text-white rounded">
-                                                                                            <i className="ri-admin-line"></i>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <span className="fw-medium text-muted fs-11 text-uppercase d-block">Admin Commission Amount</span>
-                                                                                        <h4 className="mb-0 fw-bold text-success">
-                                                                                            {formatCurrencyValue(totalCommissionAmount)}
-                                                                                        </h4>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className="text-end">
-                                                                                    <span className="badge bg-success text-white fs-12 px-3">
-                                                                                        {successFee || '0'}% Admin Commission
-                                                                                    </span>
-                                                                                </div>
+                                                                        <div className="commission-card commission-card--admin commission-card--wide">
+                                                                            <span className="commission-card__icon">
+                                                                                <i className="ri-admin-line"></i>
+                                                                            </span>
+                                                                            <div className="commission-card__body">
+                                                                                <span className="commission-card__label">Admin Commission</span>
+                                                                                <span className="commission-card__amount">
+                                                                                    {formatCurrencyValue(totalCommissionAmount)}
+                                                                                </span>
                                                                             </div>
+                                                                            <span className="commission-card__share">
+                                                                                {successFee || '0'}% of success fee
+                                                                            </span>
                                                                         </div>
                                                                     </div>
                                                                 ) : (
                                                                     <>
                                                                         <div className="col-md-12">
-                                                                            <div className="alert alert-secondary border-dashed mb-3 py-2 bg-light">
-                                                                                <div className="d-flex justify-content-between align-items-center">
-                                                                                    <div>
-                                                                                        <i className="ri-pie-chart-line text-secondary me-2"></i>
-                                                                                        <span className="fw-medium">Success Commission Amount:</span>
-                                                                                    </div>
-                                                                                    <h5 className="mb-0 fw-bold">{formatCurrencyValue(totalCommissionAmount)}</h5>
+                                                                            <div className="commission-total">
+                                                                                <span className="commission-total__label">
+                                                                                    <i className="ri-pie-chart-line"></i>
+                                                                                    Success Commission Amount
+                                                                                </span>
+                                                                                <span className="commission-total__value">
+                                                                                    {formatCurrencyValue(totalCommissionAmount)}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-md-6">
+                                                                            <div className="commission-card commission-card--admin">
+                                                                                <div className="commission-card__head">
+                                                                                    <span className="commission-card__icon">
+                                                                                        <i className="ri-admin-line"></i>
+                                                                                    </span>
+                                                                                    <span className="commission-card__label">Admin Commission</span>
+                                                                                </div>
+                                                                                <span className="commission-card__amount">
+                                                                                    {formatCurrencyValue(adminCommissionAmount)}
+                                                                                </span>
+                                                                                <div className="commission-card__foot">
+                                                                                    <span className="commission-card__share">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                    <span>Share of Success Fee</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
 
                                                                         <div className="col-md-6">
-                                                                            <div className="card border-0 bg-primary bg-opacity-10 mb-0">
-                                                                                <div className="card-body pt-3 px-4">
-                                                                                    <div className="d-flex align-items-center mb-2">
-                                                                                        <div className="flex-shrink-0">
-                                                                                            <div className="avatar-xs">
-                                                                                                <span className="avatar-title bg-primary text-white rounded fs-14">
-                                                                                                    <i className="ri-admin-line"></i>
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="flex-grow-1 ms-2">
-                                                                                            <p className="text-muted mb-0 fs-11 text-uppercase">Admin Commission</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <h4 className="mb-0 fw-bold text-primary fs-18">
-                                                                                        {formatCurrencyValue(adminCommissionAmount)}
-                                                                                    </h4>
-                                                                                    <p className="text-muted mb-0 mt-2 fs-12">
-                                                                                        <span className="badge bg-primary fs-10">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                        <span className="ms-1">Share of Success Fee</span>
-                                                                                    </p>
+                                                                            <div className="commission-card commission-card--partner">
+                                                                                <div className="commission-card__head">
+                                                                                    <span className="commission-card__icon">
+                                                                                        <i className="ri-shake-hands-line"></i>
+                                                                                    </span>
+                                                                                    <span className="commission-card__label">Partner Commission</span>
                                                                                 </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="col-md-6">
-                                                                            <div className="card border-0 bg-success bg-opacity-10 mb-0">
-                                                                                <div className="card-body pt-3 px-4">
-                                                                                    <div className="d-flex align-items-center mb-2">
-                                                                                        <div className="flex-shrink-0">
-                                                                                            <div className="avatar-xs">
-                                                                                                <span className="avatar-title bg-success text-white rounded fs-14">
-                                                                                                    <i className="ri-shake-hands-line"></i>
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="flex-grow-1 ms-2">
-                                                                                            <p className="text-muted mb-0 fs-11 text-uppercase">Partner Commission</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <h4 className="mb-0 fw-bold text-success fs-18">
-                                                                                        {formatCurrencyValue(partnerCommissionAmount)}
-                                                                                    </h4>
-                                                                                    <p className="text-muted mb-0 mt-2 fs-12">
-                                                                                        <span className="badge bg-success fs-10">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                        <span className="ms-1">Share of Success Fee</span>
-                                                                                    </p>
+                                                                                <span className="commission-card__amount">
+                                                                                    {formatCurrencyValue(partnerCommissionAmount)}
+                                                                                </span>
+                                                                                <div className="commission-card__foot">
+                                                                                    <span className="commission-card__share">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                    <span>Share of Success Fee</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -1093,7 +1069,7 @@ export default function FundingApplicationDetails() {
                                         <div className="card-header bg-white py-3">
                                             <h6 className="card-title mb-0 fs-16">Application Progress Steps</h6>
                                         </div>
-                                        <div className="list-group list-group-flush">
+                                        <div className="list-group list-group-flush application-steps">
                                             {STEPS.map((step) => (
                                                 <button
                                                     key={step.id}
