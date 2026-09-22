@@ -235,6 +235,38 @@ button svg {
   color: var(--brand-on-secondary) !important;
 }
 
+/* ...and so does anything nested inside a surface that asked to be TINTED.
+
+   .bg-primary above sets a flat background !important, which ignores
+   --vz-bg-opacity. So `bg-primary bg-opacity-10` - written to be a 10% tint -
+   paints as a solid brand fill instead. Six screens still use that combination
+   (invoice and payment details, the user and lead modals, capital access,
+   resources), and in every one the text inside keeps its page-oriented utility
+   colour: .text-muted goes mid-grey and .text-primary resolves to the brand
+   ink, i.e. navy on navy. The funding application's commission cards hit this
+   too and were rebuilt on their own classes instead - see .commission-card in
+   custom.css.
+
+   Matching only the `bg-opacity-*` variants keeps this off ordinary filled
+   surfaces such as a .bg-primary header, where a nested white panel would be
+   wrecked by forcing white text. The real fix is to honour bg-opacity above;
+   until then these are filled surfaces and their text has to follow. */
+.bg-primary[class*="bg-opacity-"] .text-muted,
+.bg-primary[class*="bg-opacity-"] .text-primary,
+.bg-primary[class*="bg-opacity-"] .text-body,
+.bg-primary[class*="bg-opacity-"] .text-dark,
+.bg-primary[class*="bg-opacity-"] .form-label {
+  color: var(--brand-on-primary) !important;
+}
+
+.bg-secondary[class*="bg-opacity-"] .text-muted,
+.bg-secondary[class*="bg-opacity-"] .text-secondary,
+.bg-secondary[class*="bg-opacity-"] .text-body,
+.bg-secondary[class*="bg-opacity-"] .text-dark,
+.bg-secondary[class*="bg-opacity-"] .form-label {
+  color: var(--brand-on-secondary) !important;
+}
+
 /* Brand colour used AS text on a white page needs the darkened ink, not the raw
    brand colour — otherwise a light brand is invisible here. */
 .text-primary {
