@@ -16,7 +16,7 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import { BORROWER_STATUS_CLASS_MAP } from '../../config/statusOptions';
 import { PARTNER_STATUS } from '../../config';
 import { getTrialBadgeConfig } from '../../utils/badgeHelper';
-import { TRIAL_FILTER_OPTIONS, ARCHIVE_FILTER_OPTIONS, PARTNER_STATUS_FILTER_OPTIONS } from '../../config/listFilterOptions';
+import { TRIAL_FILTER_OPTIONS, ARCHIVE_FILTER_OPTIONS, PARTNER_STATUS_FILTER_OPTIONS } from '../../config/partnerStatus';
 
 
 

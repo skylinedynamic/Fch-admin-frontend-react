@@ -155,3 +155,17 @@ export const CURRENCY_OPTIONS = [
   { label: 'EUR', value: 'EUR' },
   { label: 'GBP', value: 'GBP' }
 ];
+
+/**
+ * The borrower's plan filter on the Clients list; the partner-side equivalent is
+ * TRIAL_FILTER_OPTIONS in partnerStatus.ts, which product words as "Trial".
+ *
+ * Still the raw is_free_trail boolean rather than a named status vocabulary: the
+ * Clients list has no Expired option yet, so there is nothing for a status to
+ * disambiguate. Worth the same treatment as TRIAL_STATUS if one is added.
+ */
+export const FREE_PLAN_FILTER_OPTIONS = [
+  { label: 'All Plans', value: '' },
+  { label: 'Free Plan', value: '1' },
+  { label: 'Regular Plan', value: '0' }
+];
