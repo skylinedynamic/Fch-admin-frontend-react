@@ -30,6 +30,9 @@ export interface ActivityLog {
     is_reminder_missed?: boolean;
     can_edit?: boolean;
     can_delete?: boolean;
+    visibility?: string;
+    visibility_label?: string;
+    can_edit_visibility?: boolean;
     is_edited?: boolean;
     created_at: string;
     updated_at: string;

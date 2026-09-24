@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getActivityLogs, downloadActivityAttachment, updateActivityLog, deleteActivityLog } from '../../../modules/activity-log/services';
+import { VISIBILITY_BADGE_STYLES } from '../../../modules/activity-log/constants';
 import { downloadBlob } from '../../../utils/fileDownload';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import '../StatisticsCardSkeleton.css';
@@ -331,25 +332,23 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
         return (
             <span
-                className="badge text-nowrap ms-2"
+                className="badge text-nowrap d-inline-flex align-items-center gap-1"
                 style={{
                     backgroundColor: config.bg,
                     color: config.color,
-                    borderRadius: '20px',
-                    padding: '3px 10px',
-                    fontSize: '11px',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    fontSize: '10px',
                     fontWeight: '600',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px',
                     lineHeight: '1.2',
                     border: 'none',
                     verticalAlign: 'middle',
-                    whiteSpace: 'nowrap'
+                    cursor: 'help'
                 }}
+                title={`Reminder: ${config.label}`}
             >
-                <i className={config.icon} style={{ fontSize: '13px', lineHeight: '1' }}></i>
-                Reminder • {config.label}
+                <i className={config.icon} style={{ fontSize: '11px', lineHeight: '1' }}></i>
+                <span>{config.label}</span>
             </span>
         );
     };
@@ -357,8 +356,14 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     const getSubtitle = (activity) => {
         const logType = (activity.log_type_raw || activity.log_type || '').toLowerCase();
         const isEdited = !!activity.is_edited;
-        const dateToUse = isEdited ? activity.updated_at : (activity.activity_date || activity.created_at);
+        const dateToUse = isEdited
+            ? (activity.edited_at || activity.updated_at || activity.activity_date || activity.created_at)
+            : (activity.activity_date || activity.created_at);
         const formattedDate = formatRelativeDate(dateToUse);
+        const originalDateStr = activity.activity_date || activity.created_at;
+        const editedTooltip = isEdited && originalDateStr
+            ? `Originally: ${formatRelativeDate(originalDateStr)} (${originalDateStr})`
+            : 'Edited';
         
         if (logType === 'email' || logType === 'email sent') {
             const emails = Array.isArray(activity.to_emails)
@@ -367,7 +372,11 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
             return (
                 <span>
                     To: {emails} • Subject: {activity.subject || 'No Subject'} • {formattedDate}
-                    {isEdited && <span className="ms-1 text-muted fst-italic fw-normal">(Edited)</span>}
+                    {isEdited && (
+                        <span className="ms-1 text-muted fst-italic fw-normal" title={editedTooltip} style={{ cursor: 'help' }}>
+                            (Edited)
+                        </span>
+                    )}
                 </span>
             );
         }
@@ -375,7 +384,11 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
         return (
             <span>
                 {formattedDate}
-                {isEdited && <span className="ms-1 text-muted fst-italic fw-normal">(Edited)</span>}
+                {isEdited && (
+                    <span className="ms-1 text-muted fst-italic fw-normal" title={editedTooltip} style={{ cursor: 'help' }}>
+                        (Edited)
+                    </span>
+                )}
             </span>
         );
     };
@@ -415,9 +428,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 const newStatus = statuses[1].trim();
 
                 return (
-                    <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark d-block">{prefix}</span>
-                        <span className="d-inline-flex align-items-center flex-wrap gap-1 mt-1">
+                    <span className="d-inline-flex align-items-center flex-wrap gap-1">
+                        <span className="text-dark me-1">{prefix}</span>
+                        <span className="text-nowrap d-inline-flex align-items-center">
                             <span style={{ color: getStatusColor(oldStatus) }}>{oldStatus}</span>
                             <span className="text-muted px-1" style={{ fontSize: '11px' }}>→</span>
                             <span style={{ color: getStatusColor(newStatus) }}>{newStatus}</span>
@@ -426,9 +439,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 );
             } else {
                 return (
-                    <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark d-block">{prefix}</span>
-                        <span style={{ color: getStatusColor(statusPart) }} className="d-block mt-1">{statusPart}</span>
+                    <span className="d-inline-flex align-items-center flex-wrap gap-1">
+                        <span className="text-dark me-1">{prefix}</span>
+                        <span style={{ color: getStatusColor(statusPart) }}>{statusPart}</span>
                     </span>
                 );
             }
@@ -637,14 +650,18 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                 {/* Content */}
                                                                 <div className="flex-grow-1 ms-3">
                                                                     <h6 className="fs-13 mb-0 text-dark d-flex align-items-center flex-wrap gap-2">
-                                                                        <span className="d-inline-flex align-items-center gap-1 text-nowrap">
-                                                                            <span>{getTitle(activity)}</span>
-                                                                            {getReminderStatusBadge(activity.reminder_status)}
-                                                                        </span>
-                                                                        {activity.properties?.visible_to_host == 1 && <span className="badge bg-danger-subtle text-danger text-nowrap" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to FCH</span>}
-                                                                        {activity.properties?.visible_to_borrower == 1 && <span className="badge bg-info-subtle text-info text-nowrap" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to Borrower</span>}
-                                                                        {activity.properties?.send_to_host == 1 && <span className="badge bg-danger-subtle text-danger text-nowrap" style={{ fontSize: '10px', padding: '3px 6px' }}>{isHost ? 'Sent to Partner' : 'Sent to FCH'}</span>}
-                                                                        {activity.properties?.send_to_borrower == 1 && <span className="badge bg-info-subtle text-info text-nowrap" style={{ fontSize: '10px', padding: '3px 6px' }}>Sent to Borrower</span>}
+                                                                        <span>{getTitle(activity)}</span>
+                                                                        {Boolean(activity.is_owner || activity.can_edit) && getReminderStatusBadge(activity.reminder_status)}
+                                                                        {Boolean(activity.is_owner || activity.can_edit) && activity.visibility && VISIBILITY_BADGE_STYLES[activity.visibility] && (
+                                                                            <span
+                                                                                className={`badge d-inline-flex align-items-center gap-1 text-nowrap ${VISIBILITY_BADGE_STYLES[activity.visibility].className}`}
+                                                                                style={{ fontSize: '10px', padding: '2px 6px' }}
+                                                                                title={`Visibility: ${VISIBILITY_BADGE_STYLES[activity.visibility].label}`}
+                                                                            >
+                                                                                <i className={VISIBILITY_BADGE_STYLES[activity.visibility].icon}></i>
+                                                                                <span>{VISIBILITY_BADGE_STYLES[activity.visibility].label}</span>
+                                                                            </span>
+                                                                        )}
                                                                     </h6>
                                                                     <div className="fs-10 text-muted" style={{ fontWeight: '500' }}>
                                                                         by {activity.causer_name || activity.creator?.name || 'System'}
@@ -784,6 +801,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 show={!!editingActivity}
                 onClose={() => setEditingActivity(null)}
                 onUpdated={handleActivityUpdated}
+                isHost={isHost}
             />
 
             {/* Delete Confirmation Modal */}

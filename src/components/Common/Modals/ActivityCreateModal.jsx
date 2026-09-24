@@ -11,6 +11,7 @@ import {
     ACTIVITY_CREATE_ERROR_FIELDS,
     normalizeActivityFieldErrors,
     getActivityValidationToast,
+    getVisibilityOptions,
 } from '../../../modules/activity-log/constants';
 import { TimeInputs } from '../TimeInputs';
 import {
@@ -40,6 +41,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
 
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isHostUser, setIsHostUser] = useState(false);
     const [formData, setFormData] = useState({
         reference: 'Call',
         activity_date: getDefaultDateTime(),
@@ -47,6 +49,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         summary: '',
         message_body: '',
         attachments: [],
+        visibility: 'private',
         remind_me: false,
         remind_at: '',
         reminder_preset: '30_minutes',
@@ -86,6 +89,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             data.append('activity_date', formData.activity_date || '');
             data.append('subject', formData.summary || '');         // maps to subject column
             data.append('description', formData.message_body || ''); // maps to description column
+            data.append('visibility', formData.visibility || '');
 
             // Validate Future Date for Tasks and Meetings
             if (FUTURE_ACTIVITY_REFERENCES.includes(formData.reference) && formData.activity_date) {
@@ -213,6 +217,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 summary: '',
                 message_body: '',
                 attachments: [],
+                visibility: 'private',
                 remind_me: false,
                 remind_at: '',
                 reminder_preset: '30_minutes',
@@ -333,6 +338,10 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             // Prevent nested elements (like Summernote dialogs if appended inside) from triggering the reset
             if (e && e.target !== modalEl) return;
 
+            const ctx = window._activityEntityContext || {};
+            const hostUser = !!ctx.isHost;
+            setIsHostUser(hostUser);
+
             setErrors({});
             setFormData({
                 reference: 'Call',
@@ -341,6 +350,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 summary: '',
                 message_body: '',
                 attachments: [],
+                visibility: 'private',
                 remind_me: false,
                 remind_at: '',
                 reminder_preset: '30_minutes',
@@ -556,6 +566,30 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         name="message_body"
                                     ></textarea>
                                     {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
+                                </div>
+                                <div className="col-12">
+                                    <label className={`form-label ${errors.visibility ? 'text-danger' : ''}`}>
+                                        Visibility <span className="text-danger">*</span>
+                                    </label>
+                                    <div className="d-flex flex-wrap gap-3">
+                                        {getVisibilityOptions(isHostUser).map(opt => (
+                                            <div className="form-check" key={opt.value}>
+                                                <input
+                                                    className="form-check-input"
+                                                    type="radio"
+                                                    name="visibility"
+                                                    id={`activityVisibility_${opt.value}`}
+                                                    value={opt.value}
+                                                    checked={formData.visibility === opt.value}
+                                                    onChange={handleInputChange}
+                                                />
+                                                <label className="form-check-label" htmlFor={`activityVisibility_${opt.value}`}>
+                                                    {opt.label}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {errors.visibility && <div className="text-danger mt-1 small">{errors.visibility[0]}</div>}
                                 </div>
                                 <div className="col-12 mt-3">
                                     <div className="row">

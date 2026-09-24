@@ -624,7 +624,7 @@ export default function ClientDetails() {
                                 partnerId={undefined}
                                 partnerEmail={undefined}
                                 hostEmail={undefined}
-                                isHost={undefined}
+                                isHost={isHost}
                             />
                         </div>
                     )}
