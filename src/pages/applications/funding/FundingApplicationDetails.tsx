@@ -1210,7 +1210,7 @@ export default function FundingApplicationDetails() {
                                 partnerId={undefined}
                                 partnerEmail={undefined}
                                 hostEmail={undefined}
-                                isHost={undefined}
+                                isHost={isHost}
                                 borrowerEmail={(app as FundingApplicationDetailsType & { borrower?: { email?: string | null } | null })?.borrower?.email}
                                 stickyTopOffset="133px"
                             />

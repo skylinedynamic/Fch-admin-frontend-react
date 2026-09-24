@@ -5,6 +5,7 @@ export interface ActivityEditModalProps {
     show: boolean;
     onClose: () => void;
     onUpdated?: () => void;
+    isHost?: boolean;
 }
 
 export default function ActivityEditModal(props: ActivityEditModalProps): ReactElement | null;

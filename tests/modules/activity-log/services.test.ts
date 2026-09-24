@@ -6,6 +6,7 @@ import {
   getActivityLog,
   createActivityLog,
   downloadActivityAttachment,
+  updateActivityLogVisibility,
 } from '../../../src/modules/activity-log/services'
 
 afterEach(() => server.resetHandlers())
@@ -84,6 +85,43 @@ describe('createActivityLog', () => {
     const result = await createActivityLog({ log_type: 'note', subject: 'Hi', description: 'desc' })
     expect(receivedBody).toEqual({ log_type: 'note', subject: 'Hi', description: 'desc' })
     expect(result.data.id).toBe(99)
+  })
+})
+
+describe('updateActivityLogVisibility', () => {
+  it('PATCHes the visibility endpoint with the given level', async () => {
+    let receivedBody: any = null
+    let receivedMethod = ''
+    server.use(
+      http.patch('*/common/activity-logs/12/visibility', async ({ request }) => {
+        receivedMethod = request.method
+        receivedBody = await request.json()
+        return HttpResponse.json({
+          status: true,
+          message: 'Activity visibility updated successfully.',
+          data: { id: 12, visibility: 'everyone', visibility_label: 'Everyone (Including Borrower)' },
+        })
+      })
+    )
+
+    const result = await updateActivityLogVisibility(12, 'everyone')
+
+    expect(receivedMethod).toBe('PATCH')
+    expect(receivedBody).toEqual({ visibility: 'everyone' })
+    expect(result.data.visibility).toBe('everyone')
+  })
+
+  it('accepts a string id and builds the URL from it', async () => {
+    let hitUrl = ''
+    server.use(
+      http.patch('*/common/activity-logs/:id/visibility', ({ request, params }) => {
+        hitUrl = String(params.id)
+        return HttpResponse.json({ status: true, message: 'ok', data: { id: request.url } })
+      })
+    )
+
+    await updateActivityLogVisibility('12', 'private')
+    expect(hitUrl).toBe('12')
   })
 })
 
