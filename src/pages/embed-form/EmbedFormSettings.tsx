@@ -34,7 +34,6 @@ export default function EmbedFormSettings() {
 
     // Form state
     const [formTitle, setFormTitle] = useState('');
-    const [notificationEmail, setNotificationEmail] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [domainInput, setDomainInput] = useState('');
     const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
@@ -55,7 +54,6 @@ export default function EmbedFormSettings() {
                 const d = res.data;
                 setConfig(d);
                 setFormTitle(d.form_title || '');
-                setNotificationEmail(d.notification_email || '');
                 setIsActive(Boolean(d.is_active));
                 setAllowedDomains(d.allowed_domains || []);
             } else {
@@ -78,7 +76,6 @@ export default function EmbedFormSettings() {
         try {
             const res = await updateEmbedFormConfig({
                 form_title: formTitle,
-                notification_email: notificationEmail || undefined,
                 is_active: isActive,
                 allowed_domains: allowedDomains,
             });
@@ -132,9 +129,10 @@ export default function EmbedFormSettings() {
 
     const copyToClipboard = (text: string, type: 'snippet' | 'url' | 'key') => {
         if (!text) return;
+        // No toast: the button itself switches to a copied state, which is the
+        // feedback a copy needs. A toast on top of it is noise.
         navigator.clipboard.writeText(text).then(() => {
             setCopied(type);
-            toast.success(type === 'snippet' ? 'Embed code copied to clipboard!' : 'Copied to clipboard!');
             setTimeout(() => setCopied(null), 2500);
         });
     };
@@ -231,26 +229,6 @@ export default function EmbedFormSettings() {
                                             </div>
                                             <div className="form-text fs-12 text-muted">
                                                 This title appears as the main heading on the public application form.
-                                            </div>
-                                        </div>
-
-                                        {/* Notification Email */}
-                                        <div className="mb-3">
-                                            <label className="form-label fw-semibold fs-13">Notification Email Address</label>
-                                            <div className="input-group">
-                                                <span className="input-group-text bg-light text-muted" style={{ width: '42px' }}>
-                                                    <i className="ri-mail-line" />
-                                                </span>
-                                                <input
-                                                    type="email"
-                                                    className="form-control"
-                                                    value={notificationEmail}
-                                                    onChange={(e) => setNotificationEmail(e.target.value)}
-                                                    placeholder="notifications@yourcompany.com"
-                                                />
-                                            </div>
-                                            <div className="form-text fs-12 text-muted">
-                                                Alert emails with full applicant details will be sent here upon submission. If left blank, your account email is used.
                                             </div>
                                         </div>
 
