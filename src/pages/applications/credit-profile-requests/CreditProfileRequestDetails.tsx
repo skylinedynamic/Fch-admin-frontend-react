@@ -4,6 +4,7 @@ import PageHeader from '../../common/PageHeader';
 import { useCreditProfileRequestDetails } from '../../../modules/credit-profile-request';
 import CreditProfileRequestDetailsLoader from '../../../components/Loader/CreditProfileRequestDetailsLoader';
 import { formatSSN, formatDate } from '../../../utils/formatters';
+import CreditAuthorizationPanel from './components/CreditAuthorizationPanel';
 
 interface DetailItemProps {
     label: string;
@@ -114,6 +115,13 @@ export default function CreditProfileRequestDetails() {
                         </Link>
                     </div>
                 </PageHeader>
+
+                {/* The FCRA evidence behind this client's pulls. Host partner
+                    only - the panel hides itself for anyone else. */}
+                <CreditAuthorizationPanel
+                    borrowerId={request.borrower_id}
+                    rows={request.credit_authorizations}
+                />
 
                 <div className="row g-4">
                     {/* ── Left column (8) ── */}
