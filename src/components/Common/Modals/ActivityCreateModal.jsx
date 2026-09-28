@@ -14,6 +14,7 @@ import {
     getVisibilityOptions,
 } from '../../../modules/activity-log/constants';
 import { TimeInputs } from '../TimeInputs';
+import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 import {
     ENTITY_TYPE_LEAD,
     ENTITY_TYPE_BORROWER,
@@ -237,8 +238,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                     }
                     // Final fallback
                     setTimeout(() => {
-                        document.body.classList.remove('modal-open');
-                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                        // Stray backdrops only - never one belonging to a modal
+                        // that is still open behind this one.
+                        clearStrayModalBackdrops();
                     }, 300);
                 }
             };

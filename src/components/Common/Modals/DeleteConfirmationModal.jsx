@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Modal from 'bootstrap/js/dist/modal';
+import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 
 export default function DeleteConfirmationModal({ show, onConfirm, onClose, loading, text }) {
   const modalRef = useRef(null);
@@ -39,8 +40,10 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
         } catch (_) { }
       }
       modalInstanceRef.current = null;
-      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-      document.body.classList.remove('modal-open');
+      // Stray backdrops only. Unmounting while another modal is still open used
+      // to delete that modal's overlay too, leaving it over an undimmed,
+      // still-scrollable page.
+      clearStrayModalBackdrops();
     };
   }, []);
 
