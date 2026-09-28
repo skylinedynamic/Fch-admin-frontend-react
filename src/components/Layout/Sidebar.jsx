@@ -347,7 +347,13 @@ export default function Sidebar() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const menuClass = useMemo(() => "app-menu navbar-menu", []);
+  // `has-trial-panel` switches the sidebar to a flex column so the banner takes
+  // part in the layout instead of floating over the last menu item. Only when
+  // there is a banner, so a paid plan keeps the theme's own layout untouched.
+  const menuClass = useMemo(
+    () => (isFreeTrial ? "app-menu navbar-menu has-trial-panel" : "app-menu navbar-menu"),
+    [isFreeTrial]
+  );
 
   const toggleOpen = () => {
     const body = typeof document !== "undefined" ? document.body : null;

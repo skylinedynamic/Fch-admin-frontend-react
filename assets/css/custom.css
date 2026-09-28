@@ -7609,3 +7609,48 @@ File: Custom Css File
     flex-direction: column;
   }
 }
+
+/* ============================================================
+   Trial panel: the last row of the sidebar, not a layer on top
+   ============================================================
+   It was position:absolute with bottom:0, kept clear of the menu by a
+   padding-bottom guess at its own height on the scroll area (declared twice
+   above, which is part of how it drifted). On a laptop-height screen - where the
+   menu is long enough to fill the column - the guess was short and the banner
+   sat on top of the last item.
+
+   The sidebar becomes a flex column instead: the scroll area takes whatever
+   space is left, the banner takes its own. Nothing can end up underneath it at
+   any height, and no measurement has to be kept in sync. Scoped to
+   .has-trial-panel, which Sidebar adds only when the banner renders, so a paid
+   plan keeps the theme's own layout. Last in the file so it wins over both
+   copies of the older rules above. */
+.navbar-menu.has-trial-panel {
+  display: flex;
+  flex-direction: column;
+  /* The theme reserves calc(70px + 25px) here for the old floating panel; the
+     banner is a real row now, so that reservation would only add a gap. */
+  padding-bottom: 0;
+}
+
+.navbar-menu.has-trial-panel .navbar-brand-box {
+  flex: 0 0 auto;
+}
+
+/* min-height:0 lets a flex child shrink below its content and scroll, which is
+   what makes the banner reachable instead of pushed off the bottom. */
+.navbar-menu.has-trial-panel #scrollbar,
+.navbar-menu.has-trial-panel #scrollbar.simplebar-scrollable-y {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: 0 !important;
+}
+
+.navbar-menu.has-trial-panel #scrollbar .simplebar-content {
+  padding-bottom: 0 !important;
+}
+
+.navbar-menu.has-trial-panel .sidebar-trial-panel {
+  position: static;
+  flex: 0 0 auto;
+}
