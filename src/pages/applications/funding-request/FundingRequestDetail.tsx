@@ -8,7 +8,6 @@ import { getFileConfig } from '../../../config/fileTypeConfig';
 import { handleFileDownload, downloadFromUrl } from '../../../utils/fileDownload';
 import { downloadBorrowerDocument } from '../../../modules/client/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
-import CommentPanel from '../../../components/Common/CommentPanel/CommentPanel';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
 import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS } from '../../../config/funding';
 import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
@@ -700,7 +699,6 @@ export default function FundingRequestDetail() {
                                     isHost={isHost}
                                     disableSticky={true}
                                 />
-                                <CommentPanel entityType="funding_request" entityId={review.id} />
                             </div>
                         </div>
                     </div>
