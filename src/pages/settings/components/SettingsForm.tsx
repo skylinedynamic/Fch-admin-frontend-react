@@ -11,6 +11,7 @@ import BrandingForm from './BrandingForm';
 import CreditProfileConfigForm from './CreditProfileConfigForm';
 import ScoreCalculationConfigForm from './ScoreCalculationConfigForm';
 import OpenAiConfigForm from './OpenAiConfigForm';
+import AssistantConfigForm from './AssistantConfigForm';
 import PaymentMethodConfig from './PaymentMethodConfig/PaymentMethodConfig';
 import EmailConfigurationForm from './EmailConfigurationForm';
 // @ts-ignore
@@ -192,6 +193,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <ScoreCalculationConfigForm />
                 ) : activeSection === 'openai' ? (
                     <OpenAiConfigForm />
+                ) : activeSection === 'assistant_config' ? (
+                    <AssistantConfigForm />
                 ) : activeSection === 'email_configuration' ? (
                     <EmailConfigurationForm />
                 ) : activeSection === 'branding' ? (
