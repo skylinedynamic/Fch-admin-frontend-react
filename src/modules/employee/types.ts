@@ -37,6 +37,16 @@ export type Employee = {
   marital_status?: string | null
   no_of_children?: number | null
   image?: string | null
+
+  // Compensation
+  paid_by?: string | null
+  hourly_rate?: number | string | null
+  annual_salary?: number | string | null
+  per_deal_applicable_service?: string | null
+  per_deal_payout_type?: string | null
+  per_deal_percentage?: number | string | null
+  per_deal_flat_amount?: number | string | null
+
   [key: string]: unknown
 }
 

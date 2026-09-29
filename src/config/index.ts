@@ -53,3 +53,13 @@ export { getProviderDesc } from './paymentDesc';
 
 // OpenAI configuration options
 export { DEFAULT_FALLBACK_MODELS, DEFAULT_EFFORT_OPTIONS } from './openaiConfig';
+
+// Employee compensation configurations
+export {
+    PAID_BY_NONE, PAID_BY_HOURLY, PAID_BY_SALARY, PAID_BY_PER_DEAL,
+    PAID_BY_OPTIONS,
+    APPLICABLE_SERVICE_ALL, APPLICABLE_SERVICE_FUNDING, APPLICABLE_SERVICE_CREDIT_CARD_STACKING, APPLICABLE_SERVICE_BUSINESS_CREDIT_BUILDER,
+    APPLICABLE_SERVICE_OPTIONS,
+    PAYOUT_TYPE_COMMISSION, PAYOUT_TYPE_FLAT_AMOUNT, PAYOUT_TYPE_OPTIONS,
+    type CompensationOption,
+} from './compensationOptions';

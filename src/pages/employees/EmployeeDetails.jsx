@@ -21,6 +21,7 @@ import { locationData } from '../../config';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 
 import EmployeeForm from './components/EmployeeForm';
+import CommissionsSection from './components/form-sections/CommissionsSection';
 import DepartmentModal from './components/DepartmentModal';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
@@ -100,7 +101,14 @@ export default function EmployeeDetails() {
     role_id: '',
     password: '',
     confirm_password: '',
-    image: ''
+    image: '',
+    paid_by: '',
+    hourly_rate: '',
+    annual_salary: '',
+    per_deal_applicable_service: '',
+    per_deal_payout_type: '',
+    per_deal_percentage: '',
+    per_deal_flat_amount: ''
   });
 
   // Fetch roles and departments on mount
@@ -674,6 +682,17 @@ export default function EmployeeDetails() {
                       <i className="fas fa-home"></i> Personal information
                     </a>
                   </li>
+                  <li className="nav-item" role="presentation">
+                    <a
+                      className="nav-link"
+                      data-bs-toggle="tab"
+                      href="#commissions"
+                      role="tab"
+                      aria-selected="false"
+                    >
+                      <i className="ri-percent-line"></i> Commissions
+                    </a>
+                  </li>
                 </ul>
               </div>
 
@@ -703,6 +722,17 @@ export default function EmployeeDetails() {
                         isPurchaseFlow={isPurchaseFlow}
                         purchaseMonths={limitData.months}
                         purchasePrice={limitData.totalPrice}
+                      />
+                    )}
+                  </div>
+                  <div className="tab-pane" id="commissions" role="tabpanel">
+                    {loading ? (
+                      <FormLoader count={4} />
+                    ) : (
+                      <CommissionsSection
+                        employee={employee}
+                        errors={errors}
+                        onChange={handleChange}
                       />
                     )}
                   </div>
