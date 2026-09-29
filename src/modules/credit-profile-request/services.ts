@@ -18,7 +18,11 @@ export const fetchCreditProfileRequestDetails = async (id: number | string): Pro
  * a plain href would arrive without the bearer token.
  */
 export const downloadCreditAuthorizationPdf = async (id: number): Promise<Blob> => {
-    const response = await apiClient.get(`/credit-authorizations/${id}/download`, {
+    // The `common` segment is part of the route, not decoration: artisan
+    // reports it as api/v1/common/credit-authorizations/{id}/download. Without
+    // it every download 404'd, and with responseType 'blob' the 404 body never
+    // surfaced - the button just said it could not download the record.
+    const response = await apiClient.get(`/common/credit-authorizations/${id}/download`, {
         responseType: 'blob',
     });
     return response.data;

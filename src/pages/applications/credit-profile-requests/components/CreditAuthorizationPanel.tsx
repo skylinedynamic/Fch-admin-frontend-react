@@ -24,6 +24,7 @@ interface Props {
  */
 export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
+    const [showAll, setShowAll] = useState(false);
 
     const handleDownload = async (row: CreditAuthorization) => {
         setDownloadingId(row.id);
@@ -47,6 +48,8 @@ export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
     };
 
     if (!rows) return null;
+
+    const displayedRows = showAll ? rows : rows.slice(0, 5);
 
     return (
         <div className="card border-0 shadow-sm mb-4">
@@ -73,62 +76,76 @@ export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
                         the authorization checkboxes were introduced will have no record here.
                     </div>
                 ) : (
-                    <div className="table-responsive">
-                        <table className="table table-sm align-middle mb-0 fs-13">
-                            <thead>
-                                <tr>
-                                    <th>Agreed (UTC)</th>
-                                    <th>Version</th>
-                                    <th>Consents</th>
-                                    <th>IP</th>
-                                    <th>iSoftPull txn</th>
-                                    <th className="text-end">PDF</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rows.map((row) => (
-                                    <tr key={row.id}>
-                                        <td>
-                                            {row.consented_at
-                                                ? row.consented_at.replace('T', ' ').slice(0, 19)
-                                                : '—'}
-                                        </td>
-                                        <td>{row.authorization_version}</td>
-                                        <td>
-                                            {/* Two legally distinct consents, so both are
-                                                shown rather than a single "agreed". */}
-                                            <span
-                                                className={`badge me-1 ${row.credit_authorization_accepted ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}
-                                            >
-                                                FCRA
-                                            </span>
-                                            <span
-                                                className={`badge ${row.e_consent_accepted ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}
-                                            >
-                                                E-SIGN
-                                            </span>
-                                        </td>
-                                        <td>{row.ip_address || '—'}</td>
-                                        <td>
-                                            {row.isoftpull_transaction_id || (
-                                                <span className="text-muted">not recorded</span>
-                                            )}
-                                        </td>
-                                        <td className="text-end">
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm btn-outline-primary"
-                                                onClick={() => handleDownload(row)}
-                                                disabled={downloadingId === row.id}
-                                            >
-                                                {downloadingId === row.id ? 'Preparing…' : 'Download'}
-                                            </button>
-                                        </td>
+                    <>
+                        <div className="table-responsive">
+                            <table className="table table-sm align-middle mb-0 fs-13">
+                                <thead>
+                                    <tr>
+                                        <th>Agreed (UTC)</th>
+                                        <th>Version</th>
+                                        <th>Consents</th>
+                                        <th>IP</th>
+                                        <th>iSoftPull txn</th>
+                                        <th className="text-end">PDF</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {displayedRows.map((row) => (
+                                        <tr key={row.id}>
+                                            <td>
+                                                {row.consented_at
+                                                    ? row.consented_at.replace('T', ' ').slice(0, 19)
+                                                    : '—'}
+                                            </td>
+                                            <td>{row.authorization_version}</td>
+                                            <td>
+                                                {/* Two legally distinct consents, so both are
+                                                    shown rather than a single "agreed". */}
+                                                <span
+                                                    className={`badge me-1 ${row.credit_authorization_accepted ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}
+                                                >
+                                                    FCRA
+                                                </span>
+                                                <span
+                                                    className={`badge ${row.e_consent_accepted ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}
+                                                >
+                                                    E-SIGN
+                                                </span>
+                                            </td>
+                                            <td>{row.ip_address || '—'}</td>
+                                            <td>
+                                                {row.isoftpull_transaction_id || (
+                                                    <span className="text-muted">not recorded</span>
+                                                )}
+                                            </td>
+                                            <td className="text-end">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline-primary"
+                                                    onClick={() => handleDownload(row)}
+                                                    disabled={downloadingId === row.id}
+                                                >
+                                                    {downloadingId === row.id ? 'Preparing…' : 'Download'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {rows.length > 5 && (
+                            <div className="text-center pt-3 border-top">
+                                <button
+                                    type="button"
+                                    className="btn btn-link btn-sm text-decoration-none fw-medium text-primary p-0"
+                                    onClick={() => setShowAll((prev) => !prev)}
+                                >
+                                    {showAll ? 'Show less' : 'See all'}
+                                    <i className={`ri-arrow-${showAll ? 'up' : 'down'}-s-line ms-1 align-middle`} />
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

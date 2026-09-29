@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { fetchCreditProfileRequests, fetchCreditProfileRequestDetails } from '../../../src/modules/credit-profile-request/services'
+import {
+  fetchCreditProfileRequests,
+  fetchCreditProfileRequestDetails,
+  downloadCreditAuthorizationPdf,
+} from '../../../src/modules/credit-profile-request/services'
 import type { CreditProfileRequest } from '../../../src/modules/credit-profile-request/types'
 
 afterEach(() => server.resetHandlers())
@@ -130,5 +134,47 @@ describe('fetchCreditProfileRequestDetails', () => {
 
     const result = await fetchCreditProfileRequestDetails('42')
     expect(result.data.id).toBe(42)
+  })
+})
+
+/**
+ * The FCRA authorisation PDF, which iSoftPull can ask for months later.
+ *
+ * The route is registered inside the `common` group - artisan reports it as
+ * `api/v1/common/credit-authorizations/{id}/download` - but this call asked for
+ * it one level up, so every download 404'd. The button reported "Could not
+ * download the authorization record" for what was only a wrong path, and with
+ * responseType 'blob' the real 404 body never reached the console either.
+ */
+describe('downloadCreditAuthorizationPdf', () => {
+  it('asks for the file where the route actually is', async () => {
+    let path: string | null = null
+
+    server.use(
+      http.get('*/common/credit-authorizations/:id/download', ({ request }) => {
+        path = new URL(request.url).pathname
+        return HttpResponse.text('%PDF-1.4', {
+          headers: { 'Content-Type': 'application/pdf' },
+        })
+      })
+    )
+
+    await downloadCreditAuthorizationPdf(7)
+
+    expect(path).toContain('/common/credit-authorizations/7/download')
+  })
+
+  it('hands back the file rather than a parsed body', async () => {
+    // Asked for as a blob because the endpoint is authenticated: a plain href
+    // would arrive without the bearer token.
+    server.use(
+      http.get('*/common/credit-authorizations/:id/download', () =>
+        HttpResponse.text('%PDF-1.4', { headers: { 'Content-Type': 'application/pdf' } })
+      )
+    )
+
+    const file = await downloadCreditAuthorizationPdf(7)
+
+    expect(file).toBeInstanceOf(Blob)
   })
 })
