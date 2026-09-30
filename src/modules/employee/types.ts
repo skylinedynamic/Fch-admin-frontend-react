@@ -38,14 +38,8 @@ export type Employee = {
   no_of_children?: number | null
   image?: string | null
 
-  // Compensation
-  paid_by?: string | null
-  hourly_rate?: number | string | null
-  annual_salary?: number | string | null
-  per_deal_applicable_service?: string | null
-  per_deal_payout_type?: string | null
-  per_deal_percentage?: number | string | null
-  per_deal_flat_amount?: number | string | null
+  // Compensation ("Paid By") is not part of the employee record — it lives in
+  // its own table behind its own endpoints; see modules/compensation.
 
   [key: string]: unknown
 }

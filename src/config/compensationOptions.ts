@@ -27,6 +27,11 @@ export const APPLICABLE_SERVICE_OPTIONS: CompensationOption[] = [
     { label: APPLICABLE_SERVICE_BUSINESS_CREDIT_BUILDER, value: APPLICABLE_SERVICE_BUSINESS_CREDIT_BUILDER },
 ];
 
+// Individually selectable services, i.e. every option except the "All" shortcut.
+export const APPLICABLE_SERVICES: CompensationOption[] = APPLICABLE_SERVICE_OPTIONS.filter(
+    (option) => option.value !== APPLICABLE_SERVICE_ALL
+);
+
 export const PAYOUT_TYPE_COMMISSION = 'Commission';
 export const PAYOUT_TYPE_FLAT_AMOUNT = 'Flat Amount';
 
@@ -34,3 +39,8 @@ export const PAYOUT_TYPE_OPTIONS: CompensationOption[] = [
     { label: PAYOUT_TYPE_COMMISSION, value: PAYOUT_TYPE_COMMISSION },
     { label: PAYOUT_TYPE_FLAT_AMOUNT, value: PAYOUT_TYPE_FLAT_AMOUNT },
 ];
+
+// Turns a service label (e.g. "Credit Card Stacking") into a field-name-safe key
+// (e.g. "credit_card_stacking") used to namespace per-service payout fields.
+export const toServiceFieldKey = (service: string): string =>
+    service.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
