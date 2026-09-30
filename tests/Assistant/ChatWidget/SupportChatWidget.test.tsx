@@ -34,7 +34,7 @@ const configWith = (welcome_subtitle: string, quick_suggestions: string[]) =>
     )
 
 const open = async () => {
-    await userEvent.click(screen.getByRole('button', { name: /open support assistant/i }))
+    await userEvent.click(screen.getByRole('button', { name: /open ask support/i }))
     await screen.findByPlaceholderText(/type a message/i)
 }
 
@@ -49,7 +49,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
         renderWithProviders(<SupportChatWidget />)
 
-        expect(screen.queryByText(/support assistant/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/ask support/i)).not.toBeInTheDocument()
 
         await open()
 
@@ -95,8 +95,8 @@ describe('SupportChatWidget (admin/WLP)', () => {
         await open()
         expect(await screen.findByText(/ask about the old prompt topic\./i)).toBeInTheDocument()
 
-        await userEvent.click(screen.getByRole('button', { name: /minimize support assistant/i }))
-        await userEvent.click(screen.getByRole('button', { name: /open support assistant/i }))
+        await userEvent.click(screen.getByRole('button', { name: /minimize ask support/i }))
+        await userEvent.click(screen.getByRole('button', { name: /open ask support/i }))
 
         expect(await screen.findByText(/ask about the new prompt topic\./i)).toBeInTheDocument()
         expect(screen.getByText('New prompt question?')).toBeInTheDocument()
@@ -148,7 +148,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
         expect(screen.getByText(/ask a question and i will do my best to help/i)).toBeInTheDocument()
     })
 
-    it('renders a native button for the approved settings_home action and navigates to the hardcoded local route on click', async () => {
+    it('renders a native button for the approved navigate_settings action and navigates to the hardcoded local route on click', async () => {
         server.use(
             noSessions(),
             notReadyConfig(),
@@ -159,8 +159,8 @@ describe('SupportChatWidget (admin/WLP)', () => {
                     data: {
                         session_id: 'session-123',
                         message_id: 'message-456',
-                        answer: 'Go to Settings.\n\n[[ACTION:settings_home]]\n\nThen select **Email Configuration**.',
-                        actions: [{ type: 'navigate', id: 'settings_home', label: 'Take Me There', path: '/admin/settings' }],
+                        answer: 'Go to Settings.\n\n[[ACTION:navigate_settings]]\n\nThen select **Email Configuration**.',
+                        actions: [{ type: 'navigate', id: 'navigate_settings', label: 'Take Me There', path: '/settings' }],
                         sources: [],
                         escalation: { required: false, reason: null, route: null },
                         policy: { live_data_used: false, restricted_content_blocked: false, sensitive_input_detected: false },
@@ -181,7 +181,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
         // Navigation always follows the frontend's own hardcoded ACTION_ALLOWLIST
         // entry, never a path read from the API response.
-        expect(navigateMock).toHaveBeenCalledWith('/admin/settings')
+        expect(navigateMock).toHaveBeenCalledWith('/settings')
     })
 
     it('ignores an action whose path does not match the local allowlist entry, as a defense-in-depth check', async () => {
@@ -195,10 +195,10 @@ describe('SupportChatWidget (admin/WLP)', () => {
                     data: {
                         session_id: 'session-123',
                         message_id: 'message-456',
-                        answer: 'Suspicious reply.\n\n[[ACTION:settings_home]]',
+                        answer: 'Suspicious reply.\n\n[[ACTION:navigate_settings]]',
                         // A server bug or compromised response claiming a different path
                         // for a known action id — the frontend must refuse to trust it.
-                        actions: [{ type: 'navigate', id: 'settings_home', label: 'Take Me There', path: '/some/other/route' }],
+                        actions: [{ type: 'navigate', id: 'navigate_settings', label: 'Take Me There', path: '/some/other/route' }],
                         sources: [],
                         escalation: { required: false, reason: null, route: null },
                         policy: { live_data_used: false, restricted_content_blocked: false, sensitive_input_detected: false },
@@ -241,10 +241,10 @@ describe('SupportChatWidget (admin/WLP)', () => {
         await sendMessage('Hi')
         await screen.findByText('Sure thing.')
 
-        await userEvent.click(screen.getByRole('button', { name: /minimize support assistant/i }))
+        await userEvent.click(screen.getByRole('button', { name: /minimize ask support/i }))
         expect(screen.queryByText('Sure thing.')).not.toBeInTheDocument()
 
-        await userEvent.click(screen.getByRole('button', { name: /open support assistant/i }))
+        await userEvent.click(screen.getByRole('button', { name: /open ask support/i }))
         await waitFor(() => expect(screen.getByText('Sure thing.')).toBeInTheDocument())
     })
 
@@ -347,7 +347,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
         await userEvent.click(screen.getByRole('button', { name: /send message/i }))
 
         // Minimize while the reply is still deliberately held back.
-        await userEvent.click(screen.getByRole('button', { name: /minimize support assistant/i }))
+        await userEvent.click(screen.getByRole('button', { name: /minimize ask support/i }))
 
         // Only now does the response settle — openRef.current is guaranteed
         // to already be false by this point.
@@ -355,7 +355,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
         await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
 
-        await userEvent.click(screen.getByRole('button', { name: /open support assistant/i }))
+        await userEvent.click(screen.getByRole('button', { name: /open ask support/i }))
         expect(screen.queryByText('1')).not.toBeInTheDocument()
         expect(await screen.findByText('Delayed reply.')).toBeInTheDocument()
     })

@@ -6,6 +6,14 @@ export interface ChatAction {
     id: string;
     label: string;
     path: string;
+    route_key?: string;
+}
+
+// Deterministic Take Me There destination, validated server-side against the approved map.
+export interface ChatNavigation {
+    required: boolean;
+    intent: 'portal_navigation' | 'none';
+    route_key: string | null;
 }
 
 export interface ChatSource {
@@ -38,6 +46,7 @@ export interface SendMessageResult {
     // X-Timezone header — already correct for the viewer, render as-is.
     created_at: string;
     actions: ChatAction[];
+    navigation?: ChatNavigation;
     sources: ChatSource[];
     escalation: ChatEscalation;
     policy: ChatPolicy;
