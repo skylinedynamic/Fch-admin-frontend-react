@@ -8,19 +8,50 @@ import supportAvatar from '../../../../assets/images/support-avatar.svg';
 import '../../../../assets/css/support-chat-widget.css';
 
 /**
- * Action ids the backend is allowed to send, mapped to a same-origin route
- * this frontend already knows about. Navigation NEVER follows a path that
- * came from the API/model without also passing this local allowlist check —
- * matching FCH_WLP_Assistant_OpenAPI_v1_1.yaml's "the model does not supply
- * arbitrary URLs" rule and WlpAssistantActions.jsx.example's
- * getApprovedSettingsAction() double-check.
+ * WLP portal navigation allowlist (mirrors config/assistant.php navigation.wlp_support and WLP System Prompt v1.3.2).
+ *
+ * The backend sends a "Take Me There" action as { id: 'navigate_<route_key>', path }
+ * after validating the model's navigation.route_key against ITS approved map.
+ * DEFAULT_ROUTES is the built-in fallback; the live map comes from the config endpoint.
+ * This is the frontend's own matching allowlist: a button is rendered, and
+ * navigation performed, ONLY when the route_key is listed here AND the path the
+ * backend sent equals the path listed here. The destination is always the
+ * route_key's own route - never the page the user is currently on, never a
+ * default, and never a path taken from model text.
  */
-const ACTION_ALLOWLIST: Record<string, string> = {
-    settings_home: '/admin/settings',
+const DEFAULT_ROUTES: Record<string, string> = {
+    leads: '/leads',
+    clients: '/clients',
+    pre_qualification: '/intake-review/pre-qualification',
+    funding_request: '/intake-review/funding-request',
+    funding_application: '/intake-review/funding-application',
+    commissions: '/commissions',
+    invoices: '/invoices',
+    payments: '/payments',
+    subscriptions: '/subscriptions',
+    upcoming_billing: '/billing',
+    appointments: '/appointments',
+    task_reminders: '/reminders',
+    resources: '/resources',
+    employees: '/employees',
+    users: '/users',
+    roles_permissions: '/roles-permissions',
+    embedded_form_configuration: '/embed-form/settings',
+    embedded_form_loan_applications: '/embed-form/loan-applications',
+    settings: '/settings',
 };
 
-function isApprovedAction(action: ChatAction): boolean {
-    return action.type === 'navigate' && ACTION_ALLOWLIST[action.id] === action.path;
+const ACTION_ID_PREFIX = 'navigate_';
+
+/** The approved same-origin path for this action, or null if it is not approved. */
+function approvedPath(action: ChatAction, routes: Record<string, string>): string | null {
+    if (action.type !== 'navigate' || !action.id.startsWith(ACTION_ID_PREFIX)) return null;
+    const path = routes[action.id.slice(ACTION_ID_PREFIX.length)];
+    return path && path === action.path ? path : null;
+}
+
+function isApprovedAction(action: ChatAction, routes: Record<string, string>): boolean {
+    return approvedPath(action, routes) !== null;
 }
 
 const ACTION_TOKEN = /\[\[ACTION:([a-z0-9_]+)\]\]/gi;
@@ -74,7 +105,7 @@ function renderInlineMarkdown(text: string, keyPrefix: string): React.ReactNode[
  * renders a native button in its place for every approved action id, then
  * renders markdown bold within the remaining text segments.
  */
-function renderReply(content: string, actions: ChatAction[], onNavigate: (path: string) => void): React.ReactNode[] {
+function renderReply(content: string, actions: ChatAction[], onNavigate: (path: string) => void, routes: Record<string, string>): React.ReactNode[] {
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -89,13 +120,13 @@ function renderReply(content: string, actions: ChatAction[], onNavigate: (path: 
 
         const action = actions.find((a) => a.id === match![1]);
 
-        if (action && isApprovedAction(action)) {
+        if (action && isApprovedAction(action, routes)) {
             parts.push(
                 <button
                     key={`btn-${action.id}-${segmentIndex++}`}
                     type="button"
                     className="btn btn-sm btn-primary d-block mt-2 mb-1"
-                    onClick={() => onNavigate(ACTION_ALLOWLIST[action.id])}
+                    onClick={() => onNavigate(approvedPath(action, routes)!)}
                 >
                     {action.label}
                 </button>
@@ -172,7 +203,7 @@ function SupportBotAvatar({ size = 26 }: { size?: 26 | 28 | 48 }) {
     return (
         <img
             src={supportAvatar}
-            alt="Support Assistant"
+            alt="Ask Support"
             className={`flex-shrink-0 shadow-sm support-chat-avatar-${size}`}
         />
     );
@@ -219,6 +250,8 @@ export default function SupportChatWidget() {
     const navigate = useNavigate();
     const currentUser = useAuthStore((state: any) => state.user);
     const userName = currentUser?.name || currentUser?.first_name || 'there';
+    // Approved route_key -> path map served by the backend (falls back to the built-in defaults).
+    const [routes, setRoutes] = useState<Record<string, string>>(DEFAULT_ROUTES);
     const [open, setOpen] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const [messages, setMessages] = useState<ChatBubble[]>([]);
@@ -262,6 +295,7 @@ export default function SupportChatWidget() {
 
         fetchAssistantConfig()
             .then((response) => {
+                if (response.data.navigation && Object.keys(response.data.navigation).length > 0) setRoutes(response.data.navigation);
                 if (response.data.welcome_subtitle) setWelcomeSubtitle(response.data.welcome_subtitle);
                 if (response.data.quick_suggestions?.length > 0) setSuggestions(response.data.quick_suggestions);
             })
@@ -401,7 +435,7 @@ export default function SupportChatWidget() {
                     type="button"
                     className="btn btn-primary rounded-circle shadow d-flex align-items-center justify-content-center support-chat-launcher"
                     onClick={() => setOpen(true)}
-                    aria-label="Open Support Assistant"
+                    aria-label="Open Ask Support"
                 >
                     <i className="ri-question-answer-line fs-22 text-white"></i>
                     {unreadCount > 0 && (
@@ -417,7 +451,7 @@ export default function SupportChatWidget() {
                     <div className="card-header bg-primary text-white py-3 px-3 d-flex align-items-center justify-content-between">
                         <div className="d-flex align-items-center gap-2">
                             <SupportBotAvatar size={26} />
-                            <span className="fw-semibold fs-14">Support Assistant</span>
+                            <span className="fw-semibold fs-14">Ask Support</span>
                         </div>
                         <div className="d-flex align-items-center gap-2">
                             <button
@@ -439,7 +473,7 @@ export default function SupportChatWidget() {
                                 type="button"
                                 className="btn btn-sm btn-link text-white p-0 d-flex align-items-center justify-content-center support-chat-icon-btn-26"
                                 onClick={() => setExpanded((prev) => !prev)}
-                                aria-label={expanded ? 'Collapse Support Assistant' : 'Expand Support Assistant'}
+                                aria-label={expanded ? 'Collapse Ask Support' : 'Expand Ask Support'}
                                 title={expanded ? 'Collapse' : 'Expand'}
                             >
                                 <ExpandCollapseIcon expanded={expanded} />
@@ -448,7 +482,7 @@ export default function SupportChatWidget() {
                                 type="button"
                                 className="btn btn-sm btn-link text-white p-0 d-flex align-items-center justify-content-center support-chat-icon-btn-26"
                                 onClick={() => setOpen(false)}
-                                aria-label="Minimize Support Assistant"
+                                aria-label="Minimize Ask Support"
                                 title="Minimize"
                             >
                                 <i className="ri-subtract-line fs-18"></i>
@@ -528,7 +562,7 @@ export default function SupportChatWidget() {
                                             className={`px-3 py-2 rounded-3 fs-13 support-chat-bubble ${m.role === 'user' ? 'bg-primary text-white' : 'bg-light text-dark'
                                                 }`}
                                         >
-                                            {m.role === 'assistant' ? renderReply(m.content, m.actions, handleNavigate) : m.content}
+                                            {m.role === 'assistant' ? renderReply(m.content, m.actions, handleNavigate, routes) : m.content}
                                         </div>
                                         {m.createdAt && (
                                             <div className="text-muted fs-11 mt-1">{m.createdAt}</div>

@@ -35,7 +35,7 @@ export const startNewAssistantSession = async (): Promise<{ status: boolean; mes
 export const fetchAssistantConfig = async (): Promise<{
     status: boolean;
     message: string;
-    data: { is_ready: boolean; welcome_subtitle: string | null; quick_suggestions: string[] };
+    data: { is_ready: boolean; welcome_subtitle: string | null; quick_suggestions: string[]; navigation?: Record<string, string> };
 }> => {
     const { data } = await apiClient.get('/common/assistant/wlp/config');
     return data;
