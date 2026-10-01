@@ -3,6 +3,7 @@ import { getAuthState, setAuthState, clearAuthState, AuthUser, setUserSubscripti
 import { getUserDetails, refreshUser } from './authApi'
 import { fetchGlobalConfigurations } from '../../modules/settings/services'
 import { clearBrandTheme } from '../../utils/brandingTheme'
+import { disconnectEcho } from '../realtime/echo'
 
 const COOKIE_NAME = 'auth_session_active'
 
@@ -72,6 +73,9 @@ export function setAuth(token?: string | null, user?: AuthUser | null, rememberM
 export function clearAuth(): void {
   clearAuthState()
   eraseCookie(COOKIE_NAME)
+
+  // Close the real-time socket; it is authorized as the user signing out.
+  disconnectEcho()
 
   // Drop the paint-ahead brand cache, otherwise the boot script repaints the
   // previous tenant's colours for whoever logs in next on this browser.

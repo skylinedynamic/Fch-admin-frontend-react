@@ -1,6 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '../../../src/store/auth/authStore'
 import { setAuth, clearAuth, isAuthenticated, checkSession, getToken, getUser } from '../../../src/lib/auth/auth'
+
+const { disconnectEcho } = vi.hoisted(() => ({ disconnectEcho: vi.fn() }))
+vi.mock('../../../src/lib/realtime/echo', () => ({ disconnectEcho, getEcho: () => null }))
 
 const COOKIE_NAME = 'auth_session_active'
 
@@ -53,6 +56,15 @@ describe('auth', () => {
       expect(getToken()).toBe('')
       expect(getUser()).toBeNull()
       expect(document.cookie).not.toContain(`${COOKIE_NAME}=true`)
+    })
+
+    it('closes the real-time connection so the next user gets a fresh one', () => {
+      setAuth('token-123', { id: 1 }, true)
+      disconnectEcho.mockClear()
+
+      clearAuth()
+
+      expect(disconnectEcho).toHaveBeenCalledTimes(1)
     })
   })
 

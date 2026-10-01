@@ -64,3 +64,26 @@ export const formatApiDate = (
         ...(showTime ? { hour: 'numeric', minute: '2-digit' } : {}),
     });
 };
+
+const RELATIVE_TIME = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+/**
+ * "Just now", "5 minutes ago", "3 hours ago", "yesterday", "4 days ago" for the
+ * last week, then the date ("Sep 1, 2026"). For datetimes with a zone (ISO
+ * 8601 with offset, as the notifications API sends them).
+ */
+export const formatRelativeTime = (value?: string | null, now: Date = new Date()): string => {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return RELATIVE_TIME.format(-Math.floor(seconds / 60), 'minute');
+    if (seconds < 86400) return RELATIVE_TIME.format(-Math.floor(seconds / 3600), 'hour');
+    if (seconds < 7 * 86400) return RELATIVE_TIME.format(-Math.floor(seconds / 86400), 'day');
+
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
