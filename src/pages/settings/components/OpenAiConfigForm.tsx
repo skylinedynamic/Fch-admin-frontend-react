@@ -339,7 +339,7 @@ const OpenAiConfigForm: React.FC = () => {
                                     <label htmlFor="openai-api-key" className="form-label fw-medium">
                                         API Key {!hasApiKey && <span className="text-danger">*</span>}
                                     </label>
-                                    <div className="input-group">
+                                    <div className="input-group input-group-inline">
                                         <span className={`input-group-text ${errors.api_key ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
                                             <i className="ri-key-2-line"></i>
                                         </span>
@@ -460,7 +460,7 @@ const OpenAiConfigForm: React.FC = () => {
                                             <label htmlFor={inputId} className="form-label fw-medium">
                                                 {label} Agent ID {field.enabled && <span className="text-danger">*</span>}
                                             </label>
-                                            <div className="input-group">
+                                            <div className="input-group input-group-inline">
                                                 <span className={`input-group-text ${error ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
                                                     <i className="ri-robot-2-line"></i>
                                                 </span>
