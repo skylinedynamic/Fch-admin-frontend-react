@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { apiClient as api } from '../../lib/http/apiClient';
 import { useAuthStore } from '../../store/auth/authStore';
 import '../../../assets/css/reminder.css';
-import { initEcho } from '../../lib/echo';
+import { getEcho, userChannelName } from '../../lib/realtime/echo';
 import { ReminderRescheduleForm } from './ReminderRescheduleForm';
 import ReminderClientCard from './ReminderClientCard';
 import { getReminderClientPath, getReminderClientLinkLabel } from '../../config/reminders';
@@ -101,28 +101,26 @@ const ReminderModal = () => {
         return () => clearInterval(interval);
     }, [token, isOpen]);
 
-    // WebSocket listener (only initialize once per user session)
+    // WebSocket listener on the shared Reverb connection. The user channel is
+    // shared with the notification bell and the trial listener, so cleanup
+    // removes only this listener rather than leaving the channel.
     useEffect(() => {
-        if (token) {
-            const userId = useAuthStore.getState().user?.id;
+        const userId = useAuthStore.getState().user?.id;
+        const echo = token && userId ? getEcho() : null;
+        if (!echo || !userId) return;
 
-            if (userId) {
-                const echo = initEcho();
-                if (echo) {
-                    echo.private(`App.Models.User.${userId}`)
-                        .listen('.reminder.due', (e: any) => {
-                            if (e?.reminder?.status === 'cancelled') return;
-                            // Refetch rather than using the broadcast payload so the
-                            // reminder arrives with its client details resolved.
-                            fetchDueReminders();
-                        });
+        const channel = echo.private(userChannelName(userId));
+        const handleDue = (e: any) => {
+            if (e?.reminder?.status === 'cancelled') return;
+            // Refetch rather than using the broadcast payload so the
+            // reminder arrives with its client details resolved.
+            fetchDueReminders();
+        };
+        channel.listen('.reminder.due', handleDue);
 
-                    return () => {
-                        echo.leave(`App.Models.User.${userId}`);
-                    };
-                }
-            }
-        }
+        return () => {
+            channel.stopListening('.reminder.due', handleDue);
+        };
     }, [token]);
 
     const resetPanels = () => {

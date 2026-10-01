@@ -61,4 +61,10 @@ export const queryKeys = {
     all: ['agreement'] as const,
     detail: (slug: string) => [...queryKeys.agreement.all, 'detail', slug] as const,
   },
+  notifications: {
+    all: ['notifications'] as const,
+    lists: () => [...queryKeys.notifications.all, 'list'] as const,
+    list: (params: object) => [...queryKeys.notifications.lists(), params] as const,
+    unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
+  },
 } as const

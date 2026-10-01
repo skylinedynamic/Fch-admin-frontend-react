@@ -6,6 +6,8 @@ import { useConfigStore } from "../../store/config";
 import faviconImg from "../../../assets/images/Favicon.png";
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from "../../config/appConfig";
+import { NOTIFICATIONS_ROUTE } from "../../config/notifications";
+import { useUnreadNotificationCount, formatUnreadCount } from "../../modules/notifications";
 
 // Menu item configuration with required permissions
 const menuItems = [
@@ -166,6 +168,13 @@ const menuItems = [
     label: "Task & Reminders",
     permission: "view reminders",
   },
+  {
+    to: NOTIFICATIONS_ROUTE,
+    icon: "ri-notification-3-line",
+    label: "Notification",
+    permission: "", // every signed-in user has an inbox
+    showUnreadNotifications: true,
+  },
   // {
   //   to: '/under-construction/training-courses',
   //   icon: 'ri-live-fill',
@@ -279,6 +288,8 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
   const { hasPermission, isRestricted, hasAnyPermission } = usePermissions();
+  // Same cached query as the header bell, so this adds no extra request.
+  const { data: unreadNotificationCount = 0 } = useUnreadNotificationCount();
   const location = useLocation();
   const { branding: settings } = useConfigStore();
 
@@ -569,7 +580,7 @@ export default function Sidebar() {
             {visibleMenuItems.map((item) => {
               const itemIsRestricted =
                 isRestricted &&
-                !["Dashboard", "Invoices", "Payments"].includes(item.label);
+                !["Dashboard", "Invoices", "Payments", "Notification"].includes(item.label);
 
               if (item.subItems) {
                 const isExpanded = expandedMenu === item.id;
@@ -721,6 +732,11 @@ export default function Sidebar() {
                     }
                   >
                     <i className={item.icon}></i> <span>{item.label}</span>
+                    {item.showUnreadNotifications && unreadNotificationCount > 0 && (
+                      <span className="badge rounded-pill bg-danger ms-auto">
+                        {formatUnreadCount(unreadNotificationCount)}
+                      </span>
+                    )}
                     {itemIsRestricted && (
                       <i className="ri-lock-fill float-end fs-14 opacity-50"></i>
                     )}
