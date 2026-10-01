@@ -1,56 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PageHeader from '../../common/PageHeader';
 import { useCreditProfileRequestDetails } from '../../../modules/credit-profile-request';
 import CreditProfileRequestDetailsLoader from '../../../components/Loader/CreditProfileRequestDetailsLoader';
 import { formatSSN, formatDate } from '../../../utils/formatters';
-
-interface DetailItemProps {
-    label: string;
-    value: React.ReactNode;
-    icon?: string;
-    copyValue?: string;
-}
-
-const DetailItem = ({ label, value, icon, copyValue }: DetailItemProps) => {
-    const [copied, setCopied] = useState(false);
-
-    const textToCopy = copyValue || (typeof value === 'string' ? value : '');
-
-    const handleCopy = () => {
-        if (!textToCopy) return;
-        navigator.clipboard.writeText(textToCopy);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    return (
-        <div className="d-flex align-items-start gap-3 py-2">
-            {icon && (
-                <div className="flex-shrink-0 text-muted">
-                    <i className={`${icon} fs-16`}></i>
-                </div>
-            )}
-            <div className="flex-grow-1 min-w-0">
-                <div className="text-muted fs-12 text-uppercase fw-medium mb-1 detail-label">
-                    {label}
-                </div>
-                <div className="fw-semibold text-dark fs-14 d-flex align-items-center gap-2">
-                    <span>{value || <span className="text-muted fst-italic">—</span>}</span>
-                    {textToCopy && (
-                        <button
-                            onClick={handleCopy}
-                            className="btn btn-sm p-0 border-0 bg-transparent flex-shrink-0 fw-normal detail-copy-btn"
-                            title="Copy"
-                        >
-                            <i className={`ri-${copied ? 'check-line' : 'file-copy-line'} detail-copy-icon${copied ? ' copied' : ''}`}></i>
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
+import CreditAuthorizationPanel from './components/CreditAuthorizationPanel';
+import { CprCard, CprField } from './components/CprCard';
 
 export default function CreditProfileRequestDetails() {
     const { id } = useParams();
@@ -115,138 +70,124 @@ export default function CreditProfileRequestDetails() {
                     </div>
                 </PageHeader>
 
-                <div className="row g-4">
-                    {/* ── Left column (8) ── */}
-                    <div className="col-lg-8 d-flex flex-column">
-                        {/* Combined Personal + Contact card */}
-                        <div className="card shadow-sm">
-                            <div className="card-header bg-transparent py-3">
-                                <div className="d-flex align-items-center gap-2">
-                                    <div className="rounded bg-primary-subtle p-2">
-                                        <i className="ri-user-3-line text-primary fs-16"></i>
-                                    </div>
-                                    <div>
-                                        <div className="fw-semibold text-dark fs-14">Applicant Details</div>
-                                        <div className="text-muted fs-12">Personal and contact information</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="card-body px-4 py-3">
-                                <div className="row g-0">
-                                    <div className="col-6">
-                                        <DetailItem label="First Name" icon="ri-account-circle-line" value={request.first_name} copyValue={request.first_name} />
-                                        <DetailItem label="Middle Name" icon="ri-account-circle-line" value={request.middle_name || '-'} copyValue={request.middle_name || undefined} />
-                                        <DetailItem label="Last Name" icon="ri-account-circle-line" value={request.last_name} copyValue={request.last_name} />
-                                        <DetailItem label="Date of Birth" icon="ri-cake-2-line" value={formatDate(request.date_of_birth)} />
-                                        <DetailItem
-                                            label="Social Security Number"
-                                            icon="ri-lock-line"
-                                            copyValue={request.ssn}
-                                            value={
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <span className="font-monospace fs-14">
-                                                        {formatSSN(request.ssn, showFullSSN)}
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-reveal-ssn py-0 px-2 fs-12"
-                                                        onClick={() => setShowFullSSN(s => !s)}
-                                                    >
-                                                        <i className={`${showFullSSN ? 'ri-eye-off-line' : 'ri-eye-line'} align-middle me-1`}></i>
-                                                        {showFullSSN ? 'Hide' : 'Reveal'}
-                                                    </button>
-                                                </div>
-                                            }
-                                        />
-                                    </div>
-                                    <div className="col-6">
-                                        <DetailItem label="Email Address" icon="ri-mail-line" value={<a href={`mailto:${request.email}`} className="text-primary text-decoration-none">{request.email}</a>} copyValue={request.email} />
-                                        <DetailItem label="Phone Number" icon="ri-phone-line" value={<a href={`tel:${request.phone}`} className="text-dark text-decoration-none">{request.phone}</a>} copyValue={request.phone} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                {/* The FCRA evidence behind this client's pulls. Host partner
+                    only - the panel hides itself for anyone else. */}
+                <CreditAuthorizationPanel
+                    borrowerId={request.borrower_id}
+                    rows={request.credit_authorizations}
+                />
 
-                        {/* Address Details */}
-                        <div className="card shadow-sm">
-                            <div className="card-header bg-transparent  py-3">
-                                <div className="d-flex align-items-center gap-2">
-                                    <div className="rounded bg-warning-subtle p-2">
-                                        <i className="ri-map-pin-2-line text-warning fs-16"></i>
-                                    </div>
-                                    <div>
-                                        <div className="fw-semibold text-dark fs-14">Address Details</div>
-                                        <div className="text-muted fs-12">Residential address for credit verification</div>
-                                    </div>
-                                </div>
+                {/* 2fr / 1fr, collapsing to one column under lg. The loader
+                    draws the same grid, so nothing moves when data arrives. */}
+                <div className="cpr-grid">
+                    <div className="cpr-col">
+                        <CprCard
+                            icon="ri-user-3-line"
+                            tone="primary"
+                            title="Applicant Details"
+                            hint="Personal and contact information"
+                        >
+                            {/* Two even columns. These used to be 5 fields
+                                against 2, which left half the card empty. */}
+                            <div className="cpr-fields cpr-fields-2">
+                                <CprField label="Full Name" icon="ri-account-circle-line" value={fullName} copyValue={fullName} />
+                                <CprField label="Date of Birth" icon="ri-cake-2-line" value={formatDate(request.date_of_birth)} />
+                                <CprField
+                                    label="Social Security Number"
+                                    icon="ri-lock-line"
+                                    copyValue={request.ssn}
+                                    value={
+                                        <>
+                                            <span className="font-monospace">{formatSSN(request.ssn, showFullSSN)}</span>
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-reveal-ssn py-0 px-2 fs-12"
+                                                onClick={() => setShowFullSSN(s => !s)}
+                                            >
+                                                <i className={`${showFullSSN ? 'ri-eye-off-line' : 'ri-eye-line'} align-middle me-1`}></i>
+                                                {showFullSSN ? 'Hide' : 'Reveal'}
+                                            </button>
+                                        </>
+                                    }
+                                />
+                                <CprField
+                                    label="Email Address"
+                                    icon="ri-mail-line"
+                                    copyValue={request.email}
+                                    value={<a href={`mailto:${request.email}`} className="text-primary text-decoration-none">{request.email}</a>}
+                                />
+                                <CprField
+                                    label="Phone Number"
+                                    icon="ri-phone-line"
+                                    copyValue={request.phone}
+                                    value={<a href={`tel:${request.phone}`} className="text-dark text-decoration-none">{request.phone}</a>}
+                                />
                             </div>
-                            <div className="card-body px-4 py-3">
-                                <div className="row g-0">
-                                    <div className="col-md-4">
-                                        <DetailItem
-                                            label="Street Address"
-                                            icon="ri-road-map-line"
-                                            value={
-                                                <>
-                                                    {request.address}
-                                                    {request.apt_suite_other && (
-                                                        <span className="text-muted ms-2 fs-13">({request.apt_suite_other})</span>
-                                                    )}
-                                                </>
-                                            }
-                                            copyValue={request.address}
-                                        />
-                                    </div>
-                                    <div className="col-md-3">
-                                        <DetailItem label="City" icon="ri-building-2-line" value={request.city} copyValue={request.city} />
-                                    </div>
-                                    <div className="col-md-3">
-                                        <DetailItem label="State" icon="ri-map-2-line" value={request.state} copyValue={request.state} />
-                                    </div>
-                                    <div className="col-md-2">
-                                        <DetailItem label="Zip Code" icon="ri-mail-send-line" value={request.zip} copyValue={request.zip} />
-                                    </div>
-                                </div>
+                        </CprCard>
+
+                        <CprCard
+                            icon="ri-map-pin-2-line"
+                            tone="warning"
+                            title="Address Details"
+                            hint="Residential address for credit verification"
+                        >
+                            <div className="cpr-fields cpr-fields-4">
+                                <CprField
+                                    label="Street Address"
+                                    icon="ri-road-map-line"
+                                    copyValue={request.address}
+                                    value={
+                                        <>
+                                            {request.address}
+                                            {request.apt_suite_other && (
+                                                <span className="text-muted ms-1 fs-13">({request.apt_suite_other})</span>
+                                            )}
+                                        </>
+                                    }
+                                />
+                                <CprField label="City" icon="ri-building-2-line" value={request.city} copyValue={request.city} />
+                                <CprField label="State" icon="ri-map-2-line" value={request.state} copyValue={request.state} />
+                                <CprField label="Zip Code" icon="ri-mail-send-line" value={request.zip} copyValue={request.zip} />
                             </div>
-                        </div>
+                        </CprCard>
                     </div>
 
-                    {/* ── Right column (4) ── */}
-                    <div className="col-lg-4">
-                        <div className="card shadow-sm">
-                            <div className="card-header bg-transparent  py-3">
-                                <div className="d-flex align-items-center gap-2">
-                                    <div className="rounded bg-success-subtle p-2">
-                                        <i className="ri-bank-card-line text-success fs-16"></i>
-                                    </div>
-                                    <div>
-                                        <div className="fw-semibold text-dark fs-14">Borrower Account</div>
-                                        <div className="text-muted fs-12">Associated business and borrower details</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="card-body px-4 py-3">
-                                <DetailItem label="Business Name" icon="ri-building-line" value={<span>{borrowerName}</span>} />
+                    <div className="cpr-col">
+                        <CprCard
+                            icon="ri-bank-card-line"
+                            tone="success"
+                            title="Borrower Account"
+                            hint="Associated business and borrower details"
+                        >
+                            <div className="cpr-fields">
+                                <CprField label="Business Name" icon="ri-building-line" value={borrowerName} />
                                 {request.borrower && (
                                     <>
-                                        <DetailItem label="Account Email" icon="ri-mail-send-line" value={<a href={`mailto:${request.borrower.email}`} className="text-primary text-decoration-none">{request.borrower.email}</a>} />
-                                        <DetailItem label="Account Phone" icon="ri-phone-fill" value={<a href={`tel:${request.borrower.phone_number}`} className="text-dark text-decoration-none">{request.borrower.phone_number}</a>} />
+                                        <CprField
+                                            label="Account Email"
+                                            icon="ri-mail-send-line"
+                                            copyValue={request.borrower.email || undefined}
+                                            value={<a href={`mailto:${request.borrower.email}`} className="text-primary text-decoration-none">{request.borrower.email}</a>}
+                                        />
+                                        <CprField
+                                            label="Account Phone"
+                                            icon="ri-phone-fill"
+                                            copyValue={request.borrower.phone_number || undefined}
+                                            value={<a href={`tel:${request.borrower.phone_number}`} className="text-dark text-decoration-none">{request.borrower.phone_number}</a>}
+                                        />
                                     </>
                                 )}
                             </div>
-                        </div>
+                        </CprCard>
                     </div>
-
-                    {/* Submission timestamp */}
-                    {request.created_at && (
-                        <div className="col-12">
-                            <div className="d-flex align-items-center gap-2 text-muted fs-12 justify-content-end">
-                                <i className="ri-time-line"></i>
-                                Submitted on {new Date(request.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                            </div>
-                        </div>
-                    )}
                 </div>
+
+                {request.created_at && (
+                    <div className="cpr-meta">
+                        <i className="ri-time-line"></i>
+                        Submitted {new Date(request.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                    </div>
+                )}
             </div>
         </div>
     );

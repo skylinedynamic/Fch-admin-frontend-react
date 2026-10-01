@@ -992,6 +992,10 @@ File: Custom Css File
   width: 20px !important;
 }
 
+.sk-w-16 {
+  width: 16px !important;
+}
+
 .sk-w-28 {
   width: 28px !important;
 }
@@ -7608,4 +7612,218 @@ File: Custom Css File
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* ============================================================
+   Trial panel: the last row of the sidebar, not a layer on top
+   ============================================================
+   It was position:absolute with bottom:0, kept clear of the menu by a
+   padding-bottom guess at its own height on the scroll area (declared twice
+   above, which is part of how it drifted). On a laptop-height screen - where the
+   menu is long enough to fill the column - the guess was short and the banner
+   sat on top of the last item.
+
+   The sidebar becomes a flex column instead: the scroll area takes whatever
+   space is left, the banner takes its own. Nothing can end up underneath it at
+   any height, and no measurement has to be kept in sync. Scoped to
+   .has-trial-panel, which Sidebar adds only when the banner renders, so a paid
+   plan keeps the theme's own layout. Last in the file so it wins over both
+   copies of the older rules above. */
+.navbar-menu.has-trial-panel {
+  display: flex;
+  flex-direction: column;
+  /* The theme reserves calc(70px + 25px) here for the old floating panel; the
+     banner is a real row now, so that reservation would only add a gap. */
+  padding-bottom: 0;
+}
+
+.navbar-menu.has-trial-panel .navbar-brand-box {
+  flex: 0 0 auto;
+}
+
+/* min-height:0 lets a flex child shrink below its content and scroll, which is
+   what makes the banner reachable instead of pushed off the bottom. */
+.navbar-menu.has-trial-panel #scrollbar,
+.navbar-menu.has-trial-panel #scrollbar.simplebar-scrollable-y {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: 0 !important;
+}
+
+.navbar-menu.has-trial-panel #scrollbar .simplebar-content {
+  padding-bottom: 0 !important;
+}
+
+.navbar-menu.has-trial-panel .sidebar-trial-panel {
+  position: static;
+  flex: 0 0 auto;
+}
+
+/* ─── Credit profile request details ──────────────────────────
+   Built on the --ca-* tokens above so this screen reads as part of
+   the same product. The skeleton in CreditProfileRequestDetailsLoader
+   uses the SAME class names, which is what keeps the waiting state
+   and the loaded state the same shape instead of two layouts that
+   swap.
+   ───────────────────────────────────────────────────────────── */
+
+.cpr-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 991.98px) {
+    .cpr-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cpr-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.cpr-card {
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: var(--ca-radius);
+    box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+.cpr-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ca-border);
+}
+
+.cpr-card-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--ca-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.cpr-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+}
+
+.cpr-card-hint {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 1px;
+}
+
+.cpr-card-body {
+    padding: 6px 16px 12px;
+}
+
+/* ─── Fields ──────────────────────────────────────────────── */
+
+.cpr-fields {
+    display: grid;
+    gap: 0 20px;
+}
+
+.cpr-fields-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cpr-fields-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 767.98px) {
+    .cpr-fields-2,
+    .cpr-fields-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cpr-field {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+    min-width: 0;
+}
+
+.cpr-field-icon {
+    flex-shrink: 0;
+    color: #94a3b8;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.cpr-field-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.cpr-field-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 3px;
+}
+
+.cpr-field-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    word-break: break-word;
+}
+
+.cpr-field-empty {
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.cpr-copy {
+    border: 0;
+    background: transparent;
+    color: #cbd5e1;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.cpr-copy:hover {
+    color: #64748b;
+}
+
+.cpr-copy.is-copied {
+    color: #10b981;
+}
+
+/* ─── Footer meta ─────────────────────────────────────────── */
+
+.cpr-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 12px;
 }
