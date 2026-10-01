@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 
 import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { useIsHostPartner } from '../../lib/auth/useIsHostPartner';
 import { fetchUserById, fetchRoles, updateUser } from '../../modules/user/services';
 import {
   fetchUserCompensation,
@@ -27,6 +28,8 @@ export default function UserDetails() {
   const { id } = useParams();
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('update users');
+  // Commission setup is only offered to the host partner.
+  const canManageCommission = useIsHostPartner();
 
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -82,14 +85,14 @@ export default function UserDetails() {
   // Compensation lives in its own table behind its own endpoint, so the
   // Commissions tab is loaded separately from the user record.
   useEffect(() => {
-    if (!id) return;
+    if (!id || !canManageCommission) return;
 
     fetchUserCompensation(id)
       .then((data) => {
         setValues((prev) => ({ ...prev, ...compensationRowsToFields(data?.paid_by, data?.compensations) }));
       })
       .catch((err) => console.error('Failed to fetch compensation', err));
-  }, [id]);
+  }, [id, canManageCommission]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -211,7 +214,7 @@ export default function UserDetails() {
 
   // Each tab saves only what it shows.
   const handleSave = () => (
-    activeTab === TAB_COMMISSIONS ? handleSaveCompensation() : handleSaveAccount()
+    canManageCommission && activeTab === TAB_COMMISSIONS ? handleSaveCompensation() : handleSaveAccount()
   );
 
   const roleOptions = roles.map((role) => ({ label: role.name, value: String(role.id) }));
@@ -269,17 +272,19 @@ export default function UserDetails() {
                       <i className="ri-user-settings-line"></i> User information
                     </button>
                   </li>
-                  <li className="nav-item" role="presentation">
-                    <button
-                      type="button"
-                      className={`nav-link ${activeTab === TAB_COMMISSIONS ? 'active' : ''}`}
-                      onClick={() => setActiveTab(TAB_COMMISSIONS)}
-                      role="tab"
-                      aria-selected={activeTab === TAB_COMMISSIONS}
-                    >
-                      <i className="ri-percent-line"></i> Commissions
-                    </button>
-                  </li>
+                  {canManageCommission && (
+                    <li className="nav-item" role="presentation">
+                      <button
+                        type="button"
+                        className={`nav-link ${activeTab === TAB_COMMISSIONS ? 'active' : ''}`}
+                        onClick={() => setActiveTab(TAB_COMMISSIONS)}
+                        role="tab"
+                        aria-selected={activeTab === TAB_COMMISSIONS}
+                      >
+                        <i className="ri-percent-line"></i> Commissions
+                      </button>
+                    </li>
+                  )}
                 </ul>
               </div>
 
@@ -427,17 +432,19 @@ export default function UserDetails() {
                     )}
                   </div>
 
-                  <div className={`tab-pane ${activeTab === TAB_COMMISSIONS ? 'active show' : ''}`} role="tabpanel">
-                    {loading ? (
-                      <FormLoader count={4} />
-                    ) : (
-                      <CommissionsSection
-                        values={values}
-                        errors={errors}
-                        onChange={handleChange}
-                      />
-                    )}
-                  </div>
+                  {canManageCommission && (
+                    <div className={`tab-pane ${activeTab === TAB_COMMISSIONS ? 'active show' : ''}`} role="tabpanel">
+                      {loading ? (
+                        <FormLoader count={4} />
+                      ) : (
+                        <CommissionsSection
+                          values={values}
+                          errors={errors}
+                          onChange={handleChange}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
