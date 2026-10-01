@@ -20,12 +20,11 @@ afterEach(() => {
 const noSessions = () =>
     http.get('*/common/assistant/wlp/sessions', () => HttpResponse.json({ status: true, message: '', data: [] }))
 
-// is_ready: false, no welcome_subtitle/quick_suggestions — the widget must
-// fall back to its own generic defaults, never a hardcoded domain-specific
-// guess, when the assistant hasn't been configured with a prompt yet.
-const notReadyConfig = () =>
+// Enabled, with no welcome line or suggested questions in the agent's
+// instructions — the widget shows only its greeting.
+const enabledConfig = () =>
     http.get('*/common/assistant/wlp/config', () =>
-        HttpResponse.json({ status: true, message: '', data: { is_ready: false, welcome_subtitle: null, quick_suggestions: [] } })
+        HttpResponse.json({ status: true, message: '', data: { is_ready: true, welcome_subtitle: null, quick_suggestions: [] } })
     )
 
 const configWith = (welcome_subtitle: string, quick_suggestions: string[]) =>
@@ -34,7 +33,7 @@ const configWith = (welcome_subtitle: string, quick_suggestions: string[]) =>
     )
 
 const open = async () => {
-    await userEvent.click(screen.getByRole('button', { name: /open ask support/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /open ask support/i }))
     await screen.findByPlaceholderText(/type a message/i)
 }
 
@@ -45,7 +44,7 @@ const sendMessage = async (text: string) => {
 
 describe('SupportChatWidget (admin/WLP)', () => {
     it('is closed until the floating button is clicked, then shows the empty-state prompt once history loads', async () => {
-        server.use(noSessions(), notReadyConfig())
+        server.use(noSessions(), enabledConfig())
 
         renderWithProviders(<SupportChatWidget />)
 
@@ -53,9 +52,10 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
         await open()
 
-        // The generic fallback subtitle — no config saved yet, and nothing
-        // hardcoded to a specific domain like "settings, or training".
-        expect(await screen.findByText(/ask a question and i will do my best to help/i)).toBeInTheDocument()
+        // Nothing is built in: with no copy from the backend the welcome card
+        // shows only its greeting — no subtitle and no suggested questions.
+        expect(await screen.findByText(/welcome to our live chat/i)).toBeInTheDocument()
+        expect(screen.queryByText(/suggested questions/i)).not.toBeInTheDocument()
     })
 
     it('renders the live-derived welcome subtitle and suggestion chips from the config endpoint', async () => {
@@ -84,7 +84,8 @@ describe('SupportChatWidget (admin/WLP)', () => {
                 return HttpResponse.json({
                     status: true,
                     message: '',
-                    data: callCount === 1
+                    // Calls 1 (page-load check) and 2 (first open) see the old copy; the reopen sees the new.
+                    data: callCount <= 2
                         ? { is_ready: true, welcome_subtitle: 'Ask about the old prompt topic.', quick_suggestions: ['Old prompt question?'] }
                         : { is_ready: true, welcome_subtitle: 'Ask about the new prompt topic.', quick_suggestions: ['New prompt question?'] },
                 })
@@ -135,23 +136,97 @@ describe('SupportChatWidget (admin/WLP)', () => {
         expect(await screen.findByText('Here is how.')).toBeInTheDocument()
     })
 
-    it('falls back to the generic defaults when the config fetch fails, without crashing', async () => {
+    it('is not shown at all when the assistant is disabled', async () => {
+        let configCalls = 0
         server.use(
             noSessions(),
-            http.get('*/common/assistant/wlp/config', () => HttpResponse.error())
+            http.get('*/common/assistant/wlp/config', () => {
+                configCalls++
+                return HttpResponse.json({ status: true, message: '', data: { is_ready: false, welcome_subtitle: null, quick_suggestions: [] } })
+            })
+        )
+
+        const { container } = renderWithProviders(<SupportChatWidget />)
+
+        await waitFor(() => expect(configCalls).toBeGreaterThan(0))
+        expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument()
+        expect(container.querySelector('.support-chat-fab, [class*="support-chat"]')).toBeNull()
+    })
+
+    it('is not shown when the enabled check fails', async () => {
+        let configCalls = 0
+        server.use(
+            noSessions(),
+            http.get('*/common/assistant/wlp/config', () => {
+                configCalls++
+                return HttpResponse.error()
+            })
         )
 
         renderWithProviders(<SupportChatWidget />)
-        await open()
 
-        expect(await screen.findByText('How can you help me?')).toBeInTheDocument()
-        expect(screen.getByText(/ask a question and i will do my best to help/i)).toBeInTheDocument()
+        await waitFor(() => expect(configCalls).toBeGreaterThan(0))
+        expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument()
     })
 
-    it('renders a native button for the approved navigate_settings action and navigates to the hardcoded local route on click', async () => {
+    it('appears and disappears without a reload when the host switches the assistant on or off', async () => {
+        let enabled = false
         server.use(
             noSessions(),
-            notReadyConfig(),
+            http.get('*/common/assistant/wlp/config', () =>
+                HttpResponse.json({ status: true, message: '', data: { is_ready: enabled, welcome_subtitle: null, quick_suggestions: [] } })
+            )
+        )
+
+        renderWithProviders(<SupportChatWidget />)
+        await waitFor(() => expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument())
+
+        // The host enables it elsewhere; this page re-checks (here: on returning to the tab).
+        enabled = true
+        window.dispatchEvent(new Event('focus'))
+        expect(await screen.findByRole('button', { name: /open ask support/i })).toBeInTheDocument()
+
+        // ...and disables it again while the panel is open: the whole chat goes away.
+        await open()
+        enabled = false
+        window.dispatchEvent(new Event('focus'))
+
+        await waitFor(() => expect(screen.queryByPlaceholderText(/type a message/i)).not.toBeInTheDocument())
+        expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument()
+    })
+
+    it('asks for the welcome copy only when the panel is opened', async () => {
+        const asked: Array<string | null> = []
+        server.use(
+            noSessions(),
+            http.get('*/common/assistant/wlp/config', ({ request }) => {
+                asked.push(new URL(request.url).searchParams.get('intro'))
+                return HttpResponse.json({ status: true, message: '', data: { is_ready: true, welcome_subtitle: null, quick_suggestions: [] } })
+            })
+        )
+
+        renderWithProviders(<SupportChatWidget />)
+        await screen.findByRole('button', { name: /open ask support/i })
+
+        // The page-load check is the cheap one: no intro requested.
+        expect(asked).toEqual([null])
+
+        await open()
+
+        await waitFor(() => expect(asked).toEqual([null, '1']))
+    })
+
+    it('renders a native button for an action in the served route map and navigates to that route on click', async () => {
+        server.use(
+            noSessions(),
+            // No destinations are built into the widget: the allowlist is the map the backend serves.
+            http.get('*/common/assistant/wlp/config', () =>
+                HttpResponse.json({
+                    status: true,
+                    message: '',
+                    data: { is_ready: true, welcome_subtitle: null, quick_suggestions: [], navigation: { settings: '/settings' } },
+                })
+            ),
             http.post('*/common/assistant/wlp/messages', () =>
                 HttpResponse.json({
                     status: true,
@@ -179,15 +254,43 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
         await userEvent.click(ctaButton)
 
-        // Navigation always follows the frontend's own hardcoded ACTION_ALLOWLIST
-        // entry, never a path read from the API response.
+        // Navigation follows the route map served by the config endpoint.
         expect(navigateMock).toHaveBeenCalledWith('/settings')
+    })
+
+    it('renders no button for an action that is not in the served route map', async () => {
+        server.use(
+            noSessions(),
+            enabledConfig(),
+            http.post('*/common/assistant/wlp/messages', () =>
+                HttpResponse.json({
+                    status: true,
+                    message: '',
+                    data: {
+                        session_id: 'session-123',
+                        message_id: 'message-456',
+                        answer: 'Go to Settings.\n\n[[ACTION:navigate_settings]]',
+                        actions: [{ type: 'navigate', id: 'navigate_settings', label: 'Take Me There', path: '/settings' }],
+                        sources: [],
+                        escalation: { required: false, reason: null, route: null },
+                        policy: { live_data_used: false, restricted_content_blocked: false, sensitive_input_detected: false },
+                    },
+                })
+            )
+        )
+
+        renderWithProviders(<SupportChatWidget />)
+        await open()
+        await sendMessage('How do I set up email?')
+
+        expect(await screen.findByText(/Go to Settings/)).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Take Me There' })).not.toBeInTheDocument()
     })
 
     it('ignores an action whose path does not match the local allowlist entry, as a defense-in-depth check', async () => {
         server.use(
             noSessions(),
-            notReadyConfig(),
+            enabledConfig(),
             http.post('*/common/assistant/wlp/messages', () =>
                 HttpResponse.json({
                     status: true,
@@ -218,7 +321,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
     it('minimizing hides the panel and reopening restores the in-memory conversation without refetching history', async () => {
         server.use(
             noSessions(),
-            notReadyConfig(),
+            enabledConfig(),
             http.post('*/common/assistant/wlp/messages', () =>
                 HttpResponse.json({
                     status: true,
@@ -250,7 +353,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
     it('restores a prior session on open via the sessions and history endpoints', async () => {
         server.use(
-            notReadyConfig(),
+            enabledConfig(),
             http.get('*/common/assistant/wlp/sessions', () =>
                 HttpResponse.json({
                     status: true,
@@ -280,7 +383,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
     it('renders the server-provided timestamp under an assistant reply', async () => {
         server.use(
             noSessions(),
-            notReadyConfig(),
+            enabledConfig(),
             http.post('*/common/assistant/wlp/messages', () =>
                 HttpResponse.json({
                     status: true,
@@ -321,7 +424,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
         server.use(
             noSessions(),
-            notReadyConfig(),
+            enabledConfig(),
             http.post('*/common/assistant/wlp/messages', async () => {
                 await replyGate;
                 return HttpResponse.json({
@@ -362,7 +465,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
     it('starts a new session and clears the conversation when clicking the New Session button', async () => {
         server.use(
-            notReadyConfig(),
+            enabledConfig(),
             http.get('*/common/assistant/wlp/sessions', () =>
                 HttpResponse.json({
                     status: true,
@@ -403,7 +506,10 @@ describe('SupportChatWidget (admin/WLP)', () => {
 
         await waitFor(() => {
             expect(screen.queryByText('Previous question')).not.toBeInTheDocument()
-            expect(screen.getByText(/ask a question and i will do my best to help/i)).toBeInTheDocument()
+            // Nothing is built in: with no copy from the backend the welcome card
+            // shows only its greeting — no subtitle and no suggested questions.
+            expect(screen.getByText(/welcome to our live chat/i)).toBeInTheDocument()
+            expect(screen.queryByText(/suggested questions/i)).not.toBeInTheDocument()
         })
     })
 })

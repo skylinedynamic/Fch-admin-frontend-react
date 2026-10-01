@@ -164,6 +164,16 @@ export const OpenAiConfigSkeleton: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Support assistants: Borrower and WL Partner agent ID fields + switches */}
+                {[0, 1].map((i) => (
+                    <div className="col-lg-6" key={i}>
+                        <div className="skeleton-line mb-2 sk-w-160 sk-h-12"></div>
+                        <div className="skeleton-line rounded w-100 sk-h-42"></div>
+                        <div className="skeleton-line mt-2 sk-w-280 sk-h-12"></div>
+                        <div className="skeleton-line mt-2 sk-w-160 sk-h-12"></div>
+                    </div>
+                ))}
             </div>
 
             <div className="col-12 mt-5 pt-3 border-top">
