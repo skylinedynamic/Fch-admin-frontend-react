@@ -296,30 +296,20 @@ export default function Users() {
   }
 
   const nameBody = (rowData) => (
-    <span
-      className="link-primary"
-      style={{ cursor: 'pointer' }}
-      onClick={() => {
-        if (!hasPermission('update users')) return;
-        setEditingUserId(rowData.id);
-        setBackendErrors({});
-        setNewUser({
-          user_id: rowData.user_id || '',
-          name: rowData.name || '',
-          email: rowData.email || '',
-          phone_number: rowData.phone_number || '',
-          role_id: resolveRoleId(rowData),
-          status: rowData.status || '',
-          password: rowData.password || '',
-          new_password: '',
-          confirm_password: '',
-        });
-        setShowAddUser(true);
-      }}
-    >
+    <Link to={`/user-details/${rowData.id}`} className="link-primary">
       {rowData.name}
-    </span>
+    </Link>
   )
+
+  // Clicking anywhere on the row opens the user, except on the controls that
+  // have their own behaviour (row checkbox, column filters).
+  const handleRowClick = (e) => {
+    const target = e.originalEvent.target;
+
+    if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
+      navigate(`/user-details/${e.data.id}`);
+    }
+  }
 
   const dateBodyTemplate = (rowData, field) => {
     return rowData[field] || '-';
@@ -654,6 +644,8 @@ export default function Users() {
                       selection={selection}
                       onSelectionChange={(e) => setSelection(e.value)}
                       dataKey="id"
+                      onRowClick={handleRowClick}
+                      rowClassName={() => 'cursor-pointer'}
                       responsiveLayout="scroll"
                       className="p-datatable-sm"
                       emptyMessage="No Users found"

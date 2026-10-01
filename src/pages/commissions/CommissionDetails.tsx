@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
-import { useCommission, useProcessPayout } from '../../modules/commission/queries';
-import { toast } from 'react-toastify';
+import { useCommission } from '../../modules/commission/queries';
 import { CommissionDetail } from '../../modules/commission/types';
 import { useAuthStore } from '../../store/auth/authStore';
-import TableLoader from '../../components/Loader/TableLoader';
+import CommissionDetailsLoader from '../../components/Loader/CommissionDetailsLoader';
 import ErrorPage from '../Utility/ErrorPage';
 import { PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP, PAYMENT_STATUS_OPTIONS } from '../../config/statusOptions';
-import { FUNDING_APPLICATION_STATUS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../config/borrower';
+import { FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../config/borrower';
 import { formatCurrency } from '../../utils/helper';
-import PayoutModal from './PayoutModal';
+import PayoutSection from './components/PayoutSection';
 
 const DetailRow = ({ label, value, className = 'col-md-6 mb-3' }: { label: string; value: React.ReactNode; className?: string }) => (
     <div className={className}>
@@ -43,9 +42,7 @@ export default function CommissionDetails() {
     const navigate = useNavigate();
     const { data: fetchedCommission, isLoading, error } = useCommission(id);
     const [commissionState, setCommissionState] = useState<CommissionDetail | null>(null);
-    const [showPayoutModal, setShowPayoutModal] = useState(false);
     const user = useAuthStore((state) => state.user);
-    const processPayoutMutation = useProcessPayout();
 
     // Update state when data is fetched
     React.useEffect(() => {
@@ -61,11 +58,32 @@ export default function CommissionDetails() {
 
 
 
+    // Shown in every state, so the breadcrumbs are there while it loads.
+    const pageHeader = (
+        <PageHeader 
+            title="Commission Details" 
+            breadcrumbs={[
+                { label: 'Commissions', path: '/commissions' },
+                { label: 'Details' }
+            ]} 
+        >
+            <div className="page-actions d-flex align-items-center gap-2 mt-0">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="btn btn-soft-secondary waves-effect"
+                >
+                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                </button>
+            </div>
+        </PageHeader>
+    );
+
     if (isLoading) {
         return (
             <div className="page-content">
                 <div className="container-fluid">
-                    <TableLoader />
+                    {pageHeader}
+                    <CommissionDetailsLoader />
                 </div>
             </div>
         );
@@ -75,6 +93,7 @@ export default function CommissionDetails() {
         return (
             <div className="page-content">
                 <div className="container-fluid">
+                    {pageHeader}
                     <ErrorPage />
                 </div>
             </div>
@@ -89,23 +108,7 @@ export default function CommissionDetails() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                {/* Header Section */}
-                <PageHeader 
-                    title="Commission Details" 
-                    breadcrumbs={[
-                        { label: 'Commissions', path: '/commissions' },
-                        { label: 'Details' }
-                    ]} 
-                >
-                    <div className="page-actions d-flex align-items-center gap-2 mt-0">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="btn btn-soft-secondary waves-effect"
-                        >
-                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                        </button>
-                    </div>
-                </PageHeader>
+                {pageHeader}
 
                 {/* Key Metrics Stats Row */}
                 <div className="row mb-4">
@@ -148,6 +151,52 @@ export default function CommissionDetails() {
                 <div className="row">
                     {/* Left Column: Main Information */}
                     <div className="col-lg-8">
+                        {/* Partner Information — same design as the client details page */}
+                        <div className="card partner-details-section p-0 mb-4">
+                            <div className="card-header partner-section-header bg-transparent border-bottom border-bottom-dashed d-flex align-items-center justify-content-between py-3 px-4">
+                                <div className="partner-section-title-wrap d-flex align-items-center gap-3">
+                                    {commission.partner_logo ? (
+                                        <img src={commission.partner_logo} alt="Partner Logo" className="partner-logo-img" />
+                                    ) : (
+                                        <div className="partner-logo-fallback">
+                                            <i className="ri-user-line"></i>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h5 className="partner-section-title mb-1">Partner Details</h5>
+                                        <p className="partner-section-subtitle mb-0">Partner this commission belongs to</p>
+                                    </div>
+                                </div>
+                                {commission.partner_id ? (
+                                    <Link to={`/partners/${commission.partner_id}`} className="btn btn-sm btn-soft-primary d-flex align-items-center gap-1 partner-profile-btn">
+                                        <i className="ri-external-link-line"></i> View Profile
+                                    </Link>
+                                ) : (
+                                    <span className="partner-status-badge">No Assigned Partner</span>
+                                )}
+                            </div>
+                            <div className="card-body partner-details-body p-4">
+                                <div className="partner-info-grid">
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Partner Name</span>
+                                        <span className="partner-info-val">{commission.partner_name || 'N/A'}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Company</span>
+                                        <span className="partner-info-val">{commission.partner_company_name || 'N/A'}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Phone</span>
+                                        <span className="partner-info-val">{commission.partner_phone_number || 'N/A'}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Email</span>
+                                        <span className="partner-info-val">{commission.partner_email || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Borrower Information */}
                         <div className="card border-0 shadow-sm mb-4">
                             <div className="card-header bg-transparent border-bottom">
@@ -215,85 +264,22 @@ export default function CommissionDetails() {
 
                     </div>
 
-                    {/* Right Column: Partner & Notes */}
+                    {/* Right Column: Payout, Commission Breakdown & Notes */}
                     <div className="col-lg-4">
-                        {/* Partner Information */}
-                        <div className="card border-0 shadow-sm mb-4">
-                            <div className="card-header bg-transparent border-bottom">
-                                <h5 className="card-title mb-0 d-flex align-items-center">
-                                    <i className="ri-building-line me-2 text-primary"></i>
-                                    Partner Information
-                                </h5>
-                            </div>
-                            <div className="card-body">
-                                <div className="d-flex align-items-center mb-3">
-                                    <div className="flex-shrink-0">
-                                        <div className="avatar-sm">
-                                            <div className="avatar-title bg-light text-primary rounded-circle fs-20">
-                                                {commission.partner_company_name ? commission.partner_company_name.charAt(0) : 'P'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex-grow-1 ms-3">
-                                        <Link to={`/partners/${commission.partner_id}`} className="text-reset text-decoration-none">
-                                            <h6 className="fs-15 mb-1 text-primary text-decoration-underline-hover">{commission.partner_company_name || 'N/A'}</h6>
-                                            <p className="text-muted mb-0 fs-13">{commission.partner_name}</p>
-                                        </Link>
-                                    </div>
-                                </div>
-                                <div className="mb-3">
-                                    <p className="text-muted mb-1 fs-12 text-uppercase fw-medium">Contact Details</p>
-                                    <ul className="list-unstyled mb-0 vstack gap-2 fs-13">
-                                        <li>
-                                            <i className="ri-mail-line me-2 text-muted align-middle"></i>
-                                            {commission.partner_email || 'N/A'}
-                                        </li>
-                                        <li>
-                                            <i className="ri-phone-line me-2 text-muted align-middle"></i>
-                                            {commission.partner_phone_number || 'N/A'}
-                                        </li>
-                                        {commission.partner_type && (
-                                            <li>
-                                                <i className="ri-star-line me-2 text-muted align-middle"></i>
-                                                <span className="badge bg-success-subtle text-success border">{commission.partner_type}</span>
-                                            </li>
-                                        )}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
 
-
-                        {/* Commission Notes */}
-                        <div className="card border-0 shadow-sm mb-4">
-                            <div className="card-header bg-transparent border-bottom">
-                                <h5 className="card-title mb-0 d-flex align-items-center">
-                                    <i className="ri-sticky-note-line me-2 text-primary"></i>
-                                    Commission Notes
-                                </h5>
-                            </div>
-                            <div className="card-body">
-                                {commission.commission_note ? (
-                                    <div className="alert alert-warning border-0 mb-0 py-3">
-                                        <div className="d-flex">
-                                            <div className="flex-grow-1 ms-3">
-                                                <p className="mb-0 fs-13" style={{ whiteSpace: 'pre-wrap' }}>
-                                                    {commission.commission_note}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-muted py-3">
-                                        <p className="mb-0 fs-13">No notes available.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        {/* Payout — to the partner, or the assigned user of a host-partner client (Admin View Only) */}
+                        {!isPartner && commission.payout && (
+                            <PayoutSection
+                                commissionId={commission.id}
+                                payout={commission.payout}
+                                currencySymbol={commission.currency_symbol}
+                                conversionRate={commission.conversion_rate}
+                            />
+                        )}
 
                         {/* Commission Breakdown (Admin View Only) */}
                         {!isPartner && (
-                            <div className="card border-0 shadow-sm">
+                            <div className="card border-0 shadow-sm mb-4">
                                 <div className="card-header bg-transparent border-bottom">
                                     <h5 className="card-title mb-0 d-flex align-items-center">
                                         <i className="ri-pie-chart-line me-2 text-primary"></i>
@@ -355,16 +341,7 @@ export default function CommissionDetails() {
                                                         </td>
                                                         <td className="text-end">{commission.partner_commission}%</td>
                                                         <td className="text-end fw-bold text-info">{formatCurrency(commission.partner_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
-                                                        <td className="text-end">
-                                                            {commission?.funding_status === FUNDING_APPLICATION_STATUS.CLOSED && commission?.commission_payment_status !== PAYMENT_STATUS_OPTIONS[0].value && (
-                                                                <button
-                                                                    className="btn btn-primary btn-sm waves-effect waves-light"
-                                                                    onClick={() => setShowPayoutModal(true)}
-                                                                >
-                                                                    <i className="ri-wallet-3-line align-middle me-1"></i> Pay
-                                                                </button>
-                                                            )}
-                                                        </td>
+                                                        <td></td>
                                                     </tr>
                                                 )}
                                             </tbody>
@@ -373,33 +350,36 @@ export default function CommissionDetails() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Commission Notes */}
+                        <div className="card border-0 shadow-sm mb-4">
+                            <div className="card-header bg-transparent border-bottom">
+                                <h5 className="card-title mb-0 d-flex align-items-center">
+                                    <i className="ri-sticky-note-line me-2 text-primary"></i>
+                                    Commission Notes
+                                </h5>
+                            </div>
+                            <div className="card-body">
+                                {commission.commission_note ? (
+                                    <div className="alert alert-warning border-0 mb-0 py-3">
+                                        <div className="d-flex">
+                                            <div className="flex-grow-1 ms-3">
+                                                <p className="mb-0 fs-13" style={{ whiteSpace: 'pre-wrap' }}>
+                                                    {commission.commission_note}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-muted py-3">
+                                        <p className="mb-0 fs-13">No notes available.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            {/* Payout Modal */}
-            {commission && (
-                <PayoutModal
-                    show={showPayoutModal}
-                    onHide={() => setShowPayoutModal(false)}
-                    loading={processPayoutMutation.isPending}
-                    commission={commission}
-                    onConfirm={(partnerMethod, note) => {
-                        processPayoutMutation.mutate(
-                            { id: commission.id, payload: { partner_payment_method: partnerMethod, note: note } },
-                            {
-                                onSuccess: () => {
-                                    toast.success('Payout processed successfully');
-                                    setShowPayoutModal(false);
-                                },
-                                onError: (error: any) => {
-                                    toast.error(error?.response?.data?.message || 'Failed to process payout');
-                                }
-                            }
-                        );
-                    }}
-                />
-            )}
         </div>
     );
 }

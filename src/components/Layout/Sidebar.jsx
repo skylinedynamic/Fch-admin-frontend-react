@@ -189,12 +189,15 @@ const menuItems = [
     icon: "ri-user-2-fill",
     label: "Employees",
     permission: "view employees",
+    // Details lives outside /employees, so NavLink can't infer it.
+    activePaths: ["/employee-details"],
   },
   {
     to: "/users",
     icon: "ri-user-3-fill",
     label: "Users",
     permission: "view users",
+    activePaths: ["/user-details"],
   },
   {
     to: "/payment-methods",
@@ -688,7 +691,12 @@ export default function Sidebar() {
                   <NavLink
                     end={item.exact}
                     className={({ isActive }) => {
-                      const isActiveState = !itemIsRestricted && isActive;
+                      // Routes that belong to this menu item but sit outside its
+                      // path, e.g. /employee-details under Employees.
+                      const onRelatedPath = (item.activePaths || []).some((path) =>
+                        location.pathname === path || location.pathname.startsWith(`${path}/`)
+                      );
+                      const isActiveState = !itemIsRestricted && (isActive || onRelatedPath);
                       return `${isActiveState ? "nav-link menu-link active" : "nav-link menu-link"} ${itemIsRestricted ? "locked-item-link" : ""}`;
                     }}
                     to={itemIsRestricted ? "#" : item.to}

@@ -37,6 +37,10 @@ export type Employee = {
   marital_status?: string | null
   no_of_children?: number | null
   image?: string | null
+
+  // Compensation ("Paid By") is not part of the employee record — it lives in
+  // its own table behind its own endpoints; see modules/compensation.
+
   [key: string]: unknown
 }
 

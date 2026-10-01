@@ -184,6 +184,10 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFre
         business_other_city: formData.business_other_city || '',
     };
 
+    // Read-only login state, shown with the email field — never sent back.
+    delete payload.pending_email;
+    delete payload.user_id;
+
     // Resolve business country code to phone prefix
     const businessPhoneInfo = getCountryPhoneInfo(formData.business_country);
     if (businessPhoneInfo) {

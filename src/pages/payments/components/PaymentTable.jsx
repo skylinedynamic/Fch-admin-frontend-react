@@ -55,7 +55,7 @@ export default function PaymentTable({
     };
 
     const nameBodyTemplate = (rowData) => {
-        return rowData.partner_name || rowData.borrower_name || '-';
+        return rowData.partner_name || rowData.borrower_name || rowData.name || '-';
     };
 
     const transactionTypeBodyTemplate = (rowData) => {
