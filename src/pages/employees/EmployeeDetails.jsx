@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { useIsHostPartner } from '../../lib/auth/useIsHostPartner';
 import { toast } from 'react-toastify';
 
 import {
@@ -42,6 +43,8 @@ export default function EmployeeDetails() {
   // Permission checks
   const canCreate = hasPermission('create employees');
   const canUpdate = hasPermission('update employees');
+  // Commission setup is only offered to the host partner.
+  const canManageCommission = useIsHostPartner();
 
   // State
   const user = useAuthStore((state) => state.user);
@@ -253,14 +256,14 @@ export default function EmployeeDetails() {
   // Compensation lives in its own table behind its own endpoint, so the
   // Commissions tab is loaded separately from the employee record.
   useEffect(() => {
-    if (!id) return;
+    if (!id || !canManageCommission) return;
 
     fetchEmployeeCompensation(id)
       .then((data) => {
         setEmployee((prev) => ({ ...prev, ...compensationRowsToFields(data?.paid_by, data?.compensations) }));
       })
       .catch((err) => console.error('Failed to fetch compensation', err));
-  }, [id]);
+  }, [id, canManageCommission]);
 
   // Validation (Disabled - Relying on backend validation)
   const validateField = (name, value) => {
@@ -578,7 +581,7 @@ export default function EmployeeDetails() {
   const handleSave = async () => {
     // Each tab saves only what it shows. A new employee is the exception:
     // compensation needs an employee id, so the first save writes both.
-    if (id && activeTab === TAB_COMMISSIONS) {
+    if (id && canManageCommission && activeTab === TAB_COMMISSIONS) {
       return handleSaveCompensation();
     }
 
@@ -676,7 +679,7 @@ export default function EmployeeDetails() {
         const res = await createEmployee(formData);
         const newEmployeeId = res.data?.employee?.id;
 
-        if (newEmployeeId) {
+        if (newEmployeeId && canManageCommission) {
           await saveEmployeeCompensation(newEmployeeId, compensationPayload);
         }
 
@@ -766,17 +769,19 @@ export default function EmployeeDetails() {
                       <i className="fas fa-home"></i> Personal information
                     </button>
                   </li>
-                  <li className="nav-item" role="presentation">
-                    <button
-                      type="button"
-                      className={`nav-link ${activeTab === TAB_COMMISSIONS ? 'active' : ''}`}
-                      onClick={() => setActiveTab(TAB_COMMISSIONS)}
-                      role="tab"
-                      aria-selected={activeTab === TAB_COMMISSIONS}
-                    >
-                      <i className="ri-percent-line"></i> Commissions
-                    </button>
-                  </li>
+                  {canManageCommission && (
+                    <li className="nav-item" role="presentation">
+                      <button
+                        type="button"
+                        className={`nav-link ${activeTab === TAB_COMMISSIONS ? 'active' : ''}`}
+                        onClick={() => setActiveTab(TAB_COMMISSIONS)}
+                        role="tab"
+                        aria-selected={activeTab === TAB_COMMISSIONS}
+                      >
+                        <i className="ri-percent-line"></i> Commissions
+                      </button>
+                    </li>
+                  )}
                 </ul>
               </div>
 
@@ -817,17 +822,19 @@ export default function EmployeeDetails() {
                       />
                     )}
                   </div>
-                  <div className={`tab-pane ${activeTab === TAB_COMMISSIONS ? 'active show' : ''}`} id="commissions" role="tabpanel">
-                    {loading ? (
-                      <FormLoader count={4} />
-                    ) : (
-                      <CommissionsSection
-                        values={employee}
-                        errors={errors}
-                        onChange={handleChange}
-                      />
-                    )}
-                  </div>
+                  {canManageCommission && (
+                    <div className={`tab-pane ${activeTab === TAB_COMMISSIONS ? 'active show' : ''}`} id="commissions" role="tabpanel">
+                      {loading ? (
+                        <FormLoader count={4} />
+                      ) : (
+                        <CommissionsSection
+                          values={employee}
+                          errors={errors}
+                          onChange={handleChange}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
