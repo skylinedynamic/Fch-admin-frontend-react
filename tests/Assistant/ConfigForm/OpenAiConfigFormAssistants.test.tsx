@@ -1,9 +1,37 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import type { ReactNode } from 'react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen, waitFor } from '../../test-utils'
 import { server } from '../../mocks/server'
 import OpenAiConfigForm from '../../../src/pages/settings/components/OpenAiConfigForm'
+
+// The real confirmation modal is a Bootstrap modal: closing it starts a timed
+// hide animation, and when a test ends (unmounting it) before that timer
+// fires, Bootstrap touches an element that no longer exists and throws
+// outside any test. What these tests care about is when the dialog is shown,
+// what it says and what its two buttons do — so a plain stand-in is used.
+vi.mock('../../../src/components/Common/Modals/DynamicActionModal', () => ({
+    default: (props: {
+        show: boolean
+        title: string
+        description: ReactNode
+        warningText?: string
+        confirmText?: string
+        cancelText?: string
+        onConfirm: () => void
+        onClose: () => void
+    }) =>
+        props.show ? (
+            <div role="dialog" aria-label={props.title}>
+                <h4>{props.title}</h4>
+                <div>{props.description}</div>
+                {props.warningText && <p>{props.warningText}</p>}
+                <button type="button" onClick={props.onClose}>{props.cancelText ?? 'Cancel'}</button>
+                <button type="button" onClick={props.onConfirm}>{props.confirmText ?? 'Confirm'}</button>
+            </div>
+        ) : null,
+}))
 
 /**
  * The Support Assistants part of the OpenAI Configuration form: the Borrower
@@ -183,7 +211,7 @@ describe('OpenAiConfigForm — support assistants', () => {
 
         expect(borrowerSwitch).toBeChecked()
         // The confirmation dialog stays closed (it is only for disabling).
-        expect(document.querySelector('.modal.show')).toBeNull()
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
         expect(screen.queryByText(/^Enable the /)).not.toBeInTheDocument()
 
         await save()
