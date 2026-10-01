@@ -8,38 +8,24 @@ import supportAvatar from '../../../../assets/images/support-avatar.svg';
 import '../../../../assets/css/support-chat-widget.css';
 
 /**
- * WLP portal navigation allowlist (mirrors config/assistant.php navigation.wlp_support and WLP System Prompt v1.3.2).
+ * WLP portal navigation allowlist.
  *
  * The backend sends a "Take Me There" action as { id: 'navigate_<route_key>', path }
- * after validating the model's navigation.route_key against ITS approved map.
- * DEFAULT_ROUTES is the built-in fallback; the live map comes from the config endpoint.
- * This is the frontend's own matching allowlist: a button is rendered, and
- * navigation performed, ONLY when the route_key is listed here AND the path the
- * backend sent equals the path listed here. The destination is always the
+ * after resolving it against ITS approved map. No destinations are built into
+ * this app: the allowlist is the live map from the config endpoint (managed in
+ * Settings > OpenAI Configuration), and it starts empty. A button is rendered,
+ * and navigation performed, ONLY when the route_key is in that map AND the path
+ * the backend sent equals the path listed there. The destination is always the
  * route_key's own route - never the page the user is currently on, never a
  * default, and never a path taken from model text.
  */
-const DEFAULT_ROUTES: Record<string, string> = {
-    leads: '/leads',
-    clients: '/clients',
-    pre_qualification: '/intake-review/pre-qualification',
-    funding_request: '/intake-review/funding-request',
-    funding_application: '/intake-review/funding-application',
-    commissions: '/commissions',
-    invoices: '/invoices',
-    payments: '/payments',
-    subscriptions: '/subscriptions',
-    upcoming_billing: '/billing',
-    appointments: '/appointments',
-    task_reminders: '/reminders',
-    resources: '/resources',
-    employees: '/employees',
-    users: '/users',
-    roles_permissions: '/roles-permissions',
-    embedded_form_configuration: '/embed-form/settings',
-    embedded_form_loan_applications: '/embed-form/loan-applications',
-    settings: '/settings',
-};
+const NO_ROUTES: Record<string, string> = {};
+
+/** Fired on window by the Settings form after the assistant settings are saved. */
+export const ASSISTANT_SETTINGS_CHANGED = 'assistant-settings-changed';
+
+/** How often an open page re-asks whether the assistant is still enabled. */
+const AVAILABILITY_RECHECK_MS = 10000;
 
 const ACTION_ID_PREFIX = 'navigate_';
 
@@ -238,25 +224,24 @@ function ExpandCollapseIcon({ expanded }: { expanded: boolean }) {
     );
 }
 
-// Shown only until the real, live-derived config arrives — see the
-// fetchAssistantConfig() effect below. Both are computed by the backend
-// straight from the current system prompt on every fetch, so they update
-// automatically whenever a host edits the prompt — never hardcoded here,
-// and never saved anywhere.
-const FALLBACK_WELCOME_SUBTITLE = 'Ask a question and I will do my best to help.';
-const FALLBACK_SUGGESTIONS = ['How can you help me?'];
-
 export default function SupportChatWidget() {
     const navigate = useNavigate();
     const currentUser = useAuthStore((state: any) => state.user);
     const userName = currentUser?.name || currentUser?.first_name || 'there';
-    // Approved route_key -> path map served by the backend (falls back to the built-in defaults).
-    const [routes, setRoutes] = useState<Record<string, string>>(DEFAULT_ROUTES);
+    // Approved route_key -> path map served by the backend; empty until it loads.
+    const [routes, setRoutes] = useState<Record<string, string>>(NO_ROUTES);
     const [open, setOpen] = useState(false);
+    // Whether the host has this assistant enabled (with an agent to run). The
+    // whole widget — floating button included — stays hidden until the backend
+    // says so, and when it is disabled or the check fails.
+    const [available, setAvailable] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const [messages, setMessages] = useState<ChatBubble[]>([]);
-    const [welcomeSubtitle, setWelcomeSubtitle] = useState(FALLBACK_WELCOME_SUBTITLE);
-    const [suggestions, setSuggestions] = useState<string[]>(FALLBACK_SUGGESTIONS);
+    // Both come from the backend, which writes them from the agent's current
+    // instructions on the OpenAI platform. Nothing is built in: until they
+    // arrive (or if there are none) the widget shows neither.
+    const [welcomeSubtitle, setWelcomeSubtitle] = useState('');
+    const [suggestions, setSuggestions] = useState<string[]>([]);
     const [input, setInput] = useState('');
     const [sending, setSending] = useState(false);
     const [loadingHistory, setLoadingHistory] = useState(false);
@@ -287,20 +272,62 @@ export default function SupportChatWidget() {
     }, [open]);
 
     // Re-fetched on every open, not just the first — the backend live-derives
-    // both fields straight from the current system prompt on each call (see
-    // SupportAssistantService::deriveWidgetIntro()), so a host's prompt edit
+    // both fields from the agent's current instructions on the OpenAI platform
+    // (see SupportAssistantService::widgetIntro()), so an edit to the agent
     // shows up here without a page reload and without any separate save step.
+    useEffect(() => {
+        let cancelled = false;
+
+        const check = () => {
+            // No point asking while the tab is in the background.
+            if (document.visibilityState === 'hidden') return;
+
+            fetchAssistantConfig()
+                .then((response) => {
+                    if (cancelled) return;
+                    setAvailable(!!response.data.is_ready);
+                    // Switched off while the panel was open: close it too.
+                    if (!response.data.is_ready) setOpen(false);
+                })
+                .catch(() => {
+                    if (!cancelled) setAvailable(false);
+                });
+        };
+
+        check();
+
+        // A host can switch the assistant on or off at any time, from another
+        // browser. Keep asking (the check is cheap and never calls OpenAI) so
+        // the chat appears or disappears here without a page reload: on a
+        // short timer, and at once when the user comes back to the tab.
+        const timer = window.setInterval(check, AVAILABILITY_RECHECK_MS);
+        window.addEventListener('focus', check);
+        document.addEventListener('visibilitychange', check);
+        // The Settings form fires this after saving, so the host's own screen
+        // updates immediately.
+        window.addEventListener(ASSISTANT_SETTINGS_CHANGED, check);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+            window.removeEventListener('focus', check);
+            document.removeEventListener('visibilitychange', check);
+            window.removeEventListener(ASSISTANT_SETTINGS_CHANGED, check);
+        };
+    }, []);
+
     useEffect(() => {
         if (!open) return;
 
-        fetchAssistantConfig()
+        fetchAssistantConfig(true)
             .then((response) => {
-                if (response.data.navigation && Object.keys(response.data.navigation).length > 0) setRoutes(response.data.navigation);
-                if (response.data.welcome_subtitle) setWelcomeSubtitle(response.data.welcome_subtitle);
-                if (response.data.quick_suggestions?.length > 0) setSuggestions(response.data.quick_suggestions);
+                setAvailable(!!response.data.is_ready);
+                setRoutes(response.data.navigation && !Array.isArray(response.data.navigation) ? response.data.navigation : NO_ROUTES);
+                setWelcomeSubtitle(response.data.welcome_subtitle || '');
+                setSuggestions(response.data.quick_suggestions || []);
             })
             .catch(() => {
-                // Falls back to the generic defaults — never left blank.
+                // Nothing to show: the welcome card stays without a subtitle or suggestions.
             });
     }, [open]);
 
@@ -428,6 +455,9 @@ export default function SupportChatWidget() {
         submitMessage(suggestionText);
     };
 
+    // Disabled in Settings (or no agent saved): no chat at all.
+    if (!available) return null;
+
     return (
         <>
             {!open && (
@@ -524,11 +554,14 @@ export default function SupportChatWidget() {
                                             <div className="fs-12 text-white-50">Welcome to our live chat!</div>
                                         </div>
                                     </div>
-                                    <p className="fs-12 mb-0 text-white support-chat-welcome-subtitle">
-                                        How can I help you today? {welcomeSubtitle}
-                                    </p>
+                                    {welcomeSubtitle && (
+                                        <p className="fs-12 mb-0 text-white support-chat-welcome-subtitle">
+                                            {welcomeSubtitle}
+                                        </p>
+                                    )}
                                 </div>
 
+                                {suggestions.length > 0 && (
                                 <div className="d-flex flex-column gap-2 my-auto pt-2">
                                     <span className="text-muted fs-11 fw-semibold text-uppercase px-1 support-chat-suggestions-label">
                                         Suggested Questions
@@ -545,6 +578,7 @@ export default function SupportChatWidget() {
                                         </button>
                                     ))}
                                 </div>
+                                )}
                             </div>
                         ) : (
                             messages.map((m) => (
