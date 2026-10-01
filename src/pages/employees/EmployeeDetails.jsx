@@ -23,6 +23,7 @@ import { validateRequired, validateEmail, validatePhone } from '../../components
 
 import EmployeeForm from './components/EmployeeForm';
 import CommissionsSection from '../../components/Compensation/CommissionsSection';
+import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
 import DepartmentModal from './components/DepartmentModal';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
@@ -52,6 +53,7 @@ export default function EmployeeDetails() {
   const [departments, setDepartments] = useState([]);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [activeTab, setActiveTab] = useState(TAB_PERSONAL);
+  const [pendingEmail, setPendingEmail] = useState(null);
 
   // User Limit States
   const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
@@ -236,6 +238,7 @@ export default function EmployeeDetails() {
             image: data.image || null
           };
           setEmployee((prev) => ({ ...prev, ...normalizedData }));
+          setPendingEmail(data.user?.pending_email || null);
 
           // Set profile image matches partner pattern
           if (data.image) {
@@ -658,8 +661,17 @@ export default function EmployeeDetails() {
       };
 
       if (id) {
-        await updateEmployee(id, formData);
+        const res = await updateEmployee(id, formData);
         toast.success('Employee updated successfully');
+
+        // With a login, a new email isn't applied until it's confirmed, so show
+        // the one still in effect alongside the pending one.
+        const savedEmail = res?.data?.employee?.email;
+        const savedPending = res?.data?.user?.pending_email || null;
+        if (savedEmail !== undefined) {
+          setEmployee((prev) => ({ ...prev, email: savedEmail }));
+        }
+        setPendingEmail(savedPending);
       } else {
         const res = await createEmployee(formData);
         const newEmployeeId = res.data?.employee?.id;
@@ -794,6 +806,14 @@ export default function EmployeeDetails() {
                         isPurchaseFlow={isPurchaseFlow}
                         purchaseMonths={limitData.months}
                         purchasePrice={limitData.totalPrice}
+                        emailNotice={
+                          <PendingEmailNotice
+                            userId={employee.user?.id}
+                            pendingEmail={pendingEmail}
+                            onChange={setPendingEmail}
+                            canManage={canUpdate}
+                          />
+                        }
                       />
                     )}
                   </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
@@ -478,21 +479,28 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // 5. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
-            console.log('[ClientInfoSection] Starting save...', { clientId, formData });
             const payload = mapClientUpdatePayload(formData, isHost, wasFreeTrial);
-            console.log('[ClientInfoSection] Mapped payload:', payload);
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
                 updateMutation.mutate({ id: clientId, data: payload }, {
                     onSuccess: (data) => {
-                        console.log('[ClientInfoSection] Save SUCCESS!', data);
                         toast.success("Client personal details updated successfully");
+
+                        // With a login, a new email isn't applied until it's
+                        // confirmed; show the one still in effect alongside the
+                        // pending one (this form only syncs from the API once).
+                        const saved = (data as any)?.data;
+                        if (saved) {
+                            setFormData(prev => ({ ...prev, email: saved.email ?? prev.email, pending_email: saved.pending_email ?? null }));
+                        }
                         if (onSaveSuccess) onSaveSuccess();
                         resolve();
                     },
                     onError: (error: any) => {
-                        console.error("[ClientInfoSection] Save ERROR:", error);
+                        // Status only: the error object carries the request
+                        // payload (config.data) and response — client PII.
+                        console.error('[ClientInfoSection] Save failed', error?.response?.status);
 
                         const responseData = error?.response?.data;
                         const isValidationError = error?.response?.status === 422;
@@ -715,6 +723,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="email" className="form-label">Email Address <span className="text-danger">*</span></label>
+                        {clientId && (
+                            <PendingEmailNotice
+                                userId={formData.user_id}
+                                pendingEmail={formData.pending_email}
+                                onChange={(value) => setFormData(prev => ({ ...prev, pending_email: value }))}
+                            />
+                        )}
                         <input
                             type="email"
                             className={`form-control ${errors.email ? 'is-invalid' : ''}`}

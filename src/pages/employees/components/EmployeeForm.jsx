@@ -25,7 +25,8 @@ export default function EmployeeForm({
     loadingLimitCheck,
     isPurchaseFlow = false,
     purchaseMonths = 1,
-    purchasePrice = 0
+    purchasePrice = 0,
+    emailNotice = null
 }) {
     return (
         <form onSubmit={(e) => e.preventDefault()}>
@@ -41,6 +42,7 @@ export default function EmployeeForm({
                     onPhonePrefixChange={onPhonePrefixChange}
                     onOpenFileManager={onOpenFileManager}
                     employeeId={employeeId}
+                    emailNotice={emailNotice}
                 />
 
                 <AddressSection

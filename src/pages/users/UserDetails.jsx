@@ -13,6 +13,7 @@ import {
   compensationRowsToFields
 } from '../../modules/compensation';
 import CommissionsSection from '../../components/Compensation/CommissionsSection';
+import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
 import FormLoader from '../../components/Loader/FormLoader';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
@@ -33,6 +34,7 @@ export default function UserDetails() {
   const [roles, setRoles] = useState([]);
   const [activeTab, setActiveTab] = useState(TAB_ACCOUNT);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState(null);
 
   const [values, setValues] = useState({
     name: '',
@@ -71,6 +73,7 @@ export default function UserDetails() {
           role_id: data.role_id != null ? String(data.role_id) : '',
           status: data.status || ''
         }));
+        setPendingEmail(data.pending_email || null);
       })
       .catch((err) => console.error('Failed to fetch user', err))
       .finally(() => setLoading(false));
@@ -162,7 +165,7 @@ export default function UserDetails() {
 
     setIsSaving(true);
     try {
-      await updateUser(id, {
+      const updated = await updateUser(id, {
         name: values.name,
         email: values.email,
         phone_number: values.phone_number,
@@ -176,7 +179,10 @@ export default function UserDetails() {
 
       toast.success('User updated successfully');
       setShowPasswordFields(false);
-      setValues((prev) => ({ ...prev, new_password: '', confirm_password: '' }));
+      // A new email isn't applied until it's confirmed, so show the one that
+      // is still in effect alongside the pending one.
+      setValues((prev) => ({ ...prev, email: updated?.email ?? prev.email, new_password: '', confirm_password: '' }));
+      setPendingEmail(updated?.pending_email || null);
     } catch (error) {
       applySaveError(error, 'Failed to update user');
     } finally {
@@ -303,6 +309,12 @@ export default function UserDetails() {
                           <div className="col-lg-6">
                             <div className="mb-3">
                               <label className="form-label">Email Address <span className="text-danger">*</span></label>
+                              <PendingEmailNotice
+                                userId={id}
+                                pendingEmail={pendingEmail}
+                                onChange={setPendingEmail}
+                                canManage={canUpdate}
+                              />
                               <input
                                 type="email"
                                 name="email"

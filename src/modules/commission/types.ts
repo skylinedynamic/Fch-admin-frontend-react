@@ -70,9 +70,43 @@ export interface CommissionDetail extends CommissionBase {
     partner_email: string;
     partner_phone_number: string;
     partner_type: string;
+    partner_logo: string | null;
+
+    /** Clients of the host partner only; null otherwise. */
+    payout: CommissionPayout | null;
 }
 
-// Union type for backward compatibility where generic usage exists (optional)
+/** Who a commission is paid out to: the partner whose client it is, or the user assigned to a host-partner client. */
+export interface CommissionPayee {
+    type: 'partner' | 'user';
+    id: number | null;
+    name: string;
+    email: string | null;
+}
+
+/** The payout of a commission — the same shape whoever is paid. */
+export interface CommissionPayout {
+    payee: CommissionPayee | null;
+    /** How the user is paid (host-partner clients); null for a partner. */
+    paid_by: string | null;
+    /** The compensation row that applied: 'Funding', or 'All' services. Users only. */
+    service: string | null;
+    payout_type: string | null;
+    /** A percentage for a Commission, the amount itself for a Flat Amount. Null once paid. */
+    rate: number | null;
+    /** What the percentage is taken from: 'Admin Commission' or 'Total Commission'. Null once paid. */
+    base_label: string | null;
+    base_amount: number | null;
+    /** Null when there's nothing to pay (no payee, not paid per deal, no rate). Once paid, what the invoice says. */
+    amount: number | null;
+    is_paid: boolean;
+    paid_at: string | null;
+    /** How it was paid (Cash, Cheque…), once paid. */
+    payment_method: string | null;
+    /** True when Make Payment is allowed: something to pay, not paid yet, funding closed. */
+    can_pay: boolean;
+}
+
 export type Commission = CommissionListItem | CommissionDetail;
 
 export interface CommissionFilters {
