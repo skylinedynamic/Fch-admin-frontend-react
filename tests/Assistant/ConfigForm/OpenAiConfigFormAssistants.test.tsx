@@ -131,8 +131,10 @@ describe('OpenAiConfigForm — support assistants', () => {
 
         await waitFor(() => expect(calls).toHaveLength(3))
         expect(calls.map((c) => c.to)).toEqual(['openai', 'borrower_support', 'wlp_support'])
-        expect(calls[1].body).toEqual({ agent_id: 'agent_borrower', enabled: true })
-        expect(calls[2].body).toEqual({ agent_id: 'agent_wlp', enabled: true })
+        // Neither assistant has a knowledge base in this fixture, so the empty
+        // list goes with the save: the host is submitting the form as it stands.
+        expect(calls[1].body).toEqual({ agent_id: 'agent_borrower', enabled: true, vector_stores: [] })
+        expect(calls[2].body).toEqual({ agent_id: 'agent_wlp', enabled: true, vector_stores: [] })
     })
 
     it('requires an Agent ID for an enabled assistant and saves nothing', async () => {
@@ -172,8 +174,8 @@ describe('OpenAiConfigForm — support assistants', () => {
         await save()
 
         await waitFor(() => expect(calls).toHaveLength(3))
-        expect(calls[1].body).toEqual({ agent_id: 'agent_borrower', enabled: false })
-        expect(calls[2].body).toEqual({ agent_id: null, enabled: false })
+        expect(calls[1].body).toEqual({ agent_id: 'agent_borrower', enabled: false, vector_stores: [] })
+        expect(calls[2].body).toEqual({ agent_id: null, enabled: false, vector_stores: [] })
     })
 
     it('asks the host to confirm before disabling, and says who loses the chat', async () => {
@@ -217,7 +219,7 @@ describe('OpenAiConfigForm — support assistants', () => {
         await save()
 
         await waitFor(() => expect(calls).toHaveLength(3))
-        expect(calls[1].body).toEqual({ agent_id: 'agent_borrower', enabled: true })
+        expect(calls[1].body).toEqual({ agent_id: 'agent_borrower', enabled: true, vector_stores: [] })
     })
 
     it("shows the server's validation message under the assistant it belongs to", async () => {
