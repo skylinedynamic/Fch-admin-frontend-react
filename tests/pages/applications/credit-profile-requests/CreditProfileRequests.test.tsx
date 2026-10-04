@@ -31,13 +31,13 @@ const row = {
   },
 }
 
-const serveList = () =>
+const serveList = (rows: unknown[] = [row]) =>
   server.use(
     http.post('*/admin/credit-profile-requests', () =>
       HttpResponse.json({
         status: true,
         message: 'ok',
-        data: { current_page: 1, data: [row], total: 1, per_page: 10, last_page: 1 },
+        data: { current_page: 1, data: rows, total: rows.length, per_page: 10, last_page: 1 },
       }),
     ),
   )
@@ -63,5 +63,20 @@ describe('Request Credit Profile list', () => {
 
     const cell = await screen.findByText('Noel Holdings LLC')
     expect(within(cell.closest('tr') as HTMLElement).getByText('Giselle Indigo Noel')).toBeInTheDocument()
+  })
+
+  it('shows whether each request is still pending', async () => {
+    serveList([
+      { ...row, id: 7, request_status: 'pending' },
+      { ...row, id: 8, first_name: 'Done', middle_name: null, request_status: 'completed' },
+    ])
+    renderWithProviders(<CreditProfileRequests />)
+
+    const pendingRow = (await screen.findByText('Giselle Indigo Noel')).closest('tr') as HTMLElement
+    const doneRow = screen.getByText('Done Noel').closest('tr') as HTMLElement
+
+    expect(within(pendingRow).getByText('Pending')).toBeInTheDocument()
+    expect(within(doneRow).getByText('Completed')).toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader').map((h) => h.textContent?.trim())).toContain('Status')
   })
 })

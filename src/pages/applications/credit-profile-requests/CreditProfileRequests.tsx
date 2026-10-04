@@ -5,6 +5,7 @@ import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { useCreditProfileRequests } from '../../../modules/credit-profile-request';
+import { CREDIT_REQUEST_STATUS_DISPLAY } from '../../../config/creditProfileRequest';
 import type { CreditProfileRequest } from '../../../modules/credit-profile-request';
 
 export default function CreditProfileRequests() {
@@ -78,6 +79,16 @@ export default function CreditProfileRequests() {
         return <span className="fw-medium text-dark">{businessName}</span>;
     };
 
+    const statusBodyTemplate = (rowData: CreditProfileRequest) => {
+        const display = rowData.request_status ? CREDIT_REQUEST_STATUS_DISPLAY[rowData.request_status] : null;
+        if (!display) return <span className="text-muted">—</span>;
+        return (
+            <span className={`badge fs-12 ${display.badgeClass}`}>
+                <i className={`${display.icon} align-middle me-1`}></i>{display.label}
+            </span>
+        );
+    };
+
     const applicantNameBodyTemplate = (rowData: CreditProfileRequest) => {
         const middle = rowData.middle_name ? ` ${rowData.middle_name}` : '';
         return <span className="fw-medium">{`${rowData.first_name}${middle} ${rowData.last_name}`}</span>;
@@ -149,7 +160,7 @@ export default function CreditProfileRequests() {
                                 </form>
 
                                 {loading ? (
-                                    <TableLoader rows={10} columns={new Array(6).fill({ style: { minWidth: '100px' } })} />
+                                    <TableLoader rows={10} columns={new Array(7).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
@@ -182,6 +193,7 @@ export default function CreditProfileRequests() {
                                             <Column header="Phone" field="phone" sortable style={{ minWidth: '140px' }} />
                                             <Column header="SSN" field="ssn" body={ssnBodyTemplate} style={{ minWidth: '120px' }} />
                                             <Column header="Request Date" field="created_at" body={dateBodyTemplate} sortable style={{ minWidth: '130px' }} />
+                                            <Column header="Status" field="request_status" body={statusBodyTemplate} style={{ minWidth: '120px' }} />
                                         </DataTable>
                                     </div>
                                 )}

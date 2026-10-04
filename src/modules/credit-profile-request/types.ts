@@ -1,3 +1,5 @@
+import type { CreditRequestStatus } from '../../config/creditProfileRequest';
+
 export interface CreditProfileRequestBorrower {
     id: number;
     business_name: string | null;
@@ -33,6 +35,8 @@ export interface CreditProfileRequest {
     created_at: string;
     updated_at: string;
     borrower?: CreditProfileRequestBorrower;
+    /** List only: pending until the client's latest request has been pulled. */
+    request_status?: CreditRequestStatus | null;
 }
 
 export interface CreditProfileRequestMeta {
