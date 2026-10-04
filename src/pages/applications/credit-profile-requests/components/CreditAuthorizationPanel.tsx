@@ -12,6 +12,12 @@ interface Props {
      * host partner, which is what hides this panel.
      */
     rows?: CreditAuthorization[];
+    /**
+     * Latest iSoftPull pull, worked out and formatted by the API in the
+     * viewer's time zone. Not derived from `rows` - their formatted times
+     * ("Sep 16, 2026 02:30 AM") do not sort as text.
+     */
+    lastPulledAt?: string | null;
 }
 
 /**
@@ -22,7 +28,7 @@ interface Props {
  * device and exist to prove the platform's own permissible purpose. Anyone else
  * is served none, and sees nothing here rather than an error.
  */
-export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
+export default function CreditAuthorizationPanel({ borrowerId, rows, lastPulledAt }: Props) {
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
     const [showAll, setShowAll] = useState(false);
 
@@ -54,7 +60,7 @@ export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
     return (
         <div className="card border-0 shadow-sm mb-4">
             <div className="card-header bg-transparent border-bottom py-3">
-                <div className="d-flex align-items-center gap-2">
+                <div className="d-flex align-items-center gap-2 flex-wrap">
                     <div className="rounded bg-primary-subtle p-2">
                         <i className="ri-shield-check-line text-primary fs-16" />
                     </div>
@@ -63,6 +69,15 @@ export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
                         <div className="text-muted fs-12">
                             Proof the client authorized each credit pull, for iSoftPull
                         </div>
+                    </div>
+                    <div className="ms-auto text-muted fs-12">
+                        <i className="ri-time-line me-1 align-middle" />
+                        <span>
+                            Last pulled from iSoftPull:{' '}
+                            <span className="fw-semibold text-dark">
+                                {lastPulledAt ? lastPulledAt : 'never'}
+                            </span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -77,15 +92,18 @@ export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
                     </div>
                 ) : (
                     <>
+                        {/* Times arrive already converted to the viewer's time zone
+                            by the API. The downloaded PDF keeps UTC, because it is
+                            the evidence record. */}
                         <div className="table-responsive">
                             <table className="table table-sm align-middle mb-0 fs-13">
                                 <thead>
                                     <tr>
-                                        <th>Agreed (UTC)</th>
+                                        <th>Agreed</th>
                                         <th>Version</th>
                                         <th>Consents</th>
                                         <th>IP</th>
-                                        <th>iSoftPull txn</th>
+                                        <th>Pulled</th>
                                         <th className="text-end">PDF</th>
                                     </tr>
                                 </thead>
@@ -93,9 +111,7 @@ export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
                                     {displayedRows.map((row) => (
                                         <tr key={row.id}>
                                             <td>
-                                                {row.consented_at
-                                                    ? row.consented_at.replace('T', ' ').slice(0, 19)
-                                                    : '—'}
+                                                {row.consented_at ? row.consented_at : '—'}
                                             </td>
                                             <td>{row.authorization_version}</td>
                                             <td>
@@ -114,8 +130,10 @@ export default function CreditAuthorizationPanel({ borrowerId, rows }: Props) {
                                             </td>
                                             <td>{row.ip_address || '—'}</td>
                                             <td>
-                                                {row.isoftpull_transaction_id || (
-                                                    <span className="text-muted">not recorded</span>
+                                                {row.pulled_at ? (
+                                                    row.pulled_at
+                                                ) : (
+                                                    <span className="text-muted">not pulled yet</span>
                                                 )}
                                             </td>
                                             <td className="text-end">
