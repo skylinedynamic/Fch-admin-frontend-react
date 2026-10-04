@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { Dropdown } from 'primereact/dropdown';
 import { fetchOpenAiConfig, fetchOpenAiModels, saveOpenAiConfig } from '../../../modules/settings/services';
 import { fetchAssistantConfigs, saveAssistantSettings } from '../../../modules/assistant-config/services';
-import type { AssistantConfig, AssistantType } from '../../../modules/assistant-config/types';
+import type { AssistantConfig, AssistantType, AssistantVectorStore } from '../../../modules/assistant-config/types';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
 import { ASSISTANT_SETTINGS_CHANGED } from '../../../components/Common/ChatWidget/SupportChatWidget';
 import { OpenAiConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
@@ -46,21 +46,47 @@ const ASSISTANTS: Array<{ type: AssistantType; label: string; audience: string; 
 ];
 
 const AGENT_ID_PATTERN = /^agent_[A-Za-z0-9]+$/;
+const VECTOR_STORE_ID_PATTERN = /^vs_[A-Za-z0-9]+$/;
+
+/** Mirrors the server's own limit on vector stores per assistant. */
+const MAX_VECTOR_STORES = 8;
+
+/** A repeater row. Blank rows are dropped on save rather than refused. */
+const filledStores = (stores: AssistantVectorStore[]): AssistantVectorStore[] =>
+    stores.map(s => ({ ...s, id: s.id.trim() })).filter(s => s.id !== '');
 
 interface AssistantField {
     agent_id: string;
     enabled: boolean;
+    /**
+     * The master switch for this assistant's knowledge base. Off hides the
+     * repeater and sends no store at all, so the assistant falls back to
+     * whatever the agent itself is configured with — without discarding the
+     * IDs already entered, which is what makes it safe to flip back on.
+     */
+    stores_enabled: boolean;
+    /** The repeater rows, in the order the host arranged them. */
+    vector_stores: AssistantVectorStore[];
     /** Masked by default, like the API key; the eye button reveals it. */
     visible: boolean;
 }
 
 const emptyAssistants = (): Record<AssistantType, AssistantField> => ({
-    borrower_support: { agent_id: '', enabled: true, visible: false },
-    wlp_support: { agent_id: '', enabled: true, visible: false },
+    borrower_support: { agent_id: '', enabled: true, stores_enabled: false, vector_stores: [], visible: false },
+    wlp_support: { agent_id: '', enabled: true, stores_enabled: false, vector_stores: [], visible: false },
 });
 
 /** Error key for an assistant's Agent ID field, e.g. "agent_id.borrower_support". */
 const agentErrorKey = (type: AssistantType): string => `agent_id.${type}`;
+
+/** Error key for an assistant's Vector Store IDs field. */
+const storeErrorKey = (type: AssistantType): string => `vector_store_ids.${type}`;
+
+/**
+ * Error key for one repeater row, so a single bad ID marks only its own field
+ * instead of reddening every row in the list.
+ */
+const storeRowErrorKey = (type: AssistantType, index: number): string => `vector_store_ids.${type}.${index}`;
 
 const OpenAiConfigForm: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
@@ -131,7 +157,18 @@ const OpenAiConfigForm: React.FC = () => {
 
             list.forEach((c) => {
                 if (next[c.assistant_type]) {
-                    next[c.assistant_type] = { agent_id: c.agent_id || '', enabled: c.is_enabled ?? true, visible: false };
+                    const stores = (c.vector_stores || []).map(s => ({ ...s }));
+
+                    next[c.assistant_type] = {
+                        agent_id: c.agent_id || '',
+                        enabled: c.is_enabled ?? true,
+                        // Open when something is actually being searched. Stores
+                        // that are all switched off read as "knowledge base off",
+                        // which is what the host left behind.
+                        stores_enabled: stores.some(s => s.enabled),
+                        vector_stores: stores,
+                        visible: false,
+                    };
                 }
             });
 
@@ -149,6 +186,63 @@ const OpenAiConfigForm: React.FC = () => {
             setErrors(prev => ({ ...prev, [agentErrorKey(type)]: null }));
         }
     };
+
+    /**
+     * Replaces the repeater rows and clears every error standing against the
+     * list, including the per-row ones — the rows have shifted, so an error
+     * pinned to row 2 no longer describes whatever now sits at row 2.
+     */
+    const updateStores = (type: AssistantType, stores: AssistantVectorStore[]) => {
+        setAssistants(prev => ({ ...prev, [type]: { ...prev[type], vector_stores: stores } }));
+        clearStoreErrors(type);
+    };
+
+    const clearStoreErrors = (type: AssistantType) => {
+        setErrors(prev => {
+            const next = { ...prev };
+            Object.keys(next)
+                .filter(key => key === storeErrorKey(type) || key.startsWith(`${storeErrorKey(type)}.`))
+                .forEach(key => { next[key] = null; });
+
+            return next;
+        });
+    };
+
+    const addStore = (type: AssistantType) =>
+        updateStores(type, [...assistants[type].vector_stores, { id: '', enabled: true }]);
+
+    /**
+     * The master switch. Turning it on opens the form with a row ready to type
+     * into. Turning it off keeps every ID — only the searching stops.
+     */
+    const toggleStores = (type: AssistantType, on: boolean) => {
+        const current = assistants[type].vector_stores;
+
+        setAssistants(prev => ({
+            ...prev,
+            [type]: {
+                ...prev[type],
+                stores_enabled: on,
+                vector_stores: on && current.length === 0 ? [{ id: '', enabled: true }] : current,
+            },
+        }));
+
+        clearStoreErrors(type);
+    };
+
+    /**
+     * What this assistant actually searches. Every ID is searched while the
+     * master switch is on, so the switch alone decides it — there is no
+     * second, per-row state to keep in step with it.
+     */
+    const storesToSave = (field: AssistantField): AssistantVectorStore[] =>
+        filledStores(field.vector_stores).map(s => ({ ...s, enabled: field.stores_enabled }));
+
+    const patchStore = (type: AssistantType, index: number, patch: Partial<AssistantVectorStore>) =>
+        updateStores(type, assistants[type].vector_stores.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+
+    const removeStore = (type: AssistantType, index: number) =>
+        updateStores(type, assistants[type].vector_stores.filter((_, i) => i !== index));
 
     const pendingAssistant = ASSISTANTS.find(a => a.type === pendingDisable);
 
@@ -244,6 +338,40 @@ const OpenAiConfigForm: React.FC = () => {
             } else if (id && !AGENT_ID_PATTERN.test(id)) {
                 newErrors[agentErrorKey(type)] = 'The Agent ID must start with "agent_" and contain only letters and numbers.';
             }
+
+            // Each row is judged on its own, so one bad ID does not condemn the
+            // rest. A blank row is ignored rather than refused: a repeater row
+            // added and never filled in is not a mistake worth blocking, and it
+            // is simply dropped on save.
+            const rows = assistants[type].vector_stores;
+            const seen = new Map<string, number>();
+
+            rows.forEach((store, index) => {
+                const storeId = store.id.trim();
+
+                if (storeId === '') {
+                    return;
+                }
+
+                if (!VECTOR_STORE_ID_PATTERN.test(storeId)) {
+                    newErrors[storeRowErrorKey(type, index)] = 'A Storage ID starts with "vs_" and contains only letters and numbers.';
+                    return;
+                }
+
+                // The duplicate is flagged where it was repeated, not where it
+                // was first entered — that is the row the host meant to change.
+                const firstSeenAt = seen.get(storeId);
+                if (firstSeenAt !== undefined) {
+                    newErrors[storeRowErrorKey(type, index)] = `Already added in row ${firstSeenAt + 1}.`;
+                    return;
+                }
+
+                seen.set(storeId, index);
+            });
+
+            if (seen.size > MAX_VECTOR_STORES) {
+                newErrors[storeErrorKey(type)] = `Up to ${MAX_VECTOR_STORES} Storage IDs can be given to one assistant.`;
+            }
         });
 
         setErrors(newErrors);
@@ -256,6 +384,7 @@ const OpenAiConfigForm: React.FC = () => {
 
         setLoading(true);
         let savingAssistant: AssistantType | null = null;
+        let savedRowIndexes: number[] = [];
         try {
             await saveOpenAiConfig({
                 // An untouched field sends a blank key, which the server reads as
@@ -269,9 +398,18 @@ const OpenAiConfigForm: React.FC = () => {
             // OpenAI with the key that is stored at that moment.
             for (const { type } of ASSISTANTS) {
                 savingAssistant = type;
+                // Blank rows are dropped before sending, so the server's row
+                // indexes no longer line up with the rows on screen. Keep the
+                // mapping to put a server error back on the row that caused it.
+                savedRowIndexes = assistants[type].vector_stores
+                    .map((store, index) => ({ store, index }))
+                    .filter(({ store }) => store.id.trim() !== '')
+                    .map(({ index }) => index);
+
                 await saveAssistantSettings(type, {
                     agent_id: assistants[type].agent_id.trim() || null,
-                    enabled: assistants[type].enabled
+                    enabled: assistants[type].enabled,
+                    vector_stores: storesToSave(assistants[type])
                 });
             }
 
@@ -287,8 +425,22 @@ const OpenAiConfigForm: React.FC = () => {
                 const mapped: FormErrors = {};
                 Object.keys(apiErrors).forEach(key => {
                     const message = Array.isArray(apiErrors[key]) ? apiErrors[key][0] : apiErrors[key];
-                    // An assistant's "agent_id" error belongs under that assistant's field.
-                    mapped[savingAssistant && key === 'agent_id' ? agentErrorKey(savingAssistant) : key] = message;
+                    // An assistant's own errors belong under that assistant's
+                    // fields, and a row error under the row it names: the
+                    // server reports these as "vector_stores.<index>.id".
+                    let mappedKey = key;
+                    if (savingAssistant && key === 'agent_id') {
+                        mappedKey = agentErrorKey(savingAssistant);
+                    } else if (savingAssistant && key.startsWith('vector_stores')) {
+                        const row = key.match(/^vector_stores\.(\d+)\b/);
+                        mappedKey = row
+                            // The server validates the rows it was sent — blank
+                            // ones dropped — so its index is mapped back onto
+                            // the row on screen that produced it.
+                            ? storeRowErrorKey(savingAssistant, savedRowIndexes[Number(row[1])] ?? Number(row[1]))
+                            : storeErrorKey(savingAssistant);
+                    }
+                    mapped[mappedKey] = message;
                 });
                 setErrors(mapped);
             }
@@ -445,7 +597,7 @@ const OpenAiConfigForm: React.FC = () => {
                                     <hr className="my-1" />
                                     <h6 className="fw-semibold fs-14 mt-3 mb-1">Support Assistants</h6>
                                     <p className="text-muted fs-13 mb-0">
-                                        The OpenAI Agent each support chat runs. Edits saved on the OpenAI platform are used from the next chat message.
+                                        The OpenAI Agent each support chat runs, and the vector stores it searches for its answers. Edits saved on the OpenAI platform are used from the next chat message.
                                     </p>
                                 </div>
 
@@ -453,7 +605,19 @@ const OpenAiConfigForm: React.FC = () => {
                                     const field = assistants[type];
                                     const saved = assistantConfigs.find(c => c.assistant_type === type);
                                     const error = errors[agentErrorKey(type)];
+                                    const storeError = errors[storeErrorKey(type)];
                                     const inputId = `assistant-agent-id-${type}`;
+                                    const stores = field.vector_stores;
+                                    // A row the host added but has not typed an ID into yet is
+                                    // neither configured nor switched off — it is simply not
+                                    // filled in, and has to read that way rather than as either.
+                                    const filled = filledStores(stores);
+                                    // What this assistant will actually search once saved.
+                                    const liveIds = field.stores_enabled ? filled.map(s => s.id) : [];
+                                    // Stores the saved agent carries that this list will not
+                                    // search — knowledge the assistant would never read.
+                                    const unlistedOnAgent = (saved?.agent?.agent_vector_store_ids || [])
+                                        .filter(id => !liveIds.includes(id));
 
                                     return (
                                         <div className="col-12 col-md-6" key={type}>
@@ -498,6 +662,113 @@ const OpenAiConfigForm: React.FC = () => {
                                                         ? `${saved.agent.name || 'Agent'} · ${saved.agent.model || ''}`
                                                         : 'Use "Copy agent ID" on the agent page on the OpenAI platform.'}
                                             </small>
+                                            {/* The master switch comes first and names the thing it
+                                                controls, so the form only appears once the host has
+                                                said this assistant should search a knowledge base. */}
+                                            <div className="form-check form-switch mt-3">
+                                                <input
+                                                    id={`assistant-stores-enabled-${type}`}
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    className="form-check-input"
+                                                    checked={field.stores_enabled}
+                                                    onChange={(e) => toggleStores(type, e.target.checked)}
+                                                    disabled={loading}
+                                                />
+                                                <label htmlFor={`assistant-stores-enabled-${type}`} className="form-check-label fw-medium">
+                                                    Storage ID
+                                                    <span className="text-muted fw-normal fs-12 ms-1">
+                                                        — search the knowledge base on every message
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            {field.stores_enabled && (
+                                            <div className="border rounded p-2 mt-2">
+                                            <div className="d-flex align-items-center justify-content-between mb-2">
+                                                <span className="fw-medium fs-13">
+                                                    {label} Storage IDs
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline-primary"
+                                                    onClick={() => addStore(type)}
+                                                    disabled={loading || stores.length >= MAX_VECTOR_STORES}
+                                                    title={stores.length >= MAX_VECTOR_STORES ? `At most ${MAX_VECTOR_STORES} storage IDs` : 'Add another storage ID'}
+                                                >
+                                                    <i className="ri-add-line me-1"></i>
+                                                    Add Storage ID
+                                                </button>
+                                            </div>
+
+                                            {stores.map((store, index) => {
+                                                const rowId = `assistant-store-${type}-${index}`;
+                                                const rowError = errors[storeRowErrorKey(type, index)];
+
+                                                return (
+                                                    <div className="mb-2" key={index}>
+                                                        <div className="input-group input-group-inline">
+                                                            <span className={`input-group-text ${rowError ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                                                {index + 1}
+                                                            </span>
+                                                            <input
+                                                                id={rowId}
+                                                                type="text"
+                                                                className={`form-control ${rowError ? 'is-invalid border-danger' : ''}`}
+                                                                placeholder="vs_..."
+                                                                value={store.id}
+                                                                onChange={(e) => patchStore(type, index, { id: e.target.value })}
+                                                                disabled={loading}
+                                                                autoComplete="off"
+                                                                aria-label={`Storage ID ${index + 1} for the ${label}`}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className={`input-group-text text-danger bg-white ${rowError ? 'border-danger' : ''}`}
+                                                                onClick={() => removeStore(type, index)}
+                                                                disabled={loading}
+                                                                aria-label={`Remove Storage ID ${index + 1}`}
+                                                                title="Remove this Storage ID"
+                                                            >
+                                                                <i className="ri-delete-bin-line"></i>
+                                                            </button>
+                                                        </div>
+                                                        {rowError && (
+                                                            <div className="text-danger fs-12 mt-1">
+                                                                <i className="ri-error-warning-line me-1"></i>
+                                                                {rowError}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {storeError && (
+                                                <div className="text-danger fs-12 mt-1">
+                                                    <i className="ri-error-warning-line me-1"></i>
+                                                    {storeError}
+                                                </div>
+                                            )}
+                                            <small className="text-muted d-block mt-1">
+                                                {filled.length === 0
+                                                    ? 'Paste a Storage ID above, then save. Copy it from Storage › Vector stores on the OpenAI platform — it starts with "vs_".'
+                                                    : `Searched on every message: ${filled.length} Storage ID${filled.length === 1 ? '' : 's'}. Empty rows are discarded on save.`}
+                                            </small>
+                                            {unlistedOnAgent.length > 0 && (
+                                                <small className="text-warning-emphasis d-block mt-1">
+                                                    <i className="ri-alert-line me-1"></i>
+                                                    The agent on OpenAI also has {unlistedOnAgent.join(', ')}, which this assistant will not search. Add and tick it above if it should.
+                                                </small>
+                                            )}
+                                            </div>
+                                            )}
+                                            {!field.stores_enabled && (
+                                                <small className="text-muted d-block mt-1">
+                                                    {filled.length > 0
+                                                        ? `${filled.length} Storage ID${filled.length === 1 ? ' is' : 's are'} saved but not searched. Switch Storage ID on to use ${filled.length === 1 ? 'it' : 'them'} again.`
+                                                        : 'No knowledge base — the assistant answers from whatever the agent itself is set up with. Switch Storage ID on to ground every answer in your approved files.'}
+                                                </small>
+                                            )}
                                             <div className="form-check form-switch mt-2">
                                                 <input
                                                     id={`assistant-enabled-${type}`}
