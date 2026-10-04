@@ -182,12 +182,17 @@ export default function CreditProfileSection({
         if (pageContent instanceof HTMLElement) {
             originalPageContentOverflow = pageContent.style.overflow;
             pageContent.style.overflow = 'hidden';
+            // overflow:hidden makes .page-content the sticky page header's
+            // scroll container, so its top:70px would push it down inside the
+            // page. The class lets CSS keep the header in normal flow instead.
+            pageContent.classList.add('page-content-scroll-locked');
         }
 
         return () => {
             document.body.style.overflow = originalBodyOverflow;
             if (pageContent instanceof HTMLElement) {
                 pageContent.style.overflow = originalPageContentOverflow;
+                pageContent.classList.remove('page-content-scroll-locked');
             }
         };
     }, []);

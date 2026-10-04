@@ -7827,3 +7827,12 @@ File: Custom Css File
     color: #94a3b8;
     margin-top: 12px;
 }
+
+/* A page that locks .page-content's scrolling (overflow:hidden) turns it into
+   the sticky header's scroll container, so top:70px would push the header 70px
+   down inside the page. Nothing scrolls there anyway - keep it in normal flow,
+   as the table-fit pages above do. */
+.page-content-scroll-locked .page-subheader-sticky {
+  position: static !important;
+  top: auto !important;
+}
