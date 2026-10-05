@@ -22,6 +22,7 @@ import {
     getReminderTypeIcon
 } from '../../config/reminders';
 import type { Reminder } from '../../config/reminders';
+import { fetchReminders as fetchReminderList, type ReminderListFilters } from '../../modules/reminders';
 import type { DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 
 export default function ReminderList() {
@@ -58,8 +59,7 @@ export default function ReminderList() {
 
     const checkPendingReminders = async () => {
         try {
-            const res = await api.get('/common/reminders?status=dismissable&per_page=1');
-            const total = res.data?.status ? (res.data.data.reminders.meta?.total ?? res.data.data.reminders.total ?? 0) : 0;
+            const { total } = await fetchReminderList({ status: 'dismissable', per_page: 1 });
             setHasPendingReminders(total > 0);
         } catch (error) {
             console.error('Failed to check pending reminders:', error);
@@ -83,35 +83,36 @@ export default function ReminderList() {
         const requestId = ++fetchRequestIdRef.current;
         setIsLoading(true);
         try {
-            let url = `/common/reminders?page=${pageNumber}&per_page=${perPage}&sort_by=${sortField}&sort_order=${sortOrder}`;
-            if (searchText) url += `&search=${encodeURIComponent(searchText)}`;
-            if (selectedType) url += `&reference_type=${encodeURIComponent(selectedType)}`;
-            if (selectedStatus) url += `&status=${encodeURIComponent(selectedStatus)}`;
+            const filters: ReminderListFilters = {
+                page: pageNumber,
+                per_page: perPage,
+                sort_by: sortField,
+                sort_order: sortOrder,
+                search: searchText,
+                reference_type: selectedType,
+                status: selectedStatus,
+            };
 
             if (dateRange && dateRange[0]) {
                 const start = dateRange[0];
                 const end = dateRange[1] || dateRange[0];
-                const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
-                const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
-                url += `&start_date=${startStr}&end_date=${endStr}`;
+                filters.start_date = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+                filters.end_date = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
             }
-            const res = await api.get(url);
+            const { data: list, total } = await fetchReminderList(filters);
             if (requestId !== fetchRequestIdRef.current) return; // a newer request superseded this one
-            if (res.data?.status) {
-                const list = res.data.data.reminders.data || [];
-                setReminders(list);
-                setTotalRecords(res.data.data.reminders.meta?.total || res.data.data.reminders.total || 0);
-                // Drop any selected rows that are no longer dismissable (dismissed
-                // via another action, another tab, or no longer in this filtered/
-                // paged view) so "Dismiss Selected" never targets a stale,
-                // already-dismissed row. Sent is included alongside pending since
-                // a "Missed" row is just a sent one whose date has passed —
-                // still fully actionable, not merely selectable when literally
-                // "pending".
-                setSelectedReminders(prev => prev.filter(sel =>
-                    list.some((r: any) => r.id === sel.id && (r.status === REMINDER_STATUS_PENDING || r.status === REMINDER_STATUS_SENT))
-                ));
-            }
+            setReminders(list);
+            setTotalRecords(total);
+            // Drop any selected rows that are no longer dismissable (dismissed
+            // via another action, another tab, or no longer in this filtered/
+            // paged view) so "Dismiss Selected" never targets a stale,
+            // already-dismissed row. Sent is included alongside pending since
+            // a "Missed" row is just a sent one whose date has passed —
+            // still fully actionable, not merely selectable when literally
+            // "pending".
+            setSelectedReminders(prev => prev.filter(sel =>
+                list.some((r: any) => r.id === sel.id && (r.status === REMINDER_STATUS_PENDING || r.status === REMINDER_STATUS_SENT))
+            ));
         } catch (error) {
             if (requestId !== fetchRequestIdRef.current) return;
             console.error('Failed to fetch reminders:', error);

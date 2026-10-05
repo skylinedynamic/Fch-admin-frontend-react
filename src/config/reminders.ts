@@ -149,7 +149,7 @@ export const formatSnoozeMinutes = (minutes: number): string => {
 export const getEffectiveReminderStatusBadgeClasses = (reminder: ReminderLike): string =>
     isReminderMissed(reminder) ? 'bg-danger-subtle text-danger' : getReminderStatusBadgeClasses(reminder.status);
 
-/** A reminder row as returned by the /common/reminders list endpoint. */
+/** A reminder row as returned by the reminders list endpoint (POST /common/reminders/fetch-reminders). */
 export interface Reminder extends ReminderLike {
     id: number;
     reference?: string;
