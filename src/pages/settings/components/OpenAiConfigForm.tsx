@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { Dropdown } from 'primereact/dropdown';
 import { fetchOpenAiConfig, fetchOpenAiModels, saveOpenAiConfig } from '../../../modules/settings/services';
+import { fetchAssistantConfigs, saveAssistantSettings } from '../../../modules/assistant-config/services';
+import type { AssistantConfig, AssistantType } from '../../../modules/assistant-config/types';
+import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
+import { ASSISTANT_SETTINGS_CHANGED } from '../../../components/Common/ChatWidget/SupportChatWidget';
 import { OpenAiConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import { DEFAULT_FALLBACK_MODELS, DEFAULT_EFFORT_OPTIONS } from '../../../config';
 
@@ -30,6 +34,34 @@ interface FormErrors {
 const STORED_KEY_MASK_CHAR = '•';
 const STORED_KEY_MASK = STORED_KEY_MASK_CHAR.repeat(164);
 
+/**
+ * The two support assistants. Each one is an Agent saved on the OpenAI
+ * platform: its instructions, model and knowledge are edited there and are
+ * used from the very next chat message. Only which agent each assistant runs,
+ * and whether it is switched on, is stored here.
+ */
+const ASSISTANTS: Array<{ type: AssistantType; label: string; audience: string; portal: string }> = [
+    { type: 'borrower_support', label: 'Borrower Assistant', audience: 'Borrowers', portal: 'borrower portal' },
+    { type: 'wlp_support', label: 'WL Partner Assistant', audience: 'WL Partners', portal: 'partner portal' },
+];
+
+const AGENT_ID_PATTERN = /^agent_[A-Za-z0-9]+$/;
+
+interface AssistantField {
+    agent_id: string;
+    enabled: boolean;
+    /** Masked by default, like the API key; the eye button reveals it. */
+    visible: boolean;
+}
+
+const emptyAssistants = (): Record<AssistantType, AssistantField> => ({
+    borrower_support: { agent_id: '', enabled: true, visible: false },
+    wlp_support: { agent_id: '', enabled: true, visible: false },
+});
+
+/** Error key for an assistant's Agent ID field, e.g. "agent_id.borrower_support". */
+const agentErrorKey = (type: AssistantType): string => `agent_id.${type}`;
+
 const OpenAiConfigForm: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
@@ -50,6 +82,14 @@ const OpenAiConfigForm: React.FC = () => {
         reasoning_effort: 'medium'
     });
     const [errors, setErrors] = useState<FormErrors>({});
+    const [assistants, setAssistants] = useState<Record<AssistantType, AssistantField>>(emptyAssistants());
+    // What the server last reported for each assistant: its saved state and the
+    // live agent (name/model) read from OpenAI, or why that read failed.
+    const [assistantConfigs, setAssistantConfigs] = useState<AssistantConfig[]>([]);
+    // The assistant a host has just switched off, waiting for them to confirm
+    // in the dialog: it removes the chat for everyone that assistant serves.
+    // Switching one on needs no confirmation.
+    const [pendingDisable, setPendingDisable] = useState<AssistantType | null>(null);
 
     useEffect(() => {
         loadConfig();
@@ -73,7 +113,7 @@ const OpenAiConfigForm: React.FC = () => {
                 reasoning_effort: configData.reasoning_effort || 'medium'
             });
 
-            await loadModels(savedModel);
+            await Promise.all([loadModels(savedModel), loadAssistants()]);
         } catch (error: any) {
             console.error('Failed to load OpenAI configuration:', error);
             setHasApiKey(false);
@@ -81,6 +121,42 @@ const OpenAiConfigForm: React.FC = () => {
         } finally {
             setFetching(false);
         }
+    };
+
+    const loadAssistants = async () => {
+        try {
+            const response = await fetchAssistantConfigs();
+            const list = response?.data || [];
+            const next = emptyAssistants();
+
+            list.forEach((c) => {
+                if (next[c.assistant_type]) {
+                    next[c.assistant_type] = { agent_id: c.agent_id || '', enabled: c.is_enabled ?? true, visible: false };
+                }
+            });
+
+            setAssistantConfigs(list);
+            setAssistants(next);
+        } catch (error) {
+            console.error('Failed to load support assistant settings:', error);
+            toast.error('Failed to load the support assistant settings.');
+        }
+    };
+
+    const updateAssistant = (type: AssistantType, patch: Partial<AssistantField>) => {
+        setAssistants(prev => ({ ...prev, [type]: { ...prev[type], ...patch } }));
+        if (!('visible' in patch) && errors[agentErrorKey(type)]) {
+            setErrors(prev => ({ ...prev, [agentErrorKey(type)]: null }));
+        }
+    };
+
+    const pendingAssistant = ASSISTANTS.find(a => a.type === pendingDisable);
+
+    const confirmDisable = () => {
+        if (pendingDisable) {
+            updateAssistant(pendingDisable, { enabled: false });
+        }
+        setPendingDisable(null);
     };
 
     const buildOptions = (models: string[], savedModel: string) => {
@@ -155,6 +231,21 @@ const OpenAiConfigForm: React.FC = () => {
             newErrors.reasoning_effort = 'The reasoning effort is required.';
         }
 
+        // Mirrors the server rules; the server additionally checks with OpenAI
+        // that each agent exists and that the key can use it.
+        ASSISTANTS.forEach(({ type }) => {
+            const { agent_id, enabled } = assistants[type];
+            const id = agent_id.trim();
+
+            if (!id && enabled) {
+                newErrors[agentErrorKey(type)] = 'The Agent ID is required while the assistant is enabled.';
+            } else if (id !== agent_id) {
+                newErrors[agentErrorKey(type)] = 'Remove leading or trailing spaces from the Agent ID.';
+            } else if (id && !AGENT_ID_PATTERN.test(id)) {
+                newErrors[agentErrorKey(type)] = 'The Agent ID must start with "agent_" and contain only letters and numbers.';
+            }
+        });
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -164,6 +255,7 @@ const OpenAiConfigForm: React.FC = () => {
         if (!validate()) return;
 
         setLoading(true);
+        let savingAssistant: AssistantType | null = null;
         try {
             await saveOpenAiConfig({
                 // An untouched field sends a blank key, which the server reads as
@@ -173,7 +265,19 @@ const OpenAiConfigForm: React.FC = () => {
                 reasoning_effort: formData.reasoning_effort
             });
 
+            // The key is saved first: the server checks each agent against
+            // OpenAI with the key that is stored at that moment.
+            for (const { type } of ASSISTANTS) {
+                savingAssistant = type;
+                await saveAssistantSettings(type, {
+                    agent_id: assistants[type].agent_id.trim() || null,
+                    enabled: assistants[type].enabled
+                });
+            }
+
             toast.success('OpenAI configuration saved successfully!');
+            // Lets the chat widget in the layout show or hide itself right away.
+            window.dispatchEvent(new Event(ASSISTANT_SETTINGS_CHANGED));
             await loadConfig();
         } catch (error: any) {
             console.error('Failed to save OpenAI config:', error);
@@ -182,7 +286,9 @@ const OpenAiConfigForm: React.FC = () => {
             if (apiErrors) {
                 const mapped: FormErrors = {};
                 Object.keys(apiErrors).forEach(key => {
-                    mapped[key] = Array.isArray(apiErrors[key]) ? apiErrors[key][0] : apiErrors[key];
+                    const message = Array.isArray(apiErrors[key]) ? apiErrors[key][0] : apiErrors[key];
+                    // An assistant's "agent_id" error belongs under that assistant's field.
+                    mapped[savingAssistant && key === 'agent_id' ? agentErrorKey(savingAssistant) : key] = message;
                 });
                 setErrors(mapped);
             }
@@ -233,7 +339,7 @@ const OpenAiConfigForm: React.FC = () => {
                                     <label htmlFor="openai-api-key" className="form-label fw-medium">
                                         API Key {!hasApiKey && <span className="text-danger">*</span>}
                                     </label>
-                                    <div className="input-group">
+                                    <div className="input-group input-group-inline">
                                         <span className={`input-group-text ${errors.api_key ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
                                             <i className="ri-key-2-line"></i>
                                         </span>
@@ -334,6 +440,81 @@ const OpenAiConfigForm: React.FC = () => {
                                         families support this; it is omitted automatically for any other model.
                                     </small>
                                 </div>
+
+                                <div className="col-12">
+                                    <hr className="my-1" />
+                                    <h6 className="fw-semibold fs-14 mt-3 mb-1">Support Assistants</h6>
+                                    <p className="text-muted fs-13 mb-0">
+                                        The OpenAI Agent each support chat runs. Edits saved on the OpenAI platform are used from the next chat message.
+                                    </p>
+                                </div>
+
+                                {ASSISTANTS.map(({ type, label }) => {
+                                    const field = assistants[type];
+                                    const saved = assistantConfigs.find(c => c.assistant_type === type);
+                                    const error = errors[agentErrorKey(type)];
+                                    const inputId = `assistant-agent-id-${type}`;
+
+                                    return (
+                                        <div className="col-12 col-md-6" key={type}>
+                                            <label htmlFor={inputId} className="form-label fw-medium">
+                                                {label} Agent ID {field.enabled && <span className="text-danger">*</span>}
+                                            </label>
+                                            <div className="input-group input-group-inline">
+                                                <span className={`input-group-text ${error ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+                                                    <i className="ri-robot-2-line"></i>
+                                                </span>
+                                                <input
+                                                    id={inputId}
+                                                    type={field.visible ? 'text' : 'password'}
+                                                    className={`form-control ${error ? 'is-invalid border-danger' : ''}`}
+                                                    style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, backgroundImage: 'none' }}
+                                                    placeholder="agent_..."
+                                                    value={field.agent_id}
+                                                    onChange={(e) => updateAssistant(type, { agent_id: e.target.value })}
+                                                    autoComplete="new-password"
+                                                    disabled={loading}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className={`input-group-text text-muted ${loading ? 'bg-light' : 'bg-white'} ${error ? 'border-danger' : ''}`}
+                                                    onClick={() => updateAssistant(type, { visible: !field.visible })}
+                                                    aria-label={`${field.visible ? 'Hide' : 'Show'} ${label} Agent ID`}
+                                                    title={field.visible ? 'Hide Agent ID' : 'Show Agent ID'}
+                                                >
+                                                    <i className={field.visible ? 'ri-eye-off-line' : 'ri-eye-line'}></i>
+                                                </button>
+                                            </div>
+                                            {error && (
+                                                <div className="text-danger fs-12 mt-1">
+                                                    <i className="ri-error-warning-line me-1"></i>
+                                                    {error}
+                                                </div>
+                                            )}
+                                            <small className="text-muted d-block mt-1">
+                                                {saved?.agent_error
+                                                    ? `Could not read the agent from OpenAI: ${saved.agent_error}`
+                                                    : saved?.agent
+                                                        ? `${saved.agent.name || 'Agent'} · ${saved.agent.model || ''}`
+                                                        : 'Use "Copy agent ID" on the agent page on the OpenAI platform.'}
+                                            </small>
+                                            <div className="form-check form-switch mt-2">
+                                                <input
+                                                    id={`assistant-enabled-${type}`}
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    className="form-check-input"
+                                                    checked={field.enabled}
+                                                    onChange={(e) => (e.target.checked ? updateAssistant(type, { enabled: true }) : setPendingDisable(type))}
+                                                    disabled={loading}
+                                                />
+                                                <label htmlFor={`assistant-enabled-${type}`} className="form-check-label fw-medium">
+                                                    {label} {field.enabled ? 'enabled' : 'disabled'}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             <div className="d-flex justify-content-end mt-4">
@@ -352,6 +533,22 @@ const OpenAiConfigForm: React.FC = () => {
                     </>
                 )}
             </div>
+
+            <DynamicActionModal
+                show={!!pendingDisable}
+                title={`Disable the ${pendingAssistant?.label ?? 'Assistant'}?`}
+                description={
+                    <>
+                        <strong>{pendingAssistant?.audience}</strong> will no longer see the support chat in the {pendingAssistant?.portal}. The chat button is hidden for all of them.
+                    </>
+                }
+                warningText="The Agent ID is kept, so you can enable it again at any time. This takes effect after you click Save Configuration."
+                warningBgClass="bg-warning-subtle border-start border-3 border-warning"
+                confirmText="Yes, Disable"
+                confirmBtnClass="btn-danger"
+                onClose={() => setPendingDisable(null)}
+                onConfirm={confirmDisable}
+            />
         </div>
     );
 };

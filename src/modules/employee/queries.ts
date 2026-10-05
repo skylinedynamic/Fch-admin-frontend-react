@@ -10,10 +10,11 @@ export const useEmployees = () => {
   })
 }
 
-export const useAvailableEmployeesForUser = () => {
+export const useAvailableEmployeesForUser = (enabled = true) => {
   return useQuery<AvailableEmployee[]>({
     queryKey: queryKeys.employee.availableForUser(),
     queryFn: fetchAvailableEmployeesForUser,
+    enabled,
   })
 }
 

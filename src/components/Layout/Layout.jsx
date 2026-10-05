@@ -4,6 +4,7 @@ import Header from './Header.jsx'
 import Sidebar from './Sidebar.jsx'
 import Footer from './Footer.jsx'
 import GlobalModals from '../Common/Modals/GlobalModals.jsx'
+import SupportChatWidget from '../Common/ChatWidget/SupportChatWidget.tsx'
 
 export default function Layout() {
   return (
@@ -21,6 +22,7 @@ export default function Layout() {
         <Footer />
       </div>
       <GlobalModals />
+      <SupportChatWidget />
     </div>
   )
 }

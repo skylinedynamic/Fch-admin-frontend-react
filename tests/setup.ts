@@ -52,6 +52,13 @@ if (!window.IntersectionObserver) {
   window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver
 }
 
+// jsdom doesn't implement layout, so it has no scrollIntoView at all —
+// components that auto-scroll to the latest message (e.g. SupportChatWidget)
+// throw "scrollIntoView is not a function" the instant they mount in a test.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function scrollIntoView() {}
+}
+
 // jsdom's Blob implementation has no `.stream()`. undici — which MSW uses to
 // build Response bodies — calls `object.stream()` on anything blob-like, so a
 // handler returning `new HttpResponse(new Blob([...]))` dies with

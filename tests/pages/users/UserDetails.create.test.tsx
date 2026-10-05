@@ -6,16 +6,22 @@ import { toast } from 'react-toastify'
 import { renderWithProviders, screen, waitFor } from '../../test-utils'
 import { server } from '../../mocks/server'
 import { useAuthStore } from '../../../src/store/auth'
-import UserCreate from '../../../src/pages/users/UserCreate'
+
+// Summernote (reached through the shared modals) needs a real canvas at import time.
+vi.mock('../../../src/hooks/useSummernote', () => ({
+  useSummernote: () => ({ editorRef: () => { } }),
+}))
 
 vi.mock('react-toastify', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-toastify')>()
   return { ...actual, toast: Object.assign(vi.fn(), { info: vi.fn(), success: vi.fn(), error: vi.fn() }) }
 })
 
+import UserDetails from '../../../src/pages/users/UserDetails'
+
 const employees = [
-  { id: 7, first_name: 'Jane', last_name: 'Doe', full_name: 'Jane Doe', email: 'jane@example.test', phone_number_1: '5551234567', country_code: '+1', employee_code: 'EMP-00007', designation: 'Analyst' },
-  { id: 9, first_name: 'John', last_name: 'Smith', full_name: 'John Smith', email: 'john@example.test', phone_number_1: '(555) 987-6543', country_code: '+1', employee_code: 'EMP-00009', designation: null },
+  { id: 7, first_name: 'Jane Doe', full_name: 'Jane Doe', email: 'jane@example.test', phone_number_1: '5551234567', country_code: '+1', employee_code: 'EMP-00007', designation: 'Analyst' },
+  { id: 9, first_name: 'John Smith', full_name: 'John Smith', email: 'john@example.test', phone_number_1: '(555) 987-6543', country_code: '+1', employee_code: 'EMP-00009', designation: null },
 ]
 
 const roles = [
@@ -33,7 +39,7 @@ function mockLookups(available = employees) {
 function renderPage() {
   return renderWithProviders(
     <Routes>
-      <Route path="/users/create" element={<UserCreate />} />
+      <Route path="/users/create" element={<UserDetails />} />
       <Route path="/users" element={<div>Users list page</div>} />
       <Route path="/employees/create" element={<div>New employee page</div>} />
     </Routes>,
@@ -60,13 +66,19 @@ beforeEach(() => {
 })
 afterEach(() => server.resetHandlers())
 
-describe('UserCreate', () => {
+describe('UserDetails - adding a user', () => {
   it('explains that the employee must exist first and links to the new employee page', async () => {
     mockLookups()
     const user = userEvent.setup()
     renderPage()
 
     expect(await screen.findByText(/create the employee first/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /add user/i })).toBeInTheDocument()
+    // The note explains why and what happens when one is picked.
+    const note = screen.getByRole('note')
+    expect(note).toHaveTextContent(/sign-in account for one of your employees/i)
+    expect(note).toHaveTextContent(/only employees who don't have a user account yet/i)
+    expect(note).toHaveTextContent(/fills in the name, email and phone number from the employee's record/i)
     const link = screen.getByRole('link', { name: /create new employee/i })
     expect(link).toHaveAttribute('href', '/employees/create')
 
@@ -136,9 +148,9 @@ describe('UserCreate', () => {
 
     await waitFor(() => expect(container.querySelector('#user-employee')).not.toBeNull())
     await choose(user, container, 'user-employee', 'Jane Doe')
-    await choose(user, container, 'user-role', 'Staff')
+    await choose(user, container, 'role_id', 'Staff')
     await user.type(screen.getByLabelText(/^password/i), 'secret123')
-    await user.click(screen.getByRole('button', { name: /save account/i }))
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
 
     expect(await screen.findByText('Users list page')).toBeInTheDocument()
     expect(received).toEqual({
@@ -160,7 +172,7 @@ describe('UserCreate', () => {
     const { container } = renderPage()
 
     await waitFor(() => expect(container.querySelector('#user-employee')).not.toBeNull())
-    await user.click(screen.getByRole('button', { name: /save account/i }))
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
 
     expect(await screen.findByText('Please select an employee')).toBeInTheDocument()
     expect(post).not.toHaveBeenCalled()
@@ -181,16 +193,16 @@ describe('UserCreate', () => {
 
     await waitFor(() => expect(container.querySelector('#user-employee')).not.toBeNull())
     await choose(user, container, 'user-employee', 'Jane Doe')
-    await choose(user, container, 'user-role', 'Staff')
+    await choose(user, container, 'role_id', 'Staff')
     await user.type(screen.getByLabelText(/^password/i), 'secret123')
-    await user.click(screen.getByRole('button', { name: /save account/i }))
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
 
     expect(await screen.findByText('The selected employee already has a user account.')).toBeInTheDocument()
     expect(screen.queryByText('Users list page')).not.toBeInTheDocument()
   })
 })
 
-describe('UserCreate when buying an extra seat', () => {
+describe('UserDetails - adding a user on a newly bought seat', () => {
   it('creates the user as a paid seat for the chosen months', async () => {
     mockLookups()
     let received: Record<string, unknown> | null = null
@@ -203,7 +215,7 @@ describe('UserCreate when buying an extra seat', () => {
     const user = userEvent.setup()
     const { container } = renderWithProviders(
       <Routes>
-        <Route path="/users/create" element={<UserCreate />} />
+        <Route path="/users/create" element={<UserDetails />} />
         <Route path="/users" element={<div>Users list page</div>} />
       </Routes>,
       { route: { pathname: '/users/create', state: { purchase: { months: 3, totalPrice: 147 } } } as never }
@@ -213,11 +225,37 @@ describe('UserCreate when buying an extra seat', () => {
     expect(screen.getByText('$147.00')).toBeInTheDocument()
 
     await choose(user, container, 'user-employee', 'Jane Doe')
-    await choose(user, container, 'user-role', 'Staff')
+    await choose(user, container, 'role_id', 'Staff')
     await user.type(screen.getByLabelText(/^password/i), 'secret123')
-    await user.click(screen.getByRole('button', { name: /save account/i }))
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
 
     await waitFor(() => expect(received).not.toBeNull())
     expect(received).toMatchObject({ employee_id: 7, is_paid: true, months: 3 })
+  })
+})
+
+describe('UserDetails - editing a user', () => {
+  it('uses the same page without the employee picker, and keeps status and password change', async () => {
+    useAuthStore.setState({ user: { id: 1, is_host: 0, permissions: ['update users'] } } as never)
+    mockLookups()
+    server.use(
+      http.get('*/common/users/7', () =>
+        HttpResponse.json({ status: true, data: { id: 7, name: 'Sam Sales', email: 'sam@example.test', phone_number: '(555) 111-2222', role_id: 2, status: 'active' } })
+      )
+    )
+    renderWithProviders(
+      <Routes>
+        <Route path="/user-details/:id" element={<UserDetails />} />
+      </Routes>,
+      { route: '/user-details/7' }
+    )
+
+    expect(await screen.findByDisplayValue('Sam Sales')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /user details/i })).toBeInTheDocument()
+    expect(screen.queryByText(/create the employee first/i)).not.toBeInTheDocument()
+    expect(document.querySelector('#user-employee')).toBeNull()
+    expect(screen.queryByLabelText(/^password/i)).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/change account password/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^update$/i })).toBeInTheDocument()
   })
 })

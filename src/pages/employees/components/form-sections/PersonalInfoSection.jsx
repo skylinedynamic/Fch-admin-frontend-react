@@ -18,7 +18,8 @@ export default function PersonalInfoSection({
     onPhonePrefixChange,
     onOpenFileManager, // Now used for parent if needed, but we'll use local state
     profileImage,
-    employeeId
+    employeeId,
+    emailNotice = null
 }) {
     const [showFileManager, setShowFileManager] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -247,6 +248,7 @@ export default function PersonalInfoSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Email <span className="text-danger">*</span></label>
+                    {emailNotice}
                     <input
                         type="email"
                         className={`form-control ${errors.email ? 'is-invalid' : ''}`}

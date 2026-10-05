@@ -82,7 +82,7 @@ describe('fetchDepartmentStatus', () => {
 describe('fetchAvailableEmployeesForUser', () => {
   it("returns the partner's employees that have no user account yet", async () => {
     const employees = [
-      { id: 7, first_name: 'Jane', last_name: 'Doe', full_name: 'Jane Doe', email: 'jane@example.test', phone_number_1: '(555) 123-4567' },
+      { id: 7, first_name: 'Jane Doe', full_name: 'Jane Doe', email: 'jane@example.test', phone_number_1: '(555) 123-4567' },
     ]
     server.use(
       http.get('*/common/employees-available-for-user', () =>

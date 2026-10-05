@@ -8,7 +8,7 @@ import SignIn from '../src/pages/singin/SignIn.jsx';
 import ForgotPassword from '../src/pages/singin/ForgotPassword.jsx';
 import ResetPassword from '../src/pages/singin/ResetPassword.jsx';
 import Users from '../src/pages/users/Users.jsx';
-import UserCreate from '../src/pages/users/UserCreate';
+import UserDetails from '../src/pages/users/UserDetails.jsx';
 import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
@@ -242,8 +242,9 @@ export default function App() {
             <Route element={<PermissionRoute permission="view users" />}>
               <Route path="users" element={<Users />} />
               <Route element={<PermissionRoute permission="create users" />}>
-                <Route path="users/create" element={<UserCreate />} />
+                <Route path="users/create" element={<UserDetails />} />
               </Route>
+              <Route path="user-details/:id" element={<UserDetails />} />
             </Route>
 
 

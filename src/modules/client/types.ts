@@ -12,6 +12,9 @@ export type Client = {
     phone_number: string;
     country_code?: string;
     email: string;
+    /** The client's login, and a new sign-in email awaiting confirmation on it. */
+    user_id?: number | null;
+    pending_email?: string | null;
     signup_id?: string;
     business_website?: string;
     is_free_trail?: boolean;

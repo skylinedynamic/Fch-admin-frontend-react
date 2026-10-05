@@ -246,7 +246,8 @@ export default function CreditProfileSection({
                     await saveCreditProfile(clientId, payload);
                     queryClient.invalidateQueries({ queryKey: clientKeys.creditProfile(clientId) });
                 } catch (saveErr) {
-                    console.error('Failed to auto-save parsed credit profile:', saveErr);
+                    // Status only: the error object carries the request payload (config.data) — client PII.
+                    console.error('Failed to auto-save parsed credit profile', (saveErr as any)?.response?.status);
                 }
 
                 toast.success('PDF uploaded and credit profile parsed successfully!');
@@ -254,7 +255,8 @@ export default function CreditProfileSection({
                 toast.error(response?.message || 'Failed to parse credit profile PDF.');
             }
         } catch (error: any) {
-            console.error('PDF parsing failed:', error);
+            // Status only: the error object carries the request payload (config.data) — client PII.
+            console.error('PDF parsing failed', error?.response?.status);
             toast.error(error?.response?.data?.message || 'An error occurred during PDF parsing.');
         } finally {
             setIsUploading(false);
@@ -509,7 +511,8 @@ export default function CreditProfileSection({
                 toast.error(response?.message || 'Failed to save credit profile.');
             }
         } catch (error: any) {
-            console.error('Failed to save credit profile:', error);
+            // Status only: the error object carries the request payload (config.data) — client PII.
+            console.error('Failed to save credit profile', error?.response?.status);
             toast.error(error?.response?.data?.message || 'An error occurred while saving.');
         } finally {
             setIsSaving(false);

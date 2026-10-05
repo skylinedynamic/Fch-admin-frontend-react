@@ -81,6 +81,8 @@ export const buildPartnerFormDataPayload = (
         'agentEmail', 'agentPhone', 'company_logo',
         'other_city',
         'borrower_domain',
+        // Read-only login state, shown with the email field — never sent back.
+        'pending_email', 'login_user_id',
     ];
 
     // Append top-level (non-enrollment) fields

@@ -4,16 +4,22 @@ import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
 import { COMMISSION_PAYMENT } from '../../config/statusOptions';
 import { formatCurrency } from '../../utils/helper';
+import { CommissionPayout } from '../../modules/commission/types';
+import { PAYOUT_TYPE_COMMISSION } from '../../config/compensationOptions';
 
 interface PayoutModalProps {
     show: boolean;
     onHide: () => void;
-    onConfirm: (partnerMethod: string, note: string) => void;
+    onConfirm: (paymentMethod: string, note: string) => void;
     loading?: boolean;
-    commission?: any;
+    /** The payout being paid — to a partner, or to the user assigned to a host-partner client. */
+    payout: CommissionPayout;
+    currencySymbol: string;
+    conversionRate: string;
 }
 
-export default function PayoutModal({ show, onHide, onConfirm, loading = false, commission }: PayoutModalProps) {
+export default function PayoutModal({ show, onHide, onConfirm, loading = false, payout, currencySymbol, conversionRate }: PayoutModalProps) {
+    const isPartner = payout.payee?.type === 'partner';
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<Modal | null>(null);
     
@@ -49,7 +55,7 @@ export default function PayoutModal({ show, onHide, onConfirm, loading = false, 
 
     const handleConfirm = () => {
         if (!partnerMethod) {
-            setError('Please select a payment method for Partner');
+            setError('Please select a payment method');
             return;
         }
         
@@ -72,30 +78,30 @@ export default function PayoutModal({ show, onHide, onConfirm, loading = false, 
                         <button type="button" className="btn-close" onClick={handleClose} disabled={loading} aria-label="Close"></button>
                     </div>
                     <div className="modal-body p-4">
-                        {commission && (
-                            <div className="card bg-info-subtle border-0 mb-4 shadow-none">
-                                <div className="card-body">
-                                    <div className="d-flex align-items-center">
-                                        <div className="avatar-sm me-3">
-                                            <div className="avatar-title bg-info text-white rounded-circle fs-20">
-                                                <i className="ri-money-dollar-circle-line"></i>
-                                            </div>
+                        <div className="card bg-info-subtle border-0 mb-4 shadow-none">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-sm me-3">
+                                        <div className="avatar-title bg-info text-white rounded-circle fs-20">
+                                            <i className="ri-money-dollar-circle-line"></i>
                                         </div>
-                                        <div className="flex-grow-1">
-                                            <h6 className="text-info text-uppercase fw-semibold mb-1">Partner Commission</h6>
-                                            <h3 className="mb-0 text-info fw-bold">
-                                                {formatCurrency(commission.partner_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}
-                                            </h3>
-                                        </div>
-                                        <div className="text-end">
-                                            <span className="badge bg-info">{commission.partner_commission}% Rate</span>
-                                        </div>
+                                    </div>
+                                    <div className="flex-grow-1">
+                                        <h6 className="text-info text-uppercase fw-semibold mb-1">Payout to {payout.payee?.name}</h6>
+                                        <h3 className="mb-0 text-info fw-bold">
+                                            {formatCurrency(payout.amount, currencySymbol, conversionRate, 2)}
+                                        </h3>
+                                    </div>
+                                    <div className="text-end">
+                                        <span className="badge bg-info">
+                                            {payout.payout_type === PAYOUT_TYPE_COMMISSION ? `${payout.rate}% Rate` : 'Flat Amount'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
 
-                        <p className="text-muted mb-4">Please select the payment methods used for this payout and add an optional note.</p>
+                        <p className="text-muted mb-4">Please select the payment method used for this payout and add an optional note.</p>
                         
                         {error && (
                             <div className="alert alert-danger fs-13 mb-3">
@@ -104,7 +110,7 @@ export default function PayoutModal({ show, onHide, onConfirm, loading = false, 
                         )}
 
                         <div className="mb-4">
-                            <label className="form-label fw-semibold">Partner Payment Method <span className="text-danger">*</span></label>
+                            <label className="form-label fw-semibold">Payment Method <span className="text-danger">*</span></label>
                             <Dropdown
                                 value={partnerMethod}
                                 options={COMMISSION_PAYMENT}
@@ -121,7 +127,7 @@ export default function PayoutModal({ show, onHide, onConfirm, loading = false, 
                             <textarea
                                 className="form-control"
                                 rows={3}
-                                placeholder="Add a note to be saved with the invoice and sent to the partner"
+                                placeholder={isPartner ? 'Add a note to be saved with the invoice and sent to the partner' : 'Add a note to be saved with the invoice'}
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 disabled={loading}
