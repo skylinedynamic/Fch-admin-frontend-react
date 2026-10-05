@@ -8,6 +8,7 @@ import CoBorrowerTable from '../shared/CoBorrowerTable'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { countries } from '../../../../../modules/location'
 import { useOwnershipInfo, useSaveOwnershipInfo } from '../../../../../modules/funding-application/queries'
+import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { citizenshipOptions } from '../../../../../data/profile'
 import { toast } from 'react-toastify'
 import { formatPhoneNumber, formatSSN, unformatSSN, formatZipCode } from '../../../../../utils/borrowerFormatters'
@@ -117,6 +118,9 @@ export default function OwnershipInformationStep({
       setOwner((prev) => ({ ...prev, isSaved: true }))
       return true
     } catch (error: any) {
+      // The partner backed out of the re-signature confirmation - nothing was
+      // attempted, so say nothing.
+      if (isEditConfirmationCancelled(error)) return false
       const errors = error.response?.data?.errors
       if (errors) {
         setValidationErrors(errors)

@@ -3,6 +3,7 @@ import type { DisclosureConsent } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
 import DisclosuresSkeleton from '../../../../../components/Loader/DisclosuresSkeleton'
 import { useDisclosuresConsent, useSaveDisclosuresConsent } from '../../../../../modules/funding-application/queries'
+import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { toast } from 'react-toastify'
 import DisclosureModal from '../shared/DisclosureModal'
 import { AUTHORIZATION_DATA, TERMS_OF_SERVICE_DATA } from '../../../../../config/disclosureConfig'
@@ -49,6 +50,9 @@ export default function DisclosuresStep({
       toast.success('Disclosures saved successfully!')
       return true
     } catch (error: any) {
+      // The partner backed out of the re-signature confirmation - nothing was
+      // attempted, so say nothing.
+      if (isEditConfirmationCancelled(error)) return false
       console.error('Error saving disclosures:', error)
       const errors = error.response?.data?.errors
       if (errors) {

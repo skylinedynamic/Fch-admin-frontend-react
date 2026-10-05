@@ -6,6 +6,7 @@ import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { entityTypes, industryTypes, yearsInBusinessOptions } from '../../../../../data/profile'
 import { countries as countriesData } from '../../../../../modules/location'
 import { useBusinessInfo, useSaveBusinessInfo } from '../../../../../modules/funding-application/queries'
+import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { formatPhoneNumber, formatNumber, formatZipCode } from '../../../../../utils/borrowerFormatters'
 import { getCountryCodeByName, getPhoneCodeByName, formatCountryDisplay, getCountryCodeFromDisplay } from '../../../../../utils/countryHelpers'
 import { toast } from 'react-toastify'
@@ -77,6 +78,9 @@ export default function BusinessInformationStep({
       toast.success('Business information saved successfully!')
       return true
     } catch (error: any) {
+      // The partner backed out of the re-signature confirmation - nothing was
+      // attempted, so say nothing.
+      if (isEditConfirmationCancelled(error)) return false
       const errors = error.response?.data?.errors
       if (errors) {
         setValidationErrors(errors)
