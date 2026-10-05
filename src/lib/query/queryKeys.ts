@@ -67,4 +67,8 @@ export const queryKeys = {
     list: (params: object) => [...queryKeys.notifications.lists(), params] as const,
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
   },
+  settings: {
+    all: ['settings'] as const,
+    smsConfiguration: () => [...queryKeys.settings.all, 'smsConfiguration'] as const,
+  },
 } as const
