@@ -60,14 +60,63 @@ describe('useLatestNotifications', () => {
   })
 })
 
+/**
+ * The latest-notifications response already carries the unread count
+ * (meta.unread_count), so the badge reads it from there instead of a second
+ * request to /unread-count.
+ */
 describe('useUnreadNotificationCount', () => {
-  it('fetches the unread count', async () => {
-    server.use(http.get('*/common/notifications/unread-count', () => HttpResponse.json({ status: true, data: { unread_count: 4 } })))
+  const countRequests = { list: 0, count: 0 }
+
+  const mockServer = (unread: () => number) => {
+    countRequests.list = 0
+    countRequests.count = 0
+    server.use(
+      http.get('*/common/notifications', () => {
+        countRequests.list += 1
+        return HttpResponse.json({ status: true, data: [item('a')], meta: { current_page: 1, last_page: 1, per_page: LATEST_NOTIFICATIONS_LIMIT, total: 1, unread_count: unread() } })
+      }),
+      http.get('*/common/notifications/unread-count', () => {
+        countRequests.count += 1
+        return HttpResponse.json({ status: true, data: { unread_count: 99 } })
+      })
+    )
+  }
+
+  it('reads the unread count from the latest notifications', async () => {
+    mockServer(() => 4)
     const { wrapper } = wrapperFor()
 
     const { result } = renderHook(() => useUnreadNotificationCount(), { wrapper })
 
     await waitFor(() => expect(result.current.data).toBe(4))
+    expect(countRequests).toEqual({ list: 1, count: 0 })
+  })
+
+  it('shares one request with the latest-notifications list when both load together', async () => {
+    mockServer(() => 3)
+    const { wrapper } = wrapperFor()
+
+    const { result } = renderHook(() => ({ latest: useLatestNotifications(), count: useUnreadNotificationCount() }), { wrapper })
+
+    await waitFor(() => expect(result.current.count.data).toBe(3))
+    await waitFor(() => expect(result.current.latest.isSuccess).toBe(true))
+    expect(countRequests).toEqual({ list: 1, count: 0 })
+  })
+
+  it('refreshes the count and the list together on a refetch', async () => {
+    let unread = 1
+    mockServer(() => unread)
+    const { qc, wrapper } = wrapperFor()
+    const { result } = renderHook(() => ({ latest: useLatestNotifications(), count: useUnreadNotificationCount() }), { wrapper })
+    await waitFor(() => expect(result.current.count.data).toBe(1))
+
+    unread = 5
+    await act(() => qc.invalidateQueries({ queryKey: queryKeys.notifications.all }))
+
+    await waitFor(() => expect(result.current.count.data).toBe(5))
+    expect(countRequests.list).toBe(2)
+    expect(countRequests.count).toBe(0)
   })
 })
 

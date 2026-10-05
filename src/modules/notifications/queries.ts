@@ -4,7 +4,6 @@ import { LATEST_NOTIFICATIONS_LIMIT, NOTIFICATION_FALLBACK_POLL_MS } from '../..
 import {
   deleteNotification,
   getNotifications,
-  getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
 } from './services'
@@ -27,11 +26,27 @@ export function useLatestNotifications(enabled = true) {
   return useNotifications(LATEST_NOTIFICATIONS_PARAMS, enabled)
 }
 
-/** @param poll Re-check periodically - set while the real-time socket is down. */
+/**
+ * The unread badge count. The latest-notifications response already carries
+ * it (meta.unread_count), so it is read from that request - which the header
+ * bell makes anyway - instead of a second call to /unread-count. When the bell
+ * and the sidebar load together, fetchQuery joins the list request already in
+ * flight, so a page load makes one request for both.
+ *
+ * @param poll Re-check periodically - set while the real-time socket is down.
+ */
 export function useUnreadNotificationCount({ poll = false }: { poll?: boolean } = {}) {
+  const queryClient = useQueryClient()
+
   return useQuery({
     queryKey: queryKeys.notifications.unreadCount(),
-    queryFn: getUnreadNotificationCount,
+    queryFn: async () => {
+      const latest = await queryClient.fetchQuery({
+        queryKey: queryKeys.notifications.list(LATEST_NOTIFICATIONS_PARAMS),
+        queryFn: () => getNotifications(LATEST_NOTIFICATIONS_PARAMS),
+      })
+      return latest.meta.unread_count
+    },
     refetchInterval: poll ? NOTIFICATION_FALLBACK_POLL_MS : false,
   })
 }

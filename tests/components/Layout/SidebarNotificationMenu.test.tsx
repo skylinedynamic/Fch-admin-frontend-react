@@ -8,9 +8,9 @@ import { useAuthStore } from '../../../src/store/auth'
 let countRequests = 0
 const unread = (count: number) =>
   server.use(
-    http.get('*/common/notifications/unread-count', () => {
+    http.get('*/common/notifications', () => {
       countRequests += 1
-      return HttpResponse.json({ status: true, data: { unread_count: count } })
+      return HttpResponse.json({ status: true, data: [], meta: { current_page: 1, last_page: 1, per_page: 5, total: 0, unread_count: count } })
     })
   )
 

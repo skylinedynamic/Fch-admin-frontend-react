@@ -18,7 +18,6 @@ describe('Header', () => {
   it('shows the notification bell with the unread count', async () => {
     setAuthState({ token: 't', user: { id: 5, name: 'Pat Partner' } as any })
     server.use(
-      http.get('*/common/notifications/unread-count', () => HttpResponse.json({ status: true, data: { unread_count: 2 } })),
       http.get('*/common/notifications', () =>
         HttpResponse.json({ status: true, data: [], meta: { current_page: 1, last_page: 1, per_page: 10, total: 0, unread_count: 2 } })
       )
