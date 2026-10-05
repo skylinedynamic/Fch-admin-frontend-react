@@ -36,15 +36,18 @@ jobs:
       - name: Run Tests with Coverage
         run: npm run test:coverage
 
-      - name: Create Environment Variables
+      # The whole staging .env.production lives in the STAGE_ENV_PARTNER secret
+      # (one KEY=value per line). Passed through env, not interpolated into the
+      # script, so its contents never become shell code or appear in the log.
+      - name: Create .env.production from secrets
+        env:
+          ENV_FILE: ${{ secrets.STAGE_ENV_PARTNER }}
         run: |
-          # Create exactly the .env variable required for staging
-          echo "VITE_API_URL=https://api.skylinedynamic.dev/api/v1" > .env.production
-          echo "VITE_BASE_API_URL=https://api.skylinedynamic.dev" >> .env.production
-          echo "VITE_WEBSITE_URL=https://skylinedynamic.dev/" >> .env.production
-          echo "VITE_BASE_URL=https://skylinedynamic.dev/" >> .env.production
-          echo "VITE_BASE_URL_IP=13.234.195.232" >> .env.production
-          echo "VITE_DEVELOPMENT_MODE=production" >> .env.production
+          if [ -z "$ENV_FILE" ]; then
+            echo "::error::The STAGE_ENV_PARTNER secret is missing or empty - add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          printf '%s\n' "$ENV_FILE" > .env.production
 
       - name: Build Application
         run: npm run build
