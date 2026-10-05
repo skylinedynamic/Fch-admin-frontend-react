@@ -6,8 +6,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
-import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers, getUserCount, purchaseUserSeats } from '../../modules/user/services';
-import { fetchInvoiceDetails } from '../../modules/invoice/services';
+import { fetchUsers, fetchRoles, updateUser, deleteUsers, getUserCount } from '../../modules/user/services';
 import { getUserDetails } from '../../lib/auth/authApi';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
@@ -19,7 +18,6 @@ import FilterLoader from '../../components/Loader/FilterLoader';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import { useAuthStore } from '../../store/auth/authStore';
 import UserLimitModal from './components/UserLimitModal';
-import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
 import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
 import { ENTITY_TYPE_PARTNER } from '../../config/appConfig';
 
@@ -56,9 +54,7 @@ export default function Users() {
   const user = useAuthStore((state) => state.user);
   const userSubscription = useAuthStore((state) => state.userSubscription);
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0 });
-  const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
+  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0 });
 
   // Free Trial User Limit Modal States
   const [showFreeTrialLimitModal, setShowFreeTrialLimitModal] = useState(false);
@@ -67,11 +63,7 @@ export default function Users() {
   const handleAddUserClick = async () => {
     // Check if current user is host from store (no API call needed)
     if (user?.is_host == 1) {
-      setShowAddUser(true);
-      setEditingUserId(null);
-      setIsPurchaseFlow(false);
-      setBackendErrors({});
-      setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+      navigate('/users/create');
       return;
     }
 
@@ -83,11 +75,7 @@ export default function Users() {
       const totalAllowed = data.data.seat_limit || data.data.user_seats || userSubscription?.user_seats || 3;
 
       if (currentCount < totalAllowed) {
-        setShowAddUser(true);
-        setEditingUserId(null);
-        setIsPurchaseFlow(false);
-        setBackendErrors({});
-        setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+        navigate('/users/create');
       } else {
         const isPartner = user?.entity_type === ENTITY_TYPE_PARTNER;
         const isFreeTrial = !!userSubscription?.is_free_trail;
@@ -100,8 +88,6 @@ export default function Users() {
             count: currentCount,
             price: data.data.per_user_price,
             limit: totalAllowed,
-            quantity: 1,
-            totalPrice: parseFloat(data.data.per_user_price || 0)
           });
           setShowLimitModal(true);
         }
@@ -114,32 +100,10 @@ export default function Users() {
     }
   };
 
+  // Over the seat limit: the new user is created as a paid seat on the Add User page.
   const handleLimitProceed = (months, totalPrice) => {
-    setLimitData(prev => ({ ...prev, months, quantity: 1, totalPrice }));
     setShowLimitModal(false);
-    setIsPurchaseFlow(true);
-    setEditingUserId(null);
-    setNewUser({
-      user_id: '',
-      name: '',
-      email: '',
-      phone_number: '',
-      role_id: '',
-      password: '',
-      new_password: '',
-      confirm_password: '',
-      is_paid: true
-    });
-    setShowAddUser(true);
-  };
-
-  const handlePaymentSuccess = async () => {
-    setShowPaymentModal(false);
-    toast.success("Payment completed successfully!");
-    // Delay reload to allow toast to be seen
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+    navigate('/users/create', { state: { purchase: { months, totalPrice } } });
   };
 
   const [newUser, setNewUser] = useState({
@@ -351,7 +315,7 @@ export default function Users() {
     // Clear previous backend errors
     setBackendErrors({});
 
-    if (editingUserId && newUser.new_password && newUser.new_password !== newUser.confirm_password) {
+    if (newUser.new_password && newUser.new_password !== newUser.confirm_password) {
       toast.error("New password and confirm password do not match");
       return;
     }
@@ -363,62 +327,23 @@ export default function Users() {
       phone_number: newUser.phone_number,
       role_id: newUser.role_id ? Number(newUser.role_id) : null,
       status: newUser.status,
-      ...(editingUserId
+      change_password: showPasswordFields && newUser.new_password ? true : false,
+      ...(showPasswordFields && newUser.new_password
         ? {
-          change_password: showPasswordFields && newUser.new_password ? true : false,
-          ...(showPasswordFields && newUser.new_password
-            ? {
-              new_password: newUser.new_password,
-              confirm_password: newUser.confirm_password,
-            }
-            : {})
+          new_password: newUser.new_password,
+          confirm_password: newUser.confirm_password,
         }
-        : {
-          password: newUser.password,
-          // If purchase flow, include these fields. 
-          // Note: Backend must accept is_paid:true or handle it appropriately.
-          // If backend rejects 'is_paid' for creation without payment, this flow might fail.
-          ...(isPurchaseFlow ? { is_paid: true, months: limitData.months } : {})
-        })
+        : {})
     }
 
     try {
       setLoadingSave(true);
-      if (editingUserId) {
-        await updateUser(editingUserId, payload)
-        toast.success(`User updated successfully`);
-        setShowAddUser(false)
-        setEditingUserId(null)
-        setBackendErrors({});
-        loadUsers()
-      } else {
-        const res = await createUser(payload)
-        toast.success(`User created successfully`);
-
-        if (isPurchaseFlow) {
-          const invoiceId = res.data?.invoice_id;
-          const userId = res.data?.id;
-          setLimitData(prev => ({ ...prev, invoiceId, userId }));
-          if (invoiceId) {
-            try {
-              const invoiceRes = await fetchInvoiceDetails(invoiceId);
-              if (invoiceRes.status) {
-                setLimitData(prev => ({ ...prev, invoice: invoiceRes.data }));
-              }
-            } catch (error) {
-              console.error('Failed to fetch invoice details:', error);
-            }
-          }
-          // User created, now proceed to payment
-          setShowAddUser(false);
-          setShowPaymentModal(true);
-        } else {
-          setShowAddUser(false)
-          setEditingUserId(null)
-          setBackendErrors({});
-          loadUsers()
-        }
-      }
+      await updateUser(editingUserId, payload)
+      toast.success(`User updated successfully`);
+      setShowAddUser(false)
+      setEditingUserId(null)
+      setBackendErrors({});
+      loadUsers()
     } catch (error) {
       // Handle backend validation errors
       if (error?.response?.data?.errors) {
@@ -730,7 +655,6 @@ export default function Users() {
           onHide={() => {
             setShowAddUser(false);
             setEditingUserId(null);
-            setIsPurchaseFlow(false);
             setShowPasswordFields(false);
             setBackendErrors({});
           }}
@@ -738,14 +662,11 @@ export default function Users() {
           user={newUser}
           onChange={handleAddUserInput}
           roles={roles}
-          isEdit={!!editingUserId}
+          isEdit
           loadingSave={loadingSave}
           showPasswordFields={showPasswordFields}
           onPasswordFieldsToggle={setShowPasswordFields}
           backendErrors={backendErrors}
-          isPurchaseFlow={isPurchaseFlow}
-          purchaseMonths={limitData.months}
-          purchasePrice={limitData.totalPrice}
         />
 
         <DeleteConfirmationModal
@@ -769,13 +690,6 @@ export default function Users() {
           userCount={limitData.count}
           freeLimit={limitData.limit}
           perUserPrice={limitData.price}
-        />
-
-        <InvoicePaymentModal
-          show={showPaymentModal}
-          onHide={() => setShowPaymentModal(false)}
-          onSuccess={handlePaymentSuccess}
-          invoice={limitData.invoice}
         />
 
         <PaidVersionOnlyModal

@@ -14,6 +14,7 @@ export const queryKeys = {
     all: ['employee'] as const,
     list: () => [...queryKeys.employee.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.employee.all, 'detail', id] as const,
+    availableForUser: () => [...queryKeys.employee.all, 'available-for-user'] as const,
   },
   appointment: {
     all: ['appointment'] as const,

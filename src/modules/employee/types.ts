@@ -40,6 +40,19 @@ export type Employee = {
   [key: string]: unknown
 }
 
+/** An employee with no user account yet - the choices when adding a user. */
+export type AvailableEmployee = {
+  id: number
+  first_name: string | null
+  last_name: string | null
+  full_name: string
+  email: string | null
+  phone_number_1: string | null
+  country_code: string | null
+  employee_code: string | null
+  designation: string | null
+}
+
 export type EmployeeSearchPayload = {
   department?: string
   job_status?: string
