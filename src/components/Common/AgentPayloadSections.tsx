@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../../assets/css/underwriting-result.css';
 
 /**
  * Renders the parts of an agent's result that no designed section covers.
@@ -35,15 +36,14 @@ const asScalarText = (value: unknown): string | null => {
 };
 
 const Bullets: React.FC<{ items: string[] }> = ({ items }) => (
-    <div className="d-flex flex-column" style={{ gap: '10px' }}>
+    <div className="d-flex flex-column uw-corrections">
         {items.map((item, idx) => (
             <div
-                className="d-flex align-items-start rounded-3"
-                style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 12px', gap: '10px' }}
+                className="d-flex align-items-start rounded-3 uw-item uw-item--neutral uw-item--compact"
                 key={idx}
             >
-                <i className="ri-arrow-right-circle-fill text-primary fs-16 flex-shrink-0" style={{ marginTop: '2px', lineHeight: 1 }}></i>
-                <span style={{ fontSize: '13px', lineHeight: '1.55', color: '#334155', fontWeight: 500, flex: 1, minWidth: 0 }}>
+                <i className="ri-arrow-right-circle-fill text-primary fs-16 flex-shrink-0 uw-item-icon"></i>
+                <span className="uw-item-text uw-item-text--neutral">
                     {item}
                 </span>
             </div>
@@ -76,7 +76,7 @@ export function renderAgentField(key: string, value: unknown): React.ReactNode {
     if (scalar !== null) {
         return (
             <SectionCard title={humanizeKey(key)} icon="ri-file-text-line" key={key}>
-                <p className="mb-0 fs-14" style={{ lineHeight: '1.7', color: '#334155' }}>{scalar}</p>
+                <p className="mb-0 fs-14 uw-prose">{scalar}</p>
             </SectionCard>
         );
     }
@@ -131,7 +131,7 @@ export function renderAgentField(key: string, value: unknown): React.ReactNode {
                                 {rows.map((row, idx) => (
                                     <tr key={idx}>
                                         {columns.map(column => (
-                                            <td className="py-3 px-4 fs-13" style={{ lineHeight: '1.5', color: '#334155' }} key={column}>
+                                            <td className="py-3 px-4 fs-13 uw-cell" key={column}>
                                                 {cellText(row[column])}
                                             </td>
                                         ))}
@@ -163,7 +163,7 @@ export function renderAgentField(key: string, value: unknown): React.ReactNode {
                         <div key={childKey}>
                             <div className="fw-bold text-dark fs-13 mb-2">{humanizeKey(childKey)}</div>
                             {scalarChild !== null ? (
-                                <p className="mb-0 fs-13" style={{ lineHeight: '1.6', color: '#334155' }}>{scalarChild}</p>
+                                <p className="mb-0 fs-13 uw-prose-sm">{scalarChild}</p>
                             ) : (
                                 <Bullets items={listChild} />
                             )}

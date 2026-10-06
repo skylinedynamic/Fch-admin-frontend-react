@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PageHeader from '../../common/PageHeader';
 import { PreQualificationApplicationDetails as PreQualificationApplicationDetailsType, GPT_STATUS, ISSUE_SEVERITY, isIncorrectUnderwriting, ClientAueResult } from '../../../modules/application/types';
-import { APPLICATION_STATUS_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
+import { PRE_QUALIFICATION_STATUS_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 import { Dropdown } from 'primereact/dropdown';
@@ -16,6 +16,7 @@ import { AiUnderwritingResultSkeleton } from '../../../components/Loader/Specifi
 import { useAuthStore } from '../../../store/auth';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { renderAgentExtraSections } from '../../../components/Common/AgentPayloadSections';
+import '../../../../assets/css/underwriting-result.css';
 
 type StepType = 1 | 2 | 3 | 4;
 
@@ -102,15 +103,15 @@ const formatRange = (min?: number | null, max?: number | null): string => {
 function renderSourceBadge(status?: string) {
     const val = (status || 'Reported').toLowerCase();
     if (val.includes('conflict')) {
-        return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold" style={{ backgroundColor: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', fontSize: '11px' }}>Conflicting</span>;
+        return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold uw-source-badge uw-source-badge--conflict">Conflicting</span>;
     }
     if (val.includes('verified')) {
-        return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold" style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', fontSize: '11px' }}>Verified</span>;
+        return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold uw-source-badge uw-source-badge--verified">Verified</span>;
     }
     if (val.includes('derived')) {
-        return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '11px' }}>Derived Data</span>;
+        return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold uw-source-badge uw-source-badge--derived">Derived Data</span>;
     }
-    return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold" style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontSize: '11px' }}>Borrower Reported</span>;
+    return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold uw-source-badge uw-source-badge--reported">Borrower Reported</span>;
 }
 
 export default function PreQualificationDetails() {
@@ -428,7 +429,7 @@ export default function PreQualificationDetails() {
                         </div>
                     </div>
                     <h6 className="fs-15 fw-semibold text-dark mb-1">Client Evaluation Not Available</h6>
-                    <p className="text-muted fs-13 mb-0 mx-auto" style={{ maxWidth: '480px' }}>
+                    <p className="text-muted fs-13 mb-0 mx-auto uw-mw-480">
                         The borrower-facing readiness assessment has not been generated for this application yet.
                     </p>
                 </div>
@@ -443,13 +444,7 @@ export default function PreQualificationDetails() {
                         <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                             <div className="d-flex align-items-center gap-3">
                                 <div
-                                    className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                    style={{
-                                        width: '46px',
-                                        height: '46px',
-                                        backgroundColor: '#ecfdf5',
-                                        color: '#10b981',
-                                    }}
+                                    className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 uw-result-icon"
                                 >
                                     <i className="ri-shield-check-fill fs-24"></i>
                                 </div>
@@ -465,21 +460,21 @@ export default function PreQualificationDetails() {
 
                             <div className="d-flex flex-wrap align-items-center gap-2">
                                 <div className="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-light border">
-                                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>Review Status:</span>
-                                    <span className="badge rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1" style={{ backgroundColor: '#059669', color: '#ffffff', fontSize: '11px', fontWeight: 600 }}>
+                                    <span className="uw-pill-label">Review Status:</span>
+                                    <span className="badge rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 uw-pill-badge uw-pill-badge--completed">
                                         <i className="ri-check-line"></i> Completed
                                     </span>
                                 </div>
                                 <div className="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-light border">
-                                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>Application:</span>
-                                    <span className="badge rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1" style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', fontSize: '11px', fontWeight: 700 }}>
+                                    <span className="uw-pill-label">Application:</span>
+                                    <span className="badge rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 uw-pill-badge uw-pill-badge--pending">
                                         <i className="ri-time-fill"></i> {app.status || 'Pending'}
                                     </span>
                                 </div>
                                 {app.gpt_generated_at && (
                                     <div className="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-light border">
-                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>Evaluated:</span>
-                                        <span className="d-inline-flex align-items-center text-muted" style={{ fontSize: '12px', fontWeight: 500, gap: '6px' }}>
+                                        <span className="uw-pill-label">Evaluated:</span>
+                                        <span className="d-inline-flex align-items-center text-muted uw-pill-value">
                                             <i className="ri-calendar-line"></i>
                                             <span>{app.gpt_generated_at}</span>
                                         </span>
@@ -493,12 +488,7 @@ export default function PreQualificationDetails() {
                 {/* 2. Estimated Funding Range Hero */}
                 {client.estimated_funding_range?.available && (
                     <div
-                        className="card shadow-sm mb-4 rounded-3 border-0"
-                        style={{
-                            background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)',
-                            border: '1px solid #bbf7d0',
-                            borderLeft: '5px solid #16a34a',
-                        }}
+                        className="card shadow-sm mb-4 rounded-3 border-0 uw-range-hero"
                     >
                         <div className="card-body p-3 p-md-4">
                             <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
@@ -509,7 +499,7 @@ export default function PreQualificationDetails() {
                                         </span>
                                         <span className="text-muted fs-12">Preliminary Assessment</span>
                                     </div>
-                                    <h6 className="text-muted fs-13 fw-semibold text-uppercase mb-2" style={{ letterSpacing: '0.05em' }}>
+                                    <h6 className="text-muted fs-13 fw-semibold text-uppercase mb-2 uw-tracking">
                                         Estimated Funding Range
                                     </h6>
                                     <div className="fs-2 fw-bold text-success mb-1">
@@ -523,10 +513,9 @@ export default function PreQualificationDetails() {
                                     )}
                                 </div>
                                 <div
-                                    className="d-none d-md-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-                                    style={{ width: '64px', height: '64px', backgroundColor: '#dcfce7', color: '#16a34a' }}
+                                    className="d-none d-md-flex align-items-center justify-content-center rounded-circle flex-shrink-0 uw-range-icon"
                                 >
-                                    <i className="ri-money-dollar-circle-fill" style={{ fontSize: '36px' }}></i>
+                                    <i className="ri-money-dollar-circle-fill uw-icon-36"></i>
                                 </div>
                             </div>
                         </div>
@@ -536,19 +525,14 @@ export default function PreQualificationDetails() {
                 {/* 3. Executive Readiness Summary */}
                 {client.funding_readiness_summary && (
                     <div
-                        className="card shadow-sm mb-4 rounded-3"
-                        style={{
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #e2e8f0',
-                            borderLeft: '4px solid #3b82f6',
-                        }}
+                        className="card shadow-sm mb-4 rounded-3 uw-summary-card"
                     >
                         <div className="card-body p-3 p-md-4">
                             <div className="d-flex align-items-center gap-2 mb-2">
                                 <i className="ri-file-text-line text-primary fs-18"></i>
                                 <h6 className="fw-bold mb-0 text-dark fs-15">Executive Readiness Summary</h6>
                             </div>
-                            <p className="mb-0 fs-14" style={{ lineHeight: '1.7', color: '#334155' }}>
+                            <p className="mb-0 fs-14 uw-prose">
                                 {client.funding_readiness_summary}
                             </p>
                         </div>
@@ -572,13 +556,13 @@ export default function PreQualificationDetails() {
                                 <table className="table table-hover align-middle mb-0">
                                     <thead className="table-light">
                                         <tr>
-                                            <th scope="col" className="ps-4 py-3 text-muted text-uppercase fs-11 fw-bold" style={{ width: '28%', minWidth: '180px' }}>
+                                            <th scope="col" className="ps-4 py-3 text-muted text-uppercase fs-11 fw-bold uw-col-area">
                                                 Evaluation Area
                                             </th>
                                             <th scope="col" className="py-3 text-muted text-uppercase fs-11 fw-bold">
                                                 Assessment
                                             </th>
-                                            <th scope="col" className="pe-4 py-3 text-muted text-uppercase fs-11 fw-bold text-end" style={{ width: '22%', minWidth: '160px' }}>
+                                            <th scope="col" className="pe-4 py-3 text-muted text-uppercase fs-11 fw-bold text-end uw-col-source">
                                                 Source Status
                                             </th>
                                         </tr>
@@ -589,7 +573,7 @@ export default function PreQualificationDetails() {
                                                 <td className="ps-4 py-3 fw-semibold text-dark fs-13">
                                                     {item.area}
                                                 </td>
-                                                <td className="py-3 fs-13" style={{ lineHeight: '1.5', color: '#334155' }}>
+                                                <td className="py-3 fs-13 uw-cell">
                                                     {item.assessment}
                                                 </td>
                                                 <td className="pe-4 py-3 text-end">
@@ -610,12 +594,10 @@ export default function PreQualificationDetails() {
                     {!!client.strengths?.length && (
                         <div className={client.areas_requiring_attention?.length ? 'col-lg-6' : 'col-12'}>
                             <div
-                                className="card h-100 shadow-sm rounded-3 border"
-                                style={{ backgroundColor: '#ffffff', borderColor: '#bbf7d0' }}
+                                className="card h-100 shadow-sm rounded-3 border uw-card--success"
                             >
                                 <div
-                                    className="card-header py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between"
-                                    style={{ backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }}
+                                    className="card-header py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between uw-card-header--success"
                                 >
                                     <div className="d-flex align-items-center gap-2">
                                         <i className="ri-shield-check-fill text-success fs-18"></i>
@@ -626,31 +608,16 @@ export default function PreQualificationDetails() {
                                     </span>
                                 </div>
                                 <div className="card-body p-3 p-md-4">
-                                    <div className="d-flex flex-column" style={{ gap: '12px' }}>
+                                    <div className="d-flex flex-column uw-stack">
                                         {client.strengths.map((item, idx) => (
                                             <div
-                                                className="d-flex align-items-start rounded-3"
-                                                style={{
-                                                    backgroundColor: '#f0fdf4',
-                                                    border: '1px solid #bbf7d0',
-                                                    padding: '12px 14px',
-                                                    gap: '12px',
-                                                }}
+                                                className="d-flex align-items-start rounded-3 uw-item uw-item--success"
                                                 key={idx}
                                             >
                                                 <i
-                                                    className="ri-checkbox-circle-fill text-success fs-17 flex-shrink-0"
-                                                    style={{ marginTop: '2px', lineHeight: 1 }}
+                                                    className="ri-checkbox-circle-fill text-success fs-17 flex-shrink-0 uw-item-icon"
                                                 ></i>
-                                                <span
-                                                    style={{
-                                                        fontSize: '13px',
-                                                        lineHeight: '1.55',
-                                                        color: '#166534',
-                                                        fontWeight: 500,
-                                                        flex: 1,
-                                                        minWidth: 0,
-                                                    }}
+                                                <span className="uw-item-text uw-item-text--success"
                                                 >
                                                     {item}
                                                 </span>
@@ -666,12 +633,10 @@ export default function PreQualificationDetails() {
                     {!!client.areas_requiring_attention?.length && (
                         <div className={client.strengths?.length ? 'col-lg-6' : 'col-12'}>
                             <div
-                                className="card h-100 shadow-sm rounded-3 border"
-                                style={{ backgroundColor: '#ffffff', borderColor: '#fde68a' }}
+                                className="card h-100 shadow-sm rounded-3 border uw-card--warning"
                             >
                                 <div
-                                    className="card-header py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between"
-                                    style={{ backgroundColor: '#fffbeb', borderColor: '#fef3c7' }}
+                                    className="card-header py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between uw-card-header--warning"
                                 >
                                     <div className="d-flex align-items-center gap-2">
                                         <i className="ri-alert-fill text-warning fs-18"></i>
@@ -682,31 +647,16 @@ export default function PreQualificationDetails() {
                                     </span>
                                 </div>
                                 <div className="card-body p-3 p-md-4">
-                                    <div className="d-flex flex-column" style={{ gap: '12px' }}>
+                                    <div className="d-flex flex-column uw-stack">
                                         {client.areas_requiring_attention.map((item, idx) => (
                                             <div
-                                                className="d-flex align-items-start rounded-3"
-                                                style={{
-                                                    backgroundColor: '#fffbeb',
-                                                    border: '1px solid #fde68a',
-                                                    padding: '12px 14px',
-                                                    gap: '12px',
-                                                }}
+                                                className="d-flex align-items-start rounded-3 uw-item uw-item--warning"
                                                 key={idx}
                                             >
                                                 <i
-                                                    className="ri-error-warning-fill text-warning fs-17 flex-shrink-0"
-                                                    style={{ marginTop: '2px', lineHeight: 1 }}
+                                                    className="ri-error-warning-fill text-warning fs-17 flex-shrink-0 uw-item-icon"
                                                 ></i>
-                                                <span
-                                                    style={{
-                                                        fontSize: '13px',
-                                                        lineHeight: '1.55',
-                                                        color: '#92400e',
-                                                        fontWeight: 500,
-                                                        flex: 1,
-                                                        minWidth: 0,
-                                                    }}
+                                                <span className="uw-item-text uw-item-text--warning"
                                                 >
                                                     {item}
                                                 </span>
@@ -730,7 +680,7 @@ export default function PreQualificationDetails() {
                                         <h6 className="fw-bold mb-0 text-dark fs-15">Submission Positioning Overview</h6>
                                     </div>
                                     <div className="card-body p-3 p-md-4">
-                                        <p className="mb-0 fs-14" style={{ lineHeight: '1.7', color: '#334155' }}>
+                                        <p className="mb-0 fs-14 uw-prose">
                                             {client.submission_positioning_overview}
                                         </p>
                                     </div>
@@ -751,31 +701,16 @@ export default function PreQualificationDetails() {
                                         </span>
                                     </div>
                                     <div className="card-body p-3 p-md-4">
-                                        <div className="d-flex flex-column" style={{ gap: '12px' }}>
+                                        <div className="d-flex flex-column uw-stack">
                                             {client.structuring_considerations.map((item, idx) => (
                                                 <div
-                                                    className="d-flex align-items-start rounded-3"
-                                                    style={{
-                                                        backgroundColor: '#f8fafc',
-                                                        border: '1px solid #e2e8f0',
-                                                        padding: '12px 14px',
-                                                        gap: '12px',
-                                                    }}
+                                                    className="d-flex align-items-start rounded-3 uw-item uw-item--neutral"
                                                     key={idx}
                                                 >
                                                     <i
-                                                        className="ri-arrow-right-circle-fill text-primary fs-17 flex-shrink-0"
-                                                        style={{ marginTop: '2px', lineHeight: 1 }}
+                                                        className="ri-arrow-right-circle-fill text-primary fs-17 flex-shrink-0 uw-item-icon"
                                                     ></i>
-                                                    <span
-                                                        style={{
-                                                            fontSize: '13px',
-                                                            lineHeight: '1.55',
-                                                            color: '#334155',
-                                                            fontWeight: 500,
-                                                            flex: 1,
-                                                            minWidth: 0,
-                                                        }}
+                                                    <span className="uw-item-text uw-item-text--neutral"
                                                     >
                                                         {item}
                                                     </span>
@@ -802,32 +737,28 @@ export default function PreQualificationDetails() {
                                     {
                                         label: 'Complete Assessment',
                                         icon: 'ri-file-list-3-line',
-                                        color: '#3b82f6',
-                                        bg: '#eff6ff',
+                                        tone: 'blue',
                                         items: client.required_next_steps.complete_assessment,
                                     },
                                     {
                                         label: 'Underwriting Review',
                                         icon: 'ri-search-eye-line',
-                                        color: '#8b5cf6',
-                                        bg: '#f5f3ff',
+                                        tone: 'purple',
                                         items: client.required_next_steps.underwriting_review,
                                     },
                                     {
                                         label: 'Submission Readiness',
                                         icon: 'ri-rocket-line',
-                                        color: '#10b981',
-                                        bg: '#ecfdf5',
+                                        tone: 'green',
                                         items: client.required_next_steps.submission_readiness,
                                     },
                                 ] as const)
                                     .filter((group) => !!group.items?.length)
                                     .map((group) => (
-                                        <div key={group.label} className="p-3 rounded-3 border bg-white">
+                                        <div key={group.label} className={`p-3 rounded-3 border bg-white uw-step-group--${group.tone}`}>
                                             <div className="d-flex align-items-center gap-2 mb-3">
                                                 <span
-                                                    className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style={{ width: '28px', height: '28px', backgroundColor: group.bg, color: group.color }}
+                                                    className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 uw-step-icon"
                                                 >
                                                     <i className={`${group.icon} fs-14`}></i>
                                                 </span>
@@ -836,21 +767,13 @@ export default function PreQualificationDetails() {
 
                                             <div className="d-flex flex-column gap-2 ms-1">
                                                 {group.items!.map((step, idx) => (
-                                                    <div className="d-flex align-items-start gap-3 fs-13" style={{ color: '#334155' }} key={idx}>
+                                                    <div className="d-flex align-items-start gap-3 fs-13 uw-step" key={idx}>
                                                         <span
-                                                            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 fw-bold fs-11"
-                                                            style={{
-                                                                width: '20px',
-                                                                height: '20px',
-                                                                marginTop: '2px',
-                                                                backgroundColor: group.bg,
-                                                                color: group.color,
-                                                                border: `1px solid ${group.color}40`,
-                                                            }}
+                                                            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 fw-bold fs-11 uw-step-number"
                                                         >
                                                             {idx + 1}
                                                         </span>
-                                                        <span style={{ lineHeight: '1.6' }}>{step}</span>
+                                                        <span className="uw-step-text">{step}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -864,24 +787,18 @@ export default function PreQualificationDetails() {
                 {/* 8. Important Notice */}
                 {client.important_notice && (
                     <div
-                        className="card shadow-none mb-4 rounded-3"
-                        style={{
-                            backgroundColor: '#fffbeb',
-                            border: '1px solid #fde68a',
-                            borderLeft: '5px solid #f59e0b',
-                        }}
+                        className="card shadow-none mb-4 rounded-3 uw-notice uw-notice--warning"
                     >
                         <div className="card-body p-3 p-md-4">
                             <div className="d-flex align-items-start gap-3">
                                 <div
-                                    className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                    style={{ width: '42px', height: '42px', backgroundColor: '#fef3c7', color: '#d97706' }}
+                                    className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 uw-notice-icon uw-notice-icon--important"
                                 >
                                     <i className="ri-alert-fill fs-22"></i>
                                 </div>
                                 <div className="flex-grow-1">
-                                    <h6 className="fw-bold mb-1 fs-15" style={{ color: '#92400e' }}>Important Notice</h6>
-                                    <p className="mb-0 fs-13" style={{ lineHeight: '1.65', color: '#451a03' }}>
+                                    <h6 className="fw-bold mb-1 fs-15 uw-notice-title--important">Important Notice</h6>
+                                    <p className="mb-0 fs-13 uw-notice-text--important">
                                         {client.important_notice}
                                     </p>
                                 </div>
@@ -895,7 +812,7 @@ export default function PreQualificationDetails() {
 
                 {/* 9. Disclosures & Disclaimers */}
                 {(client.final_disclosure || client.disclaimer) && (
-                    <div className="pt-3 border-top fs-12 text-muted" style={{ lineHeight: '1.65' }}>
+                    <div className="pt-3 border-top fs-12 text-muted uw-disclosures">
                         {client.final_disclosure && (
                             <p className="mb-2">{client.final_disclosure}</p>
                         )}
@@ -993,7 +910,7 @@ export default function PreQualificationDetails() {
                             </div>
                         </div>
                         <h5 className="fs-16 fw-semibold text-dark mb-2">Evaluation In Progress</h5>
-                        <p className="text-muted fs-14 mb-0 mx-auto" style={{ maxWidth: '520px' }}>
+                        <p className="text-muted fs-14 mb-0 mx-auto uw-mw-520">
                             The pre-qualification underwriting review is currently in progress or awaiting evaluation by the underwriting team. Once completed, the full Client Underwriting Evaluation will appear here.
                         </p>
                     </div>
@@ -1007,7 +924,7 @@ export default function PreQualificationDetails() {
                         </div>
                     </div>
                     <h5 className="fs-16 fw-semibold text-dark mb-2">No AI Evaluation Run Yet</h5>
-                    <p className="text-muted fs-14 mb-0 mx-auto" style={{ maxWidth: '520px' }}>
+                    <p className="text-muted fs-14 mb-0 mx-auto uw-mw-520">
                         Use <strong>Run Pre-Qualification</strong> at the top of the page to trigger automated OpenAI underwriting. The engine will evaluate the borrower's submitted data, recommend funding programs, produce a required document checklist, and generate an internal underwriting memo.
                     </p>
                 </div>
@@ -1024,8 +941,7 @@ export default function PreQualificationDetails() {
                         <div className="d-flex align-items-center gap-2">
                             <button
                                 type="button"
-                                className={`btn btn-sm ${aueViewMode === 'internal' ? 'btn-primary' : 'btn-light border'} d-flex align-items-center fw-medium px-3 py-2`}
-                                style={{ gap: '8px' }}
+                                className={`uw-gap-8 btn btn-sm ${aueViewMode === 'internal' ? 'btn-primary' : 'btn-light border'} d-flex align-items-center fw-medium px-3 py-2`}
                                 onClick={() => setAueViewMode('internal')}
                             >
                                 <i className="ri-shield-keyhole-line fs-14"></i>
@@ -1033,8 +949,7 @@ export default function PreQualificationDetails() {
                             </button>
                             <button
                                 type="button"
-                                className={`btn btn-sm ${aueViewMode === 'client' ? 'btn-primary' : 'btn-light border'} d-flex align-items-center fw-medium px-3 py-2`}
-                                style={{ gap: '8px' }}
+                                className={`uw-gap-8 btn btn-sm ${aueViewMode === 'client' ? 'btn-primary' : 'btn-light border'} d-flex align-items-center fw-medium px-3 py-2`}
                                 onClick={() => setAueViewMode('client')}
                             >
                                 <i className="ri-eye-line fs-14"></i>
@@ -1071,7 +986,7 @@ export default function PreQualificationDetails() {
                             </div>
                             <div className="d-flex align-items-center gap-2">
                                 {app.gpt_generated_at && (
-                                    <span className="text-muted fs-12 d-inline-flex align-items-center" style={{ gap: '6px' }}>
+                                    <span className="text-muted fs-12 d-inline-flex align-items-center uw-gap-6">
                                         <i className="ri-calendar-check-line"></i>
                                         <span>Evaluated: {app.gpt_generated_at}</span>
                                     </span>
@@ -1254,7 +1169,7 @@ export default function PreQualificationDetails() {
                                             </button>
                                         </div>
                                         <div className="p-3 bg-light rounded border">
-                                            <p className="fs-14 text-dark mb-0" style={{ whiteSpace: 'pre-line' }}>
+                                            <p className="fs-14 text-dark mb-0 uw-pre-line">
                                                 {ai.internal.executive_underwriting_conclusion}
                                             </p>
                                         </div>
@@ -1436,7 +1351,7 @@ export default function PreQualificationDetails() {
                                             Final Internal Disposition
                                         </h6>
                                         <div className="p-3 bg-light rounded border">
-                                            <p className="fs-14 text-dark mb-0" style={{ whiteSpace: 'pre-line' }}>
+                                            <p className="fs-14 text-dark mb-0 uw-pre-line">
                                                 {ai.internal.final_internal_disposition}
                                             </p>
                                         </div>
@@ -1560,7 +1475,7 @@ export default function PreQualificationDetails() {
                                             className={`list-group-item list-group-item-action d-flex align-items-center gap-2 rounded-2 border-0 py-2 px-3 mb-1 fs-14 ${currentStep === step.id ? 'active' : 'text-body'}`}
                                             onClick={() => setCurrentStep(step.id as StepType)}
                                         >
-                                            <div className={`rounded-circle d-flex align-items-center justify-content-center me-1 ${currentStep === step.id ? 'bg-white text-primary' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px', fontSize: '14px', fontWeight: '600' }}>
+                                            <div className={`uw-avatar-32 rounded-circle d-flex align-items-center justify-content-center me-1 ${currentStep === step.id ? 'bg-white text-primary' : 'bg-light text-muted'}`}>
                                                 {step.id}
                                             </div>
                                             <span className="fw-medium">{step.title}</span>
@@ -1605,7 +1520,7 @@ export default function PreQualificationDetails() {
                                                 <label htmlFor="status-select" className="form-label text-muted">Status <span className="text-danger">*</span></label>
                                                 <Dropdown
                                                     value={status}
-                                                    options={APPLICATION_STATUS_OPTIONS}
+                                                    options={PRE_QUALIFICATION_STATUS_OPTIONS}
                                                     onChange={(e) => {
                                                         setStatus(e.value);
                                                         if (statusError) setStatusError('');
@@ -1677,7 +1592,7 @@ export default function PreQualificationDetails() {
                                             </div>
                                             <div className="mb-0">
                                                 <label className="form-label text-muted d-block">Status Notes</label>
-                                                <div className="text-muted fs-14 bg-light p-3 rounded" style={{ minHeight: '80px' }}>
+                                                <div className="text-muted fs-14 bg-light p-3 rounded uw-minh-80">
                                                     {app.status_note || 'No notes available'}
                                                 </div>
                                             </div>
