@@ -15,8 +15,59 @@ import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDeta
 import { AiUnderwritingResultSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import { useAuthStore } from '../../../store/auth';
 import { usePermissions } from '../../../lib/auth/usePermissions';
+import { renderAgentExtraSections } from '../../../components/Common/AgentPayloadSections';
 
 type StepType = 1 | 2 | 3 | 4;
+
+/**
+ * The fields the sections below are designed for. The schemas themselves live
+ * on the OpenAI agents, so anything else an agent returns is rendered by
+ * renderAgentExtraSections() rather than dropped — a reviewer acting on an
+ * evaluation has to be looking at all of it.
+ */
+const CLIENT_SECTIONED_KEYS: ReadonlySet<string> = new Set([
+    'assessment_title',
+    'funding_readiness_summary',
+    'readiness_snapshot',
+    'estimated_funding_range',
+    'strengths',
+    'areas_requiring_attention',
+    'structuring_considerations',
+    'submission_positioning_overview',
+    'required_next_steps',
+    'important_notice',
+    'final_disclosure',
+    'disclaimer',
+    // Provenance about the run itself, shown in the header rather than as a section.
+    'prompt_version',
+    'submission_id',
+    'schema_version',
+    'generated_at',
+]);
+
+const INTERNAL_SECTIONED_KEYS: ReadonlySet<string> = new Set([
+    'classification',
+    'prompt_version',
+    'submission_id',
+    'matrix_version',
+    'overall_stance',
+    'data_status',
+    'manual_review',
+    'borrower_request_snapshot',
+    'aus_model_determination',
+    'strengths',
+    'executive_underwriting_conclusion',
+    'recommended_funding_paths',
+    'active_lender_matches',
+    'conditions_and_flags',
+    'underwriting_analysis',
+    'routing_recommendation',
+    'required_documentation',
+    'credit_building_pathway',
+    'final_internal_disposition',
+    'closing_tag',
+    'disclaimer',
+]);
 
 // Mirrors PreQualificationRequest::STATUS_NOTE_MAX_LENGTH on the server, which
 // the update endpoint validates against. Kept in step with it so the field can
@@ -839,6 +890,9 @@ export default function PreQualificationDetails() {
                     </div>
                 )}
 
+                {/* Anything else this agent's schema defines. */}
+                {renderAgentExtraSections(client, CLIENT_SECTIONED_KEYS)}
+
                 {/* 9. Disclosures & Disclaimers */}
                 {(client.final_disclosure || client.disclaimer) && (
                     <div className="pt-3 border-top fs-12 text-muted" style={{ lineHeight: '1.65' }}>
@@ -1388,6 +1442,9 @@ export default function PreQualificationDetails() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Anything else this agent's schema defines. */}
+                                {renderAgentExtraSections(ai.internal, INTERNAL_SECTIONED_KEYS)}
 
                                 {(ai.internal.closing_tag || ai.internal.disclaimer) && (
                                     <div className="mb-4 pt-2 border-top">
