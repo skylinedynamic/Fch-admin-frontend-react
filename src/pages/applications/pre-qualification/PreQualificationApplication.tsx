@@ -14,7 +14,8 @@ import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSke
 import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { PreQualificationApplication as PreQualificationApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
-import { APPLICATION_STATUS_OPTIONS, FUNDING_TYPE_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
+import { PRE_QUALIFICATION_STATUS_OPTIONS, FUNDING_TYPE_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
+import '../../../../assets/css/underwriting-result.css';
 
 
 
@@ -302,7 +303,7 @@ export default function PreQualificationApplication() {
                                         <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
                                             <Dropdown
                                                 value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, ...APPLICATION_STATUS_OPTIONS]}
+                                                options={[{ label: 'All Status', value: '' }, ...PRE_QUALIFICATION_STATUS_OPTIONS]}
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 onChange={(e) => setSelectedStatus(e.value)}
@@ -368,12 +369,12 @@ export default function PreQualificationApplication() {
                                             className="p-datatable-sm"
                                             emptyMessage="No applications found"
                                         >
-                                            <Column header="Name" field="full_name" sortable filter filterPlaceholder="Search name" style={{ minWidth: '160px' }} />
-                                            <Column field="business_name" header="Business Name" sortable filter filterPlaceholder="Search business" style={{ minWidth: '180px' }} />
-                                            <Column field="funding_type" header="Funding Type" sortable filter filterPlaceholder="Search type" style={{ minWidth: '150px' }} />
-                                            <Column header="Requested Amount" field="requested_amount" body={(rowData: PreQualificationApplicationType) => rowData.requested_amount} sortable style={{ minWidth: '160px' }} />
-                                            <Column field="date" header="Date" body={(rowData: PreQualificationApplicationType) => rowData.date || '-'} sortable style={{ minWidth: '120px' }} />
-                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search status" style={{ minWidth: '140px' }} />
+                                            <Column className="uw-col-min-160" header="Name" field="full_name" sortable filter filterPlaceholder="Search name" />
+                                            <Column className="uw-col-min-180" field="business_name" header="Business Name" sortable filter filterPlaceholder="Search business" />
+                                            <Column className="uw-col-min-150" field="funding_type" header="Funding Type" sortable filter filterPlaceholder="Search type" />
+                                            <Column className="uw-col-min-160" header="Requested Amount" field="requested_amount" body={(rowData: PreQualificationApplicationType) => rowData.requested_amount} sortable />
+                                            <Column className="uw-col-min-120" field="date" header="Date" body={(rowData: PreQualificationApplicationType) => rowData.date || '-'} sortable />
+                                            <Column className="uw-col-min-140" field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search status" />
                                         </DataTable>
                                     </div>
                                 )}
