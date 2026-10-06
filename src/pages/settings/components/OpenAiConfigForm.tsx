@@ -5,7 +5,6 @@ import { fetchOpenAiConfig, fetchOpenAiModels, saveOpenAiConfig } from '../../..
 import { fetchAssistantConfigs, saveAssistantSettings } from '../../../modules/assistant-config/services';
 import type { AssistantConfig, AssistantType, AssistantVectorStore } from '../../../modules/assistant-config/types';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
-import { ASSISTANT_SETTINGS_CHANGED } from '../../../components/Common/ChatWidget/SupportChatWidget';
 import { OpenAiConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import { DEFAULT_FALLBACK_MODELS, DEFAULT_EFFORT_OPTIONS } from '../../../config';
 
@@ -414,8 +413,6 @@ const OpenAiConfigForm: React.FC = () => {
             }
 
             toast.success('OpenAI configuration saved successfully!');
-            // Lets the chat widget in the layout show or hide itself right away.
-            window.dispatchEvent(new Event(ASSISTANT_SETTINGS_CHANGED));
             await loadConfig();
         } catch (error: any) {
             console.error('Failed to save OpenAI config:', error);
