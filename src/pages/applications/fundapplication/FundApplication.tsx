@@ -267,7 +267,7 @@ export default function FundApplication() {
   // let saves through unasked and dismissed a dialog that had just opened.
   useEffect(() => {
     if (!fundingData) return
-    setEditRequiresConfirmation(Boolean(fundingData.edit_requires_resign))
+    setEditRequiresConfirmation(Boolean(fundingData.edit_needs_confirmation ?? fundingData.edit_requires_resign), fundingData.id)
   }, [fundingData])
 
   // Until the application has loaded, the flag above is only a default. Saves
@@ -798,7 +798,7 @@ export default function FundApplication() {
         isEditing={isEditing}
       />
       {/* Rendered once for the whole wizard: every step's save waits on it. */}
-      <EditConfirmationModal />
+      <EditConfirmationModal status={fundingData?.status} awaitingResign={Boolean(fundingData?.requires_resign)} />
     </div>
   )
 }

@@ -53,21 +53,62 @@ export const useEditConfirmationStore = create<EditConfirmationState>(() => ({
   resolver: null,
 }))
 
+/**
+ * A yes survives a reload of the page, and nothing else. It is kept for the tab
+ * only, against the one application it was given for, and dropped as soon as
+ * the wizard is left - so coming back to the application asks again.
+ */
+const CONFIRMED_KEY = 'fundApplication.editConfirmedFor'
+
+const readConfirmedFor = (): string | null => {
+  try {
+    return window.sessionStorage.getItem(CONFIRMED_KEY)
+  } catch (_) {
+    return null
+  }
+}
+
+const writeConfirmedFor = (applicationId: string | null): void => {
+  try {
+    if (applicationId) {
+      window.sessionStorage.setItem(CONFIRMED_KEY, applicationId)
+    } else {
+      window.sessionStorage.removeItem(CONFIRMED_KEY)
+    }
+  } catch (_) { }
+}
+
+// Which application the gate is currently answering for.
+let currentApplicationId: string | null = null
+
 export const getEditConfirmationState = (): EditConfirmationState => useEditConfirmationStore.getState()
 
 /**
  * Tell the gate whether this application is in a state where an edit costs a
  * signature. Driven by the API rather than by a status list held here.
  */
-export const setEditRequiresConfirmation = (requiresConfirmation: boolean): void => {
+export const setEditRequiresConfirmation = (
+  requiresConfirmation: boolean,
+  applicationId?: number | string | null
+): void => {
   const { promptOnOpen } = useEditConfirmationStore.getState()
+
+  currentApplicationId = applicationId != null ? String(applicationId) : null
+
+  // Already said yes for this application before the page was reloaded.
+  const confirmedBeforeReload =
+    requiresConfirmation && currentApplicationId !== null && readConfirmedFor() === currentApplicationId
+
+  // A loaded application that is no longer signed: an earlier yes covers
+  // nothing now. (Leaving the wizard forgets it too, in resetEditConfirmation.)
+  if (!requiresConfirmation && currentApplicationId !== null) writeConfirmedFor(null)
 
   useEditConfirmationStore.setState({
     requiresConfirmation,
     // Only the state it was opened in counts; once unsigned, the moment has passed.
     promptOnOpen: requiresConfirmation ? (promptOnOpen ?? true) : false,
-    // Once it stops being signed, an earlier yes no longer covers anything.
     ...(requiresConfirmation ? {} : { hasConfirmed: false }),
+    ...(confirmedBeforeReload ? { hasConfirmed: true } : {}),
   })
 
   // The application stopped being signed (it dropped to Draft, or the borrower
@@ -89,13 +130,29 @@ export const setEditRequiresConfirmation = (requiresConfirmation: boolean): void
 export const resetEditConfirmation = (): void => {
   setEditRequiresConfirmation(false)
   useEditConfirmationStore.setState({ isResolving: false, promptOnOpen: null, hasConfirmed: false })
+
+  // Forget the remembered yes a tick later rather than now. In development
+  // React unmounts and remounts the wizard once on load, and that must not wipe
+  // the answer a reload is supposed to keep; the remount cancels this.
+  pendingForget = setTimeout(() => {
+    pendingForget = null
+    writeConfirmedFor(null)
+  }, 0)
 }
+
+let pendingForget: ReturnType<typeof setTimeout> | null = null
 
 /**
  * Mark the flag as unknown while the application is being fetched, and as
  * settled once it has arrived (or failed - the API still enforces the rule).
  */
 export const setEditConfirmationResolving = (isResolving: boolean): void => {
+  // The wizard is mounted (again), so it was not really left.
+  if (pendingForget !== null) {
+    clearTimeout(pendingForget)
+    pendingForget = null
+  }
+
   useEditConfirmationStore.setState({ isResolving })
 }
 
@@ -155,6 +212,8 @@ export const resolveEditConfirmation = (confirmed: boolean): void => {
   const { resolver } = useEditConfirmationStore.getState()
 
   useEditConfirmationStore.setState({ isOpen: false, resolver: null, ...(confirmed ? { hasConfirmed: true } : {}) })
+
+  if (confirmed) writeConfirmedFor(currentApplicationId)
 
   resolver?.(confirmed)
 }

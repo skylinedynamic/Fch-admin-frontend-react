@@ -528,15 +528,96 @@ export default function FundingApplicationDetails() {
         </div>
     );
 
-    const renderAttestationAndAuthorization = () => (
-        <div className="row">
-            <div className="col-md-6 mb-3">
-                <label className="form-label fs-13">Attestation Authorization</label>
-                <div>{app.attestation_authorization ? <span className="badge bg-success">Authorized</span> : <span className="badge bg-secondary">Not Authorized</span>}</div>
-            </div>
+    // One signature, shown the way the borrower gave it: the image for an
+    // e-signature, the name for a typed one - with who signed and when.
+    const renderSignaturePanel = (
+        title: string,
+        signature: any,
+        options: { badge: React.ReactNode; faded?: boolean; emptyText: string }
+    ) => {
+        const isEsign = signature?.signature_type === 'esign' && signature?.signature_image;
+        const hasSignature = Boolean(signature && (isEsign || signature.signature_name));
+        // Both dates arrive already formatted by the API (toTimezone).
+        const signatureDate = signature?.signature_date || null;
 
-        </div>
-    );
+        return (
+            <div className="col-lg-6 mb-3 d-flex flex-column">
+                <label className="form-label fs-13 d-flex align-items-center gap-2">{title} {options.badge}</label>
+                <div className="border rounded-3 overflow-hidden flex-grow-1 d-flex flex-column">
+                    <div className="d-flex align-items-center justify-content-center text-center p-3" style={{ height: 150 }}>
+                        {!hasSignature ? (
+                            <span className="text-muted fs-13">{options.emptyText}</span>
+                        ) : isEsign ? (
+                            <img
+                                src={signature.signature_image}
+                                alt={`Signature of ${signature.signature_name || 'the borrower'}`}
+                                className="mw-100 mh-100"
+                                style={{ objectFit: 'contain', opacity: options.faded ? 0.45 : 1 }}
+                            />
+                        ) : (
+                            <span className={`fs-18 fw-semibold text-break ${options.faded ? 'text-decoration-line-through text-muted' : 'text-dark'}`}>
+                                {signature.signature_name}
+                            </span>
+                        )}
+                    </div>
+                    {hasSignature && (
+                        <div className="border-top bg-light px-3 py-2 flex-grow-1">
+                            <div className="row g-2 fs-13">
+                                <div className="col-sm-6">
+                                    <span className="text-muted fs-12 d-block">Signed By</span>
+                                    <span className="fw-medium">{signature.signature_name || 'N/A'}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted fs-12 d-block">Signature Type</span>
+                                    <span className="fw-medium">{isEsign ? 'E-Signature' : 'Typed Name'}</span>
+                                </div>
+                                <div className="col-sm-6">
+                                    <span className="text-muted fs-12 d-block">Signed On</span>
+                                    <span className="fw-medium">{signature.signed_at || 'N/A'}</span>
+                                </div>
+                                {/* Always shown, so both panels have the same four
+                                    fields and end at the same height. */}
+                                <div className="col-sm-6">
+                                    <span className="text-muted fs-12 d-block">Signature Date</span>
+                                    <span className="fw-medium">{signatureDate || '—'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const renderAttestationAndAuthorization = () => {
+        const current = (app as any).signature_data;
+        const previous = (app as any).previous_signature;
+        const requiresResign = Boolean((app as any).requires_resign);
+
+        return (
+            <div className="row">
+                <div className="col-12 mb-3">
+                    <label className="form-label fs-13">Attestation Authorization</label>
+                    <div>{app.attestation_authorization ? <span className="badge bg-success">Authorized</span> : <span className="badge bg-secondary">Not Authorized</span>}</div>
+                </div>
+
+                {renderSignaturePanel(previous ? 'New Electronic Signature' : 'Electronic Signature', current, {
+                    badge: current
+                        ? <span className="badge bg-success-subtle text-success">Currently on file</span>
+                        : <span className="badge bg-warning-subtle text-warning">{requiresResign ? 'Awaiting re-signature' : 'Not signed yet'}</span>,
+                    emptyText: requiresResign
+                        ? 'The borrower has not signed again yet.'
+                        : 'This application has not been signed yet.',
+                })}
+
+                {previous && renderSignaturePanel('Previous Signature', previous, {
+                    badge: <span className="badge bg-danger-subtle text-danger">No longer valid</span>,
+                    faded: true,
+                    emptyText: '',
+                })}
+            </div>
+        );
+    };
 
     const renderDocumentAuditHistory = () => (
         <div className="row">

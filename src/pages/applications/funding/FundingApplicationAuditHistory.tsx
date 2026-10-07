@@ -305,6 +305,37 @@ export default function FundingApplicationAuditHistory() {
                                         <i className="ri-shield-check-fill text-success align-middle me-1"></i>
                                         Signature & Audit Log Details
                                     </h6>
+                                    {/* The signature currently on the application - the
+                                        latest one. Drawn / uploaded e-signatures show as
+                                        the image; typed ones as the name that was typed. */}
+                                    {(() => {
+                                        const sigData = (app as any).signature_data;
+                                        const isEsign = sigData.signature_type === 'esign' && sigData.signature_image;
+                                        if (!isEsign && !sigData.signature_name) return null;
+
+                                        return (
+                                            <div className="border rounded p-3 mb-3 d-flex align-items-center flex-wrap gap-3">
+                                                <div className="border-bottom border-dark pb-1 px-2 text-center" style={{ minWidth: 200 }}>
+                                                    {isEsign ? (
+                                                        <img
+                                                            src={sigData.signature_image}
+                                                            alt={`Signature of ${sigData.signature_name || 'the borrower'}`}
+                                                            style={{ maxHeight: 70, maxWidth: 260, mixBlendMode: 'multiply' }}
+                                                        />
+                                                    ) : (
+                                                        <span className="fs-18 fw-bold text-dark">{sigData.signature_name}</span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted fs-12 d-block">Signed By</span>
+                                                    <span className="fw-medium fs-13 d-block">{sigData.signature_name || 'N/A'}</span>
+                                                    <span className="badge bg-info-subtle text-info mt-1">
+                                                        {isEsign ? 'Drawn / Uploaded Electronic Signature' : 'Typed Electronic Signature'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                     <div className="row g-3 mb-3">
                                         <div className="col-md-4">
                                             <span className="text-muted fs-12 d-block">Public IP Address</span>

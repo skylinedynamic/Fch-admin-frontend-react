@@ -139,6 +139,7 @@ export interface FundingRequestData {
   is_editable?: boolean
   /** Editable, but a change would cost the borrower's signature. */
   edit_requires_resign?: boolean
+  edit_needs_confirmation?: boolean
   can_start_new_funding_request?: boolean
   locked_reason?: string | null
 }

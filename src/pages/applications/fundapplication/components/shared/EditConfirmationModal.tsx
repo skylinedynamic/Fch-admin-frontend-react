@@ -41,7 +41,7 @@ import {
  * Rendered once by the wizard; which save it is answering for is held in the
  * store, so every save path gets the same dialog.
  */
-export default function EditConfirmationModal() {
+export default function EditConfirmationModal({ status, awaitingResign }: { status?: string | null; awaitingResign?: boolean }) {
   const isOpen = useEditConfirmationStore(state => state.isOpen)
   const requiresConfirmation = useEditConfirmationStore(state => state.requiresConfirmation)
   const promptOnOpen = useEditConfirmationStore(state => state.promptOnOpen)
@@ -108,7 +108,11 @@ export default function EditConfirmationModal() {
               </div>
               <div>
                 <h5 id="edit-confirmation-title" className="mb-1">Edit Submitted Application?</h5>
-                <p className="text-muted mb-0">This application has already been signed and submitted by the borrower.</p>
+                <p className="text-muted mb-0">
+                  {awaitingResign
+                    ? 'This application was submitted before and is waiting for the borrower to sign it again.'
+                    : 'This application has already been signed and submitted by the borrower.'}
+                </p>
               </div>
             </div>
 
@@ -137,7 +141,7 @@ export default function EditConfirmationModal() {
             <div className="mt-4">
               <div className="alert alert-info mb-0">
                 <p className="mb-0">
-                  <span className="fw-semibold">NOTE:</span> No changes are made until you save an edit, and each edit is recorded against your account. Select Cancel to keep the application as submitted.
+                  <span className="fw-semibold">NOTE:</span> No changes are made until you save an edit, and each edit is recorded against your account. Select Cancel to keep the application {status ? <>in its current status, <span className="fw-semibold">{status}</span>.</> : 'as it is.'}
                 </p>
               </div>
             </div>
