@@ -23,6 +23,21 @@ import { create } from 'zustand'
 type EditConfirmationState = {
   /** Does an edit to this application currently cost a signature? */
   requiresConfirmation: boolean
+  /**
+   * The application is still loading, so `requiresConfirmation` is not an
+   * answer yet. A save that arrives now waits for it instead of reading the
+   * default `false` as "nothing is signed" and slipping past the dialog.
+   */
+  isResolving: boolean
+  /**
+   * Was the application already signed when it was opened? Then the dialog is
+   * shown straight away, before any typing. Null until the first load answers;
+   * an application that only becomes signed during this visit (the borrower just
+   * submitted it) does not get a dialog thrown at them for it.
+   */
+  promptOnOpen: boolean | null
+  /** The warning has been accepted for this visit, so saves stop asking. */
+  hasConfirmed: boolean
   /** Is the dialog on screen right now? */
   isOpen: boolean
   /** Resolves the save that is waiting on the borrower's answer. */
@@ -31,6 +46,9 @@ type EditConfirmationState = {
 
 export const useEditConfirmationStore = create<EditConfirmationState>(() => ({
   requiresConfirmation: false,
+  isResolving: false,
+  promptOnOpen: null,
+  hasConfirmed: false,
   isOpen: false,
   resolver: null,
 }))
@@ -42,7 +60,15 @@ export const getEditConfirmationState = (): EditConfirmationState => useEditConf
  * signature. Driven by the API rather than by a status list held here.
  */
 export const setEditRequiresConfirmation = (requiresConfirmation: boolean): void => {
-  useEditConfirmationStore.setState({ requiresConfirmation })
+  const { promptOnOpen } = useEditConfirmationStore.getState()
+
+  useEditConfirmationStore.setState({
+    requiresConfirmation,
+    // Only the state it was opened in counts; once unsigned, the moment has passed.
+    promptOnOpen: requiresConfirmation ? (promptOnOpen ?? true) : false,
+    // Once it stops being signed, an earlier yes no longer covers anything.
+    ...(requiresConfirmation ? {} : { hasConfirmed: false }),
+  })
 
   // The application stopped being signed (it dropped to Draft, or the borrower
   // signed again) while a dialog was up. Release the waiting save rather than
@@ -57,13 +83,55 @@ export const setEditRequiresConfirmation = (requiresConfirmation: boolean): void
 }
 
 /**
+ * The wizard is closing. Forget everything, so nothing follows the user to the
+ * next application they open.
+ */
+export const resetEditConfirmation = (): void => {
+  setEditRequiresConfirmation(false)
+  useEditConfirmationStore.setState({ isResolving: false, promptOnOpen: null, hasConfirmed: false })
+}
+
+/**
+ * Mark the flag as unknown while the application is being fetched, and as
+ * settled once it has arrived (or failed - the API still enforces the rule).
+ */
+export const setEditConfirmationResolving = (isResolving: boolean): void => {
+  useEditConfirmationStore.setState({ isResolving })
+}
+
+const whenResolved = (): Promise<void> =>
+  new Promise<void>(resolve => {
+    if (!useEditConfirmationStore.getState().isResolving) {
+      resolve()
+      return
+    }
+
+    const unsubscribe = useEditConfirmationStore.subscribe(state => {
+      if (!state.isResolving) {
+        unsubscribe()
+        resolve()
+      }
+    })
+  })
+
+/**
  * Ask the borrower to confirm, if this edit would cost them a signature.
  * Resolves true to go ahead, false if they back out.
  */
 export const requestEditConfirmation = (): Promise<boolean> => {
-  const { requiresConfirmation, isOpen, resolver } = useEditConfirmationStore.getState()
+  // The step forms load before the application's status does, so a quick Save
+  // can get here first. Wait for the real answer rather than guessing.
+  if (useEditConfirmationStore.getState().isResolving) {
+    return whenResolved().then(askForConfirmation)
+  }
 
-  if (!requiresConfirmation) {
+  return askForConfirmation()
+}
+
+const askForConfirmation = (): Promise<boolean> => {
+  const { requiresConfirmation, hasConfirmed, isOpen, resolver } = useEditConfirmationStore.getState()
+
+  if (!requiresConfirmation || hasConfirmed) {
     return Promise.resolve(true)
   }
 
@@ -86,7 +154,7 @@ export const requestEditConfirmation = (): Promise<boolean> => {
 export const resolveEditConfirmation = (confirmed: boolean): void => {
   const { resolver } = useEditConfirmationStore.getState()
 
-  useEditConfirmationStore.setState({ isOpen: false, resolver: null })
+  useEditConfirmationStore.setState({ isOpen: false, resolver: null, ...(confirmed ? { hasConfirmed: true } : {}) })
 
   resolver?.(confirmed)
 }

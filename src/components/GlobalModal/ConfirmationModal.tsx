@@ -47,6 +47,9 @@ interface ConfirmationModalProps {
   loading?: boolean
   loadingText?: string
   icon?: string
+  iconClass?: string
+  iconBgClass?: string
+  iconTextClass?: string
 }
 
 export default function ConfirmationModal({
@@ -59,7 +62,10 @@ export default function ConfirmationModal({
   cancelText = 'Cancel',
   loading = false,
   loadingText = 'Processing...',
-  icon = 'https://cdn.lordicon.com/lupuorrc.json'
+  icon = 'https://cdn.lordicon.com/lupuorrc.json',
+  iconClass,
+  iconBgClass = 'bg-danger-subtle',
+  iconTextClass = 'text-danger'
 }: ConfirmationModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const modalInstanceRef = useRef<BootstrapModalInstance | null>(null)
@@ -93,10 +99,9 @@ export default function ConfirmationModal({
       if (modal) {
         try {
           modal.hide()
-          // Use a small timeout to let the hide animation finish before disposing
-          setTimeout(() => {
-            if (typeof modal.dispose === 'function') modal.dispose()
-          }, 300)
+          // Dispose straight away: a show still mid-animation would otherwise
+          // re-attach the dialog to the body after React has removed it.
+          if (typeof modal.dispose === 'function') modal.dispose()
         } catch (_) { }
       }
       modalInstanceRef.current = null
@@ -114,12 +119,20 @@ export default function ConfirmationModal({
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
           <div className="modal-body p-5 text-center">
-            <lord-icon
-              src={icon}
-              trigger="loop"
-              colors="primary:#121331,secondary:#08a88a"
-              style={{ width: '90px', height: '90px' }}
-            ></lord-icon>
+            {iconClass ? (
+              <div className="avatar-xl mx-auto mb-3">
+                <span className={`avatar-title ${iconBgClass} ${iconTextClass} rounded-circle fs-48`}>
+                  <i className={iconClass}></i>
+                </span>
+              </div>
+            ) : (
+              <lord-icon
+                src={icon}
+                trigger="loop"
+                colors="primary:#121331,secondary:#08a88a"
+                style={{ width: '90px', height: '90px' }}
+              ></lord-icon>
+            )}
             <div className="mt-4 text-center">
               <h4>{title}</h4>
               <p className="text-muted fs-15 mb-4">

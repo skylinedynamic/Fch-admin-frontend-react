@@ -19,7 +19,10 @@ export const APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
   [APPLICATION_STATUS_OPTIONS[1].value]: 'bg-info-subtle text-info',
   [APPLICATION_STATUS_OPTIONS[2].value]: 'bg-primary-subtle text-primary',
   [APPLICATION_STATUS_OPTIONS[3].value]: 'bg-success-subtle text-success',
-  [APPLICATION_STATUS_OPTIONS[4].value]: 'bg-danger-subtle text-danger'
+  [APPLICATION_STATUS_OPTIONS[4].value]: 'bg-danger-subtle text-danger',
+  // Not a status staff can pick, but rows do carry it - without an entry here
+  // it fell through to each page's neutral fallback and read as "nothing wrong".
+  Failed: 'bg-danger-subtle text-danger'
 };
 
 export const CHANGE_REQUEST_STATUS = {

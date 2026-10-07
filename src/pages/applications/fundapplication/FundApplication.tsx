@@ -13,7 +13,7 @@ import DisclosuresStep from './components/steps/DisclosuresStep'
 import FederalComplianceStep from './components/steps/FederalComplianceStep'
 import CoBorrowerModal from './components/shared/CoBorrowerModal'
 import EditConfirmationModal from './components/shared/EditConfirmationModal'
-import { setEditRequiresConfirmation } from '../../../store/fundApplication/editConfirmationStore'
+import { setEditRequiresConfirmation, setEditConfirmationResolving, resetEditConfirmation } from '../../../store/fundApplication/editConfirmationStore'
 
 // Hooks
 import { useCoBorrowers } from './hooks/useCoBorrowers'
@@ -251,7 +251,7 @@ export default function FundApplication() {
 
   // Fetch funding request and documents (tab-wise lazy loading)
   const currentReqId = fundingRequestId || id || null
-  const { data: fundingData } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
+  const { data: fundingData, isLoading: isFundingDataLoading } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
   const fundingApplicationId = fundingData?.id ?? null
   const { data: documentsData } = useFundingApplicationDocuments(fundingApplicationId, {
     enabled: !!fundingApplicationId,
@@ -261,11 +261,22 @@ export default function FundApplication() {
   // call, not a status list held here - the server decides it and enforces it.
   // Feed it to the gate the step saves wait on, and clear the gate on unmount so
   // a stale flag cannot follow the partner to another borrower's application.
+  //
+  // Only a loaded application can answer. The request id changes type once the
+  // application arrives, which refetches it; treating that gap as "not signed"
+  // let saves through unasked and dismissed a dialog that had just opened.
   useEffect(() => {
-    setEditRequiresConfirmation(Boolean(fundingData?.edit_requires_resign))
-  }, [fundingData?.edit_requires_resign])
+    if (!fundingData) return
+    setEditRequiresConfirmation(Boolean(fundingData.edit_requires_resign))
+  }, [fundingData])
 
-  useEffect(() => () => setEditRequiresConfirmation(false), [])
+  // Until the application has loaded, the flag above is only a default. Saves
+  // wait on this, so one fired early still gets the dialog.
+  useEffect(() => {
+    setEditConfirmationResolving(isFundingDataLoading)
+  }, [isFundingDataLoading])
+
+  useEffect(() => () => resetEditConfirmation(), [])
 
   // Synchronize funding data when fetched from API
   useEffect(() => {

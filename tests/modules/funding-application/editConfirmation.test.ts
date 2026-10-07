@@ -13,6 +13,9 @@ import {
 const reset = () =>
   useEditConfirmationStore.setState({
     requiresConfirmation: false,
+    isResolving: false,
+    promptOnOpen: null,
+    hasConfirmed: false,
     isOpen: false,
     resolver: null,
   })

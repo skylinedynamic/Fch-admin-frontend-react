@@ -143,7 +143,7 @@ export const useDisclosuresConsent = (fundingRequestId?: number | string | null,
 
 export const useFundingRequest = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
   return useQuery<FundingRequestData>({
-    queryKey: [...queryKeys.fundingApplication.fundingRequest(), fundingRequestId ?? 'current'],
+    queryKey: [...queryKeys.fundingApplication.fundingRequest(), fundingRequestId ? String(fundingRequestId) : 'current'],
     queryFn: () => fetchFundingRequest(fundingRequestId),
     enabled: options?.enabled,
   })
