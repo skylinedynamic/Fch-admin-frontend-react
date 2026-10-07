@@ -480,8 +480,19 @@ export default function FundApplication() {
   const stepsTotal = tabs.length
   const completedCount = isApplicationSubmitted ? stepsTotal : tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
   const progressPct = isApplicationSubmitted ? 100 : Math.round((completedCount / stepsTotal) * 100)
-  const firstInvalidIdx = isApplicationSubmitted ? -1 : tabs.findIndex((_, index) => !isStepValid(index))
-  const maxAllowedIdx = isApplicationSubmitted ? stepsTotal - 1 : (firstInvalidIdx === -1 ? stepsTotal - 1 : firstInvalidIdx)
+  // How far down the list a step may be opened: up to the first one that is not
+  // complete (saved - the one without a tick), and never past it. This used to
+  // ask only whether a step's fields looked valid, so a step whose form was
+  // prefilled but never saved unlocked the one after it, which then showed dark
+  // and clickable beside steps that were correctly greyed out.
+  const firstIncompleteIdx = isApplicationSubmitted ? -1 : tabs.findIndex((_, index) => !isStepComplete(index))
+  // Open steps are the complete ones (ticked) and the one being worked on.
+  // Every other step is greyed out - including the very next one - until the
+  // step before it has been saved. The way forward is Save & Next.
+  const lastCompleteIdx = firstIncompleteIdx === -1 ? stepsTotal - 1 : firstIncompleteIdx - 1
+  const maxAllowedIdx = isApplicationSubmitted
+    ? stepsTotal - 1
+    : Math.max(activeStep, lastCompleteIdx)
 
   // Handle tab switching with auto-save
   const handleTabSwitch = useCallback(
