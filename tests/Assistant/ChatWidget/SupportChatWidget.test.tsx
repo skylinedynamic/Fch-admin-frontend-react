@@ -227,6 +227,44 @@ describe('SupportChatWidget (admin/WLP)', () => {
         expect(configCalls).toBe(0)
     })
 
+    it('shows a quoted passage and a heading as formatted text, never as raw ">" or "#" characters', async () => {
+        server.use(
+            noSessions(),
+            enabledConfig(),
+            http.post('*/common/assistant/wlp/messages', () =>
+                HttpResponse.json({
+                    status: true,
+                    message: '',
+                    data: {
+                        session_id: 'session-123',
+                        message_id: 'message-456',
+                        answer: '## How to describe it\n\nYou can tell your client:\n\n> "This is **revenue-based financing**.\n> It is not a loan."\n\nKeep it simple.',
+                        actions: [],
+                        sources: [],
+                        escalation: { required: false, reason: null, route: null },
+                        policy: { live_data_used: false, restricted_content_blocked: false, sensitive_input_detected: false },
+                    },
+                })
+            )
+        )
+
+        renderWithProviders(<SupportChatWidget />)
+        await open()
+        await sendMessage('How should I describe revenue-based financing?')
+
+        const quote = (await screen.findByText(/It is not a loan\./)).closest('.support-chat-quote')
+        expect(quote).not.toBeNull()
+        // Both quoted lines sit in the one block, with the bold inside still rendered.
+        expect(quote).toHaveTextContent('"This is revenue-based financing. It is not a loan."')
+        expect(quote!.querySelector('strong')).toHaveTextContent('revenue-based financing')
+
+        expect(screen.getByText('How to describe it').tagName.toLowerCase()).toBe('strong')
+
+        const bubble = quote!.closest('.support-chat-bubble')
+        expect(bubble).not.toBeNull()
+        expect(bubble!.textContent).not.toMatch(/[>#]/)
+    })
+
     it('renders a native button for an action in the served route map and navigates to that route on click', async () => {
         server.use(
             noSessions(),
