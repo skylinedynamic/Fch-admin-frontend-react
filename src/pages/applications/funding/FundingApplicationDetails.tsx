@@ -9,6 +9,7 @@ import { FundingApplicationDetails as FundingApplicationDetailsType } from '../.
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
+import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
 import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip } from '../../../modules/application/services';
 // @ts-ignore
@@ -82,6 +83,12 @@ export default function FundingApplicationDetails() {
     const showPartnerCommission = app?.partner_id !== authPartnerId;
     const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
+    const canEditApplication =
+        app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
+        !!app?.funding_request_id &&
+        !!app?.is_editable &&
+        app.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
+        app.status !== FUNDING_APPLICATION_STATUS.DRAFT;
 
     // Sync status and commission with fetched data
     useEffect(() => {
@@ -766,6 +773,17 @@ export default function FundingApplicationDetails() {
                                     >
                                         <i className="ri-file-download-line align-middle me-1"></i> Download
                                     </button>
+                                    {/* Same rule as the funding request page: the request is approved and the
+                                        submitted application is still at status key 9 or below. */}
+                                    {canEditApplication && (
+                                        <Link
+                                            to={`/fund-application/${app.funding_request_id}`}
+                                            className="btn btn-warning waves-effect"
+                                            title="Editing will require the borrower to re-sign the application"
+                                        >
+                                            <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application
+                                        </Link>
+                                    )}
                                     <Link to="/intake-review/funding-application" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
