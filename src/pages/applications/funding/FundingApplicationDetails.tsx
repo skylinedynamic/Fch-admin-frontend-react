@@ -83,12 +83,13 @@ export default function FundingApplicationDetails() {
     const showPartnerCommission = app?.partner_id !== authPartnerId;
     const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
+    // Editable while the request is approved and the application is at status
+    // key 9 or below. The server works that out from the lifecycle key and
+    // sends it as is_editable, so no status names are compared here.
     const canEditApplication =
         app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
         !!app?.funding_request_id &&
-        !!app?.is_editable &&
-        app.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
-        app.status !== FUNDING_APPLICATION_STATUS.DRAFT;
+        !!app?.is_editable;
 
     // Sync status and commission with fetched data
     useEffect(() => {
@@ -773,8 +774,6 @@ export default function FundingApplicationDetails() {
                                     >
                                         <i className="ri-file-download-line align-middle me-1"></i> Download
                                     </button>
-                                    {/* Same rule as the funding request page: the request is approved and the
-                                        submitted application is still at status key 9 or below. */}
                                     {canEditApplication && (
                                         <Link
                                             to={`/fund-application/${app.funding_request_id}`}
