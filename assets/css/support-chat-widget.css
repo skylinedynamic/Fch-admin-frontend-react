@@ -213,3 +213,11 @@
     width: 38px;
     height: 38px;
 }
+
+/* A passage the assistant quotes (markdown "> text"): set apart, without the ">" itself. */
+.support-chat-quote {
+    display: block;
+    margin: 0.5rem 0;
+    padding-left: 0.75rem;
+    border-left: 3px solid rgba(0, 0, 0, 0.2);
+}

@@ -88,6 +88,58 @@ function renderInlineMarkdown(text: string, keyPrefix: string): React.ReactNode[
     return parts;
 }
 
+// A quoted line ("> text") and a heading line ("## text"), as the agent's
+// markdown writes them.
+const QUOTE_LINE = /^[ \t]*>[ \t]?(.*)$/;
+const HEADING_LINE = /^[ \t]*#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*$/;
+
+/**
+ * Renders one run of reply text. Beyond bold and links it handles the two
+ * line-level markdown forms the agent uses, so neither shows as a raw
+ * character: consecutive "> " lines become one quoted block, and a "# "
+ * heading becomes a bold line.
+ */
+function renderText(text: string, keyPrefix: string): React.ReactNode[] {
+    const blocks: { quote: boolean; lines: string[] }[] = [];
+
+    for (const line of text.split('\n')) {
+        const quoted = QUOTE_LINE.exec(line);
+        const last = blocks[blocks.length - 1];
+
+        if (quoted) {
+            if (last?.quote) last.lines.push(quoted[1]);
+            else blocks.push({ quote: true, lines: [quoted[1]] });
+            continue;
+        }
+
+        const heading = HEADING_LINE.exec(line);
+        const plain = heading ? `**${heading[1].replace(/\*\*/g, '')}**` : line;
+
+        if (last && !last.quote) last.lines.push(plain);
+        else blocks.push({ quote: false, lines: [plain] });
+    }
+
+    return blocks.map((block, index) => {
+        const key = `${keyPrefix}-k${index}`;
+
+        if (block.quote) {
+            return (
+                <span key={key} className="support-chat-quote">
+                    {renderInlineMarkdown(block.lines.join('\n'), key)}
+                </span>
+            );
+        }
+
+        // The quoted block breaks the line itself, so the blank lines the
+        // agent left around it would only add empty space.
+        let body = block.lines.join('\n');
+        if (blocks[index - 1]?.quote) body = body.replace(/^\n+/, '');
+        if (blocks[index + 1]?.quote) body = body.replace(/\n+$/, '');
+
+        return <React.Fragment key={key}>{renderInlineMarkdown(body, key)}</React.Fragment>;
+    });
+}
+
 /**
  * Splits an assistant reply on the backend's action placeholder token and
  * renders a native button in its place for every approved action id, then
@@ -103,7 +155,7 @@ function renderReply(content: string, actions: ChatAction[], onNavigate: (path: 
     while ((match = ACTION_TOKEN.exec(content)) !== null) {
         if (match.index > lastIndex) {
             const segment = content.slice(lastIndex, match.index);
-            parts.push(<span key={`seg-${segmentIndex++}`}>{renderInlineMarkdown(segment, `txt-${segmentIndex}`)}</span>);
+            parts.push(<span key={`seg-${segmentIndex++}`}>{renderText(segment, `txt-${segmentIndex}`)}</span>);
         }
 
         const action = actions.find((a) => a.id === match![1]);
@@ -126,7 +178,7 @@ function renderReply(content: string, actions: ChatAction[], onNavigate: (path: 
 
     if (lastIndex < content.length) {
         const segment = content.slice(lastIndex);
-        parts.push(<span key={`seg-${segmentIndex++}`}>{renderInlineMarkdown(segment, `txt-${segmentIndex}`)}</span>);
+        parts.push(<span key={`seg-${segmentIndex++}`}>{renderText(segment, `txt-${segmentIndex}`)}</span>);
     }
 
     return parts;
