@@ -28,6 +28,8 @@ export interface ActivityLog {
     reminder_status?: string | null;
     reminder_status_raw?: string | null;
     is_reminder_missed?: boolean;
+    /** Created by a person (who chose its visibility), not written by the system. */
+    is_manual?: boolean;
     can_edit?: boolean;
     can_delete?: boolean;
     visibility?: string;

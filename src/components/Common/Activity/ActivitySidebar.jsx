@@ -655,7 +655,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                     <h6 className="fs-13 mb-0 text-dark d-flex align-items-center flex-wrap gap-2">
                                                                         <span>{getTitle(activity)}</span>
                                                                         {Boolean(activity.is_owner || activity.can_edit) && getReminderStatusBadge(activity.reminder_status)}
-                                                                        {Boolean(activity.is_owner || activity.can_edit) && activity.visibility && VISIBILITY_BADGE_STYLES[activity.visibility] && (
+                                                                        {/* The visibility tag belongs to activities a person created and
+                                                                            chose a level for. System entries (client created, invoice
+                                                                            created ...) never had one chosen, so they show none. */}
+                                                                        {Boolean(activity.is_manual && (activity.is_owner || activity.can_edit)) && activity.visibility && VISIBILITY_BADGE_STYLES[activity.visibility] && (
                                                                             <span
                                                                                 className={`badge d-inline-flex align-items-center gap-1 text-nowrap ${VISIBILITY_BADGE_STYLES[activity.visibility].className}`}
                                                                                 style={{ fontSize: '10px', padding: '2px 6px' }}
@@ -685,7 +688,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                         {activity.can_edit && (
                                                                         <button
                                                                             type="button"
-                                                                            className="btn btn-soft-primary activity-action-btn"
+                                                                            className="btn btn-outline-primary activity-action-btn"
                                                                             title="Edit activity"
                                                                             aria-label="Edit activity"
                                                                             onClick={() => openEdit(activity)}
@@ -696,7 +699,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                         {activity.can_delete && (
                                                                         <button
                                                                             type="button"
-                                                                            className="btn btn-soft-danger activity-action-btn"
+                                                                            className="btn btn-outline-danger activity-action-btn"
                                                                             title="Delete activity"
                                                                             aria-label="Delete activity"
                                                                             onClick={() => handleDeleteClick(itemId)}
@@ -850,20 +853,11 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 }
 
                 /* Edit / Delete on an activity row: a small pair of soft square
-                   icon buttons, quiet until the row is hovered or focused, and
-                   always fully shown on touch screens (no hover there). */
+                   icon buttons, always fully shown. They used to be dimmed until
+                   the row was hovered, which read as disabled or blurred. */
                 .activity-item-actions {
                     display: flex;
                     gap: 6px;
-                    opacity: 0.55;
-                    transition: opacity 0.15s ease;
-                }
-                .activity-sidebar-card .accordion-item:hover .activity-item-actions,
-                .activity-item-actions:focus-within {
-                    opacity: 1;
-                }
-                @media (hover: none) {
-                    .activity-item-actions { opacity: 1; }
                 }
                 .activity-action-btn {
                     width: 28px;
@@ -885,7 +879,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                     outline-offset: 1px;
                 }
                 @media (prefers-reduced-motion: reduce) {
-                    .activity-item-actions, .activity-action-btn { transition: none; }
+                    .activity-action-btn { transition: none; }
                     .activity-action-btn:hover { transform: none; }
                 }
 

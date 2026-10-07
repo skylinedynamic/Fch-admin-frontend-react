@@ -528,8 +528,9 @@ export default function FundingApplicationDetails() {
         </div>
     );
 
-    // One signature, shown the way the borrower gave it: the image for an
-    // e-signature, the name for a typed one - with who signed and when.
+    // One signature, laid out the way the borrower sees it on their signing
+    // step: the signature on the left (the image for an e-signature, the name
+    // for a typed one), its date on the right, and who signed underneath.
     const renderSignaturePanel = (
         title: string,
         signature: any,
@@ -537,49 +538,63 @@ export default function FundingApplicationDetails() {
     ) => {
         const isEsign = signature?.signature_type === 'esign' && signature?.signature_image;
         const hasSignature = Boolean(signature && (isEsign || signature.signature_name));
-        // Both dates arrive already formatted by the API (toTimezone).
-        const signatureDate = signature?.signature_date || null;
+        // Both dates arrive already formatted by the API (toTimezone). An
+        // e-signature carries the date the borrower chose; a typed name has
+        // only the moment it was submitted.
+        const dateCaption = signature?.signature_date ? 'Signature Date' : 'Signed On';
+        const dateValue = signature?.signature_date || signature?.signed_at || '—';
+        const captionStyle: React.CSSProperties = { fontSize: 10.5, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 };
 
         return (
-            <div className="col-lg-6 mb-3 d-flex flex-column">
+            <div className="col-12 mb-3 d-flex flex-column">
                 <label className="form-label fs-13 d-flex align-items-center gap-2">{title} {options.badge}</label>
-                <div className="border rounded-3 overflow-hidden flex-grow-1 d-flex flex-column">
-                    <div className="d-flex align-items-center justify-content-center text-center p-3" style={{ height: 150 }}>
-                        {!hasSignature ? (
-                            <span className="text-muted fs-13">{options.emptyText}</span>
-                        ) : isEsign ? (
-                            <img
-                                src={signature.signature_image}
-                                alt={`Signature of ${signature.signature_name || 'the borrower'}`}
-                                className="mw-100 mh-100"
-                                style={{ objectFit: 'contain', opacity: options.faded ? 0.45 : 1 }}
-                            />
-                        ) : (
-                            <span className={`fs-18 fw-semibold text-break ${options.faded ? 'text-decoration-line-through text-muted' : 'text-dark'}`}>
-                                {signature.signature_name}
-                            </span>
+                <div className="border rounded overflow-hidden flex-grow-1 d-flex flex-column bg-white">
+                    <div className="row g-0 flex-grow-1">
+                        <div className={hasSignature ? 'col-sm-7' : 'col-12'}>
+                            <div className="h-100 d-flex align-items-center justify-content-center text-center p-3" style={{ minHeight: 130 }}>
+                                {!hasSignature ? (
+                                    <span className="text-muted fs-13">{options.emptyText}</span>
+                                ) : isEsign ? (
+                                    <img
+                                        src={signature.signature_image}
+                                        alt={`Signature of ${signature.signature_name || 'the borrower'}`}
+                                        className="mw-100"
+                                        style={{ maxHeight: 100, objectFit: 'contain', opacity: options.faded ? 0.45 : 1 }}
+                                    />
+                                ) : (
+                                    <span className={`fs-18 fw-semibold text-break ${options.faded ? 'text-decoration-line-through text-muted' : 'text-dark'}`}>
+                                        {signature.signature_name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        {hasSignature && (
+                            <div className="col-sm-5 border-start bg-light">
+                                <div className="h-100 d-flex flex-column align-items-center justify-content-center text-center px-3 py-3">
+                                    <i className="ri-calendar-check-line mb-1" style={{ fontSize: 20, color: '#3b518d', opacity: 0.7 }}></i>
+                                    <div className="w-100 pb-1 text-dark fs-13 text-nowrap" style={{ borderBottom: '1px solid #64748b' }}>
+                                        {dateValue}
+                                    </div>
+                                    <span className="mt-1 text-nowrap" style={captionStyle}>{dateCaption}</span>
+                                </div>
+                            </div>
                         )}
                     </div>
+
                     {hasSignature && (
-                        <div className="border-top bg-light px-3 py-2 flex-grow-1">
+                        <div className="border-top bg-light px-3 py-2">
                             <div className="row g-2 fs-13">
-                                <div className="col-sm-6">
+                                <div className="col-sm-4">
                                     <span className="text-muted fs-12 d-block">Signed By</span>
-                                    <span className="fw-medium">{signature.signature_name || 'N/A'}</span>
+                                    <span className="fw-medium text-break">{signature.signature_name || 'N/A'}</span>
                                 </div>
-                                <div className="col-sm-6">
+                                <div className="col-sm-4">
                                     <span className="text-muted fs-12 d-block">Signature Type</span>
                                     <span className="fw-medium">{isEsign ? 'E-Signature' : 'Typed Name'}</span>
                                 </div>
-                                <div className="col-sm-6">
-                                    <span className="text-muted fs-12 d-block">Signed On</span>
+                                <div className="col-sm-4">
+                                    <span className="text-muted fs-12 d-block">Submitted On</span>
                                     <span className="fw-medium">{signature.signed_at || 'N/A'}</span>
-                                </div>
-                                {/* Always shown, so both panels have the same four
-                                    fields and end at the same height. */}
-                                <div className="col-sm-6">
-                                    <span className="text-muted fs-12 d-block">Signature Date</span>
-                                    <span className="fw-medium">{signatureDate || '—'}</span>
                                 </div>
                             </div>
                         </div>
@@ -601,6 +616,14 @@ export default function FundingApplicationDetails() {
                     <div>{app.attestation_authorization ? <span className="badge bg-success">Authorized</span> : <span className="badge bg-secondary">Not Authorized</span>}</div>
                 </div>
 
+                {/* Previous first, then the new one - the same order the
+                    borrower signs in. */}
+                {previous && renderSignaturePanel('Previous Signature', previous, {
+                    badge: <span className="badge bg-danger-subtle text-danger">No longer valid</span>,
+                    faded: true,
+                    emptyText: '',
+                })}
+
                 {renderSignaturePanel(previous ? 'New Electronic Signature' : 'Electronic Signature', current, {
                     badge: current
                         ? <span className="badge bg-success-subtle text-success">Currently on file</span>
@@ -608,12 +631,6 @@ export default function FundingApplicationDetails() {
                     emptyText: requiresResign
                         ? 'The borrower has not signed again yet.'
                         : 'This application has not been signed yet.',
-                })}
-
-                {previous && renderSignaturePanel('Previous Signature', previous, {
-                    badge: <span className="badge bg-danger-subtle text-danger">No longer valid</span>,
-                    faded: true,
-                    emptyText: '',
                 })}
             </div>
         );
