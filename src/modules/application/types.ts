@@ -351,6 +351,11 @@ export interface FundingApplicationDetails {
     application_number: string;
     partner_id: number;
     borrower_id: number;
+    // The request the edit form opens on, its status, and whether the
+    // application's lifecycle key still allows an edit.
+    funding_request_id?: number | null;
+    funding_request_status?: string | null;
+    is_editable?: boolean;
     full_name: string;
     business_name: string;
     business_email: string;
