@@ -1,59 +1,62 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 
 import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
-import { useIsHostPartner } from '../../lib/auth/useIsHostPartner';
 import { fetchUserById, fetchRoles, updateUser } from '../../modules/user/services';
-import {
-  fetchUserCompensation,
-  saveUserCompensation,
-  buildCompensationRows,
-  compensationRowsToFields
-} from '../../modules/compensation';
-import CommissionsSection from '../../components/Compensation/CommissionsSection';
+import { useCreateUser } from '../../modules/user';
+import { useAvailableEmployeesForUser } from '../../modules/employee';
+import { fetchInvoiceDetails } from '../../modules/invoice/services';
+import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
+import EmployeePicker from './components/EmployeePicker';
 import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
 import FormLoader from '../../components/Loader/FormLoader';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
-import { PAID_BY_NONE } from '../../config';
 import { scrollToFirstError } from '../../utils/formUtils';
 
-const TAB_ACCOUNT = 'accountDetails';
-const TAB_COMMISSIONS = 'commissions';
-
+/**
+ * Adding a user (/users/create) and viewing/editing one (/user-details/:id).
+ *
+ * A new user is always the login of one of the partner's employees, picked
+ * from those without a user yet; picking one fills in the account details.
+ * When the partner is over its seat limit the Users list sends
+ * `state.purchase` ({ months, totalPrice }) and the user is created as a paid
+ * seat, followed by paying its invoice.
+ */
 export default function UserDetails() {
   const { id } = useParams();
+  const isCreate = !id;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const purchase = isCreate ? location.state?.purchase : null;
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('update users');
-  // Commission setup is only offered to the host partner.
-  const canManageCommission = useIsHostPartner();
+  const canSave = isCreate ? hasPermission('create users') : canUpdate;
 
-  const [loading, setLoading] = useState(true);
+  const employeesQuery = useAvailableEmployeesForUser(isCreate);
+  const createUser = useCreateUser();
+  const [invoice, setInvoice] = useState(null);
+
+  const [loading, setLoading] = useState(!isCreate);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [roles, setRoles] = useState([]);
-  const [activeTab, setActiveTab] = useState(TAB_ACCOUNT);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(null);
 
   const [values, setValues] = useState({
+    employee_id: null,
+    password: '',
     name: '',
     email: '',
     phone_number: '',
     role_id: '',
     status: '',
     new_password: '',
-    confirm_password: '',
-    paid_by: '',
-    hourly_rate: '',
-    annual_salary: '',
-    per_deal_applicable_services: [],
-    per_deal_payout_type: '',
-    per_deal_percentage: '',
-    per_deal_flat_amount: ''
+    confirm_password: ''
   });
 
   useEffect(() => {
@@ -82,18 +85,6 @@ export default function UserDetails() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Compensation lives in its own table behind its own endpoint, so the
-  // Commissions tab is loaded separately from the user record.
-  useEffect(() => {
-    if (!id || !canManageCommission) return;
-
-    fetchUserCompensation(id)
-      .then((data) => {
-        setValues((prev) => ({ ...prev, ...compensationRowsToFields(data?.paid_by, data?.compensations) }));
-      })
-      .catch((err) => console.error('Failed to fetch compensation', err));
-  }, [id, canManageCommission]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -111,7 +102,23 @@ export default function UserDetails() {
     }
   };
 
-  const applySaveError = (error, fallbackMessage, { toastValidationErrors = false } = {}) => {
+  // Picking the employee fills in the account details from them.
+  const handleEmployeeChange = (employee) => {
+    setValues((prev) => ({
+      ...prev,
+      employee_id: employee?.id ?? null,
+      name: employee?.full_name ?? '',
+      email: employee?.email ?? '',
+      phone_number: formatPhoneNumber(employee?.phone_number_1 ?? '') ?? ''
+    }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      ['employee_id', 'name', 'email', 'phone_number'].forEach((key) => delete next[key]);
+      return next;
+    });
+  };
+
+  const applySaveError = (error, fallbackMessage) => {
     console.error('Save error:', error);
 
     if (error.response?.data?.errors) {
@@ -124,12 +131,6 @@ export default function UserDetails() {
 
       setErrors(mapped);
       scrollToFirstError(mapped);
-
-      // Compensation errors are keyed by row (compensations.0.amount), which has
-      // no matching input on the form, so they'd otherwise fail silently.
-      if (toastValidationErrors) {
-        toast.error(Object.values(mapped)[0] || fallbackMessage);
-      }
     } else if (error.response?.data?.message) {
       // No toast - handled by the global interceptor.
     } else if (error.response?.status !== 403) {
@@ -140,14 +141,19 @@ export default function UserDetails() {
   const validateAccount = () => {
     const next = {};
 
+    if (isCreate && !values.employee_id) next.employee_id = 'Please select an employee';
     if (!values.name) next.name = 'Name is required';
     if (!values.email) next.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(values.email)) next.email = 'Email is invalid';
     if (!values.phone_number) next.phone_number = 'Phone number is required';
     if (!values.role_id) next.role_id = 'Role is required';
-    if (!values.status) next.status = 'Status is required';
+    if (isCreate) {
+      if (!values.password) next.password = 'Password is required';
+    } else if (!values.status) {
+      next.status = 'Status is required';
+    }
 
-    if (showPasswordFields) {
+    if (!isCreate && showPasswordFields) {
       if (!values.new_password) next.new_password = 'New password is required';
       if (!values.confirm_password) next.confirm_password = 'Confirm password is required';
       if (values.new_password && values.confirm_password && values.new_password !== values.confirm_password) {
@@ -163,8 +169,43 @@ export default function UserDetails() {
     return true;
   };
 
+  const handleCreate = async () => {
+    setIsSaving(true);
+    try {
+      const res = await createUser.mutateAsync({
+        employee_id: values.employee_id,
+        name: values.name,
+        email: values.email,
+        phone_number: values.phone_number,
+        role_id: Number(values.role_id),
+        password: values.password,
+        ...(purchase ? { is_paid: true, months: purchase.months } : {})
+      });
+      toast.success('User created successfully');
+
+      // A paid seat stays inactive until its invoice is paid.
+      const invoiceId = res?.data?.invoice_id;
+      if (purchase && invoiceId) {
+        const invoiceRes = await fetchInvoiceDetails(invoiceId);
+        if (invoiceRes?.status) {
+          setInvoice(invoiceRes.data);
+          return;
+        }
+      }
+      navigate('/users');
+    } catch (error) {
+      const data = error?.response?.data;
+      // e.g. "User limit reached" - a message with no field to show it under.
+      if (!data?.errors && data?.message) toast.error(data.message);
+      else applySaveError(error, 'Failed to create user');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveAccount = async () => {
     if (!validateAccount()) return;
+    if (isCreate) return handleCreate();
 
     setIsSaving(true);
     try {
@@ -193,62 +234,40 @@ export default function UserDetails() {
     }
   };
 
-  // The Commissions tab saves through its own endpoint, so updating it leaves
-  // the user record untouched.
-  const handleSaveCompensation = async () => {
-    setErrors({});
-    setIsSaving(true);
-
-    try {
-      await saveUserCompensation(id, {
-        paid_by: values.paid_by || PAID_BY_NONE,
-        compensations: buildCompensationRows(values)
-      });
-      toast.success('Commission updated successfully');
-    } catch (error) {
-      applySaveError(error, 'Failed to update commission', { toastValidationErrors: true });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Each tab saves only what it shows.
-  const handleSave = () => (
-    canManageCommission && activeTab === TAB_COMMISSIONS ? handleSaveCompensation() : handleSaveAccount()
-  );
-
   const roleOptions = roles.map((role) => ({ label: role.name, value: String(role.id) }));
+  const pageTitle = isCreate ? 'Add User' : 'User Details';
+  const formLoading = isCreate ? employeesQuery.isLoading : loading;
 
   return (
     <div className="page-content">
       <div className="container-fluid">
         <PageHeader
-          title="User Details"
+          title={pageTitle}
           breadcrumbs={[
             { label: 'Users', path: '/users' },
-            { label: 'User Details' }
+            { label: pageTitle }
           ]}
         >
           <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
             <Link to="/users" className="btn btn-outline-secondary w-lg waves-effect">
               <i className="ri-arrow-left-line align-middle me-1"></i> Back
             </Link>
-            {canUpdate && (
+            {canSave && (
               <button
                 type="button"
-                onClick={handleSave}
+                onClick={handleSaveAccount}
                 className="btn btn-primary w-lg waves-effect"
-                disabled={isSaving || loading}
+                disabled={isSaving || formLoading}
               >
                 {isSaving ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                    Updating...
+                    {isCreate ? 'Saving...' : 'Updating...'}
                   </>
                 ) : (
                   <>
                     <i className="ri-save-3-line align-middle me-1"></i>
-                    Update
+                    {isCreate ? 'Save' : 'Update'}
                   </>
                 )}
               </button>
@@ -262,44 +281,36 @@ export default function UserDetails() {
               <div className="card-header">
                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
                   <li className="nav-item" role="presentation">
-                    <button
-                      type="button"
-                      className={`nav-link ${activeTab === TAB_ACCOUNT ? 'active' : ''}`}
-                      onClick={() => setActiveTab(TAB_ACCOUNT)}
-                      role="tab"
-                      aria-selected={activeTab === TAB_ACCOUNT}
-                    >
+                    <button type="button" className="nav-link active" role="tab" aria-selected="true">
                       <i className="ri-user-settings-line"></i> User information
                     </button>
                   </li>
-                  {canManageCommission && (
-                    <li className="nav-item" role="presentation">
-                      <button
-                        type="button"
-                        className={`nav-link ${activeTab === TAB_COMMISSIONS ? 'active' : ''}`}
-                        onClick={() => setActiveTab(TAB_COMMISSIONS)}
-                        role="tab"
-                        aria-selected={activeTab === TAB_COMMISSIONS}
-                      >
-                        <i className="ri-percent-line"></i> Commissions
-                      </button>
-                    </li>
-                  )}
                 </ul>
               </div>
 
               <div className="card-body p-4">
                 <div className="tab-content">
-                  <div className={`tab-pane ${activeTab === TAB_ACCOUNT ? 'active show' : ''}`} role="tabpanel">
-                    {loading ? (
+                  <div className="tab-pane active show" role="tabpanel">
+                    {formLoading ? (
                       <FormLoader count={6} />
                     ) : (
                       <form onSubmit={(e) => e.preventDefault()}>
                         <div className="row">
+                          {isCreate && (
+                            <EmployeePicker
+                              employees={employeesQuery.data ?? []}
+                              value={values.employee_id}
+                              error={errors.employee_id}
+                              canCreateEmployee={hasPermission('create employees')}
+                              onChange={handleEmployeeChange}
+                            />
+                          )}
+
                           <div className="col-lg-6">
                             <div className="mb-3">
-                              <label className="form-label">Name <span className="text-danger">*</span></label>
+                              <label htmlFor="name" className="form-label">Name <span className="text-danger">*</span></label>
                               <input
+                                id="name"
                                 type="text"
                                 name="name"
                                 className={`form-control ${errors.name ? 'is-invalid' : ''}`}
@@ -313,14 +324,17 @@ export default function UserDetails() {
 
                           <div className="col-lg-6">
                             <div className="mb-3">
-                              <label className="form-label">Email Address <span className="text-danger">*</span></label>
-                              <PendingEmailNotice
-                                userId={id}
-                                pendingEmail={pendingEmail}
-                                onChange={setPendingEmail}
-                                canManage={canUpdate}
-                              />
+                              <label htmlFor="email" className="form-label">Email Address <span className="text-danger">*</span></label>
+                              {!isCreate && (
+                                <PendingEmailNotice
+                                  userId={id}
+                                  pendingEmail={pendingEmail}
+                                  onChange={setPendingEmail}
+                                  canManage={canUpdate}
+                                />
+                              )}
                               <input
+                                id="email"
                                 type="email"
                                 name="email"
                                 className={`form-control ${errors.email ? 'is-invalid' : ''}`}
@@ -334,8 +348,9 @@ export default function UserDetails() {
 
                           <div className="col-lg-6">
                             <div className="mb-3">
-                              <label className="form-label">Phone Number <span className="text-danger">*</span></label>
+                              <label htmlFor="phone_number" className="form-label">Phone Number <span className="text-danger">*</span></label>
                               <input
+                                id="phone_number"
                                 type="text"
                                 name="phone_number"
                                 className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
@@ -349,7 +364,7 @@ export default function UserDetails() {
 
                           <div className="col-lg-6">
                             <div className="mb-3">
-                              <label className="form-label">User Role <span className="text-danger">*</span></label>
+                              <label htmlFor="role_id" className="form-label">User Role <span className="text-danger">*</span></label>
                               <Dropdown
                                 inputId="role_id"
                                 value={String(values.role_id || '')}
@@ -362,9 +377,50 @@ export default function UserDetails() {
                             </div>
                           </div>
 
+                          {isCreate ? (
+                            <>
+                              <div className="col-lg-6">
+                                <div className="mb-3">
+                                  <label htmlFor="password" className="form-label">Password <span className="text-danger">*</span></label>
+                                  <input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    autoComplete="new-password"
+                                    className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                    value={values.password}
+                                    onChange={handleChange}
+                                    placeholder="Enter password"
+                                  />
+                                  {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                                </div>
+                              </div>
+
+                              {purchase && (
+                                <div className="col-12">
+                                  <div className="p-3 bg-success bg-opacity-10 text-success mb-3">
+                                    <h6 className="fw-semibold text-success fs-14 mb-2">
+                                      <i className="ri-checkbox-circle-fill me-1"></i> Seat Purchase Pending Activation
+                                    </h6>
+                                    <div className="row g-2 fs-13">
+                                      <div className="col-6">Additional Seat Quantity:</div>
+                                      <div className="col-6 text-end fw-semibold">1 Seat</div>
+                                      <div className="col-6">Subscription Duration:</div>
+                                      <div className="col-6 text-end fw-semibold">
+                                        {purchase.months} Month{purchase.months > 1 ? 's' : ''}
+                                      </div>
+                                      <div className="col-6 fw-bold">Total Amount Due:</div>
+                                      <div className="col-6 text-end fw-bold">${Number(purchase.totalPrice || 0).toFixed(2)}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                          <>
                           <div className="col-lg-6">
                             <div className="mb-3">
-                              <label className="form-label">Account Status <span className="text-danger">*</span></label>
+                              <label htmlFor="status" className="form-label">Account Status <span className="text-danger">*</span></label>
                               <Dropdown
                                 inputId="status"
                                 value={values.status}
@@ -427,29 +483,30 @@ export default function UserDetails() {
                               </div>
                             </>
                           )}
+                          </>
+                          )}
                         </div>
                       </form>
                     )}
                   </div>
 
-                  {canManageCommission && (
-                    <div className={`tab-pane ${activeTab === TAB_COMMISSIONS ? 'active show' : ''}`} role="tabpanel">
-                      {loading ? (
-                        <FormLoader count={4} />
-                      ) : (
-                        <CommissionsSection
-                          values={values}
-                          errors={errors}
-                          onChange={handleChange}
-                        />
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {isCreate && (
+          <InvoicePaymentModal
+            show={!!invoice}
+            invoice={invoice}
+            onHide={() => navigate('/users')}
+            onSuccess={() => {
+              toast.success('Payment completed successfully!');
+              navigate('/users');
+            }}
+          />
+        )}
       </div>
     </div>
   );

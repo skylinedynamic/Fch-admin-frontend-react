@@ -241,6 +241,9 @@ export default function App() {
             {/* Users Routes - requires 'view users' permission */}
             <Route element={<PermissionRoute permission="view users" />}>
               <Route path="users" element={<Users />} />
+              <Route element={<PermissionRoute permission="create users" />}>
+                <Route path="users/create" element={<UserDetails />} />
+              </Route>
               <Route path="user-details/:id" element={<UserDetails />} />
             </Route>
 

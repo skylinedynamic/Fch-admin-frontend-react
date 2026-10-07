@@ -8,7 +8,7 @@ export default function DetailsSkeletonLoader() {
                 <div className="card border-0 shadow-sm overflow-hidden">
                     <div className="card-header bg-white p-4">
                         <div className="d-flex align-items-center">
-                            <Skeleton shape="circle" size="3rem" className="me-3"></Skeleton>
+                            <Skeleton size="3rem" className="me-3"></Skeleton>
                             <div className="flex-grow-1">
                                 <Skeleton className="sk-w-40p sk-h-1_5rem mb-2"></Skeleton>
                                 <Skeleton className="sk-w-20p sk-h-1rem"></Skeleton>

@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen, waitFor } from '../../test-utils'
 import { server } from '../../mocks/server'
 import SupportChatWidget from '../../../src/components/Common/ChatWidget/SupportChatWidget'
+import { useAuthStore } from '../../../src/store/auth'
+import { PARTNER_TYPES } from '../../../src/config/partnerTypeOptions'
 
 const navigateMock = vi.fn()
 
@@ -12,9 +14,16 @@ vi.mock('react-router-dom', async () => {
     return { ...actual, useNavigate: () => navigateMock }
 })
 
+// The chat is for White-Label Partners only, so that is who is signed in
+// unless a test says otherwise.
+const signInAs = (user: Record<string, unknown> | null) => useAuthStore.setState({ user })
+
+beforeEach(() => signInAs({ id: 1, name: 'Partner User', is_host: false, partner_type: PARTNER_TYPES.WHITE_LABEL }))
+
 afterEach(() => {
     server.resetHandlers()
     navigateMock.mockClear()
+    signInAs(null)
 })
 
 const noSessions = () =>
@@ -84,8 +93,8 @@ describe('SupportChatWidget (admin/WLP)', () => {
                 return HttpResponse.json({
                     status: true,
                     message: '',
-                    // Calls 1 (page-load check) and 2 (first open) see the old copy; the reopen sees the new.
-                    data: callCount <= 2
+                    // Call 1 (first open) sees the old copy; the reopen (call 2) sees the new.
+                    data: callCount <= 1
                         ? { is_ready: true, welcome_subtitle: 'Ask about the old prompt topic.', quick_suggestions: ['Old prompt question?'] }
                         : { is_ready: true, welcome_subtitle: 'Ask about the new prompt topic.', quick_suggestions: ['New prompt question?'] },
                 })
@@ -136,7 +145,7 @@ describe('SupportChatWidget (admin/WLP)', () => {
         expect(await screen.findByText('Here is how.')).toBeInTheDocument()
     })
 
-    it('is not shown at all when the assistant is disabled', async () => {
+    it('closes and hides when the assistant is not ready upon open', async () => {
         let configCalls = 0
         server.use(
             noSessions(),
@@ -146,56 +155,34 @@ describe('SupportChatWidget (admin/WLP)', () => {
             })
         )
 
-        const { container } = renderWithProviders(<SupportChatWidget />)
-
-        await waitFor(() => expect(configCalls).toBeGreaterThan(0))
-        expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument()
-        expect(container.querySelector('.support-chat-fab, [class*="support-chat"]')).toBeNull()
-    })
-
-    it('is not shown when the enabled check fails', async () => {
-        let configCalls = 0
-        server.use(
-            noSessions(),
-            http.get('*/common/assistant/wlp/config', () => {
-                configCalls++
-                return HttpResponse.error()
-            })
-        )
-
         renderWithProviders(<SupportChatWidget />)
 
-        await waitFor(() => expect(configCalls).toBeGreaterThan(0))
-        expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument()
-    })
+        // No API calls made while closed
+        expect(configCalls).toBe(0)
 
-    it('appears and disappears without a reload when the host switches the assistant on or off', async () => {
-        let enabled = false
-        server.use(
-            noSessions(),
-            http.get('*/common/assistant/wlp/config', () =>
-                HttpResponse.json({ status: true, message: '', data: { is_ready: enabled, welcome_subtitle: null, quick_suggestions: [] } })
-            )
-        )
-
-        renderWithProviders(<SupportChatWidget />)
-        await waitFor(() => expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument())
-
-        // The host enables it elsewhere; this page re-checks (here: on returning to the tab).
-        enabled = true
-        window.dispatchEvent(new Event('focus'))
-        expect(await screen.findByRole('button', { name: /open ask support/i })).toBeInTheDocument()
-
-        // ...and disables it again while the panel is open: the whole chat goes away.
         await open()
-        enabled = false
-        window.dispatchEvent(new Event('focus'))
+
+        await waitFor(() => expect(configCalls).toBe(1))
+
+        // The panel opens before the answer arrives, so the chat going away is
+        // waited for rather than asserted on the same tick the request was
+        // counted — the request is counted when it is sent, and the widget can
+        // only react once it has come back.
+        await waitFor(() => expect(screen.queryByPlaceholderText(/type a message/i)).not.toBeInTheDocument())
+        expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument()
+    })
+
+    it('closes and hides when the enabled check fails upon open', async () => {
+        server.use(noSessions(), http.get('*/common/assistant/wlp/config', () => HttpResponse.error()))
+
+        renderWithProviders(<SupportChatWidget />)
+        await open()
 
         await waitFor(() => expect(screen.queryByPlaceholderText(/type a message/i)).not.toBeInTheDocument())
         expect(screen.queryByRole('button', { name: /open ask support/i })).not.toBeInTheDocument()
     })
 
-    it('asks for the welcome copy only when the panel is opened', async () => {
+    it('does not call the config api when closed and calls it when the panel is opened', async () => {
         const asked: Array<string | null> = []
         server.use(
             noSessions(),
@@ -208,12 +195,36 @@ describe('SupportChatWidget (admin/WLP)', () => {
         renderWithProviders(<SupportChatWidget />)
         await screen.findByRole('button', { name: /open ask support/i })
 
-        // The page-load check is the cheap one: no intro requested.
-        expect(asked).toEqual([null])
+        // Nothing is asked while the chat sits closed — not on load, and not
+        // when the user comes back to the tab.
+        window.dispatchEvent(new Event('focus'))
+        expect(asked).toEqual([])
 
         await open()
 
-        await waitFor(() => expect(asked).toEqual([null, '1']))
+        await waitFor(() => expect(asked).toEqual(['1']))
+    })
+
+    it.each([
+        ['a host user', { id: 1, is_host: true, partner_type: PARTNER_TYPES.WHITE_LABEL }],
+        ['a Certified Partner', { id: 1, is_host: false, partner_type: PARTNER_TYPES.CERTIFIED }],
+    ])('is never shown to %s and never calls the config api', async (_who, user) => {
+        let configCalls = 0
+        server.use(
+            noSessions(),
+            http.get('*/common/assistant/wlp/config', () => {
+                configCalls++
+                return HttpResponse.json({ status: true, message: '', data: { is_ready: true, welcome_subtitle: null, quick_suggestions: [] } })
+            })
+        )
+        signInAs(user)
+
+        const { container } = renderWithProviders(<SupportChatWidget />)
+        window.dispatchEvent(new Event('focus'))
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        expect(container).toBeEmptyDOMElement()
+        expect(configCalls).toBe(0)
     })
 
     it('renders a native button for an action in the served route map and navigates to that route on click', async () => {

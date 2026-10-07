@@ -11,8 +11,20 @@ import {
     updateScoreConfigurations,
     fetchTimeSettings,
     updateTimeSettings,
+    fetchSmsConfiguration,
+    saveSmsConfiguration,
+    sendTestSms,
 } from './services';
-import type { SendTestMailPayload, SendTestMailResponse, ScoreConfigurationResponse } from './types';
+import { queryKeys } from '../../lib/query/queryKeys';
+import type {
+    SendTestMailPayload,
+    SendTestMailResponse,
+    ScoreConfigurationResponse,
+    SmsConfigurationResponse,
+    SaveSmsConfigurationPayload,
+    SendTestSmsPayload,
+    SendTestSmsResponse,
+} from './types';
 
 /**
  * Hook to send a test notification/system email.
@@ -135,5 +147,32 @@ export const useUpdateTimeSettings = () => {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['timeSettings'] });
         },
+    });
+};
+
+/**
+ * The signed-in partner's SMS configuration and the options its form offers.
+ */
+export const useSmsConfiguration = (enabled = true) => {
+    return useQuery<SmsConfigurationResponse>({
+        queryKey: queryKeys.settings.smsConfiguration(),
+        queryFn: fetchSmsConfiguration,
+        enabled,
+    });
+};
+
+export const useSaveSmsConfiguration = () => {
+    const qc = useQueryClient();
+    return useMutation<SmsConfigurationResponse, Error, SaveSmsConfigurationPayload>({
+        mutationFn: saveSmsConfiguration,
+        onSuccess: (response) => {
+            qc.setQueryData(queryKeys.settings.smsConfiguration(), response);
+        },
+    });
+};
+
+export const useSendTestSms = () => {
+    return useMutation<SendTestSmsResponse, Error, SendTestSmsPayload>({
+        mutationFn: sendTestSms,
     });
 };

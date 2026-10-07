@@ -555,7 +555,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     };
 
     return (
-        <div className="card activity-sidebar-card d-flex flex-column w-100 mb-0 shadow-sm border-0" style={disableSticky ? { border: 'none', flexGrow: 1, minHeight: 0 } : { height: `calc(100vh - ${stickyTopOffset})`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
+        // Sticky: keep the same 1.5rem bottom gap as the cards beside it, so the
+        // card doesn't run into the page footer, and size it to still fit the
+        // viewport with that gap while it's stuck.
+        <div className={`card activity-sidebar-card d-flex flex-column w-100 shadow-sm border-0 ${disableSticky ? 'mb-0' : 'mb-4'}`} style={disableSticky ? { border: 'none', flexGrow: 1, minHeight: 0 } : { height: `calc(100vh - ${stickyTopOffset} - 1.5rem)`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
             {/* Card Header */}
             <div className="card-header align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={disableSticky ? { backgroundColor: '#fff' } : { position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
                 <h5 className="card-title mb-0 fs-16">
@@ -676,29 +679,29 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                 {(activity.log_type_raw === 'activity' || activity.log_name === 'activity')
                                                                     && (activity.can_edit || activity.can_delete) && (
                                                                     <div
-                                                                        className="flex-shrink-0 ms-2 d-flex gap-1"
+                                                                        className="activity-item-actions flex-shrink-0 ms-2"
                                                                         onClick={(e) => e.stopPropagation()}
                                                                     >
                                                                         {activity.can_edit && (
                                                                         <button
                                                                             type="button"
-                                                                            className="btn btn-ghost-secondary btn-icon btn-xs"
-                                                                            title="Edit"
+                                                                            className="btn btn-soft-primary activity-action-btn"
+                                                                            title="Edit activity"
+                                                                            aria-label="Edit activity"
                                                                             onClick={() => openEdit(activity)}
-                                                                            style={{ padding: '2px 5px', fontSize: '12px' }}
                                                                         >
-                                                                            <i className="ri-edit-line"></i>
+                                                                            <i className="ri-pencil-line" aria-hidden="true"></i>
                                                                         </button>
                                                                         )}
                                                                         {activity.can_delete && (
                                                                         <button
                                                                             type="button"
-                                                                            className="btn btn-ghost-danger btn-icon btn-xs"
-                                                                            title="Delete"
+                                                                            className="btn btn-soft-danger activity-action-btn"
+                                                                            title="Delete activity"
+                                                                            aria-label="Delete activity"
                                                                             onClick={() => handleDeleteClick(itemId)}
-                                                                            style={{ padding: '2px 5px', fontSize: '12px' }}
                                                                         >
-                                                                            <i className="ri-delete-bin-line"></i>
+                                                                            <i className="ri-delete-bin-6-line" aria-hidden="true"></i>
                                                                         </button>
                                                                         )}
                                                                     </div>
@@ -844,6 +847,46 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 }
                 .activity-scroll-container::-webkit-scrollbar-thumb:hover {
                     background: #adb5bd;
+                }
+
+                /* Edit / Delete on an activity row: a small pair of soft square
+                   icon buttons, quiet until the row is hovered or focused, and
+                   always fully shown on touch screens (no hover there). */
+                .activity-item-actions {
+                    display: flex;
+                    gap: 6px;
+                    opacity: 0.55;
+                    transition: opacity 0.15s ease;
+                }
+                .activity-sidebar-card .accordion-item:hover .activity-item-actions,
+                .activity-item-actions:focus-within {
+                    opacity: 1;
+                }
+                @media (hover: none) {
+                    .activity-item-actions { opacity: 1; }
+                }
+                .activity-action-btn {
+                    width: 28px;
+                    height: 28px;
+                    padding: 0;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    line-height: 1;
+                    transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+                }
+                .activity-action-btn:hover {
+                    transform: translateY(-1px);
+                }
+                .activity-action-btn:focus-visible {
+                    outline: 2px solid currentColor;
+                    outline-offset: 1px;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .activity-item-actions, .activity-action-btn { transition: none; }
+                    .activity-action-btn:hover { transform: none; }
                 }
 
                 /* Avatar sizing */

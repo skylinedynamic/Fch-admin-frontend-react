@@ -41,7 +41,6 @@ const item = (id: string, overrides: Record<string, unknown> = {}) => ({
 
 function mockApi({ items = [item('1'), item('2', { is_read: true })], unread = 1 } = {}) {
   server.use(
-    http.get('*/common/notifications/unread-count', () => HttpResponse.json({ status: true, data: { unread_count: unread } })),
     http.get('*/common/notifications', () =>
       HttpResponse.json({ status: true, data: items, meta: { current_page: 1, last_page: 1, per_page: 10, total: items.length, unread_count: unread } })
     )
@@ -224,9 +223,10 @@ describe('NotificationBell', () => {
     let fetches = 0
     mockApi()
     server.use(
-      http.get('*/common/notifications/unread-count', () => {
+      http.get('*/common/notifications', () => {
         fetches += 1
-        return HttpResponse.json({ status: true, data: { unread_count: fetches === 1 ? 1 : 5 } })
+        const unread = fetches === 1 ? 1 : 5
+        return HttpResponse.json({ status: true, data: [], meta: { current_page: 1, last_page: 1, per_page: 5, total: 0, unread_count: unread } })
       })
     )
     renderBell()

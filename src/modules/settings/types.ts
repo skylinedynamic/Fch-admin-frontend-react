@@ -217,3 +217,61 @@ export interface CreditProfileConfig {
     credit_profile_rule_bank_established_months?: string;
     credit_profile_rule_bank_basic_months?: string;
 }
+
+// ── SMS configuration (Settings > SMS Configuration) ──────────────────────
+
+export interface SmsProviderOption {
+    value: string;
+    label: string;
+}
+
+export interface SmsCountryOption {
+    value: string;
+    label: string;
+    providers: SmsProviderOption[];
+}
+
+export interface SmsConfigurationOptions {
+    countries: SmsCountryOption[];
+}
+
+/** A partner's saved configuration. `auth_token` is only ever the mask or null. */
+export interface SmsConfiguration {
+    country: string;
+    provider: string;
+    is_enabled: boolean;
+    from_number: string | null;
+    account_sid: string | null;
+    auth_token: string | null;
+    messaging_service_sid: string | null;
+    updated_at: string | null;
+}
+
+export interface SmsConfigurationResponse {
+    status: boolean;
+    message?: string;
+    data: {
+        configuration: SmsConfiguration | null;
+        options: SmsConfigurationOptions;
+    };
+}
+
+/** A blank `auth_token` keeps the stored token. */
+export interface SaveSmsConfigurationPayload {
+    country: string;
+    provider: string;
+    is_enabled: boolean;
+    account_sid: string;
+    auth_token: string;
+    from_number: string;
+    messaging_service_sid: string;
+}
+
+export interface SendTestSmsPayload {
+    phone: string;
+}
+
+export interface SendTestSmsResponse {
+    status: boolean;
+    message: string;
+}

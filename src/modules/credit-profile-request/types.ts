@@ -1,3 +1,5 @@
+import type { CreditRequestStatus } from '../../config/creditProfileRequest';
+
 export interface CreditProfileRequestBorrower {
     id: number;
     business_name: string | null;
@@ -16,6 +18,8 @@ export interface CreditProfileRequest {
      * for anyone but the host partner.
      */
     credit_authorizations?: CreditAuthorization[];
+    /** Latest iSoftPull pull, e.g. "Sep 16, 2026 02:30 AM" in the viewer's time zone. Host partner only. */
+    credit_last_pulled_at?: string | null;
     first_name: string;
     middle_name: string | null;
     last_name: string;
@@ -31,6 +35,8 @@ export interface CreditProfileRequest {
     created_at: string;
     updated_at: string;
     borrower?: CreditProfileRequestBorrower;
+    /** List only: pending until the client's latest request has been pulled. */
+    request_status?: CreditRequestStatus | null;
 }
 
 export interface CreditProfileRequestMeta {
@@ -81,9 +87,11 @@ export interface CreditAuthorization {
     citation: string;
     credit_authorization_accepted: boolean;
     e_consent_accepted: boolean;
+    /** e.g. "Sep 16, 2026 02:30 AM", in the viewer's time zone (converted by the API from X-Timezone). */
     consented_at: string | null;
     ip_address: string | null;
     user_agent: string | null;
     isoftpull_transaction_id: string | null;
+    /** Same format and zone as consented_at; null until the pull has run. */
     pulled_at: string | null;
 }

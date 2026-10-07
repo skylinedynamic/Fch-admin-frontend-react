@@ -14,6 +14,7 @@ export const queryKeys = {
     all: ['employee'] as const,
     list: () => [...queryKeys.employee.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.employee.all, 'detail', id] as const,
+    availableForUser: () => [...queryKeys.employee.all, 'available-for-user'] as const,
   },
   appointment: {
     all: ['appointment'] as const,
@@ -66,5 +67,9 @@ export const queryKeys = {
     lists: () => [...queryKeys.notifications.all, 'list'] as const,
     list: (params: object) => [...queryKeys.notifications.lists(), params] as const,
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
+  },
+  settings: {
+    all: ['settings'] as const,
+    smsConfiguration: () => [...queryKeys.settings.all, 'smsConfiguration'] as const,
   },
 } as const

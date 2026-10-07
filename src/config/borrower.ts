@@ -20,10 +20,15 @@ export const APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
   [APPLICATION_STATUS_OPTIONS[2].value]: 'bg-primary-subtle text-primary',
   [APPLICATION_STATUS_OPTIONS[3].value]: 'bg-success-subtle text-success',
   [APPLICATION_STATUS_OPTIONS[4].value]: 'bg-danger-subtle text-danger',
-  // Not a status staff can pick, but rows do carry it - without an entry here
-  // it fell through to each page's neutral fallback and read as "nothing wrong".
   Failed: 'bg-danger-subtle text-danger'
 };
+
+// Pre-qualification adds Failed: the automated review called the borrower's
+// information incorrect, or could not be produced.
+export const PRE_QUALIFICATION_STATUS_OPTIONS = [
+  ...APPLICATION_STATUS_OPTIONS,
+  { label: 'Failed', value: 'Failed' }
+];
 
 export const CHANGE_REQUEST_STATUS = {
   PENDING: 'Pending',

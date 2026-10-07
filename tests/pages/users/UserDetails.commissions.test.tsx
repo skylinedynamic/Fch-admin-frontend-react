@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { Route, Routes } from 'react-router-dom'
-import { renderWithProviders, screen, waitFor } from '../../test-utils'
+import { renderWithProviders, screen } from '../../test-utils'
 import { server } from '../../mocks/server'
 import { useAuthStore } from '../../../src/store/auth'
 
@@ -31,38 +31,30 @@ function mockApi() {
   )
 }
 
-function renderPage() {
-  return renderWithProviders(
-    <Routes>
-      <Route path="/users/:id" element={<UserDetails />} />
-    </Routes>,
-    { route: '/users/7' }
-  )
-}
-
 const signInAs = (user: Record<string, unknown>) =>
   useAuthStore.setState({ token: 't', user: { id: 1, permissions: ['view users', 'update users'], ...user } as never })
 
-describe('UserDetails Commissions tab', () => {
+/**
+ * Every user is an employee's login, so commission is set up on the employee
+ * (Employees > Commissions), not on the user.
+ */
+describe('UserDetails has no Commissions section', () => {
   beforeEach(() => { reset(); mockApi() })
   afterEach(reset)
 
-  it('is shown to a host partner', async () => {
-    signInAs({ is_host: 1, entity_type: 'Partner' })
-    renderPage()
-
-    expect(await screen.findByRole('tab', { name: /commissions/i })).toBeInTheDocument()
-    await waitFor(() => expect(compensationRequests).toBe(1))
-  })
-
   it.each([
+    ['the host partner', { is_host: 1, entity_type: 'Partner' }],
     ['a non-host partner', { is_host: 0, entity_type: 'Partner' }],
-    ['a host whose entity_type is not Partner', { is_host: 1, entity_type: 'Employee' }],
-  ])('is hidden from %s, and its data is never requested', async (_label, user) => {
+  ])('not even for %s, and its data is never requested', async (_label, user) => {
     signInAs(user)
-    renderPage()
+    renderWithProviders(
+      <Routes>
+        <Route path="/users/:id" element={<UserDetails />} />
+      </Routes>,
+      { route: '/users/7' }
+    )
 
-    expect(await screen.findByRole('tab', { name: /user information/i })).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('Sam Sales')).toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: /commissions/i })).not.toBeInTheDocument()
     expect(screen.queryByText(/commission or flat amount|paid by/i)).not.toBeInTheDocument()
     expect(compensationRequests).toBe(0)

@@ -6,11 +6,14 @@ import CreditProfileRequestDetailsLoader from '../../../components/Loader/Credit
 import { formatSSN, formatDate } from '../../../utils/formatters';
 import CreditAuthorizationPanel from './components/CreditAuthorizationPanel';
 import { CprCard, CprField } from './components/CprCard';
+import { usePermissions } from '../../../lib/auth/usePermissions';
+import { ENROLLMENT_TABS } from '../../../modules/client/constants';
 
 export default function CreditProfileRequestDetails() {
     const { id } = useParams();
     const { data: apiResponse, isLoading, error } = useCreditProfileRequestDetails(id || '');
     const [showFullSSN, setShowFullSSN] = useState(false);
+    const { hasPermission } = usePermissions();
 
     if (isLoading) {
         return (
@@ -64,6 +67,17 @@ export default function CreditProfileRequestDetails() {
                     ]} 
                 >
                     <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        {/* The client screen is gated on 'view clients', so the
+                            link is only offered to someone who can open it. */}
+                        {hasPermission('view clients') && (
+                            <Link
+                                to={`/clients/${request.borrower_id}`}
+                                state={{ activeTab: ENROLLMENT_TABS.CREDIT_PROFILE }}
+                                className="btn btn-primary waves-effect"
+                            >
+                                <i className="ri-user-line align-middle me-1"></i> Go to Borrower Credit Profile
+                            </Link>
+                        )}
                         <Link to="/intake-review/credit-profile-requests" className="btn btn-outline-secondary w-lg waves-effect">
                             <i className="ri-arrow-left-line align-middle me-1"></i> Back
                         </Link>
@@ -75,6 +89,7 @@ export default function CreditProfileRequestDetails() {
                 <CreditAuthorizationPanel
                     borrowerId={request.borrower_id}
                     rows={request.credit_authorizations}
+                    lastPulledAt={request.credit_last_pulled_at}
                 />
 
                 {/* 2fr / 1fr, collapsing to one column under lg. The loader
@@ -101,7 +116,7 @@ export default function CreditProfileRequestDetails() {
                                             <span className="font-monospace">{formatSSN(request.ssn, showFullSSN)}</span>
                                             <button
                                                 type="button"
-                                                className="btn btn-sm btn-reveal-ssn py-0 px-2 fs-12"
+                                                className="btn btn-sm btn-reveal-ssn ms-2 py-0 px-2 fs-12"
                                                 onClick={() => setShowFullSSN(s => !s)}
                                             >
                                                 <i className={`${showFullSSN ? 'ri-eye-off-line' : 'ri-eye-line'} align-middle me-1`}></i>

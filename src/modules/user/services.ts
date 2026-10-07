@@ -1,6 +1,6 @@
 // src/modules/user/services.ts
 import { apiClient } from '../../lib/http/apiClient'
-import type { User } from './types'
+import type { CreateUserPayload, CreateUserResponse, User } from './types'
 
 interface UsersPayload {
   page?: number
@@ -45,7 +45,7 @@ export const fetchUserById = async (id: number | string) => {
 }
 
 
-export const createUser = async (payload: Partial<User>): Promise<User> => {
+export const createUser = async (payload: CreateUserPayload): Promise<CreateUserResponse> => {
   const { data } = await apiClient.post('/common/users', payload)
   return data
 }

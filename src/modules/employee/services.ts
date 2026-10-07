@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient'
-import type { Employee, EmployeeSearchPayload, EmployeeListResponse } from './types'
+import type { AvailableEmployee, Employee, EmployeeSearchPayload, EmployeeListResponse } from './types'
 
 export type DepartmentStatusType = 'department' | 'status'
 
@@ -21,6 +21,12 @@ export const fetchEmployees = async (payload: EmployeeSearchPayload = {}): Promi
   const meta = data.meta ?? {}
 
   return { employees, meta }
+}
+
+/** The partner's employees that are not yet connected to a user. */
+export const fetchAvailableEmployeesForUser = async (): Promise<AvailableEmployee[]> => {
+  const { data } = await apiClient.get('/common/employees-available-for-user')
+  return Array.isArray(data?.data) ? data.data : []
 }
 
 export const fetchEmployeeById = async (id: string | number): Promise<Employee> => {
