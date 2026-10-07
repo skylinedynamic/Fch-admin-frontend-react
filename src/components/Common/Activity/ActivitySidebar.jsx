@@ -38,8 +38,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     const [deletingActivityId, setDeletingActivityId] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const toggleOpen = (id) => {
-        setOpenIds(prev => ({ ...prev, [id]: !prev[id] }));
+    // `openByDefault` is how the entry shows before anyone has clicked it, so
+    // the first click on an entry that starts open closes it.
+    const toggleOpen = (id, openByDefault = false) => {
+        setOpenIds(prev => ({ ...prev, [id]: !(prev[id] ?? openByDefault) }));
     };
 
     const handleDownload = async (activityId, file) => {
@@ -626,10 +628,16 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                     <div className="accordion accordion-flush" id="activityAccordion">
                                         {activities.map((activity, index) => {
                                             const itemId = activity.id ?? index;
-                                            const isOpen = !!openIds[itemId];
                                             const hasDescription = !!activity.description;
                                             const hasAttachments = Array.isArray(activity.attachments) && activity.attachments.length > 0;
-                                            const isCollapsible = hasDescription || hasAttachments;
+                                            const hasFieldChanges = !!activity.field_changes && Object.keys(activity.field_changes).length > 0;
+                                            const hasSignatures = !!activity.signatures && !!(activity.signatures.previous || activity.signatures.new);
+                                            const isCollapsible = hasDescription || hasAttachments || hasFieldChanges || hasSignatures;
+                                            // A signature or a list of changed fields is the point of the
+                                            // entry, so it shows without a click. Other entries stay
+                                            // collapsed until opened, as before.
+                                            const openByDefault = hasFieldChanges || hasSignatures;
+                                            const isOpen = openIds[itemId] ?? openByDefault;
 
                                             return (
                                                 <div key={itemId} className="accordion-item border-0">
@@ -641,7 +649,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                 background: 'transparent',
                                                                 textDecoration: 'none',
                                                             }}
-                                                            onClick={() => isCollapsible && toggleOpen(itemId)}
+                                                            onClick={() => isCollapsible && toggleOpen(itemId, openByDefault)}
                                                             aria-expanded={isOpen}
                                                         >
                                                             <div className="d-flex w-100 align-items-start">
@@ -733,6 +741,71 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                             className="text-muted mb-2 fs-13"
                                                                             dangerouslySetInnerHTML={{ __html: activity.description }}
                                                                         />
+                                                                    )}
+
+                                                                    {/* An edit to an application: each field that
+                                                                        changed, old value and new. */}
+                                                                    {hasFieldChanges && (
+                                                                        <div className="table-responsive mb-2">
+                                                                            <table className="table table-sm table-bordered fs-12 mb-0 align-middle">
+                                                                                <thead className="table-light">
+                                                                                    <tr>
+                                                                                        <th>Field</th>
+                                                                                        <th>Previous</th>
+                                                                                        <th>New</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {Object.entries(activity.field_changes).map(([field, change]) => (
+                                                                                        <tr key={field}>
+                                                                                            <td className="fw-medium">{change?.label || field}</td>
+                                                                                            <td className="text-muted text-break">{change?.from ?? '—'}</td>
+                                                                                            <td className="text-break">{change?.to ?? '—'}</td>
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* A submit or re-submit: the signature that was replaced and the
+                                                                        new one, side by side on one row - a small thumbnail for an
+                                                                        e-signature, the typed name otherwise. */}
+                                                                    {hasSignatures && (
+                                                                        <div className="d-flex gap-2 mb-2">
+                                                                            {[['previous', 'Previous'], ['new', activity.signatures.previous ? 'New' : 'Signature']]
+                                                                                .filter(([key]) => activity.signatures[key])
+                                                                                .map(([key, title]) => {
+                                                                                    const signature = activity.signatures[key];
+                                                                                    const isPrevious = key === 'previous';
+                                                                                    const isImage = signature.type === 'esign' && signature.image;
+                                                                                    return (
+                                                                                        <div key={key} className="border rounded bg-white px-2 py-1" style={{ flex: '1 1 0', minWidth: 0 }}>
+                                                                                            <div className="fs-11 fw-semibold text-uppercase text-muted mb-1">{title}</div>
+                                                                                            <div
+                                                                                                className="d-flex align-items-center justify-content-center border rounded bg-light mb-1"
+                                                                                                style={{ height: 34, overflow: 'hidden' }}
+                                                                                            >
+                                                                                                {isImage ? (
+                                                                                                    <img
+                                                                                                        src={signature.image}
+                                                                                                        alt={`${title} signature of ${signature.name || 'the borrower'}`}
+                                                                                                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: isPrevious ? 0.5 : 1 }}
+                                                                                                    />
+                                                                                                ) : (
+                                                                                                    <span className={`fs-12 fw-semibold text-truncate px-1 ${isPrevious ? 'text-decoration-line-through text-muted' : 'text-dark'}`}>
+                                                                                                        {signature.name}
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <div className="fs-11 text-muted lh-sm">
+                                                                                                <div className="text-truncate">{isImage ? 'E-Signature' : 'Typed Name'}</div>
+                                                                                                {signature.signed_at && <div className="text-truncate">{signature.signed_at}</div>}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                        </div>
                                                                     )}
 
                                                                     {hasAttachments && (
