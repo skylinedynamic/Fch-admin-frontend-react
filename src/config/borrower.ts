@@ -3,7 +3,8 @@ export const APPLICATION_STATUS = {
   INTAKE_RECEIVED: 'Intake Received',
   IN_REVIEW: 'In Review',
   APPROVED: 'Approved',
-  DECLINED: 'Declined'
+  DECLINED: 'Declined',
+  FAILED: 'Failed'
 };
 
 export const APPLICATION_STATUS_OPTIONS = [
@@ -20,14 +21,14 @@ export const APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
   [APPLICATION_STATUS_OPTIONS[2].value]: 'bg-primary-subtle text-primary',
   [APPLICATION_STATUS_OPTIONS[3].value]: 'bg-success-subtle text-success',
   [APPLICATION_STATUS_OPTIONS[4].value]: 'bg-danger-subtle text-danger',
-  Failed: 'bg-danger-subtle text-danger'
+  [APPLICATION_STATUS.FAILED]: 'bg-danger-subtle text-danger'
 };
 
 // Pre-qualification adds Failed: the automated review called the borrower's
 // information incorrect, or could not be produced.
 export const PRE_QUALIFICATION_STATUS_OPTIONS = [
   ...APPLICATION_STATUS_OPTIONS,
-  { label: 'Failed', value: 'Failed' }
+  { label: APPLICATION_STATUS.FAILED, value: APPLICATION_STATUS.FAILED }
 ];
 
 export const CHANGE_REQUEST_STATUS = {
