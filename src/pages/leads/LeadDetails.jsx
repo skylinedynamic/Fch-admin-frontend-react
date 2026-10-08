@@ -175,14 +175,17 @@ export default function LeadDetails() {
             newErrors.contact_person = 'Contact Person is required.';
         }
 
-        if (!formData.email?.trim()) {
-            newErrors.email = 'Contact Email is required.';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-            newErrors.email = 'Please enter a valid email address.';
-        }
+        // Email and phone belong to the Contact Info tab only.
+        if (activeTab === 'contactInfo') {
+            if (!formData.email?.trim()) {
+                newErrors.email = 'Contact Email is required.';
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+                newErrors.email = 'Please enter a valid email address.';
+            }
 
-        if (activeTab === 'contactInfo' && !formData.phone_number?.trim()) {
-            newErrors.phone_number = 'Phone Number is required.';
+            if (!formData.phone_number?.trim()) {
+                newErrors.phone_number = 'Phone Number is required.';
+            }
         }
 
         setErrors(newErrors);
@@ -211,7 +214,6 @@ export default function LeadDetails() {
                     salesperson_id: formData.salesperson_id,
                     company_name: formData.company_name,
                     contact_person: formData.contact_person,
-                    email: formData.email,
                     domain: formData.domain,
                     lead_source: formData.lead_source,
                     lead_source_note: formData.lead_source_note,
@@ -697,13 +699,6 @@ export default function LeadDetails() {
                                                                     <label className="form-label">Contact Person <span className="text-danger">*</span></label>
                                                                     <input type="text" className={`form-control ${errors.contact_person ? 'is-invalid' : ''}`} name="contact_person" value={formData.contact_person} onChange={handleInputChange} placeholder="Enter contact person full name" />
                                                                     {errors.contact_person && <div className="invalid-feedback d-block">{errors.contact_person}</div>}
-                                                                </div>
-                                                            </div>
-                                                            <div className="col-lg-6">
-                                                                <div className="mb-3">
-                                                                    <label className="form-label">Contact Email <span className="text-danger">*</span></label>
-                                                                    <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} name="email" value={formData.email} onChange={handleInputChange} placeholder="dave@example.com" />
-                                                                    {errors.email && <div className="invalid-feedback d-block">{errors.email}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
