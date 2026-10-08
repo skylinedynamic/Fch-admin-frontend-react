@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import PageHeader from '../../common/PageHeader';
 import { useCreditProfileRequestDetails } from '../../../modules/credit-profile-request';
 import CreditProfileRequestDetailsLoader from '../../../components/Loader/CreditProfileRequestDetailsLoader';
-import { formatSSN, formatDate } from '../../../utils/formatters';
+import { formatSSN } from '../../../utils/formatters';
 import CreditAuthorizationPanel from './components/CreditAuthorizationPanel';
 import { CprCard, CprField } from './components/CprCard';
 import { usePermissions } from '../../../lib/auth/usePermissions';
@@ -106,7 +106,7 @@ export default function CreditProfileRequestDetails() {
                                 against 2, which left half the card empty. */}
                             <div className="cpr-fields cpr-fields-2">
                                 <CprField label="Full Name" icon="ri-account-circle-line" value={fullName} copyValue={fullName} />
-                                <CprField label="Date of Birth" icon="ri-cake-2-line" value={formatDate(request.date_of_birth)} />
+                                <CprField label="Date of Birth" icon="ri-cake-2-line" value={request.date_of_birth || '—'} />
                                 <CprField
                                     label="Social Security Number"
                                     icon="ri-lock-line"
