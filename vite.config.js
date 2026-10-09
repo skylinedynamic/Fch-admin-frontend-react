@@ -7,6 +7,9 @@ export default defineConfig({
     alias: [
       { find: 'primereact/datatable', replacement: '/src/components/Table/DataTableWrapper.jsx' },
       { find: '@primereact/datatable', replacement: 'primereact/datatable' },
+      // Month/year dropdowns in the shared calendar design; see the wrapper.
+      { find: 'primereact/calendar', replacement: '/src/components/Calendar/CalendarWrapper.tsx' },
+      { find: '@primereact/calendar', replacement: 'primereact/calendar' },
     ]
   },
   server: {

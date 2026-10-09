@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Flatpickr from 'react-flatpickr';
+import { yearDropdownPlugin } from '../../../../utils/flatpickrPlugins';
 import { toast } from 'react-toastify';
 // @ts-ignore
 import { PALETTE, makeBlock } from './utils';
@@ -7,6 +8,13 @@ import { AgreementBlock } from './types';
 
 // ── A4 at 96 dpi ─────────────────────────────────────────────────────────────
 const A4_H = 1122.5;  // px  (297mm)
+
+// Agreement and signature dates can fall either side of today.
+const AGREEMENT_DATE_OPTIONS = {
+    dateFormat: 'd M, Y',
+    monthSelectorType: 'dropdown' as const,
+    plugins: [yearDropdownPlugin(1900, new Date().getFullYear() + 10)],
+};
 
 interface TextBlockProps {
     block: AgreementBlock;
@@ -235,7 +243,7 @@ interface BlockBodyProps {
 }
 
 // ── Single block's inner content ──────────────────────────────────────────────
-function BlockBody({ block, helpers, readOnly }: BlockBodyProps) {
+export function BlockBody({ block, helpers, readOnly }: BlockBodyProps) {
     const { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, selectedId, openFmForBlock } = helpers;
 
     const blockVars = {
@@ -367,7 +375,7 @@ function BlockBody({ block, helpers, readOnly }: BlockBodyProps) {
                 {block.type === 'date' && (
                     <div className="ab4-field" style={fieldVars}>
                         <div className="ab4-field-lbl">{block.fieldLabel}{block.fieldRequired ? ' *' : ''}:</div>
-                        <Flatpickr className="form-control ab4-modern-fpick" options={{ dateFormat: 'd M, Y' }} placeholder="Select Date" />
+                        <Flatpickr className="form-control ab4-modern-fpick" options={AGREEMENT_DATE_OPTIONS} placeholder="Select Date" />
                     </div>
                 )}
                 {block.type === 'checkbox' && (
@@ -396,7 +404,7 @@ function BlockBody({ block, helpers, readOnly }: BlockBodyProps) {
                                     fontFamily: block.fontFamily,
                                     textAlign: 'center',
                                 }}
-                                options={{ dateFormat: 'd M, Y' }} placeholder="Click here" />
+                                options={AGREEMENT_DATE_OPTIONS} placeholder="Click here" />
                             <div className="ab4-sig-meta ab4-sig-meta--date">Signature Date</div>
                         </div>
                     </div>

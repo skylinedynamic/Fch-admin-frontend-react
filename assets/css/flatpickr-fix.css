@@ -1,0 +1,186 @@
+/*
+ * Pin the date picker to seven columns.
+ *
+ * Flatpickr lays the month out as a plain flex-wrap list and relies on a fixed
+ * arithmetic relationship to get seven per row: `.dayContainer` is exactly
+ * 307.875px and every `.flatpickr-day` is at most 39px, so an eighth day cannot
+ * fit. The weekday header is sized separately, as seven equal shares of that
+ * same width.
+ *
+ * Nothing enforces the two agreeing. Four stylesheets in this app set those
+ * internals independently - app.min.css, custom.css, the unpinned
+ * cdn.jsdelivr.net flatpickr build, and agreement-builder.css, which is a
+ * page-specific file that Vite bundles globally and which shrinks the day to
+ * 38px and forces `.flatpickr-calendar` to 315px. Shave a pixel off the day or
+ * add one to the container and an eighth day fits the row, while the header
+ * still draws seven. Every date then renders one column to the left: 6 June
+ * 1981, a Saturday, appeared under FRI.
+ *
+ * The dates were never wrong - only their position. So rather than re-tune the
+ * arithmetic, which the next stylesheet would break again, both rows are made
+ * real seven-column grids. Seven is then structural and no width can change it.
+ *
+ * Must load after every other flatpickr stylesheet; imported from src/main.jsx.
+ * Copied from client-fch (assets/css/flatpickr-fix.css) - keep the two in sync.
+ */
+
+/* The month: exactly seven columns, whatever the container is sized to. */
+.flatpickr-calendar .dayContainer {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    justify-content: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    /* Either side, so the first and last columns do not touch the frame: 7px
+       plus the day area's own 1px border line - 8px in all, as PrimeReact. */
+    padding: 0 7px !important;
+    box-sizing: border-box !important;
+}
+
+/* The header: the same seven columns and the same side padding, so the two
+   line up by construction. */
+.flatpickr-calendar .flatpickr-weekdaycontainer {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    padding: 0 7px !important;
+    box-sizing: border-box !important;
+}
+
+.flatpickr-calendar span.flatpickr-weekday {
+    width: auto !important;
+    flex: none !important;
+}
+
+/*
+ * The day fills its grid cell, up to 40px - the PrimeReact calendar's day
+ * size - and sits centred in it. Seven columns are structural now, so a
+ * max-width can no longer let an eighth day into the row. The square aspect
+ * ratio keeps the selected/today highlight square-cornered and even.
+ */
+.flatpickr-calendar .dayContainer .flatpickr-day {
+    width: 100% !important;
+    max-width: 40px !important;
+    justify-self: center;
+    min-width: 0 !important;
+    flex-basis: auto !important;
+    margin: 0 !important;
+    aspect-ratio: 1 / 1;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    line-height: normal !important;
+    height: auto !important;
+}
+
+/*
+ * The container these sit in must be free to be whatever width the calendar is,
+ * rather than flatpickr's hard-coded 307.875px, or the grid above is laid out
+ * against a width that no longer matches the calendar.
+ */
+.flatpickr-calendar .flatpickr-days,
+.flatpickr-calendar .flatpickr-rContainer {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+}
+
+/*
+ * Week numbers, if ever switched on, are a separate column outside the grid -
+ * left alone deliberately so enabling them does not silently become an eighth
+ * column.
+ */
+.flatpickr-calendar .flatpickr-weekwrapper .flatpickr-weekday,
+.flatpickr-calendar .flatpickr-weekwrapper span.flatpickr-day {
+    width: 100% !important;
+    aspect-ratio: auto;
+}
+
+/*
+ * Header: the previous/next arrows are boxes the size of the month and year
+ * fields, on the same line, 8px from them and from the edges:
+ *
+ *   8 | < 36x36 | 8 | Month | 8 | Year | 8 | > 36x36 | 8
+ *
+ * Flatpickr positions its arrows absolutely over the header; they are put back
+ * into the header's flex row instead, so the spacing is structural. Drawn like
+ * .fp-yd-trigger (custom.min.css). The PrimeReact calendar's arrows match this
+ * in primereact-calendar.css.
+ */
+.flatpickr-calendar .flatpickr-months {
+    align-items: center !important;
+    padding: 12px 8px !important;
+    box-sizing: border-box !important;
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-month {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-current-month {
+    padding: 0 8px !important;
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month {
+    position: static !important;
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--primary-color) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+    color: #fff !important;
+    fill: #fff !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month:hover {
+    background: var(--primary-color) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    filter: brightness(1.1) !important;
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month svg,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month svg {
+    width: 8px !important;
+    height: 8px !important;
+}
+
+/* At minDate/maxDate Flatpickr hides the arrow, which would slide the month
+   and year fields sideways. Keep its place and dim it instead; it takes no
+   clicks, so the calendar still cannot be moved past the limit. */
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month.flatpickr-disabled,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month.flatpickr-disabled {
+    display: flex !important;
+    opacity: 0.4 !important;
+    pointer-events: none !important;
+}
+
+/* Flatpickr's chevron is a thin filled shape; at 8px with a 1.6px stroke it
+   has the PrimeReact chevron's size and weight. */
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month svg path,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month svg path {
+    stroke: #fff !important;
+    stroke-width: 1.6px !important;
+    stroke-linejoin: round !important;
+}
+
+/* The app's own body font, set explicitly rather than inherited, as for the
+   PrimeReact calendar (primereact-calendar.css) - so both calendars always
+   use the same font, whatever page or theme they open over. */
+.flatpickr-calendar.flatpickr-calendar {
+    font-family: var(--vz-body-font-family) !important;
+}

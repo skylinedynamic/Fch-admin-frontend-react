@@ -19,6 +19,7 @@ import { BlockList, InsertZone } from './BlockComponents';
 // @ts-ignore
 import { PropertyPanel } from './PropertyPanel';
 import { AgreementBuilderLoader } from '../../../../components/Loader/AgreementLoader';
+import { withAppCalendar } from '../../../../utils/agreementCalendar';
 import { FileManagerModal } from '../../../../components/FileManagerModal/FileManagerModal';
 import type { FileSystemItem } from '../../../../modules/filemanager/types';
 
@@ -152,6 +153,10 @@ const AgreementBuilder: React.FC = () => {
     const html = useMemo(() => {
         return getAgreementHtml(blocks, { pagePad, docBg });
     }, [blocks, pagePad, docBg]);
+
+    // The preview opens the app's own calendar in the date fields; the
+    // agreement is saved as it is (handleSave uses `html`).
+    const previewHtml = useMemo(() => withAppCalendar(html), [html]);
 
     const handleEdit = (type: 'partner' | 'borrower') => {
         setEditingType(type);
@@ -318,7 +323,7 @@ const AgreementBuilder: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <iframe ref={previewRef} className="ab4-preview-frame" srcDoc={html} title="Preview" frameBorder="0" />
+                        <iframe ref={previewRef} className="ab4-preview-frame" srcDoc={previewHtml} title="Preview" frameBorder="0" />
                     </div>
                 )}
             </div>
