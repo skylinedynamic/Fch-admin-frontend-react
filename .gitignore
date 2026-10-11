@@ -6,3 +6,7 @@ templete/
 playwright-report/
 test-results/
 coverage/
+
+# Live e2e suite: credentials and the saved signed-in session
+.env.e2e
+e2e-live/.auth/
