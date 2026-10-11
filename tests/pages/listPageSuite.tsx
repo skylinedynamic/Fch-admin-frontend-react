@@ -101,7 +101,7 @@ export function describeListPage(spec: ListPageSpec, toast: { success: unknown; 
         else await user.click(applyButton())
 
         await waitFor(() => {
-          const last = { body: list.bodies.at(-1), url: list.urls.at(-1) ?? '' }
+          const last = { body: list.bodies[list.bodies.length - 1], url: list.urls[list.urls.length - 1] ?? '' }
           expect(String(read(last))).toContain('needle')
         })
       })

@@ -56,7 +56,9 @@ describe.each([
   { name: 'useFinancialInfo', hook: useFinancialInfo, path: 'financial-info', key: fa.financialInfo() },
   { name: 'useDisclosuresConsent', hook: useDisclosuresConsent, path: 'disclosures-and-consent', key: fa.disclosuresConsent() },
   { name: 'useFederalCompliance', hook: useFederalCompliance, path: 'federal-compliance-disclosures', key: fa.federalCompliance() },
-])('$name', ({ hook, path, key }) => {
+])('$name', ({ hook: typedHook, path, key }) => {
+  // The five hooks share a call signature but each returns its own data type.
+  const hook = typedHook as (id?: number | string | null, options?: { enabled?: boolean }) => any
   it('reads the current application when no funding request is given', async () => {
     const seen = stub('get', `${FA}/${path}`, { status: true, data: { id: 1 } })
 

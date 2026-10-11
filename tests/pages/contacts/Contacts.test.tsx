@@ -59,7 +59,7 @@ describe('Contacts list', () => {
     await user.type(screen.getByPlaceholderText('Search here...'), 'dan')
     await user.click(screen.getByRole('button', { name: /filters/i }))
 
-    await waitFor(() => expect(JSON.stringify(list.bodies.at(-1))).toContain('dan'))
+    await waitFor(() => expect(JSON.stringify(list.bodies[list.bodies.length - 1])).toContain('dan'))
   })
 
   it('Clear empties the search box', async () => {

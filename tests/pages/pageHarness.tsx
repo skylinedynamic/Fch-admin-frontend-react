@@ -68,7 +68,10 @@ async function readBody(request: Request) {
   if (type.includes('application/json')) return request.clone().json().catch(() => null)
   if (type.includes('multipart/form-data')) {
     const form = await request.clone().formData().catch(() => null)
-    return form ? Object.fromEntries(form.entries()) : null
+    if (!form) return null
+    const fields: Record<string, unknown> = {}
+    form.forEach((value, key) => { fields[key] = value })
+    return fields
   }
   return null
 }
