@@ -2630,8 +2630,7 @@ span.flatpickr-weekday {
 
 /* calender */
 .flatpickr-weekday,
-.flatpickr-months .flatpickr-month,
-.flatpickr-current-month .flatpickr-monthDropdown-months {
+.flatpickr-months .flatpickr-month {
   color: rgb(0, 0, 0) !important;
 }
 
@@ -2891,8 +2890,7 @@ span.flatpickr-weekday {
 
 /* calender */
 .flatpickr-weekday,
-.flatpickr-months .flatpickr-month,
-.flatpickr-current-month .flatpickr-monthDropdown-months {
+.flatpickr-months .flatpickr-month {
   color: rgb(0, 0, 0) !important;
 }
 

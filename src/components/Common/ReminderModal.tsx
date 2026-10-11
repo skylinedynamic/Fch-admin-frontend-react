@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { apiClient as api } from '../../lib/http/apiClient';
 import { useAuthStore } from '../../store/auth/authStore';
 import '../../../assets/css/reminder.css';
-import { initEcho } from '../../lib/echo';
+import { getEcho, userChannelName } from '../../lib/realtime/echo';
 import { ReminderRescheduleForm } from './ReminderRescheduleForm';
 import ReminderClientCard from './ReminderClientCard';
 import { getReminderClientPath, getReminderClientLinkLabel } from '../../config/reminders';
@@ -13,10 +13,18 @@ import ReminderSnoozeForm, { ReminderSnoozeErrors } from './ReminderSnoozeForm';
 import ReminderAttachments from './ReminderAttachments';
 import ActivityEditModal from './Modals/ActivityEditModal';
 import { getActivityLog } from '../../modules/activity-log/services';
+import { isReminderPastDue } from '../../utils/reminders';
 
 // After "Go to Client" the popup stays out of the way this long while the
 // user works on the file (a newly due reminder still pops up immediately).
 const GO_TO_CLIENT_QUIET_MS = 5 * 60 * 1000;
+
+// A reminder closed with X (not dismissed or snoozed) comes back after this.
+const RESHOW_AFTER_CLOSE_MS = 30 * 1000;
+
+// How often the open popup re-checks, on its own clock, whether an upcoming
+// activity has become "missed". Local only - no request.
+const CLOCK_TICK_MS = 30 * 1000;
 
 // Notes longer than this get their own line below the details; past the second
 // length they are clamped to two lines with "See more".
@@ -35,95 +43,130 @@ const ReminderModal = () => {
     const [notesExpanded, setNotesExpanded] = useState(false);
     // Reminder picked from the multi-reminder list to act on individually.
     const [focusedId, setFocusedId] = useState<number | null>(null);
-    const quietUntilRef = useRef(0);
     // The activity being edited from "Edit Reminder". While its form is open
     // the popup stays hidden (it can't sit on top of it).
     const [editingActivity, setEditingActivity] = useState<any>(null);
     const editingRef = useRef(false);
+    // Brings the popup back after X / "Go to Client" (see scheduleReshow).
+    const reshowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // The latest list, for timers and socket handlers set up earlier.
+    const remindersRef = useRef<any[]>([]);
+    remindersRef.current = reminders;
+    // The popup's own clock for "missed" (see CLOCK_TICK_MS).
+    const [now, setNow] = useState(() => Date.now());
 
     const location = useLocation();
 
-    // Fetch due reminders
-    const fetchDueReminders = async ({ keepOpenState = false }: { keepOpenState?: boolean } = {}) => {
+    const hasActive = (list: any[]) => list.some((r) => r && r.status !== 'cancelled');
+
+    const clearReshow = () => {
+        if (reshowTimerRef.current) clearTimeout(reshowTimerRef.current);
+        reshowTimerRef.current = null;
+    };
+
+    // Shows the popup again after `ms` if anything is still due by then.
+    const scheduleReshow = (ms: number) => {
+        clearReshow();
+        reshowTimerRef.current = setTimeout(() => {
+            reshowTimerRef.current = null;
+            if (!editingRef.current && hasActive(remindersRef.current)) setIsOpen(true);
+        }, ms);
+    };
+
+    // The only request the popup makes on its own: once, when the page loads
+    // (or on sign-in), for whatever is already due. From then on every change
+    // arrives over Reverb (see below), so it never polls.
+    const fetchDueReminders = async () => {
         if (!token) return;
 
         try {
             const response = await api.get('/common/reminders/due');
-
-            if (
-                response.data &&
-                response.data.data &&
-                response.data.data.reminders
-            ) {
-                const fetchedReminders = (response.data.data.reminders || []).filter(
-                    (r: any) => r && r.status !== 'cancelled'
-                );
-
-                setReminders(fetchedReminders);
-                if (keepOpenState) {
-                    // Refreshing an open popup: only close it if nothing is left.
-                    if (fetchedReminders.length === 0) setIsOpen(false);
-                } else {
-                    // Never pop up over the activity edit form.
-                    setIsOpen(fetchedReminders.length > 0 && !editingRef.current);
-                }
-            }
-        } catch (error) {
-            console.error(
-                'Failed to fetch due reminders:',
-                error
+            const fetchedReminders = (response.data?.data?.reminders || []).filter(
+                (r: any) => r && r.status !== 'cancelled'
             );
+
+            setReminders(fetchedReminders);
+            // Never pop up over the activity edit form.
+            setIsOpen(fetchedReminders.length > 0 && !editingRef.current);
+        } catch (error) {
+            console.error('Failed to fetch due reminders:', error);
         }
     };
 
-    // Fetch once on mount/login to catch reminders that were already due
-    // before the socket connected. Reverb (.reminder.due, queued broadcast)
-    // pushes anything that becomes due afterward, and the 30s poll below
-    // covers dropped connections — no need to refetch on every route change.
     useEffect(() => {
         fetchDueReminders();
     }, [token]);
 
-    // Periodically re-check so if you just closed the popup (X) without dismissing,
-    // it resurfaces again and again until actually dismissed or rescheduled.
+    // Reverb pushes, on the user channel shared with the notification bell and
+    // the trial listener (so cleanup removes only these listeners). Each push
+    // carries the reminder already rendered for this user, the same shape as
+    // GET /due, so it is used as-is:
+    //  - .reminder.due: one came due - add it and open the popup;
+    //  - .reminder.updated: one changed - show its new details while it's
+    //    still due, or drop it once dismissed, snoozed or deleted (from this
+    //    tab, another tab, or the reminders page).
     useEffect(() => {
-        if (!token) return;
+        const userId = useAuthStore.getState().user?.id;
+        const echo = token && userId ? getEcho() : null;
+        if (!echo || !userId) return;
 
-        const interval = setInterval(() => {
-            if (editingRef.current) return;
-            if (isOpen) {
-                // Already showing — refresh the data only (Missed/Pending, dates).
-                fetchDueReminders({ keepOpenState: true });
-            } else if (Date.now() >= quietUntilRef.current) {
-                fetchDueReminders();
+        const upsert = (reminder: any) => {
+            setReminders((prev) => {
+                const index = prev.findIndex((r) => r.id === reminder.id);
+                if (index === -1) return [reminder, ...prev];
+                const next = [...prev];
+                next[index] = reminder;
+                return next;
+            });
+        };
+
+        const handleDue = (e: any) => {
+            const reminder = e?.reminder;
+            if (!reminder || reminder.status === 'cancelled') return;
+            upsert(reminder);
+            if (!editingRef.current) {
+                clearReshow();
+                setIsOpen(true);
             }
-        }, 30000);
-        return () => clearInterval(interval);
-    }, [token, isOpen]);
+        };
 
-    // WebSocket listener (only initialize once per user session)
-    useEffect(() => {
-        if (token) {
-            const userId = useAuthStore.getState().user?.id;
-
-            if (userId) {
-                const echo = initEcho();
-                if (echo) {
-                    echo.private(`App.Models.User.${userId}`)
-                        .listen('.reminder.due', (e: any) => {
-                            if (e?.reminder?.status === 'cancelled') return;
-                            // Refetch rather than using the broadcast payload so the
-                            // reminder arrives with its client details resolved.
-                            fetchDueReminders();
-                        });
-
-                    return () => {
-                        echo.leave(`App.Models.User.${userId}`);
-                    };
-                }
+        const handleUpdated = (e: any) => {
+            if (e?.active && e.reminder) {
+                upsert(e.reminder);
+                return;
             }
-        }
+            setReminders((prev) => prev.filter((r) => r.id !== e?.id));
+            setFocusedId((current) => (current === e?.id ? null : current));
+        };
+
+        const channel = echo.private(userChannelName(userId));
+        channel.listen('.reminder.due', handleDue);
+        channel.listen('.reminder.updated', handleUpdated);
+
+        return () => {
+            channel.stopListening('.reminder.due', handleDue);
+            channel.stopListening('.reminder.updated', handleUpdated);
+        };
     }, [token]);
+
+    const anyActive = hasActive(reminders);
+
+    // Nothing left to show: close, and forget any pending re-show.
+    useEffect(() => {
+        if (!anyActive) {
+            setIsOpen(false);
+            clearReshow();
+        }
+    }, [anyActive]);
+
+    // Tick the local clock only while there is something that can turn "missed".
+    useEffect(() => {
+        if (!anyActive) return;
+        const id = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+        return () => clearInterval(id);
+    }, [anyActive]);
+
+    useEffect(() => clearReshow, []);
 
     const resetPanels = () => {
         setShowCustomReschedule(false);
@@ -149,16 +192,18 @@ const ReminderModal = () => {
         }
     };
 
-    // Toggle modal. Closing (X) hides the popup.
+    // Closing (X) only hides the popup: a reminder that wasn't dismissed or
+    // snoozed comes back on its own, until it is.
     const toggle = () => {
         setIsOpen(false);
         setFocusedId(null);
         resetPanels();
+        scheduleReshow(RESHOW_AFTER_CLOSE_MS);
     };
 
     const goToClient = () => {
-        quietUntilRef.current = Date.now() + GO_TO_CLIENT_QUIET_MS;
         toggle();
+        scheduleReshow(GO_TO_CLIENT_QUIET_MS);
     };
 
     const removeReminder = (id: any) => {
@@ -294,12 +339,14 @@ const ReminderModal = () => {
         }
     };
 
+    // Any change the edit made arrives as a .reminder.updated push, so this
+    // only brings back the popup if something is still due.
     const closeEdit = () => {
         editingRef.current = false;
         setEditingActivity(null);
         setFocusedId(null);
         resetPanels();
-        fetchDueReminders();
+        if (hasActive(remindersRef.current)) setIsOpen(true);
     };
 
     const editModal = (
@@ -327,7 +374,7 @@ const ReminderModal = () => {
     // view and the per-item badges below (the activity's own date/time, not
     // whether the alert already fired) so the summary text at the top
     // actually matches what the list underneath shows.
-    const missedCount = activeReminders.reduce((count, r) => (r.is_past_due ? count + 1 : count), 0);
+    const missedCount = activeReminders.reduce((count, r) => (isReminderPastDue(r, now) ? count + 1 : count), 0);
     const allMissed = isMultiple && missedCount === activeReminders.length;
     const someMissed = isMultiple && missedCount > 0 && !allMissed;
 
@@ -354,7 +401,7 @@ const ReminderModal = () => {
     // whether the alert already fired. reminder_date_time is deliberately
     // earlier than set_date_time (e.g. "10 minutes before"), so a
     // due-but-still-upcoming reminder must not read as "missed".
-    const isPastDue = !!mainReminder.is_past_due;
+    const isPastDue = isReminderPastDue(mainReminder, now);
     // Edit Reminder opens the activity behind the reminder, which only the
     // person who logged that activity may change (the API enforces it too).
     const canEdit = !!mainReminder.activity_log_id && !!mainReminder.activity_can_edit;
@@ -399,6 +446,7 @@ const ReminderModal = () => {
                                 <button
                                     type="button"
                                     className="position-absolute bg-transparent border-0 text-white reminder-close-btn"
+                                    aria-label="Close reminder"
                                     onClick={toggle}
                                 >
                                     <i className="ri-close-line"></i>
@@ -441,7 +489,7 @@ const ReminderModal = () => {
                                         // Same as the single-reminder view: the activity's own
                                         // date/time decides "missed", not when the alert fired.
                                         const dateLabel = r.display?.activity_datetime ?? '—';
-                                        const itemIsPastDue = !!r.is_past_due;
+                                        const itemIsPastDue = isReminderPastDue(r, now);
                                         const client = r.client;
                                         return (
                                             <div
@@ -572,6 +620,7 @@ const ReminderModal = () => {
                                 <button
                                     type="button"
                                     className="position-absolute bg-transparent border-0 text-white reminder-close-btn"
+                                    aria-label="Close reminder"
                                     onClick={toggle}
                                 >
                                     <i className="ri-close-line"></i>

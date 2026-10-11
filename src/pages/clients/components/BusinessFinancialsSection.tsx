@@ -11,6 +11,7 @@ import { scrollToFirstError } from '../../../utils/formUtils';
 import type { Client } from '../../../modules/client/types';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.css';
+import { yearDropdownPlugin } from '../../../utils/flatpickrPlugins';
 
 const defaultFinancialsState = DEFAULT_CLIENT_STATE;
 
@@ -169,7 +170,6 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     // 4. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
-            console.log('[BusinessFinancialsSection] Starting save...', { clientId, formData });
 
             // Unformat values before sending to API
             const apiData = { ...formData };
@@ -213,13 +213,11 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                 funding_urgency: apiData.funding_urgency,
                 bank_accounts: bankAccountsPayload
             };
-            console.log('[BusinessFinancialsSection] Mapped payload:', payload);
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
                 updateMutation.mutate({ id: clientId, data: payload }, {
                     onSuccess: (res: any) => {
-                        console.log('[BusinessFinancialsSection] Save SUCCESS!', res);
                         toast.success("Business financials updated successfully");
 
                         const responseData = res?.data?.data || res?.data || res;
@@ -245,7 +243,8 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         resolve();
                     },
                     onError: (error: any) => {
-                        console.error("[BusinessFinancialsSection] Save ERROR:", error);
+                        // Status only: the error object carries the request payload (config.data) — client PII.
+                        console.error('[BusinessFinancialsSection] Save failed', error?.response?.status);
                         const responseData = error?.response?.data;
                         const isValidationError = error?.response?.status === 422;
 
@@ -625,7 +624,8 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                                                                 altInput: true,
                                                                 altFormat: "j M, Y",
                                                                 maxDate: "today",
-                                                                monthSelectorType: "dropdown"
+                                                                monthSelectorType: "dropdown",
+                                                                plugins: [yearDropdownPlugin(1900)]
                                                             }}
                                                             placeholder="Select account open date"
                                                         />

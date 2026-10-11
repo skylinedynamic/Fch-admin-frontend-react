@@ -8,6 +8,7 @@ import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
 import { ENTITY_TYPE_PARTNER } from '../../config/appConfig'
+import NotificationBell from './NotificationBell'
 
 export default function Header() {
   const navigate = useNavigate()
@@ -274,8 +275,9 @@ export default function Header() {
               </div>
             </div>
 
-            {/* ── Right: avatar button ──────────────────────── */}
+            {/* ── Right: notifications + avatar button ──────── */}
             <div className="d-flex align-items-center">
+              <NotificationBell />
               <div className="ms-sm-3 header-item topbar-user">
                 <button
                   ref={btnRef}

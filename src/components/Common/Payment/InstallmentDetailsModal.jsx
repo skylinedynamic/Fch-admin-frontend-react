@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Modal from 'bootstrap/js/dist/modal';
+import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 import { Dropdown } from 'primereact/dropdown';
 
 const formatCurrency = (value) => {
@@ -72,7 +73,8 @@ export default function InstallmentDetailsModal({
             document.body.style.overflow = '';
             document.body.style.paddingRight = '';
             // Remove any leftover backdrop
-            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            // Stray backdrops only - never one belonging to a modal still open.
+            clearStrayModalBackdrops();
             if (onHiddenRef.current) {
                 onHiddenRef.current();
             }

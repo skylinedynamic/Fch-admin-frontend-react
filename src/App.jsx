@@ -8,13 +8,13 @@ import SignIn from '../src/pages/singin/SignIn.jsx';
 import ForgotPassword from '../src/pages/singin/ForgotPassword.jsx';
 import ResetPassword from '../src/pages/singin/ResetPassword.jsx';
 import Users from '../src/pages/users/Users.jsx';
+import UserDetails from '../src/pages/users/UserDetails.jsx';
 import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
 import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
-import { ENTITY_TYPE_BORROWER } from './config/appConfig';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
@@ -94,8 +94,8 @@ import ReminderList from './pages/reminders/ReminderList';
 import $ from 'jquery';
 window.jQuery = window.$ = $;
 
-import { initEcho } from './lib/echo';
-import { clearAuth } from './lib/auth';
+import { useTrialExpiredListener } from './lib/auth/useTrialExpiredListener';
+import NotificationList from './pages/notifications/NotificationList';
 
 // Import Summernote CSS globally
 import 'summernote/dist/summernote-lite.css';
@@ -134,28 +134,11 @@ export default function App() {
     if (token) {
       refreshSubscription();
       queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
-
-      // Initialize Reverb WebSocket listener for Trial Expiration
-      if (user) {
-        const echo = initEcho();
-        if (echo) {
-          echo.private(`App.Models.User.${user.id}`)
-            .listen('.trial.expired', () => {
-              clearAuth();
-              const expiredMessage = user.entity_type === ENTITY_TYPE_BORROWER
-                ? 'Your free plan has expired. You have been logged out.'
-                : 'Your free trial has expired. You have been logged out.';
-              toast.error(expiredMessage, { toastId: 'reverb-trial-expired' });
-              window.location.assign('/login');
-            });
-            
-          return () => {
-            echo.leave(`App.Models.User.${user.id}`);
-          };
-        }
-      }
     }
   }, [token, user]);
+
+  // Reverb: log out as soon as the trial / free plan expires.
+  useTrialExpiredListener();
 
   // Fetch authenticated global configurations (branding + status flags)
   const { data: globalConfigData } = useGlobalConfigurations(!!user);
@@ -209,7 +192,12 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="fund-application/:id" element={<FundApplication />} />
-            <Route path="reminders" element={<ReminderList />} />
+            <Route path="notifications" element={<NotificationList />} />
+
+            {/* Reminders Route - requires 'view reminders' permission */}
+            <Route element={<PermissionRoute permission="view reminders" />}>
+              <Route path="reminders" element={<ReminderList />} />
+            </Route>
 
             {/* Commissions Routes */}
             <Route element={<PermissionRoute permission="view commission" />}>
@@ -253,6 +241,10 @@ export default function App() {
             {/* Users Routes - requires 'view users' permission */}
             <Route element={<PermissionRoute permission="view users" />}>
               <Route path="users" element={<Users />} />
+              <Route element={<PermissionRoute permission="create users" />}>
+                <Route path="users/create" element={<UserDetails />} />
+              </Route>
+              <Route path="user-details/:id" element={<UserDetails />} />
             </Route>
 
 

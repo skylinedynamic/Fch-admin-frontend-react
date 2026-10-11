@@ -37,7 +37,23 @@ export type Employee = {
   marital_status?: string | null
   no_of_children?: number | null
   image?: string | null
+
+  // Compensation ("Paid By") is not part of the employee record — it lives in
+  // its own table behind its own endpoints; see modules/compensation.
+
   [key: string]: unknown
+}
+
+/** An employee with no user account yet - the choices when adding a user. */
+export type AvailableEmployee = {
+  id: number
+  first_name: string | null
+  full_name: string
+  email: string | null
+  phone_number_1: string | null
+  country_code: string | null
+  employee_code: string | null
+  designation: string | null
 }
 
 export type EmployeeSearchPayload = {

@@ -15,13 +15,14 @@ import {
     ACTIVITY_EDIT_ERROR_FIELDS,
     normalizeActivityFieldErrors,
     getActivityValidationToast,
+    getVisibilityOptions,
 } from '../../../modules/activity-log/constants';
 import { TimeInputs } from '../TimeInputs';
 
 const REFERENCE_OPTIONS = REMINDER_TYPES.map(t => t.value);
 
 
-export default function ActivityEditModal({ activity, show, onClose, onUpdated }) {
+export default function ActivityEditModal({ activity, show, onClose, onUpdated, isHost }) {
     const textareaRef = useRef(null);
     const fileInputRef = useRef(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -35,6 +36,7 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
         activity_date: '',
         summary: '',
         message_body: '',
+        visibility: 'internal',
         remind_me: false,
         remind_at: '',
         reminder_preset: '30_minutes',
@@ -54,6 +56,7 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
                 activity_date: activity.activity_date || activity.properties?.activity_date || activity.created_at || '',
                 summary: activity.properties?.subject || activity.subject || activity.event || '',
                 message_body: activity.description || activity.properties?.description || '',
+                visibility: activity.visibility || 'internal',
                 remind_me: Boolean(activity.remind_me ?? activity.properties?.remind_me ?? false),
                 remind_at: activity.remind_at || activity.properties?.remind_at || '',
                 reminder_preset: activity.reminder_preset || activity.properties?.reminder_preset || '30_minutes',
@@ -171,6 +174,7 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
             data.append('activity_date', formData.activity_date || '');
             data.append('subject', formData.summary || '');
             data.append('description', formData.message_body || '');
+            data.append('visibility', formData.visibility || '');
             data.append('remind_me', formData.remind_me ? '1' : '0');
             data.append('remind_at', formData.remind_me ? (finalRemindAt || '') : '');
             data.append('reminder_preset', formData.reminder_preset || '30_minutes');
@@ -348,6 +352,31 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated }
                                         name="edit_message_body"
                                     ></textarea>
                                     {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
+                                </div>
+
+                                <div className="col-12">
+                                    <label className={`form-label ${errors.visibility ? 'text-danger' : ''}`}>
+                                        Visibility <span className="text-danger">*</span>
+                                    </label>
+                                    <div className="d-flex flex-wrap gap-3">
+                                        {getVisibilityOptions(isHost).map(opt => (
+                                            <div className="form-check" key={opt.value}>
+                                                <input
+                                                    className="form-check-input"
+                                                    type="radio"
+                                                    name="visibility"
+                                                    id={`activityEditVisibility_${opt.value}`}
+                                                    value={opt.value}
+                                                    checked={formData.visibility === opt.value}
+                                                    onChange={handleInputChange}
+                                                />
+                                                <label className="form-check-label" htmlFor={`activityEditVisibility_${opt.value}`}>
+                                                    {opt.label}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {errors.visibility && <div className="text-danger mt-1 small">{errors.visibility[0]}</div>}
                                 </div>
 
                                 {/* Reminder Section */}

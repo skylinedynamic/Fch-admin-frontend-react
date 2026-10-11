@@ -34,11 +34,17 @@ export default function EmbedFormSettings() {
 
     // Form state
     const [formTitle, setFormTitle] = useState('');
-    const [notificationEmail, setNotificationEmail] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [domainInput, setDomainInput] = useState('');
     const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
     const [copied, setCopied] = useState<'snippet' | 'url' | 'key' | null>(null);
+
+    // A form is published on the partner's own domain, so a White-Label partner
+    // without one has nowhere to host it. The API refuses to create the form in
+    // that case and sends back what to configure, instead of a link that would
+    // 404 for every applicant.
+    const canPublish = config?.form_url_available !== false;
+    const publishWarning: string | null = config?.form_url_warning ?? null;
 
     const loadConfig = useCallback(async () => {
         setLoading(true);
@@ -48,7 +54,6 @@ export default function EmbedFormSettings() {
                 const d = res.data;
                 setConfig(d);
                 setFormTitle(d.form_title || '');
-                setNotificationEmail(d.notification_email || '');
                 setIsActive(Boolean(d.is_active));
                 setAllowedDomains(d.allowed_domains || []);
             } else {
@@ -71,7 +76,6 @@ export default function EmbedFormSettings() {
         try {
             const res = await updateEmbedFormConfig({
                 form_title: formTitle,
-                notification_email: notificationEmail || undefined,
                 is_active: isActive,
                 allowed_domains: allowedDomains,
             });
@@ -125,9 +129,10 @@ export default function EmbedFormSettings() {
 
     const copyToClipboard = (text: string, type: 'snippet' | 'url' | 'key') => {
         if (!text) return;
+        // No toast: the button itself switches to a copied state, which is the
+        // feedback a copy needs. A toast on top of it is noise.
         navigator.clipboard.writeText(text).then(() => {
             setCopied(type);
-            toast.success(type === 'snippet' ? 'Embed code copied to clipboard!' : 'Copied to clipboard!');
             setTimeout(() => setCopied(null), 2500);
         });
     };
@@ -149,6 +154,20 @@ export default function EmbedFormSettings() {
                 ) : (
                     /* Main Content Grid */
                     <div className="row g-4">
+                        {!canPublish && publishWarning && (
+                            <div className="col-12">
+                                <div className="alert alert-warning border-0 d-flex align-items-start gap-3 mb-0" role="alert">
+                                    <i className="ri-error-warning-line fs-20 lh-1 mt-1" />
+                                    <div>
+                                        <h6 className="alert-heading fw-bold fs-14 mb-1">
+                                            Your embedded form is not published yet
+                                        </h6>
+                                        <p className="fs-13 mb-0">{publishWarning}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Left Column: Form Settings */}
                         <div className="col-lg-7">
                             {/* Summary Metrics Row */}
@@ -210,26 +229,6 @@ export default function EmbedFormSettings() {
                                             </div>
                                             <div className="form-text fs-12 text-muted">
                                                 This title appears as the main heading on the public application form.
-                                            </div>
-                                        </div>
-
-                                        {/* Notification Email */}
-                                        <div className="mb-3">
-                                            <label className="form-label fw-semibold fs-13">Notification Email Address</label>
-                                            <div className="input-group">
-                                                <span className="input-group-text bg-light text-muted" style={{ width: '42px' }}>
-                                                    <i className="ri-mail-line" />
-                                                </span>
-                                                <input
-                                                    type="email"
-                                                    className="form-control"
-                                                    value={notificationEmail}
-                                                    onChange={(e) => setNotificationEmail(e.target.value)}
-                                                    placeholder="notifications@yourcompany.com"
-                                                />
-                                            </div>
-                                            <div className="form-text fs-12 text-muted">
-                                                Alert emails with full applicant details will be sent here upon submission. If left blank, your account email is used.
                                             </div>
                                         </div>
 
@@ -314,11 +313,19 @@ export default function EmbedFormSettings() {
 
                                         {/* Submit Button */}
                                         {canUpdate && (
-                                            <div className="d-flex justify-content-end pt-2 border-top">
+                                            <div className="d-flex justify-content-end align-items-center gap-3 pt-2 border-top">
+                                                {!canPublish && (
+                                                    <span className="fs-12 text-muted mt-3">
+                                                        Saving is unavailable until the form has a publishing address.
+                                                    </span>
+                                                )}
                                                 <button
                                                     type="submit"
                                                     className="btn btn-primary px-4 fw-semibold mt-3"
-                                                    disabled={saving}
+                                                    // The API refuses the write with a 422 while
+                                                    // the partner has nowhere to publish, so the
+                                                    // button says so rather than producing a toast.
+                                                    disabled={saving || !canPublish}
                                                 >
                                                     {saving ? (
                                                         <>
@@ -349,6 +356,20 @@ export default function EmbedFormSettings() {
                                 />
 
                                 <div className="card-body p-4">
+                                    {!canPublish ? (
+                                        /* No key, no link and no snippet to show: the form does
+                                           not exist yet. Empty copy-boxes here read as a bug -
+                                           partners copy a blank link and wonder why nothing
+                                           works - so the card says what to do instead. */
+                                        <div className="text-center py-4">
+                                            <span className="ef-card__icon bg-warning-subtle text-warning d-inline-flex mb-3">
+                                                <i className="ri-global-line fs-20" />
+                                            </span>
+                                            <h6 className="fw-bold fs-14 mb-2">No publishing address yet</h6>
+                                            <p className="fs-13 text-muted mb-0">{publishWarning}</p>
+                                        </div>
+                                    ) : (
+                                    <>
                                     {/* Partner Public Key */}
                                     <div className="ef-field mb-4">
                                         <div className="d-flex justify-content-between align-items-center mb-1">
@@ -435,8 +456,11 @@ export default function EmbedFormSettings() {
                                         </div>
                                     </div>
 
+                                    </>
+                                    )}
+
                                     {/* Security / Key Regeneration Card */}
-                                    {canUpdate && (
+                                    {canUpdate && canPublish && (
                                         <div className="alert alert-warning border-0 p-3 mb-0" style={{ borderRadius: 'var(--ef-radius)' }} role="alert">
                                             <div className="d-flex align-items-start gap-2">
                                                 <div className="flex-grow-1">

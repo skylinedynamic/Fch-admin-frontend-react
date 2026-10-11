@@ -6,6 +6,8 @@ import { useConfigStore } from "../../store/config";
 import faviconImg from "../../../assets/images/Favicon.png";
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from "../../config/appConfig";
+import { NOTIFICATIONS_ROUTE } from "../../config/notifications";
+import { useUnreadNotificationCount, formatUnreadCount } from "../../modules/notifications";
 
 // Menu item configuration with required permissions
 const menuItems = [
@@ -164,6 +166,14 @@ const menuItems = [
     to: "/reminders",
     icon: "ri-alarm-warning-line",
     label: "Task & Reminders",
+    permission: "view reminders",
+  },
+  {
+    to: NOTIFICATIONS_ROUTE,
+    icon: "ri-notification-3-line",
+    label: "Notification",
+    permission: "", // every signed-in user has an inbox
+    showUnreadNotifications: true,
   },
   // {
   //   to: '/under-construction/training-courses',
@@ -188,12 +198,15 @@ const menuItems = [
     icon: "ri-user-2-fill",
     label: "Employees",
     permission: "view employees",
+    // Details lives outside /employees, so NavLink can't infer it.
+    activePaths: ["/employee-details"],
   },
   {
     to: "/users",
     icon: "ri-user-3-fill",
     label: "Users",
     permission: "view users",
+    activePaths: ["/user-details"],
   },
   {
     to: "/payment-methods",
@@ -275,6 +288,8 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
   const { hasPermission, isRestricted, hasAnyPermission } = usePermissions();
+  // Same cached query as the header bell, so this adds no extra request.
+  const { data: unreadNotificationCount = 0 } = useUnreadNotificationCount();
   const location = useLocation();
   const { branding: settings } = useConfigStore();
 
@@ -346,7 +361,13 @@ export default function Sidebar() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const menuClass = useMemo(() => "app-menu navbar-menu", []);
+  // `has-trial-panel` switches the sidebar to a flex column so the banner takes
+  // part in the layout instead of floating over the last menu item. Only when
+  // there is a banner, so a paid plan keeps the theme's own layout untouched.
+  const menuClass = useMemo(
+    () => (isFreeTrial ? "app-menu navbar-menu has-trial-panel" : "app-menu navbar-menu"),
+    [isFreeTrial]
+  );
 
   const toggleOpen = () => {
     const body = typeof document !== "undefined" ? document.body : null;
@@ -559,7 +580,7 @@ export default function Sidebar() {
             {visibleMenuItems.map((item) => {
               const itemIsRestricted =
                 isRestricted &&
-                !["Dashboard", "Invoices", "Payments"].includes(item.label);
+                !["Dashboard", "Invoices", "Payments", "Notification"].includes(item.label);
 
               if (item.subItems) {
                 const isExpanded = expandedMenu === item.id;
@@ -687,7 +708,12 @@ export default function Sidebar() {
                   <NavLink
                     end={item.exact}
                     className={({ isActive }) => {
-                      const isActiveState = !itemIsRestricted && isActive;
+                      // Routes that belong to this menu item but sit outside its
+                      // path, e.g. /employee-details under Employees.
+                      const onRelatedPath = (item.activePaths || []).some((path) =>
+                        location.pathname === path || location.pathname.startsWith(`${path}/`)
+                      );
+                      const isActiveState = !itemIsRestricted && (isActive || onRelatedPath);
                       return `${isActiveState ? "nav-link menu-link active" : "nav-link menu-link"} ${itemIsRestricted ? "locked-item-link" : ""}`;
                     }}
                     to={itemIsRestricted ? "#" : item.to}
@@ -706,6 +732,11 @@ export default function Sidebar() {
                     }
                   >
                     <i className={item.icon}></i> <span>{item.label}</span>
+                    {item.showUnreadNotifications && unreadNotificationCount > 0 && (
+                      <span className="badge rounded-pill bg-danger ms-auto">
+                        {formatUnreadCount(unreadNotificationCount)}
+                      </span>
+                    )}
                     {itemIsRestricted && (
                       <i className="ri-lock-fill float-end fs-14 opacity-50"></i>
                     )}

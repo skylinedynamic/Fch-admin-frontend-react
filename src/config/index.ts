@@ -17,7 +17,13 @@ export { MARITAL_STATUS_OPTIONS, type MaritalStatusOption } from './maritalStatu
 export { relationOptions, type RelationOption } from './relations';
 
 // General configurations
-export { PARTNER_STATUS, type PartnerStatusOption } from './partnerStatus';
+export {
+    ALL_STATUS_OPTION,
+    PARTNER_STATUS, PARTNER_STATUS_FILTER_OPTIONS,
+    TRIAL_STATUS, TRIAL_STATUS_TRIAL, TRIAL_STATUS_EXPIRED, TRIAL_STATUS_REGULAR, TRIAL_FILTER_OPTIONS,
+    ARCHIVE_STATUS, ARCHIVE_ACTIVE, ARCHIVE_ONLY, ARCHIVE_ALL, ARCHIVE_FILTER_OPTIONS,
+    type PartnerStatusOption,
+} from './partnerStatus';
 export { STATUS, type StatusOption } from './statusOptions';
 
 // Location configurations
@@ -47,3 +53,14 @@ export { getProviderDesc } from './paymentDesc';
 
 // OpenAI configuration options
 export { DEFAULT_FALLBACK_MODELS, DEFAULT_EFFORT_OPTIONS } from './openaiConfig';
+
+// Employee compensation configurations
+export {
+    PAID_BY_NONE, PAID_BY_HOURLY, PAID_BY_SALARY, PAID_BY_PER_DEAL,
+    PAID_BY_OPTIONS,
+    APPLICABLE_SERVICE_ALL, APPLICABLE_SERVICE_FUNDING, APPLICABLE_SERVICE_CREDIT_CARD_STACKING, APPLICABLE_SERVICE_BUSINESS_CREDIT_BUILDER,
+    APPLICABLE_SERVICE_OPTIONS, APPLICABLE_SERVICES,
+    PAYOUT_TYPE_COMMISSION, PAYOUT_TYPE_FLAT_AMOUNT, PAYOUT_TYPE_OPTIONS,
+    toServiceFieldKey,
+    type CompensationOption,
+} from './compensationOptions';

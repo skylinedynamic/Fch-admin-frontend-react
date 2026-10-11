@@ -9,7 +9,8 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import type { Client, ClientFilterParams, ClientListStatistics } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
 import { BORROWER_STATUS, BORROWER_STATUS_CLASS_MAP } from '../../../config/statusOptions';
-import { ARCHIVE_FILTER_OPTIONS, FREE_PLAN_FILTER_OPTIONS, ALL_STATUS_OPTION } from '../../../config/listFilterOptions';
+import { ARCHIVE_FILTER_OPTIONS, ALL_STATUS_OPTION } from '../../../config/partnerStatus';
+import { FREE_PLAN_FILTER_OPTIONS } from '../../../config/borrower';
 import { getBorrowerFreeEditionBadgeConfig } from '../../../utils/badgeHelper';
 
 

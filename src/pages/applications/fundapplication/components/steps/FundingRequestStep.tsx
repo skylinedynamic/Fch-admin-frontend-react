@@ -6,6 +6,7 @@ import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER } from '../../../../../data/profile'
 import { useFundingRequest, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
+import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { toast } from 'react-toastify'
 import { formatCurrency, unformatCurrency } from '../../../../../utils/borrowerFormatters'
 import { useQuery } from '@tanstack/react-query'
@@ -162,6 +163,9 @@ export default function FundingRequestStep({
       toast.success('Funding request saved successfully')
       return true
     } catch (error: any) {
+      // The partner backed out of the re-signature confirmation - nothing was
+      // attempted, so say nothing.
+      if (isEditConfirmationCancelled(error)) return false
       console.error('Error saving funding request:', error)
       const errors = error.response?.data?.errors
       if (errors) {

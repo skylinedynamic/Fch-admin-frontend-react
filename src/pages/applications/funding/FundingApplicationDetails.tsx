@@ -9,6 +9,7 @@ import { FundingApplicationDetails as FundingApplicationDetailsType } from '../.
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
+import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
 import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip } from '../../../modules/application/services';
 // @ts-ignore
@@ -82,6 +83,13 @@ export default function FundingApplicationDetails() {
     const showPartnerCommission = app?.partner_id !== authPartnerId;
     const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
+    // Editable while the request is approved and the application is at status
+    // key 9 or below. The server works that out from the lifecycle key and
+    // sends it as is_editable, so no status names are compared here.
+    const canEditApplication =
+        app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
+        !!app?.funding_request_id &&
+        !!app?.is_editable;
 
     // Sync status and commission with fetched data
     useEffect(() => {
@@ -528,15 +536,113 @@ export default function FundingApplicationDetails() {
         </div>
     );
 
-    const renderAttestationAndAuthorization = () => (
-        <div className="row">
-            <div className="col-md-6 mb-3">
-                <label className="form-label fs-13">Attestation Authorization</label>
-                <div>{app.attestation_authorization ? <span className="badge bg-success">Authorized</span> : <span className="badge bg-secondary">Not Authorized</span>}</div>
-            </div>
+    // One signature, laid out the way the borrower sees it on their signing
+    // step: the signature on the left (the image for an e-signature, the name
+    // for a typed one), its date on the right, and who signed underneath.
+    const renderSignaturePanel = (
+        title: string,
+        signature: any,
+        options: { badge: React.ReactNode; faded?: boolean; emptyText: string }
+    ) => {
+        const isEsign = signature?.signature_type === 'esign' && signature?.signature_image;
+        const hasSignature = Boolean(signature && (isEsign || signature.signature_name));
+        // Both dates arrive already formatted by the API (toTimezone). An
+        // e-signature carries the date the borrower chose; a typed name has
+        // only the moment it was submitted.
+        const dateCaption = signature?.signature_date ? 'Signature Date' : 'Signed On';
+        const dateValue = signature?.signature_date || signature?.signed_at || '—';
+        const captionStyle: React.CSSProperties = { fontSize: 10.5, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 };
 
-        </div>
-    );
+        return (
+            <div className="col-12 mb-3 d-flex flex-column">
+                <label className="form-label fs-13 d-flex align-items-center gap-2">{title} {options.badge}</label>
+                <div className="border rounded overflow-hidden flex-grow-1 d-flex flex-column bg-white">
+                    <div className="row g-0 flex-grow-1">
+                        <div className={hasSignature ? 'col-sm-7' : 'col-12'}>
+                            <div className="h-100 d-flex align-items-center justify-content-center text-center p-3" style={{ minHeight: 130 }}>
+                                {!hasSignature ? (
+                                    <span className="text-muted fs-13">{options.emptyText}</span>
+                                ) : isEsign ? (
+                                    <img
+                                        src={signature.signature_image}
+                                        alt={`Signature of ${signature.signature_name || 'the borrower'}`}
+                                        className="mw-100"
+                                        style={{ maxHeight: 100, objectFit: 'contain', opacity: options.faded ? 0.45 : 1 }}
+                                    />
+                                ) : (
+                                    <span className={`fs-18 fw-semibold text-break ${options.faded ? 'text-decoration-line-through text-muted' : 'text-dark'}`}>
+                                        {signature.signature_name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        {hasSignature && (
+                            <div className="col-sm-5 border-start bg-light">
+                                <div className="h-100 d-flex flex-column align-items-center justify-content-center text-center px-3 py-3">
+                                    <i className="ri-calendar-check-line mb-1" style={{ fontSize: 20, color: '#3b518d', opacity: 0.7 }}></i>
+                                    <div className="w-100 pb-1 text-dark fs-13 text-nowrap" style={{ borderBottom: '1px solid #64748b' }}>
+                                        {dateValue}
+                                    </div>
+                                    <span className="mt-1 text-nowrap" style={captionStyle}>{dateCaption}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {hasSignature && (
+                        <div className="border-top bg-light px-3 py-2">
+                            <div className="row g-2 fs-13">
+                                <div className="col-sm-4">
+                                    <span className="text-muted fs-12 d-block">Signed By</span>
+                                    <span className="fw-medium text-break">{signature.signature_name || 'N/A'}</span>
+                                </div>
+                                <div className="col-sm-4">
+                                    <span className="text-muted fs-12 d-block">Signature Type</span>
+                                    <span className="fw-medium">{isEsign ? 'E-Signature' : 'Typed Name'}</span>
+                                </div>
+                                <div className="col-sm-4">
+                                    <span className="text-muted fs-12 d-block">Submitted On</span>
+                                    <span className="fw-medium">{signature.signed_at || 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const renderAttestationAndAuthorization = () => {
+        const current = (app as any).signature_data;
+        const previous = (app as any).previous_signature;
+        const requiresResign = Boolean((app as any).requires_resign);
+
+        return (
+            <div className="row">
+                <div className="col-12 mb-3">
+                    <label className="form-label fs-13">Attestation Authorization</label>
+                    <div>{app.attestation_authorization ? <span className="badge bg-success">Authorized</span> : <span className="badge bg-secondary">Not Authorized</span>}</div>
+                </div>
+
+                {/* Previous first, then the new one - the same order the
+                    borrower signs in. */}
+                {previous && renderSignaturePanel('Previous Signature', previous, {
+                    badge: <span className="badge bg-danger-subtle text-danger">No longer valid</span>,
+                    faded: true,
+                    emptyText: '',
+                })}
+
+                {renderSignaturePanel(previous ? 'New Electronic Signature' : 'Electronic Signature', current, {
+                    badge: current
+                        ? <span className="badge bg-success-subtle text-success">Currently on file</span>
+                        : <span className="badge bg-warning-subtle text-warning">{requiresResign ? 'Awaiting re-signature' : 'Not signed yet'}</span>,
+                    emptyText: requiresResign
+                        ? 'The borrower has not signed again yet.'
+                        : 'This application has not been signed yet.',
+                })}
+            </div>
+        );
+    };
 
     const renderDocumentAuditHistory = () => (
         <div className="row">
@@ -668,6 +774,15 @@ export default function FundingApplicationDetails() {
                                     >
                                         <i className="ri-file-download-line align-middle me-1"></i> Download
                                     </button>
+                                    {canEditApplication && (
+                                        <Link
+                                            to={`/fund-application/${app.funding_request_id}`}
+                                            className="btn btn-warning waves-effect"
+                                            title="Editing will require the borrower to re-sign the application"
+                                        >
+                                            <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application
+                                        </Link>
+                                    )}
                                     <Link to="/intake-review/funding-application" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
@@ -982,91 +1097,67 @@ export default function FundingApplicationDetails() {
                                                             <div className="row g-2">
                                                                 {!showPartnerCommission ? (
                                                                     <div className="col-md-12">
-                                                                        <div className="alert alert-success border mb-0 py-3 bg-success-subtle">
-                                                                            <div className="d-flex justify-content-between align-items-center">
-                                                                                <div className="d-flex align-items-center">
-                                                                                    <div className="avatar-xs me-3">
-                                                                                        <div className="avatar-title bg-success text-white rounded">
-                                                                                            <i className="ri-admin-line"></i>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <span className="fw-medium text-muted fs-11 text-uppercase d-block">Admin Commission Amount</span>
-                                                                                        <h4 className="mb-0 fw-bold text-success">
-                                                                                            {formatCurrencyValue(totalCommissionAmount)}
-                                                                                        </h4>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className="text-end">
-                                                                                    <span className="badge bg-success text-white fs-12 px-3">
-                                                                                        {successFee || '0'}% Admin Commission
-                                                                                    </span>
-                                                                                </div>
+                                                                        <div className="commission-card commission-card--admin commission-card--wide">
+                                                                            <span className="commission-card__icon">
+                                                                                <i className="ri-admin-line"></i>
+                                                                            </span>
+                                                                            <div className="commission-card__body">
+                                                                                <span className="commission-card__label">Admin Commission</span>
+                                                                                <span className="commission-card__amount">
+                                                                                    {formatCurrencyValue(totalCommissionAmount)}
+                                                                                </span>
                                                                             </div>
+                                                                            <span className="commission-card__share">
+                                                                                {successFee || '0'}% of success fee
+                                                                            </span>
                                                                         </div>
                                                                     </div>
                                                                 ) : (
                                                                     <>
                                                                         <div className="col-md-12">
-                                                                            <div className="alert alert-secondary border-dashed mb-3 py-2 bg-light">
-                                                                                <div className="d-flex justify-content-between align-items-center">
-                                                                                    <div>
-                                                                                        <i className="ri-pie-chart-line text-secondary me-2"></i>
-                                                                                        <span className="fw-medium">Success Commission Amount:</span>
-                                                                                    </div>
-                                                                                    <h5 className="mb-0 fw-bold">{formatCurrencyValue(totalCommissionAmount)}</h5>
+                                                                            <div className="commission-total">
+                                                                                <span className="commission-total__label">
+                                                                                    <i className="ri-pie-chart-line"></i>
+                                                                                    Success Commission Amount
+                                                                                </span>
+                                                                                <span className="commission-total__value">
+                                                                                    {formatCurrencyValue(totalCommissionAmount)}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-md-6">
+                                                                            <div className="commission-card commission-card--admin">
+                                                                                <div className="commission-card__head">
+                                                                                    <span className="commission-card__icon">
+                                                                                        <i className="ri-admin-line"></i>
+                                                                                    </span>
+                                                                                    <span className="commission-card__label">Admin Commission</span>
+                                                                                </div>
+                                                                                <span className="commission-card__amount">
+                                                                                    {formatCurrencyValue(adminCommissionAmount)}
+                                                                                </span>
+                                                                                <div className="commission-card__foot">
+                                                                                    <span className="commission-card__share">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                    <span>Share of Success Fee</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
 
                                                                         <div className="col-md-6">
-                                                                            <div className="card border-0 bg-primary bg-opacity-10 mb-0">
-                                                                                <div className="card-body pt-3 px-4">
-                                                                                    <div className="d-flex align-items-center mb-2">
-                                                                                        <div className="flex-shrink-0">
-                                                                                            <div className="avatar-xs">
-                                                                                                <span className="avatar-title bg-primary text-white rounded fs-14">
-                                                                                                    <i className="ri-admin-line"></i>
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="flex-grow-1 ms-2">
-                                                                                            <p className="text-muted mb-0 fs-11 text-uppercase">Admin Commission</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <h4 className="mb-0 fw-bold text-primary fs-18">
-                                                                                        {formatCurrencyValue(adminCommissionAmount)}
-                                                                                    </h4>
-                                                                                    <p className="text-muted mb-0 mt-2 fs-12">
-                                                                                        <span className="badge bg-primary fs-10">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                        <span className="ms-1">Share of Success Fee</span>
-                                                                                    </p>
+                                                                            <div className="commission-card commission-card--partner">
+                                                                                <div className="commission-card__head">
+                                                                                    <span className="commission-card__icon">
+                                                                                        <i className="ri-shake-hands-line"></i>
+                                                                                    </span>
+                                                                                    <span className="commission-card__label">Partner Commission</span>
                                                                                 </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="col-md-6">
-                                                                            <div className="card border-0 bg-success bg-opacity-10 mb-0">
-                                                                                <div className="card-body pt-3 px-4">
-                                                                                    <div className="d-flex align-items-center mb-2">
-                                                                                        <div className="flex-shrink-0">
-                                                                                            <div className="avatar-xs">
-                                                                                                <span className="avatar-title bg-success text-white rounded fs-14">
-                                                                                                    <i className="ri-shake-hands-line"></i>
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="flex-grow-1 ms-2">
-                                                                                            <p className="text-muted mb-0 fs-11 text-uppercase">Partner Commission</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <h4 className="mb-0 fw-bold text-success fs-18">
-                                                                                        {formatCurrencyValue(partnerCommissionAmount)}
-                                                                                    </h4>
-                                                                                    <p className="text-muted mb-0 mt-2 fs-12">
-                                                                                        <span className="badge bg-success fs-10">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                        <span className="ms-1">Share of Success Fee</span>
-                                                                                    </p>
+                                                                                <span className="commission-card__amount">
+                                                                                    {formatCurrencyValue(partnerCommissionAmount)}
+                                                                                </span>
+                                                                                <div className="commission-card__foot">
+                                                                                    <span className="commission-card__share">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                    <span>Share of Success Fee</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -1093,7 +1184,7 @@ export default function FundingApplicationDetails() {
                                         <div className="card-header bg-white py-3">
                                             <h6 className="card-title mb-0 fs-16">Application Progress Steps</h6>
                                         </div>
-                                        <div className="list-group list-group-flush">
+                                        <div className="list-group list-group-flush application-steps">
                                             {STEPS.map((step) => (
                                                 <button
                                                     key={step.id}
@@ -1234,7 +1325,7 @@ export default function FundingApplicationDetails() {
                                 partnerId={undefined}
                                 partnerEmail={undefined}
                                 hostEmail={undefined}
-                                isHost={undefined}
+                                isHost={isHost}
                                 borrowerEmail={(app as FundingApplicationDetailsType & { borrower?: { email?: string | null } | null })?.borrower?.email}
                                 stickyTopOffset="133px"
                             />

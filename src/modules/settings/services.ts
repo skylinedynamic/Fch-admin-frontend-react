@@ -1,6 +1,16 @@
 import axios from 'axios';
 import { apiClient } from '../../lib/http/apiClient';
-import type { SendTestMailPayload, SendTestMailResponse, AppConfigResponse, ThemeConfigurations, ScoreConfigurationResponse } from './types';
+import type {
+    SendTestMailPayload,
+    SendTestMailResponse,
+    AppConfigResponse,
+    ThemeConfigurations,
+    ScoreConfigurationResponse,
+    SmsConfigurationResponse,
+    SaveSmsConfigurationPayload,
+    SendTestSmsPayload,
+    SendTestSmsResponse,
+} from './types';
 
 // Base API path
 
@@ -25,6 +35,24 @@ export const toggleEmailConfigStatus = async (): Promise<any> => {
     return data;
 };
 
+
+// SMS configuration of the signed-in user's partner, with the countries and
+// providers the form offers. The auth token comes back masked, never in clear.
+export const fetchSmsConfiguration = async (): Promise<SmsConfigurationResponse> => {
+    const { data } = await apiClient.get('/common/sms-configuration');
+    return data;
+};
+
+export const saveSmsConfiguration = async (payload: SaveSmsConfigurationPayload): Promise<SmsConfigurationResponse> => {
+    const { data } = await apiClient.post('/common/sms-configuration', payload);
+    return data;
+};
+
+// Sends a test text with the saved (not necessarily enabled) configuration.
+export const sendTestSms = async (payload: SendTestSmsPayload): Promise<SendTestSmsResponse> => {
+    const { data } = await apiClient.post('/common/sms-configuration/test', payload);
+    return data;
+};
 
 export const fetchGlobalConfigurations = async (): Promise<any> => {
     const { data } = await apiClient.get('/common/partner-theme');

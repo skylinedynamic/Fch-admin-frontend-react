@@ -1,12 +1,33 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
-import { fetchUsers, fetchUserById, updateUser, deleteUsers } from './services'
-import type { User } from './types'
+import { queryKeys as appQueryKeys } from '../../lib/query'
+import { fetchUsers, fetchUserById, updateUser, deleteUsers, createUser, fetchRoles } from './services'
+import type { CreateUserPayload, User } from './types'
 
 export const queryKeys = {
   user: {
     list: (payload?: any) => ['users', payload || {}],
     detail: (id: string | number) => ['users', id],
+    roles: () => ['users', 'roles'],
   },
+}
+
+export const useRoles = () => {
+  return useQuery({
+    queryKey: queryKeys.user.roles(),
+    queryFn: () => fetchRoles(),
+  })
+}
+
+export const useCreateUser = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CreateUserPayload) => createUser(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] })
+      // The employee just linked is no longer available for another user.
+      qc.invalidateQueries({ queryKey: appQueryKeys.employee.availableForUser() })
+    },
+  })
 }
 
 // useUsers returns the full API payload: { status, message, data, links, pagination }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getActivityLogs, downloadActivityAttachment, updateActivityLog, deleteActivityLog } from '../../../modules/activity-log/services';
+import { VISIBILITY_BADGE_STYLES } from '../../../modules/activity-log/constants';
 import { downloadBlob } from '../../../utils/fileDownload';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import '../StatisticsCardSkeleton.css';
@@ -37,8 +38,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     const [deletingActivityId, setDeletingActivityId] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const toggleOpen = (id) => {
-        setOpenIds(prev => ({ ...prev, [id]: !prev[id] }));
+    // `openByDefault` is how the entry shows before anyone has clicked it, so
+    // the first click on an entry that starts open closes it.
+    const toggleOpen = (id, openByDefault = false) => {
+        setOpenIds(prev => ({ ...prev, [id]: !(prev[id] ?? openByDefault) }));
     };
 
     const handleDownload = async (activityId, file) => {
@@ -267,24 +270,129 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
         return avatarColors[idx];
     };
 
+    const getReminderStatusBadge = (status) => {
+        if (!status) return null;
+        const s = String(status).toLowerCase();
+        
+        let config = {
+            bg: '#ffedd5',
+            color: '#ea580c',
+            icon: 'ri-time-line',
+            label: 'Pending'
+        };
+
+        if (s === 'dismissed') {
+            config = {
+                bg: '#f1f5f9',
+                color: '#475569',
+                icon: 'ri-indeterminate-circle-line',
+                label: 'Dismissed'
+            };
+        } else if (s === 'cancelled') {
+            config = {
+                bg: '#fee2e2',
+                color: '#dc2626',
+                icon: 'ri-close-circle-line',
+                label: 'Cancelled'
+            };
+        } else if (s === 'snoozed') {
+            config = {
+                bg: '#e0f2fe',
+                color: '#0284c7',
+                icon: 'ri-zzz-line',
+                label: 'Snoozed'
+            };
+        } else if (s === 'completed') {
+            config = {
+                bg: '#dcfce7',
+                color: '#16a34a',
+                icon: 'ri-checkbox-circle-line',
+                label: 'Completed'
+            };
+        } else if (s === 'missed') {
+            config = {
+                bg: '#fee2e2',
+                color: '#dc2626',
+                icon: 'ri-close-circle-line',
+                label: 'Missed'
+            };
+        } else if (s === 'sent') {
+            config = {
+                bg: '#e0f2fe',
+                color: '#0284c7',
+                icon: 'ri-notification-3-line',
+                label: 'Sent'
+            };
+        } else {
+            config = {
+                bg: '#ffedd5',
+                color: '#ea580c',
+                icon: 'ri-time-line',
+                label: status
+            };
+        }
+
+        return (
+            <span
+                className="badge text-nowrap d-inline-flex align-items-center gap-1"
+                style={{
+                    backgroundColor: config.bg,
+                    color: config.color,
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    lineHeight: '1.2',
+                    border: 'none',
+                    verticalAlign: 'middle',
+                    cursor: 'help'
+                }}
+                title={`Reminder: ${config.label}`}
+            >
+                <i className={config.icon} style={{ fontSize: '11px', lineHeight: '1' }}></i>
+                <span>{config.label}</span>
+            </span>
+        );
+    };
+
     const getSubtitle = (activity) => {
-        const logType = (activity.log_type || '').toLowerCase();
+        const logType = (activity.log_type_raw || activity.log_type || '').toLowerCase();
+        const isEdited = !!activity.is_edited;
+        const dateToUse = isEdited
+            ? (activity.edited_at || activity.updated_at || activity.activity_date || activity.created_at)
+            : (activity.activity_date || activity.created_at);
+        const formattedDate = formatRelativeDate(dateToUse);
+        const originalDateStr = activity.activity_date || activity.created_at;
+        const editedTooltip = isEdited && originalDateStr
+            ? `Originally: ${formatRelativeDate(originalDateStr)} (${originalDateStr})`
+            : 'Edited';
         
         if (logType === 'email' || logType === 'email sent') {
             const emails = Array.isArray(activity.to_emails)
                 ? activity.to_emails.join(', ')
                 : (activity.to_emails || 'N/A');
-            return `To: ${emails} • Subject: ${activity.subject || 'No Subject'} • ${formatRelativeDate(activity.created_at)}`;
+            return (
+                <span>
+                    To: {emails} • Subject: {activity.subject || 'No Subject'} • {formattedDate}
+                    {isEdited && (
+                        <span className="ms-1 text-muted fst-italic fw-normal" title={editedTooltip} style={{ cursor: 'help' }}>
+                            (Edited)
+                        </span>
+                    )}
+                </span>
+            );
         }
 
-        if (logType === 'activity') {
-            const ref = activity.reference || 'N/A';
-            // Use activity_date (if available from scheduling), else fallback to created_at
-            const dateToUse = activity.activity_date || activity.created_at;
-            return `Reference: ${ref} • ${formatRelativeDate(dateToUse)}`;
-        }
-
-        return formatRelativeDate(activity.created_at);
+        return (
+            <span>
+                {formattedDate}
+                {isEdited && (
+                    <span className="ms-1 text-muted fst-italic fw-normal" title={editedTooltip} style={{ cursor: 'help' }}>
+                        (Edited)
+                    </span>
+                )}
+            </span>
+        );
     };
 
     const getStatusColor = (status) => {
@@ -322,9 +430,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 const newStatus = statuses[1].trim();
 
                 return (
-                    <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark d-block">{prefix}</span>
-                        <span className="d-inline-flex align-items-center flex-wrap gap-1 mt-1">
+                    <span className="d-inline-flex align-items-center flex-wrap gap-1">
+                        <span className="text-dark me-1">{prefix}</span>
+                        <span className="text-nowrap d-inline-flex align-items-center">
                             <span style={{ color: getStatusColor(oldStatus) }}>{oldStatus}</span>
                             <span className="text-muted px-1" style={{ fontSize: '11px' }}>→</span>
                             <span style={{ color: getStatusColor(newStatus) }}>{newStatus}</span>
@@ -333,9 +441,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 );
             } else {
                 return (
-                    <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark d-block">{prefix}</span>
-                        <span style={{ color: getStatusColor(statusPart) }} className="d-block mt-1">{statusPart}</span>
+                    <span className="d-inline-flex align-items-center flex-wrap gap-1">
+                        <span className="text-dark me-1">{prefix}</span>
+                        <span style={{ color: getStatusColor(statusPart) }}>{statusPart}</span>
                     </span>
                 );
             }
@@ -449,7 +557,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     };
 
     return (
-        <div className="card activity-sidebar-card d-flex flex-column w-100 mb-0 shadow-sm border-0" style={disableSticky ? { border: 'none', flexGrow: 1, minHeight: 0 } : { height: `calc(100vh - ${stickyTopOffset})`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
+        // Sticky: keep the same 1.5rem bottom gap as the cards beside it, so the
+        // card doesn't run into the page footer, and size it to still fit the
+        // viewport with that gap while it's stuck.
+        <div className={`card activity-sidebar-card d-flex flex-column w-100 shadow-sm border-0 ${disableSticky ? 'mb-0' : 'mb-4'}`} style={disableSticky ? { border: 'none', flexGrow: 1, minHeight: 0 } : { height: `calc(100vh - ${stickyTopOffset} - 1.5rem)`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
             {/* Card Header */}
             <div className="card-header align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={disableSticky ? { backgroundColor: '#fff' } : { position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
                 <h5 className="card-title mb-0 fs-16">
@@ -517,10 +628,16 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                     <div className="accordion accordion-flush" id="activityAccordion">
                                         {activities.map((activity, index) => {
                                             const itemId = activity.id ?? index;
-                                            const isOpen = !!openIds[itemId];
                                             const hasDescription = !!activity.description;
                                             const hasAttachments = Array.isArray(activity.attachments) && activity.attachments.length > 0;
-                                            const isCollapsible = hasDescription || hasAttachments;
+                                            const hasFieldChanges = !!activity.field_changes && Object.keys(activity.field_changes).length > 0;
+                                            const hasSignatures = !!activity.signatures && !!(activity.signatures.previous || activity.signatures.new);
+                                            const isCollapsible = hasDescription || hasAttachments || hasFieldChanges || hasSignatures;
+                                            // A signature or a list of changed fields is the point of the
+                                            // entry, so it shows without a click. Other entries stay
+                                            // collapsed until opened, as before.
+                                            const openByDefault = hasFieldChanges || hasSignatures;
+                                            const isOpen = openIds[itemId] ?? openByDefault;
 
                                             return (
                                                 <div key={itemId} className="accordion-item border-0">
@@ -532,7 +649,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                 background: 'transparent',
                                                                 textDecoration: 'none',
                                                             }}
-                                                            onClick={() => isCollapsible && toggleOpen(itemId)}
+                                                            onClick={() => isCollapsible && toggleOpen(itemId, openByDefault)}
                                                             aria-expanded={isOpen}
                                                         >
                                                             <div className="d-flex w-100 align-items-start">
@@ -545,10 +662,20 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                 <div className="flex-grow-1 ms-3">
                                                                     <h6 className="fs-13 mb-0 text-dark d-flex align-items-center flex-wrap gap-2">
                                                                         <span>{getTitle(activity)}</span>
-                                                                        {activity.properties?.visible_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to FCH</span>}
-                                                                        {activity.properties?.visible_to_borrower == 1 && <span className="badge bg-info-subtle text-info" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to Borrower</span>}
-                                                                        {activity.properties?.send_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>{isHost ? 'Sent to Partner' : 'Sent to FCH'}</span>}
-                                                                        {activity.properties?.send_to_borrower == 1 && <span className="badge bg-info-subtle text-info" style={{ fontSize: '10px', padding: '3px 6px' }}>Sent to Borrower</span>}
+                                                                        {Boolean(activity.is_owner || activity.can_edit) && getReminderStatusBadge(activity.reminder_status)}
+                                                                        {/* The visibility tag belongs to activities a person created and
+                                                                            chose a level for. System entries (client created, invoice
+                                                                            created ...) never had one chosen, so they show none. */}
+                                                                        {Boolean(activity.is_manual && (activity.is_owner || activity.can_edit)) && activity.visibility && VISIBILITY_BADGE_STYLES[activity.visibility] && (
+                                                                            <span
+                                                                                className={`badge d-inline-flex align-items-center gap-1 text-nowrap ${VISIBILITY_BADGE_STYLES[activity.visibility].className}`}
+                                                                                style={{ fontSize: '10px', padding: '2px 6px' }}
+                                                                                title={`Visibility: ${VISIBILITY_BADGE_STYLES[activity.visibility].label}`}
+                                                                            >
+                                                                                <i className={VISIBILITY_BADGE_STYLES[activity.visibility].icon}></i>
+                                                                                <span>{VISIBILITY_BADGE_STYLES[activity.visibility].label}</span>
+                                                                            </span>
+                                                                        )}
                                                                     </h6>
                                                                     <div className="fs-10 text-muted" style={{ fontWeight: '500' }}>
                                                                         by {activity.causer_name || activity.creator?.name || 'System'}
@@ -563,29 +690,29 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                 {(activity.log_type_raw === 'activity' || activity.log_name === 'activity')
                                                                     && (activity.can_edit || activity.can_delete) && (
                                                                     <div
-                                                                        className="flex-shrink-0 ms-2 d-flex gap-1"
+                                                                        className="activity-item-actions flex-shrink-0 ms-2"
                                                                         onClick={(e) => e.stopPropagation()}
                                                                     >
                                                                         {activity.can_edit && (
                                                                         <button
                                                                             type="button"
-                                                                            className="btn btn-ghost-secondary btn-icon btn-xs"
-                                                                            title="Edit"
+                                                                            className="btn btn-outline-primary activity-action-btn"
+                                                                            title="Edit activity"
+                                                                            aria-label="Edit activity"
                                                                             onClick={() => openEdit(activity)}
-                                                                            style={{ padding: '2px 5px', fontSize: '12px' }}
                                                                         >
-                                                                            <i className="ri-edit-line"></i>
+                                                                            <i className="ri-pencil-line" aria-hidden="true"></i>
                                                                         </button>
                                                                         )}
                                                                         {activity.can_delete && (
                                                                         <button
                                                                             type="button"
-                                                                            className="btn btn-ghost-danger btn-icon btn-xs"
-                                                                            title="Delete"
+                                                                            className="btn btn-outline-danger activity-action-btn"
+                                                                            title="Delete activity"
+                                                                            aria-label="Delete activity"
                                                                             onClick={() => handleDeleteClick(itemId)}
-                                                                            style={{ padding: '2px 5px', fontSize: '12px' }}
                                                                         >
-                                                                            <i className="ri-delete-bin-line"></i>
+                                                                            <i className="ri-delete-bin-6-line" aria-hidden="true"></i>
                                                                         </button>
                                                                         )}
                                                                     </div>
@@ -614,6 +741,71 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                             className="text-muted mb-2 fs-13"
                                                                             dangerouslySetInnerHTML={{ __html: activity.description }}
                                                                         />
+                                                                    )}
+
+                                                                    {/* An edit to an application: each field that
+                                                                        changed, old value and new. */}
+                                                                    {hasFieldChanges && (
+                                                                        <div className="table-responsive mb-2">
+                                                                            <table className="table table-sm table-bordered fs-12 mb-0 align-middle">
+                                                                                <thead className="table-light">
+                                                                                    <tr>
+                                                                                        <th>Field</th>
+                                                                                        <th>Previous</th>
+                                                                                        <th>New</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {Object.entries(activity.field_changes).map(([field, change]) => (
+                                                                                        <tr key={field}>
+                                                                                            <td className="fw-medium">{change?.label || field}</td>
+                                                                                            <td className="text-muted text-break">{change?.from ?? '—'}</td>
+                                                                                            <td className="text-break">{change?.to ?? '—'}</td>
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* A submit or re-submit: the signature that was replaced and the
+                                                                        new one, side by side on one row - a small thumbnail for an
+                                                                        e-signature, the typed name otherwise. */}
+                                                                    {hasSignatures && (
+                                                                        <div className="d-flex gap-2 mb-2">
+                                                                            {[['previous', 'Previous'], ['new', activity.signatures.previous ? 'New' : 'Signature']]
+                                                                                .filter(([key]) => activity.signatures[key])
+                                                                                .map(([key, title]) => {
+                                                                                    const signature = activity.signatures[key];
+                                                                                    const isPrevious = key === 'previous';
+                                                                                    const isImage = signature.type === 'esign' && signature.image;
+                                                                                    return (
+                                                                                        <div key={key} className="border rounded bg-white px-2 py-1" style={{ flex: '1 1 0', minWidth: 0 }}>
+                                                                                            <div className="fs-11 fw-semibold text-uppercase text-muted mb-1">{title}</div>
+                                                                                            <div
+                                                                                                className="d-flex align-items-center justify-content-center border rounded bg-light mb-1"
+                                                                                                style={{ height: 34, overflow: 'hidden' }}
+                                                                                            >
+                                                                                                {isImage ? (
+                                                                                                    <img
+                                                                                                        src={signature.image}
+                                                                                                        alt={`${title} signature of ${signature.name || 'the borrower'}`}
+                                                                                                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: isPrevious ? 0.5 : 1 }}
+                                                                                                    />
+                                                                                                ) : (
+                                                                                                    <span className={`fs-12 fw-semibold text-truncate px-1 ${isPrevious ? 'text-decoration-line-through text-muted' : 'text-dark'}`}>
+                                                                                                        {signature.name}
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <div className="fs-11 text-muted lh-sm">
+                                                                                                <div className="text-truncate">{isImage ? 'E-Signature' : 'Typed Name'}</div>
+                                                                                                {signature.signed_at && <div className="text-truncate">{signature.signed_at}</div>}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                        </div>
                                                                     )}
 
                                                                     {hasAttachments && (
@@ -688,6 +880,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 show={!!editingActivity}
                 onClose={() => setEditingActivity(null)}
                 onUpdated={handleActivityUpdated}
+                isHost={isHost}
             />
 
             {/* Delete Confirmation Modal */}
@@ -730,6 +923,37 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 }
                 .activity-scroll-container::-webkit-scrollbar-thumb:hover {
                     background: #adb5bd;
+                }
+
+                /* Edit / Delete on an activity row: a small pair of soft square
+                   icon buttons, always fully shown. They used to be dimmed until
+                   the row was hovered, which read as disabled or blurred. */
+                .activity-item-actions {
+                    display: flex;
+                    gap: 6px;
+                }
+                .activity-action-btn {
+                    width: 28px;
+                    height: 28px;
+                    padding: 0;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    line-height: 1;
+                    transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+                }
+                .activity-action-btn:hover {
+                    transform: translateY(-1px);
+                }
+                .activity-action-btn:focus-visible {
+                    outline: 2px solid currentColor;
+                    outline-offset: 1px;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .activity-action-btn { transition: none; }
+                    .activity-action-btn:hover { transform: none; }
                 }
 
                 /* Avatar sizing */

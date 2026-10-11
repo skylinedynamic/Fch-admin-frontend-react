@@ -12,6 +12,8 @@ import DocumentUploadStep from './components/steps/DocumentUploadStep'
 import DisclosuresStep from './components/steps/DisclosuresStep'
 import FederalComplianceStep from './components/steps/FederalComplianceStep'
 import CoBorrowerModal from './components/shared/CoBorrowerModal'
+import EditConfirmationModal from './components/shared/EditConfirmationModal'
+import { setEditRequiresConfirmation, setEditConfirmationResolving, resetEditConfirmation } from '../../../store/fundApplication/editConfirmationStore'
 
 // Hooks
 import { useCoBorrowers } from './hooks/useCoBorrowers'
@@ -249,11 +251,32 @@ export default function FundApplication() {
 
   // Fetch funding request and documents (tab-wise lazy loading)
   const currentReqId = fundingRequestId || id || null
-  const { data: fundingData } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
+  const { data: fundingData, isLoading: isFundingDataLoading } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
   const fundingApplicationId = fundingData?.id ?? null
   const { data: documentsData } = useFundingApplicationDocuments(fundingApplicationId, {
     enabled: !!fundingApplicationId,
   })
+
+  // Whether an edit currently costs the borrower their signature is the API's
+  // call, not a status list held here - the server decides it and enforces it.
+  // Feed it to the gate the step saves wait on, and clear the gate on unmount so
+  // a stale flag cannot follow the partner to another borrower's application.
+  //
+  // Only a loaded application can answer. The request id changes type once the
+  // application arrives, which refetches it; treating that gap as "not signed"
+  // let saves through unasked and dismissed a dialog that had just opened.
+  useEffect(() => {
+    if (!fundingData) return
+    setEditRequiresConfirmation(Boolean(fundingData.edit_needs_confirmation ?? fundingData.edit_requires_resign), fundingData.id)
+  }, [fundingData])
+
+  // Until the application has loaded, the flag above is only a default. Saves
+  // wait on this, so one fired early still gets the dialog.
+  useEffect(() => {
+    setEditConfirmationResolving(isFundingDataLoading)
+  }, [isFundingDataLoading])
+
+  useEffect(() => () => resetEditConfirmation(), [])
 
   // Synchronize funding data when fetched from API
   useEffect(() => {
@@ -457,8 +480,19 @@ export default function FundApplication() {
   const stepsTotal = tabs.length
   const completedCount = isApplicationSubmitted ? stepsTotal : tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
   const progressPct = isApplicationSubmitted ? 100 : Math.round((completedCount / stepsTotal) * 100)
-  const firstInvalidIdx = isApplicationSubmitted ? -1 : tabs.findIndex((_, index) => !isStepValid(index))
-  const maxAllowedIdx = isApplicationSubmitted ? stepsTotal - 1 : (firstInvalidIdx === -1 ? stepsTotal - 1 : firstInvalidIdx)
+  // How far down the list a step may be opened: up to the first one that is not
+  // complete (saved - the one without a tick), and never past it. This used to
+  // ask only whether a step's fields looked valid, so a step whose form was
+  // prefilled but never saved unlocked the one after it, which then showed dark
+  // and clickable beside steps that were correctly greyed out.
+  const firstIncompleteIdx = isApplicationSubmitted ? -1 : tabs.findIndex((_, index) => !isStepComplete(index))
+  // Open steps are the complete ones (ticked) and the one being worked on.
+  // Every other step is greyed out - including the very next one - until the
+  // step before it has been saved. The way forward is Save & Next.
+  const lastCompleteIdx = firstIncompleteIdx === -1 ? stepsTotal - 1 : firstIncompleteIdx - 1
+  const maxAllowedIdx = isApplicationSubmitted
+    ? stepsTotal - 1
+    : Math.max(activeStep, lastCompleteIdx)
 
   // Handle tab switching with auto-save
   const handleTabSwitch = useCallback(
@@ -774,6 +808,8 @@ export default function FundApplication() {
         onSubmit={submitCoBorrower}
         isEditing={isEditing}
       />
+      {/* Rendered once for the whole wizard: every step's save waits on it. */}
+      <EditConfirmationModal status={fundingData?.status} awaitingResign={Boolean(fundingData?.requires_resign)} />
     </div>
   )
 }

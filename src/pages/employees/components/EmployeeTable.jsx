@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
@@ -20,6 +20,18 @@ export default function EmployeeTable({
     onSort
 }) {
     const { hasPermission } = usePermissions();
+    const navigate = useNavigate();
+
+    // Clicking anywhere on the row opens the employee, except on the controls
+    // that have their own behaviour (row checkbox, column filters).
+    const handleRowClick = (e) => {
+        const target = e.originalEvent.target;
+
+        if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
+            navigate(`/employee-details/${e.data.id}`);
+        }
+    };
+
     // Name column body template
     const nameBody = (rowData) => (
         <Link to={`/employee-details/${rowData.id}`} className="link-primary">
@@ -86,6 +98,8 @@ export default function EmployeeTable({
                 selection={selection}
                 onSelectionChange={onSelectionChange}
                 dataKey="id"
+                onRowClick={handleRowClick}
+                rowClassName={() => 'cursor-pointer'}
                 responsiveLayout="scroll"
                 className="p-datatable-sm"
                 loading={loading}

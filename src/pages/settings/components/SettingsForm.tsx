@@ -13,6 +13,8 @@ import ScoreCalculationConfigForm from './ScoreCalculationConfigForm';
 import OpenAiConfigForm from './OpenAiConfigForm';
 import PaymentMethodConfig from './PaymentMethodConfig/PaymentMethodConfig';
 import EmailConfigurationForm from './EmailConfigurationForm';
+import SmsConfigurationForm from './SmsConfiguration/SmsConfigurationForm';
+import { SMS_CONFIGURATION_PERMISSION, SMS_CONFIGURATION_SECTION } from '../../../config/smsConfiguration';
 // @ts-ignore
 import TenantDomainConfig from './TenantDomainConfig';
 
@@ -46,6 +48,10 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
 
     if (hasPermission('update email configuration settings')) {
         sections.push({ id: 'email_configuration', label: 'Email Configuration', icon: 'ri-mail-settings-line' });
+    }
+
+    if (hasPermission(SMS_CONFIGURATION_PERMISSION)) {
+        sections.push({ id: SMS_CONFIGURATION_SECTION, label: 'SMS Configuration', icon: 'ri-message-2-line' });
     }
 
     if (hasPermission('update branding settings')) {
@@ -194,6 +200,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <OpenAiConfigForm />
                 ) : activeSection === 'email_configuration' ? (
                     <EmailConfigurationForm />
+                ) : activeSection === SMS_CONFIGURATION_SECTION ? (
+                    <SmsConfigurationForm />
                 ) : activeSection === 'branding' ? (
                     <BrandingForm />
                 ) : activeSection === 'domain_configuration' ? (

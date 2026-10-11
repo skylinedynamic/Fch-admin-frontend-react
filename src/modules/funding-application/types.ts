@@ -127,6 +127,21 @@ export interface FundingRequestData {
   is_federal_compliance_saved?: boolean
   signature_data?: any
   status?: string | null
+
+  // What the partner may still do with this application. The API decides all of
+  // these from the application's status and enforces them regardless of what the
+  // UI shows - these exist so the portal can say why before the partner spends
+  // time typing.
+  /** The borrower's signature has already been withdrawn; they must sign again. */
+  requires_resign?: boolean
+  /** Out of the partner's hands - with a lender, under contract, funded, closed. */
+  is_locked?: boolean
+  is_editable?: boolean
+  /** Editable, but a change would cost the borrower's signature. */
+  edit_requires_resign?: boolean
+  edit_needs_confirmation?: boolean
+  can_start_new_funding_request?: boolean
+  locked_reason?: string | null
 }
 
 export interface FundingRequestResponse {

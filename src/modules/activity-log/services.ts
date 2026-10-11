@@ -37,3 +37,10 @@ export const deleteActivityLog = async (id: number | string) => {
     const response = await apiClient.delete(`/common/activity-logs/${id}`);
     return response.data;
 };
+
+// Host-only: reclassify an activity's visibility without touching its
+// content — works on rows the caller didn't author, unlike updateActivityLog.
+export const updateActivityLogVisibility = async (id: number | string, visibility: string) => {
+    const response = await apiClient.patch(`/common/activity-logs/${id}/visibility`, { visibility });
+    return response.data;
+};

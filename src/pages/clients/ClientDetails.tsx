@@ -323,7 +323,8 @@ export default function ClientDetails() {
                 }
             }
         } catch (error: any) {
-            console.error("Save erroraaaa:", error);
+            // Status only: the error object carries the request payload (config.data) — client PII.
+            console.error('Client save failed', error?.response?.status);
 
             // 422 = server-side validation. Always shown as field-level danger +
             // under-field messages — never a toast, even if the errors payload
@@ -624,7 +625,7 @@ export default function ClientDetails() {
                                 partnerId={undefined}
                                 partnerEmail={undefined}
                                 hostEmail={undefined}
-                                isHost={undefined}
+                                isHost={isHost}
                             />
                         </div>
                     )}

@@ -2,12 +2,20 @@ import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query/queryKeys'
 import { fetchBusinessInfo, saveBusinessInfo, fetchOwnershipInfo, saveOwnershipInfo, fetchFinancialInfo, saveFinancialInfo, fetchDisclosuresConsent, saveDisclosuresConsent, fetchFundingRequest, saveFundingRequest, fetchFederalCompliance, saveFederalCompliance, saveAttestation, fetchAttestation, fetchFundingApplicationDocuments, deleteFundingApplicationDocument, uploadFundingApplicationDocuments, validateCoBorrower } from './services'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { withEditConfirmation } from './editConfirmation'
 import type { FundingRequestData, FundingApplicationDocument, AttestationData } from './types'
+
+// The six step saves below are gated: once the borrower has signed and
+// submitted, a partner's change withdraws that signature, so the partner is
+// asked before the request goes out. Gating here rather than at each button is
+// what makes it hold for both the Save button and the wizard's auto-save on tab
+// switch. `saveAttestation` is intentionally not gated - signing is what clears
+// the warning, not another edit that needs one.
 
 export const useSaveBusinessInfo = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: saveBusinessInfo,
+    mutationFn: withEditConfirmation(saveBusinessInfo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.businessInfo() })
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
@@ -20,7 +28,7 @@ export const useSaveBusinessInfo = () => {
 export const useSaveOwnershipInfo = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: saveOwnershipInfo,
+    mutationFn: withEditConfirmation(saveOwnershipInfo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.ownershipInfo() })
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
@@ -33,7 +41,7 @@ export const useSaveOwnershipInfo = () => {
 export const useSaveFinancialInfo = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: saveFinancialInfo,
+    mutationFn: withEditConfirmation(saveFinancialInfo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.financialInfo() })
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
@@ -46,7 +54,7 @@ export const useSaveFinancialInfo = () => {
 export const useSaveFundingRequest = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: saveFundingRequest,
+    mutationFn: withEditConfirmation(saveFundingRequest),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -58,7 +66,7 @@ export const useSaveFundingRequest = () => {
 export const useSaveDisclosuresConsent = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: saveDisclosuresConsent,
+    mutationFn: withEditConfirmation(saveDisclosuresConsent),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.disclosuresConsent() })
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
@@ -71,7 +79,7 @@ export const useSaveDisclosuresConsent = () => {
 export const useSaveFederalCompliance = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: saveFederalCompliance,
+    mutationFn: withEditConfirmation(saveFederalCompliance),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.federalCompliance() })
       queryClient.invalidateQueries({ queryKey: queryKeys.fundingApplication.fundingRequest() })
@@ -135,7 +143,7 @@ export const useDisclosuresConsent = (fundingRequestId?: number | string | null,
 
 export const useFundingRequest = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
   return useQuery<FundingRequestData>({
-    queryKey: [...queryKeys.fundingApplication.fundingRequest(), fundingRequestId ?? 'current'],
+    queryKey: [...queryKeys.fundingApplication.fundingRequest(), fundingRequestId ? String(fundingRequestId) : 'current'],
     queryFn: () => fetchFundingRequest(fundingRequestId),
     enabled: options?.enabled,
   })

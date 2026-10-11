@@ -14,6 +14,7 @@ import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
 import { ENROLLMENT_TYPE_ONE_TIME, ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_OPTIONS } from '../../../config/subscriptionConfig';
+import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
 
 
 export default function PartnerInformationSection({
@@ -364,6 +365,13 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">E-mail <span className="text-danger">*</span></label>
+                    {partnerId && (
+                        <PendingEmailNotice
+                            userId={formData.login_user_id}
+                            pendingEmail={formData.pending_email}
+                            onChange={(value) => handleInputChange({ target: { name: 'pending_email', value } })}
+                        />
+                    )}
                     <input
                         type="email"
                         className={`form-control ${errors.email ? 'is-invalid' : ''}`}

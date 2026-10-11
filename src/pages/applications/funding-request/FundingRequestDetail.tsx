@@ -188,6 +188,19 @@ export default function FundingRequestDetail() {
                                     <i className="ri-file-list-3-line align-middle"></i> Process Application
                                 </Link>
                             )}
+                            {/* Already submitted but still at status key 9 or below: the application can be edited. */}
+                            {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id &&
+                                review.funding_application?.is_editable &&
+                                review.funding_application.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
+                                review.funding_application.status !== FUNDING_APPLICATION_STATUS.DRAFT && (
+                                <Link
+                                    to={`/fund-application/${review.id}`}
+                                    className="btn btn-warning waves-effect"
+                                    title="Editing will require the borrower to re-sign the application"
+                                >
+                                    <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application
+                                </Link>
+                            )}
                             <Link to="/intake-review/funding-request" className="btn btn-outline-secondary w-lg waves-effect">
                                 <i className="ri-arrow-left-line align-middle me-1"></i> Back
                             </Link>

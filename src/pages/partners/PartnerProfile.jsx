@@ -591,7 +591,7 @@ export default function PartnerProfile() {
             const formDataToSend = buildPartnerFormDataPayload(formData, id, wasFreeTrial, partnerPlans);
 
             if (id) {
-                await updatePartner(id, formDataToSend);
+                const updateResponse = await updatePartner(id, formDataToSend);
                 // Force refresh both local form data and global user session
                 await fetchPartnerData(true);
                 await refreshUserData();

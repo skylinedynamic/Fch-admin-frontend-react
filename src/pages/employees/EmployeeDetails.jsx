@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { useIsHostPartner } from '../../lib/auth/useIsHostPartner';
 import { toast } from 'react-toastify';
 
 import {
@@ -17,10 +18,13 @@ import { getUserDetails } from '../../lib/auth/authApi';
 import UserLimitModal from '../users/components/UserLimitModal';
 import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
 import { useAuthStore } from '../../store/auth/authStore';
-import { locationData } from '../../config';
+import { locationData, PAID_BY_NONE } from '../../config';
+import { fetchEmployeeCompensation, saveEmployeeCompensation, buildCompensationRows, compensationRowsToFields } from '../../modules/compensation';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 
 import EmployeeForm from './components/EmployeeForm';
+import CommissionsSection from '../../components/Compensation/CommissionsSection';
+import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
 import DepartmentModal from './components/DepartmentModal';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
@@ -29,14 +33,18 @@ import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { scrollToFirstError } from '../../utils/formUtils';
 
+const TAB_PERSONAL = 'personalDetails';
+const TAB_COMMISSIONS = 'commissions';
+
 export default function EmployeeDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { hasPermission } = usePermissions();
 
   // Permission checks
   const canCreate = hasPermission('create employees');
   const canUpdate = hasPermission('update employees');
+  // Commission setup is only offered to the host partner.
+  const canManageCommission = useIsHostPartner();
 
   // State
   const user = useAuthStore((state) => state.user);
@@ -47,6 +55,8 @@ export default function EmployeeDetails() {
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+  const [activeTab, setActiveTab] = useState(TAB_PERSONAL);
+  const [pendingEmail, setPendingEmail] = useState(null);
 
   // User Limit States
   const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
@@ -100,7 +110,14 @@ export default function EmployeeDetails() {
     role_id: '',
     password: '',
     confirm_password: '',
-    image: ''
+    image: '',
+    paid_by: '',
+    hourly_rate: '',
+    annual_salary: '',
+    per_deal_applicable_services: [],
+    per_deal_payout_type: '',
+    per_deal_percentage: '',
+    per_deal_flat_amount: ''
   });
 
   // Fetch roles and departments on mount
@@ -224,6 +241,7 @@ export default function EmployeeDetails() {
             image: data.image || null
           };
           setEmployee((prev) => ({ ...prev, ...normalizedData }));
+          setPendingEmail(data.user?.pending_email || null);
 
           // Set profile image matches partner pattern
           if (data.image) {
@@ -234,6 +252,18 @@ export default function EmployeeDetails() {
         .finally(() => setLoading(false));
     }
   }, [id]);
+
+  // Compensation lives in its own table behind its own endpoint, so the
+  // Commissions tab is loaded separately from the employee record.
+  useEffect(() => {
+    if (!id || !canManageCommission) return;
+
+    fetchEmployeeCompensation(id)
+      .then((data) => {
+        setEmployee((prev) => ({ ...prev, ...compensationRowsToFields(data?.paid_by, data?.compensations) }));
+      })
+      .catch((err) => console.error('Failed to fetch compensation', err));
+  }, [id, canManageCommission]);
 
   // Validation (Disabled - Relying on backend validation)
   const validateField = (name, value) => {
@@ -499,7 +529,62 @@ export default function EmployeeDetails() {
     }, 2000);
   };
 
+  const applySaveError = (error, fallbackMessage, { toastValidationErrors = false } = {}) => {
+    console.error('Save error:', error);
+
+    // Handle backend validation errors
+    if (error.response?.data?.errors) {
+      const backendErrors = error.response.data.errors;
+      const mappedErrors = {};
+
+      Object.keys(backendErrors).forEach(key => {
+        mappedErrors[key] = Array.isArray(backendErrors[key])
+          ? backendErrors[key][0]
+          : backendErrors[key];
+      });
+
+      setErrors(mappedErrors);
+      scrollToFirstError(mappedErrors);
+
+      // Compensation errors are keyed by row (compensations.0.amount), which has
+      // no matching input on the form, so they'd otherwise fail silently.
+      if (toastValidationErrors) {
+        toast.error(Object.values(mappedErrors)[0] || fallbackMessage);
+      }
+      // Otherwise no toast for validation errors - they're shown inline only.
+    } else if (error.response?.data?.message) {
+      // No toast here to avoid double messages (handled by global interceptor)
+    } else if (error.response?.status !== 403) {
+      toast.error(fallbackMessage);
+    }
+  };
+
+  // The Commissions tab saves through its own endpoint, so updating it leaves
+  // the employee record untouched.
+  const handleSaveCompensation = async () => {
+    setErrors({});
+    setIsSaving(true);
+
+    try {
+      await saveEmployeeCompensation(id, {
+        paid_by: employee.paid_by || PAID_BY_NONE,
+        compensations: buildCompensationRows(employee)
+      });
+      toast.success('Commission updated successfully');
+    } catch (error) {
+      applySaveError(error, 'Failed to update commission', { toastValidationErrors: true });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
+    // Each tab saves only what it shows. A new employee is the exception:
+    // compensation needs an employee id, so the first save writes both.
+    if (id && canManageCommission && activeTab === TAB_COMMISSIONS) {
+      return handleSaveCompensation();
+    }
+
     setErrors({});
     setIsSaving(true);
 
@@ -524,7 +609,15 @@ export default function EmployeeDetails() {
 
     try {
       const formData = new FormData();
+
+      // The Commissions tab goes to the compensation endpoints, not to the
+      // employee record, so its fields are kept out of this payload.
+      const compensationFieldPattern = /^(paid_by|compensations|hourly_rate|annual_salary|per_deal_)/;
+
       Object.entries(employee).forEach(([key, value]) => {
+        if (compensationFieldPattern.test(key)) {
+          return;
+        }
         if (value !== null && value !== undefined) {
           if (key === 'image') {
             if (value instanceof File) {
@@ -562,11 +655,34 @@ export default function EmployeeDetails() {
         formData.append('months', limitData.months);
       }
 
+      // Only on create: compensation has its own endpoint and needs an employee
+      // id, so whatever the Commissions tab holds is written right after the
+      // employee exists. Editing saves the two tabs independently.
+      const compensationPayload = {
+        paid_by: employee.paid_by || PAID_BY_NONE,
+        compensations: buildCompensationRows(employee)
+      };
+
       if (id) {
-        await updateEmployee(id, formData);
+        const res = await updateEmployee(id, formData);
         toast.success('Employee updated successfully');
+
+        // With a login, a new email isn't applied until it's confirmed, so show
+        // the one still in effect alongside the pending one.
+        const savedEmail = res?.data?.employee?.email;
+        const savedPending = res?.data?.user?.pending_email || null;
+        if (savedEmail !== undefined) {
+          setEmployee((prev) => ({ ...prev, email: savedEmail }));
+        }
+        setPendingEmail(savedPending);
       } else {
         const res = await createEmployee(formData);
+        const newEmployeeId = res.data?.employee?.id;
+
+        if (newEmployeeId && canManageCommission) {
+          await saveEmployeeCompensation(newEmployeeId, compensationPayload);
+        }
+
         toast.success('Employee created successfully');
 
         if (isPurchaseFlow) {
@@ -591,31 +707,8 @@ export default function EmployeeDetails() {
         }
       }
 
-      setTimeout(() => navigate('/employees'), 800);
     } catch (error) {
-      console.error('Save error:', error);
-
-      // Handle backend validation errors
-      if (error.response?.data?.errors) {
-        const backendErrors = error.response.data.errors;
-        const mappedErrors = {};
-
-        Object.keys(backendErrors).forEach(key => {
-          mappedErrors[key] = Array.isArray(backendErrors[key])
-            ? backendErrors[key][0]
-            : backendErrors[key];
-        });
-
-        setErrors(mappedErrors);
-        scrollToFirstError(mappedErrors);
-
-        // No toast notifications for validation errors - errors shown inline only
-        // toast.error for validation errors removed as per requirement
-      } else if (error.response?.data?.message) {
-        // No toast here to avoid double messages (handled by global interceptor)
-      } else if (error.response?.status !== 403) {
-        toast.error(id ? 'Failed to update employee' : 'Failed to save employee');
-      }
+      applySaveError(error, id ? 'Failed to update employee' : 'Failed to save employee');
     } finally {
       setIsSaving(false);
     }
@@ -663,23 +756,38 @@ export default function EmployeeDetails() {
             <div className="card">
               <div className="card-header">
                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
+                  {/* Controlled by React rather than Bootstrap's tab plugin, so
+                      Save knows which tab's data to write. */}
                   <li className="nav-item" role="presentation">
-                    <a
-                      className="nav-link active"
-                      data-bs-toggle="tab"
-                      href="#personalDetails"
+                    <button
+                      type="button"
+                      className={`nav-link ${activeTab === TAB_PERSONAL ? 'active' : ''}`}
+                      onClick={() => setActiveTab(TAB_PERSONAL)}
                       role="tab"
-                      aria-selected="true"
+                      aria-selected={activeTab === TAB_PERSONAL}
                     >
                       <i className="fas fa-home"></i> Personal information
-                    </a>
+                    </button>
                   </li>
+                  {canManageCommission && (
+                    <li className="nav-item" role="presentation">
+                      <button
+                        type="button"
+                        className={`nav-link ${activeTab === TAB_COMMISSIONS ? 'active' : ''}`}
+                        onClick={() => setActiveTab(TAB_COMMISSIONS)}
+                        role="tab"
+                        aria-selected={activeTab === TAB_COMMISSIONS}
+                      >
+                        <i className="ri-percent-line"></i> Commissions
+                      </button>
+                    </li>
+                  )}
                 </ul>
               </div>
 
               <div className="card-body p-4">
                 <div className="tab-content">
-                  <div className="tab-pane active show" id="personalDetails" role="tabpanel">
+                  <div className={`tab-pane ${activeTab === TAB_PERSONAL ? 'active show' : ''}`} id="personalDetails" role="tabpanel">
                     {loading ? (
                       <FormLoader count={10} />
                     ) : (
@@ -703,9 +811,30 @@ export default function EmployeeDetails() {
                         isPurchaseFlow={isPurchaseFlow}
                         purchaseMonths={limitData.months}
                         purchasePrice={limitData.totalPrice}
+                        emailNotice={
+                          <PendingEmailNotice
+                            userId={employee.user?.id}
+                            pendingEmail={pendingEmail}
+                            onChange={setPendingEmail}
+                            canManage={canUpdate}
+                          />
+                        }
                       />
                     )}
                   </div>
+                  {canManageCommission && (
+                    <div className={`tab-pane ${activeTab === TAB_COMMISSIONS ? 'active show' : ''}`} id="commissions" role="tabpanel">
+                      {loading ? (
+                        <FormLoader count={4} />
+                      ) : (
+                        <CommissionsSection
+                          values={employee}
+                          errors={errors}
+                          onChange={handleChange}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

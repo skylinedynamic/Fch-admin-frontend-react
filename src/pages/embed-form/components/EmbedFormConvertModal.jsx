@@ -9,6 +9,7 @@ export default function EmbedFormConvertModal({
     onConfirm,
     submission,
     loading,
+    existingBorrower = null,
 }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -53,6 +54,7 @@ export default function EmbedFormConvertModal({
             onConfirm({
                 is_free_trail: true,
                 free_trail_end_date: null,
+                ...(existingBorrower ? { confirm_existing_borrower: true } : {}),
             });
         }
     };
@@ -80,8 +82,12 @@ export default function EmbedFormConvertModal({
                                 <i className="ri-vip-crown-2-line" />
                             </div>
                             <div>
-                                <h5 className="modal-title mb-0">Convert to Free Plan Borrower</h5>
-                                <p className="text-muted fs-12 mb-0">No plan or payment required</p>
+                                <h5 className="modal-title mb-0">
+                                    {existingBorrower ? 'Existing Borrower Found' : 'Convert to Free Plan Borrower'}
+                                </h5>
+                                <p className="text-muted fs-12 mb-0">
+                                    {existingBorrower ? 'Please confirm before continuing' : 'No plan or payment required'}
+                                </p>
                             </div>
                         </div>
                         <button
@@ -107,7 +113,42 @@ export default function EmbedFormConvertModal({
                             </div>
                         </div>
 
-                        <ul className="ef-convert-modal__list list-unstyled mb-0">
+                        {existingBorrower && (
+                            <div className="alert alert-warning mb-0" role="alert">
+                                <div className="fw-semibold mb-2">
+                                    <i className="ri-error-warning-line me-1" />
+                                    A borrower with this email already exists
+                                </div>
+                                <dl className="row fs-13 mb-2">
+                                    <dt className="col-5 fw-normal text-muted">Name</dt>
+                                    <dd className="col-7 mb-1">{existingBorrower.name || '—'}</dd>
+                                    <dt className="col-5 fw-normal text-muted">Email</dt>
+                                    <dd className="col-7 mb-1 text-break">{existingBorrower.email || '—'}</dd>
+                                    <dt className="col-5 fw-normal text-muted">Phone</dt>
+                                    <dd className="col-7 mb-1">{existingBorrower.phone_number || '—'}</dd>
+                                    <dt className="col-5 fw-normal text-muted">Business</dt>
+                                    <dd className="col-7 mb-1">{existingBorrower.business_name || '—'}</dd>
+                                    <dt className="col-5 fw-normal text-muted">Status</dt>
+                                    <dd className="col-7 mb-1">{existingBorrower.status || '—'}</dd>
+                                    <dt className="col-5 fw-normal text-muted">Partner</dt>
+                                    <dd className="col-7 mb-1">{existingBorrower.partner_name || '—'}</dd>
+                                    <dt className="col-5 fw-normal text-muted">Funding applications</dt>
+                                    <dd className="col-7 mb-1">{existingBorrower.funding_applications_count ?? 0}</dd>
+                                    <dt className="col-5 fw-normal text-muted">Member since</dt>
+                                    <dd className="col-7 mb-0">
+                                        {existingBorrower.created_at
+                                            ? new Date(existingBorrower.created_at).toLocaleDateString()
+                                            : '—'}
+                                    </dd>
+                                </dl>
+                                <div className="fs-13">
+                                    No new borrower account will be created. A new funding application from this
+                                    submission will be added to the borrower above.
+                                </div>
+                            </div>
+                        )}
+
+                        {!existingBorrower && <ul className="ef-convert-modal__list list-unstyled mb-0">
                             <li>
                                 <i className="ri-checkbox-circle-fill text-primary" />
                                 <span>
@@ -130,7 +171,7 @@ export default function EmbedFormConvertModal({
                                 <i className="ri-information-line text-warning" />
                                 <span>This submission is marked as converted and cannot be converted again.</span>
                             </li>
-                        </ul>
+                        </ul>}
                     </div>
 
                     <div className="modal-footer">
@@ -156,7 +197,7 @@ export default function EmbedFormConvertModal({
                             ) : (
                                 <>
                                     <i className="ri-user-follow-line align-bottom" />
-                                    Convert to Free Plan Borrower
+                                    {existingBorrower ? 'Confirm & Create Funding Application' : 'Convert to Free Plan Borrower'}
                                 </>
                             )}
                         </button>

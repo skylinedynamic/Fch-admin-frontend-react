@@ -182,12 +182,17 @@ export default function CreditProfileSection({
         if (pageContent instanceof HTMLElement) {
             originalPageContentOverflow = pageContent.style.overflow;
             pageContent.style.overflow = 'hidden';
+            // overflow:hidden makes .page-content the sticky page header's
+            // scroll container, so its top:70px would push it down inside the
+            // page. The class lets CSS keep the header in normal flow instead.
+            pageContent.classList.add('page-content-scroll-locked');
         }
 
         return () => {
             document.body.style.overflow = originalBodyOverflow;
             if (pageContent instanceof HTMLElement) {
                 pageContent.style.overflow = originalPageContentOverflow;
+                pageContent.classList.remove('page-content-scroll-locked');
             }
         };
     }, []);
@@ -241,7 +246,8 @@ export default function CreditProfileSection({
                     await saveCreditProfile(clientId, payload);
                     queryClient.invalidateQueries({ queryKey: clientKeys.creditProfile(clientId) });
                 } catch (saveErr) {
-                    console.error('Failed to auto-save parsed credit profile:', saveErr);
+                    // Status only: the error object carries the request payload (config.data) — client PII.
+                    console.error('Failed to auto-save parsed credit profile', (saveErr as any)?.response?.status);
                 }
 
                 toast.success('PDF uploaded and credit profile parsed successfully!');
@@ -249,7 +255,8 @@ export default function CreditProfileSection({
                 toast.error(response?.message || 'Failed to parse credit profile PDF.');
             }
         } catch (error: any) {
-            console.error('PDF parsing failed:', error);
+            // Status only: the error object carries the request payload (config.data) — client PII.
+            console.error('PDF parsing failed', error?.response?.status);
             toast.error(error?.response?.data?.message || 'An error occurred during PDF parsing.');
         } finally {
             setIsUploading(false);
@@ -504,7 +511,8 @@ export default function CreditProfileSection({
                 toast.error(response?.message || 'Failed to save credit profile.');
             }
         } catch (error: any) {
-            console.error('Failed to save credit profile:', error);
+            // Status only: the error object carries the request payload (config.data) — client PII.
+            console.error('Failed to save credit profile', error?.response?.status);
             toast.error(error?.response?.data?.message || 'An error occurred while saving.');
         } finally {
             setIsSaving(false);

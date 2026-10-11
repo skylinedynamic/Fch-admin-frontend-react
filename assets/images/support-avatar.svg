@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <clipPath id="squareBounds">
+      <rect width="512" height="512" />
+    </clipPath>
+  </defs>
+
+  <!-- Full-bleed Solid Steel Blue Background -->
+  <rect width="512" height="512" fill="#4780A2" />
+
+  <!-- Shadow & Details Clipped to Square -->
+  <g clip-path="url(#squareBounds)">
+    <!-- 45-degree Long Shadow -->
+    <path d="
+      M 160 215 L 360 415 L 260 512 L 100 512 Z
+      M 315 215 L 512 412 L 512 512 L 400 512 Z
+      M 265 315 L 468 512 L 300 512 Z
+    " fill="#305B76" opacity="0.45" />
+    
+    <polygon points="175,190 335,190 512,367 512,512 300,512 175,387" fill="#325E7A" opacity="0.45" />
+    <polygon points="190,260 355,260 512,417 512,512 380,512 190,322" fill="#325E7A" opacity="0.4" />
+    <polygon points="260,300 290,300 480,490 400,512 260,372" fill="#325E7A" opacity="0.4" />
+
+    <!-- Headset Headband Main Arch -->
+    <path d="M 180 230 C 180 140, 212 128, 256 128 C 300 128, 332 140, 332 230" 
+          fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" />
+    
+    <!-- Headband inner groove line -->
+    <path d="M 196 195 C 208 152, 230 146, 256 146 C 282 146, 304 152, 316 195" 
+          fill="none" stroke="#4780A2" stroke-width="6" stroke-linecap="round" />
+
+    <!-- Left Ear Cushion (White Pill) -->
+    <rect x="156" y="195" width="48" height="82" rx="24" ry="24" fill="#FFFFFF" />
+
+    <!-- Right Ear Cushion (White Pill) -->
+    <rect x="308" y="195" width="48" height="82" rx="24" ry="24" fill="#FFFFFF" />
+
+    <!-- Microphone Boom (Curved Arm) -->
+    <path d="M 188 260 C 188 302, 218 335, 270 335" 
+          fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" />
+
+    <!-- Microphone Capsule (Tip) -->
+    <rect x="256" y="320" width="46" height="30" rx="15" ry="15" fill="#FFFFFF" />
+  </g>
+</svg>

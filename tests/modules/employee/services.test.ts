@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { fetchEmployees, updateEmployee, fetchDepartmentStatus } from '../../../src/modules/employee/services'
+import { fetchEmployees, updateEmployee, fetchDepartmentStatus, fetchAvailableEmployeesForUser } from '../../../src/modules/employee/services'
 
 afterEach(() => server.resetHandlers())
 
@@ -76,5 +76,24 @@ describe('fetchDepartmentStatus', () => {
   it('swallows errors and returns an empty array instead of throwing', async () => {
     server.use(http.post('*/common/departments/fetch-departments', () => HttpResponse.error()))
     await expect(fetchDepartmentStatus({ type: 'status' })).resolves.toEqual([])
+  })
+})
+
+describe('fetchAvailableEmployeesForUser', () => {
+  it("returns the partner's employees that have no user account yet", async () => {
+    const employees = [
+      { id: 7, first_name: 'Jane Doe', full_name: 'Jane Doe', email: 'jane@example.test', phone_number_1: '(555) 123-4567' },
+    ]
+    server.use(
+      http.get('*/common/employees-available-for-user', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: employees })
+      )
+    )
+    await expect(fetchAvailableEmployeesForUser()).resolves.toEqual(employees)
+  })
+
+  it('normalizes a missing data field to an empty list', async () => {
+    server.use(http.get('*/common/employees-available-for-user', () => HttpResponse.json({ status: true })))
+    await expect(fetchAvailableEmployeesForUser()).resolves.toEqual([])
   })
 })

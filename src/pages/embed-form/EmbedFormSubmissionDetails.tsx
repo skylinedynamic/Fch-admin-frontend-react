@@ -206,6 +206,7 @@ export default function EmbedFormSubmissionDetails() {
     const [statusSaving, setStatusSaving] = useState(false);
 
     const [showConvertModal, setShowConvertModal] = useState(false);
+    const [existingBorrower, setExistingBorrower] = useState<any>(null);
     const [conversionLoading, setConversionLoading] = useState(false);
 
     const fetchDetails = async () => {
@@ -266,17 +267,24 @@ export default function EmbedFormSubmissionDetails() {
                     converted_borrower: {
                         id: borrowerId,
                         full_name: `${prev?.first_name || ''} ${prev?.last_name || ''}`.trim(),
-                        is_free_trail: true,
+                        is_free_trail: data.is_free_trail ?? true,
                     },
                     converted_funding_application_id: data.funding_application_id ?? null,
                 }));
                 setShowConvertModal(false);
+                setExistingBorrower(null);
                 toast.success(res?.message || 'Submission converted to a Free Plan Borrower!');
             } else {
                 toast.error(res?.message || 'Failed to convert to free plan borrower.');
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free plan borrower.');
+            const body = err?.response?.data;
+            if (err?.response?.status === 409 && body?.code === 'existing_borrower_confirmation_required') {
+                // Show who already exists and let the user confirm before anything is created.
+                setExistingBorrower(body?.data?.existing_borrower ?? {});
+                return;
+            }
+            toast.error(body?.message || err?.message || 'Failed to convert to free plan borrower.');
         } finally {
             setConversionLoading(false);
         }
@@ -1039,10 +1047,11 @@ export default function EmbedFormSubmissionDetails() {
 
                         <EmbedFormConvertModal
                             show={showConvertModal}
-                            onHide={() => setShowConvertModal(false)}
+                            onHide={() => { setShowConvertModal(false); setExistingBorrower(null); }}
                             onConfirm={handleConvertConfirm}
                             submission={submission}
                             loading={conversionLoading}
+                            existingBorrower={existingBorrower}
                         />
                     </div>
                 )}

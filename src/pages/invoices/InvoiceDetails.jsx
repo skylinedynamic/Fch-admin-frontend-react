@@ -90,12 +90,12 @@ export default function InvoiceDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <PageHeader 
-                    title={invoice ? `Invoice #${invoice.invoice_id}` : 'Invoice Details'} 
+                <PageHeader
+                    title={invoice ? `Invoice #${invoice.invoice_id}` : 'Invoice Details'}
                     breadcrumbs={[
                         { label: 'Invoices', path: '/invoices' },
                         { label: 'Details' }
-                    ]} 
+                    ]}
                 />
 
                 {loading ? (
@@ -109,7 +109,7 @@ export default function InvoiceDetails() {
                                         <div className="card-header border-bottom border-primary border-opacity-25 p-4">
                                             <div className="d-flex align-items-center">
                                                 <div className="flex-shrink-0 avatar-sm">
-                                                    <div className="avatar-title bg-primary bg-opacity-10 text-primary rounded fs-24">
+                                                    <div className="avatar-title bg-gray-subtle bg-opacity-10 text-primary rounded fs-24">
                                                         <i className="ri-file-text-line"></i>
                                                     </div>
                                                 </div>

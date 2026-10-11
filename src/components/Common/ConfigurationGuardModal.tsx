@@ -15,7 +15,13 @@ const ConfigurationGuardModal = () => {
     const primaryColor = branding?.primary_color;
     const flags = statusFlags;
 
-    const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
+    // The Embedded Form configuration page is guarded for the same reason as the
+    // rest: the form it publishes emails a notification on every submission, and
+    // a White-Label partner with no mail configuration of its own sends none -
+    // the API refuses to fall back to the host's mailbox. Publishing a form that
+    // silently drops its leads is worse than being asked to finish setup first.
+    // Only the configuration page; the submissions list stays reachable.
+    const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients', '/embed-form/settings'];
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
     const parseTrueFlag = (value: unknown) =>

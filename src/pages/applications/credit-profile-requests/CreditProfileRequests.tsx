@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../common/PageHeader';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { useCreditProfileRequests } from '../../../modules/credit-profile-request';
+import { CREDIT_REQUEST_STATUS_DISPLAY } from '../../../config/creditProfileRequest';
 import type { CreditProfileRequest } from '../../../modules/credit-profile-request';
 
 export default function CreditProfileRequests() {
@@ -72,19 +73,19 @@ export default function CreditProfileRequests() {
     };
 
     // Template bodies
-    const borrowerBodyTemplate = (rowData: CreditProfileRequest) => {
-        const borrower = rowData.borrower;
-        if (!borrower) return <span className="text-muted">—</span>;
-        const name = borrower.business_name || `${borrower.first_name || ''} ${borrower.last_name || ''}`.trim() || `Borrower #${borrower.id}`;
+    const companyBodyTemplate = (rowData: CreditProfileRequest) => {
+        const businessName = rowData.borrower?.business_name;
+        if (!businessName) return <span className="text-muted">—</span>;
+        return <span className="fw-medium text-dark">{businessName}</span>;
+    };
+
+    const statusBodyTemplate = (rowData: CreditProfileRequest) => {
+        const display = rowData.request_status ? CREDIT_REQUEST_STATUS_DISPLAY[rowData.request_status] : null;
+        if (!display) return <span className="text-muted">—</span>;
         return (
-            <div>
-                <div className="fw-medium text-dark">{name}</div>
-                {borrower.business_name && (borrower.first_name || borrower.last_name) && (
-                    <small className="text-muted d-block">
-                        {`${borrower.first_name || ''} ${borrower.last_name || ''}`.trim()}
-                    </small>
-                )}
-            </div>
+            <span className={`badge fs-12 ${display.badgeClass}`}>
+                <i className={`${display.icon} align-middle me-1`}></i>{display.label}
+            </span>
         );
     };
 
@@ -107,20 +108,6 @@ export default function CreditProfileRequests() {
             <span className="text-muted">
                 {date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
-        );
-    };
-
-    const actionBodyTemplate = (rowData: CreditProfileRequest) => {
-        return (
-            <div className="d-flex align-items-center gap-2">
-                <Link
-                    to={`/intake-review/credit-profile-requests/${rowData.id}`}
-                    className="btn btn-sm btn-light-primary btn-icon waves-effect waves-light"
-                    title="View Details"
-                >
-                    <i className="ri-eye-line align-middle"></i>
-                </Link>
-            </div>
         );
     };
 
@@ -200,13 +187,13 @@ export default function CreditProfileRequests() {
                                             className="p-datatable-sm"
                                             emptyMessage="No credit profile requests found."
                                         >
-                                            <Column header="Borrower" field="borrower.business_name" body={borrowerBodyTemplate} style={{ minWidth: '180px' }} />
                                             <Column header="Applicant" field="first_name" body={applicantNameBodyTemplate} sortable style={{ minWidth: '180px' }} />
+                                            <Column header="Company" field="borrower.business_name" body={companyBodyTemplate} style={{ minWidth: '180px' }} />
                                             <Column header="Email" field="email" sortable style={{ minWidth: '180px' }} />
                                             <Column header="Phone" field="phone" sortable style={{ minWidth: '140px' }} />
                                             <Column header="SSN" field="ssn" body={ssnBodyTemplate} style={{ minWidth: '120px' }} />
                                             <Column header="Request Date" field="created_at" body={dateBodyTemplate} sortable style={{ minWidth: '130px' }} />
-                                            <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '80px', textAlign: 'center' }} />
+                                            <Column header="Status" field="request_status" body={statusBodyTemplate} style={{ minWidth: '120px' }} />
                                         </DataTable>
                                     </div>
                                 )}
