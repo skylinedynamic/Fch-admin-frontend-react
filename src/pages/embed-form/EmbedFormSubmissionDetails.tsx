@@ -11,6 +11,7 @@ import {
 } from '../../modules/embed-form/services';
 import { handleFileDownload } from '../../utils/fileDownload';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { formatApiDate } from '../../utils/dates';
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 
@@ -28,23 +29,66 @@ const MANUAL_STATUS_OPTIONS = [
     { label: 'Rejected', value: 'rejected' },
 ];
 
-const FILE_GROUPS: Record<string, { label: string; icon: string }> = {
-    paystub_document: { label: 'Paystubs', icon: 'ri-money-dollar-box-line' },
-    credit_report_document: { label: 'Credit Reports', icon: 'ri-bar-chart-box-line' },
+// Icons for the borrower document types the embedded form uploads under. The
+// labels come from the server now, so this only decorates — a type added in the
+// admin still renders, with the fallback icon.
+const DOC_TYPE_ICONS: Record<string, string> = {
+    'business bank statements': 'ri-bank-line',
+    'business plan': 'ri-lightbulb-line',
+    'business tax returns': 'ri-file-list-3-line',
+    'ein / corporation docs': 'ri-government-line',
+    'equipment invoice / quote': 'ri-tools-line',
+    'personal tax returns': 'ri-user-received-line',
+    'voided business check': 'ri-money-dollar-box-line',
+    'a/r aging report': 'ri-bar-chart-box-line',
+    // Retired buckets, kept so submissions taken before the funding
+    // application rewrite still show a sensible icon.
+    paystub_document: 'ri-money-dollar-box-line',
+    credit_report_document: 'ri-bar-chart-box-line',
 };
 
-const creditScoreBand = (score: number | string) => {
-    const value = Number(score);
-    if (!value) return 'muted';
-    if (value >= 740) return 'good';
-    if (value >= 670) return 'fair';
-    return 'poor';
-};
+const COMPLIANCE_QUESTIONS: { key: string; label: string }[] = [
+    { key: 'filed_for_bankruptcy', label: 'Filed for Bankruptcy' },
+    { key: 'any_pending_lawsuits', label: 'Pending Lawsuits' },
+    { key: 'has_federal_loan', label: 'Defaulted on a Federal Loan' },
+    { key: 'has_federal_debt', label: 'Delinquent on Federal Debt' },
+    { key: 'has_criminal_offense', label: 'Criminal Offense' },
+    { key: 'has_parole_or_probation', label: 'On Parole or Probation' },
+    { key: 'suspended_or_debarred', label: 'Suspended or Debarred' },
+    { key: 'any_outstanding_judgments_business', label: 'Judgments / Liens (Business)' },
+    { key: 'any_outstanding_judgments_owner', label: 'Judgments / Liens (Owner)' },
+];
 
-const creditScoreLabel = (score: number | string) => {
-    const band = creditScoreBand(score);
-    return band === 'good' ? 'Good — Very Good' : band === 'fair' ? 'Fair' : band === 'poor' ? 'Needs Work' : '';
-};
+const docTypeIcon = (label: string) =>
+    DOC_TYPE_ICONS[label?.toLowerCase()] || DOC_TYPE_ICONS[label] || 'ri-folder-line';
+
+/**
+ * Credit score band, as resolved by the server.
+ *
+ * There is deliberately no threshold table here. This screen used to carry its
+ * own (`>= 740 good, >= 670 fair`), which labelled 710 and 720 "Fair" when the
+ * published FICO ranges put 670-739 in "Good". The API now sends the band it
+ * resolved from the one configurable table, and the UI only renders it.
+ */
+const scoreBand = (submission: any) => ({
+    key: submission?.credit_score_band ?? null,
+    label: submission?.credit_score_band_label ?? null,
+    tone: submission?.credit_score_band_tone ?? 'secondary',
+});
+
+const yesNo = (value: boolean | null | undefined) =>
+    value === null || value === undefined ? null : (
+        <span className={`badge ${value ? 'bg-warning-subtle text-warning' : 'bg-light text-body border'} fs-12`}>
+            {value ? 'Yes' : 'No'}
+        </span>
+    );
+
+const consentBadge = (value: boolean | null | undefined) =>
+    value === null || value === undefined ? null : (
+        <span className={`badge ${value ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fs-12`}>
+            <i className={value ? 'ri-check-line' : 'ri-close-line'} /> {value ? 'Accepted' : 'Not accepted'}
+        </span>
+    );
 
 const formatMoney = (formatted?: string | null, raw?: string | number | null) => {
     if (formatted) return formatted;
@@ -53,17 +97,10 @@ const formatMoney = (formatted?: string | null, raw?: string | number | null) =>
     return Number.isNaN(value) ? String(raw) : `$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 };
 
-const formatDate = (value?: string | null, withTime = false) => {
-    if (!value) return null;
-    const date = new Date(value.includes('T') ? value : value.replace(' ', 'T'));
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        ...(withTime ? { hour: 'numeric', minute: '2-digit' } : {}),
-    });
-};
+// Calendar dates (date_of_birth, business_checking_start_date, birthday) must
+// not be parsed as UTC midnight, or they render a day early behind UTC.
+const formatDate = (value?: string | null, withTime = false) =>
+    formatApiDate(value, withTime);
 
 const formatFileSize = (bytes?: number) => {
     if (!bytes) return '—';
@@ -231,6 +268,7 @@ export default function EmbedFormSubmissionDetails() {
                         full_name: `${prev?.first_name || ''} ${prev?.last_name || ''}`.trim(),
                         is_free_trail: true,
                     },
+                    converted_funding_application_id: data.funding_application_id ?? null,
                 }));
                 setShowConvertModal(false);
                 toast.success(res?.message || 'Submission converted to a Free Plan Borrower!');
@@ -261,10 +299,12 @@ export default function EmbedFormSubmissionDetails() {
 
     const attachments = submission?.attachments ?? [];
 
+    const coBorrowers = submission?.co_borrowers ?? [];
+
     const groupedAttachments = useMemo(() => {
         const groups: Record<string, any[]> = {};
         attachments.forEach((att: any) => {
-            const key = att.field_name || 'other';
+            const key = att.document_type || att.field_name || 'Other Documents';
             (groups[key] = groups[key] || []).push(att);
         });
         return groups;
@@ -278,27 +318,53 @@ export default function EmbedFormSubmissionDetails() {
     const initials = `${submission?.first_name?.[0] || ''}${submission?.last_name?.[0] || ''}`.toUpperCase() || 'AP';
 
     const fullAddress = submission
-        ? [submission.home_address, submission.city, submission.state, submission.postal_code].filter(Boolean).join(', ')
+        ? [
+              submission.street_address || submission.home_address,
+              submission.city,
+              submission.state,
+              submission.zip_code || submission.postal_code,
+          ].filter(Boolean).join(', ')
         : '';
+
+    const businessAddress = submission
+        ? [
+              submission.business_address,
+              submission.business_city,
+              submission.business_state,
+              submission.business_postal_code,
+          ].filter(Boolean).join(', ')
+        : '';
+
+    // Displayed score and its server-resolved band.
+    const personalCreditScore =
+        submission?.credit_score_display ?? submission?.credit_score ?? null;
+    const creditBand = scoreBand(submission);
 
     const heroStats = submission
         ? [
               {
-                  label: 'Desired Funding',
-                  value: formatMoney(submission.desired_funding_amount_formatted, submission.desired_funding_amount) || '—',
+                  label: 'Requested Amount',
+                  value:
+                      formatMoney(submission.requested_amount_formatted, submission.requested_amount) ||
+                      formatMoney(submission.desired_funding_amount_formatted, submission.desired_funding_amount) ||
+                      '—',
                   icon: 'ri-hand-coin-line',
                   tone: 'success',
               },
               {
-                  label: 'Annual Income',
-                  value: formatMoney(submission.annual_income_formatted, submission.annual_income) || '—',
+                  label: 'Monthly Revenue',
+                  value: formatMoney(submission.monthly_revenue_formatted, submission.monthly_revenue) || '—',
                   icon: 'ri-line-chart-line',
                   tone: 'info',
               },
               {
-                  label: 'Credit Score',
-                  value: submission.credit_score || '—',
-                  hint: submission.credit_score ? creditScoreLabel(submission.credit_score) : '',
+                  // Named "Estimated" and tagged self-reported: this is the
+                  // applicant's own figure, never a bureau-verified one, and the
+                  // two must never be presented identically.
+                  label: 'Estimated Credit Score',
+                  value: personalCreditScore || '—',
+                  hint: creditBand.label,
+                  selfReported: true,
                   icon: 'ri-speed-up-line',
                   tone: 'warning',
               },
@@ -455,8 +521,11 @@ export default function EmbedFormSubmissionDetails() {
                                                 )}
                                             </div>
                                             <div className="ef-hero__meta">
-                                                {submission.occupation && (
-                                                    <span><i className="ri-briefcase-line" />{submission.occupation}</span>
+                                                {(submission.business_name || submission.occupation) && (
+                                                    <span>
+                                                        <i className="ri-briefcase-line" />
+                                                        {submission.business_name || submission.occupation}
+                                                    </span>
                                                 )}
                                                 {submission.email && (
                                                     <span><i className="ri-mail-line" />{submission.email}</span>
@@ -526,9 +595,12 @@ export default function EmbedFormSubmissionDetails() {
                                                     <span className="ef-stat__label">{stat.label}</span>
                                                     <span className="ef-stat__value">{stat.value}</span>
                                                     {stat.hint && (
-                                                        <span className={`ef-score ef-score--${creditScoreBand(submission.credit_score)}`}>
+                                                        <span className={`badge bg-${creditBand.tone}-subtle text-${creditBand.tone} fs-11`}>
                                                             {stat.hint}
                                                         </span>
+                                                    )}
+                                                    {(stat as any).selfReported && (
+                                                        <span className="d-block text-muted fs-11 mt-1">Self-reported</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -541,32 +613,60 @@ export default function EmbedFormSubmissionDetails() {
                         <div className="row g-0 gx-4">
                             {/* ── Main column ── */}
                             <div className="col-xl-8">
-                                <SectionCard title="Applicant Information" icon="ri-user-3-line" tone="primary">
+                                <SectionCard title="Business Information" icon="ri-building-line" tone="primary">
+                                    <div className="row g-3">
+                                        <DetailFieldItem label="Legal Business Name" value={submission.business_name} copyValue={submission.business_name} />
+                                        <DetailFieldItem label="Business Contact" value={submission.full_name} copyValue={submission.full_name} />
+                                        <DetailFieldItem label="Business Email" value={submission.business_email} copyValue={submission.business_email} />
+                                        <DetailFieldItem
+                                            label="Business Phone"
+                                            value={submission.business_phone_display || submission.business_phone_no}
+                                            copyValue={submission.business_phone_no}
+                                        />
+                                        <DetailFieldItem label="Industry Type" value={submission.industry_type} />
+                                        <DetailFieldItem label="Entity Type" value={submission.entity_type} />
+                                        <DetailFieldItem label="Years in Business" value={submission.years_in_business} />
+                                        <DetailFieldItem label="Number of Employees" value={submission.number_of_employees} />
+                                        <DetailFieldItem
+                                            label="Business Address"
+                                            colSize="col-12"
+                                            value={businessAddress || null}
+                                            copyValue={businessAddress}
+                                        />
+                                    </div>
+                                </SectionCard>
+
+                                <SectionCard title="Ownership Information" icon="ri-user-3-line" tone="info">
                                     <div className="row g-3">
                                         <DetailFieldItem label="First Name" value={submission.first_name} copyValue={submission.first_name} />
                                         <DetailFieldItem label="Last Name" value={submission.last_name} copyValue={submission.last_name} />
                                         <DetailFieldItem label="Email Address" value={submission.email} copyValue={submission.email} />
-                                        <DetailFieldItem label="Phone Number" value={submission.phone} copyValue={submission.phone} />
-                                        <DetailFieldItem label="Date of Birth" value={formatDate(submission.birthday)} />
+                                        <DetailFieldItem
+                                            label="Phone Number"
+                                            value={submission.phone_display || submission.phone}
+                                            copyValue={submission.phone}
+                                        />
+                                        <DetailFieldItem label="Date of Birth" value={formatDate(submission.date_of_birth || submission.birthday)} />
                                         <DetailFieldItem
                                             label="Social Security Number"
                                             value={
-                                                <span className="font-monospace d-inline-flex align-items-center gap-1">
-                                                    <i className="ri-lock-2-line text-muted" />
-                                                    {submission.ssn_masked || (submission.last_4_ssn ? `•••-••-${submission.last_4_ssn}` : 'Encrypted on record')}
-                                                </span>
+                                                submission.last_4_ssn ? (
+                                                    <span className="font-monospace d-inline-flex align-items-center gap-1">
+                                                        <i className="ri-lock-2-line text-muted" />
+                                                        {`•••-••-${submission.last_4_ssn}`}
+                                                    </span>
+                                                ) : null
                                             }
                                         />
+                                        <DetailFieldItem label="Citizenship Status" value={submission.citizenship_status} />
                                         <DetailFieldItem
-                                            label="Estimated Credit Score"
-                                            value={submission.credit_score ? (
-                                                <span className={`ef-score ef-score--${creditScoreBand(submission.credit_score)}`}>
-                                                    <i className="ri-speed-up-line" /> {submission.credit_score} · {creditScoreLabel(submission.credit_score)}
-                                                </span>
-                                            ) : null}
+                                            label="Ownership"
+                                            value={submission.ownership !== null && submission.ownership !== undefined
+                                                ? `${Number(submission.ownership)}%`
+                                                : null}
                                         />
                                         <DetailFieldItem
-                                            label="Residential Address"
+                                            label="Home Address"
                                             colSize="col-12"
                                             value={fullAddress || null}
                                             copyValue={fullAddress}
@@ -574,49 +674,122 @@ export default function EmbedFormSubmissionDetails() {
                                     </div>
                                 </SectionCard>
 
-                                <SectionCard title="Employment & Income" icon="ri-briefcase-4-line" tone="success">
+                                {coBorrowers.length > 0 && (
+                                    <SectionCard
+                                        title={`Co-Borrowers (${coBorrowers.length})`}
+                                        icon="ri-team-line"
+                                        tone="info"
+                                    >
+                                        {coBorrowers.map((co: any, index: number) => (
+                                            <div key={co.id ?? index} className={index ? 'pt-3 mt-3 border-top' : ''}>
+                                                <div className="d-flex align-items-center gap-2 mb-2">
+                                                    <span className="fw-semibold text-dark fs-13">
+                                                        {co.full_name || `${co.first_name || ''} ${co.last_name || ''}`.trim()}
+                                                    </span>
+                                                    {co.title_role && (
+                                                        <span className="badge bg-light text-body border fs-12">{co.title_role}</span>
+                                                    )}
+                                                    {co.ownership_percentage !== null && co.ownership_percentage !== undefined && (
+                                                        <span className="badge bg-primary-subtle text-primary fs-12">
+                                                            {Number(co.ownership_percentage)}%
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="row g-3">
+                                                    <DetailFieldItem label="Email" value={co.email} copyValue={co.email} />
+                                                    <DetailFieldItem label="Mobile Phone" value={co.mobile_phone} copyValue={co.mobile_phone} />
+                                                    <DetailFieldItem label="Home Phone" value={co.home_phone} copyValue={co.home_phone} />
+                                                    <DetailFieldItem label="Date of Birth" value={formatDate(co.date_of_birth)} />
+                                                    <DetailFieldItem
+                                                        label="Social Security Number"
+                                                        value={co.last_4_ssn ? (
+                                                            <span className="font-monospace d-inline-flex align-items-center gap-1">
+                                                                <i className="ri-lock-2-line text-muted" />
+                                                                {`•••-••-${co.last_4_ssn}`}
+                                                            </span>
+                                                        ) : null}
+                                                    />
+                                                    <DetailFieldItem
+                                                        label="Drivers License"
+                                                        value={[co.drivers_license_number, co.drivers_license_state].filter(Boolean).join(' · ') || null}
+                                                    />
+                                                    <DetailFieldItem
+                                                        label="Address"
+                                                        colSize="col-12"
+                                                        value={[co.street_address, co.city, co.state, co.zip_code].filter(Boolean).join(', ') || null}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </SectionCard>
+                                )}
+
+                                <SectionCard title="Financial Information" icon="ri-line-chart-line" tone="success">
                                     <div className="row g-3">
-                                        <DetailFieldItem label="Employer / Business Name" value={submission.employer_name} copyValue={submission.employer_name} />
-                                        <DetailFieldItem label="Occupation / Role" value={submission.occupation} copyValue={submission.occupation} />
-                                        <DetailFieldItem label="Employer Phone" value={submission.employer_phone} copyValue={submission.employer_phone} />
                                         <DetailFieldItem
-                                            label="Annual Income"
+                                            label="Average Monthly Revenue"
                                             value={
-                                                formatMoney(submission.annual_income_formatted, submission.annual_income)
-                                                    ? <span className="fw-bold text-success">{formatMoney(submission.annual_income_formatted, submission.annual_income)}</span>
+                                                formatMoney(submission.monthly_revenue_formatted, submission.monthly_revenue)
+                                                    ? <span className="fw-bold text-success">{formatMoney(submission.monthly_revenue_formatted, submission.monthly_revenue)}</span>
                                                     : null
                                             }
                                         />
                                         <DetailFieldItem
-                                            label="Employer Address"
-                                            colSize="col-12"
-                                            value={submission.employer_address}
-                                            copyValue={submission.employer_address}
+                                            label="Annual Revenue"
+                                            value={formatMoney(submission.annual_revenue_formatted, submission.annual_revenue)}
                                         />
+                                        <DetailFieldItem label="Business Bank" value={submission.business_bank_name} />
+                                        <DetailFieldItem label="Checking Opened" value={formatDate(submission.business_checking_start_date)} />
+                                        <DetailFieldItem
+                                            label="Estimated Credit Score (self-reported)"
+                                            value={personalCreditScore ? (
+                                                <span className="d-inline-flex align-items-center gap-2">
+                                                    <span className="fw-semibold">
+                                                        <i className="ri-speed-up-line me-1" />{personalCreditScore}
+                                                    </span>
+                                                    {creditBand.label && (
+                                                        <span className={`badge bg-${creditBand.tone}-subtle text-${creditBand.tone} fs-11`}>
+                                                            {creditBand.label}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            ) : null}
+                                        />
+                                        <DetailFieldItem label="Business Credit Score" value={submission.self_reported_business_credit_score} />
+                                        <DetailFieldItem label="Existing Business Debt" value={yesNo(submission.has_business_debt)} />
+                                        {submission.has_business_debt && (
+                                            <DetailFieldItem
+                                                label="Outstanding Balance"
+                                                value={formatMoney(submission.debt_balance_formatted, submission.debt_balance)}
+                                            />
+                                        )}
                                     </div>
                                 </SectionCard>
 
-                                <SectionCard title="Housing & Funding Request" icon="ri-home-4-line" tone="info">
+                                <SectionCard title="Funding Request" icon="ri-hand-coin-line" tone="warning">
                                     <div className="row g-3">
                                         <DetailFieldItem
-                                            label="Housing Status"
-                                            value={submission.housing_status ? (
-                                                <span className="badge bg-light text-body border fs-12 text-capitalize">{submission.housing_status}</span>
-                                            ) : null}
-                                        />
-                                        <DetailFieldItem
-                                            label="Monthly Housing Payment"
-                                            value={formatMoney(submission.monthly_housing_payment_formatted, submission.monthly_housing_payment)}
-                                        />
-                                        <DetailFieldItem
-                                            label="Desired Funding Amount"
+                                            label="Requested Amount"
                                             value={
-                                                formatMoney(submission.desired_funding_amount_formatted, submission.desired_funding_amount)
-                                                    ? <span className="fw-bold text-success fs-14">{formatMoney(submission.desired_funding_amount_formatted, submission.desired_funding_amount)}</span>
+                                                formatMoney(submission.requested_amount_formatted, submission.requested_amount)
+                                                    ? <span className="fw-bold text-success fs-14">{formatMoney(submission.requested_amount_formatted, submission.requested_amount)}</span>
                                                     : null
                                             }
                                         />
-                                        <DetailFieldItem label="Referral Source" value={submission.referral_source} />
+                                        <DetailFieldItem label="Preferred Funding Type" value={submission.preferred_funding_type} />
+                                        <DetailFieldItem label="Purpose of Funds" value={submission.purpose_of_funds} />
+                                        <DetailFieldItem label="Timeframe Needed" value={submission.timeframe_needed} />
+                                        <DetailFieldItem label="Collateral Available" value={submission.collateral_available} />
+                                        <DetailFieldItem label="Approved Funding" value={submission.approved_funding} />
+                                        {submission.purpose_note && (
+                                            <DetailFieldItem label="Purpose Note" colSize="col-12" value={submission.purpose_note} />
+                                        )}
+                                        <DetailFieldItem
+                                            label="Referral Source"
+                                            value={submission.referral_source_other
+                                                ? `${submission.referral_source} — ${submission.referral_source_other}`
+                                                : submission.referral_source}
+                                        />
                                         <DetailFieldItem label="Sales Representative" value={submission.sales_rep} />
                                     </div>
                                 </SectionCard>
@@ -628,12 +801,11 @@ export default function EmbedFormSubmissionDetails() {
                                     bodyClass={attachments.length ? 'p-3' : 'p-0'}
                                 >
                                     {attachments.length ? (
-                                        Object.entries(groupedAttachments).map(([field, files]) => {
-                                            const group = FILE_GROUPS[field] || { label: 'Other Documents', icon: 'ri-folder-line' };
+                                        Object.entries(groupedAttachments).map(([label, files]) => {
                                             return (
-                                                <div key={field} className="ef-doc-group">
+                                                <div key={label} className="ef-doc-group">
                                                     <div className="ef-doc-group__title">
-                                                        <i className={group.icon} /> {group.label}
+                                                        <i className={docTypeIcon(label)} /> {label}
                                                         <span className="ef-doc-group__count">{files.length}</span>
                                                     </div>
                                                     <div className="row g-2">
@@ -681,6 +853,95 @@ export default function EmbedFormSubmissionDetails() {
                                         </div>
                                     )}
                                 </SectionCard>
+
+                                <SectionCard title="Disclosures and Consent" icon="ri-file-shield-2-line" tone="info">
+                                    <div className="row g-3">
+                                        <DetailFieldItem
+                                            label="Credit Pull Authorization"
+                                            value={consentBadge(submission.credit_pull_authorization)}
+                                        />
+                                        <DetailFieldItem
+                                            label="Terms and Conditions"
+                                            value={consentBadge(submission.terms_conditions_acceptance)}
+                                        />
+                                    </div>
+                                </SectionCard>
+
+                                <SectionCard title="Federal Compliance Disclosures" icon="ri-bank-line" tone="danger">
+                                    <div className="row g-3">
+                                        {COMPLIANCE_QUESTIONS.map(({ key, label }) => (
+                                            <DetailFieldItem key={key} label={label} value={yesNo(submission[key])} />
+                                        ))}
+                                        {submission.federal_compliance_disclosures_explanation && (
+                                            <DetailFieldItem
+                                                label="Applicant Explanation"
+                                                colSize="col-12"
+                                                value={submission.federal_compliance_disclosures_explanation}
+                                            />
+                                        )}
+                                    </div>
+                                </SectionCard>
+
+                                <SectionCard title="Attestation and Authorization" icon="ri-quill-pen-line" tone="success">
+                                    <div className="row g-3">
+                                        <DetailFieldItem
+                                            label="Electronic Signature"
+                                            colSize="col-12"
+                                            value={submission.signature_name ? (
+                                                <span className="fs-16 fst-italic fw-semibold text-dark">{submission.signature_name}</span>
+                                            ) : null}
+                                        />
+                                        <DetailFieldItem label="E-Sign Consent" value={consentBadge(submission.esign_consent)} />
+                                        <DetailFieldItem label="Accuracy Certification" value={consentBadge(submission.terms_consent)} />
+                                        <DetailFieldItem label="Verification Authorization" value={consentBadge(submission.credit_consent)} />
+                                        <DetailFieldItem label="Legally Binding Acknowledgement" value={consentBadge(submission.legal_binding_consent)} />
+                                        <DetailFieldItem
+                                            label="Signed At"
+                                            value={submission.signed_at || formatDate(submission.signature_data?.signed_at, true)}
+                                        />
+                                        <DetailFieldItem label="Applicant Timezone" value={submission.submission_timezone} />
+                                        <DetailFieldItem label="Application Version" value={submission.application_version} />
+                                        <DetailFieldItem
+                                            label="Signed From"
+                                            colSize="col-12"
+                                            value={submission.signature_data?.user_agent ? (
+                                                <span className="fs-12 text-muted text-break">
+                                                    {submission.signature_data.ip_address} &middot; {submission.signature_data.user_agent}
+                                                </span>
+                                            ) : null}
+                                        />
+                                    </div>
+                                </SectionCard>
+
+                                {/* Answers from before the funding application rewrite. Only these
+                                    submissions carry them, so the card stays off every new one. */}
+                                {submission.has_legacy_consumer_data && (
+                                    <SectionCard title="Legacy Application Answers" icon="ri-archive-line" tone="secondary">
+                                        <p className="text-muted fs-12 mb-3">
+                                            This submission was taken with the previous consumer loan form. These answers have
+                                            no equivalent on the funding application and are shown here for reference.
+                                        </p>
+                                        <div className="row g-3">
+                                            <DetailFieldItem label="Employer / Business Name" value={submission.employer_name} />
+                                            <DetailFieldItem label="Occupation / Role" value={submission.occupation} />
+                                            <DetailFieldItem label="Employer Phone" value={submission.employer_phone} />
+                                            <DetailFieldItem label="Employer Address" value={submission.employer_address} />
+                                            <DetailFieldItem
+                                                label="Annual Income"
+                                                value={formatMoney(submission.annual_income_formatted, submission.annual_income)}
+                                            />
+                                            <DetailFieldItem label="Housing Status" value={submission.housing_status} />
+                                            <DetailFieldItem
+                                                label="Monthly Housing Payment"
+                                                value={formatMoney(submission.monthly_housing_payment_formatted, submission.monthly_housing_payment)}
+                                            />
+                                            <DetailFieldItem
+                                                label="Desired Funding Amount"
+                                                value={formatMoney(submission.desired_funding_amount_formatted, submission.desired_funding_amount)}
+                                            />
+                                        </div>
+                                    </SectionCard>
+                                )}
                             </div>
 
                             {/* ── Side column ── */}
@@ -697,6 +958,11 @@ export default function EmbedFormSubmissionDetails() {
                                                 <span className="badge bg-primary-subtle text-primary ef-status-pill mt-1">
                                                     <i className="ri-vip-crown-2-fill" /> Free Plan
                                                 </span>
+                                                {submission.converted_funding_application_id && (
+                                                    <span className="badge bg-warning-subtle text-warning ef-status-pill mt-1 ms-1">
+                                                        <i className="ri-file-list-3-line" /> Funding application created
+                                                    </span>
+                                                )}
                                             </div>
                                             {convertedBorrowerId && (
                                                 <button

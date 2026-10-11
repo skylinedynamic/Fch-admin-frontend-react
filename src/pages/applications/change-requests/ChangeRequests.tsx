@@ -259,7 +259,7 @@ export default function ChangeRequests() {
                 {/* Summary Cards */}
                 <div className="row change-request-section">
                     {loading ? (
-                        [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
+                        [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} colSize="col-xl-3 col-md-6" />)
                     ) : (
                         [
                             { title: 'Total Requests', icon: 'ri-swap-box-line', colorVariant: 'primary', value: statistics.total_requests || 0 },
@@ -273,6 +273,7 @@ export default function ChangeRequests() {
                                 count={card.value}
                                 icon={card.icon}
                                 colorVariant={card.colorVariant}
+                                colSize="col-xl-3 col-md-6"
                             />
                         ))
                     )}

@@ -248,7 +248,7 @@ export default function PreQualificationApplication() {
                 {/* Statistics Cards */}
                 <div className="row pre-qual-section">
                     {statsLoading ? (
-                        [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
+                        [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} colSize="col-xl-3 col-md-6" />)
                     ) : (
                         statisticsConfig.map((config, index) => (
                             <StatisticsCard
@@ -257,6 +257,7 @@ export default function PreQualificationApplication() {
                                 count={config.dataKey.includes('rate') ? `${stats[config.dataKey]}` : stats[config.dataKey]}
                                 icon={config.icon}
                                 colorVariant={config.colorVariant}
+                                colSize="col-xl-3 col-md-6"
                             />
                         ))
                     )}

@@ -19,7 +19,8 @@ import type { Client, BorrowerPlan } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
-import { locationData, getCountryPhoneInfo } from '../../../config/locations';
+import { locationData } from '../../../modules/location';
+import { getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers, getPartnerBorrowerFee } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
 import { useAuthStore } from '../../../store/auth/authStore';
@@ -94,6 +95,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
     const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
+
+    // `formData.is_free_trail` is typed as `boolean`, but is defensively checked
+    // against legacy wire formats (0/1, "true"/"1") some sources may still send.
+    const rawFormIsFreeTrail = formData.is_free_trail as unknown;
+    const isFormFreeTrailActive = rawFormIsFreeTrail == 1 || rawFormIsFreeTrail === true || rawFormIsFreeTrail === 'true' || rawFormIsFreeTrail === '1';
     const [isSynced, setIsSynced] = useState(false); // Track if data has been synced from API
     const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
     const [showInstallmentModal, setShowInstallmentModal] = useState(false);
@@ -624,19 +630,40 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <h5 className="text-primary fs-16 mb-1">Personal Information</h5>
                     <hr className="mt-1" />
                 </div>
+                {/* First + Middle share the left half, Last keeps the right, so the
+                    optional middle name costs no extra row. */}
                 <div className="col-lg-6">
-                    <div className="mb-3">
-                        <label htmlFor="first_name" className="form-label">First Name <span className="text-danger">*</span></label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.first_name ? 'is-invalid' : ''}`}
-                            id="first_name"
-                            name="first_name"
-                            placeholder="Enter first name"
-                            value={formData.first_name || ''}
-                            onChange={handleInputChange}
-                        />
-                        {errors.first_name && <div className="invalid-feedback">{errors.first_name}</div>}
+                    <div className="row g-2">
+                        <div className="col-7">
+                            <div className="mb-3">
+                                <label htmlFor="first_name" className="form-label">First Name <span className="text-danger">*</span></label>
+                                <input
+                                    type="text"
+                                    className={`form-control ${errors.first_name ? 'is-invalid' : ''}`}
+                                    id="first_name"
+                                    name="first_name"
+                                    placeholder="Enter first name"
+                                    value={formData.first_name || ''}
+                                    onChange={handleInputChange}
+                                />
+                                {errors.first_name && <div className="invalid-feedback">{errors.first_name}</div>}
+                            </div>
+                        </div>
+                        <div className="col-5">
+                            <div className="mb-3">
+                                <label htmlFor="middle_name" className="form-label">Middle Name</label>
+                                <input
+                                    type="text"
+                                    className={`form-control ${errors.middle_name ? 'is-invalid' : ''}`}
+                                    id="middle_name"
+                                    name="middle_name"
+                                    placeholder="Optional"
+                                    value={formData.middle_name || ''}
+                                    onChange={handleInputChange}
+                                />
+                                {errors.middle_name && <div className="invalid-feedback">{errors.middle_name}</div>}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -738,7 +765,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">State <span className="text-danger">*</span></label>
+                        <label className="form-label">State</label>
                         <Dropdown
                             inputId="state"
                             value={formData.state}
@@ -758,7 +785,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">City <span className="text-danger">*</span></label>
+                        <label className="form-label">City</label>
                         <Dropdown
                             inputId="city"
                             value={formData.city}
@@ -799,6 +826,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <label htmlFor="postal_code" className="form-label">Zip Code</label>
                         <input
                             type="text"
+                            inputMode="numeric"
+                            maxLength={5}
                             className={`form-control ${errors.postal_code ? 'is-invalid' : ''}`}
                             id="postal_code"
                             name="postal_code"
@@ -975,7 +1004,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">State <span className="text-danger">*</span></label>
+                        <label className="form-label">State</label>
                         <Dropdown
                             inputId="business_state"
                             value={formData.business_state}
@@ -995,7 +1024,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">City <span className="text-danger">*</span></label>
+                        <label className="form-label">City</label>
                         <Dropdown
                             inputId="business_city"
                             value={formData.business_city}
@@ -1036,6 +1065,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <label htmlFor="business_postal_code" className="form-label">Zip Code</label>
                         <input
                             type="text"
+                            inputMode="numeric"
+                            maxLength={5}
                             className={`form-control ${errors.business_postal_code ? 'is-invalid' : ''}`}
                             id="business_postal_code"
                             name="business_postal_code"
@@ -1270,7 +1301,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 className="form-check-input"
                                                 id="is_free_trail"
                                                 name="is_free_trail"
-                                                checked={formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1'}
+                                                checked={isFormFreeTrailActive}
                                                 style={isPartnerOnFreeTrial ? { opacity: 1, pointerEvents: 'none' } : undefined}
                                                 onChange={(e) => {
                                                     if (isPartnerOnFreeTrial) return;
@@ -1304,7 +1335,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 )}
 
-                {!(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1') && (
+                {!isFormFreeTrailActive && (
                     <>
                         {/* Enrollment Type Dropdown — shown when creating or when converting from free trial */}
                         {!(!!clientId && !wasFreeTrial) && (
@@ -1708,8 +1739,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <InstallmentDetailsModal
                     show={showInstallmentModal}
                     onHide={() => setShowInstallmentModal(false)}
+                    onHidden={undefined}
                     defaultMonths={selectedOption?.total_installments_count || formData.installment_months || 12}
                     totalAmount={Number(selectedOption?.total_amount || formData.enrollment_amount || formData.total_subscription_amount || 0)}
+                    planLabel={undefined}
+                    partnerType={undefined}
                     appliedTotalAmount={formData.enrollment_amount}
                     appliedDownPayment={formData.installment_down_payment}
                     appliedMonths={formData.installment_months}

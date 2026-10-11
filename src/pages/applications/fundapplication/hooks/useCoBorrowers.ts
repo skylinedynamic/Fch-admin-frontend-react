@@ -1,7 +1,27 @@
 import { useState, useCallback } from 'react'
-import Modal from 'bootstrap/js/dist/modal'
+// bootstrap ships no type declarations for this subpath export
+// @ts-expect-error -- untyped third-party module, typed manually below
+import BootstrapModalCtor from 'bootstrap/js/dist/modal'
 import { toast } from 'react-toastify'
 import type { CoBorrower } from '../types'
+
+interface BootstrapModalOptions {
+  backdrop?: boolean | 'static';
+  keyboard?: boolean;
+  focus?: boolean;
+}
+interface BootstrapModalInstance {
+  show(relatedTarget?: HTMLElement): void;
+  hide(): void;
+  toggle(relatedTarget?: HTMLElement): void;
+  dispose(): void;
+}
+interface BootstrapModalConstructor {
+  new(element: Element, options?: BootstrapModalOptions): BootstrapModalInstance;
+  getInstance(element: Element): BootstrapModalInstance | null;
+  getOrCreateInstance(element: Element, options?: BootstrapModalOptions): BootstrapModalInstance;
+}
+const Modal = BootstrapModalCtor as BootstrapModalConstructor
 
 // Constants
 const CO_BORROWER_MODAL_ID = 'coBorrowerModal'

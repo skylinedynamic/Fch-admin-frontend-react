@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchUsers, fetchUserById, updateUser, deleteUser } from './services'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { fetchUsers, fetchUserById, updateUser, deleteUsers } from './services'
 import type { User } from './types'
 
 export const queryKeys = {
@@ -14,10 +14,10 @@ export const useUsers = (payload?: { page?: number; per_page?: number; search?: 
   return useQuery({
     queryKey: queryKeys.user.list(payload),
     queryFn: async () => {
-      const res = await fetchUsers(payload)
+      const res = await fetchUsers(payload ?? {})
       return res // whole payload
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 1,
   })
 }
@@ -44,7 +44,7 @@ export const useUpdateUser = () => {
 export const useDeleteUser = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string | number) => deleteUser(id),
+    mutationFn: (id: string | number) => deleteUsers([id]),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
     },

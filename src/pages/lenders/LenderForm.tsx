@@ -201,7 +201,7 @@ export default function LenderForm() {
                                             {renderInput('name', 'Lender Name', 'text', 'Enter lender name', 'col-md-6', true)}
                                             {renderInput('legal_name', 'Legal Name', 'text', 'Enter legal name', 'col-md-6', true)}
 
-                                            <div className="mb-4 col-md-4">
+                                            <div className="mb-4 col-md-4 taxonomy-field">
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <label className="form-label text-dark fw-medium mb-0">Product Categories <span className="text-danger">*</span></label>
                                                     <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowCategoryModal(true)}>Add New</button>
@@ -213,13 +213,21 @@ export default function LenderForm() {
                                                     onChange={(e) => handleChange({ target: { name: 'product_categories', value: e.value } } as any)}
                                                     optionLabel="label"
                                                     optionValue="value"
-                                                    placeholder="Select Categories"
-                                                    className={`w-100 rounded-3 slim-multiselect ${errors.product_categories ? 'p-invalid' : ''}`}
+                                                    placeholder="Select product categories"
+                                                    className={`w-100 ${errors.product_categories ? 'p-invalid' : ''}`}
+                                                    panelClassName="taxonomy-field-panel"
                                                     appendTo="self"
-                                                    maxSelectedLabels={2}
-                                                    selectedItemsLabel="{0} items selected"
+                                                    filter
+                                                    filterPlaceholder="Search categories"
+                                                    display="chip"
+                                                    showSelectAll={false}
+                                                    removeIcon="ri-close-line"
+                                                    maxSelectedLabels={20}
+                                                    emptyFilterMessage="No matching category - use Add New to create it"
                                                 />
-                                                {errors.product_categories && <div className="invalid-feedback d-block">{errors.product_categories}</div>}
+                                                {errors.product_categories
+                                                    ? <div className="invalid-feedback d-block">{errors.product_categories}</div>
+                                                    : <div className="taxonomy-field__hint">Pick one or more categories, or create a new one with Add New.</div>}
                                             </div>
 
                                             <div className="mb-4 col-md-4">

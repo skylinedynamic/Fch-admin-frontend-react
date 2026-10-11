@@ -152,7 +152,7 @@ export default function FundingApplicationAuditHistory() {
                                             value={auditData}
                                             sortField={sortField}
                                             sortOrder={sortOrder}
-                                            onSort={(e) => {
+                                            onSort={(e: any) => {
                                                 setSortField(e.sortField || 'downloaded_at');
                                                 setSortOrder(e.sortOrder || -1);
                                             }}

@@ -145,7 +145,7 @@ export default function FundingGroupModal({ visible, onHide, onSuccess, groups =
                         <hr className="my-3" />
                         <label className="form-label fw-semibold mb-2">Existing Groups</label>
                         <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                            {groups.map((item) => (
+                            {groups.map((item: any) => (
                                 <div
                                     key={item.id}
                                     className="d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-light"

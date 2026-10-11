@@ -22,6 +22,8 @@ export type BusinessDetails = {
 export type OwnerInfo = {
   id?: number | null
   firstName: string
+  /** Optional; first and last are the required parts of a name. */
+  middleName?: string
   lastName: string
   dob: string
   ssn: string
@@ -40,6 +42,8 @@ export type OwnerInfo = {
 export type CoBorrower = {
   id?: number | null
   firstName: string
+  /** Optional; first and last are the required parts of a name. */
+  middleName?: string
   lastName: string
   role: string
   ownershipPct: string

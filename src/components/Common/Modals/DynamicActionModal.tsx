@@ -1,5 +1,39 @@
 import React, { useEffect, useRef, ReactNode } from 'react';
-import Modal from 'bootstrap/js/dist/modal';
+// bootstrap ships no type declarations for this subpath export
+// @ts-expect-error -- untyped third-party module, typed manually below
+import BootstrapModalCtor from 'bootstrap/js/dist/modal';
+
+interface BootstrapModalOptions {
+    backdrop?: boolean | 'static';
+    keyboard?: boolean;
+    focus?: boolean;
+}
+interface BootstrapModalInstance {
+    show(relatedTarget?: HTMLElement): void;
+    hide(): void;
+    toggle(relatedTarget?: HTMLElement): void;
+    dispose(): void;
+}
+interface BootstrapModalConstructor {
+    new(element: Element, options?: BootstrapModalOptions): BootstrapModalInstance;
+    getInstance(element: Element): BootstrapModalInstance | null;
+    getOrCreateInstance(element: Element, options?: BootstrapModalOptions): BootstrapModalInstance;
+}
+const Modal = BootstrapModalCtor as BootstrapModalConstructor;
+
+declare module 'react' {
+    namespace JSX {
+        interface IntrinsicElements {
+            'lord-icon': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+                src?: string;
+                trigger?: string;
+                colors?: string;
+                delay?: string | number;
+                target?: string;
+            };
+        }
+    }
+}
 
 interface DynamicActionModalProps {
     show: boolean;
@@ -33,7 +67,7 @@ const DynamicActionModal: React.FC<DynamicActionModalProps> = ({
     loading
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
-    const modalInstanceRef = useRef<Modal | null>(null);
+    const modalInstanceRef = useRef<BootstrapModalInstance | null>(null);
 
     // Initialize Bootstrap Modal instance once
     useEffect(() => {

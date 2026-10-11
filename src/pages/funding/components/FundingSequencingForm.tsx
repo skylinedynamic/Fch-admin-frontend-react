@@ -11,7 +11,7 @@ import { getAllLenders, getLenderProductCategories } from '../../../modules/lend
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS, DEFAULT_READINESS_FACTORS } from '../../../config/funding';
 import { industryTypes } from '../../../config/borrower';
-import { locationData } from '../../../config/locations';
+import { locationData } from '../../../modules/location';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { fetchBorrowerDocumentTypes } from '../../../modules/client/services';
 import FundingGroupModal from './FundingGroupModal';
@@ -20,24 +20,27 @@ import LenderVisibilityGrid from './LenderVisibilityGrid';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import '../../../../assets/css/funding.css';
 
+// locationData is filled from the API after the module graph has been imported,
+// so it must only ever be read inside a function - never in a module-level
+// initialiser, which runs before the fetch has even started.
+const usStates = () => locationData.USA?.states ?? {};
+
 const mapStateCodeToName = (stateArray: any[]) => {
     if (!Array.isArray(stateArray)) return [];
-    return stateArray.map(st => {
-        if (typeof st === 'string' && locationData.USA.states[st as keyof typeof locationData.USA.states]) {
-            return locationData.USA.states[st as keyof typeof locationData.USA.states].name;
-        }
-        return st;
-    });
+    const states = usStates();
+    return stateArray.map(st => (typeof st === 'string' && states[st]) ? states[st].name : st);
 };
 
-const stateOptions = Object.entries(locationData.USA.states).map(([code, state]) => ({
-    label: state.name,
-    value: state.name
-}));
+const buildStateOptions = () =>
+    Object.values(usStates()).map(state => ({
+        label: state.name,
+        value: state.name
+    }));
 
 
 
 export default function FundingSequencingForm() {
+    const stateOptions = React.useMemo(buildStateOptions, []);
     const { hasPermission } = usePermissions();
     const navigate = useNavigate();
     const { id } = useParams();
@@ -175,7 +178,7 @@ export default function FundingSequencingForm() {
     const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
         setFormData(prev => ({ ...prev, description: e.target.value }));
         if (errors.description) {
-            setErrors(prev => ({ ...prev, description: null }));
+            setErrors((prev: any) => ({ ...prev, description: null }));
         }
     }, {
         height: 200,
@@ -364,7 +367,7 @@ export default function FundingSequencingForm() {
         });
 
         if (Array.isArray(cleanData.readiness_factors)) {
-            cleanData.readiness_factors = cleanData.readiness_factors.filter(item => typeof item === 'string' && item.trim() !== '');
+            cleanData.readiness_factors = cleanData.readiness_factors.filter((item: any) => typeof item === 'string' && item.trim() !== '');
         }
 
         const unifiedPayload = {

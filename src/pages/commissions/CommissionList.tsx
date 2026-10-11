@@ -208,10 +208,10 @@ export default function CommissionList() {
                 <div className="row commission-section">
                     {isLoading ? (
                         <>
-                            <StatisticsCardSkeleton />
-                            <StatisticsCardSkeleton />
-                            <StatisticsCardSkeleton />
-                            <StatisticsCardSkeleton />
+                            <StatisticsCardSkeleton colSize="col-xl-3 col-md-6" />
+                            <StatisticsCardSkeleton colSize="col-xl-3 col-md-6" />
+                            <StatisticsCardSkeleton colSize="col-xl-3 col-md-6" />
+                            <StatisticsCardSkeleton colSize="col-xl-3 col-md-6" />
                         </>
                     ) : (
                         statisticsConfig.map((config, index) => {
@@ -228,6 +228,7 @@ export default function CommissionList() {
                                     count={displayValue}
                                     icon={config.icon}
                                     colorVariant={config.colorVariant}
+                                    colSize="col-xl-3 col-md-6"
                                 />
                             );
                         })

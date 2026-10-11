@@ -1,7 +1,7 @@
 import React from 'react';
 import { MultiSelect } from 'primereact/multiselect';
 import { Dropdown } from 'primereact/dropdown';
-import { RESTRICTED_INDUSTRIES_OPTIONS } from '../../../config/funding';
+import { INDUSTRIES_OPTIONS } from '../../../config/funding';
 
 interface LenderVisibilityCardProps {
     visibility: any;
@@ -199,7 +199,7 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
                             <label className="form-label text-dark fw-medium mb-1">Restricted Industries</label>
                             <MultiSelect
                                 value={visibility.restricted_industries || []}
-                                options={RESTRICTED_INDUSTRIES_OPTIONS}
+                                options={INDUSTRIES_OPTIONS}
                                 onChange={(e) => onChange(index, 'restricted_industries', e.value)}
                                 optionLabel="label"
                                 optionValue="value"

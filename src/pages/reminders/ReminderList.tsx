@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient as api } from '../../lib/http/apiClient';
 import { toast } from 'react-toastify';
-import { parseDate, parseDateTime } from '../../utils/formatters';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from '../../components/Table/DataTableWrapper';
@@ -18,11 +17,15 @@ import {
     REMINDER_STATUS_SENT,
     getEffectiveReminderStatusBadgeClasses,
     getEffectiveReminderStatusLabel,
+    getReminderClientPath,
+    getReminderClientLinkLabel,
     getReminderTypeIcon
 } from '../../config/reminders';
+import type { Reminder } from '../../config/reminders';
+import type { DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 
 export default function ReminderList() {
-    const [reminders, setReminders] = useState([]);
+    const [reminders, setReminders] = useState<Reminder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [initialLoading, setInitialLoading] = useState(true);
 
@@ -33,16 +36,21 @@ export default function ReminderList() {
     const [sortOrder, setSortOrder] = useState('desc');
 
     const [searchText, setSearchText] = useState('');
-    const [selectedType, setSelectedType] = useState(null);
-    const [selectedStatus, setSelectedStatus] = useState(null);
-    const [dateRange, setDateRange] = useState(() => {
+    const [selectedType, setSelectedType] = useState<string | null>(null);
+    const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+    // PrimeReact's range Calendar hands back `(Date | null)[] | null | undefined`,
+    // and Clear resets the whole range to null — so the element type has to stay
+    // nullable rather than the plain `Date[]` the initial value alone infers.
+    const [dateRange, setDateRange] = useState<(Date | null)[] | null>(() => {
         const today = new Date();
         return [today, today];
     });
 
-    const [dismissModal, setDismissModal] = useState({ show: false, loading: false });
-    const [viewModal, setViewModal] = useState({ show: false, data: null });
-    const [selectedReminders, setSelectedReminders] = useState([]);
+    // `type` decides which confirmation copy the modal shows and which endpoint
+    // handleConfirmDismiss hits; it's absent while the modal is closed.
+    const [dismissModal, setDismissModal] = useState<{ show: boolean; type?: 'all' | 'selected'; loading: boolean }>({ show: false, loading: false });
+    const [viewModal, setViewModal] = useState<{ show: boolean; data: Reminder | null }>({ show: false, data: null });
+    const [selectedReminders, setSelectedReminders] = useState<Reminder[]>([]);
     // Server-side truth for "does this user have ANY dismissable (pending or
     // sent — sent includes ones showing as Missed) reminder at all",
     // independent of the table's current page/date/type/status filters.
@@ -208,7 +216,7 @@ export default function ReminderList() {
 
     const STATUS_OPTIONS = REMINDER_STATUS_OPTIONS;
 
-    const getStatusBadge = (rowData) => {
+    const getStatusBadge = (rowData: Reminder) => {
         return (
             <span className={`badge text-uppercase px-3 py-1 rounded-pill fw-medium ${getEffectiveReminderStatusBadgeClasses(rowData)}`}>
                 {getEffectiveReminderStatusLabel(rowData)}
@@ -216,7 +224,7 @@ export default function ReminderList() {
         );
     };
 
-    const subjectBodyTemplate = (rowData) => {
+    const subjectBodyTemplate = (rowData: Reminder) => {
         return (
             <div className="d-flex align-items-center">
                 <div className="flex-shrink-0 me-3">
@@ -228,7 +236,7 @@ export default function ReminderList() {
                 </div>
                 <div className="flex-grow-1">
                     <div className="fs-14 mb-1 d-flex align-items-center gap-2">
-                        <h5 className="fs-15 mb-0 text-dark">{rowData.summary}</h5>
+                        <h5 className="fs-15 mb-0 text-dark text-break">{rowData.summary}</h5>
                     </div>
                     <div className="text-muted mb-1 fs-12 d-flex flex-wrap gap-2">
                         {rowData.organizer && (
@@ -246,26 +254,50 @@ export default function ReminderList() {
         );
     };
 
-    const activityDateBodyTemplate = (rowData) => {
-        // set_date_time/send_at from the API are already full ISO-8601 strings
-        // with an offset (ReminderResource converts to X-Timezone server-side)
-        // — pass them straight to parseDateTime. Round-tripping through
-        // `new Date(...).toISOString()` first converts to UTC and drops the
-        // offset, so parseDateTime's own `new Date(...)` re-parses that naive
-        // string as local time again — shifting the displayed time by the
-        // browser's UTC offset instead of showing the correct local time.
-        const dateStr = rowData.set_date_time || rowData.send_at;
-        if (!dateStr) return <span>—</span>;
+    const clientBodyTemplate = (rowData: Reminder) => {
+        const client = rowData.client;
+        if (!client) return <span className="text-muted">—</span>;
 
-        return <span className="fw-medium">{parseDateTime(dateStr)}</span>;
+        const clientPath = getReminderClientPath(client);
+        return (
+            <div className="overflow-hidden">
+                {clientPath ? (
+                    <Link to={clientPath} className="fw-semibold text-dark d-block text-truncate">{client.name || 'Unnamed'}</Link>
+                ) : (
+                    <span className="fw-semibold text-dark d-block text-truncate">{client.name || 'Unnamed'}</span>
+                )}
+                <div className="text-muted fs-12 text-truncate">
+                    {client.type_label}
+                    {client.business_name && client.business_name !== client.name ? ` · ${client.business_name}` : ''}
+                </div>
+                {/* Same button as the reminder popup and details modal: Go to Client /
+                    Lead / Partner / Employee. A link, so it never opens the row's modal. */}
+                {clientPath && (
+                    <Link
+                        to={clientPath}
+                        className="btn btn-sm btn-soft-primary fw-semibold d-inline-flex align-items-center mt-1"
+                    >
+                        <i className="ri-user-shared-line me-1"></i> {getReminderClientLinkLabel(client)}
+                    </Link>
+                )}
+            </div>
+        );
     };
 
-    const onPage = (event) => {
+    const activityDateBodyTemplate = (rowData: Reminder) => {
+        // Formatted by the API's toTimezone() in the viewer's timezone — shown as-is.
+        const dateStr = rowData.display?.activity_datetime;
+        if (!dateStr) return <span>—</span>;
+
+        return <span className="fw-medium">{dateStr}</span>;
+    };
+
+    const onPage = (event: DataTablePageEvent) => {
         setPerPage(event.rows);
         setPage(Math.floor(event.first / event.rows) + 1);
     };
 
-    const onSort = (event) => {
+    const onSort = (event: DataTableSortEvent) => {
         setSortField(event.sortField);
         setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc');
     };
@@ -336,7 +368,7 @@ export default function ReminderList() {
                                                     <input
                                                         type="text"
                                                         className="form-control search bg-light border-light"
-                                                        placeholder="Search here..."
+                                                        placeholder="Search subject or client..."
                                                         value={searchText}
                                                         onChange={(e) => setSearchText(e.target.value)}
                                                         onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
@@ -368,7 +400,7 @@ export default function ReminderList() {
                                                 <div className="search-box">
                                                     <Calendar
                                                         value={dateRange}
-                                                        onChange={(e) => setDateRange(e.value)}
+                                                        onChange={(e) => setDateRange(e.value ?? null)}
                                                         placeholder="Date Range"
                                                         selectionMode="range"
                                                         readOnlyInput
@@ -415,12 +447,12 @@ export default function ReminderList() {
                                             emptyMessage="No reminders found"
                                             selectionMode="checkbox"
                                             selection={selectedReminders}
-                                            onSelectionChange={(e) => setSelectedReminders(e.value)}
-                                            isDataSelectable={(e) => e.data.status === REMINDER_STATUS_PENDING || e.data.status === REMINDER_STATUS_SENT}
-                                            onRowClick={(e) => {
+                                            onSelectionChange={(e: { value: Reminder[] }) => setSelectedReminders(e.value)}
+                                            isDataSelectable={(e: { data: Reminder }) => e.data.status === REMINDER_STATUS_PENDING || e.data.status === REMINDER_STATUS_SENT}
+                                            onRowClick={(e: { originalEvent: React.MouseEvent; data: Reminder }) => {
                                                 const target = e.originalEvent.target as HTMLElement;
-                                                // Do not open modal if clicking the checkbox column
-                                                if (target.closest('.p-checkbox') || target.closest('.p-selection-column') || target.tagName.toLowerCase() === 'input') {
+                                                // Do not open modal if clicking the checkbox column or the client link
+                                                if (target.closest('.p-checkbox') || target.closest('.p-selection-column') || target.closest('a') || target.tagName.toLowerCase() === 'input') {
                                                     return;
                                                 }
                                                 setViewModal({ show: true, data: e.data });
@@ -430,7 +462,8 @@ export default function ReminderList() {
                                         >
                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                                             <Column field="reference" header="Reference" body={(rowData) => <span className="badge bg-primary-subtle text-primary px-2 py-1">{rowData.reference}</span>} style={{ minWidth: '120px' }} sortable></Column>
-                                            <Column field="summary" header="Subject" body={subjectBodyTemplate} style={{ minWidth: '350px' }} sortable></Column>
+                                            <Column field="summary" header="Subject" body={subjectBodyTemplate} style={{ minWidth: '300px' }} sortable></Column>
+                                            <Column header="Client" body={clientBodyTemplate} style={{ minWidth: '200px', maxWidth: '260px' }}></Column>
                                             <Column field="set_date_time" header="Activity Date & Time" body={activityDateBodyTemplate} style={{ minWidth: '180px' }} sortable></Column>
                                             <Column field="status" header="Status" body={(rowData) => getStatusBadge(rowData)} style={{ minWidth: '120px' }} sortable></Column>
                                         </DataTable>

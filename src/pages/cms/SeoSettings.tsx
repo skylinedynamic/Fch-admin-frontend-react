@@ -28,7 +28,7 @@ export default function SeoSettings() {
     const [searchText, setSearchText] = useState<string>('');
     const [appliedSearch, setAppliedSearch] = useState<string>('');
     const [sortField, setSortField] = useState<string>('id');
-    const [sortOrder, setSortOrder] = useState<number>(-1);
+    const [sortOrder, setSortOrder] = useState<number>(1);
 
     const { data: seoData, isLoading, isFetching } = useSeoSettings({
         page,

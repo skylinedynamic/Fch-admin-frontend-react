@@ -86,7 +86,7 @@ export const REMINDER_PRESETS = [
     { value: 'custom_time_before', label: 'Custom Time Before' }
 ];
 
-export const getReminderMsToSubtract = (preset, value, unit) => {
+export const getReminderMsToSubtract = (preset: string, value: string, unit: string): number => {
     let ms = 0;
     if (preset === 'custom_time_before') {
         const val = parseInt(value);

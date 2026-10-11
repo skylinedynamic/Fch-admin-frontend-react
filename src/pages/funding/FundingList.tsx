@@ -13,12 +13,13 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP } from '../../config/funding';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import { FundingSequencingListItem } from '../../modules/funding/types';
 
 export default function FundingList() {
     const { hasPermission } = usePermissions();
     const navigate = useNavigate();
     const [loading, setLoading] = useState<boolean>(true);
-    const [fundings, setFundings] = useState<any[]>([]);
+    const [fundings, setFundings] = useState<FundingSequencingListItem[]>([]);
 
     // Options for filters
     const [groups, setGroups] = useState<any[]>([]);
@@ -119,14 +120,14 @@ export default function FundingList() {
         loadData();
     }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedFilters, appliedStatus, appliedGroup, appliedType]);
 
-    const onPage = (event) => {
+    const onPage = (event: any) => {
         const nextPerPage = event.rows;
         const nextPage = Math.floor(event.first / event.rows) + 1;
         setPerPage(nextPerPage);
         setPage(nextPage);
     };
 
-    const onSort = (event) => {
+    const onSort = (event: any) => {
         console.log('Sort Event:', event);
 
         setSortField(event.sortField);
@@ -156,11 +157,11 @@ export default function FundingList() {
         setPage(1);
     };
 
-    const iconBodyTemplate = (rowData) => {
+    const iconBodyTemplate = (rowData: FundingSequencingListItem) => {
         const iconClass = rowData.icon?.startsWith('ri-')
             ? rowData.icon
-            : (FUNDING_ICON_MAP[rowData.icon] ? `ri-${FUNDING_ICON_MAP[rowData.icon]}-line` : (rowData.icon || 'ri-file-list-3-line'));
-        const colorName = FUNDING_COLOR_MAP[rowData.icon_color] || rowData.icon_color || 'primary';
+            : (rowData.icon && FUNDING_ICON_MAP[rowData.icon] ? `ri-${FUNDING_ICON_MAP[rowData.icon]}-line` : (rowData.icon || 'ri-file-list-3-line'));
+        const colorName = (rowData.icon_color && FUNDING_COLOR_MAP[rowData.icon_color]) || rowData.icon_color || 'primary';
 
         return (
             <div className="d-flex justify-content-center align-items-center">
@@ -171,7 +172,7 @@ export default function FundingList() {
         );
     };
 
-    const nameBodyTemplate = (rowData) => {
+    const nameBodyTemplate = (rowData: FundingSequencingListItem) => {
         return (
             <div>
                 <span className="fw-bold text-primary" style={{ cursor: 'pointer' }} onClick={() => navigate(`/funding/${rowData.id}`)}>
@@ -184,15 +185,15 @@ export default function FundingList() {
         );
     };
 
-    const groupBodyTemplate = (rowData) => {
+    const groupBodyTemplate = (rowData: FundingSequencingListItem) => {
         return <span>{rowData.group?.name || '-'}</span>;
     };
 
-    const typeBodyTemplate = (rowData) => {
+    const typeBodyTemplate = (rowData: FundingSequencingListItem) => {
         return <span>{rowData.type?.name || '-'}</span>;
     };
 
-    const statusBodyTemplate = (rowData) => {
+    const statusBodyTemplate = (rowData: FundingSequencingListItem) => {
         const status = rowData.status || FUNDING_STATUS_OPTIONS[0].value;
         const badgeClass = status === FUNDING_STATUS_OPTIONS[0].value ? 'bg-success' : 'bg-danger';
         const canUpdate = true;
@@ -209,10 +210,10 @@ export default function FundingList() {
         );
     };
 
-    const handleStatusChange = async (id, currentStatus) => {
-        const newStatus = currentStatus === FUNDING_STATUS_OPTIONS[0].value
+    const handleStatusChange = async (id: number | string, currentStatus: string | null) => {
+        const newStatus = (currentStatus === FUNDING_STATUS_OPTIONS[0].value
             ? FUNDING_STATUS_OPTIONS[1].value
-            : FUNDING_STATUS_OPTIONS[0].value;
+            : FUNDING_STATUS_OPTIONS[0].value) as string;
         try {
             await updateFundingSequencingStatus(id, newStatus);
             toast.success(`Status updated to ${newStatus}`);
@@ -398,7 +399,7 @@ export default function FundingList() {
                                             onSort={onSort}
                                             sortField={sortField}
                                             sortOrder={sortOrder === 'asc' ? 1 : -1}
-                                            onFilter={(e) => {
+                                            onFilter={(e: any) => {
                                                 setFilters(e.filters);
                                                 setAppliedFilters(e.filters);
                                                 setPage(1);
@@ -413,8 +414,8 @@ export default function FundingList() {
                                             scrollHeight="flex"
                                             selectionMode="multiple"
                                             selection={selectedFundings}
-                                            onSelectionChange={(e) => setSelectedFundings(e.value)}
-                                            onRowClick={(e) => {
+                                            onSelectionChange={(e: any) => setSelectedFundings(e.value)}
+                                            onRowClick={(e: any) => {
                                                 const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
                                                     e.originalEvent.target.closest('.p-selection-column');
                                                 if (!isCheckbox) navigate(`/funding/${e.data.id}`);

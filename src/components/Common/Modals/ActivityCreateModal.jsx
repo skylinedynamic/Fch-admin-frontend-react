@@ -6,6 +6,12 @@ import { parseDate } from '../../../utils/formatters';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
+import {
+    ACTIVITY_SUMMARY_MAX_LENGTH,
+    ACTIVITY_CREATE_ERROR_FIELDS,
+    normalizeActivityFieldErrors,
+    getActivityValidationToast,
+} from '../../../modules/activity-log/constants';
 import { TimeInputs } from '../TimeInputs';
 import {
     ENTITY_TYPE_LEAD,
@@ -19,6 +25,7 @@ import {
 } from '../../../config/appConfig';
 
 const REFERENCE_OPTIONS = REMINDER_TYPES.map(t => t.value);
+
 
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
@@ -40,7 +47,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         summary: '',
         message_body: '',
         attachments: [],
-        target_visibility: 'borrower',
         remind_me: false,
         remind_at: '',
         reminder_preset: '30_minutes',
@@ -153,15 +159,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             const ctx = window._activityEntityContext || {};
             const resolvedEntityId = entityId ?? ctx.entityId;
             const resolvedEntityType = entityType ?? ctx.entityType;
-            const resolvedPartnerId = ctx.partnerId;
-
-            if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
-                if (!formData.target_visibility) {
-                    setErrors({ target_visibility: ['Please select Send to FCH or Send to Borrower'] });
-                    setIsSaving(false);
-                    return;
-                }
-            }
 
             // Entity IDs - separate Lead, Client, Borrower, Partner, Funding Request, and Funding Application
             if (resolvedEntityType === ENTITY_TYPE_LEAD) {
@@ -172,12 +169,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 data.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 data.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
-                if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
-                if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_APPLICATION) {
                 data.append('funding_application_id', resolvedEntityId ? resolvedEntityId.toString() : '');
-                if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
-                if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {
@@ -193,12 +186,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             if (response && response.status === false) {
                 const backendErrors = response.errors;
                 if (backendErrors && typeof backendErrors === 'object') {
-                    const normalizedErrors = {};
-                    Object.keys(backendErrors).forEach(key => {
-                        const error = backendErrors[key];
-                        normalizedErrors[key] = Array.isArray(error) ? error : [error];
-                    });
+                    const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
                     setErrors(normalizedErrors);
+                    toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS));
                 } else {
                     toast.error(response.message || 'Validation failed.');
                 }
@@ -223,7 +213,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 summary: '',
                 message_body: '',
                 attachments: [],
-                target_visibility: 'borrower',
                 remind_me: false,
                 remind_at: '',
                 reminder_preset: '30_minutes',
@@ -258,13 +247,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             const backendErrors = responseData?.errors;
 
             if (backendErrors && typeof backendErrors === 'object') {
-                // Normalize: backend may send strings OR arrays for error values
-                const normalizedErrors = {};
-                Object.keys(backendErrors).forEach(key => {
-                    const error = backendErrors[key];
-                    normalizedErrors[key] = Array.isArray(error) ? error : [error];
-                });
+                const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
                 setErrors(normalizedErrors);
+                toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS));
             } else if (err.response?.status !== 403) {
                 toast.error(responseData?.message || 'Failed to create activity');
             }
@@ -356,7 +341,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 summary: '',
                 message_body: '',
                 attachments: [],
-                target_visibility: 'borrower',
                 remind_me: false,
                 remind_at: '',
                 reminder_preset: '30_minutes',
@@ -404,9 +388,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             }
         };
     }, []);
-    const ctx = window._activityEntityContext || {};
-    const resolvedEntityType = entityType ?? ctx.entityType;
-    const resolvedPartnerId = ctx.partnerId;
 
     // Real-time validations
     let realTimeDateError = null;
@@ -475,43 +456,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                         )}
                         <form>
                             <div className="row g-3">
-                                {/* Send to Partner / Borrower Radio Buttons - Moved to top as requested */}
-                                {resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1 && (
-                                    <div className="col-12 border-bottom pb-3 mb-1 mt-0">
-                                        <div className="d-flex gap-4">
-                                            <div className="form-check">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="radio"
-                                                    name="activity_target_visibility"
-                                                    id="activityVisibleToHost"
-                                                    value="host"
-                                                    checked={formData.target_visibility === 'host'}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
-                                                />
-                                                <label className="form-check-label" htmlFor="activityVisibleToHost">
-                                                    {ctx.isHost ? 'Send to Partner' : 'Send to FCH'}
-                                                </label>
-                                            </div>
-                                            <div className="form-check">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="radio"
-                                                    name="activity_target_visibility"
-                                                    id="activityVisibleToBorrower"
-                                                    value="borrower"
-                                                    checked={formData.target_visibility === 'borrower'}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
-                                                />
-                                                <label className="form-check-label" htmlFor="activityVisibleToBorrower">
-                                                    Send to Borrower
-                                                </label>
-                                            </div>
-                                        </div>
-                                        {errors.target_visibility && <div className="text-danger mt-1 small">{errors.target_visibility[0]}</div>}
-                                    </div>
-                                )}
-
                                 <div className="col-md-6">
                                     <label className="form-label">Reference <span className="text-danger">*</span></label>
                                     <select
@@ -582,9 +526,15 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                     {!errors.activity_date && realTimeDateError && <div className="text-danger mt-1 small">{realTimeDateError}</div>}
                                 </div>
                                 <div className="col-12">
-                                    <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
-                                        Summary <span className="text-danger">*</span>
-                                    </label>
+                                    <div className="d-flex justify-content-between align-items-baseline">
+                                        <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
+                                            Summary <span className="text-danger">*</span>
+                                        </label>
+                                        {/* The summary is the reminder's title too — capped at ACTIVITY_SUMMARY_MAX_LENGTH (the API enforces the same). */}
+                                        <span className={`fs-11 ${(formData.summary || '').length >= ACTIVITY_SUMMARY_MAX_LENGTH ? 'text-danger' : 'text-muted'}`}>
+                                            {(formData.summary || '').length}/{ACTIVITY_SUMMARY_MAX_LENGTH}
+                                        </span>
+                                    </div>
                                     <input
                                         type="text"
                                         className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
@@ -592,9 +542,10 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         name="summary"
                                         value={formData.summary}
                                         onChange={handleInputChange}
+                                        maxLength={ACTIVITY_SUMMARY_MAX_LENGTH}
                                         required
                                     />
-                                    {errors.subject && <div className="text-danger mt-1 small">{errors.subject[0]}</div>}
+                                    {errors.subject && <div className="invalid-feedback">{errors.subject[0]}</div>}
                                 </div>
                                 <div className="col-12">
                                     <label className={`form-label ${errors.description ? 'text-danger' : ''}`}>Message</label>
@@ -619,7 +570,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                                     onChange={(e) => setFormData(prev => ({ ...prev, remind_me: e.target.checked }))}
                                                 />
                                                 <label className="form-check-label ms-2" htmlFor="remindMeSwitch">
-                                                    Set Remainder
+                                                    Set Reminder
                                                 </label>
                                             </div>
                                         </div>

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query/queryKeys'
 import { fetchBusinessInfo, saveBusinessInfo, fetchOwnershipInfo, saveOwnershipInfo, fetchFinancialInfo, saveFinancialInfo, fetchDisclosuresConsent, saveDisclosuresConsent, fetchFundingRequest, saveFundingRequest, fetchFederalCompliance, saveFederalCompliance, saveAttestation, fetchAttestation, fetchFundingApplicationDocuments, deleteFundingApplicationDocument, uploadFundingApplicationDocuments, validateCoBorrower } from './services'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { FundingRequestData, FundingApplicationDocument } from './types'
+import type { FundingRequestData, FundingApplicationDocument, AttestationData } from './types'
 
 export const useSaveBusinessInfo = () => {
   const queryClient = useQueryClient()

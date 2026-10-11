@@ -23,7 +23,7 @@ import {
     LEAD_INDUSTRY_TYPE_OPTIONS
 } from '../../config/leadOptions';
 import { locationData } from '../../config';
-import { formatPhoneNumber } from '../../utils/formatters';
+import { formatPhoneNumber, formatZipCode } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
 import { Calendar } from 'primereact/calendar';
 
@@ -157,6 +157,8 @@ export default function LeadDetails() {
             } else {
                 setFormData(prev => ({ ...prev, city: value }));
             }
+        } else if (name === 'zip_code') {
+            setFormData(prev => ({ ...prev, [name]: formatZipCode(value) }));
         } else if (name === 'duns_number') {
             // DUNS is strictly 9 digits
             const val = value.replace(/\D/g, '').slice(0, 9);
@@ -263,7 +265,11 @@ export default function LeadDetails() {
     };
 
     const handleConvertClick = () => {
-        const isMissingInfo = !formData.contact_person || !formData.email || !formData.phone_number || !formData.country || !formData.state || !formData.city;
+        // Address is optional on a lead, so a missing state or city no longer
+        // counts as incomplete - only the details needed to actually reach the
+        // person do. The borrower and partner records they convert into accept a
+        // blank address too.
+        const isMissingInfo = !formData.contact_person || !formData.email || !formData.phone_number || !formData.country;
         if (isMissingInfo) {
             setShowMissingInfoModal(true);
         } else {
@@ -852,7 +858,7 @@ export default function LeadDetails() {
                                                             </div>
                                                             <div className="col-lg-4">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">State <span className="text-danger">*</span></label>
+                                                                    <label className="form-label">State</label>
                                                                     <Dropdown
                                                                         value={formData.state}
                                                                         options={states}
@@ -868,7 +874,7 @@ export default function LeadDetails() {
                                                             </div>
                                                             <div className="col-lg-4">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">City <span className="text-danger">*</span></label>
+                                                                    <label className="form-label">City</label>
                                                                     <Dropdown
                                                                         value={formData.city}
                                                                         options={[...cities, { label: 'Others', value: 'Others' }]}
@@ -895,7 +901,7 @@ export default function LeadDetails() {
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Zip Code</label>
-                                                                    <input type="text" className={`form-control ${errors.zip_code ? 'is-invalid' : ''}`} name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
+                                                                    <input type="text" inputMode="numeric" maxLength={5} className={`form-control ${errors.zip_code ? 'is-invalid' : ''}`} name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
                                                                     {errors.zip_code && <div className="invalid-feedback d-block">{errors.zip_code}</div>}
                                                                 </div>
                                                             </div>

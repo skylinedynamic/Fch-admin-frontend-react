@@ -371,7 +371,7 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
             <VerificationActionModal
                 show={modalConfig.show}
                 onHide={() => setModalConfig(prev => ({ ...prev, show: false }))}
-                onConfirm={(reason) => {
+                onConfirm={(reason: string) => {
                     const isVerify = modalConfig.type === 'manual_verify';
                     const status = isVerify ? VERIFICATION_STATUS.COMPLETED : VERIFICATION_STATUS.REJECTED;
                     const rawTaskIds = modalConfig.isBulk ? selectedTasks : (modalConfig.taskId ? [modalConfig.taskId] : []);
@@ -413,6 +413,7 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                 }}
                 actionType={modalConfig.type}
                 loading={verifyMutation.isPending}
+                validationErrors={undefined}
                 isBulk={modalConfig.isBulk}
                 count={modalConfig.isBulk ? selectedTasks.length : 1}
             />

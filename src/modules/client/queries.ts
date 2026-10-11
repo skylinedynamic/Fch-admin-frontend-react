@@ -8,6 +8,8 @@ import {
     updateBusinessFinancials,
     deleteClient,
     deleteClients,
+    archiveClients,
+    unarchiveClients,
     fetchClientChecklist,
     saveClientChecklist,
     fetchBorrowerProfileStats,
@@ -121,6 +123,31 @@ export const useDeleteClients = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: deleteClients,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: clientKeys.lists() });
+        },
+    });
+};
+
+/**
+ * Archiving takes a client out of the working list without deleting anything -
+ * the record, its history and its access are untouched, and a search still finds
+ * it. Both invalidate the list so the row moves in or out immediately.
+ */
+export const useArchiveClients = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: archiveClients,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: clientKeys.lists() });
+        },
+    });
+};
+
+export const useUnarchiveClients = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: unarchiveClients,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: clientKeys.lists() });
         },
