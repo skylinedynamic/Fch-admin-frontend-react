@@ -1,4 +1,5 @@
 import { test, type APIRequestContext, type Page } from '@playwright/test'
+import { recordApiCall } from './apiCallLog'
 
 /**
  * Settings for the live suite. Nothing here has a real credential as a
@@ -44,6 +45,7 @@ export async function sessionToken(page: Page): Promise<string> {
 
 /** Calls the real API directly, as the signed-in user. */
 export async function api(request: APIRequestContext, token: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, data?: unknown) {
+  recordApiCall('live', method, path)
   return request.fetch(`${LIVE.apiUrl}${path}`, {
     method,
     data,
@@ -62,6 +64,7 @@ export function trackServerErrors(page: Page): ApiFailure[] {
   const failures: ApiFailure[] = []
   page.on('response', (response) => {
     if (!response.url().startsWith(LIVE.apiUrl)) return
+    recordApiCall('live', response.request().method(), response.url().slice(LIVE.apiUrl.length))
     if (response.status() >= 500) {
       failures.push({ url: response.url(), status: response.status(), method: response.request().method() })
     }

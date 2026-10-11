@@ -1,7 +1,8 @@
 import { test as setup, expect } from '@playwright/test'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { LIVE } from './env'
+import { FINDINGS_FILE } from './paths'
 import { PERSONAS, authFile, credentialsFor, isConfigured } from './personas'
 
 /**
@@ -10,6 +11,11 @@ import { PERSONAS, authFile, credentialsFor, isConfigured } from './personas'
  * live specs. A persona without credentials gets an empty state, so the specs
  * that need it start and skip themselves with a readable reason.
  */
+// Start each run with an empty findings report.
+setup('reset the access findings report', () => {
+  rmSync(FINDINGS_FILE, { force: true })
+})
+
 for (const persona of PERSONAS) {
   setup(`sign in as ${persona.label}`, async ({ page }) => {
     const file = authFile(persona.key)

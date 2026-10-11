@@ -36,16 +36,19 @@ if (!['mock', 'live', 'all'].includes(MODE)) {
 const chrome = devices['Desktop Chrome']
 
 const mockProjects: Project[] = [
-  { name: 'mock', testDir: './e2e', use: { ...chrome } },
+  { name: 'mock', testDir: './e2e', outputDir: 'test-results/mock', use: { ...chrome } },
 ]
 
 const liveProjects: Project[] = [
   // Logs in once through the real login page and stores the session.
-  { name: 'live-setup', testDir: './e2e-live', testMatch: /auth\.setup\.ts/, use: { ...chrome } },
+  { name: 'live-setup', testDir: './e2e-live', testMatch: /auth\.setup\.ts/, outputDir: 'test-results/live-setup', use: { ...chrome } },
   {
     name: 'live',
     testDir: './e2e-live',
     testIgnore: /auth\.setup\.ts/,
+    // Each project keeps its own folder, so a mock run and a live run started
+    // side by side do not wipe each other's traces.
+    outputDir: 'test-results/live',
     dependencies: ['live-setup'],
     use: { ...chrome, storageState: LIVE_AUTH_FILE },
   },
@@ -66,6 +69,9 @@ export default defineConfig({
   // timeouts (confirmed in the sibling fch-borrower-react repo).
   workers: 1,
   reporter: 'html',
+  // 5s is too tight for assertions on transient UI (toasts) when the machine is busy:
+  // the app only renders after its locations request, well after the load event.
+  expect: { timeout: 10_000 },
   use: {
     baseURL: externalApp || 'http://localhost:4174',
     trace: 'on-first-retry',

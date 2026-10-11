@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page, type Route, type Request } from '@playwright/test'
+import { recordApiCall } from '../e2e-live/apiCallLog'
 
 /**
  * Shared Playwright helpers for the admin panel e2e suite.
@@ -152,9 +153,12 @@ export async function mockApi(page: Page, handlers: Handler[] = []): Promise<Api
       if (h.method && h.method.toUpperCase() !== method) continue
       const hit = typeof h.match === 'string' ? path.includes(h.match) : h.match.test(path)
       if (!hit) continue
+      // The built-in theme stub is plumbing, not something a test set up.
+      recordApiCall('mock', method, path, i > 0)
       const body = typeof h.body === 'function' ? (h.body as (r: Request) => unknown)(req) : h.body
       return route.fulfill({ status: h.status ?? 200, json: body ?? ok([]) })
     }
+    recordApiCall('mock', method, path, false)
     return route.fulfill({ json: ok([]) })
   })
 

@@ -1,7 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { LIVE, api, trackServerErrors } from './env'
-import { PERSONAS, authFile, isConfigured, type Persona } from './personas'
+import { PERSONAS, authFile, isConfigured, type Persona, type PersonaKey } from './personas'
+import { landingPath } from './navigation'
+import { FINDINGS_FILE } from './paths'
 import { ROUTES, expectedOutcome, type Outcome, type SessionSubscription, type SessionUser } from './routes'
 
 /**
@@ -17,39 +20,40 @@ import { ROUTES, expectedOutcome, type Outcome, type SessionSubscription, type S
  *      does not refuse its own list call (otherwise the user sees a broken page);
  *   3. for a screen the UI blocks, whether the API blocks it too. A UI guard is
  *      not security, so an API that still answers is recorded as a finding in
- *      test-results/live-access-findings.json and as an annotation on the test.
+ *      e2e-live/.results/access-findings.json and as an annotation on the test.
  */
 
 const NAV_TIMEOUT = Number(process.env.E2E_LIVE_TIMEOUT_MS || 60_000)
 
 type Session = { token: string; user: SessionUser & Record<string, unknown>; subscription: SessionSubscription }
 
-async function readSession(page: Page): Promise<Session> {
-  await page.goto('/profile')
-  return page.evaluate(() => {
-    const state = JSON.parse(window.localStorage.getItem('auth') || '{}')?.state || {}
+/**
+ * The session auth.setup.ts saved for a persona, read straight from its
+ * storage-state file. Reading it from disk (instead of loading a page in every
+ * test) keeps each check to a single navigation.
+ */
+function readSession(key: PersonaKey): Session {
+  const file = authFile(key)
+  if (!existsSync(file)) return { token: '', user: {}, subscription: null }
+  const saved = JSON.parse(readFileSync(file, 'utf8')) as { origins?: { localStorage?: { name: string; value: string }[] }[] }
+  for (const origin of saved.origins ?? []) {
+    const auth = origin.localStorage?.find((item) => item.name === 'auth')
+    if (!auth) continue
+    const state = JSON.parse(auth.value)?.state || {}
     return { token: state.token || '', user: state.user || {}, subscription: state.userSubscription || null }
-  })
-}
-
-const landing = (page: Page) => new URL(page.url()).pathname
-
-async function settle(page: Page, path: string) {
-  await page.goto(path)
-  // Guards redirect on first render; give the router a moment to finish.
-  await page.waitForLoadState('domcontentloaded')
-  await expect
-    .poll(() => landing(page), { timeout: 15_000 })
-    .toMatch(new RegExp(`^(${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|/access-denied|/|/login)$`))
+  }
+  return { token: '', user: {}, subscription: null }
 }
 
 type Finding = { persona: string; screen: string; path: string; api: string; status: number; note: string }
-const findings: Finding[] = []
-
-test.afterAll(() => {
-  mkdirSync('test-results', { recursive: true })
-  writeFileSync('test-results/live-access-findings.json', JSON.stringify(findings, null, 2))
-})
+// Appended one at a time: a failing test restarts the worker, so anything kept
+// in memory until the end of the run would be lost.
+function record(finding: Finding) {
+  mkdirSync(dirname(FINDINGS_FILE), { recursive: true })
+  const all: Finding[] = existsSync(FINDINGS_FILE) ? JSON.parse(readFileSync(FINDINGS_FILE, 'utf8')) : []
+  if (!all.some((f) => f.persona === finding.persona && f.path === finding.path)) all.push(finding)
+  writeFileSync(FINDINGS_FILE, JSON.stringify(all, null, 2))
+}
 
 for (const persona of PERSONAS) {
   test.describe(`Live access - ${persona.label}`, () => {
@@ -58,9 +62,9 @@ for (const persona of PERSONAS) {
 
     let session: Session
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(() => {
       test.skip(!isConfigured(persona), `${persona.label} not configured: set E2E_${persona.env}_EMAIL and E2E_${persona.env}_PASSWORD.`)
-      session = await readSession(page)
+      session = readSession(persona.key)
       expect(session.token, `${persona.label} has no saved session - did auth.setup.ts sign in?`).not.toBe('')
     })
 
@@ -89,8 +93,7 @@ for (const persona of PERSONAS) {
         test.info().annotations.push({ type: 'expected', description: expected })
 
         const serverErrors = trackServerErrors(page)
-        await settle(page, route.path)
-        const landed = landing(page)
+        const landed = await landingPath(page, route.path, NAV_TIMEOUT)
 
         if (expected === 'allowed') {
           expect(landed, `${persona.label} should be able to open ${route.path}`).toBe(route.path)
@@ -127,7 +130,7 @@ for (const persona of PERSONAS) {
               status: res.status(),
               note: 'The UI blocks this screen but the API still answers the request for this account.',
             }
-            findings.push(finding)
+            record(finding)
             test.info().annotations.push({ type: 'api-not-enforced', description: `${finding.api} -> ${finding.status}` })
           }
         }
