@@ -275,6 +275,50 @@ test.describe('Client profile - Funding', () => {
     await expect(page.getByText('SBA 7(a)').first()).toBeVisible()
   })
 
+  const OPTIONS = (seq: Record<string, unknown>) => ({
+    method: 'GET', match: '/common/funding-sequencings/client-funding-options/1',
+    body: ok({ types: [{ id: 1, name: 'SBA Loan' }], groups: [{ id: 1, name: 'Business Loans', sequencings: [{ id: 201, name: 'SBA 7(a)', funding_type_id: 1, icon: 'ri-bank-line', icon_color: 'blue', ...seq }] }] }),
+  })
+  const READINESS = '/common/funding-qualification/client-readiness-factors/1/201'
+
+  test('opening an option loads the client readiness factors for it', async ({ page }) => {
+    const api = await openTab(page, 'Funding Sequence', [
+      OPTIONS({}),
+      { method: 'GET', match: READINESS, body: ok([{ label: 'Credit Score', status: 'Strong' }, { label: 'Time in Business', status: 'Weak' }]) },
+    ])
+    await page.locator('.funding-card', { hasText: 'SBA 7(a)' }).click()
+    await expectCall(api, 'GET', READINESS)
+    await expect(page.getByText('Underwriting Factors')).toBeVisible()
+    await expect(page.getByText('Time in Business')).toBeVisible()
+    await expect(page.getByText('No strong qualifying factors available.')).toHaveCount(0)
+  })
+
+  test('without strong factors the detail says so', async ({ page }) => {
+    await openTab(page, 'Funding Sequence', [OPTIONS({}), { method: 'GET', match: READINESS, body: ok([{ label: 'Time in Business', status: 'Weak' }]) }])
+    await page.locator('.funding-card', { hasText: 'SBA 7(a)' }).click()
+    await expect(page.getByText('No strong qualifying factors available.')).toBeVisible()
+  })
+
+  test('a failed readiness load is reported', async ({ page }) => {
+    await openTab(page, 'Funding Sequence', [OPTIONS({}), { method: 'GET', match: READINESS, status: 500, body: failure('boom') }])
+    await page.locator('.funding-card', { hasText: 'SBA 7(a)' }).click()
+    await expect(page.getByText('Failed to load readiness factors')).toBeVisible()
+  })
+
+  test('Back returns to the list of options', async ({ page }) => {
+    await openTab(page, 'Funding Sequence', [OPTIONS({}), { method: 'GET', match: READINESS, body: ok([]) }])
+    await page.locator('.funding-card', { hasText: 'SBA 7(a)' }).click()
+    await page.getByRole('button', { name: /Back/ }).last().click()
+    await expect(page.locator('.funding-card', { hasText: 'SBA 7(a)' })).toBeVisible()
+  })
+
+  test('a locked option cannot be opened', async ({ page }) => {
+    const api = await openTab(page, 'Funding Sequence', [OPTIONS({ engine_status: 'Locked' })])
+    await page.locator('.funding-card', { hasText: 'SBA 7(a)' }).click()
+    await expect(page.locator('.funding-card', { hasText: 'SBA 7(a)' })).toHaveClass(/funding-card-disabled/)
+    expect(api.find('GET', READINESS)).toHaveLength(0)
+  })
+
   test('the funding requests tab lists what this client raised', async ({ page }) => {
     const api = await openTab(page, 'Funding Requests', [{ method: 'POST', match: /\/common\/funding-request$/, body: ok({ data: [] }) }])
     const call = await expectCall(api, 'POST', /\/common\/funding-request$/)

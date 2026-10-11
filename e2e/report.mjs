@@ -6,6 +6,9 @@
  *   test-reports/e2e-live.json   PLAYWRIGHT_JSON_OUTPUT_NAME=... npm run test:e2e:live -- --reporter=json
  *   test-reports/vitest.json     npx vitest run --reporter=json --outputFile=test-reports/vitest.json
  *
+ * Optional extras: e2e-<suite>-rerun.json (failures re-run on their own) and
+ * e2e-<suite>-part-<name>.json (a later run of whole spec files, which replaces those files).
+ *
  * Any file that is missing is reported as "not run" rather than skipped silently.
  * `npm run test:report` runs this and prints the path of the page.
  */
@@ -203,8 +206,27 @@ function withReruns(tests, rerunRaw) {
   })
 }
 
-const mock = mockRaw && { tests: withReruns(playwrightTests(mockRaw.data), read('e2e-mock-rerun.json')), at: mockRaw.at }
-const live = liveRaw && { tests: withReruns(playwrightTests(liveRaw.data), read('e2e-live-rerun.json')), at: liveRaw.at }
+/**
+ * A part file (e2e-mock-part-<name>.json, e2e-live-part-<name>.json) is a later run of a few
+ * whole spec files - ones added or changed after the main run. Its results replace the main
+ * run's for those files, so each spec file is reported from exactly one run.
+ */
+function withParts(tests, suite) {
+  const prefix = `e2e-${suite}-part-`
+  const parts = existsSync(DIR) ? readdirSync(DIR).filter((f) => f.startsWith(prefix) && f.endsWith('.json')).sort() : []
+  let merged = tests
+  for (const name of parts) {
+    const raw = read(name)
+    if (!raw) continue
+    const extra = playwrightTests(raw.data)
+    const files = new Set(extra.map((t) => t.file))
+    merged = merged.filter((t) => !files.has(t.file)).concat(extra)
+  }
+  return merged
+}
+
+const mock = mockRaw && { tests: withParts(withReruns(playwrightTests(mockRaw.data), read('e2e-mock-rerun.json')), 'mock'), at: mockRaw.at }
+const live = liveRaw && { tests: withParts(withReruns(playwrightTests(liveRaw.data), read('e2e-live-rerun.json')), 'live'), at: liveRaw.at }
 const vitestAll = vitestRaw && { tests: vitestTests(vitestRaw.data), at: vitestRaw.at }
 
 const isFeature = (t) => /^tests\/(pages|components|Assistant)\//.test(t.file)

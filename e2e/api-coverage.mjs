@@ -69,7 +69,54 @@ function mentioned(text, path) {
   // Tests often build the URL from a constant prefix (`${BASE}/fetch-all`), so
   // also accept the last two static segments on their own.
   const tail = path.split('/').filter((segment) => segment && segment !== ':param').slice(-2).join('/')
-  return tail.includes('/') && new RegExp(`${escapeRegExp(tail)}(?![A-Za-z0-9_-])`).test(text)
+  if (tail.includes('/') && new RegExp(`${escapeRegExp(tail)}(?![A-Za-z0-9_-])`).test(text)) return true
+  // ...or any trailing part of the path right after a template prefix:
+  // `${FA}/attestation-authorization`, `${RA}/pre-qualification/5/run-ai`.
+  const segments = path.split('/').filter(Boolean)
+  for (let start = 1; start < segments.length; start++) {
+    const rest = segments.slice(start)
+    if (rest[rest.length - 1] === ':param') break
+    const suffix = rest.map((s) => (s === ':param' ? '[^/\'"`\\s)]+' : escapeRegExp(s))).join('/')
+    if (new RegExp(`\\}/${suffix}(?![A-Za-z0-9_-])`).test(text)) return true
+  }
+  return false
+}
+
+// Endpoints whose only callers are service functions no screen uses, so no e2e
+// test can reach them (tests/modules/unreachableServices.test.ts pins their
+// requests). Kept by hand: re-check when one of these functions gains a caller.
+const UNREACHABLE = new Set([
+  'GET /common/get-theme',
+  'GET /common/time-slots/fetch-all',
+  'GET /common/borrowers/all',
+  'POST /process-payment',
+  'POST /process-payment-for-users',
+  'POST /payment/initiate-subscription',
+  'PUT /admin/funding-sequencings/:param/visibility',
+  'POST /:param/upload-file',
+  'POST /common/borrowers/fetch-borrowers',
+  'GET /admin/credit-builder/tier-tasks/:param',
+  'POST /admin/partners-stats',
+])
+
+// The e2e suites also log every request a test set up a response for, or made
+// itself (test-reports/api-calls-<suite>.ndjson, see e2e-live/apiCallLog.ts).
+// That catches endpoints a spec reaches through a constant or template the
+// text search above cannot follow.
+function exercised(suite) {
+  const file = `test-reports/api-calls-${suite}.ndjson`
+  if (!existsSync(file)) return []
+  return readFileSync(file, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => { try { return JSON.parse(line) } catch { return null } })
+    .filter((call) => call && call.specific)
+}
+const calls = { mock: exercised('mock'), live: exercised('live') }
+
+function called(suite, method, path) {
+  const pattern = new RegExp(`^${path.split(':param').map(escapeRegExp).join('[^/]+')}$`)
+  return calls[suite].some((call) => call.method === method && pattern.test(call.path))
 }
 
 const rows = [...endpoints.values()]
@@ -77,9 +124,10 @@ const rows = [...endpoints.values()]
     method: endpoint.method,
     path: endpoint.path,
     files: [...endpoint.files].sort(),
-    mock: mentioned(suites.mock, endpoint.path),
-    live: mentioned(suites.live, endpoint.path),
+    mock: mentioned(suites.mock, endpoint.path) || called('mock', endpoint.method, endpoint.path),
+    live: mentioned(suites.live, endpoint.path) || called('live', endpoint.method, endpoint.path),
     unit: mentioned(suites.unit, endpoint.path),
+    unreachable: UNREACHABLE.has(`${endpoint.method} ${endpoint.path}`),
   }))
   .sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
 
@@ -94,6 +142,9 @@ const summary = {
   e2eAny: count((r) => r.mock || r.live),
   unit: count((r) => r.unit),
   any: count((r) => r.mock || r.live || r.unit),
+  unreachable: count((r) => r.unreachable),
+  reachable: count((r) => !r.unreachable),
+  e2eReachable: count((r) => !r.unreachable && (r.mock || r.live)),
 }
 
 mkdirSync('test-reports', { recursive: true })
@@ -106,15 +157,19 @@ console.log(`  mentioned by a live e2e spec   : ${pct(summary.e2eLive)}`)
 console.log(`  mentioned by any e2e spec      : ${pct(summary.e2eAny)}`)
 console.log(`  mentioned by a unit/feature test: ${pct(summary.unit)}`)
 console.log(`  mentioned by any test          : ${pct(summary.any)}`)
+console.log(`  reachable from a screen        : ${summary.reachable} - of those, in an e2e spec: ${summary.e2eReachable} (${((summary.e2eReachable / summary.reachable) * 100).toFixed(0)}%)`)
 
 const line = (r) => `  ${r.method.padEnd(6)} ${r.path}   <- ${r.files[0].replace('src/', '')}`
 const untested = rows.filter((r) => !r.mock && !r.live && !r.unit)
-const noE2e = rows.filter((r) => !r.mock && !r.live && r.unit)
+const noE2e = rows.filter((r) => !r.mock && !r.live && r.unit && !r.unreachable)
+const unreachable = rows.filter((r) => r.unreachable)
 
 console.log(`\nIn no test at all (${untested.length}):`)
 untested.forEach((r) => console.log(line(r)))
 console.log(`\nUnit/feature-tested but in no e2e spec (${noE2e.length}):`)
 noE2e.forEach((r) => console.log(line(r)))
+console.log(`\nNo screen calls these, so only unit tests can reach them (${unreachable.length}):`)
+unreachable.forEach((r) => console.log(`${line(r)}${r.unit ? '' : '   [NO UNIT TEST]'}`))
 
 if (process.argv.includes('--all')) {
   console.log('\nEvery endpoint (M = mocked e2e, L = live e2e, U = unit/feature):')
