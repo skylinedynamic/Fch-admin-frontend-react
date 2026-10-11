@@ -1,0 +1,249 @@
+import { test, expect, type Page } from '@playwright/test'
+import {
+  mockApi, ok, paginated, failure, seedSession, expectCall, confirmDelete, cancelDelete,
+  selectRow, openActionsMenu, type ApiMock,
+} from './helpers'
+
+const COMPLETE = {
+  id: 51, contact_person: 'Lena Lead', company_name: 'Lead Works', email: 'lena@example.test', phone_number: '(555) 010-0001',
+  lead_type: 'Borrower', status: 'New', country: 'United States', state: 'Texas', city: 'Austin', convert_to: null,
+}
+const INCOMPLETE = {
+  id: 52, contact_person: 'Milo Missing', company_name: 'Half Data LLC', email: 'milo@example.test', phone_number: '',
+  lead_type: 'Borrower', status: 'New', country: '', state: '', city: '', convert_to: null,
+}
+const CONVERTED = {
+  id: 53, contact_person: 'Cora Converted', company_name: 'Done Deal', email: 'cora@example.test', phone_number: '(555) 010-0003',
+  lead_type: 'Partner', status: 'Won', country: 'United States', state: 'Texas', city: 'Austin', convert_to: 'Partner',
+}
+const LEADS = [COMPLETE, INCOMPLETE, CONVERTED]
+const LIST = '/common/leads/fetch-leads'
+
+async function openList(page: Page, permissions: string[]): Promise<ApiMock> {
+  await seedSession(page, { permissions })
+  const api = await mockApi(page, [{ method: 'POST', match: LIST, body: paginated(LEADS) }])
+  await page.goto('/leads')
+  await expect(page.getByText('Lena Lead')).toBeVisible()
+  return api
+}
+
+test.describe('Leads list', () => {
+  test('renders leads from the API', async ({ page }) => {
+    await openList(page, ['view leads'])
+    await expect(page.getByText('Half Data LLC')).toBeVisible()
+    await expect(page.getByText('cora@example.test')).toBeVisible()
+  })
+
+  test('a converted lead shows a badge instead of the convert button', async ({ page }) => {
+    await openList(page, ['view leads'])
+    const row = page.locator('tr', { hasText: 'Cora Converted' })
+    await expect(row.getByText('Converted as a Partner')).toBeVisible()
+    await expect(row.getByRole('button', { name: /convert to/i })).toHaveCount(0)
+  })
+
+  test('search is sent to the API', async ({ page }) => {
+    const api = await openList(page, ['view leads'])
+    await page.getByPlaceholder('Search here...').fill('milo')
+    await page.getByRole('button', { name: /filters/i }).click()
+    await expect.poll(() => JSON.stringify(api.find('POST', LIST).at(-1)?.json ?? {})).toContain('milo')
+  })
+
+  test('Clear empties the search box', async ({ page }) => {
+    await openList(page, ['view leads'])
+    await page.getByPlaceholder('Search here...').fill('milo')
+    await page.getByRole('button', { name: /clear/i }).click()
+    await expect(page.getByPlaceholder('Search here...')).toHaveValue('')
+  })
+
+  test('shows the empty state', async ({ page }) => {
+    await seedSession(page, { permissions: ['view leads'] })
+    await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([]) }])
+    await page.goto('/leads')
+    await expect(page.getByText('No leads found')).toBeVisible()
+  })
+
+  test('a failed list request is reported', async ({ page }) => {
+    await seedSession(page, { permissions: ['view leads'] })
+    await mockApi(page, [{ method: 'POST', match: LIST, body: failure('Leads are unavailable.') }])
+    await page.goto('/leads')
+    await expect(page.getByText('Leads are unavailable.').first()).toBeVisible()
+  })
+
+  test('clicking a row opens the lead', async ({ page }) => {
+    await openList(page, ['view leads'])
+    await page.getByText('lena@example.test').click()
+    await expect(page).toHaveURL(/\/leads\/51/)
+  })
+
+  test('Add Lead needs the create permission', async ({ page }) => {
+    await openList(page, ['view leads'])
+    await expect(page.getByRole('button', { name: /add lead/i })).toHaveCount(0)
+  })
+
+  test('Add Lead opens the create page', async ({ page }) => {
+    await openList(page, ['view leads', 'create leads'])
+    await page.getByRole('button', { name: /add lead/i }).click()
+    await expect(page).toHaveURL(/\/leads\/create/)
+  })
+})
+
+test.describe('Leads bulk delete', () => {
+  test('deletes each selected lead after confirmation', async ({ page }) => {
+    const api = await openList(page, ['view leads', 'delete leads'])
+    api.add({ method: 'DELETE', match: /\/common\/leads\/\d+$/, body: ok(null) })
+    await selectRow(page, 0)
+    await selectRow(page, 1)
+    await openActionsMenu(page)
+    await page.getByRole('button', { name: /delete selected/i }).click()
+    await confirmDelete(page)
+    await expect(page.getByText('Leads deleted successfully')).toBeVisible()
+    expect(api.find('DELETE', /\/common\/leads\/\d+$/).map((c) => c.path)).toEqual(['/common/leads/51', '/common/leads/52'])
+  })
+
+  test('closing the confirmation cancels the delete', async ({ page }) => {
+    const api = await openList(page, ['view leads', 'delete leads'])
+    await selectRow(page, 0)
+    await openActionsMenu(page)
+    await page.getByRole('button', { name: /delete selected/i }).click()
+    await cancelDelete(page)
+    expect(api.find('DELETE', /\/common\/leads\//)).toHaveLength(0)
+  })
+
+  test('a failed delete shows the server message', async ({ page }) => {
+    const api = await openList(page, ['view leads', 'delete leads'])
+    api.add({ method: 'DELETE', match: /\/common\/leads\/\d+$/, status: 409, body: failure('Lead has already been converted.') })
+    await selectRow(page, 0)
+    await openActionsMenu(page)
+    await page.getByRole('button', { name: /delete selected/i }).click()
+    await confirmDelete(page)
+    await expect(page.getByText('Lead has already been converted.').first()).toBeVisible()
+  })
+
+  test('row selection is hidden without the delete permission', async ({ page }) => {
+    await openList(page, ['view leads'])
+    await expect(page.locator('.p-datatable-tbody .p-checkbox')).toHaveCount(0)
+  })
+})
+
+test.describe('Lead conversion', () => {
+  test('a complete lead opens the convert dialog', async ({ page }) => {
+    await openList(page, ['view leads'])
+    await page.locator('tr', { hasText: 'Lena Lead' }).getByRole('button', { name: /convert to borrower/i }).click()
+    await expect(page.getByText('Convert Lead to Borrower')).toBeVisible()
+  })
+
+  test('a lead with missing contact info is asked to complete it first', async ({ page }) => {
+    const api = await openList(page, ['view leads'])
+    await page.locator('tr', { hasText: 'Milo Missing' }).getByRole('button', { name: /convert to borrower/i }).click()
+    await expect(page.getByRole('button', { name: 'Save & Continue' })).toBeVisible()
+    await expect(page.locator('.modal.show', { hasText: 'Convert Lead to Borrower' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await expect(page.getByRole('button', { name: 'Save & Continue' })).toBeHidden()
+    expect(api.find('POST', '/convert')).toHaveLength(0)
+  })
+
+  test('missing-info server errors keep the dialog open', async ({ page }) => {
+    const api = await openList(page, ['view leads'])
+    api.add({
+      method: 'POST', match: '/common/leads/52/contact-info', status: 422,
+      body: failure('Invalid', { phone_number: ['The phone number field is required.'] }),
+    })
+    await page.locator('tr', { hasText: 'Milo Missing' }).getByRole('button', { name: /convert to borrower/i }).click()
+    await page.getByRole('button', { name: 'Save & Continue' }).click()
+    await expectCall(api, 'POST', '/common/leads/52/contact-info')
+    await expect(page.getByRole('button', { name: 'Save & Continue' })).toBeVisible()
+  })
+})
+
+test.describe('Lead create', () => {
+  const CREATE = '/common/leads/details'
+
+  async function openCreate(page: Page) {
+    await seedSession(page, { permissions: ['view leads', 'create leads'] })
+    const api = await mockApi(page)
+    await page.goto('/leads/create')
+    await expect(page.locator('input[name="company_name"]')).toBeVisible()
+    return api
+  }
+
+  test('server validation errors are shown inline', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({
+      method: 'POST', match: CREATE, status: 422,
+      body: failure('Invalid', { company_name: ['The company name field is required.'] }),
+    })
+    await page.getByRole('button', { name: /save/i }).click()
+    await expect(page.getByText('The company name field is required.')).toBeVisible()
+    await expect(page.locator('input[name="company_name"]')).toHaveClass(/is-invalid/)
+    await expect(page).toHaveURL(/\/leads\/create/)
+  })
+
+  test('a general failure is toasted', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({ method: 'POST', match: CREATE, status: 500, body: failure('Lead pipeline is locked.') })
+    await page.getByRole('button', { name: /save/i }).click()
+    await expect(page.getByText('Lead pipeline is locked.').first()).toBeVisible()
+  })
+
+  test('lead details are posted and the contact-info tab opens for the new lead', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({ method: 'POST', match: CREATE, body: ok({ id: 77 }) })
+    api.add({ method: 'GET', match: '/common/leads/77', body: ok({ ...COMPLETE, id: 77, company_name: 'Fresh Lead Co' }) })
+    await page.locator('input[name="company_name"]').fill('Fresh Lead Co')
+    await page.locator('input[name="domain"]').fill('freshlead.test')
+    await page.getByRole('button', { name: /save/i }).click()
+    const call = await expectCall(api, 'POST', CREATE)
+    expect(call.json).toMatchObject({ company_name: 'Fresh Lead Co', domain: 'freshlead.test' })
+    await expect(page.getByText('Lead Details Completed successfully')).toBeVisible()
+    await expect(page).toHaveURL(/\/leads\/77\?tab=contactInfo/)
+  })
+
+  test('the create page is blocked without the create permission', async ({ page }) => {
+    await seedSession(page, { permissions: ['view leads'] })
+    await mockApi(page)
+    await page.goto('/leads/create')
+    await expect(page).toHaveURL(/access-denied/)
+  })
+})
+
+test.describe('Lead edit', () => {
+  async function openEdit(page: Page, lead: Record<string, unknown> = COMPLETE, permissions = ['view leads', 'update leads']) {
+    await seedSession(page, { permissions })
+    const api = await mockApi(page, [{ method: 'GET', match: /\/common\/leads\/\d+$/, body: ok(lead) }])
+    await page.goto(`/leads/${lead.id}`)
+    await expect(page.locator('input[name="company_name"]')).toHaveValue(String(lead.company_name))
+    return api
+  }
+
+  test('Update on the lead details tab posts to the details endpoint', async ({ page }) => {
+    const api = await openEdit(page)
+    api.add({ method: 'POST', match: '/common/leads/51/details', body: ok(COMPLETE) })
+    await page.locator('input[name="company_name"]').fill('Lead Works Renamed')
+    await page.getByRole('button', { name: /update/i }).click()
+    const call = await expectCall(api, 'POST', '/common/leads/51/details')
+    expect(call.json).toMatchObject({ company_name: 'Lead Works Renamed' })
+    await expect(page.getByText('Lead Details updated successfully')).toBeVisible()
+  })
+
+  test('Update on the contact info tab posts to the contact-info endpoint', async ({ page }) => {
+    const api = await openEdit(page)
+    api.add({ method: 'POST', match: '/common/leads/51/contact-info', body: ok(COMPLETE) })
+    await page.goto('/leads/51?tab=contactInfo')
+    await expect(page.locator('input[name="contact_person"]')).toHaveValue('Lena Lead')
+    await page.locator('input[name="contact_person"]').fill('Lena L. Lead')
+    await page.getByRole('button', { name: /update/i }).click()
+    const call = await expectCall(api, 'POST', '/common/leads/51/contact-info')
+    expect(call.json).toMatchObject({ contact_person: 'Lena L. Lead', email: 'lena@example.test' })
+    await expect(page.getByText('Lead contact information updated successfully')).toBeVisible()
+  })
+
+  test('a converted lead cannot be edited', async ({ page }) => {
+    await openEdit(page, CONVERTED)
+    await expect(page.locator('button.btn-primary.w-lg')).toHaveCount(0)
+  })
+
+  test('Update is hidden for view-only users', async ({ page }) => {
+    await openEdit(page, COMPLETE, ['view leads'])
+    await expect(page.locator('button.btn-primary.w-lg')).toHaveCount(0)
+  })
+})
