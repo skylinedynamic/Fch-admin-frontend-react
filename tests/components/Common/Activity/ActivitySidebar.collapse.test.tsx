@@ -37,6 +37,9 @@ const serve = (rows: unknown[]) =>
     )
   )
 
+// The component is plain JS, so tsc treats every prop it destructures as required.
+const props = { entityId: 1, entityType: 'Lead', partnerId: null, borrowerEmail: null, partnerEmail: null, hostEmail: null, isHost: true }
+
 const rowOf = async (title: string) =>
   (await screen.findByText(title)).closest('.accordion-button') as HTMLElement
 
@@ -46,7 +49,7 @@ describe('ActivitySidebar - entries start collapsed', () => {
   it('an entry with changed fields starts collapsed and offers "View changes"', async () => {
     serve([activity({ id: 1, event_label: 'Lead details changed', field_changes: { status: { label: 'Status', from: 'New', to: 'Won' } } })])
     const user = userEvent.setup()
-    renderWithProviders(<ActivitySidebar entityId={1} entityType="Lead" />)
+    renderWithProviders(<ActivitySidebar {...props} />)
 
     const row = await rowOf('Lead details changed')
     expect(row).toHaveAttribute('aria-expanded', 'false')
@@ -60,7 +63,7 @@ describe('ActivitySidebar - entries start collapsed', () => {
 
   it('an entry with signatures starts collapsed and offers "View signatures"', async () => {
     serve([activity({ id: 2, event_label: 'Application signed', signatures: { previous: null, new: { type: 'typed', name: 'Jane Doe' } } })])
-    renderWithProviders(<ActivitySidebar entityId={1} entityType="Lead" />)
+    renderWithProviders(<ActivitySidebar {...props} />)
 
     const row = await rowOf('Application signed')
     expect(row).toHaveAttribute('aria-expanded', 'false')
@@ -69,7 +72,7 @@ describe('ActivitySidebar - entries start collapsed', () => {
 
   it('a plain entry has no details link', async () => {
     serve([activity({ id: 3, event_label: 'Note added', description: 'Called the client' })])
-    renderWithProviders(<ActivitySidebar entityId={1} entityType="Lead" />)
+    renderWithProviders(<ActivitySidebar {...props} />)
 
     const row = await rowOf('Note added')
     expect(row).toHaveAttribute('aria-expanded', 'false')
