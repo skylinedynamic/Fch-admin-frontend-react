@@ -28,7 +28,8 @@ describeListPage(
     search: { placeholder: 'Search here...' },
     create: { permission: 'create leads', label: /add lead/i, role: 'button', target: '/leads/create' },
     selection: { permission: 'delete leads' },
-    bulkDelete: { permission: 'delete leads', method: 'delete', path: '/common/leads/51', successToast: 'Leads deleted successfully' },
+    // One call for every selected lead (master #15, docs/handoff/2026-10-13-one-lead-delete-api.md).
+    bulkDelete: { permission: 'delete leads', method: 'post', path: '/common/leads/multiple-delete', body: (ids) => ({ ids }), successToast: 'Leads deleted successfully' },
   },
   toast
 )

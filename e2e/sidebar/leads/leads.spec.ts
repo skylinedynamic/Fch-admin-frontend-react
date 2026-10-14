@@ -89,16 +89,17 @@ test.describe('Leads list', () => {
 })
 
 test.describe('Leads bulk delete', () => {
-  test('deletes each selected lead after confirmation', async ({ page }) => {
+  test('deletes the selected leads in one call after confirmation', async ({ page }) => {
     const api = await openList(page, ['view leads', 'delete leads'])
-    api.add({ method: 'DELETE', match: /\/common\/leads\/\d+$/, body: ok(null) })
+    api.add({ method: 'POST', match: '/common/leads/multiple-delete', body: ok(null) })
     await selectRow(page, 0)
     await selectRow(page, 1)
     await openActionsMenu(page)
     await page.getByRole('button', { name: /delete selected/i }).click()
     await confirmDelete(page)
     await expect(page.getByText('Leads deleted successfully')).toBeVisible()
-    expect(api.find('DELETE', /\/common\/leads\/\d+$/).map((c) => c.path)).toEqual(['/common/leads/51', '/common/leads/52'])
+    // One call for every selected lead (docs/handoff/2026-10-13-one-lead-delete-api.md).
+    expect(api.find('POST', '/common/leads/multiple-delete').map((c) => c.json)).toEqual([{ ids: [51, 52] }])
   })
 
   test('closing the confirmation cancels the delete', async ({ page }) => {
@@ -107,12 +108,12 @@ test.describe('Leads bulk delete', () => {
     await openActionsMenu(page)
     await page.getByRole('button', { name: /delete selected/i }).click()
     await cancelDelete(page)
-    expect(api.find('DELETE', /\/common\/leads\//)).toHaveLength(0)
+    expect(api.find('POST', '/common/leads/multiple-delete')).toHaveLength(0)
   })
 
   test('a failed delete shows the server message', async ({ page }) => {
     const api = await openList(page, ['view leads', 'delete leads'])
-    api.add({ method: 'DELETE', match: /\/common\/leads\/\d+$/, status: 409, body: failure('Lead has already been converted.') })
+    api.add({ method: 'POST', match: '/common/leads/multiple-delete', status: 409, body: failure('Lead has already been converted.') })
     await selectRow(page, 0)
     await openActionsMenu(page)
     await page.getByRole('button', { name: /delete selected/i }).click()

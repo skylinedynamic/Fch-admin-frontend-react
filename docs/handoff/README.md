@@ -23,6 +23,9 @@ Issues found by E2E runs, with a status each: [../e2e/ISSUES.md](../e2e/ISSUES.m
 | File | Title |
 |---|---|
 | [2026-10-13-summary-pending-and-test-data.md](2026-10-13-summary-pending-and-test-data.md) | Summary, pending items and test data |
+| [2026-10-13-one-lead-delete-api.md](2026-10-13-one-lead-delete-api.md) | Leads — one lead delete API |
+| [2026-10-13-remove-default-payment-method.md](2026-10-13-remove-default-payment-method.md) | My Subscription — remove the default payment method |
+| [2026-10-13-application-documents-open-the-borrowers-folder.md](2026-10-13-application-documents-open-the-borrowers-folder.md) | Application documents open the borrower’s folder |
 | [2026-10-13-resources-create-edit-and-manage-screens-need-their-own-permission.md](2026-10-13-resources-create-edit-and-manage-screens-need-their-own-permission.md) | Resources — create, edit and manage screens need their own permission |
 | [2026-10-13-real-database-create-for-the-remaining-host-modules.md](2026-10-13-real-database-create-for-the-remaining-host-modules.md) | Real-database create for the remaining host modules |
 | [2026-10-13-api-message-files-that-did-not-exist.md](2026-10-13-api-message-files-that-did-not-exist.md) | API — message files that did not exist |
@@ -60,3 +63,31 @@ Issues found by E2E runs, with a status each: [../e2e/ISSUES.md](../e2e/ISSUES.m
 - **Summary file:** each date also has `YYYY-MM-DD-summary-pending-and-test-data.md` — the list of that date's files, where things stand, what is still pending, the files changed, the test data left behind and how to rerun.
 - Do not edit an older date's file to record new work. If an item from an earlier date is finished later, record it in a file for the new date and reference the old entry by date and number.
 - Add every new file to the index above.
+
+## Template
+
+```markdown
+# <Title>
+
+**Date:** YYYY-MM-DD
+**Branch:** <branch>
+**Author:** <name>
+
+## Problem
+What was wrong or missing, and how it showed up (which screen, who was affected, what they saw).
+
+## Solution
+What was changed and why this approach. Note any behaviour change a user will notice, and any API change in fch-api it depends on.
+
+## Files changed
+- `src/path/to/file.tsx` — one line on what changed
+
+## Tests
+- Added: `tests/.../thing.test.tsx` — what it pins
+- Updated: `tests/.../other.test.tsx` — what changed in the expectation
+- E2E: `e2e/...spec.ts` — added/updated, or why not needed
+- Run: `npm test` / `npm run test:e2e` / `npm run typecheck` — result
+
+## Open / follow-up
+Anything not done, decisions waiting, and actions for someone outside the code.
+```
