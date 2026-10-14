@@ -15,6 +15,8 @@ export default function Dashboard() {
   const currentUser = useAuthStore((state) => state.user);
   const userSubscription = useAuthStore((state) => state.userSubscription);
   const isHost = currentUser?.is_host == 1;
+  // The login response carries `name` only; `first_name` is kept for sessions that have it.
+  const firstName = currentUser?.first_name || currentUser?.name?.trim().split(' ')[0] || 'User';
 
   const isFreeTrial = !!userSubscription?.is_free_trail;
   const trialEndDate = userSubscription?.free_trail_end_date;
@@ -84,7 +86,7 @@ export default function Dashboard() {
             <div className="col-12">
               <div className="d-flex align-items-lg-center flex-lg-row flex-column">
                 <div className="flex-grow-1">
-                  <h4 className="fs-16 mb-1">Welcome, {currentUser?.first_name || 'User'}!</h4>
+                  <h4 className="fs-16 mb-1">Welcome, {firstName}!</h4>
                   <p className="text-muted mb-0">Here's what's happening with your business.</p>
                 </div>
                 <div className="mt-3 mt-lg-0">

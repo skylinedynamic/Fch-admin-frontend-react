@@ -1,0 +1,90 @@
+import { afterEach, describe, expect, it } from 'vitest'
+import { server } from '../../mocks/server'
+import { queryKeys } from '../../../src/lib/query/queryKeys'
+import {
+  usePartners,
+  usePartner,
+  useCreatePartner,
+  useUpdatePartner,
+  useDeletePartner,
+  useSubscriptionStats,
+} from '../../../src/modules/partner/queries'
+import { expectIdle, runMutation, runQuery, stub } from '../queryHarness'
+
+afterEach(() => server.resetHandlers())
+
+describe('partner queries', () => {
+  it('usePartners fetches the list', async () => {
+    const seen = stub('post', '/admin/partners/fetch-partners', { status: true, data: [{ id: 2, company_name: 'Acme' }], meta: { total: 1 } })
+
+    const { result, queryClient } = await runQuery(() => usePartners())
+
+    expect(seen.calls).toBe(1)
+    expect(result.current.isSuccess).toBe(true)
+    expect(queryClient.getQueryData(queryKeys.partner.list())).toBeDefined()
+  })
+
+  it('usePartner does not fetch when disabled', () => {
+    expectIdle(() => usePartner(1, false))
+  })
+
+  it('usePartner fetches one record under its own key', async () => {
+    stub('get', '/admin/partners-details/2', { status: true, data: { id: 2, company_name: 'Acme' } })
+
+    const { result, queryClient } = await runQuery(() => usePartner(2))
+
+    expect(result.current.isSuccess).toBe(true)
+    expect(queryClient.getQueryData(queryKeys.partner.detail(2))).toBeDefined()
+  })
+})
+
+describe('partner mutations', () => {
+  it('useCreatePartner sends the payload and refreshes the list', async () => {
+    const seen = stub('post', '/admin/partners', { status: true, data: { id: 1 } })
+    const payload = { full_name: 'Peter Partner', email: 'peter@x.com' }
+
+    const { invalidated } = await runMutation(() => useCreatePartner(), payload as never)
+
+    expect(seen.bodies[0]).toEqual(payload)
+    expect(invalidated).toEqual([queryKeys.partner.list()])
+  })
+
+  it('useUpdatePartner sends the change and refreshes that record and the list', async () => {
+    const seen = stub('put', '/admin/partners/2', { status: true, data: { id: 2 } })
+    const payload = { company_name: 'Acme Renamed' }
+
+    const { invalidated } = await runMutation(() => useUpdatePartner(), { id: 2, payload } as never)
+
+    expect(seen.bodies[0]).toEqual(payload)
+    expect(invalidated).toEqual([queryKeys.partner.detail(2), queryKeys.partner.list()])
+  })
+
+  it('useDeletePartner deletes and refreshes the list', async () => {
+    const seen = stub('delete', '/admin/partners/2', { status: true, message: 'deleted' })
+
+    const { invalidated } = await runMutation(() => useDeletePartner(), 2 as never)
+
+    expect(seen.calls).toBe(1)
+    expect(invalidated).toEqual([queryKeys.partner.list()])
+  })
+
+  it('a failed useCreatePartner leaves the cache alone', async () => {
+    stub('post', '/admin/partners', { status: false, message: 'Invalid' }, 422)
+
+    const { invalidated, error } = await runMutation(() => useCreatePartner(), {} as never)
+
+    expect(error).toBeTruthy()
+    expect(invalidated).toEqual([])
+  })
+})
+
+describe('useSubscriptionStats', () => {
+  it('asks for a single row, since only the statistics block is wanted', async () => {
+    const seen = stub('post', '/common/subscriptions/fetch-all', { status: true, data: [], stats: { active: 3 } })
+
+    const { result } = await runQuery(() => useSubscriptionStats())
+
+    expect(seen.bodies[0]).toEqual({ per_page: 1 })
+    expect(result.current.isSuccess).toBe(true)
+  })
+})
