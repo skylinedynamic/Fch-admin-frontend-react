@@ -160,7 +160,9 @@ describe('SEO hooks', () => {
     const { invalidated } = await runMutation(() => useSaveSeoSetting(), { id: undefined, data: form({ meta_title: 'Home' }) })
 
     expect(store.calls).toBe(1)
-    expect(invalidated).toEqual([['seo-settings']])
+    // The list and the single-page cache both refresh, so reopening the edit
+    // page shows what was just saved rather than the cached copy.
+    expect(invalidated).toEqual([['seo-settings'], ['seo-setting']])
   })
 
   it('useSaveSeoSetting posts to the id when editing', async () => {
