@@ -584,20 +584,18 @@ const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess, onHi
   const handleConfirmPayment = async () => {
     setSubmitting(true);
     try {
+      // A refusal from the API has to stop here: this used to be caught and
+      // logged, so a rejected payment still showed the confirmation receipt.
       if (invoice?.id && selectedProvider?.id) {
-        try {
-          await processUnifiedPayment({
-            payment_token: JSON.stringify({
-              gateway: selectedProvider?.name || 'manual',
-              mode: 'manual',
-              transaction_number: transactionNumber ? transactionNumber.trim() : null,
-            }),
-            invoice_id: invoice.id,
-            payment_method_id: selectedProvider.id,
-          });
-        } catch (apiErr) {
-          console.log('Manual payment submission fallback logged');
-        }
+        await processUnifiedPayment({
+          payment_token: JSON.stringify({
+            gateway: selectedProvider?.name || 'manual',
+            mode: 'manual',
+            transaction_number: transactionNumber ? transactionNumber.trim() : null,
+          }),
+          invoice_id: invoice.id,
+          payment_method_id: selectedProvider.id,
+        });
       }
       setSubmitted(true);
       if (onSubmittedChange) onSubmittedChange(true);
@@ -613,7 +611,7 @@ const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess, onHi
       }
     } catch (err) {
       console.error('Error confirming payment:', err);
-      toast.error("Failed to submit payment confirmation");
+      toast.error(err?.response?.data?.message || "Failed to submit payment confirmation");
     } finally {
       setSubmitting(false);
     }

@@ -30,7 +30,7 @@ Same foundation as `client-fch` (shared conventions, separate codebase) — `src
 - Status/role/permission strings and dropdown options belong in `src/config/` or the module's `types.ts`, not repeated as inline literals.
 
 ## TDD (strict)
-Test runner: Vitest + React Testing Library + MSW for unit/integration (`vitest.config.ts`, tests under `tests/`, harness in `tests/setup.ts` / `tests/test-utils.tsx` / `tests/mocks/`), Playwright for E2E (`playwright.config.ts`, specs under `e2e/`).
+Test runner: Vitest + React Testing Library + MSW for unit/integration (`vitest.config.ts`, tests under `tests/`, harness in `tests/setup.ts` / `tests/test-utils.tsx` / `tests/mocks/`), Playwright for E2E (`playwright.config.ts`, specs under `e2e/`, see "E2E tests" below). For every change:
 1. Write a failing test for the behavior first.
 2. Write the minimum code to pass it.
 3. Refactor with the test green.
@@ -41,6 +41,45 @@ Cover the level the change actually needs, not just one:
 - **Integration** — a component rendered with its real children/store/query client (no mocking the thing under test).
 - **Functional** — an actual admin user flow end-to-end (form submit → API call → UI result) via Playwright.
 
+## Every change updates the tests (mandatory)
+For **any** change — a new feature, a change to an existing feature, or a bug fix:
+
+1. **Find the existing tests first.** Search `tests/` (Vitest unit and integration/feature tests) and `e2e/` (Playwright specs) for the module, page, component and flow you are touching. Update every test whose expectation the change affects — never leave a test asserting the old behaviour, and never delete, skip or weaken a test to make it pass.
+2. **Cover each level the change touches**, not just one:
+   - **Unit** — new/changed hook, util, store or `services.ts` mapping logic.
+   - **Integration / feature** — new/changed component or page, rendered with its real children, store and query client, HTTP mocked with MSW against the real `apiClient`.
+   - **Functional (E2E)** — new/changed user flow (form submit → API call → UI result) in Playwright.
+3. **Bug fixes are test-first:** write the test expecting the *correct* behaviour, watch it fail, then fix.
+4. **New features:** failing test → minimum code → refactor with the test green.
+5. Run the affected suites (and `npm run typecheck`) before finishing, and say so — with the failure output if anything fails.
+
+When the change follows an API change in `fch-api`, update the MSW handlers and fixtures to the API's new response shape in the same change.
+
+## E2E tests
+One Playwright tree, `e2e/`, laid out like the sibling `fch-borrower-react` suite — **one folder per sidebar menu item**:
+- `e2e/sidebar/<menu>/` — every screen reachable from the sidebar, in the menu's own folder (`dashboard`, `partners`, `leads`, `clients`, `capital-access`, `lenders`, `funding-sequence`, `commissions`, `invoices`, `payments`, `subscriptions`, `upcoming-billings`, `appointments`, `task-reminders`, `notification`, `resources`, `employees`, `users`, `payment-method`, `plan-fee`, `roles-permissions`, `settings`); a submenu item goes in `<group>/<item>/` (`intake-review/{pre-qualification,funding-request,funding-application,change-requests,credit-profile-requests}`, `credit-builder/{manage-tier,verification-center,credit-accounts}`, `cms/{site-settings,blogs,seo-settings}`, `embedded-form/{configuration,loan-applications}`). Detail/create/edit pages opened from a menu screen live in that menu's folder. `e2e/sidebar/menu/` covers the sidebar itself and the permission matrix.
+- `e2e/topbar/<item>/` — header items (`profile`, `contacts`, `my-subscription`, `notification-bell`, `logout`, `menu`); `e2e/auth/` — login / forgot / reset (guest).
+- `e2e/support/` — `helpers.ts` (mock API), `routes.ts` (guard table), `live/` (real-API env + fixtures); `e2e/fixtures/` — persona permission snapshots.
+
+Two kinds of spec, side by side in the same folder:
+- `<name>.spec.ts` — **mocked**: every API call is intercepted by `mockApi()`, so validation, permissions and error cases are cheap to force. `npm run test:e2e` (parallel, ~10 min for the full suite).
+- `<name>.live.spec.ts` — **real `fch-backend-api` + local database**, signed in once as the host by `e2e/auth.setup.ts` (session in git-ignored `e2e/.auth/`). Opens each screen by clicking the sidebar, like a user, and fails on any 5xx or uncaught page error. `npm run test:e2e:live` (one worker; needs the API on `E2E_API_URL` and `E2E_HOST_EMAIL`/`E2E_HOST_PASSWORD` in `.env.e2e`). Live specs are read-only unless named `*-submit`/`*-save`/`*-create`, which must undo their change or be safe to repeat.
+
+E2E follows the feature (mandatory) — a feature change without its E2E update is not finished:
+- **New screen, route, form, button or permission** — add its specs in the menu's folder (mocked, and a live check for a new screen) and, where it has a route, an entry in `e2e/support/routes.ts` so the access matrix covers it.
+- **Changed behavior** (validation rule, required field, permission, API payload or response shape, label the tests match on, redirect) — update every spec that asserts the old behavior. Search `e2e/` for the route, endpoint and visible text you touched.
+- **Removed feature** — remove its specs and its `e2e/support/routes.ts` entry.
+- **Fixed bug that a spec marks as a known bug** (`test.fail()`) — remove the marker and its comment in the same change.
+- **API change in `fch-backend-api`** that this app consumes — update the mocked responses to the real shape; a mocked spec must not accept data the real API never sends (e.g. the login user has `name`, not `first_name`).
+- Never weaken, skip or delete a test to get a pass. If a test is wrong, fix the test and say why.
+- Run the affected spec files before handing a change over, and both suites before merging into `stage`.
+- **Issues found by E2E runs** are tracked in `docs/e2e/ISSUES.md` with a status per issue (Fixed / Open / Needs decision / Won't fix) — add new findings there and update the status when fixed.
+
+## Handoff notes (required)
+Every new feature, and every change to an existing feature (including bug fixes), ends with a handoff file in `docs/handoff/`. Write it in the same task as the change — not later, and not only when asked.
+- **File name**: `docs/handoff/YYYY-MM-DD-<full-title-in-kebab-case>.md` — the date the work was done plus its title, e.g. `2026-10-14-e2e-sidebar-menu-folders-and-real-api-suite.md`. No date folders; several features on one date are several files with the same date. If one already exists for the same date and title, update it.
+- **Contents**: `# YYYY-MM-DD — Title`, then an "At a glance" table of **the problem (what was wrong or missing, and how it showed up), the solution, and what was changed (files)**; then dated, titled entries with Problem / Solution / Files / Tests added or updated / Verified / Status; then what is still pending. A test run that found no defect still records the issues met during the run.
+- Add the file to the index in `docs/handoff/README.md`.
 ### Every change updates the tests (mandatory)
 For **any** change — a new feature, a change to an existing feature, or a bug fix:
 

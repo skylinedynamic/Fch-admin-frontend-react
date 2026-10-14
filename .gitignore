@@ -6,3 +6,9 @@ templete/
 playwright-report/
 test-results/
 coverage/
+
+# Generated verification reports
+test-reports/
+
+# Playwright live session (auth.setup.ts)
+e2e/.auth/
