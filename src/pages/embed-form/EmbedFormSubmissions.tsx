@@ -94,6 +94,7 @@ export default function EmbedFormSubmissions() {
     // Free trial conversion modal state
     const [targetSubmission, setTargetSubmission] = useState<any>(null);
     const [showConvertModal, setShowConvertModal] = useState(false);
+    const [existingBorrower, setExistingBorrower] = useState<any>(null);
     const [conversionLoading, setConversionLoading] = useState(false);
 
     // Statistics state
@@ -145,11 +146,15 @@ export default function EmbedFormSubmissions() {
 
             if (res.status) {
                 const data = res.data?.data || res.data || [];
-                const total = res.data?.meta?.total ?? res.data?.total ?? data.length;
+                // The API answers { status, message, data: [...], meta }, so meta
+                // sits beside data, not inside it. Reading it from data left the
+                // total at the size of the current page - the cards and the
+                // paginator both stopped at ten.
+                const total = res.meta?.total ?? res.data?.meta?.total ?? res.data?.total ?? data.length;
                 setSubmissions(data);
                 setTotalRecords(total);
 
-                const backendStats = res.data?.meta?.stats || res.data?.stats;
+                const backendStats = res.meta?.stats || res.data?.meta?.stats || res.data?.stats;
                 if (backendStats) {
                     setStats(backendStats);
                 } else {
@@ -240,12 +245,19 @@ export default function EmbedFormSubmissions() {
                 }));
 
                 setShowConvertModal(false);
+                setExistingBorrower(null);
                 toast.success(res?.message || 'Submission converted to a Free Plan Borrower!');
             } else {
                 toast.error(res?.message || 'Failed to convert to free plan borrower.');
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || err?.message || 'Failed to convert to free plan borrower.');
+            const body = err?.response?.data;
+            if (err?.response?.status === 409 && body?.code === 'existing_borrower_confirmation_required') {
+                // Show who already exists and let the user confirm before anything is created.
+                setExistingBorrower(body?.data?.existing_borrower ?? {});
+                return;
+            }
+            toast.error(body?.message || err?.message || 'Failed to convert to free plan borrower.');
         } finally {
             setConversionLoading(false);
         }
@@ -606,10 +618,11 @@ export default function EmbedFormSubmissions() {
                 {/* Free Trial Borrower Conversion Modal */}
                 <EmbedFormConvertModal
                     show={showConvertModal}
-                    onHide={() => setShowConvertModal(false)}
+                    onHide={() => { setShowConvertModal(false); setExistingBorrower(null); }}
                     onConfirm={handleConvertConfirm}
                     submission={targetSubmission}
                     loading={conversionLoading}
+                    existingBorrower={existingBorrower}
                 />
 
             </div>

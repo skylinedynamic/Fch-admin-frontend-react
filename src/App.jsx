@@ -282,7 +282,7 @@ export default function App() {
               </Route>
             </Route>
             {/* Settings Route */}
-            <Route element={<PermissionRoute permission={["update payment settings", "update partner agreement settings", "update borrower agreement settings"]} />}>
+            <Route element={<PermissionRoute permission={["update payment settings", "update partner agreement settings", "update borrower agreement settings", "update email configuration settings", "update sms configuration settings", "update branding settings", "update domain configuration settings", "update microbilt settings"]} />}>
               <Route path="settings" element={<Settings />} />
             </Route>
 
@@ -411,9 +411,18 @@ export default function App() {
             <Route element={<PermissionRoute permission="view resources" />}>
               <Route path="resources" element={<Resource />} />
               <Route path="resources/service/:id" element={<ResourceServiceDetail />} />
-              <Route path="resources/create" element={<ResourceForm />} />
-              <Route path="resources/edit/:id" element={<ResourceForm />} />
-              <Route path="manage-resources" element={<ManageResources />} />
+              {/* Managing resources is a host task: the API only accepts these
+                  calls from an admin, and only the host holds these permissions.
+                  Viewing alone must not open a form that cannot be saved. */}
+              <Route element={<PermissionRoute permission="create resources" />}>
+                <Route path="resources/create" element={<ResourceForm />} />
+              </Route>
+              <Route element={<PermissionRoute permission="update resources" />}>
+                <Route path="resources/edit/:id" element={<ResourceForm />} />
+              </Route>
+              <Route element={<PermissionRoute permission={["create resources", "update resources", "delete resources"]} />}>
+                <Route path="manage-resources" element={<ManageResources />} />
+              </Route>
             </Route>
 
 

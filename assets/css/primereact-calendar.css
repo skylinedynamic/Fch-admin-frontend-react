@@ -1,0 +1,432 @@
+/*
+ * PrimeReact <Calendar> panel in the borrower portal's calendar design.
+ *
+ * The app's Flatpickr pickers are themed in custom.min.css; this gives the
+ * PrimeReact ones (filters, appointments, reminders, profile forms...) the
+ * same look: primary-colour header and weekday row, the month and year
+ * buttons drawn like the Flatpickr month/year dropdown triggers, the month and
+ * year grids with the same hover and selected colours as those dropdowns'
+ * lists, and the same day cells.
+ *
+ * Only the look changes. PrimeReact still behaves as it always has: clicking
+ * the month or year opens its month/year grid.
+ *
+ * The borrower (client-fch) and partner (Fch-admin-frontend-react) portals
+ * carry identical copies of this file; keep the two in sync. Must load after
+ * the app's other stylesheets (see src/main.jsx).
+ */
+
+/* ── Panel ─────────────────────────────────────────────────────────────── */
+/* Built like the Flatpickr calendar: a transparent box carrying the 14px
+   outline and shadow, with a header and body inside rounded to 5px. Overflow
+   stays visible so an open month/year list is never clipped. */
+.p-datepicker {
+  background: transparent !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  /* The app's own body font, set explicitly. Inheriting it is not enough: a
+     calendar opened with appendTo="self" sits inside a PrimeReact field, which
+     takes the PrimeReact theme's font - and that changes once a page loading a
+     second theme (lara-light-indigo) has been visited. */
+  font-family: var(--vz-body-font-family) !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+/* The Flatpickr body: white with square corners and a faint bottom line, and
+   inside it a 1px frame with 5px corners round the day grid - starting below
+   the weekday row, so it is drawn as an overlay rather than a border. */
+.p-datepicker .p-datepicker-calendar-container,
+.p-datepicker .p-monthpicker,
+.p-datepicker .p-yearpicker {
+  background: #fff !important;
+  border-bottom: 1px solid rgba(72, 72, 72, 0.2) !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.p-datepicker .p-datepicker-calendar-container::after,
+.p-datepicker .p-monthpicker::after,
+.p-datepicker .p-yearpicker::after {
+  border: 1px solid rgb(206, 212, 218);
+  border-radius: 0 0 5px 5px;
+  border-top: none;
+  bottom: 0;
+  content: '';
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* Below the 38px weekday row. */
+.p-datepicker .p-datepicker-calendar-container::after {
+  top: 38px;
+}
+
+/* With a footer below, the body's corners are square and the footer's round. */
+.p-datepicker:has(.p-datepicker-buttonbar) .p-datepicker-calendar-container {
+  border-radius: 0 !important;
+}
+
+/* Exactly the Flatpickr popup's width. PrimeReact stretches the popup to the
+   input with an inline min-width, which made it span a whole wide form field;
+   !important outranks that inline style. */
+.p-datepicker:not(.p-datepicker-timeonly) {
+  max-width: calc(100vw - 16px) !important;
+  min-width: 0 !important;
+  width: 308px !important;
+}
+
+.p-datepicker .p-datepicker-group-container,
+.p-datepicker .p-datepicker-group {
+  padding: 0 !important;
+}
+
+/* ── Header: month/year buttons and arrows ─────────────────────────────── */
+.p-datepicker .p-datepicker-header {
+  align-items: center !important;
+  background: var(--primary-color) !important;
+  border: none !important;
+  border-radius: 5px 5px 0 0 !important;
+  color: #fff !important;
+  height: 76px !important;
+  margin: 0 !important;
+  padding: 12px 8px !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-title {
+  align-items: center !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  line-height: normal !important;
+  margin: 0 8px !important;
+  min-width: 0 !important;
+}
+
+/* Month/year dropdowns (components/Calendar/CalendarNavDropdown). The button
+   and list are the Flatpickr ones (.fp-yd-* in custom.min.css); this only
+   sizes each half of the title and hangs the list under its button. */
+.p-datepicker .p-datepicker-title .p-cal-nav {
+  display: flex !important;
+  flex: 1 1 50% !important;
+  max-width: 50% !important;
+  min-width: 0 !important;
+  position: relative !important;
+}
+
+/* The list's text settings are what the Flatpickr calendar hands down to its
+   own list; here it would otherwise inherit the header's bold white title. */
+.p-datepicker .p-datepicker-title .p-cal-nav .fp-yd-list {
+  color: #212529;
+  font-size: 14px;
+  font-weight: 400;
+  left: 0;
+  line-height: 24px;
+  text-align: center;
+  top: calc(100% + 2px);
+  width: 100%;
+}
+
+/* Month-only/year-only pickers keep PrimeReact's title buttons, drawn like
+   the Flatpickr month/year triggers (.fp-yd-trigger). */
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-month,
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-year {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: var(--primary-color) url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 8px center !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  flex: 1 1 50% !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  height: 36px !important;
+  line-height: 34px !important;
+  margin: 0 !important;
+  max-width: 50% !important;
+  min-width: 0 !important;
+  outline: none !important;
+  padding: 0 24px 0 10px !important;
+  text-align: left !important;
+  transition: all 0.15s ease !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-month:enabled:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-year:enabled:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-month:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-year:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #fff !important;
+  filter: brightness(1.1) !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-month:focus,
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-year:focus {
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: none !important;
+}
+
+/* The decade label shown while the year grid is open. */
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-decade {
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* Previous/next arrows: boxes the size of the month and year fields, on the
+   same line - the Flatpickr calendar's arrows match (flatpickr-fix.css). */
+.p-datepicker .p-datepicker-header .p-datepicker-prev,
+.p-datepicker .p-datepicker-header .p-datepicker-next {
+  align-items: center !important;
+  background: var(--primary-color) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  color: #fff !important;
+  display: flex !important;
+  flex: 0 0 36px !important;
+  height: 36px !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transition: all 0.15s ease !important;
+  width: 36px !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-prev:enabled:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-next:enabled:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-prev:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-next:hover {
+  background: var(--primary-color) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #fff !important;
+  filter: brightness(1.1) !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-prev:focus,
+.p-datepicker .p-datepicker-header .p-datepicker-next:focus {
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: none !important;
+}
+
+/* At minDate/maxDate: dimmed in place, as in the Flatpickr calendar. */
+.p-datepicker .p-datepicker-header .p-datepicker-prev:disabled,
+.p-datepicker .p-datepicker-header .p-datepicker-next:disabled {
+  filter: none !important;
+  opacity: 0.4 !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-prev .p-icon,
+.p-datepicker .p-datepicker-header .p-datepicker-next .p-icon {
+  color: #fff !important;
+  fill: #fff !important;
+  height: 10px !important;
+  width: 10px !important;
+}
+
+/* ── Day grid ──────────────────────────────────────────────────────────── */
+.p-datepicker table {
+  border-collapse: collapse !important;
+  font-size: 13px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.p-datepicker table thead tr th {
+  background: var(--primary-color) !important;
+  border: none !important;
+  border-bottom: 1px solid rgb(233, 235, 236) !important;
+  box-sizing: border-box !important;
+  height: 38px !important;
+  padding: 0 !important;
+  text-align: center !important;
+}
+
+.p-datepicker table thead tr th span {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase !important;
+}
+
+.p-datepicker table tbody tr:first-child td {
+  padding-top: 8px !important;
+}
+
+/* Space under the last row of days. On the body rather than on the last
+   row's cells, so nothing that restyles table rows can take it away. */
+.p-datepicker .p-datepicker-calendar-container {
+  padding-bottom: 8px !important;
+}
+
+.p-datepicker table tbody td {
+  background: transparent !important;
+  padding: 2px 0 !important;
+}
+
+/* 8px either side of the grid, so the first and last columns do not touch
+   the frame - on the weekday row too, so its labels stay over their days. */
+.p-datepicker table thead tr th:first-child,
+.p-datepicker table tbody td:first-child {
+  padding-left: 8px !important;
+}
+
+.p-datepicker table thead tr th:last-child,
+.p-datepicker table tbody td:last-child {
+  padding-right: 8px !important;
+}
+
+.p-datepicker table tbody td > span {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  color: #3c3c3c !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  margin: 0 auto !important;
+  transform: none !important;
+  transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  width: 40px !important;
+}
+
+.p-datepicker table tbody td > span:not(.p-highlight):not(.p-disabled):hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: var(--primary-color) !important;
+  transform: translateY(-1px) !important;
+}
+
+.p-datepicker table tbody td > span:focus {
+  box-shadow: none !important;
+}
+
+.p-datepicker table tbody td.p-datepicker-other-month > span {
+  color: #c5c5c5 !important;
+  opacity: 1 !important;
+}
+
+.p-datepicker table tbody td.p-datepicker-today > span,
+.p-datepicker table tbody td > span.p-highlight,
+.p-datepicker table tbody td > span.p-highlight:hover {
+  background: var(--primary-color) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+.p-datepicker table tbody td > span.p-highlight {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* No leftover marker from older themes on today's cell. */
+.p-datepicker table tbody td.p-datepicker-today > span::after {
+  display: none !important;
+}
+
+.p-datepicker table tbody td > span.p-disabled,
+.p-datepicker table tbody td > span.p-disabled:hover {
+  background: transparent !important;
+  color: rgb(72 72 72 / 41%) !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+/* Neighbouring-month days inside minDate/maxDate (marked by CalendarWrapper):
+   Flatpickr's light grey, not the disabled grey PrimeReact would give them. */
+.p-datepicker table tbody td.p-datepicker-other-month > span.p-disabled:has(> .p-cal-other-in-range) {
+  color: #c5c5c5 !important;
+}
+
+/* The marker itself is invisible. Without this the partner portal's
+   `.p-disabled *` rule paints it as a grey box. */
+.p-datepicker table tbody td > span > .p-cal-other-in-range {
+  background: transparent !important;
+}
+
+/* Range selection: the days between the ends. */
+.p-datepicker table tbody td.p-highlight,
+.p-datepicker table tbody td.p-datepicker-range-start,
+.p-datepicker table tbody td.p-datepicker-range-end {
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* ── Month and year grids: the dropdown lists' hover and selected colours ── */
+.p-datepicker .p-monthpicker,
+.p-datepicker .p-yearpicker {
+  margin: 0 !important;
+  padding: 8px !important;
+}
+
+.p-datepicker .p-monthpicker .p-monthpicker-month,
+.p-datepicker .p-yearpicker .p-yearpicker-year {
+  background: transparent !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  color: #344054 !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  padding: 8px 4px !important;
+  transition: background 0.1s ease !important;
+}
+
+.p-datepicker .p-monthpicker .p-monthpicker-month:not(.p-disabled):not(.p-highlight):hover,
+.p-datepicker .p-yearpicker .p-yearpicker-year:not(.p-disabled):not(.p-highlight):hover {
+  background: rgba(var(--bs-primary-rgb), 0.08) !important;
+  color: #344054 !important;
+}
+
+.p-datepicker .p-monthpicker .p-monthpicker-month.p-highlight,
+.p-datepicker .p-yearpicker .p-yearpicker-year.p-highlight {
+  background: var(--primary-color) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+.p-datepicker .p-monthpicker .p-monthpicker-month.p-disabled,
+.p-datepicker .p-yearpicker .p-yearpicker-year.p-disabled {
+  color: rgb(72 72 72 / 41%) !important;
+  cursor: not-allowed !important;
+}
+
+/* ── Footer buttons (Today / Clear), where a calendar shows them ───────── */
+.p-datepicker .p-datepicker-buttonbar {
+  background: #fff !important;
+  border-radius: 0 0 5px 5px !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+  padding: 8px 12px !important;
+}
+
+.p-datepicker .p-datepicker-buttonbar .p-button {
+  color: var(--primary-color) !important;
+}
+
+/* ── Footer (footerTemplate, e.g. the TimeInputs time row) and timepicker ─ */
+/* The panel itself is transparent (see Panel above), so anything below the
+   day grid needs its own white background - otherwise whatever is behind the
+   popup (a text editor, a label) shows through it. */
+.p-datepicker .p-datepicker-footer,
+.p-datepicker .p-timepicker {
+  background: #fff !important;
+  border-radius: 0 0 5px 5px !important;
+}
+
+/* Only the last section gets the rounded corners. */
+.p-datepicker .p-timepicker:has(~ .p-datepicker-footer),
+.p-datepicker .p-timepicker:has(~ .p-datepicker-buttonbar) {
+  border-radius: 0 !important;
+}

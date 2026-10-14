@@ -26,8 +26,12 @@ export const updateLeadContactInfo = async (id: string | number, payload: Partia
   return response.data;
 };
 
-export const deleteLead = async (id: string | number): Promise<any> => {
-  const response = await apiClient.delete(`/common/leads/${id}`);
+/**
+ * Deletes one lead or many in one call - the API's only lead delete. Leads not
+ * in the caller's book are skipped.
+ */
+export const deleteLeads = async (ids: Array<string | number>): Promise<any> => {
+  const response = await apiClient.post('/common/leads/multiple-delete', { ids });
   return response.data;
 };
 

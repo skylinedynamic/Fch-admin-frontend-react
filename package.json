@@ -8,13 +8,16 @@
     "build": "vite build && cp -r assets dist/",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "typecheck:e2e": "tsc -p tsconfig.e2e.json",
     "test": "vitest run",
     "test:unit": "vitest run tests/utils tests/store tests/lib",
     "test:feature": "vitest run tests/modules tests/pages",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e": "node e2e/run.mjs --project=mock",
+    "test:e2e:ui": "node e2e/run.mjs --project=mock --ui",
+    "test:report": "node e2e/report.mjs",
+    "test:e2e:live": "node e2e/run.mjs --project=live"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-react": "^11.2.0",

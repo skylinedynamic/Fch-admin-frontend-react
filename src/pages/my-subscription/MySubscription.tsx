@@ -14,6 +14,7 @@ import {
   fetchMySubscriptionPaymentProviders,
   updateMySubscriptionDefaultPaymentMethod,
   cancelMySubscription,
+  removeMySubscriptionDefaultPaymentMethod,
 } from '../../modules/my-subscription/services';
 import {
   STATUS_ACTIVE as SUBSCRIPTION_STATUS_ACTIVE,
@@ -517,6 +518,22 @@ export default function MySubscription(): JSX.Element {
   const [showChangeModal, setShowChangeModal] = useState<boolean>(false);
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [cancelling, setCancelling] = useState<boolean>(false);
+  const [showRemoveModal, setShowRemoveModal] = useState<boolean>(false);
+  const [removing, setRemoving] = useState<boolean>(false);
+
+  const handleRemoveDefaultPaymentMethod = async () => {
+    setRemoving(true);
+    try {
+      const res = await removeMySubscriptionDefaultPaymentMethod();
+      toast.success(res?.message || 'Default payment method removed');
+      setShowRemoveModal(false);
+      loadSubscriptionDetails(false);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to remove the default payment method.');
+    } finally {
+      setRemoving(false);
+    }
+  };
 
   const handleCancelSubscription = async () => {
     setCancelling(true);
@@ -555,6 +572,8 @@ export default function MySubscription(): JSX.Element {
   const subscription = data?.subscription;
   const partner = data?.partner;
   const recentPayments = data?.recent_payments || [];
+  // None once removed; the API still answers Stripe for a card saved before defaults were recorded.
+  const hasDefaultMethod = Boolean(partner?.payment_provider?.name || partner?.default_payment_method);
 
   const isSubscriptionCancelled = (subscription?.status || '').toLowerCase() === SUBSCRIPTION_STATUS_CANCELLED.toLowerCase();
   const subHasCompletedDate = Boolean(subscription?.enrollment_completed_at);
@@ -763,15 +782,37 @@ export default function MySubscription(): JSX.Element {
                           </h6>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-soft-primary px-2.5 py-1 fs-12 fw-medium rounded-1"
-                        onClick={() => setShowChangeModal(true)}
-                      >
-                        <i className="ri-edit-line me-1"></i> Change
-                      </button>
+                      <div className="d-flex align-items-center gap-1">
+                        {hasDefaultMethod && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-soft-danger px-2.5 py-1 fs-12 fw-medium rounded-1"
+                            onClick={() => setShowRemoveModal(true)}
+                          >
+                            <i className="ri-delete-bin-line me-1"></i> Remove
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-soft-primary px-2.5 py-1 fs-12 fw-medium rounded-1"
+                          onClick={() => setShowChangeModal(true)}
+                        >
+                          <i className="ri-edit-line me-1"></i> Change
+                        </button>
+                      </div>
                     </div>
 
+                    {!hasDefaultMethod ? (
+                      <div className="d-flex align-items-center gap-3 pt-2">
+                        <div className="billing-card-icon-avatar bg-light text-muted">
+                          <i className="ri-bank-card-2-line"></i>
+                        </div>
+                        <div>
+                          <h6 className="fs-14 fw-bold text-dark mb-1">No default payment method</h6>
+                          <span className="text-muted fs-12 d-block">Invoices are not charged automatically until you set one.</span>
+                        </div>
+                      </div>
+                    ) : (
                     <div className="d-flex align-items-center gap-3 pt-2">
                       {partner?.payment_provider?.logo ? (
                         <div className="billing-card-logo-box">
@@ -820,6 +861,7 @@ export default function MySubscription(): JSX.Element {
                         })()}
                       </div>
                     </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -922,6 +964,19 @@ export default function MySubscription(): JSX.Element {
           currentMethod={partner?.default_payment_method}
           onClose={() => setShowChangeModal(false)}
           onUpdated={() => loadSubscriptionDetails(false)}
+        />
+
+        {/* Remove Default Payment Method Confirmation Modal */}
+        <ConfirmationModal
+          show={showRemoveModal}
+          onHide={() => setShowRemoveModal(false)}
+          onConfirm={handleRemoveDefaultPaymentMethod}
+          loading={removing}
+          title="Remove Default Payment Method"
+          message="Your invoices will not be charged automatically until you set a default payment method again - you will need to pay them manually. Payments already made are not affected."
+          confirmText="Yes, Remove It"
+          cancelText="Keep It"
+          variant="danger"
         />
 
         {/* Cancel Subscription Confirmation Modal */}

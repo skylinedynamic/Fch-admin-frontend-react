@@ -11,6 +11,7 @@ import { scrollToFirstError } from '../../../utils/formUtils';
 import type { Client } from '../../../modules/client/types';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.css';
+import { yearDropdownPlugin } from '../../../utils/flatpickrPlugins';
 
 const defaultFinancialsState = DEFAULT_CLIENT_STATE;
 
@@ -623,7 +624,8 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                                                                 altInput: true,
                                                                 altFormat: "j M, Y",
                                                                 maxDate: "today",
-                                                                monthSelectorType: "dropdown"
+                                                                monthSelectorType: "dropdown",
+                                                                plugins: [yearDropdownPlugin(1900)]
                                                             }}
                                                             placeholder="Select account open date"
                                                         />
