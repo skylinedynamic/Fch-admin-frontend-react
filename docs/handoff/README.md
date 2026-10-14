@@ -63,6 +63,11 @@ Issues found by E2E runs, with a status each: [../e2e/ISSUES.md](../e2e/ISSUES.m
 - **Summary file:** each date also has `YYYY-MM-DD-summary-pending-and-test-data.md` — the list of that date's files, where things stand, what is still pending, the files changed, the test data left behind and how to rerun.
 - Do not edit an older date's file to record new work. If an item from an earlier date is finished later, record it in a file for the new date and reference the old entry by date and number.
 - Add every new file to the index above.
+# Handoffs
+
+One file per finished piece of work — a feature, a change or a bug fix — so whoever picks it up next knows what was wrong, what was done and what is left.
+
+**File name:** `YYYY-MM-DD-short-title.md` (date the work was finished, kebab-case title), e.g. `2026-10-12-payment-form-validation.md`.
 
 ## Template
 
