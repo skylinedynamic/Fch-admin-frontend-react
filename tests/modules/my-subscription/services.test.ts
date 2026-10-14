@@ -5,6 +5,7 @@ import {
   fetchMySubscriptionDetails,
   updateMySubscriptionDefaultPaymentMethod,
   cancelMySubscription,
+  removeMySubscriptionDefaultPaymentMethod,
 } from '../../../src/modules/my-subscription/services'
 
 afterEach(() => server.resetHandlers())
@@ -26,6 +27,18 @@ describe('my-subscription services', () => {
     await updateMySubscriptionDefaultPaymentMethod({ provider_name: 'stripe', payment_method_id: 'pm_abc123' })
     expect(receivedBody).toEqual({ provider_name: 'stripe', payment_method_id: 'pm_abc123' })
     expect(receivedBody).not.toHaveProperty('cardNumber')
+  })
+
+  it('removeMySubscriptionDefaultPaymentMethod posts to the remove route with no body', async () => {
+    let called = false
+    server.use(
+      http.post('*/common/my-subscription/remove-default-payment-method', () => {
+        called = true
+        return HttpResponse.json({ status: true, data: { default_payment_method: null } })
+      })
+    )
+    await expect(removeMySubscriptionDefaultPaymentMethod()).resolves.toEqual({ status: true, data: { default_payment_method: null } })
+    expect(called).toBe(true)
   })
 
   it('cancelMySubscription posts to the cancel route', async () => {

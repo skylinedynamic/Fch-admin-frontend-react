@@ -4,6 +4,7 @@ import { useAuthStore } from '../../../store/auth/authStore'
 import "../../../../assets/css/agreement-builder.css"
 import { AgreementSignModalLoader } from '../../Loader/AgreementLoader'
 import { FileManagerModal } from '../../FileManagerModal/FileManagerModal'
+import { withAppCalendar } from '../../../utils/agreementCalendar'
 
 /**
  * AgreementSignModal
@@ -525,7 +526,8 @@ export default function AgreementSignModal() {
       html = html + scriptOverride;
     }
 
-    return html;
+    // Its date fields open the app's own calendar.
+    return withAppCalendar(html);
   }, [template]);
 
   if (loading && visible) return <AgreementSignModalLoader />

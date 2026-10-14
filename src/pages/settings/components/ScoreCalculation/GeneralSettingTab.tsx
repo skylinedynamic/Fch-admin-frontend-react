@@ -1,4 +1,5 @@
 import { ACCESS_TIME } from '../../../../config/capitalAccessOptions';
+import TimeField from '../../../../components/TimeField/TimeField';
 
 interface TimeRange {
     start: string;
@@ -91,11 +92,10 @@ const GeneralSettingTab: React.FC<Props> = ({ timeSettings, onChange, nextPlayDe
                                 <div className="d-flex align-items-center gap-2">
                                     <div className="flex-grow-1">
                                         <label className="form-label fs-12 fw-medium text-muted mb-1">Start</label>
-                                        <input
-                                            type="time"
+                                        <TimeField
                                             className="form-control form-control-sm"
                                             value={timeSettings[period.key].start}
-                                            onChange={e => handleChange(period.key, 'start', e.target.value)}
+                                            onChange={value => handleChange(period.key, 'start', value)}
                                         />
                                     </div>
                                     <div className="flex-shrink-0 pt-4">
@@ -103,11 +103,10 @@ const GeneralSettingTab: React.FC<Props> = ({ timeSettings, onChange, nextPlayDe
                                     </div>
                                     <div className="flex-grow-1">
                                         <label className="form-label fs-12 fw-medium text-muted mb-1">End</label>
-                                        <input
-                                            type="time"
+                                        <TimeField
                                             className="form-control form-control-sm"
                                             value={timeSettings[period.key].end}
-                                            onChange={e => handleChange(period.key, 'end', e.target.value)}
+                                            onChange={value => handleChange(period.key, 'end', value)}
                                         />
                                     </div>
                                 </div>

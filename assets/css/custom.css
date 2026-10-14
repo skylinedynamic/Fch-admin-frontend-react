@@ -1120,32 +1120,6 @@ File: Custom Css File
   opacity: 0.9;
 }
 
-/* 
-   Fix for DatePicker Layout: 
-   The day cells are set to 34px width, but the container was too wide (307px), 
-   allowing 8 days to fit in a row. 
-   Calculation: 7 days * 34px = 238px. 
-   Adding 8px padding on both sides (16px) = 254px.
-*/
-.flatpickr-calendar {
-  width: 254px !important;
-}
-
-.dayContainer {
-  width: 254px !important;
-  min-width: 254px !important;
-  max-width: 254px !important;
-}
-
-.flatpickr-weekdaycontainer {
-  width: 254px !important;
-}
-
-.flatpickr-weekday {
-  max-width: 34px !important;
-}
-
-
 /* Resource Hub Final Standardized Styles */
 
 .rh-scroll::-webkit-scrollbar {

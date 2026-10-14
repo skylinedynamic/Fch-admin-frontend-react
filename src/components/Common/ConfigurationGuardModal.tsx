@@ -43,15 +43,6 @@ const ConfigurationGuardModal = () => {
         (isCertified && isPaymentMissing)
     );
 
-    console.log('ConfigurationGuardModal debug:', {
-        partner_type: user?.partner_type,
-        isWhiteLabel,
-        isCertified,
-        isPaymentMissing,
-        isGuardedRoute,
-        flags
-    });
-
     if (!showModal) return null;
 
     const segment = location.pathname.split('/')[1];

@@ -37,12 +37,18 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { loadLocations } from './modules/location'
+import { applyCalendarLocale } from './config/calendarLocale'
+import { applyFlatpickrDefaults } from './config/flatpickrDefaults'
 
 
 import "../assets/css/custom.min.css"
 import "../assets/css/custom.css"
 import "../assets/css/responsive.css"
 import "../assets/css/datepicker.css"
+// After every other flatpickr rule above; see the file's header.
+import "../assets/css/flatpickr-fix.css"
+// PrimeReact <Calendar> panel, in the same design as the borrower portal.
+import "../assets/css/primereact-calendar.css"
 // MUST be the last stylesheet imported. Vite emits JS-imported CSS after the
 // <link> tags in index.html, so a brand-tokens.css that is only linked there
 // loses to any !important rule in custom.css - which is what pinned the
@@ -58,6 +64,12 @@ const rootContent = (
     </QueryClientProvider>
   </BrowserRouter>
 )
+
+// Before anything renders, so every PrimeReact calendar heads its columns SUN MON ...
+applyCalendarLocale()
+// ...and every Flatpickr picker shows the app calendar on phones too, not the
+// browser's native date input.
+applyFlatpickrDefaults()
 
 const container = document.getElementById('root')
 const root = createRoot(container)

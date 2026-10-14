@@ -369,6 +369,7 @@ export default function OwnershipInformationStep({
                 altFormat: 'j M, Y',
                 maxDate: 'today',
                 monthSelectorType: 'dropdown',
+                plugins: [yearDropdownPlugin(1900)],
               }}
               placeholder="Select date of birth"
             />
