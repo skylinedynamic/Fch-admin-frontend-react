@@ -77,7 +77,18 @@ const renderSection = () => {
   return ref
 }
 
-const incomeField = () => screen.findByLabelText('Annual Personal Income') as Promise<HTMLInputElement>
+/**
+ * The inputs render empty before the section's data arrives, so finding the
+ * field is not enough: wait until the loaded figures are in it. Annual Revenue
+ * is always 600,000.00 in these fixtures, so it marks "loaded" even when the
+ * income itself is empty. (Without this the test raced the request and failed
+ * on slower CI runners.)
+ */
+const incomeField = async () => {
+  await waitFor(() => expect(screen.getByLabelText(/Annual Revenue/i)).toHaveValue('600,000.00'))
+
+  return screen.getByLabelText('Annual Personal Income') as HTMLInputElement
+}
 
 const save = async (ref: React.RefObject<BusinessFinancialsSectionRef | null>) => {
   await act(async () => {
