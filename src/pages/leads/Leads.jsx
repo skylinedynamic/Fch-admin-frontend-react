@@ -5,7 +5,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchLeads, deleteLead, convertLead, updateLeadContactInfo } from '../../modules/leads/services';
+import { fetchLeads, deleteLeads, convertLead, updateLeadContactInfo } from '../../modules/leads/services';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -284,9 +284,7 @@ export default function Leads() {
     const handleDeleteConfirm = async () => {
         try {
             setLoading(true);
-            for (const lead of deleteRows) {
-                await deleteLead(lead.id);
-            }
+            await deleteLeads(deleteRows.map((lead) => lead.id));
             toast.success('Leads deleted successfully');
             setShowDeleteModal(false);
             setSelectedLeads([]);

@@ -8,7 +8,6 @@ import { DocumentSection } from '../../../../documents/components/DocumentSectio
 import { submitFileSelection } from '../../../../../modules/filemanager/services'
 import type { FileSystemItem } from '../../../../../modules/filemanager/types'
 import { useDocumentTypes } from '../../../../../modules/documents'
-import { getUser } from '../../../../../lib/auth/auth'
 import DeleteConfirmationModal from '../../../../../components/GlobalModal/DeleteConfirmModal'
 import { useFundingRequest, useFundingApplicationDocuments, useDeleteFundingApplicationDocument, useUploadFundingApplicationDocuments } from '../../../../../modules/funding-application/queries'
 import type { FundingApplicationDocument } from '../../../../../modules/funding-application/types'
@@ -181,7 +180,9 @@ export default function DocumentUploadStep({
         selectionMode={true}
         onSelectFiles={handleFileSelection}
         entityType="borrowers"
-        entityId={getUser()?.entity_id}
+        // The application's borrower - never the signed-in partner's or staff
+        // member's own id, which named some unrelated borrower's folder.
+        entityId={fundingData?.borrower_id ?? undefined}
       />
 
       <DeleteConfirmationModal
