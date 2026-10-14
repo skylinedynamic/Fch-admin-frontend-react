@@ -12,6 +12,7 @@ import type {
   TagListResponse,
   SeoListParams,
   SeoListResponse,
+  SeoSetting,
   SeoSettingResponse,
   SiteSetting,
 } from "./types";
@@ -82,6 +83,10 @@ export const cmsService = {
   // SEO
   fetchSeoSettings: async (params?: SeoListParams): Promise<SeoListResponse> => {
     const response = await apiClient.post("/admin/cms/seo-settings", params);
+    return response.data;
+  },
+  fetchAllSeoSettings: async (): Promise<SingleApiResponse<SeoSetting[]>> => {
+    const response = await apiClient.get("/admin/cms/seo-settings");
     return response.data;
   },
   fetchSeoSetting: async (id: string | number): Promise<SeoSettingResponse> => {
