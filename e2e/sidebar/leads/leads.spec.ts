@@ -165,8 +165,19 @@ test.describe('Lead create', () => {
     const api = await mockApi(page)
     await page.goto('/leads/create')
     await expect(page.locator('input[name="company_name"]')).toBeVisible()
+    // Contact Person is required (SCRUM-170); the form refuses to post without it.
+    await page.locator('input[name="contact_person"]').fill('Jane Doe')
     return api
   }
+
+  test('Contact Person is required before anything is posted', async ({ page }) => {
+    const api = await openCreate(page)
+    await page.locator('input[name="contact_person"]').fill('')
+    await page.getByRole('button', { name: /save/i }).click()
+    await expect(page.getByText('Contact Person is required.')).toBeVisible()
+    await expect(page.locator('input[name="contact_person"]')).toHaveClass(/is-invalid/)
+    expect(api.find('POST', CREATE)).toHaveLength(0)
+  })
 
   test('server validation errors are shown inline', async ({ page }) => {
     const api = await openCreate(page)
@@ -213,7 +224,7 @@ test.describe('Lead create', () => {
     await pickPrime(page, page.locator('.p-dropdown', { hasText: 'Select status' }), 'New Lead')
     await page.getByRole('button', { name: /save/i }).click()
     const call = await expectCall(api, 'POST', CREATE)
-    expect(call.json).toMatchObject({ company_name: 'Fresh Lead Co', domain: 'freshlead.test' })
+    expect(call.json).toMatchObject({ company_name: 'Fresh Lead Co', contact_person: 'Jane Doe', domain: 'freshlead.test' })
     expect(call.json.probability).toBeTruthy()
     expect(call.json.status).toBeTruthy()
     await expect(page.getByText('Lead Details Completed successfully')).toBeVisible()

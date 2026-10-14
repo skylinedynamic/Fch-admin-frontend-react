@@ -633,11 +633,13 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                             const hasFieldChanges = !!activity.field_changes && Object.keys(activity.field_changes).length > 0;
                                             const hasSignatures = !!activity.signatures && !!(activity.signatures.previous || activity.signatures.new);
                                             const isCollapsible = hasDescription || hasAttachments || hasFieldChanges || hasSignatures;
-                                            // A signature or a list of changed fields is the point of the
-                                            // entry, so it shows without a click. Other entries stay
-                                            // collapsed until opened, as before.
-                                            const openByDefault = hasFieldChanges || hasSignatures;
+                                            // Every entry starts collapsed, so a long history stays a
+                                            // short list. An entry that holds signatures or a list of
+                                            // changed fields says so with a link on its row (below), so
+                                            // they are found without having to open each one.
+                                            const openByDefault = false;
                                             const isOpen = openIds[itemId] ?? openByDefault;
+                                            const detailsLabel = hasSignatures ? 'signatures' : hasFieldChanges ? 'changes' : null;
 
                                             return (
                                                 <div key={itemId} className="accordion-item border-0">
@@ -682,6 +684,15 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                                                                         <span className="mx-1"> • </span>
                                                                         <i className="ri-time-line align-middle me-1"></i>
                                                                         {getSubtitle(activity)}
+                                                                        {detailsLabel && (
+                                                                            <>
+                                                                                <span className="mx-1"> • </span>
+                                                                                <span className="text-primary fw-semibold">
+                                                                                    {isOpen ? 'Hide' : 'View'} {detailsLabel}
+                                                                                    <i className={`${isOpen ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'} align-middle`}></i>
+                                                                                </span>
+                                                                            </>
+                                                                        )}
                                                                     </div>
                                                                 </div>
 
