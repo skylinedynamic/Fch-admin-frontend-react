@@ -3,7 +3,6 @@
  * Builds one self-contained HTML page from the JSON results of the test runs:
  *
  *   test-reports/e2e-mock.json   PLAYWRIGHT_JSON_OUTPUT_NAME=... npm run test:e2e -- --reporter=json
- *   test-reports/e2e-live.json   PLAYWRIGHT_JSON_OUTPUT_NAME=... npm run test:e2e:live -- --reporter=json
  *   test-reports/vitest.json     npx vitest run --reporter=json --outputFile=test-reports/vitest.json
  *
  * Optional extras: e2e-<suite>-rerun.json (failures re-run on their own) and
@@ -170,24 +169,9 @@ function knownBugs(all) {
     <table><tbody>${bugs.map((t) => `<tr><td>${pill('known-bug')}</td><td>${esc(t.group)}${t.group ? ' › ' : ''}${esc(t.title)}<div class="muted"><code>${esc(t.file)}</code></div></td></tr>`).join('')}</tbody></table>`
 }
 
-function findings() {
-  const file = resolve('e2e-live/.results/access-findings.json')
-  if (!existsSync(file)) return ''
-  const list = JSON.parse(readFileSync(file, 'utf8'))
-  if (!list.length) {
-    return `<h2>API enforcement</h2><p class="muted">For every screen the UI blocks, the live run also called the API directly as that user. The API refused each one - no gaps recorded.</p>`
-  }
-  return `<h2>API enforcement findings <span class="muted">(${list.length})</span></h2>
-    <p class="muted">The UI blocks these screens for the persona, but the API still answered the screen's list request when called directly with that user's token. Hiding a screen is not access control, so each row should be reviewed: either the read is intentionally shared, or the endpoint needs a permission check.</p>
-    <table><thead><tr><th>Persona</th><th>Screen</th><th>Request</th><th>API status</th></tr></thead><tbody>${list
-      .map((f) => `<tr><td>${esc(f.persona)}</td><td>${esc(f.screen)} <code>${esc(f.path)}</code></td><td><code>${esc(f.api)}</code></td><td>${esc(f.status)}</td></tr>`)
-      .join('')}</tbody></table>`
-}
-
 // ---- Assemble ---------------------------------------------------------------------------------
 
 const mockRaw = read('e2e-mock.json')
-const liveRaw = read('e2e-live.json')
 const vitestRaw = read('vitest.json')
 
 /**
@@ -207,7 +191,7 @@ function withReruns(tests, rerunRaw) {
 }
 
 /**
- * A part file (e2e-mock-part-<name>.json, e2e-live-part-<name>.json) is a later run of a few
+ * A part file (e2e-mock-part-<name>.json) is a later run of a few
  * whole spec files - ones added or changed after the main run. Its results replace the main
  * run's for those files, so each spec file is reported from exactly one run.
  */
@@ -226,20 +210,16 @@ function withParts(tests, suite) {
 }
 
 const mock = mockRaw && { tests: withParts(withReruns(playwrightTests(mockRaw.data), read('e2e-mock-rerun.json')), 'mock'), at: mockRaw.at }
-const live = liveRaw && { tests: withParts(withReruns(playwrightTests(liveRaw.data), read('e2e-live-rerun.json')), 'live'), at: liveRaw.at }
 const vitestAll = vitestRaw && { tests: vitestTests(vitestRaw.data), at: vitestRaw.at }
 
 const isFeature = (t) => /^tests\/(pages|components|Assistant)\//.test(t.file)
 const unit = vitestAll && { tests: vitestAll.tests.filter((t) => !isFeature(t)), at: vitestAll.at }
 const feature = vitestAll && { tests: vitestAll.tests.filter(isFeature), at: vitestAll.at }
 
-const everything = [...(mock?.tests ?? []), ...(live?.tests ?? []), ...(vitestAll?.tests ?? [])]
+const everything = [...(mock?.tests ?? []), ...(vitestAll?.tests ?? [])]
 const total = count(everything)
-const missing = [!mock && 'mocked e2e', !live && 'live e2e', !vitestAll && 'unit and feature'].filter(Boolean)
+const missing = [!mock && 'mocked e2e', !vitestAll && 'unit and feature'].filter(Boolean)
 
-const personaOf = (t) => (t.group.match(/^Live access - ([^›]+)/)?.[1] ?? '').trim()
-const livePersona = live ? live.tests.filter((t) => personaOf(t)) : []
-const liveOther = live ? live.tests.filter((t) => !personaOf(t)) : []
 
 const headline = total.failed
   ? `${total.failed} test${total.failed === 1 ? '' : 's'} failing`
@@ -304,11 +284,10 @@ const html = `<!doctype html>
     ${summaryCard('Unit tests', 'Vitest: services, hooks, stores, utilities', unit)}
     ${summaryCard('Feature tests', 'Vitest + Testing Library: pages and components', feature)}
     ${summaryCard('E2E - mocked', 'Playwright, real browser, API intercepted', mock)}
-    ${summaryCard('E2E - live', 'Playwright against the real API, six personas', live)}
   </div>
 
   <div class="toolbar">
-    <input id="q" type="search" placeholder="Filter tests by name, file or persona…" aria-label="Filter tests">
+    <input id="q" type="search" placeholder="Filter tests by name or file…" aria-label="Filter tests">
     <button data-status="failed">Failed</button>
     <button data-status="known-bug">Known bugs</button>
     <button data-status="skipped">Skipped</button>
@@ -317,16 +296,9 @@ const html = `<!doctype html>
   </div>
 
   ${knownBugs(everything)}
-  ${findings()}
 
   <h2>E2E - mocked <span class="muted">${mock ? `(${mock.tests.length} tests, by spec file)` : '(not run)'}</span></h2>
   ${mock ? fileTable(mock.tests) : '<p class="muted">No results file found.</p>'}
-
-  <h2>E2E - live, access by persona <span class="muted">${live ? `(${livePersona.length} checks)` : '(not run)'}</span></h2>
-  ${live ? fileTable(livePersona, personaOf) : '<p class="muted">No results file found.</p>'}
-
-  <h2>E2E - live, other specs <span class="muted">${live ? `(${liveOther.length} tests)` : ''}</span></h2>
-  ${live ? fileTable(liveOther) : ''}
 
   <h2>Feature tests <span class="muted">${feature ? `(${feature.tests.length} tests)` : '(not run)'}</span></h2>
   ${feature ? fileTable(feature.tests) : ''}

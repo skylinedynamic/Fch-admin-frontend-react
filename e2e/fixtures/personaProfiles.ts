@@ -5,7 +5,7 @@
  * names the route guards read.
  *
  * They are a snapshot: when RoleSeeder / PermissionSeeder change in
- * fch-backend-api, refresh them (the live suite reads the real values instead).
+ * fch-backend-api, refresh them from a real login.
  */
 export const PERSONA_PROFILES = {
   "host": {

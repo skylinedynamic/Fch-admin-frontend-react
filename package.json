@@ -14,11 +14,10 @@
     "test:feature": "vitest run tests/modules tests/pages",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "node e2e/run.mjs mock",
-    "test:e2e:live": "node e2e/run.mjs live",
-    "test:e2e:all": "node e2e/run.mjs all",
-    "test:e2e:ui": "node e2e/run.mjs mock --ui",
-    "test:report": "node e2e/report.mjs"
+    "test:e2e": "node e2e/run.mjs --project=mock",
+    "test:e2e:ui": "node e2e/run.mjs --project=mock --ui",
+    "test:report": "node e2e/report.mjs",
+    "test:e2e:live": "node e2e/run.mjs --project=live"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-react": "^11.2.0",

@@ -34,8 +34,15 @@ describe('Dashboard', () => {
     await waitFor(() => expect(dashboard.calls).toBe(1))
   })
 
-  it('falls back to a generic greeting', async () => {
-    mount()
+  // The login API sends `name` only, no `first_name`.
+  it('greets a user from the login response by the first word of their name', async () => {
+    mount({ name: 'Craig Rice' })
+
+    expect(await screen.findByText('Welcome, Craig!')).toBeInTheDocument()
+  })
+
+  it('falls back to a generic greeting when there is no name', async () => {
+    mount({ name: '' })
 
     expect(await screen.findByText('Welcome, User!')).toBeInTheDocument()
   })
