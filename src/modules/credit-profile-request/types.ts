@@ -29,6 +29,7 @@ export interface CreditProfileRequest {
     state: string;
     zip: string;
     ssn: string;
+    /** Details: ready to display, e.g. "May 12, 1990" - print as-is, do not parse. List: raw ISO from the model. */
     date_of_birth: string;
     phone: string;
     email: string;
