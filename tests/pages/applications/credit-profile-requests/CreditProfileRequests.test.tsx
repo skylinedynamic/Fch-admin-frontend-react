@@ -79,4 +79,42 @@ describe('Request Credit Profile list', () => {
     expect(within(doneRow).getByText('Completed')).toBeInTheDocument()
     expect(screen.getAllByRole('columnheader').map((h) => h.textContent?.trim())).toContain('Status')
   })
+
+  // A borrower's one request is updated in place when they submit again, so
+  // "latest" is updated_at: the list opens latest-first by it and dates each
+  // row by it, so a resubmission shows at the top with today's date.
+  it('asks the API for the latest request first', async () => {
+    let body: Record<string, unknown> | null = null
+    server.use(
+      http.post('*/admin/credit-profile-requests', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ status: true, message: 'ok', data: { current_page: 1, data: [row], total: 1, per_page: 10, last_page: 1 } })
+      }),
+    )
+    renderWithProviders(<CreditProfileRequests />)
+
+    await screen.findByText('Giselle Indigo Noel')
+    expect(body).toMatchObject({ sort_field: 'updated_at', sort_order: 'desc' })
+  })
+
+  it('dates each request by when it was last submitted', async () => {
+    serveList([{ ...row, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-12T10:00:00Z' }])
+    renderWithProviders(<CreditProfileRequests />)
+
+    const tr = (await screen.findByText('Giselle Indigo Noel')).closest('tr') as HTMLElement
+    expect(within(tr).getByText('Oct 12, 2026')).toBeInTheDocument()
+    expect(within(tr).queryByText('Oct 1, 2026')).not.toBeInTheDocument()
+  })
+
+  it('keeps the order the API returns, latest first', async () => {
+    serveList([
+      { ...row, id: 9, first_name: 'Newest', middle_name: null, updated_at: '2026-10-12T10:00:00Z' },
+      { ...row, id: 7, first_name: 'Oldest', middle_name: null, updated_at: '2026-10-01T10:00:00Z' },
+    ])
+    renderWithProviders(<CreditProfileRequests />)
+
+    await screen.findByText('Newest Noel')
+    const names = screen.getAllByText(/^(Newest|Oldest) Noel$/).map((el) => el.textContent)
+    expect(names).toEqual(['Newest Noel', 'Oldest Noel'])
+  })
 })
