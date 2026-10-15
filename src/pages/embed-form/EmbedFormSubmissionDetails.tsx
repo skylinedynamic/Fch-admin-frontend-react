@@ -322,6 +322,10 @@ export default function EmbedFormSubmissionDetails() {
     const isRejected = submission?.status === 'rejected';
     const convertedBorrower = submission?.converted_borrower;
     const convertedBorrowerId = convertedBorrower?.id || submission?.converted_borrower_id || null;
+    // The funding application the conversion created. Its page sits behind
+    // "view funding application", so the button is only offered with it.
+    const convertedFundingApplicationId = submission?.converted_funding_application_id || null;
+    const canViewFundingApplication = hasPermission('view funding application');
     const currentStatus = STATUS_META[submission?.status?.toLowerCase()] || STATUS_META.new;
     const initials = `${submission?.first_name?.[0] || ''}${submission?.last_name?.[0] || ''}`.toUpperCase() || 'AP';
 
@@ -568,16 +572,28 @@ export default function EmbedFormSubmissionDetails() {
                                             />
                                         </div>
                                         {isConverted ? (
-                                            convertedBorrowerId && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-soft-primary ef-convert-btn ef-convert-btn--lg"
-                                                    onClick={() => navigate(`/clients/${convertedBorrowerId}`)}
-                                                >
-                                                    <i className="ri-external-link-line" />
-                                                    <span>View Borrower</span>
-                                                </button>
-                                            )
+                                            <>
+                                                {convertedFundingApplicationId && canViewFundingApplication && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary ef-convert-btn ef-convert-btn--lg"
+                                                        onClick={() => navigate(`/intake-review/funding-application/${convertedFundingApplicationId}`)}
+                                                    >
+                                                        <i className="ri-file-list-3-line" />
+                                                        <span>View Funding Application</span>
+                                                    </button>
+                                                )}
+                                                {convertedBorrowerId && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary ef-convert-btn ef-convert-btn--lg"
+                                                        onClick={() => navigate(`/clients/${convertedBorrowerId}`)}
+                                                    >
+                                                        <i className="ri-external-link-line" />
+                                                        <span>View Borrower</span>
+                                                    </button>
+                                                )}
+                                            </>
                                         ) : canConvert ? (
                                             <button
                                                 type="button"

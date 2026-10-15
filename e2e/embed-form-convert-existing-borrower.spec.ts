@@ -19,7 +19,7 @@ const HOST_USER = {
   user_type: 'Admin',
   is_host: 1,
   partner_id: null,
-  permissions: ['view application', 'convert application'],
+  permissions: ['view application', 'convert application', 'view funding application'],
 }
 
 const THEME = {
@@ -134,5 +134,16 @@ test.describe('Embed Form › Loan application › convert onto an existing borr
     await expect.poll(() => convertBodies.length).toBe(2)
     expect(convertBodies[1]).toMatchObject({ confirm_existing_borrower: true })
     await expect(page.getByText('Existing Borrower Found')).toHaveCount(0)
+  })
+
+  test('offers the new funding application as soon as it is created', async ({ page }) => {
+    await startConvert(page)
+    await page.locator('.modal').getByRole('button', { name: /Confirm & Create Funding Application/ }).click()
+
+    const view = page.getByRole('button', { name: /View Funding Application/ })
+    await expect(view).toBeVisible()
+    await view.click()
+
+    await expect(page).toHaveURL(/\/intake-review\/funding-application\/77$/)
   })
 })
