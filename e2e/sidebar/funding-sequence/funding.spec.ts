@@ -6,6 +6,8 @@ import {
 
 const GROUPS = [{ id: 1, name: 'Business Loans' }, { id: 2, name: 'Credit Lines' }]
 const TYPES = [{ id: 1, name: 'SBA Loan' }, { id: 2, name: 'Term Loan' }]
+// The form's Funding Type dropdown lists the lenders' product categories.
+const PRODUCT_CATEGORIES = [{ id: 11, name: 'Equipment Financing' }, { id: 12, name: 'Term Loan' }, { id: 13, name: 'SBA Loan' }]
 const FUNDINGS = [
   { id: 201, name: 'SBA 7(a)', group: GROUPS[0], type: TYPES[0], amount_range: '$50k - $5M', terms: '10 years', status: 'Active' },
   { id: 202, name: 'Working Capital Line', group: GROUPS[1], type: TYPES[1], amount_range: '$10k - $250k', terms: 'Revolving', status: 'Inactive' },
@@ -17,6 +19,7 @@ function base() {
     { method: 'POST', match: LIST, body: paginated(FUNDINGS) },
     { method: 'GET', match: '/admin/funding-groups', body: ok(GROUPS) },
     { method: 'GET', match: '/admin/funding-types', body: ok(TYPES) },
+    { method: 'GET', match: '/admin/lenders/product-categories', body: ok(PRODUCT_CATEGORIES) },
   ]
 }
 
@@ -173,6 +176,26 @@ test.describe('Funding sequence create', () => {
     await expect(page.getByText('Funding sequence created successfully!')).toBeVisible()
     await expect(page).toHaveURL(/\/funding\/300\?tab=visibility/)
   })
+
+  // QA: Funding Type had no search, so a long list of types had to be scrolled.
+  for (const field of [
+    { label: 'Funding Type', placeholder: 'Select type', query: 'term', match: 'Term Loan', other: 'SBA Loan' },
+    { label: 'Funding Group', placeholder: 'Select group', query: 'credit', match: 'Credit Lines', other: 'Business Loans' },
+  ]) {
+    test(`${field.label} can be searched`, async ({ page }) => {
+      await openCreate(page)
+      await page.locator('.p-dropdown').filter({ hasText: field.placeholder }).click()
+
+      const panel = page.locator('.p-dropdown-panel')
+      await panel.locator('input.p-dropdown-filter').fill(field.query)
+
+      await expect(panel.getByRole('option', { name: field.match })).toBeVisible()
+      await expect(panel.getByRole('option', { name: field.other })).toHaveCount(0)
+
+      await panel.getByRole('option', { name: field.match }).click()
+      await expect(page.locator('.p-dropdown').filter({ hasText: field.match })).toBeVisible()
+    })
+  }
 
   test('negative amounts cannot be typed', async ({ page }) => {
     await openCreate(page)

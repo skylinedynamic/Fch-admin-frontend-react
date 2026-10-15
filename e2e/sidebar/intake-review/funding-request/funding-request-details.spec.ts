@@ -101,6 +101,32 @@ test.describe('Funding request details', () => {
     await expect(page.getByRole('heading', { name: 'Review Actions' })).toHaveCount(0)
   })
 
+  // QA: the host could open and edit a white-label partner's funding
+  // application. Only the partner the request belongs to prepares it.
+  test.describe('preparing the funding application', () => {
+    const approved = (over: Record<string, unknown> = {}) => ok(review({ status: 'Approved', ...over }))
+    const submitted = { id: 80, status: 'Pending', is_editable: true }
+    const processLink = (page: Page) => page.getByRole('link', { name: /process application/i })
+    const editLink = (page: Page) => page.getByRole('link', { name: /edit funding application/i })
+
+    test('the owning partner can process the application', async ({ page }) => {
+      await open(page, approved(), { permissions: PERMS, is_host: 0, partner_id: 5 })
+      await expect(processLink(page)).toHaveAttribute('href', '/fund-application/501')
+    })
+
+    test('the owning partner can edit a submitted application', async ({ page }) => {
+      await open(page, approved({ funding_application: submitted }), { permissions: PERMS, is_host: 0, partner_id: 5 })
+      await expect(editLink(page)).toHaveAttribute('href', '/fund-application/501')
+    })
+
+    test('the host is offered neither on a partner\'s request', async ({ page }) => {
+      await open(page, approved({ funding_application: submitted }), { permissions: PERMS, is_host: 1, partner_id: 1 })
+      await expect(page.getByRole('heading', { name: 'Jane Doe' })).toBeVisible()
+      await expect(editLink(page)).toHaveCount(0)
+      await expect(processLink(page)).toHaveCount(0)
+    })
+  })
+
   test('a failed load goes back to the list', async ({ page }) => {
     await open(page, failure('Not found'))
     await expect(page).toHaveURL(/\/intake-review\/funding-request$/)

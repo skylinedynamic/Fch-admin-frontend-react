@@ -4,6 +4,7 @@ import { sendAssistantMessage, fetchAssistantHistory, listAssistantSessions, sta
 import type { ChatAction, ChatBubble } from '../../../modules/support-chat/types';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
+import { revealRoute } from '../../../utils/revealRoute';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import supportAvatar from '../../../../assets/images/support-avatar.svg';
 import '../../../../assets/css/support-chat-widget.css';
@@ -432,6 +433,7 @@ export default function SupportChatWidget() {
     const handleNavigate = (path: string) => {
         setOpen(false);
         navigate(path);
+        revealRoute();
     };
 
     const handleStartNewConversation = async () => {

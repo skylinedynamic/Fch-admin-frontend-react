@@ -21,6 +21,7 @@ import DownloadPdfModal from './DownloadPdfModal';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
+import { ownsApplication } from '../../../utils/applicationOwnership';
 
 type StepType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -85,8 +86,11 @@ export default function FundingApplicationDetails() {
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
     // Editable while the request is approved and the application is at status
     // key 9 or below. The server works that out from the lifecycle key and
-    // sends it as is_editable, so no status names are compared here.
+    // sends it as is_editable, so no status names are compared here. Only the
+    // partner the application belongs to edits it - never the host on a
+    // partner's application.
     const canEditApplication =
+        ownsApplication(user, app?.partner_id) &&
         app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
         !!app?.funding_request_id &&
         !!app?.is_editable;

@@ -51,3 +51,32 @@ test.describe('Funding applications', () => {
     await expect(page).toHaveURL(/access-denied/)
   })
 })
+
+// QA (funding-application/82): the host saw Edit Funding Application on a
+// white-label partner's application. Only the owning partner edits it.
+test.describe('Funding application details — Edit Funding Application', () => {
+  const DETAIL = new RegExp(`${RA}/funding-application/82$`)
+  const application = {
+    id: 82, partner_id: 21, borrower_id: 7, status: 'Pending', full_name: 'Zia Fuentes', business_name: 'Fuentes LLC',
+    funding_request_id: 29, funding_request_status: 'Approved', is_editable: true, co_borrowers: [], documents: [],
+  }
+  const editLink = (page: Page) => page.getByRole('link', { name: /edit funding application/i })
+
+  async function openDetails(page: Page, user: Record<string, unknown>) {
+    await seedSession(page, { permissions: ['view funding application', 'update funding application'], ...user })
+    await mockApi(page, [{ method: 'GET', match: DETAIL, body: ok(application) }])
+    await page.goto('/intake-review/funding-application/82')
+    await expect(page.getByRole('link', { name: /back/i })).toBeVisible()
+  }
+
+  test('the host sees the application without an Edit button', async ({ page }) => {
+    await openDetails(page, { is_host: 1, partner_id: 1 })
+    await expect(page.getByRole('button', { name: /download/i })).toBeVisible()
+    await expect(editLink(page)).toHaveCount(0)
+  })
+
+  test('the partner that owns it can edit it', async ({ page }) => {
+    await openDetails(page, { is_host: 0, partner_id: 21 })
+    await expect(editLink(page)).toHaveAttribute('href', '/fund-application/29')
+  })
+})

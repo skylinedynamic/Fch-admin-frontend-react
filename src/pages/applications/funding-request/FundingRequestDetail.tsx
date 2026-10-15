@@ -21,6 +21,7 @@ import '../../../../assets/css/funding-requests.css';
 import { toast } from 'react-toastify';
 
 import { useAuthStore } from '../../../store/auth/authStore';
+import { ownsApplication } from '../../../utils/applicationOwnership';
 import { getDocStatusBadgeConfig } from '../../../utils/badgeHelper';
 
 export default function FundingRequestDetail() {
@@ -60,6 +61,9 @@ export default function FundingRequestDetail() {
     const isUpdatingOrFetching = updateStatusMutation.isPending || isFetching;
 
     const review = apiResponse?.data;
+    // Processing or editing the funding application is the owning partner's
+    // job; the host reviews a partner's request but does not prepare it.
+    const canPrepareApplication = ownsApplication(currentUser, review?.partner_id);
 
     useEffect(() => {
         if (review) {
@@ -179,7 +183,7 @@ export default function FundingRequestDetail() {
                                     <i className="ri-user-line align-middle me-1"></i> Go to Client
                                 </Link>
                             )}
-                            {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id && (
+                            {canPrepareApplication && review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id && (
                                 !review.funding_application ||
                                 review.funding_application.status === FUNDING_APPLICATION_STATUS.ON_HOLD ||
                                 review.funding_application.status === FUNDING_APPLICATION_STATUS.DRAFT
@@ -189,7 +193,7 @@ export default function FundingRequestDetail() {
                                 </Link>
                             )}
                             {/* Already submitted but still at status key 9 or below: the application can be edited. */}
-                            {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id &&
+                            {canPrepareApplication && review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id &&
                                 review.funding_application?.is_editable &&
                                 review.funding_application.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
                                 review.funding_application.status !== FUNDING_APPLICATION_STATUS.DRAFT && (

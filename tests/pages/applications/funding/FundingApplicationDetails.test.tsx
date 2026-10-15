@@ -79,4 +79,22 @@ describe('FundingApplicationDetails — Edit Funding Application', () => {
 
     expect(editLink()).not.toBeInTheDocument()
   })
+
+  // Defect: the host saw Edit Funding Application on a white-label partner's
+  // application. Only the partner the application belongs to edits it.
+  it('hides it from the host on another partner\'s application', () => {
+    detail.application = { ...editable, partner_id: 21 }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back/i })).toBeInTheDocument()
+  })
+
+  it('offers it to the partner that owns the application', () => {
+    detail.application = { ...editable, partner_id: 21 }
+    useAuthStore.setState({ user: { id: 9, is_host: false, partner_id: 21, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).toHaveAttribute('href', '/fund-application/29')
+  })
 })

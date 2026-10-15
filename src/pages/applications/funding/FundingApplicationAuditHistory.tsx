@@ -256,16 +256,6 @@ export default function FundingApplicationAuditHistory() {
                                 </p>
                             </div>
 
-                            {selectedRow.details?.password && (
-                                <div className="mb-3">
-                                    <h6 className="text-muted fs-13 mb-1">Document Password Used</h6>
-                                    <div className="p-2 bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded fs-13">
-                                        <i className="ri-lock-password-line align-middle me-1"></i>
-                                        <span className="font-monospace fw-medium">{selectedRow.details.password}</span>
-                                    </div>
-                                </div>
-                            )}
-
                             {selectedRow.details?.device_type && (
                                 <>
                                     <hr className="my-3 border-dashed" />
@@ -464,7 +454,7 @@ export default function FundingApplicationAuditHistory() {
                         {!selectedRow?.details?.file_path && selectedRow !== null && (
                             <span className="text-muted fs-13 fst-italic">
                                 <i className="ri-information-line align-middle me-1"></i>
-                                Document file is not available for this record
+                                Downloads are not kept on the server. This record shows who downloaded the file, when, and its SHA-256 fingerprint.
                             </span>
                         )}
                     </div>

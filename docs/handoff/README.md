@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-15
+
+| File | Title |
+|---|---|
+| [2026-10-15-qa-host-cannot-edit-partner-application-take-me-there-scroll-funding-type-search.md](2026-10-15-qa-host-cannot-edit-partner-application-take-me-there-scroll-funding-type-search.md) | QA — host cannot edit a partner's application, Take Me There scroll, Funding Type search |
+
 ### 2026-10-14
 
 | File | Title |

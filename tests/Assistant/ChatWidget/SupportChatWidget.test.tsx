@@ -307,6 +307,47 @@ describe('SupportChatWidget (admin/WLP)', () => {
         expect(navigateMock).toHaveBeenCalledWith('/settings')
     })
 
+    // Defect: on a scrolled-down dashboard, "Take Me There" for the dashboard
+    // closed the chat and changed nothing - navigating to the open page does
+    // not move it. The page now scrolls smoothly to the top.
+    it('scrolls the page to the top after Take Me There, even for the page already open', async () => {
+        const scrollTo = vi.fn()
+        window.scrollTo = scrollTo as unknown as typeof window.scrollTo
+        server.use(
+            noSessions(),
+            http.get('*/common/assistant/wlp/config', () =>
+                HttpResponse.json({
+                    status: true,
+                    message: '',
+                    data: { is_ready: true, welcome_subtitle: null, quick_suggestions: [], navigation: { dashboard: '/' } },
+                })
+            ),
+            http.post('*/common/assistant/wlp/messages', () =>
+                HttpResponse.json({
+                    status: true,
+                    message: '',
+                    data: {
+                        session_id: 'session-123',
+                        message_id: 'message-789',
+                        answer: 'The Dashboard gives an overview.\n\n[[ACTION:navigate_dashboard]]',
+                        actions: [{ type: 'navigate', id: 'navigate_dashboard', label: 'Take Me There', path: '/' }],
+                        sources: [],
+                        escalation: { required: false, reason: null, route: null },
+                        policy: { live_data_used: false, restricted_content_blocked: false, sensitive_input_detected: false },
+                    },
+                })
+            )
+        )
+
+        renderWithProviders(<SupportChatWidget />)
+        await open()
+        await sendMessage('dashboard')
+        await userEvent.click(await screen.findByRole('button', { name: 'Take Me There' }))
+
+        expect(navigateMock).toHaveBeenCalledWith('/')
+        await waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' }))
+    })
+
     it('renders no button for an action that is not in the served route map', async () => {
         server.use(
             noSessions(),

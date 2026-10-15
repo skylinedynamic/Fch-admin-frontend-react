@@ -808,6 +808,8 @@ export default function FundingSequencingForm() {
                                                                 onChange={(e) => handleInputChange({ target: { name: 'funding_type_id', value: e.value } })}
                                                                 optionLabel="name"
                                                                 optionValue="id"
+                                                                filter
+                                                                filterBy="name"
                                                                 placeholder="Select type"
                                                                 className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_type_id ? 'p-invalid border-danger' : ''}`}
                                                             />
