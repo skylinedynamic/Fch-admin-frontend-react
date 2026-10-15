@@ -88,6 +88,9 @@ export default function InvoiceTable({
         );
     };
 
+    // The payer's company, beside (never inside) their name.
+    const companyBodyTemplate = (rowData) => rowData.company_name || '-';
+
     const typeBodyTemplate = (rowData) => {
         return <span className="fw-medium">{rowData.type || '-'}</span>;
     };
@@ -174,6 +177,7 @@ export default function InvoiceTable({
                 <Column field="created_at" header="Invoice Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
                 <Column field="invoice_id" header="Invoice ID" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by ID"></Column>
                 <Column field="customer_name" header="Name" body={customerBodyTemplate} style={{ minWidth: '180px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by name"></Column>
+                <Column field="company_name" header="Company" body={companyBodyTemplate} style={{ minWidth: '160px' }}></Column>
                 <Column field="payment_amount" header="Amount" body={amountBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by amount"></Column>
                 <Column field="type" header="Type" body={typeBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by type"></Column>
                 <Column field="status" header="Status" body={statusBodyTemplate} style={{ minWidth: '150px' }} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false}></Column>

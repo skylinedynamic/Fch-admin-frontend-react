@@ -7,6 +7,7 @@ import { INVOICE_STATUS_COLORS, STATUS_PAID, STATUS_PROCESSING } from '../../con
 import { useAuthStore } from '../../store/auth';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import InvoicePaymentModal from './components/InvoicePaymentModal';
+import { InvoicePartyLines } from './components/InvoicePartyDetails';
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
 import ErrorPage from '../Utility/ErrorPage';
 
@@ -142,10 +143,7 @@ export default function InvoiceDetails() {
                                                 </div>
                                                 <div className="col-lg-6 col-md-6">
                                                     <h5 className="fs-15 fw-bold mb-3"><i className="ri-user-3-line text-muted align-middle me-1"></i> Billed To</h5>
-                                                    <h6 className="fs-14 fw-semibold mb-1">{invoice.name || invoice.customer_name}</h6>
-                                                    <p className="text-muted mb-1">{invoice.email}</p>
-                                                    {invoice.phone && <p className="text-muted mb-1">{invoice.phone}</p>}
-                                                    <p className="text-muted mb-0">{invoice.address || invoice.country || 'N/A'}</p>
+                                                    <InvoicePartyLines party={invoice.billed_to || {}} />
                                                 </div>
                                             </div>
                                         </div>
