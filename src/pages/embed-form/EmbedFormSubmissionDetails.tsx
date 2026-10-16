@@ -14,6 +14,8 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import { formatApiDate } from '../../utils/dates';
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
+import SubmissionPartner from './components/SubmissionPartner';
+import { useAuthStore } from '../../store/auth/authStore';
 
 const STATUS_META: Record<string, { label: string; badge: string; icon: string }> = {
     new: { label: 'New', badge: 'bg-primary-subtle text-primary', icon: 'ri-flashlight-line' },
@@ -198,6 +200,8 @@ export default function EmbedFormSubmissionDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
+    // The host sees every partner's applications: the header says whose this is.
+    const isHost = useAuthStore((state: any) => state.user?.is_host == 1);
     const canConvert = hasPermission('convert application');
 
     const [submission, setSubmission] = useState<any>(null);
@@ -533,6 +537,12 @@ export default function EmbedFormSubmissionDetails() {
                                                 )}
                                             </div>
                                             <div className="ef-hero__meta">
+                                                {isHost && submission.partner && (
+                                                    <span>
+                                                        <i className="ri-store-2-line" />
+                                                        Partner: <SubmissionPartner partner={submission.partner} />
+                                                    </span>
+                                                )}
                                                 {(submission.business_name || submission.occupation) && (
                                                     <span>
                                                         <i className="ri-briefcase-line" />

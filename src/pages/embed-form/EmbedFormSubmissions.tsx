@@ -18,6 +18,8 @@ import {
 } from '../../modules/embed-form/services';
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
+import SubmissionPartner from './components/SubmissionPartner';
+import { useAuthStore } from '../../store/auth/authStore';
 
 const STATUS_OPTIONS = [
     { label: 'New', value: 'new' },
@@ -64,6 +66,8 @@ const formatDateLocal = (date: Date) => {
 export default function EmbedFormSubmissions() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
+    // The host sees every partner's applications, so each row names its partner.
+    const isHost = useAuthStore((state: any) => state.user?.is_host == 1);
 
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -557,6 +561,13 @@ export default function EmbedFormSubmissions() {
                                                 filterPlaceholder="Search by applicant"
                                                 style={{ minWidth: '220px' }}
                                             />
+                                            {isHost && (
+                                                <Column
+                                                    header="Partner"
+                                                    body={(rowData: any) => <SubmissionPartner partner={rowData.partner} />}
+                                                    style={{ minWidth: '180px' }}
+                                                />
+                                            )}
                                             <Column
                                                 field="email"
                                                 header="Contact Info"

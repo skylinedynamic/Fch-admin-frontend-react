@@ -97,3 +97,32 @@ test.describe('Embed Form › Loan application › business and funding answers'
     await expect(page.getByText('SBA Loan, Line of Credit')).toBeVisible()
   })
 })
+
+// The host sees every partner's applications: the list and the details page
+// say which partner each one came through.
+test.describe('Embed Form › Loan applications › which partner (host)', () => {
+  const PARTNER = { id: 4, company_name: 'Acme Lending', full_name: 'Pat Partner', partner_type: 'White-Label Partner (WL)', is_host: false }
+
+  test.beforeEach(async ({ page }) => {
+    await seedHostSession(page)
+    await page.route(`${API_ORIGIN}/**`, (route) => jsonOk(route, []))
+    await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => jsonOk(route, { ...THEME, branding: THEME }))
+    await page.route(`${API_ORIGIN}/common/embed-forms/submissions/fetch`, (route) =>
+      route.fulfill({ json: { status: true, message: 'ok', data: [{ ...SUBMISSION, partner: PARTNER }], meta: { total: 1, stats: { total: 1, new_count: 1, reviewing_count: 0, converted_count: 0 } } } })
+    )
+    await page.route(`${API_ORIGIN}/common/embed-forms/submissions/5`, (route) => jsonOk(route, { ...SUBMISSION, partner: PARTNER }))
+  })
+
+  test('the list has a Partner column', async ({ page }) => {
+    await page.goto('/embed-form/loan-applications')
+    await expect(page.getByRole('columnheader', { name: 'Partner' })).toBeVisible()
+    const row = page.getByRole('row', { name: /Odessa Mccall/ })
+    await expect(row.getByText('Acme Lending')).toBeVisible()
+    await expect(row.getByText('White Label')).toBeVisible()
+  })
+
+  test('the details page names the partner in its header', async ({ page }) => {
+    await page.goto('/embed-form/loan-applications/5')
+    await expect(page.getByText(/Partner:/).first()).toContainText('Acme Lending')
+  })
+})

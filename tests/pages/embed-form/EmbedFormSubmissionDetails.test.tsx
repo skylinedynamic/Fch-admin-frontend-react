@@ -196,3 +196,51 @@ describe('Loan application details › business and funding answers', () => {
     expect(screen.queryByText('SBA Loan, Line of Credit')).not.toBeInTheDocument()
   })
 })
+
+/**
+ * The host sees every partner's applications, so the details page says which
+ * partner this one came through; a partner looking at their own is not told.
+ */
+describe('Loan application details › partner', () => {
+  const fromPartner = {
+    ...converted,
+    partner: { id: 4, company_name: 'Acme Lending', full_name: 'Pat Partner', partner_type: 'White-Label Partner (WL)', is_host: false },
+  }
+
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  it('tells the host which partner the application came through', async () => {
+    useAuthStore.setState({ token: 'tok', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: ['view application'] } as never })
+    serve(fromPartner)
+    renderWithProviders(
+      <Routes>
+        <Route path="/embed-form/loan-applications/:id" element={<EmbedFormSubmissionDetails />} />
+      </Routes>,
+      { route: '/embed-form/loan-applications/3' }
+    )
+
+    // In the header, beside the applicant's contact details.
+    const line = await screen.findByText(/Partner:/)
+    expect(line).toHaveTextContent('Partner: Acme Lending')
+    expect(line).toHaveTextContent('White Label')
+  })
+
+  it('does not give a partner the header line about themselves', async () => {
+    useAuthStore.setState({ token: 'tok', user: { id: 1, name: 'Pat Partner', is_host: 0, permissions: ['view application'] } as never })
+    serve(fromPartner)
+    renderWithProviders(
+      <Routes>
+        <Route path="/embed-form/loan-applications/:id" element={<EmbedFormSubmissionDetails />} />
+      </Routes>,
+      { route: '/embed-form/loan-applications/3' }
+    )
+
+    await screen.findAllByText('Odessa Mccall')
+    // The header line is for the host; "Received Via Partner" stays in the metadata card.
+    expect(screen.queryByText(/Partner:/)).not.toBeInTheDocument()
+    expect(screen.queryByText('White Label')).not.toBeInTheDocument()
+  })
+})
