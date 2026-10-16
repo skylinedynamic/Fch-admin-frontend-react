@@ -17,14 +17,14 @@ describe('portalMeta', () => {
   it('names the tenant and the portal', () => {
     const meta = portalMeta({ site_name: 'Acme Capital', site_slogan: 'Capital for Main Street' })
 
-    expect(meta.title).toBe('Acme Capital | Partner Dashboard')
+    expect(meta.title).toBe('Acme Capital | Partner Portal')
     expect(meta.siteName).toBe('Acme Capital')
     expect(meta.description).toBe('Capital for Main Street')
   })
 
   it('describes the portal when the tenant has no slogan', () => {
     expect(portalMeta({ site_name: 'Acme Capital', site_slogan: 'null' }).description)
-      .toBe('Sign in to the Acme Capital partner dashboard to manage your borrowers and their funding.')
+      .toBe('Sign in to the Acme Capital partner portal to manage your borrowers and their funding.')
   })
 
   it('uses the sidebar logo as the preview image', () => {
@@ -67,23 +67,23 @@ describe('applyPortalMeta', () => {
       logo_document_full_url: 'https://api.test/storage/doc.png',
     })
 
-    expect(document.title).toBe('Acme Capital | Partner Dashboard')
+    expect(document.title).toBe('Acme Capital | Partner Portal')
     expect(content('meta[name="description"]')).toBe('Capital for Main Street')
-    expect(content('meta[property="og:title"]')).toBe('Acme Capital | Partner Dashboard')
+    expect(content('meta[property="og:title"]')).toBe('Acme Capital | Partner Portal')
     expect(content('meta[property="og:site_name"]')).toBe('Acme Capital')
     expect(content('meta[property="og:description"]')).toBe('Capital for Main Street')
     expect(content('meta[property="og:image"]')).toBe('https://api.test/storage/doc.png')
-    expect(content('meta[name="twitter:title"]')).toBe('Acme Capital | Partner Dashboard')
+    expect(content('meta[name="twitter:title"]')).toBe('Acme Capital | Partner Portal')
     expect(content('meta[name="twitter:image"]')).toBe('https://api.test/storage/doc.png')
   })
 
   it('updates the tags already in the page rather than adding more', () => {
-    document.head.innerHTML = '<meta property="og:title" content="Four Corner Funding | Partner Dashboard"><link rel="icon" href="/assets/images/Favicon.png">'
+    document.head.innerHTML = '<meta property="og:title" content="Four Corner Funding | Partner Portal"><link rel="icon" href="/assets/images/Favicon.png">'
 
     applyPortalMeta({ site_name: 'Acme', favicon_full_url: 'https://api.test/storage/fav.png' })
 
     expect(document.head.querySelectorAll('meta[property="og:title"]')).toHaveLength(1)
-    expect(content('meta[property="og:title"]')).toBe('Acme | Partner Dashboard')
+    expect(content('meta[property="og:title"]')).toBe('Acme | Partner Portal')
     const icons = document.head.querySelectorAll('link[rel~="icon"]')
     expect(icons).toHaveLength(1)
     expect(icons[0].getAttribute('href')).toMatch(/^https:\/\/api\.test\/storage\/fav\.png\?_t=\d+$/)
@@ -109,10 +109,10 @@ describe('applyPortalMeta', () => {
   })
 
   it('leaves the page alone without branding', () => {
-    document.title = 'Four Corner Funding | Partner Dashboard'
+    document.title = 'Four Corner Funding | Partner Portal'
 
     applyPortalMeta(null)
 
-    expect(document.title).toBe('Four Corner Funding | Partner Dashboard')
+    expect(document.title).toBe('Four Corner Funding | Partner Portal')
   })
 })

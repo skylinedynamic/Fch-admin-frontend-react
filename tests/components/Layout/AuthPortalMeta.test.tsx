@@ -12,9 +12,9 @@ const content = (selector: string) => document.head.querySelector(selector)?.get
 
 beforeEach(() => {
   localStorage.clear()
-  document.title = 'Four Corner Funding | Partner Dashboard'
+  document.title = 'Four Corner Funding | Partner Portal'
   document.head.innerHTML = [
-    '<meta property="og:title" content="Four Corner Funding | Partner Dashboard">',
+    '<meta property="og:title" content="Four Corner Funding | Partner Portal">',
     '<link rel="icon" href="/assets/images/Favicon.png">',
   ].join('')
   server.use(
@@ -45,8 +45,8 @@ describe('Login page branding', () => {
   it('shows the partner in the tab, the preview tags and the logo', async () => {
     const { container } = renderWithProviders(<SignIn />)
 
-    await waitFor(() => expect(document.title).toBe('Acme Capital | Partner Dashboard'))
-    expect(content('meta[property="og:title"]')).toBe('Acme Capital | Partner Dashboard')
+    await waitFor(() => expect(document.title).toBe('Acme Capital | Partner Portal'))
+    expect(content('meta[property="og:title"]')).toBe('Acme Capital | Partner Portal')
     expect(document.head.querySelectorAll('meta[property="og:title"]')).toHaveLength(1)
     expect(content('meta[property="og:description"]')).toBe('Capital for Main Street')
     expect(content('meta[property="og:image"]')).toBe('https://api.test/storage/acme-sidebar.png')

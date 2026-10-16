@@ -30,8 +30,8 @@ describe('index.html link-preview tags', () => {
     const doc = head()
 
     expect(doc.querySelectorAll('title')).toHaveLength(1)
-    expect(doc.querySelector('title')?.textContent).toBe('Four Corner Funding | Partner Dashboard')
-    expect(doc.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe('Four Corner Funding | Partner Dashboard')
+    expect(doc.querySelector('title')?.textContent).toBe('Four Corner Funding | Partner Portal')
+    expect(doc.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe('Four Corner Funding | Partner Portal')
     expect(doc.querySelector('meta[property="og:site_name"]')?.getAttribute('content')).toBe('Four Corner Funding')
     expect(doc.querySelector('meta[name="description"]')?.getAttribute('content')).toBeTruthy()
     expect(doc.querySelector('meta[property="og:description"]')?.getAttribute('content')).toBeTruthy()

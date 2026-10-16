@@ -29,9 +29,9 @@ test.describe('Login page › partner link-preview tags', () => {
     await mockBranding(page)
     await page.goto('/login')
 
-    await expect(page).toHaveTitle('Acme Capital | Partner Dashboard')
+    await expect(page).toHaveTitle('Acme Capital | Partner Portal')
     await expect(page.locator('head meta[property="og:title"]')).toHaveCount(1)
-    expect(await meta(page, 'meta[property="og:title"]')).toBe('Acme Capital | Partner Dashboard')
+    expect(await meta(page, 'meta[property="og:title"]')).toBe('Acme Capital | Partner Portal')
     expect(await meta(page, 'meta[property="og:site_name"]')).toBe('Acme Capital')
     expect(await meta(page, 'meta[property="og:description"]')).toBe('Capital for Main Street')
     expect(await meta(page, 'meta[name="description"]')).toBe('Capital for Main Street')
@@ -50,7 +50,7 @@ test.describe('Login page › partner link-preview tags', () => {
     expect(html).toContain('<!--# include virtual="/__portal-meta" stub="portal_meta_default" -->')
     expect(html).toContain('<!--# block name="portal_meta_default" -->')
     expect(html.match(/<title>/g)).toHaveLength(1)
-    expect(html).toContain('<meta property="og:title" content="Four Corner Funding | Partner Dashboard" />')
+    expect(html).toContain('<meta property="og:title" content="Four Corner Funding | Partner Portal" />')
   })
 
   // Against an Nginx with the portal-meta SSI include configured (see
@@ -64,7 +64,7 @@ test.describe('Login page › partner link-preview tags', () => {
     expect(html).not.toContain('<!--#')
     expect(html.match(/<title>/g)).toHaveLength(1)
     expect(html.match(/property="og:title"/g)).toHaveLength(1)
-    expect(html).toMatch(/<title>[^<]+ \| Partner Dashboard<\/title>/)
+    expect(html).toMatch(/<title>[^<]+ \| Partner Portal<\/title>/)
     expect(html).toMatch(/<meta property="og:url" content="https:\/\/[^"]+\/">/)
   })
 })
