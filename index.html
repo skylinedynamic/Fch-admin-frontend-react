@@ -4,6 +4,28 @@
 
 <head>
   <meta charset="utf-8" />
+  <!-- Link-preview tags (title, description, Open Graph, favicon) for this
+       partner's domain. Previews never run JavaScript, so Nginx fills these in
+       with an SSI include of the API's /api/portal-meta. The block is the stub:
+       the packaged defaults, served if that call fails and wherever SSI is off.
+       It has to sit before the include, and both before the branding script
+       below, which then updates these tags instead of adding a second set.
+       The packaged favicon stays outside the block (Vite fingerprints its path);
+       the API adds a partner favicon only when there is one, after this one,
+       and the later icon is the one the tab shows. -->
+  <link rel="icon" href="/assets/images/Favicon.png" />
+  <!--# block name="portal_meta_default" -->
+  <title>Four Corner Funding | Partner Dashboard</title>
+  <meta name="description" content="Sign in to the Four Corner Funding partner dashboard to manage your borrowers and their funding." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Four Corner Funding" />
+  <meta property="og:title" content="Four Corner Funding | Partner Dashboard" />
+  <meta property="og:description" content="Sign in to the Four Corner Funding partner dashboard to manage your borrowers and their funding." />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Four Corner Funding | Partner Dashboard" />
+  <meta name="twitter:description" content="Sign in to the Four Corner Funding partner dashboard to manage your borrowers and their funding." />
+  <!--# endblock -->
+  <!--# include virtual="/__portal-meta" stub="portal_meta_default" -->
   <script>
     (function () {
       // Paints the tenant's brand before React mounts.
@@ -65,8 +87,9 @@
                 document.head.appendChild(favLink);
               }
             }
-            if (branding.site_name) {
-              document.title = branding.site_name;
+            // Same wording as src/config/portalMeta.ts and the API's portal-meta.
+            if (branding.site_name && branding.site_name !== 'null') {
+              document.title = branding.site_name + ' | Partner Dashboard';
             }
           }
         }
@@ -75,9 +98,7 @@
       }
     })();
   </script>
-  <title>Four Corner Funding | Partner Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="shortcut icon" href="/assets/images/Favicon.png" />
 
   <!-- jsvectormap css -->
   <link href="/assets/libs/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css" />
