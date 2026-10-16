@@ -29,8 +29,8 @@ export type PortalMeta = {
   favicon: string | null
 }
 
-/** Light-surface logos first: previews are drawn on a light card. */
-const IMAGE_KEYS = ['logo_document_full_url', 'logo_mail_full_url', 'logo_mobile_full_url', 'logo_sidebar_full_url'] as const
+/** The sidebar logo - the tenant's main mark - first; the others stand in for it. */
+const IMAGE_KEYS = ['logo_sidebar_full_url', 'logo_document_full_url', 'logo_mail_full_url', 'logo_mobile_full_url'] as const
 
 /** The placeholder service's SVG default, which previews cannot show. */
 const PLACEHOLDER = /^(https:\/\/placehold\.co\/\d+x\d+)(?=\?|$)/

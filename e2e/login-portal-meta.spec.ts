@@ -35,7 +35,7 @@ test.describe('Login page › partner link-preview tags', () => {
     expect(await meta(page, 'meta[property="og:site_name"]')).toBe('Acme Capital')
     expect(await meta(page, 'meta[property="og:description"]')).toBe('Capital for Main Street')
     expect(await meta(page, 'meta[name="description"]')).toBe('Capital for Main Street')
-    expect(await meta(page, 'meta[property="og:image"]')).toBe(BRANDING.logo_document_full_url)
+    expect(await meta(page, 'meta[property="og:image"]')).toBe(BRANDING.logo_sidebar_full_url)
 
     const icons = page.locator('head link[rel~="icon"]')
     await expect(icons).toHaveCount(1)

@@ -27,16 +27,26 @@ describe('portalMeta', () => {
       .toBe('Sign in to the Acme Capital partner dashboard to manage your borrowers and their funding.')
   })
 
-  it('uses the first light-surface logo a preview can show', () => {
+  it('uses the sidebar logo as the preview image', () => {
     const meta = portalMeta({
       site_name: 'Acme',
-      logo_document_full_url: 'https://api.test/storage/doc.svg',
-      logo_mail_full_url: 'null',
-      logo_mobile_full_url: 'https://api.test/storage/mobile.png',
       logo_sidebar_full_url: 'https://api.test/storage/sidebar.png',
+      logo_document_full_url: 'https://api.test/storage/doc.png',
     })
 
-    expect(meta.image).toBe('https://api.test/storage/mobile.png')
+    expect(meta.image).toBe('https://api.test/storage/sidebar.png')
+  })
+
+  it('falls back to the next logo a preview can show', () => {
+    const meta = portalMeta({
+      site_name: 'Acme',
+      logo_sidebar_full_url: 'https://api.test/storage/sidebar.svg',
+      logo_document_full_url: 'null',
+      logo_mail_full_url: 'https://api.test/storage/mail.png',
+      logo_mobile_full_url: 'https://api.test/storage/mobile.png',
+    })
+
+    expect(meta.image).toBe('https://api.test/storage/mail.png')
   })
 
   it('asks for the name placeholder as PNG', () => {
