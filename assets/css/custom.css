@@ -7816,3 +7816,44 @@ File: Custom Css File
   position: static !important;
   top: auto !important;
 }
+/*
+ * Additional Funding Types (funding application, Step 4): a PrimeReact
+ * MultiSelect sized like the other fields - 37.5px tall with 4px corners - and
+ * compact chips in the primary tint, growing a row at a time.
+ */
+.additional-funding-types.p-multiselect {
+  min-height: 37.5px;
+  border-radius: 4px;
+  align-items: center;
+}
+
+.additional-funding-types .p-multiselect-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  white-space: normal;
+}
+
+.additional-funding-types .p-multiselect-label.p-placeholder {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.additional-funding-types .p-multiselect-token {
+  margin: 0;
+  padding: 2px 6px 2px 8px;
+  border-radius: 4px;
+  background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
+  color: var(--vz-primary, #405189);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.additional-funding-types .p-multiselect-token .p-multiselect-token-icon {
+  margin-left: 6px;
+  width: 12px;
+  height: 12px;
+}
+

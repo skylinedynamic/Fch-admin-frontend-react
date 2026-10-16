@@ -116,6 +116,7 @@ export interface FundingRequestData {
   purpose_of_funds: string | null
   approved_funding?: string | null
   preferred_funding_type: string | null
+  additional_funding_types?: string[]
   timeframe_needed: string | null
   collateral_available: string | null
   purpose_note: string | null

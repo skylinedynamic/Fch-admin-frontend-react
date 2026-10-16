@@ -123,3 +123,76 @@ describe('Loan application details › View Funding Application', () => {
     expect(screen.queryByRole('button', { name: /View Funding Application/ })).not.toBeInTheDocument()
   })
 })
+
+/**
+ * The business EIN, the business start date (stored as
+ * business_checking_start_date), the requested amount in its currency and the
+ * additional funding types, as the API sends them.
+ */
+describe('Loan application details › business and funding answers', () => {
+  const answered = {
+    ...converted,
+    business_ein: '123456789',
+    business_ein_display: '12-3456789',
+    years_in_business: '3+ years',
+    business_checking_start_date: '2019-04-01',
+    currency: 'EUR',
+    currency_symbol: '€',
+    requested_amount: '150000.00',
+    requested_amount_formatted: '€150,000.00',
+    preferred_funding_type: 'Term Loan',
+    additional_funding_types: ['SBA Loan', 'Line of Credit'],
+  }
+
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  it('shows the EIN written as an EIN', async () => {
+    signInWith(['view application'])
+    serve(answered)
+    renderPage()
+
+    expect(await screen.findByText('Business EIN')).toBeInTheDocument()
+    expect(screen.getByText('12-3456789')).toBeInTheDocument()
+  })
+
+  it('calls the checking date the business start date', async () => {
+    signInWith(['view application'])
+    serve(answered)
+    renderPage()
+
+    expect(await screen.findByText('Business Start Date')).toBeInTheDocument()
+    expect(screen.queryByText('Checking Opened')).not.toBeInTheDocument()
+  })
+
+  it('shows the requested amount in its currency', async () => {
+    signInWith(['view application'])
+    serve(answered)
+    renderPage()
+
+    // In the header summary and in the Funding Request section.
+    expect((await screen.findAllByText('€150,000.00')).length).toBeGreaterThan(0)
+    expect(screen.queryByText('$150,000.00')).not.toBeInTheDocument()
+    expect(screen.getByText('EUR')).toBeInTheDocument()
+  })
+
+  it('lists the additional funding types', async () => {
+    signInWith(['view application'])
+    serve(answered)
+    renderPage()
+
+    expect(await screen.findByText('Additional Funding Types')).toBeInTheDocument()
+    expect(screen.getByText('SBA Loan, Line of Credit')).toBeInTheDocument()
+  })
+
+  it('leaves the additional funding types out when none were chosen', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, additional_funding_types: [] })
+    renderPage()
+
+    await screen.findByText('Preferred Funding Type')
+    expect(screen.queryByText('SBA Loan, Line of Credit')).not.toBeInTheDocument()
+  })
+})

@@ -649,6 +649,12 @@ export default function EmbedFormSubmissionDetails() {
                                         />
                                         <DetailFieldItem label="Industry Type" value={submission.industry_type} />
                                         <DetailFieldItem label="Entity Type" value={submission.entity_type} />
+                                        <DetailFieldItem
+                                            label="Business EIN"
+                                            value={submission.business_ein_display || submission.business_ein}
+                                            copyValue={submission.business_ein_display || submission.business_ein}
+                                        />
+                                        {/* Worked out from the business start date; older submissions picked it. */}
                                         <DetailFieldItem label="Years in Business" value={submission.years_in_business} />
                                         <DetailFieldItem label="Number of Employees" value={submission.number_of_employees} />
                                         <DetailFieldItem
@@ -763,7 +769,8 @@ export default function EmbedFormSubmissionDetails() {
                                             value={formatMoney(submission.annual_revenue_formatted, submission.annual_revenue)}
                                         />
                                         <DetailFieldItem label="Business Bank" value={submission.business_bank_name} />
-                                        <DetailFieldItem label="Checking Opened" value={formatDate(submission.business_checking_start_date)} />
+                                        {/* Stored as business_checking_start_date. */}
+                                        <DetailFieldItem label="Business Start Date" value={formatDate(submission.business_checking_start_date)} />
                                         <DetailFieldItem
                                             label="Estimated Credit Score (self-reported)"
                                             value={personalCreditScore ? (
@@ -796,11 +803,22 @@ export default function EmbedFormSubmissionDetails() {
                                             label="Requested Amount"
                                             value={
                                                 formatMoney(submission.requested_amount_formatted, submission.requested_amount)
-                                                    ? <span className="fw-bold text-success fs-14">{formatMoney(submission.requested_amount_formatted, submission.requested_amount)}</span>
+                                                    ? (
+                                                        <span className="d-inline-flex align-items-center gap-2">
+                                                            <span className="fw-bold text-success fs-14">{formatMoney(submission.requested_amount_formatted, submission.requested_amount)}</span>
+                                                            {submission.currency && (
+                                                                <span className="badge bg-light text-body border fs-11">{submission.currency}</span>
+                                                            )}
+                                                        </span>
+                                                    )
                                                     : null
                                             }
                                         />
                                         <DetailFieldItem label="Preferred Funding Type" value={submission.preferred_funding_type} />
+                                        <DetailFieldItem
+                                            label="Additional Funding Types"
+                                            value={submission.additional_funding_types?.length ? submission.additional_funding_types.join(', ') : null}
+                                        />
                                         <DetailFieldItem label="Purpose of Funds" value={submission.purpose_of_funds} />
                                         <DetailFieldItem label="Timeframe Needed" value={submission.timeframe_needed} />
                                         <DetailFieldItem label="Collateral Available" value={submission.collateral_available} />

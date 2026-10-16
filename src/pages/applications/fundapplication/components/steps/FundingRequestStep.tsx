@@ -4,7 +4,8 @@ import type { FundingRequest } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
 import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
-import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER } from '../../../../../data/profile'
+import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType } from '../../../../../data/profile'
+import { MultiSelect } from 'primereact/multiselect'
 import { useFundingRequest, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { toast } from 'react-toastify'
@@ -152,6 +153,7 @@ export default function FundingRequestStep({
       requested_amount: unformatCurrency(funding.requestedAmount) || null,
       purpose_of_funds: funding.purpose || null,
       preferred_funding_type: funding.fundingType || null,
+      additional_funding_types: withoutPreferredFundingType(funding.additionalFundingTypes, funding.fundingType),
       approved_funding: funding.approvedFunding || null,
       timeframe_needed: funding.timeframe || null,
       collateral_available: funding.collateral || null,
@@ -208,6 +210,7 @@ export default function FundingRequestStep({
         purpose: resolvedPurpose,
         approvedFunding: resolvedApprovedFunding,
         fundingType: resolvedFundingType,
+        additionalFundingTypes: withoutPreferredFundingType(apiData.additional_funding_types, resolvedFundingType),
         timeframe: resolvedTimeframe,
         collateral: apiData.collateral_available || '',
         purposeNote: apiData.purpose_note || '',
@@ -341,7 +344,11 @@ export default function FundingRequestStep({
         </label>
         <CustomDropdown
           value={funding.fundingType}
-          onChange={(value) => setFunding({ ...funding, fundingType: value })}
+          onChange={(value) => setFunding({
+            ...funding,
+            fundingType: value,
+            additionalFundingTypes: withoutPreferredFundingType(funding.additionalFundingTypes, value),
+          })}
           options={dynamicFundingTypeOptions}
           optionLabel="label"
           optionValue="value"
@@ -350,6 +357,26 @@ export default function FundingRequestStep({
         />
         {hasError('preferred_funding_type') && (
           <div className="invalid-feedback d-block">{getFieldError('preferred_funding_type')}</div>
+        )}
+      </div>
+      <div className="col-md-6">
+        <label className="form-label" htmlFor="additional_funding_types">Additional Funding Types</label>
+        {/* Every funding type but the preferred one, several at once. */}
+        <MultiSelect
+          inputId="additional_funding_types"
+          value={funding.additionalFundingTypes ?? []}
+          onChange={(e) => setFunding({ ...funding, additionalFundingTypes: e.value })}
+          options={additionalFundingTypeOptions(funding.fundingType)}
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select any other funding types"
+          display="chip"
+          showSelectAll={false}
+          appendTo="self"
+          className={`w-100 additional-funding-types ${hasError('additional_funding_types') ? 'p-invalid' : ''}`}
+        />
+        {hasError('additional_funding_types') && (
+          <div className="invalid-feedback d-block">{getFieldError('additional_funding_types')}</div>
         )}
       </div>
       <div className="col-md-6">
