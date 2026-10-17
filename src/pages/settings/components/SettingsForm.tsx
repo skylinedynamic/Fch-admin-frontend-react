@@ -12,7 +12,7 @@ import CreditProfileConfigForm from './CreditProfileConfigForm';
 import ScoreCalculationConfigForm from './ScoreCalculationConfigForm';
 import OpenAiConfigForm from './OpenAiConfigForm';
 import PaymentMethodConfig from './PaymentMethodConfig/PaymentMethodConfig';
-import EmailConfigurationForm from './EmailConfigurationForm';
+import MailConfigurationSection from './MailConfiguration/MailConfigurationSection';
 import SmsConfigurationForm from './SmsConfiguration/SmsConfigurationForm';
 import { SMS_CONFIGURATION_PERMISSION, SMS_CONFIGURATION_SECTION } from '../../../config/smsConfiguration';
 // @ts-ignore
@@ -199,7 +199,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                 ) : activeSection === 'openai' ? (
                     <OpenAiConfigForm />
                 ) : activeSection === 'email_configuration' ? (
-                    <EmailConfigurationForm />
+                    <MailConfigurationSection />
                 ) : activeSection === SMS_CONFIGURATION_SECTION ? (
                     <SmsConfigurationForm />
                 ) : activeSection === 'branding' ? (
