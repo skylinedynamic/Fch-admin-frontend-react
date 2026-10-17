@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, ChangeEvent, FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
-import { useBlogs, useSaveSeoSetting, useSeoSettings } from '../../modules/cms/queries';
+import { useAllSeoSettings, useBlogs, useSaveSeoSetting, useSeoSetting } from '../../modules/cms/queries';
 import { toast } from 'react-toastify';
 import CmsFormLoader from '../../components/Loader/CmsFormLoader';
 import { Dropdown } from 'primereact/dropdown';
@@ -25,8 +25,13 @@ interface SeoFormData {
 export default function SeoSettingEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    // Return to the same list page / search the user came from
+    const listPath = `/cms/seo-settings${location.state?.listSearch || ''}`;
     const saveMutation = useSaveSeoSetting();
-    const { data: seoData, isLoading, isFetching } = useSeoSettings();
+    // Load the record by id — the paginated list only holds the first page
+    const { data: settingData, isLoading, isFetching } = useSeoSetting(id);
+    const { data: seoData } = useAllSeoSettings();
     const { data: blogsData } = useBlogs({ per_page: 100 }); // Fetch blogs for the dropdown
 
     const [formData, setFormData] = useState<SeoFormData>({
@@ -44,8 +49,17 @@ export default function SeoSettingEdit() {
             value: `Blog: ${blog.title}`,
             path: `/blog/${blog.slug}`
         }));
-        return [...WEBSITE_PAGES, ...blogOptions];
-    }, [blogsData]);
+        const options = [...WEBSITE_PAGES, ...blogOptions];
+        // Keep the saved page selectable even if it is not in the predefined list
+        if (formData.page_name && !options.some(p => p.value === formData.page_name)) {
+            options.unshift({
+                label: `${formData.page_name} — ${formData.path}`,
+                value: formData.page_name,
+                path: formData.path
+            });
+        }
+        return options;
+    }, [blogsData, formData.page_name, formData.path]);
     const [ogImage, setOgImage] = useState<string | null>(null);
     const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -54,9 +68,9 @@ export default function SeoSettingEdit() {
 
     // Populate form when editing or when page selection changes in create mode
     useEffect(() => {
-        if (id && seoData?.data) {
-            const setting = seoData.data.find((s: any) => String(s.id) === id);
-            if (setting) {
+        if (id && settingData?.data) {
+            const setting = settingData.data;
+            if (String(setting.id) === id) {
                 setFormData({
                     page_name: setting.page_name || '',
                     path: setting.path || '',
@@ -70,10 +84,13 @@ export default function SeoSettingEdit() {
                     setOgImagePreview(setting.og_image);
                     const relativePath = setting.og_image.split('/storage/').pop() || '';
                     setOgImage(relativePath);
+                } else {
+                    setOgImage(null);
+                    setOgImagePreview(null);
                 }
             }
         }
-    }, [id, seoData]);
+    }, [id, settingData]);
 
     const handlePageChange = (value: string) => {
         const selected = pageOptions.find(p => p.value === value);
@@ -100,7 +117,7 @@ export default function SeoSettingEdit() {
                 setOgImagePreview(null);
             }
             // Navigate to edit mode for this record
-            navigate(`/cms/seo-settings/edit/${existing.id}`, { replace: true });
+            navigate(`/cms/seo-settings/edit/${existing.id}`, { replace: true, state: location.state });
             return;
         }
 
@@ -169,7 +186,7 @@ export default function SeoSettingEdit() {
         try {
             await saveMutation.mutateAsync({ id: id ? Number(id) : undefined, data });
             toast.success(id ? 'SEO settings updated successfully' : 'SEO settings created successfully');
-            navigate('/cms/seo-settings');
+            navigate(listPath);
         } catch (error: any) {
             if (error.response?.data?.errors) {
                 const backendErrors = error.response.data.errors;
@@ -201,7 +218,7 @@ export default function SeoSettingEdit() {
                     ]} 
                 >
                     <div className="page-actions d-flex align-items-center gap-2">
-                        <Link to="/cms/seo-settings" className="btn btn-outline-secondary waves-effect" style={{ whiteSpace: 'nowrap' }}>
+                        <Link to={listPath} className="btn btn-outline-secondary waves-effect" style={{ whiteSpace: 'nowrap' }}>
                             <i className="ri-arrow-left-line align-middle me-1"></i> Back
                         </Link>
                         <button

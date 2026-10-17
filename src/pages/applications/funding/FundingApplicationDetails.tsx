@@ -428,6 +428,7 @@ export default function FundingApplicationDetails() {
             <DetailRow label="Purpose of Funds" value={app.purpose_of_funds} />
             {app.purpose_note && <DetailRow label="Purpose of Funding Note" value={app.purpose_note} />}
             <DetailRow label="Preferred Funding Type" value={app.preferred_funding_type} />
+            <DetailRow label="Additional Funding Types" value={app.additional_funding_types?.join(', ')} />
             <DetailRow label="Timeframe Needed" value={app.timeframe_needed} />
             <div className="col-12 mb-3">
                 <label className="form-label fs-13">Collateral Available?</label>

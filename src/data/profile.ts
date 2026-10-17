@@ -139,6 +139,20 @@ export const fundingTypeOptions: OptionType[] = [
   { label: 'Refinance / Debt Consolidation', value: 'Refinance / Debt Consolidation' },
 ]
 
+/**
+ * The Additional Funding Types choices on the funding application's Funding
+ * Request step: every funding type except the preferred one, which cannot be
+ * picked twice (the API refuses it too).
+ */
+export const additionalFundingTypeOptions = (preferred: string | null | undefined): OptionType[] =>
+  fundingTypeOptions.filter((o) => o.value !== preferred)
+
+/** The chosen additional types, without one that has just become the preferred type. */
+export const withoutPreferredFundingType = (
+  chosen: string[] | null | undefined,
+  preferred: string | null | undefined
+): string[] => (chosen ?? []).filter((type) => type !== preferred)
+
 export const timeframeOptions: OptionType[] = [
   { label: 'Immediately', value: 'Immediately' },
   { label: '1-2 Weeks', value: '1-2 Weeks' },

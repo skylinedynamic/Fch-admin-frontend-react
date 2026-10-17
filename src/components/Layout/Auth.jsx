@@ -3,6 +3,7 @@ import logoImg from "../../../assets/images/fch-logo-wide.png"
 import { APP_CONFIG, MODULE_BRANDING } from '../../config/appConfig'
 import { fetchBranding } from '../../modules/settings/services'
 import { applyBrandTheme } from '../../utils/brandingTheme'
+import { applyPortalMeta } from '../../utils/portalMeta'
 
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
   const [settings, setSettings] = React.useState(null);
@@ -23,17 +24,8 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
           // The server's precomputed map is passed through so this matches what
           // /api/branding.css already painted before React mounted.
           applyBrandTheme(res.data, payload?.data?.css_vars);
-          const faviconUrl = res.data.favicon_full_url || res.data.favicon;
-          if (faviconUrl && faviconUrl !== 'null') {
-            document.querySelectorAll("link[rel~='icon']").forEach(el => el.remove());
-            const link = document.createElement('link');
-            link.rel = 'icon';
-            link.href = faviconUrl.includes('?') ? `${faviconUrl}&_t=${Date.now()}` : `${faviconUrl}?_t=${Date.now()}`;
-            document.head.appendChild(link);
-          }
-          if (res.data.site_name) {
-            document.title = res.data.site_name;
-          }
+          // Title, description, preview tags and favicon, as the partner's.
+          applyPortalMeta(res.data);
         }
       })
       .catch((err) => {

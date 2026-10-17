@@ -14,6 +14,8 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import { formatApiDate } from '../../utils/dates';
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
+import SubmissionPartner from './components/SubmissionPartner';
+import { useAuthStore } from '../../store/auth/authStore';
 
 const STATUS_META: Record<string, { label: string; badge: string; icon: string }> = {
     new: { label: 'New', badge: 'bg-primary-subtle text-primary', icon: 'ri-flashlight-line' },
@@ -198,6 +200,8 @@ export default function EmbedFormSubmissionDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
+    // The host sees every partner's applications: the header says whose this is.
+    const isHost = useAuthStore((state: any) => state.user?.is_host == 1);
     const canConvert = hasPermission('convert application');
 
     const [submission, setSubmission] = useState<any>(null);
@@ -322,6 +326,10 @@ export default function EmbedFormSubmissionDetails() {
     const isRejected = submission?.status === 'rejected';
     const convertedBorrower = submission?.converted_borrower;
     const convertedBorrowerId = convertedBorrower?.id || submission?.converted_borrower_id || null;
+    // The funding application the conversion created. Its page sits behind
+    // "view funding application", so the button is only offered with it.
+    const convertedFundingApplicationId = submission?.converted_funding_application_id || null;
+    const canViewFundingApplication = hasPermission('view funding application');
     const currentStatus = STATUS_META[submission?.status?.toLowerCase()] || STATUS_META.new;
     const initials = `${submission?.first_name?.[0] || ''}${submission?.last_name?.[0] || ''}`.toUpperCase() || 'AP';
 
@@ -529,6 +537,12 @@ export default function EmbedFormSubmissionDetails() {
                                                 )}
                                             </div>
                                             <div className="ef-hero__meta">
+                                                {isHost && submission.partner && (
+                                                    <span>
+                                                        <i className="ri-store-2-line" />
+                                                        Partner: <SubmissionPartner partner={submission.partner} />
+                                                    </span>
+                                                )}
                                                 {(submission.business_name || submission.occupation) && (
                                                     <span>
                                                         <i className="ri-briefcase-line" />
@@ -568,16 +582,28 @@ export default function EmbedFormSubmissionDetails() {
                                             />
                                         </div>
                                         {isConverted ? (
-                                            convertedBorrowerId && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-soft-primary ef-convert-btn ef-convert-btn--lg"
-                                                    onClick={() => navigate(`/clients/${convertedBorrowerId}`)}
-                                                >
-                                                    <i className="ri-external-link-line" />
-                                                    <span>View Borrower</span>
-                                                </button>
-                                            )
+                                            <>
+                                                {convertedFundingApplicationId && canViewFundingApplication && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary ef-convert-btn ef-convert-btn--lg"
+                                                        onClick={() => navigate(`/intake-review/funding-application/${convertedFundingApplicationId}`)}
+                                                    >
+                                                        <i className="ri-file-list-3-line" />
+                                                        <span>View Funding Application</span>
+                                                    </button>
+                                                )}
+                                                {convertedBorrowerId && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary ef-convert-btn ef-convert-btn--lg"
+                                                        onClick={() => navigate(`/clients/${convertedBorrowerId}`)}
+                                                    >
+                                                        <i className="ri-external-link-line" />
+                                                        <span>View Borrower</span>
+                                                    </button>
+                                                )}
+                                            </>
                                         ) : canConvert ? (
                                             <button
                                                 type="button"
@@ -633,6 +659,12 @@ export default function EmbedFormSubmissionDetails() {
                                         />
                                         <DetailFieldItem label="Industry Type" value={submission.industry_type} />
                                         <DetailFieldItem label="Entity Type" value={submission.entity_type} />
+                                        <DetailFieldItem
+                                            label="Business EIN"
+                                            value={submission.business_ein_display || submission.business_ein}
+                                            copyValue={submission.business_ein_display || submission.business_ein}
+                                        />
+                                        {/* Worked out from the business start date; older submissions picked it. */}
                                         <DetailFieldItem label="Years in Business" value={submission.years_in_business} />
                                         <DetailFieldItem label="Number of Employees" value={submission.number_of_employees} />
                                         <DetailFieldItem
@@ -747,7 +779,8 @@ export default function EmbedFormSubmissionDetails() {
                                             value={formatMoney(submission.annual_revenue_formatted, submission.annual_revenue)}
                                         />
                                         <DetailFieldItem label="Business Bank" value={submission.business_bank_name} />
-                                        <DetailFieldItem label="Checking Opened" value={formatDate(submission.business_checking_start_date)} />
+                                        {/* Stored as business_checking_start_date. */}
+                                        <DetailFieldItem label="Business Start Date" value={formatDate(submission.business_checking_start_date)} />
                                         <DetailFieldItem
                                             label="Estimated Credit Score (self-reported)"
                                             value={personalCreditScore ? (
@@ -780,11 +813,22 @@ export default function EmbedFormSubmissionDetails() {
                                             label="Requested Amount"
                                             value={
                                                 formatMoney(submission.requested_amount_formatted, submission.requested_amount)
-                                                    ? <span className="fw-bold text-success fs-14">{formatMoney(submission.requested_amount_formatted, submission.requested_amount)}</span>
+                                                    ? (
+                                                        <span className="d-inline-flex align-items-center gap-2">
+                                                            <span className="fw-bold text-success fs-14">{formatMoney(submission.requested_amount_formatted, submission.requested_amount)}</span>
+                                                            {submission.currency && (
+                                                                <span className="badge bg-light text-body border fs-11">{submission.currency}</span>
+                                                            )}
+                                                        </span>
+                                                    )
                                                     : null
                                             }
                                         />
                                         <DetailFieldItem label="Preferred Funding Type" value={submission.preferred_funding_type} />
+                                        <DetailFieldItem
+                                            label="Additional Funding Types"
+                                            value={submission.additional_funding_types?.length ? submission.additional_funding_types.join(', ') : null}
+                                        />
                                         <DetailFieldItem label="Purpose of Funds" value={submission.purpose_of_funds} />
                                         <DetailFieldItem label="Timeframe Needed" value={submission.timeframe_needed} />
                                         <DetailFieldItem label="Collateral Available" value={submission.collateral_available} />
