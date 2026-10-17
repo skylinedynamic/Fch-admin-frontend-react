@@ -206,6 +206,13 @@ export const deleteFundingApplicationDocument = async (documentId: number): Prom
   return data
 }
 
+// Download a funding application's own copy of a document (not My Documents).
+export const downloadFundingApplicationDocument = async (documentId: string | number): Promise<any> => {
+  return apiClient.get(`/common/funding-application/documents/${Number(documentId)}/download`, {
+    responseType: 'blob',
+  })
+}
+
 export const uploadFundingApplicationDocuments = async (payload: {
   funding_application_id: number
   document_type_id: number

@@ -1,11 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderWithProviders, screen } from '../../../test-utils'
+import userEvent from '@testing-library/user-event'
+import { renderWithProviders, screen, within } from '../../../test-utils'
 import FundingRequestDetail from '../../../../src/pages/applications/funding-request/FundingRequestDetail'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import { FUNDING_APPLICATION_STATUS } from '../../../../src/config/borrower'
 import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
 
 const detail = vi.hoisted(() => ({ review: {} as Record<string, unknown> }))
+const downloads = vi.hoisted(() => ({ myDocument: vi.fn(), applicationDocument: vi.fn() }))
+
+vi.mock('../../../../src/modules/client/services', async (original) => ({
+  ...(await original<typeof import('../../../../src/modules/client/services')>()),
+  downloadBorrowerDocument: downloads.myDocument,
+}))
+vi.mock('../../../../src/modules/funding-application/services', async (original) => ({
+  ...(await original<typeof import('../../../../src/modules/funding-application/services')>()),
+  downloadFundingApplicationDocument: downloads.applicationDocument,
+}))
+vi.mock('../../../../src/utils/fileDownload', async (original) => ({
+  ...(await original<typeof import('../../../../src/utils/fileDownload')>()),
+  handleFileDownload: (fetcher: () => unknown) => fetcher(),
+}))
 
 vi.mock('../../../../src/modules/application', async (original) => ({
   ...(await original<typeof import('../../../../src/modules/application')>()),
@@ -75,3 +90,43 @@ describe('FundingRequestDetail — preparing the funding application', () => {
   })
 })
 
+/**
+ * Defect (QA 2026-10-16): the Host's Documents Uploaded list always came from
+ * My Documents. A row is now the funding application's copy once there is
+ * one, and its download must go through the application's document.
+ */
+describe('FundingRequestDetail — documents uploaded', () => {
+  beforeEach(() => {
+    downloads.myDocument.mockReset()
+    downloads.applicationDocument.mockReset()
+    asHost()
+    detail.review = {
+      ...approved,
+      documents_with_urls: [
+        { name: 'Driver’s License', source: 'application', document_id: 6, file_name: 'licence.pdf', document_type: 'Driver’s License', status: 'Uploaded', url: 'http://x/storage/funding-application/5/FA-1/licence.pdf' },
+        { name: 'Business Bank Statements', source: 'borrower', document_id: 11, file_name: 'march.pdf', document_type: 'Business Bank Statements', status: 'Uploaded', url: 'http://x/storage/borrowers/5/march.pdf' },
+      ],
+    }
+  })
+
+  const downloadFor = (fileName: string) => {
+    const row = screen.getByText(fileName).closest('tr') as HTMLElement
+    return within(row).getByTitle('Download Document')
+  }
+
+  it('downloads an application copy from the funding application', async () => {
+    renderWithProviders(<FundingRequestDetail />)
+    await userEvent.click(downloadFor('licence.pdf'))
+
+    expect(downloads.applicationDocument).toHaveBeenCalledWith(6)
+    expect(downloads.myDocument).not.toHaveBeenCalled()
+  })
+
+  it('downloads a My Documents file from My Documents', async () => {
+    renderWithProviders(<FundingRequestDetail />)
+    await userEvent.click(downloadFor('march.pdf'))
+
+    expect(downloads.myDocument).toHaveBeenCalledWith(11)
+    expect(downloads.applicationDocument).not.toHaveBeenCalled()
+  })
+})

@@ -7,6 +7,7 @@ import FundingRequestDetailLoader from './components/FundingRequestDetailLoader'
 import { getFileConfig } from '../../../config/fileTypeConfig';
 import { handleFileDownload, downloadFromUrl } from '../../../utils/fileDownload';
 import { downloadBorrowerDocument } from '../../../modules/client/services';
+import { downloadFundingApplicationDocument } from '../../../modules/funding-application/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
 import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS } from '../../../config/funding';
@@ -139,10 +140,11 @@ export default function FundingRequestDetail() {
     const getExactStatusStyles = (status: string) => {
         const label = status || FUNDING_REVIEW_STATUS.PENDING;
         const card = FUNDING_REVIEW_GUIDELINE_CARDS.find(c => c.label === label);
+        const color = card?.color || '#f59e0b';
         return {
-            bg: card?.bg || '#f0fdf4',
-            border: card?.border || '#bbf7d0',
-            iconBg: card?.iconBg || '#16a34a',
+            bg: `${color}14`,
+            border: `${color}55`,
+            iconBg: color,
         };
     };
 
@@ -514,7 +516,8 @@ export default function FundingRequestDetail() {
 
                                                             if (doc.document_id && !String(doc.document_id).startsWith('missing_')) {
                                                                 handleFileDownload(
-                                                                    () => downloadBorrowerDocument(doc.document_id),
+                                                                    // The funding application's copy, or the My Documents file.
+                                                                    () => doc.source === 'application' ? downloadFundingApplicationDocument(doc.document_id) : downloadBorrowerDocument(doc.document_id),
                                                                     fileName,
                                                                     doc.url
                                                                 );

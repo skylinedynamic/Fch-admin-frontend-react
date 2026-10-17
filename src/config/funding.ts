@@ -334,53 +334,43 @@ export const FUNDING_REVIEW_TIMELINE_STEPS = [
     },
 ];
 
+// When the Host should set each status. Only the Host reviews a funding
+// request; the borrower sees the matching explanation in the borrower portal.
 export const FUNDING_REVIEW_GUIDELINE_CARDS = [
     {
         label: FUNDING_REVIEW_STATUS.PENDING,
-        desc: 'Request submitted and waiting for review.',
-        bg: '#f0fdf4',
-        border: '#bbf7d0',
-        iconBg: '#16a34a',
+        desc: 'New request from the borrower, waiting for review. Only the Host reviews it.',
+        color: '#f59e0b',
         icon: 'ri-time-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.ACCEPTED,
-        desc: 'Review completed successfully.',
-        bg: '#fefce8',
-        border: '#fef08a',
-        iconBg: '#eab308',
-        icon: 'ri-check-line'
+        desc: 'Set when all documents and information are checked and complete.',
+        color: '#06b6d4',
+        icon: 'ri-checkbox-circle-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.IN_PROGRESS,
-        desc: 'Admin can reviewing the request.',
-        bg: '#eff6ff',
-        border: '#bfdbfe',
-        iconBg: '#3b82f6',
-        icon: 'ri-shield-user-fill'
+        desc: 'Set while you process the application or need something from the borrower. Post instructions in Activity.',
+        color: '#3b82f6',
+        icon: 'ri-loader-4-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.APPROVED,
-        desc: 'Borrower can start funding application.',
-        bg: '#f0fdf4',
-        border: '#bbf7d0',
-        iconBg: '#16a34a',
-        icon: 'ri-check-line'
+        desc: 'Set when everything is complete and correct. The borrower can start the funding application.',
+        color: '#10b981',
+        icon: 'ri-check-double-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.REJECTED,
-        desc: 'Request declined missing information.',
-        bg: '#fef2f2',
-        border: '#fecaca',
-        iconBg: '#ef4444',
+        desc: 'Set when documents are missing or the funding requested is wrong. Give the reason.',
+        color: '#ef4444',
         icon: 'ri-close-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.CANCELED,
-        desc: 'Request has been canceled.',
-        bg: '#fef2f2',
-        border: '#fecaca',
-        iconBg: '#ef4444',
+        desc: 'Set to stop a request that should not continue, e.g. a duplicate or the wrong funding type.',
+        color: '#64748b',
         icon: 'ri-stop-circle-line'
     }
 ];
