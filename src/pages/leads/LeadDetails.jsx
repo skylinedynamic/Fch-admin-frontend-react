@@ -604,7 +604,7 @@ export default function LeadDetails() {
                                 </div>
                                 <div className="card-body p-4">
                                     <div className="tab-content">
-                                        {isLoading || isSaving ? (
+                                        {isLoading ? (
                                             <FormLoader count={12} />
                                         ) : (
                                             <>
