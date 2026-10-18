@@ -98,6 +98,13 @@ export const useSeoSettings = (params?: SeoListParams) => {
   });
 };
 
+export const useAllSeoSettings = () => {
+  return useQuery({
+    queryKey: ["seo-settings", "all"],
+    queryFn: cmsService.fetchAllSeoSettings,
+  });
+};
+
 export const useSeoSetting = (id: string | number | undefined) => {
   return useQuery({
     queryKey: ["seo-setting", id],
@@ -132,6 +139,7 @@ export const useSaveSeoSetting = () => {
     mutationFn: ({ id, data }: { id: number | undefined; data: FormData }) => cmsService.saveSeoSetting(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seo-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["seo-setting"] });
     },
   });
 };

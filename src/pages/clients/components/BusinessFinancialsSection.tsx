@@ -175,10 +175,14 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
             const apiData = { ...formData };
             delete apiData.years_in_business; // Do not send computed read-only field to API
 
+            // A money field left empty is sent as null, which clears it on the
+            // server. Leaving it out (or sending '') would keep the old amount,
+            // so an optional figure could never be removed once entered.
             CURRENCY_FIELDS.forEach(field => {
-                if (apiData[field]) {
-                    apiData[field] = unformatNumber(apiData[field]);
-                }
+                const raw = apiData[field];
+                apiData[field] = raw === null || raw === undefined || String(raw).trim() === ''
+                    ? null
+                    : unformatNumber(raw);
             });
 
             // Map and sanitize bank accounts
@@ -203,6 +207,9 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                 average_monthly_deposits: apiData.average_monthly_deposits,
                 monthly_deposit_count: apiData.monthly_deposit_count,
                 annual_revenue: apiData.annual_revenue,
+                // Was missing from the payload, so it was never saved: any
+                // change, including clearing it, was dropped on Update.
+                annual_personal_income: apiData.annual_personal_income,
                 profit_margin: apiData.profit_margin,
                 current_business_debt: apiData.current_business_debt,
                 fico_score: apiData.fico_score,

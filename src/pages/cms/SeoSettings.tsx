@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
 import { useSeoSettings, useDeleteSeoSettings } from '../../modules/cms/queries';
 import { DataTable } from '../../components/Table/DataTableWrapper';
@@ -23,10 +23,24 @@ interface SeoSetting {
 export default function SeoSettings() {
     const { hasPermission } = usePermissions();
     const navigate = useNavigate();
-    const [page, setPage] = useState<number>(1);
-    const [perPage, setPerPage] = useState<number>(10);
-    const [searchText, setSearchText] = useState<string>('');
-    const [appliedSearch, setAppliedSearch] = useState<string>('');
+    const location = useLocation();
+    // Page, page size and search live in the URL so the list reopens where it was left after an edit
+    const [searchParams, setSearchParams] = useSearchParams();
+    const page = Math.max(1, Number(searchParams.get('page')) || 1);
+    const perPage = Math.max(1, Number(searchParams.get('per_page')) || 10);
+    const appliedSearch = searchParams.get('search') || '';
+    const updateListParams = (next: { page?: number; perPage?: number; search?: string }) => {
+        const params: Record<string, string> = {};
+        const nextPage = next.page ?? page;
+        const nextPerPage = next.perPage ?? perPage;
+        const nextSearch = next.search ?? appliedSearch;
+        if (nextPage > 1) params.page = String(nextPage);
+        if (nextPerPage !== 10) params.per_page = String(nextPerPage);
+        if (nextSearch) params.search = nextSearch;
+        setSearchParams(params, { replace: true });
+    };
+    const setPage = (value: number) => updateListParams({ page: value });
+    const [searchText, setSearchText] = useState<string>(appliedSearch);
     const [sortField, setSortField] = useState<string>('id');
     const [sortOrder, setSortOrder] = useState<number>(1);
 
@@ -48,14 +62,20 @@ export default function SeoSettings() {
     }, []);
 
     const handleApplyFilters = () => {
-        setAppliedSearch(searchText);
-        setPage(1);
+        updateListParams({ search: searchText, page: 1 });
     };
     const handleClearFilters = () => {
         setSearchText('');
-        setAppliedSearch('');
-        setPage(1);
+        updateListParams({ search: '', page: 1 });
     };
+
+    // Step back when the current page no longer exists (e.g. its last rows were deleted)
+    const lastPage = seoData?.meta?.last_page;
+    React.useEffect(() => {
+        if (lastPage && page > lastPage) setPage(lastPage);
+    }, [lastPage, page]);
+
+    const listState = { listSearch: location.search };
 
     const handleDelete = async () => {
         if (!selectedRows.length) return;
@@ -82,7 +102,7 @@ export default function SeoSettings() {
                 <div className="blog-row-actions ms-2 opacity-0">
                     {hasPermission('update seo settings') && (
                         <>
-                            <Link to={`/cms/seo-settings/edit/${rowData.id}`} className="text-primary fs-12 fw-medium me-2">Edit</Link>
+                            <Link to={`/cms/seo-settings/edit/${rowData.id}`} state={listState} className="text-primary fs-12 fw-medium me-2">Edit</Link>
                             <span className="text-muted fs-11 me-2">|</span>
                         </>
                     )}
@@ -206,8 +226,7 @@ export default function SeoSettings() {
                                             rows={perPage}
                                             first={(page - 1) * perPage}
                                             onPage={(e: any) => {
-                                                setPage((e.page ?? 0) + 1);
-                                                setPerPage(e.rows);
+                                                updateListParams({ page: (e.page ?? 0) + 1, perPage: e.rows });
                                             }}
                                             sortField={sortField}
                                             sortOrder={sortOrder}
@@ -223,7 +242,7 @@ export default function SeoSettings() {
                                                 const target = e.originalEvent.target as HTMLElement;
                                                 const isAction = target.closest('.btn') || target.closest('a') || target.closest('.p-checkbox') || target.closest('.p-selection-column');
                                                 if (!isAction && hasPermission('update seo settings')) {
-                                                    navigate(`/cms/seo-settings/edit/${e.data.id}`);
+                                                    navigate(`/cms/seo-settings/edit/${e.data.id}`, { state: listState });
                                                 }
                                             }}
                                             responsiveLayout="scroll"

@@ -194,6 +194,7 @@ export default function LeadDetails() {
                     status: formData.status,
                     salesperson_id: formData.salesperson_id,
                     company_name: formData.company_name,
+                    contact_person: formData.contact_person,
                     domain: formData.domain,
                     lead_source: formData.lead_source,
                     lead_source_note: formData.lead_source_note,
@@ -603,7 +604,7 @@ export default function LeadDetails() {
                                 </div>
                                 <div className="card-body p-4">
                                     <div className="tab-content">
-                                        {isLoading || isSaving ? (
+                                        {isLoading ? (
                                             <FormLoader count={12} />
                                         ) : (
                                             <>
@@ -672,6 +673,13 @@ export default function LeadDetails() {
                                                                     <label className="form-label">Organization Name <span className="text-danger">*</span></label>
                                                                     <input type="text" className={`form-control ${errors.company_name ? 'is-invalid' : ''}`} name="company_name" value={formData.company_name} onChange={handleInputChange} placeholder="Enter organization name" />
                                                                     {errors.company_name && <div className="invalid-feedback d-block">{errors.company_name}</div>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Contact Person <span className="text-danger">*</span></label>
+                                                                    <input type="text" className={`form-control ${errors.contact_person ? 'is-invalid' : ''}`} name="contact_person" value={formData.contact_person} onChange={handleInputChange} placeholder="Enter contact person full name" />
+                                                                    {errors.contact_person && <div className="invalid-feedback d-block">{errors.contact_person}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
