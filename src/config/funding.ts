@@ -339,39 +339,39 @@ export const FUNDING_REVIEW_TIMELINE_STEPS = [
 export const FUNDING_REVIEW_GUIDELINE_CARDS = [
     {
         label: FUNDING_REVIEW_STATUS.PENDING,
-        desc: 'New request from the borrower, waiting for review. Only the Host reviews it.',
+        desc: 'Your request is received and waiting for the Host to review.',
         color: '#f59e0b',
         icon: 'ri-time-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.ACCEPTED,
-        desc: 'Set when all documents and information are checked and complete.',
-        color: '#06b6d4',
-        icon: 'ri-checkbox-circle-line'
+        desc: 'All documents and information are checked and complete.',
+        color: '#22c55e',
+        icon: 'ri-check-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.IN_PROGRESS,
-        desc: 'Set while you process the application or need something from the borrower. Post instructions in Activity.',
+        desc: 'Your request is under review. We may need more information or documents.',
         color: '#3b82f6',
-        icon: 'ri-loader-4-line'
+        icon: 'ri-loader-2-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.APPROVED,
-        desc: 'Set when everything is complete and correct. The borrower can start the funding application.',
-        color: '#10b981',
-        icon: 'ri-check-double-line'
+        desc: 'Everything is complete and correct. You can start your funding application.',
+        color: '#16a34a',
+        icon: 'ri-shield-check-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.REJECTED,
-        desc: 'Set when documents are missing or the funding requested is wrong. Give the reason.',
+        desc: 'The request does not meet our requirements. You can check the reason and reapply if needed.',
         color: '#ef4444',
         icon: 'ri-close-line'
     },
     {
         label: FUNDING_REVIEW_STATUS.CANCELED,
-        desc: 'Set to stop a request that should not continue, e.g. a duplicate or the wrong funding type.',
+        desc: 'You stopped the request before it was completed.',
         color: '#64748b',
-        icon: 'ri-stop-circle-line'
+        icon: 'ri-forbid-line'
     }
 ];
 

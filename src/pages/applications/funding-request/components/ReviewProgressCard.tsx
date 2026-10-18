@@ -204,35 +204,40 @@ export default function ReviewProgressCard({
                             Status Guideline
                         </h5>
                     </div>
+                    <p className="text-muted fs-13 mb-3">Your funding request goes through 6 stages. Here's what each status means:</p>
 
-                    {/* One row per status; the request's current status is highlighted. */}
-                    <ul className="list-unstyled mb-0 border rounded-3 overflow-hidden">
-                        {guidelineCards.map((item, idx) => {
+                    {/* One card per status, three to a row, each tinted with its status
+                        colour; the request's current status is outlined and badged. */}
+                    <ul className="row g-3 list-unstyled mb-0">
+                        {guidelineCards.map((item) => {
                             const isCurrent = item.label === status;
                             return (
                                 <li
                                     key={item.label}
                                     aria-current={isCurrent ? 'step' : undefined}
-                                    className={`d-flex align-items-start gap-3 px-3 py-2 ${idx > 0 ? 'border-top' : ''}`}
-                                    style={{
-                                        backgroundColor: isCurrent ? `${item.color}14` : '#fff',
-                                        boxShadow: isCurrent ? `inset 3px 0 0 ${item.color}` : 'none',
-                                    }}
+                                    className="col-12 col-sm-6 col-md-4"
                                 >
                                     <div
-                                        className="d-flex align-items-center justify-content-center rounded-circle text-white mt-1"
-                                        style={{ width: 24, height: 24, background: item.color, flexShrink: 0 }}
+                                        className="fr-guideline-card h-100 p-3 rounded-3"
+                                        style={{
+                                            backgroundColor: `${item.color}${isCurrent ? '24' : '0f'}`,
+                                            border: `${isCurrent ? 2 : 1}px solid ${item.color}${isCurrent ? '' : '40'}`,
+                                        }}
                                     >
-                                        <i className={`${item.icon} fs-12`}></i>
-                                    </div>
-                                    <div className="flex-grow-1">
-                                        <div className="d-flex align-items-center gap-2">
+                                        {/* Icon and title on one row; the description uses the card's full width below. */}
+                                        <div className="d-flex align-items-center gap-2 mb-2">
+                                            <div
+                                                className="d-flex align-items-center justify-content-center rounded-circle text-white"
+                                                style={{ width: 32, height: 32, background: item.color, flexShrink: 0 }}
+                                            >
+                                                <i className={`${item.icon} fs-16`}></i>
+                                            </div>
                                             <h6 className="mb-0 fw-bold text-dark fs-14">{item.label}</h6>
                                             {isCurrent && (
                                                 <span className="badge rounded-pill fs-11" style={{ backgroundColor: item.color }}>Current</span>
                                             )}
                                         </div>
-                                        <p className="mb-0 fs-13 text-body">{item.desc}</p>
+                                        <p className="mb-0 fs-13 text-muted text-start">{item.desc}</p>
                                     </div>
                                 </li>
                             );

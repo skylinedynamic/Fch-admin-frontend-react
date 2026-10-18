@@ -22,13 +22,13 @@ describe('ReviewProgressCard status guideline (Host)', () => {
   })
 
   it.each([
-    [/new request.*only the host reviews/i],
-    [/set when all documents and information are checked and complete/i],
-    [/set while you process the application or need something from the borrower/i],
-    [/set when everything is complete and correct.*borrower can start the funding application/i],
-    [/set when documents are missing or the funding requested is wrong/i],
-    [/set to stop a request.*wrong funding type/i],
-  ])('tells the Host when to use each status: %s', (text) => {
+    [/received and waiting for the host to review/i],
+    [/all documents and information are checked and complete/i],
+    [/under review.*more information or documents/i],
+    [/everything is complete and correct.*start your funding application/i],
+    [/does not meet our requirements.*reapply if needed/i],
+    [/stopped the request before it was completed/i],
+  ])('explains what each status means: %s', (text) => {
     renderWithProviders(<ReviewProgressCard status={FUNDING_REVIEW_STATUS.PENDING} />)
 
     expect(within(guideline()).getByText(text)).toBeInTheDocument()
