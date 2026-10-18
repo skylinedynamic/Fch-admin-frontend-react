@@ -76,8 +76,24 @@ test.describe('Settings routes', () => {
     await expect(page).toHaveURL(/\/settings\/branding$/)
     await expect(page.locator('.settings-menu-card .list-group-item.active')).toContainText('Branding')
 
+    // Email configuration is not one of the required sections.
     await page.goto('/clients')
-    await modal.getByRole('button', { name: /Email Configuration/ }).click()
-    await expect(page).toHaveURL(/\/settings\/email-configuration$/)
+    await expect(modal.getByText('Configuration Incomplete')).toBeVisible()
+    await expect(modal.getByRole('button', { name: /Email Configuration/ })).toHaveCount(0)
+  })
+
+  test('a white-label partner without mail settings is not stopped - the banner is enough', async ({ page }) => {
+    await signIn(page, { ...COMPLETE, is_fresh_email: false })
+    // Its own mail is not verified: the fallback sends meanwhile.
+    await page.route(`${API_ORIGIN}/common/mail-configurations`, (route) => ok(route, {
+      configurations: [], providers: [], uses_own_configuration: false,
+      fallback: { is_configured: true, is_verified: true, from_address: 'noreply@fch.test' },
+      can_manage_fallback: false,
+    }))
+
+    await page.goto('/clients')
+
+    await expect(page.locator('.mail-not-verified-banner')).toContainText('noreply@fch.test')
+    await expect(page.locator('.cgm-modal')).toHaveCount(0)
   })
 })
