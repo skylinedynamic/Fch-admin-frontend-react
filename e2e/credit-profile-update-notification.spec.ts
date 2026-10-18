@@ -99,4 +99,24 @@ test.describe('Notifications › credit profile update requested', () => {
     await expect(page.getByText('Applicant Details')).toBeVisible()
     await expect(page.getByText('odessa@example.test').first()).toBeVisible()
   })
+
+  test('a request opened from the profile shows what it has, and "Not provided" for the rest', async ({ page }) => {
+    // The borrower never submitted the form: the update request opened one from
+    // their profile, which held no ZIP, phone or date of birth.
+    await page.route(`${API_ORIGIN}/admin/credit-profile-requests/${REQUEST.id}`, (route) =>
+      jsonOk(route, { ...REQUEST, zip: null, phone: null, date_of_birth: null })
+    )
+    await page.goto('/')
+
+    await page.getByRole('button', { name: /notifications, 1 unread/i }).click()
+    await page.getByText('Odessa Mccall asked to update their credit profile.').click()
+
+    await expect(page).toHaveURL(new RegExp(`/intake-review/credit-profile-requests/${REQUEST.id}$`))
+    const field = (label: string) => page.locator('.cpr-field', { has: page.locator('.cpr-field-label', { hasText: label }) })
+    await expect(field('Zip Code')).toContainText('Not provided')
+    await expect(field('Phone Number')).toContainText('Not provided')
+    await expect(field('Date of Birth')).toContainText('Not provided')
+    await expect(field('City')).toContainText('Austin')
+    await expect(page.locator('a[href="tel:null"]')).toHaveCount(0)
+  })
 })
