@@ -231,6 +231,52 @@ test.describe('Settings › Email Configuration', () => {
     await expect(card.getByText('Verified', { exact: true })).toBeVisible()
   })
 
+  test('Save Configuration waits for a change once the settings are verified', async ({ page }) => {
+    await signIn(page, false)
+    const verified: Config = {
+      id: 11, provider: 'smtp', provider_label: 'SMTP', from_address: 'mail@acme.test', bcc_emails: null,
+      smtp_host: 'smtp.acme.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'mailer', smtp_password: '••••••••',
+      is_verified: true, is_default: true, verified_at: '2026-10-17 08:00:00', verified_to: 'pat@example.test', updated_at: '2026-10-17T08:00:00+00:00',
+    }
+    let saves = 0
+
+    await page.route(`${API_ORIGIN}/**`, (route) => ok(route, []))
+    await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => ok(route, { ...THEME, branding: THEME }))
+    await page.route(MAIL, (route) => {
+      if (route.request().method() === 'POST') saves += 1
+      return ok(route, {
+        configurations: [verified],
+        providers: PROVIDERS,
+        uses_own_configuration: true,
+        fallback: { is_configured: true, is_verified: true },
+        can_manage_fallback: false,
+      })
+    })
+
+    await openEmailConfiguration(page)
+    const card = page.getByRole('region', { name: 'Email configuration' })
+    await expect(card.getByText('Verified', { exact: true })).toBeVisible()
+    const save = card.getByRole('button', { name: 'Save Configuration' })
+    const host = card.getByLabel('SMTP Host')
+
+    // Nothing changed: nothing to save.
+    await expect(save).toBeDisabled()
+
+    // A setting edited: it can be saved (and will need verifying again).
+    await host.fill('smtp2.acme.test')
+    await expect(save).toBeEnabled()
+    await expect(card.getByText(/must be verified again/)).toBeVisible()
+
+    // Put back as it was: nothing to save again.
+    await host.fill('smtp.acme.test')
+    await expect(save).toBeDisabled()
+
+    // A new secret typed counts as a change too.
+    await card.getByLabel('SMTP Password').fill('n3w-secret')
+    await expect(save).toBeEnabled()
+    expect(saves).toBe(0)
+  })
+
   test('Test Mail appears under Email Configuration once the mail configuration is verified', async ({ page }) => {
     // A white-label partner's own account: one of those Test Mail is for.
     await page.addInitScript(

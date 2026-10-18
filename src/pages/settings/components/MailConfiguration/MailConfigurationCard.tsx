@@ -100,7 +100,11 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
 
     // Saving changed settings throws away their verification (the API checks
     // the settings against those the code went through).
-    const needsReverifying = Boolean(configuration?.is_verified) && isMailFormChanged(form, savedForm);
+    const formChanged = isMailFormChanged(form, savedForm);
+    const needsReverifying = Boolean(configuration?.is_verified) && formChanged;
+    // Verified settings, unchanged, have nothing to save: Save Configuration
+    // comes on once something is changed (a field edited, a secret typed).
+    const nothingToSave = Boolean(configuration?.is_verified) && !formChanged;
 
     const update = (field: string, value: string) => {
         setForm((current) => ({ ...current, [field]: value }));
@@ -260,7 +264,8 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
                                     <button
                                         type="submit"
                                         className="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 shadow-sm w-100 w-sm-auto"
-                                        disabled={saving}
+                                        disabled={saving || nothingToSave}
+                                        title={nothingToSave ? 'These settings are verified. Change a setting to save it.' : undefined}
                                     >
                                         {saving && <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>}
                                         <i className="ri-save-2-line fs-18"></i>

@@ -122,3 +122,93 @@ describe('Settings menu - Test Mail', () => {
     expect(setActiveSection).toHaveBeenCalledWith('test_mail')
   })
 })
+
+/**
+ * Once the mail configuration is verified there is nothing to save:
+ * Save Configuration stays disabled until a setting is changed (a field
+ * edited, a secret typed), and goes back to disabled when the edit is undone.
+ * Unverified settings can always be saved.
+ */
+describe('Settings menu - Save Configuration on verified settings', () => {
+  const signIn = () =>
+    useAuthStore.setState({
+      token: 't',
+      user: { id: 1, name: 'Pat Partner', permissions: ['update email configuration settings'], partner_id: 2, is_host: 0 },
+      userSubscription: null,
+    } as never)
+
+  const serve = (verified: boolean) =>
+    server.use(
+      http.get('*/common/mail-configurations', () =>
+        HttpResponse.json({
+          status: true,
+          data: {
+            configurations: [{
+              id: 11, provider: 'smtp', provider_label: 'SMTP', from_address: 'mail@acme.test', bcc_emails: null,
+              smtp_host: 'smtp.acme.test', smtp_password: '••••••••', is_default: true, is_verified: verified,
+              verified_at: null, verified_to: null, updated_at: null,
+            }],
+            providers: [{
+              value: 'smtp',
+              label: 'SMTP',
+              fields: [
+                { key: 'smtp_host', label: 'SMTP Host', type: 'text', required: true, secret: false, options: [] },
+                { key: 'smtp_password', label: 'SMTP Password', type: 'password', required: true, secret: true, options: [] },
+              ],
+            }],
+            uses_own_configuration: verified,
+            fallback: { is_configured: true, is_verified: true },
+            can_manage_fallback: false,
+          },
+        })
+      )
+    )
+
+  const renderMail = async () => {
+    renderWithProviders(<SettingsForm fetching={false} activeSection="email_configuration" setActiveSection={vi.fn()} />)
+    const region = await screen.findByRole('region', { name: /mail configuration/i })
+    await waitFor(() => expect(within(region).getByLabelText(/smtp host/i)).toHaveValue('smtp.acme.test'))
+    return { region, save: () => within(region).getByRole('button', { name: /save configuration/i }) }
+  }
+
+  it('is disabled while the verified settings are unchanged', async () => {
+    signIn()
+    serve(true)
+    const { save } = await renderMail()
+
+    expect(save()).toBeDisabled()
+  })
+
+  it('comes on once a setting is changed, and goes off again when the change is undone', async () => {
+    signIn()
+    serve(true)
+    const user = userEvent.setup()
+    const { region, save } = await renderMail()
+
+    const host = within(region).getByLabelText(/smtp host/i)
+    await user.type(host, 'x')
+    expect(save()).toBeEnabled()
+
+    await user.type(host, '{Backspace}')
+    expect(save()).toBeDisabled()
+  })
+
+  it('comes on once a new secret is typed', async () => {
+    signIn()
+    serve(true)
+    const user = userEvent.setup()
+    const { region, save } = await renderMail()
+
+    await user.type(within(region).getByLabelText(/smtp password/i), 'n3w-secret')
+
+    expect(save()).toBeEnabled()
+  })
+
+  it('stays available while the settings are not verified', async () => {
+    signIn()
+    serve(false)
+    const { save } = await renderMail()
+
+    expect(save()).toBeEnabled()
+  })
+})
