@@ -11,7 +11,8 @@ import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
-import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip } from '../../../modules/application/services';
+import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip, downloadFundingApplicationDocument } from '../../../modules/application/services';
+import { handleFileDownload } from '../../../utils/fileDownload';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 // @ts-ignore
@@ -451,12 +452,28 @@ export default function FundingApplicationDetails() {
         }
     };
 
+    // Saves the file in place. A plain <a href download> to the API's storage URL
+    // is cross-origin, so the browser ignored `download` and opened a new tab.
+    const downloadDocumentFile = (e: React.MouseEvent, file: { id: number | string; original_name?: string; url?: string }) => {
+        e.preventDefault();
+        handleFileDownload(
+            () => downloadFundingApplicationDocument(file.id),
+            file.original_name || 'document',
+            file.url
+        );
+    };
+
     const renderDocumentUpload = () => (
         <div className="row">
             {app.documents && app.documents.length > 0 ? (
                 app.documents.map((docType, index) => (
                     <div key={index} className="col-12 mb-4">
-                        <h6 className="fs-15 fw-bold mb-3 border-bottom pb-2">{docType.type}</h6>
+                        <h6 className="fs-15 fw-bold mb-3 border-bottom pb-2">
+                            {docType.type}
+                            <span className="ms-2 badge bg-primary-subtle text-primary fs-12">
+                                {docType.files.length} {docType.files.length === 1 ? 'file' : 'files'}
+                            </span>
+                        </h6>
                         <div className="card border shadow-none">
                             <ul className="list-group list-group-flush">
                                 {docType.files.map((file) => (
@@ -469,13 +486,13 @@ export default function FundingApplicationDetails() {
                                             </div>
                                             <div className="flex-grow-1 ms-3">
                                                 <h6 className="fs-13 mb-0">
-                                                    <a href={file.url} target="_blank" rel="noreferrer" className="text-reset">{file.original_name}</a>
+                                                    <a href="#" onClick={(e) => downloadDocumentFile(e, file)} className="text-reset">{file.original_name}</a>
                                                 </h6>
                                             </div>
                                             <div className="flex-shrink-0">
-                                                <a href={file.url} download={file.original_name} target="_blank" rel="noreferrer" className="btn btn-icon btn-sm btn-ghost-primary text-primary" title="Download">
+                                                <button type="button" onClick={(e) => downloadDocumentFile(e, file)} className="btn btn-icon btn-sm btn-ghost-primary text-primary" title="Download">
                                                     <i className="ri-download-2-line fs-18"></i>
-                                                </a>
+                                                </button>
                                             </div>
                                         </div>
                                     </li>
