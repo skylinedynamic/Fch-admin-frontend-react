@@ -16,12 +16,10 @@ const ConfigurationGuardModal = () => {
     const primaryColor = branding?.primary_color;
     const flags = statusFlags;
 
-    // The Embedded Form configuration page is guarded for the same reason as the
-    // rest: the form it publishes emails a notification on every submission, and
-    // a White-Label partner with no mail configuration of its own sends none -
-    // the API refuses to fall back to the host's mailbox. Publishing a form that
-    // silently drops its leads is worse than being asked to finish setup first.
-    // Only the configuration page; the submissions list stays reachable.
+    // Only the Embedded Form configuration page is guarded, not its submissions
+    // list. Email configuration is never required here: until a partner's own
+    // mail configuration is verified its mail goes out with the platform's
+    // fallback configuration, and MailNotVerifiedBanner says so on every page.
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients', '/embed-form/settings'];
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
@@ -29,7 +27,6 @@ const ConfigurationGuardModal = () => {
         value === true || value === 'true' || value === 1 || value === '1';
 
     // Show modal only after config flags are loaded and a real missing state is detected
-    const isEmailMissing = !parseTrueFlag(flags?.is_fresh_email);
     const isBrandingMissing = !parseTrueFlag(flags?.is_fresh_settings);
     const isPaymentMissing = !parseTrueFlag(flags?.is_fresh_payment);
     const configLoaded = flags !== null && flags !== undefined;
@@ -42,7 +39,7 @@ const ConfigurationGuardModal = () => {
     // Right after the partner pays, the list shows on whatever page they are on
     // (see InvoiceTable/InvoiceDetails); otherwise only on the guarded pages.
     const showModal = !isHost && (isGuardedRoute || setupPromptOpen) && configLoaded && (
-        (isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing)) ||
+        (isWhiteLabel && (isBrandingMissing || isPaymentMissing)) ||
         (isCertified && isPaymentMissing)
     );
 
@@ -116,20 +113,6 @@ const ConfigurationGuardModal = () => {
                                 <span>
                                     <span className="cgm-item-title">Branding Configuration</span>
                                     <span className="cgm-item-desc">Logos, colors, and site identity are missing.</span>
-                                </span>
-                                <i className="ri-arrow-right-s-line cgm-item-arrow" aria-hidden="true" />
-                            </button>
-                        )}
-
-                        {/* Email — shown only when missing for White-Label */}
-                        {isWhiteLabel && isEmailMissing && (
-                            <button type="button" className="cgm-item cgm-item-link" onClick={() => openSettings(settingsPath('email_configuration'))}>
-                                <span className="cgm-icon-box cgm-bg-email">
-                                    <i className="ri-mail-send-line cgm-icon-email" />
-                                </span>
-                                <span>
-                                    <span className="cgm-item-title">Email Configuration</span>
-                                    <span className="cgm-item-desc">SMTP or AWS SES settings required for notifications.</span>
                                 </span>
                                 <i className="ri-arrow-right-s-line cgm-item-arrow" aria-hidden="true" />
                             </button>
