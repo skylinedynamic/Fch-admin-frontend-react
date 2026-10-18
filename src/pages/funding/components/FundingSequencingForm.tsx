@@ -9,7 +9,7 @@ import { STATUS_ACTIVE } from '../../../config/statusOptions';
 import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, updateFundingSequencingSingleLenderVisibility, updateFundingSequencingSingleCategoryVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
 import { getAllLenders, getLenderProductCategories } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
-import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS, DEFAULT_READINESS_FACTORS } from '../../../config/funding';
+import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS, DEFAULT_READINESS_FACTORS } from '../../../config/funding';
 import { industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../modules/location';
 import { useSummernote } from '../../../hooks/useSummernote';
@@ -17,6 +17,7 @@ import { fetchBorrowerDocumentTypes } from '../../../modules/client/services';
 import FundingGroupModal from './FundingGroupModal';
 import FundingTypeModal from './FundingTypeModal';
 import LenderVisibilityGrid from './LenderVisibilityGrid';
+import UsesField from './UsesField';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import '../../../../assets/css/funding.css';
 
@@ -900,20 +901,10 @@ export default function FundingSequencingForm() {
                                                     </div>
 
                                                     <div className="col-lg-6 col-md-6 col-12">
-                                                        <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Uses</label>
-                                                            <Dropdown
-                                                                value={formData.uses && formData.uses.length > 0 ? formData.uses[0] : null}
-                                                                options={USES_OPTIONS}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value ? [e.value] : [] } })}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Select uses..."
-                                                                filter
-                                                                filterPlaceholder="Search uses..."
-                                                                className="w-100 rounded-3 slim-dropdown"
-                                                            />
-                                                        </div>
+                                                        <UsesField
+                                                            value={formData.uses || []}
+                                                            onChange={(uses) => handleInputChange({ target: { name: 'uses', value: uses } })}
+                                                        />
                                                     </div>
 
                                                     {/* Row 7 */}

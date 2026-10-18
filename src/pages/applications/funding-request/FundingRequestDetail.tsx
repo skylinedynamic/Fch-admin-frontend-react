@@ -175,7 +175,7 @@ export default function FundingRequestDetail() {
                     >
                         <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                             {(review?.borrower?.id || review?.borrower_id) && (
-                                <Link to={`/clients/${review.borrower?.id || review.borrower_id}`} className="btn btn-info waves-effect">
+                                <Link to={`/clients/${review.borrower?.id || review.borrower_id}`} className="btn btn-primary waves-effect">
                                     <i className="ri-user-line align-middle me-1"></i> Go to Client
                                 </Link>
                             )}
@@ -636,7 +636,7 @@ export default function FundingRequestDetail() {
                                                     {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
                                                         <button
                                                             type="button"
-                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-1 px-3 h-100 flex-shrink-0"
+                                                            className="btn btn-primary fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-1 px-3 h-100 flex-shrink-0"
                                                             onClick={() => {
                                                                 if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
                                                                     if (isHost && assignedLenderIds.length === 0) {
@@ -683,7 +683,7 @@ export default function FundingRequestDetail() {
                                                     <div className="mt-3">
                                                         <button
                                                             type="button"
-                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
+                                                            className="btn btn-primary fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
                                                             onClick={() => {
                                                                 if (!rejectReason.trim()) {
                                                                     setValidationErrors({ reject_reason: ['The reason / note field is required.'] });

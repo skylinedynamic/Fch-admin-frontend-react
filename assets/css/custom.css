@@ -7817,44 +7817,163 @@ File: Custom Css File
   top: auto !important;
 }
 /*
- * Additional Funding Types (funding application, Step 4): a PrimeReact
- * MultiSelect sized like the other fields - 37.5px tall with 4px corners - and
- * compact chips in the primary tint, growing a row at a time.
+ * Several-at-once pickers - `.chip-multiselect` (components/Common/ChipMultiSelect):
+ * Purpose of Funds and Additional Funding Types on the funding application's
+ * Funding Request step, in both portals: 37.5px tall, 4px corners, chips that
+ * wrap a row at a time inside the field, no hover or focus colour, ticked
+ * boxes in the primary colour. Kept identical to the borrower portal's copy.
  */
-.additional-funding-types.p-multiselect {
-  min-height: 37.5px;
-  border-radius: 4px;
-  align-items: center;
+.chip-multiselect .p-multiselect {
+    position: relative; /* the appendTo="self" panel is placed against the field */
+    width: 100%;
+    border-color: #ced4da; /* the same at rest, on hover and on focus */
+    min-height: 37.5px;
+    height: auto;
+    border-radius: 4px;
+    align-items: center;
 }
 
-.additional-funding-types .p-multiselect-label {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  white-space: normal;
+/* No hover or focus colour: the border and shadow stay as they are at rest -
+   on the field and on the search box in its list. */
+.chip-multiselect .p-multiselect:not(.p-disabled):hover,
+.chip-multiselect .p-multiselect:not(.p-disabled).p-focus,
+.chip-multiselect .p-multiselect:not(.p-disabled).p-inputwrapper-focus,
+.chip-multiselect-panel .p-multiselect-filter-container .p-inputtext:enabled:hover,
+.chip-multiselect-panel .p-multiselect-filter-container .p-inputtext:enabled:focus {
+    border-color: #ced4da;
+    box-shadow: none;
+    outline: 0 none;
 }
 
-.additional-funding-types .p-multiselect-label.p-placeholder {
-  padding: 8px 12px;
-  font-size: 13px;
+.chip-multiselect .p-multiselect .p-multiselect-label-container {
+    overflow: visible;
 }
 
-.additional-funding-types .p-multiselect-token {
-  margin: 0;
-  padding: 2px 6px 2px 8px;
-  border-radius: 4px;
-  background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
-  color: var(--vz-primary, #405189);
-  font-size: 12px;
-  line-height: 1.5;
+.chip-multiselect .p-multiselect .p-multiselect-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    white-space: normal;
 }
 
-.additional-funding-types .p-multiselect-token .p-multiselect-token-icon {
-  margin-left: 6px;
-  width: 12px;
-  height: 12px;
+.chip-multiselect .p-multiselect .p-multiselect-label.p-placeholder {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--vz-secondary-color, #878a99);
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-token {
+    flex-shrink: 0;
+    max-width: 100%;
+    margin: 0;
+    gap: 6px;
+    padding: 2px 6px 2px 10px;
+    border: 1px solid rgba(var(--vz-primary-rgb, 64, 81, 137), 0.18);
+    border-radius: 20px;
+    background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
+    color: var(--vz-primary, #405189);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-token-label {
+    margin-right: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-token-icon {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border-radius: 50%;
+    color: var(--vz-primary, #405189);
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+    opacity: 0.65;
+    transition: all 0.15s ease-in-out;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-token-icon:hover {
+    background: var(--vz-primary, #405189);
+    color: #fff;
+    opacity: 1;
+}
+
+/* The list: pinned under the field at its width, search-only header. */
+.chip-multiselect .chip-multiselect-panel.p-multiselect-panel {
+    top: calc(100% + 3px) !important;
+    left: -1px !important;
+    width: calc(100% + 2px);
+    min-width: 0;
+    max-width: none;
+    border: 1px solid var(--vz-border-color, #e9ebec);
+    border-radius: 4px;
+    box-shadow: 0 5px 20px rgba(30, 32, 37, 0.12);
+    transform-origin: top !important;
+    z-index: 1056;
+}
+
+.chip-multiselect-panel .p-multiselect-header {
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--vz-border-color, #e9ebec);
+    border-radius: 4px 4px 0 0;
+    background: var(--vz-light, #f3f6f9);
+}
+
+.chip-multiselect-panel .p-multiselect-filter-container {
+    width: 100%;
+}
+
+.chip-multiselect-panel .p-multiselect-filter-container .p-inputtext {
+    width: 100%;
+    padding: 6px 10px 6px 30px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.chip-multiselect-panel .p-multiselect-filter-container .p-multiselect-filter-icon {
+    right: auto;
+    left: 10px;
+    margin-top: -0.5rem;
+    color: var(--vz-secondary-color, #878a99);
+}
+
+.chip-multiselect-panel .p-multiselect-items-wrapper {
+    max-height: 240px;
+}
+
+.chip-multiselect-panel .p-multiselect-item {
+    margin: 2px 6px;
+    padding: 7px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* A ticked option's checkbox in the primary colour, not PrimeReact's blue.
+   !important only on the border: the global `.p-checkbox .p-checkbox-box`
+   rule above sets it with !important. */
+.chip-multiselect-panel .p-checkbox.p-highlight .p-checkbox-box,
+.chip-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight {
+    border-color: var(--vz-primary, #405189) !important;
+    background: var(--vz-primary, #405189);
+}
+
+.chip-multiselect-panel .p-checkbox .p-checkbox-box {
+    box-shadow: none;
+}
+
+.chip-multiselect-panel .p-multiselect-item.p-highlight {
+    background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
+    color: var(--vz-primary, #405189);
 }
 
 
