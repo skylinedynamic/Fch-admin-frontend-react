@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
 import { useConfigStore } from '../../store/config';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
+import { SETTINGS_BASE_PATH, settingsPath } from '../../config/settingsSections';
 import '../../../assets/css/profile-incomplete.css';
 
 const ConfigurationGuardModal = () => {
@@ -11,7 +12,7 @@ const ConfigurationGuardModal = () => {
     const user = useAuthStore((state) => state.user);
 
     // Retrieve branding and flags directly from our global Zustand store!
-    const { branding, statusFlags } = useConfigStore();
+    const { branding, statusFlags, setupPromptOpen, closeSetupPrompt } = useConfigStore();
     const primaryColor = branding?.primary_color;
     const flags = statusFlags;
 
@@ -38,7 +39,9 @@ const ConfigurationGuardModal = () => {
     const isWhiteLabel = partnerType === PARTNER_TYPES.WHITE_LABEL && !isHost;
     const isCertified = partnerType === PARTNER_TYPES.CERTIFIED && !isHost;
 
-    const showModal = !isHost && isGuardedRoute && configLoaded && (
+    // Right after the partner pays, the list shows on whatever page they are on
+    // (see InvoiceTable/InvoiceDetails); otherwise only on the guarded pages.
+    const showModal = !isHost && (isGuardedRoute || setupPromptOpen) && configLoaded && (
         (isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing)) ||
         (isCertified && isPaymentMissing)
     );
@@ -53,6 +56,12 @@ const ConfigurationGuardModal = () => {
     });
 
     if (!showModal) return null;
+
+    // Each section opens its own settings page.
+    const openSettings = (path: string) => {
+        closeSetupPrompt();
+        navigate(path);
+    };
 
     const segment = location.pathname.split('/')[1];
     const pageLabel = segment.charAt(0).toUpperCase() + segment.slice(1);
@@ -87,56 +96,71 @@ const ConfigurationGuardModal = () => {
                         <h2 className="cgm-right-title">
                             Configuration Incomplete
                         </h2>
-                        <p className="cgm-right-desc">
-                            To ensure the system functions accurately, complete the following global settings before accessing{' '}
-                            <strong>{pageLabel}</strong>.
-                        </p>
+                        {setupPromptOpen && !isGuardedRoute ? (
+                            <p className="cgm-right-desc">
+                                Your payment is complete. Finish these settings so the system works as it should - choose one to open it.
+                            </p>
+                        ) : (
+                            <p className="cgm-right-desc">
+                                To ensure the system functions accurately, complete the following global settings before accessing{' '}
+                                <strong>{pageLabel}</strong>.
+                            </p>
+                        )}
 
                         {/* Branding — shown only when missing for White-Label */}
                         {isWhiteLabel && isBrandingMissing && (
-                            <div className="cgm-item">
-                                <div className="cgm-icon-box cgm-bg-branding">
+                            <button type="button" className="cgm-item cgm-item-link" onClick={() => openSettings(settingsPath('branding'))}>
+                                <span className="cgm-icon-box cgm-bg-branding">
                                     <i className="ri-palette-line cgm-icon-branding" />
-                                </div>
-                                <div>
-                                    <p className="cgm-item-title">Branding Configuration</p>
-                                    <p className="cgm-item-desc">Logos, colors, and site identity are missing.</p>
-                                </div>
-                            </div>
+                                </span>
+                                <span>
+                                    <span className="cgm-item-title">Branding Configuration</span>
+                                    <span className="cgm-item-desc">Logos, colors, and site identity are missing.</span>
+                                </span>
+                                <i className="ri-arrow-right-s-line cgm-item-arrow" aria-hidden="true" />
+                            </button>
                         )}
 
                         {/* Email — shown only when missing for White-Label */}
                         {isWhiteLabel && isEmailMissing && (
-                            <div className="cgm-item">
-                                <div className="cgm-icon-box cgm-bg-email">
+                            <button type="button" className="cgm-item cgm-item-link" onClick={() => openSettings(settingsPath('email_configuration'))}>
+                                <span className="cgm-icon-box cgm-bg-email">
                                     <i className="ri-mail-send-line cgm-icon-email" />
-                                </div>
-                                <div>
-                                    <p className="cgm-item-title">Email Configuration</p>
-                                    <p className="cgm-item-desc">SMTP or AWS SES settings required for notifications.</p>
-                                </div>
-                            </div>
+                                </span>
+                                <span>
+                                    <span className="cgm-item-title">Email Configuration</span>
+                                    <span className="cgm-item-desc">SMTP or AWS SES settings required for notifications.</span>
+                                </span>
+                                <i className="ri-arrow-right-s-line cgm-item-arrow" aria-hidden="true" />
+                            </button>
                         )}
 
                         {/* Payment Integration — shown only when missing for White-Label or Certified Partner */}
                         {(isWhiteLabel || isCertified) && isPaymentMissing && (
-                            <div className="cgm-item">
-                                <div className="cgm-icon-box cgm-bg-payment">
+                            <button type="button" className="cgm-item cgm-item-link" onClick={() => openSettings(settingsPath('payment'))}>
+                                <span className="cgm-icon-box cgm-bg-payment">
                                     <i className="ri-bank-card-line cgm-icon-payment" />
-                                </div>
-                                <div>
-                                    <p className="cgm-item-title">Payment Integration</p>
-                                    <p className="cgm-item-desc">Stripe payment settings are required to process transactions.</p>
-                                </div>
-                            </div>
+                                </span>
+                                <span>
+                                    <span className="cgm-item-title">Payment Integration</span>
+                                    <span className="cgm-item-desc">Stripe payment settings are required to process transactions.</span>
+                                </span>
+                                <i className="ri-arrow-right-s-line cgm-item-arrow" aria-hidden="true" />
+                            </button>
                         )}
 
-                        <button onClick={() => navigate('/settings')} className="cgm-btn-main">
+                        <button onClick={() => openSettings(SETTINGS_BASE_PATH)} className="cgm-btn-main">
                             Go to Global Settings
                         </button>
-                        <button onClick={() => navigate('/')} className="cgm-btn-ghost">
-                            Back to Dashboard
-                        </button>
+                        {setupPromptOpen && !isGuardedRoute ? (
+                            <button onClick={closeSetupPrompt} className="cgm-btn-ghost">
+                                I&apos;ll do it later
+                            </button>
+                        ) : (
+                            <button onClick={() => openSettings('/')} className="cgm-btn-ghost">
+                                Back to Dashboard
+                            </button>
+                        )}
                     </div>
 
                 </div>

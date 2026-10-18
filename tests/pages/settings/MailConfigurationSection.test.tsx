@@ -488,30 +488,35 @@ describe('MailConfigurationSection', () => {
 describe('MailConfigurationSection - fallback', () => {
   const fallback = smtp({ id: 1, from_address: 'noreply@fch.test', smtp_host: 'smtp.fch.test', is_verified: false })
 
+  /** The fallback's providers, and which one mail goes out with now. */
+  const serveFallback = (configurations: unknown[], sendingId: number | null = null) =>
+    server.use(
+      http.get('*/common/mail-configurations/fallback', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { configurations, providers, sending_id: sendingId } })
+      )
+    )
+
   beforeEach(() => {
     list.can_manage_fallback = true
     mockList()
-    server.use(
-      http.get('*/common/mail-configurations/fallback', () =>
-        HttpResponse.json({ status: true, message: 'ok', data: { configuration: fallback, providers } })
-      )
-    )
+    serveFallback([fallback])
   })
 
-  it('lets the host partner edit and verify the one fallback for everyone', async () => {
+  it('lets the host partner edit and verify a fallback provider', async () => {
     const calls: string[] = []
     server.use(
       http.post('*/common/mail-configurations/fallback', async ({ request }) => {
         calls.push(`save ${(await request.json() as { smtp_host: string }).smtp_host}`)
-        return HttpResponse.json({ status: true, message: 'Saved', data: { configuration: fallback, providers } })
+        return HttpResponse.json({ status: true, message: 'Saved', data: fallback })
       }),
-      http.post('*/common/mail-configurations/fallback/send-code', () => {
-        calls.push('send')
+      http.post('*/common/mail-configurations/fallback/:id/send-code', ({ params }) => {
+        calls.push(`send ${params.id}`)
         return HttpResponse.json({ status: true, message: 'A verification code has been sent to host@fch.test.', data: null })
       }),
-      http.post('*/common/mail-configurations/fallback/verify', async ({ request }) => {
-        calls.push(`verify ${(await request.json() as { code: string }).code}`)
-        return HttpResponse.json({ status: true, message: 'Verified', data: { configuration: { ...fallback, is_verified: true }, providers } })
+      http.post('*/common/mail-configurations/fallback/:id/verify', async ({ params, request }) => {
+        calls.push(`verify ${params.id} ${(await request.json() as { code: string }).code}`)
+        serveFallback([{ ...fallback, is_verified: true, is_default: true }], 1)
+        return HttpResponse.json({ status: true, message: 'Verified', data: { ...fallback, is_verified: true, is_default: true } })
       }),
     )
     const user = userEvent.setup()
@@ -527,12 +532,10 @@ describe('MailConfigurationSection - fallback', () => {
     await user.click(within(fallbackCard).getByRole('button', { name: 'Verify' }))
 
     await waitFor(() => expect(within(fallbackCard).getByText('Verified')).toBeInTheDocument())
-    expect(calls).toEqual(['save smtp.fch.test', 'send', 'verify 135790'])
-    // There is one fallback, so there is nothing to choose between.
-    expect(within(fallbackCard).queryByText('Default')).not.toBeInTheDocument()
+    expect(calls).toEqual(['save smtp.fch.test', 'send 1', 'verify 1 135790'])
   })
 
-  it('warns the host partner, first thing, while the fallback is not verified', async () => {
+  it('warns the host partner, first thing, while no fallback provider can send', async () => {
     const scrolled: Element[] = []
     const original = Element.prototype.scrollIntoView
     Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this) }
@@ -556,11 +559,7 @@ describe('MailConfigurationSection - fallback', () => {
   })
 
   it('asks the host partner to set the fallback up when there is none', async () => {
-    server.use(
-      http.get('*/common/mail-configurations/fallback', () =>
-        HttpResponse.json({ status: true, message: 'ok', data: { configuration: null, providers } })
-      )
-    )
+    serveFallback([])
     renderWithProviders(<MailConfigurationSection />)
     const fallbackCard = await card('Fallback email configuration')
 
@@ -569,16 +568,8 @@ describe('MailConfigurationSection - fallback', () => {
     expect(within(alert).getByRole('button', { name: 'Set up now' })).toBeInTheDocument()
   })
 
-  it('shows the verified fallback as active, in the same style as the partner status', async () => {
-    server.use(
-      http.get('*/common/mail-configurations/fallback', () =>
-        HttpResponse.json({
-          status: true,
-          message: 'ok',
-          data: { configuration: { ...fallback, is_verified: true, verified_at: '2026-10-17 08:44:42', verified_to: 'host@fch.test' }, providers },
-        })
-      )
-    )
+  it('shows the fallback provider mail goes out with as active, in the same style as the partner status', async () => {
+    serveFallback([{ ...fallback, is_verified: true, is_default: true, verified_at: '2026-10-17 08:44:42', verified_to: 'host@fch.test' }], 1)
     renderWithProviders(<MailConfigurationSection />)
     const fallbackCard = await card('Fallback email configuration')
 
@@ -591,12 +582,29 @@ describe('MailConfigurationSection - fallback', () => {
     expect(within(fallbackCard).queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('lets the host partner switch the fallback to another provider from the dropdown', async () => {
+  it('names the provider actually sending when the default cannot', async () => {
+    // SMTP is the default but unverified; the verified SES sends meanwhile.
+    serveFallback([
+      { ...fallback, is_default: true },
+      ses({ id: 2, from_address: 'noreply@fch.test', is_verified: true, verified_at: '2026-10-17 08:44:42', verified_to: 'host@fch.test' }),
+    ], 2)
+    renderWithProviders(<MailConfigurationSection />)
+    const fallbackCard = await card('Fallback email configuration')
+
+    const status = await within(fallbackCard).findByRole('status', { name: 'Fallback delivery status' })
+    expect(within(status).getByRole('heading', { name: 'Fallback sending with Amazon SES' })).toBeInTheDocument()
+  })
+
+  it('keeps the SMTP fallback when the host partner saves SES, and still sends with SMTP', async () => {
+    const verifiedSmtp = { ...fallback, is_verified: true, is_default: true, verified_at: '2026-10-17 08:44:42', verified_to: 'host@fch.test' }
+    serveFallback([verifiedSmtp], 1)
     let received: Record<string, unknown> | null = null
     server.use(
       http.post('*/common/mail-configurations/fallback', async ({ request }) => {
         received = await request.json() as Record<string, unknown>
-        return HttpResponse.json({ status: true, message: 'Saved', data: { configuration: fallback, providers } })
+        const saved = ses({ id: 2, from_address: 'noreply@fch.test', is_verified: false })
+        serveFallback([verifiedSmtp, saved], 1)
+        return HttpResponse.json({ status: true, message: 'Saved', data: saved })
       }),
     )
     const user = userEvent.setup()
@@ -605,7 +613,8 @@ describe('MailConfigurationSection - fallback', () => {
     await within(fallbackCard).findByDisplayValue('smtp.fch.test')
 
     await chooseProvider(user, fallbackCard, 'mail-fallback-provider', 'Amazon SES')
-    expect(within(fallbackCard).getByText(/saving switches it to Amazon SES/i)).toBeInTheDocument()
+    // Nothing is replaced, so there is nothing to warn about.
+    expect(within(fallbackCard).queryByText(/saving switches it/i)).not.toBeInTheDocument()
 
     await user.type(within(fallbackCard).getByLabelText(/AWS Access Key/), 'AKIAFCH')
     await user.type(within(fallbackCard).getByLabelText(/AWS Secret Key/), 'secret')
@@ -613,5 +622,37 @@ describe('MailConfigurationSection - fallback', () => {
     await user.click(within(fallbackCard).getByRole('button', { name: /save configuration/i }))
 
     await waitFor(() => expect(received).toMatchObject({ provider: 'aws_ses', aws_access_key: 'AKIAFCH', from_address: 'noreply@fch.test' }))
+    await waitFor(() => expect(within(fallbackCard).getByText('Not verified')).toBeInTheDocument())
+    expect(within(fallbackCard).getByRole('heading', { name: 'Fallback sending with SMTP' })).toBeInTheDocument()
+
+    // SMTP is still there, settings and all.
+    await chooseProvider(user, fallbackCard, 'mail-fallback-provider', 'SMTP')
+    expect(within(fallbackCard).getByDisplayValue('smtp.fch.test')).toBeInTheDocument()
+    expect(within(fallbackCard).getByText('Default')).toBeInTheDocument()
+  })
+
+  it('switches the fallback to another verified provider after confirming', async () => {
+    serveFallback([
+      { ...fallback, is_verified: true, is_default: true },
+      ses({ id: 2, from_address: 'noreply@fch.test', is_verified: true }),
+    ], 1)
+    let madeDefault: string | null = null
+    server.use(
+      http.post('*/common/mail-configurations/fallback/:id/default', ({ params }) => {
+        madeDefault = String(params.id)
+        return HttpResponse.json({ status: true, message: 'Default mail configuration updated.', data: null })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<MailConfigurationSection />)
+    const fallbackCard = await card('Fallback email configuration')
+    await within(fallbackCard).findByDisplayValue('smtp.fch.test')
+
+    await chooseProvider(user, fallbackCard, 'mail-fallback-provider', 'Amazon SES')
+    await user.click(within(fallbackCard).getByRole('button', { name: 'Use this provider' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Send Mail With This Provider' })
+    await user.click(within(dialog).getByRole('button', { name: 'Yes, Send with Amazon SES' }))
+
+    await waitFor(() => expect(madeDefault).toBe('2'))
   })
 })

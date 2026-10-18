@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { renderWithProviders, screen } from '../../test-utils'
+import { renderWithProviders, screen, waitFor, within } from '../../test-utils'
+import userEvent from '@testing-library/user-event'
 import { server } from '../../mocks/server'
 import { useAuthStore } from '../../../src/store/auth'
 import SettingsForm from '../../../src/pages/settings/components/SettingsForm'
@@ -34,5 +35,90 @@ describe('Settings menu - Email Configuration', () => {
     expect(await screen.findByText(
       'Until the mail configuration is verified, all mail will be sent using the fallback mail configuration.'
     )).toBeInTheDocument()
+  })
+})
+
+/**
+ * Test Mail sits right under Email Configuration, and only once the partner's
+ * own mail configuration is verified - before that there is nothing of its own
+ * to test. The Email Configuration card then links to it, beside Save.
+ */
+describe('Settings menu - Test Mail', () => {
+  const signInHostOwner = () =>
+    useAuthStore.setState({
+      token: 't',
+      user: {
+        id: 1,
+        name: 'Host Owner',
+        entity_type: 'Partner',
+        is_host: 1,
+        partner_id: 1,
+        permissions: ['update email configuration settings', 'update branding settings'],
+      },
+      userSubscription: null,
+    } as never)
+
+  const serveMail = (usesOwnConfiguration: boolean) =>
+    server.use(
+      http.get('*/common/mail-configurations', () =>
+        HttpResponse.json({
+          status: true,
+          data: {
+            configurations: [{
+              id: 11, provider: 'smtp', provider_label: 'SMTP', from_address: 'mail@acme.test', bcc_emails: null,
+              smtp_host: 'smtp.acme.test', is_default: usesOwnConfiguration, is_verified: usesOwnConfiguration,
+              verified_at: null, verified_to: null, updated_at: null,
+            }],
+            providers: [{ value: 'smtp', label: 'SMTP', fields: [{ key: 'smtp_host', label: 'SMTP Host', type: 'text', required: true, secret: false, options: [] }] }],
+            uses_own_configuration: usesOwnConfiguration,
+            fallback: { is_configured: true, is_verified: true },
+            can_manage_fallback: false,
+          },
+        })
+      )
+    )
+
+  const menuItems = () =>
+    screen.getAllByRole('button').filter((b) => b.classList.contains('list-group-item')).map((b) => b.textContent?.trim())
+
+  it('is hidden until the mail configuration is verified', async () => {
+    signInHostOwner()
+    serveMail(false)
+
+    renderWithProviders(<SettingsForm fetching={false} activeSection="email_configuration" setActiveSection={vi.fn()} />)
+
+    await screen.findByRole('region', { name: 'Email configuration' })
+    expect(menuItems()).not.toContain('Test Mail')
+    expect(screen.queryByRole('button', { name: /^test mail$/i })).not.toBeInTheDocument()
+  })
+
+  it('appears right under Email Configuration once it is verified', async () => {
+    signInHostOwner()
+    serveMail(true)
+
+    renderWithProviders(<SettingsForm fetching={false} activeSection="email_configuration" setActiveSection={vi.fn()} />)
+
+    await screen.findByRole('region', { name: 'Email configuration' })
+    await waitFor(() => expect(menuItems()).toContain('Test Mail'))
+    const items = menuItems()
+    expect(items[items.indexOf('Email Configuration') + 1]).toBe('Test Mail')
+  })
+
+  it('is reached from a Test Mail button just before Save Configuration', async () => {
+    signInHostOwner()
+    serveMail(true)
+    const setActiveSection = vi.fn()
+    const user = userEvent.setup()
+
+    renderWithProviders(<SettingsForm fetching={false} activeSection="email_configuration" setActiveSection={setActiveSection} />)
+
+    const card = await screen.findByRole('region', { name: 'Email configuration' })
+    const testMail = await within(card).findByRole('button', { name: /^test mail$/i })
+    const save = within(card).getByRole('button', { name: /save configuration/i })
+    // Directly before Save, in the same row.
+    expect(testMail.nextElementSibling).toBe(save)
+
+    await user.click(testMail)
+    expect(setActiveSection).toHaveBeenCalledWith('test_mail')
   })
 })

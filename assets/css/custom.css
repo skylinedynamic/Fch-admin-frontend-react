@@ -7860,32 +7860,57 @@ File: Custom Css File
 
 /* Settings > Email Configuration: verifying a mail configuration with a code. */
 .mail-verify-card {
-  border: 1px solid var(--vz-border-color, #e9ebec);
+  border: 1px solid rgba(var(--vz-primary-rgb), 0.18);
+  border-left: 3px solid var(--vz-primary);
   border-radius: 4px;
-  background: var(--vz-card-bg, #fff);
+  /* A soft wash of the theme colour, so the step stands out from the form. */
+  background: linear-gradient(90deg, rgba(var(--vz-primary-rgb), 0.07), rgba(var(--vz-primary-rgb), 0.02));
   overflow: hidden;
 }
 
 .mail-verify-head {
-  padding: 16px 20px;
+  padding: 18px 20px;
 }
 
 .mail-verify-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgba(var(--vz-warning-rgb, 247, 184, 75), 0.15);
-  color: var(--vz-warning, #f7b84b);
-  font-size: 20px;
+  background: #fff;
+  color: var(--vz-primary);
+  font-size: 21px;
+  box-shadow: 0 2px 8px rgba(var(--vz-primary-rgb), 0.18);
+}
+
+.mail-verify-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 220px;
+  padding: 10px 22px;
+  font-weight: 600;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(var(--vz-primary-rgb), 0.25);
+}
+
+.mail-verify-send i {
+  font-size: 17px;
+}
+
+@media (max-width: 767.98px) {
+  .mail-verify-send {
+    width: 100%;
+  }
 }
 
 .mail-verify-body {
   padding: 16px 20px 18px;
-  border-top: 1px solid var(--vz-border-color, #e9ebec);
-  background: var(--vz-light, #f3f6f9);
+  border-top: 1px solid rgba(var(--vz-primary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .mail-verify-error {
@@ -7973,4 +7998,90 @@ File: Custom Css File
   border-radius: 50%;
   background: currentColor;
   box-shadow: 0 0 0 3px rgba(var(--vz-success-rgb, 10, 179, 156), 0.2);
+}
+
+/* Mail-not-verified banner (components/Layout/MailNotVerifiedBanner.tsx).
+   It sits just under the fixed 70px header, inside the page gutters. Most
+   pages offset the header on .page-content; table pages
+   (body.table-page-fit-active) offset it on .main-content instead - so the
+   banner adds the header offset only on the former. */
+.mail-not-verified-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  /* Lined up with the page beneath: .page-content's and .container-fluid's
+     padding, 12px each. */
+  margin: calc(70px + 0.75rem) var(--vz-grid-gutter-width) 0;
+  padding: 0.625rem 0.75rem 0.625rem 0.875rem;
+  /* The theme's alert-danger colours, bordered on the left only. */
+  border: 0;
+  border-left: 3px solid var(--vz-danger);
+  border-radius: 4px;
+}
+
+/* Table pages carry no header offset of their own, and inset their content
+   15px rather than 24px. */
+.table-page-fit-active .mail-not-verified-banner {
+  margin: 0.75rem 15px 0;
+  flex-shrink: 0;
+}
+
+/* The banner has taken the header offset, so the page after it drops its own:
+   custom.min.css forces .page-content's 70px top padding with !important.
+   Table pages (.page-content-fit) carry no offset of their own. */
+.main-content > .mail-not-verified-banner ~ .page-content:not(.page-content-fit) {
+  margin-top: 0 !important;
+  padding-top: 0.5rem !important;
+}
+
+.mail-not-verified-banner__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(var(--vz-danger-rgb), 0.16);
+  color: var(--vz-danger);
+  font-size: 17px;
+  animation: mail-banner-breathe 2.4s ease-in-out infinite;
+}
+
+.mail-not-verified-banner__text {
+  flex: 1 1 260px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.mail-not-verified-banner__text strong,
+.mail-not-verified-banner__address {
+  font-weight: 600;
+}
+
+.mail-not-verified-banner__address {
+  word-break: break-all;
+}
+
+.mail-not-verified-banner .btn {
+  border-radius: 4px;
+}
+
+@keyframes mail-banner-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--vz-danger-rgb), 0.35);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 7px rgba(var(--vz-danger-rgb), 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mail-not-verified-banner__icon {
+    animation: none;
+  }
 }

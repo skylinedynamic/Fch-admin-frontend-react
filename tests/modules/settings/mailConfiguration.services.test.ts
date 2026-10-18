@@ -12,6 +12,7 @@ import {
   saveFallbackMailConfiguration,
   sendFallbackMailCode,
   verifyFallbackMailConfiguration,
+  makeDefaultFallbackMailConfiguration,
 } from '../../../src/modules/settings/services'
 
 afterEach(() => server.resetHandlers())
@@ -61,23 +62,29 @@ describe('mail configuration services', () => {
     expect(calls).toEqual(['delete 4', 'default 4', 'send 4', 'verify 4 123456'])
   })
 
-  it('the fallback has its own endpoints', async () => {
+  it('the fallback has its own endpoints, one configuration per provider like a partner', async () => {
     const calls: string[] = []
     server.use(
-      http.get('*/common/mail-configurations/fallback', () => { calls.push('get'); return ok({ configuration: null, providers: [] }) }),
-      http.post('*/common/mail-configurations/fallback', () => { calls.push('save'); return ok({ configuration: null, providers: [] }) }),
-      http.post('*/common/mail-configurations/fallback/send-code', () => { calls.push('send'); return ok() }),
-      http.post('*/common/mail-configurations/fallback/verify', async ({ request }) => {
-        calls.push(`verify ${(await request.json() as { code: string }).code}`)
-        return ok({ configuration: null, providers: [] })
+      http.get('*/common/mail-configurations/fallback', () => {
+        calls.push('get')
+        return ok({ configurations: [], providers: [], sending_id: null })
+      }),
+      http.post('*/common/mail-configurations/fallback', () => { calls.push('save'); return ok() }),
+      http.post('*/common/mail-configurations/fallback/:id/default', ({ params }) => { calls.push(`default ${params.id}`); return ok() }),
+      http.post('*/common/mail-configurations/fallback/:id/send-code', ({ params }) => { calls.push(`send ${params.id}`); return ok() }),
+      http.post('*/common/mail-configurations/fallback/:id/verify', async ({ params, request }) => {
+        calls.push(`verify ${params.id} ${(await request.json() as { code: string }).code}`)
+        return ok()
       }),
     )
 
-    await fetchFallbackMailConfiguration()
+    const fallback = await fetchFallbackMailConfiguration()
     await saveFallbackMailConfiguration({ provider: 'smtp', from_address: 'noreply@fch.test' })
-    await sendFallbackMailCode()
-    await verifyFallbackMailConfiguration('654321')
+    await makeDefaultFallbackMailConfiguration(7)
+    await sendFallbackMailCode(7)
+    await verifyFallbackMailConfiguration(7, '654321')
 
-    expect(calls).toEqual(['get', 'save', 'send', 'verify 654321'])
+    expect(fallback.data).toEqual({ configurations: [], providers: [], sending_id: null })
+    expect(calls).toEqual(['get', 'save', 'default 7', 'send 7', 'verify 7 654321'])
   })
 })

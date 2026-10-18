@@ -2,9 +2,10 @@ import { test, expect, type Page, type Route } from '@playwright/test'
 
 // Settings › Email Configuration: a partner verifies each mail provider with a
 // code sent through it, and until one is verified its mail goes through the
-// platform fallback - which only the host partner's own account manages. The
-// API side is fch-api's tests/Feature/MailConfiguration. Backend calls are
-// intercepted at the API origin, holding just enough state to play the flow.
+// platform fallback - which only the host partner's own account manages, one
+// configuration per provider like a partner's own. The API side is fch-api's
+// tests/Feature/MailConfiguration. Backend calls are intercepted at the API
+// origin, holding just enough state to play the flow.
 const API_ORIGIN = 'http://127.0.0.1:8000/api/v1'
 const MAIL = `${API_ORIGIN}/common/mail-configurations`
 
@@ -153,11 +154,19 @@ test.describe('Settings › Email Configuration', () => {
     await expect(status).toContainText('From mail@acme.test')
   })
 
-  test('the host partner manages the one fallback for every partner', async ({ page }) => {
+  test('the host partner adds SES to the fallback without losing SMTP, then switches to it', async ({ page }) => {
     await signIn(page, true)
 
-    let fallback: Config | null = null
+    // The fallback starts on a verified SMTP; SES is added beside it.
+    const fallbacks: Config[] = [{
+      id: 1, provider: 'smtp', provider_label: 'SMTP', from_address: 'noreply@fch.test', bcc_emails: null,
+      smtp_host: 'smtp.fch.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'platform', smtp_password: '••••••••',
+      is_verified: true, is_default: true, verified_at: '2026-10-17 08:00:00', verified_to: 'host@example.test', updated_at: '2026-10-17T08:00:00+00:00',
+    }]
     let fallbackSaves = 0
+    // As the API decides it: the verified default, else another verified one.
+    const sendingId = () => (fallbacks.find((c) => c.is_default && c.is_verified) ?? fallbacks.find((c) => c.is_verified))?.id ?? null
+    const byId = (route: Route) => fallbacks.find((c) => c.id === Number(route.request().url().split('/').slice(-2)[0])) as Config
 
     await page.route(`${API_ORIGIN}/**`, (route) => ok(route, []))
     await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => ok(route, { ...THEME, branding: THEME }))
@@ -165,29 +174,34 @@ test.describe('Settings › Email Configuration', () => {
       configurations: [],
       providers: PROVIDERS,
       uses_own_configuration: false,
-      fallback: { is_configured: fallback !== null, is_verified: Boolean(fallback?.is_verified) },
+      fallback: { is_configured: true, is_verified: sendingId() !== null },
       can_manage_fallback: true,
     }))
     await page.route(`${MAIL}/fallback`, (route) => {
       if (route.request().method() === 'POST') {
         fallbackSaves++
         const body = route.request().postDataJSON() as Record<string, unknown>
-        fallback = { ...body, id: 1, provider_label: 'Amazon SES', aws_secret_key: '••••••••', is_verified: false, is_default: false, verified_at: null, verified_to: null, updated_at: '2026-10-17T11:00:00+00:00' }
+        const saved: Config = { ...body, id: 2, provider_label: 'Amazon SES', aws_secret_key: '••••••••', is_verified: false, is_default: false, verified_at: null, verified_to: null, updated_at: '2026-10-17T11:00:00+00:00' }
+        fallbacks.push(saved)
+        return ok(route, saved, 'Mail configuration saved.')
       }
-      return ok(route, { configuration: fallback, providers: PROVIDERS })
+      return ok(route, { configurations: fallbacks, providers: PROVIDERS, sending_id: sendingId() })
     })
-    await page.route(`${MAIL}/fallback/send-code`, (route) => ok(route, null, 'A verification code has been sent to host@example.test.'))
-    await page.route(`${MAIL}/fallback/verify`, (route) => {
-      fallback = { ...(fallback as Config), is_verified: true, verified_to: 'host@example.test', updated_at: '2026-10-17T11:05:00+00:00' }
-      return ok(route, { configuration: fallback, providers: PROVIDERS }, 'Mail configuration verified.')
+    await page.route(`${MAIL}/fallback/*/send-code`, (route) => ok(route, null, 'A verification code has been sent to host@example.test.'))
+    await page.route(`${MAIL}/fallback/*/verify`, (route) => {
+      Object.assign(byId(route), { is_verified: true, verified_at: '2026-10-17 11:05:00', verified_to: 'host@example.test' })
+      return ok(route, byId(route), 'Mail configuration verified.')
+    })
+    await page.route(`${MAIL}/fallback/*/default`, (route) => {
+      const chosen = byId(route)
+      fallbacks.forEach((c) => { c.is_default = c === chosen })
+      return ok(route, chosen, 'Default mail configuration updated.')
     })
 
     await openEmailConfiguration(page)
-    await expect(page.getByText(/no verified fallback mail configuration yet/i)).toBeVisible()
-
     const card = page.getByRole('region', { name: 'Fallback email configuration' })
-    await expect(card.getByText(/used for every partner/i)).toBeVisible()
-    await expect(card.getByRole('alert').getByRole('heading', { name: 'No fallback mail configuration' })).toBeVisible()
+    const status = card.getByRole('status', { name: 'Fallback delivery status' })
+    await expect(status.getByRole('heading', { name: 'Fallback sending with SMTP' })).toBeVisible()
 
     await chooseProvider(page, card, 'Amazon SES')
     await card.getByLabel('From Address').fill('noreply@fch.test')
@@ -196,15 +210,160 @@ test.describe('Settings › Email Configuration', () => {
     await card.getByLabel('AWS Region').fill('us-east-1')
     await card.getByRole('button', { name: 'Save Configuration' }).click()
 
+    // SES is saved but unverified, and mail still goes out with SMTP.
     await expect(card.getByText('Not verified', { exact: true })).toBeVisible()
     expect(fallbackSaves).toBe(1)
+    await expect(status.getByRole('heading', { name: 'Fallback sending with SMTP' })).toBeVisible()
 
     await card.getByRole('button', { name: 'Send verification code' }).click()
     await card.getByLabel('Verification code').fill('975310')
     await card.getByRole('button', { name: 'Verify', exact: true }).click()
-
     await expect(card.getByText('Verified', { exact: true })).toBeVisible()
-    await expect(card.getByRole('alert')).toHaveCount(0)
-    await expect(card.getByRole('status', { name: 'Fallback delivery status' }).getByRole('heading', { name: 'Fallback sending with Amazon SES' })).toBeVisible()
+
+    await card.getByRole('button', { name: 'Use this provider' }).click()
+    const dialog = page.locator('.modal.show', { hasText: 'Send Mail With This Provider' })
+    await dialog.getByRole('button', { name: 'Yes, Send with Amazon SES' }).click()
+    await expect(status.getByRole('heading', { name: 'Fallback sending with Amazon SES' })).toBeVisible()
+
+    // SMTP is still there, settings and all, ready to switch back to.
+    await chooseProvider(page, card, 'SMTP')
+    await expect(card.getByLabel('SMTP Host')).toHaveValue('smtp.fch.test')
+    await expect(card.getByText('Verified', { exact: true })).toBeVisible()
+  })
+
+  test('Test Mail appears under Email Configuration once the mail configuration is verified', async ({ page }) => {
+    // A white-label partner's own account: one of those Test Mail is for.
+    await page.addInitScript(
+      ([u]) => {
+        window.localStorage.setItem('auth', JSON.stringify({ state: { token: 'e2e-fake-token', user: u, rememberMe: true }, version: 0 }))
+        document.cookie = 'auth_session_active=true; path=/'
+      },
+      [{ ...user(false), entity_type: 'Partner', partner_type: 'White-Label Partner (WL)' }]
+    )
+
+    let configurations: Config[] = [{
+      id: 21, provider: 'smtp', provider_label: 'SMTP', from_address: 'mail@acme.test', bcc_emails: null,
+      smtp_host: 'smtp.acme.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'mailer', smtp_password: '••••••••',
+      is_verified: false, is_default: false, verified_at: null, verified_to: null, updated_at: '2026-10-17T10:00:00+00:00',
+    }]
+
+    await page.route(`${API_ORIGIN}/**`, (route) => ok(route, []))
+    await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => ok(route, { ...THEME, branding: THEME }))
+    await page.route(MAIL, (route) => ok(route, {
+      configurations,
+      providers: PROVIDERS,
+      uses_own_configuration: configurations.some((c) => c.is_verified && c.is_default),
+      fallback: { is_configured: true, is_verified: true },
+      can_manage_fallback: false,
+    }))
+    await page.route(`${MAIL}/21/send-code`, (route) => ok(route, null, 'A verification code has been sent to pat@example.test.'))
+    await page.route(`${MAIL}/21/verify`, (route) => {
+      configurations = [{ ...configurations[0], is_verified: true, is_default: true, verified_to: 'pat@example.test' }]
+      return ok(route, configurations[0], 'Mail configuration verified.')
+    })
+
+    await openEmailConfiguration(page)
+    const menu = page.locator('.settings-menu-card .list-group-item')
+    const smtp = page.getByRole('region', { name: 'Email configuration' })
+    await expect(smtp.getByText('Not verified', { exact: true })).toBeVisible()
+
+    // Nothing of its own to test yet.
+    await expect(menu.filter({ hasText: 'Test Mail' })).toHaveCount(0)
+    await expect(smtp.getByRole('button', { name: 'Test Mail', exact: true })).toHaveCount(0)
+
+    await smtp.getByRole('button', { name: 'Send verification code' }).click()
+    await smtp.getByLabel('Verification code').fill('246810')
+    await smtp.getByRole('button', { name: 'Verify', exact: true }).click()
+    await expect(smtp.getByText('Verified', { exact: true })).toBeVisible()
+
+    // Right under Email Configuration in the menu.
+    const labels = await menu.allTextContents()
+    const at = labels.findIndex((l) => l.includes('Email Configuration'))
+    expect(labels[at + 1]).toContain('Test Mail')
+
+    // And a button just before Save Configuration that opens it.
+    const testMail = smtp.getByRole('button', { name: 'Test Mail', exact: true })
+    await expect(testMail).toBeVisible()
+    await testMail.click()
+    await expect(page.getByRole('heading', { name: 'Test Email Configuration' })).toBeVisible()
+  })
+
+  test('every page warns that mail is sent from the fallback address until verified', async ({ page }) => {
+    await signIn(page, false)
+    await page.route(`${API_ORIGIN}/**`, (route) => ok(route, []))
+    await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => ok(route, { ...THEME, branding: THEME }))
+    await page.route(MAIL, (route) => ok(route, {
+      configurations: [], providers: PROVIDERS, uses_own_configuration: false,
+      fallback: { is_configured: true, is_verified: true, from_address: 'noreply@fch.test' },
+      can_manage_fallback: false,
+    }))
+
+    await page.goto('/dashboard')
+    const banner = page.locator('.mail-not-verified-banner')
+    await expect(banner).toContainText('Until it is verified, all mail will be sent using noreply@fch.test.')
+
+    await banner.getByRole('link', { name: 'Verify mail' }).click()
+    await expect(page).toHaveURL(/\/settings\/email-configuration$/)
+  })
+
+  test('the mail banner lines up with the page, with no extra gap, on any kind of page', async ({ page }) => {
+    // Pages offset the fixed header in three ways: table pages (Clients) on
+    // .main-content, the rest on .page-content's padding (Settings,
+    // Notifications) or margin. The banner must sit just under the header and
+    // the page must start just under the banner on all of them.
+    await page.addInitScript(
+      ([u]) => {
+        window.localStorage.setItem('auth', JSON.stringify({ state: { token: 'e2e-fake-token', user: u, rememberMe: true }, version: 0 }))
+        document.cookie = 'auth_session_active=true; path=/'
+      },
+      [{ ...user(false), permissions: [...user(false).permissions, 'view clients'] }]
+    )
+    await page.route(`${API_ORIGIN}/**`, (route) => ok(route, []))
+    await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => ok(route, { ...THEME, branding: THEME }))
+    await page.route(MAIL, (route) => ok(route, {
+      configurations: [], providers: PROVIDERS, uses_own_configuration: false,
+      fallback: { is_configured: true, is_verified: true, from_address: 'noreply@fch.test' },
+      can_manage_fallback: false,
+    }))
+
+    for (const path of ['/clients', '/settings', '/notifications']) {
+      await page.goto(path)
+      const banner = page.locator('.mail-not-verified-banner')
+      await expect(banner).toBeVisible()
+      // The page's first line of text, outside the banner.
+      await expect.poll(() => page.evaluate(() => document.querySelector('.main-content')!.textContent!.trim().length)).toBeGreaterThan(0)
+      const gaps = await page.evaluate(() => {
+        const headerBottom = document.querySelector('#page-topbar')!.getBoundingClientRect().bottom
+        const b = document.querySelector('.mail-not-verified-banner')!
+        const box = b.getBoundingClientRect()
+        const walker = document.createTreeWalker(document.querySelector('.main-content')!, NodeFilter.SHOW_TEXT)
+        let firstText = Infinity
+        while (walker.nextNode()) {
+          const node = walker.currentNode as Text
+          if (!node.textContent?.trim() || b.contains(node)) continue
+          const range = document.createRange()
+          range.selectNodeContents(node)
+          const rect = range.getBoundingClientRect()
+          if (rect.width > 0 && rect.height > 0) firstText = Math.min(firstText, rect.top)
+        }
+        // The page's own edges: its title and its widest cards.
+        const cards = [...document.querySelectorAll('.main-content .card')].map((c) => c.getBoundingClientRect()).filter((r) => r.width > 0)
+        const title = document.querySelector('.main-content h4')!.getBoundingClientRect()
+        return {
+          above: box.top - headerBottom,
+          below: firstText - box.bottom,
+          left: box.left - title.left,
+          right: box.right - Math.max(...cards.map((r) => r.right)),
+        }
+      })
+      // Lined up with the page beneath it.
+      expect(Math.abs(gaps.left), `left edge on ${path}`).toBeLessThanOrEqual(1)
+      expect(Math.abs(gaps.right), `right edge on ${path}`).toBeLessThanOrEqual(1)
+      // The header's 1px bottom border may overlap it.
+      expect(gaps.above, `gap above the banner on ${path}`).toBeGreaterThanOrEqual(-1)
+      expect(gaps.above, `gap above the banner on ${path}`).toBeLessThanOrEqual(16)
+      expect(gaps.below, `gap below the banner on ${path}`).toBeGreaterThanOrEqual(0)
+      expect(gaps.below, `gap below the banner on ${path}`).toBeLessThanOrEqual(24)
+    }
   })
 })

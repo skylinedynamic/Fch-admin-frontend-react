@@ -17,7 +17,12 @@ import { MailDeliveryStatus, MailUnverifiedAlert, scrollToFirst } from './MailSt
  * verified default. Until then its mail goes through the platform fallback,
  * which only the host partner's own account manages.
  */
-const MailConfigurationSection: React.FC = () => {
+interface MailConfigurationSectionProps {
+    /** Opens Test Mail - offered once mail goes out under the partner's own settings. */
+    onTestMail?: () => void;
+}
+
+const MailConfigurationSection: React.FC<MailConfigurationSectionProps> = ({ onTestMail }) => {
     const { data, isLoading, isError } = useMailConfigurations();
     const save = useSaveMailConfiguration();
     const makeDefault = useMakeDefaultMailConfiguration();
@@ -81,6 +86,7 @@ const MailConfigurationSection: React.FC = () => {
                 sendCode={(configuration) => sendCode.mutateAsync(configuration.id)}
                 verify={(configuration, code) => verify.mutateAsync({ id: configuration.id, code })}
                 makeDefault={(configuration) => makeDefault.mutateAsync(configuration.id)}
+                onTestMail={state.uses_own_configuration ? onTestMail : undefined}
             />
 
             {state.can_manage_fallback && (

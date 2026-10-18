@@ -272,6 +272,7 @@ export default function App() {
             {/* Settings Route */}
             <Route element={<PermissionRoute permission={["update payment settings", "update partner agreement settings", "update borrower agreement settings"]} />}>
               <Route path="settings" element={<Settings />} />
+              <Route path="settings/:section" element={<Settings />} />
             </Route>
 
             <Route path="profile" element={<Profile />} />
@@ -392,7 +393,9 @@ export default function App() {
             {/* General Settings */}
             <Route element={<PermissionRoute permission="update borrower agreement settings" />}>
               <Route path="settings" element={<Settings />} />
-              <Route path="admin/settings" element={<Settings />} />
+              <Route path="settings/:section" element={<Settings />} />
+              {/* Old address: Settings lives under /settings now. */}
+              <Route path="admin/settings" element={<Navigate to="/settings" replace />} />
             </Route>
 
             {/* Resources Modules */}

@@ -79,18 +79,18 @@ const MailVerificationPanel: React.FC<MailVerificationPanelProps> = ({ id, idPre
                     <i className="ri-shield-keyhole-line"></i>
                 </div>
                 <div className="flex-grow-1">
-                    <h6 className="mb-1 fw-semibold fs-14 text-dark">Verify this configuration</h6>
+                    <h6 className="mb-1 fw-semibold fs-15 text-dark">Verify this configuration</h6>
                     <p className="text-muted mb-0 fs-13">
                         We&apos;ll email a {CODE_LENGTH}-digit code to {email ? <strong className="text-body">{email}</strong> : 'you'} through
                         these settings. Mail is only sent with verified settings.
                     </p>
                 </div>
                 {!codeSent && (
-                    <button type="button" className="btn btn-primary btn-sm px-3 flex-shrink-0" onClick={handleSend} disabled={sending}>
+                    <button type="button" className="btn btn-primary mail-verify-send flex-shrink-0" onClick={handleSend} disabled={sending}>
                         {sending ? (
-                            <span className="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                            <span className="spinner-border spinner-border-sm" aria-hidden="true"></span>
                         ) : (
-                            <i className="ri-mail-send-line me-1"></i>
+                            <i className="ri-mail-send-line" aria-hidden="true"></i>
                         )}
                         Send verification code
                     </button>

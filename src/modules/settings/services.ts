@@ -25,7 +25,8 @@ export const sendTestMail = async (payload: SendTestMailPayload): Promise<SendTe
 };
 
 // Mail configuration: the partner's providers, each verified by a code sent
-// through it, and the one platform-wide fallback the host partner keeps.
+// through it, and the platform-wide fallback the host partner keeps - which,
+// like a partner, has one configuration per provider.
 const MAIL = '/common/mail-configurations';
 
 export const fetchMailConfigurations = async (): Promise<MailConfigurationsResponse> => {
@@ -63,18 +64,23 @@ export const fetchFallbackMailConfiguration = async (): Promise<FallbackMailConf
     return data;
 };
 
-export const saveFallbackMailConfiguration = async (payload: SaveMailConfigurationPayload): Promise<FallbackMailConfigurationResponse> => {
+export const saveFallbackMailConfiguration = async (payload: SaveMailConfigurationPayload): Promise<MailConfigurationActionResponse> => {
     const { data } = await apiClient.post(`${MAIL}/fallback`, payload);
     return data;
 };
 
-export const sendFallbackMailCode = async (): Promise<MailConfigurationActionResponse> => {
-    const { data } = await apiClient.post(`${MAIL}/fallback/send-code`);
+export const makeDefaultFallbackMailConfiguration = async (id: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/fallback/${id}/default`);
     return data;
 };
 
-export const verifyFallbackMailConfiguration = async (code: string): Promise<FallbackMailConfigurationResponse> => {
-    const { data } = await apiClient.post(`${MAIL}/fallback/verify`, { code });
+export const sendFallbackMailCode = async (id: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/fallback/${id}/send-code`);
+    return data;
+};
+
+export const verifyFallbackMailConfiguration = async (id: number, code: string): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/fallback/${id}/verify`, { code });
     return data;
 };
 

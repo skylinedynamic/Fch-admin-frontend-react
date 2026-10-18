@@ -10,6 +10,7 @@ import {
     verifyMailConfiguration,
     fetchFallbackMailConfiguration,
     saveFallbackMailConfiguration,
+    makeDefaultFallbackMailConfiguration,
     sendFallbackMailCode,
     verifyFallbackMailConfiguration,
     fetchAppConfigurations,
@@ -100,7 +101,7 @@ export const useVerifyMailConfiguration = () =>
     useMailMutation<{ id: number; code: string }>(({ id, code }) => verifyMailConfiguration(id, code));
 
 /**
- * The one platform-wide fallback. Only the host partner's own account may
+ * The platform-wide fallback's providers. Only the host partner's own account may
  * read it, so callers pass `enabled` from `can_manage_fallback`.
  */
 export const useFallbackMailConfiguration = (enabled = true) => {
@@ -112,16 +113,15 @@ export const useFallbackMailConfiguration = (enabled = true) => {
 };
 
 /**
- * Saving or verifying the fallback answers with the fallback itself, which
- * goes straight into the cache; the partner list carries its status, so it
- * refreshes too.
+ * Any change to a fallback provider can change which one mail goes out with,
+ * and the partner list carries the fallback's status - so both refresh.
  */
-const useFallbackMutation = <TVariables,>(mutationFn: (variables: TVariables) => Promise<FallbackMailConfigurationResponse>) => {
+const useFallbackMutation = <TVariables,>(mutationFn: (variables: TVariables) => Promise<MailConfigurationActionResponse>) => {
     const qc = useQueryClient();
-    return useMutation<FallbackMailConfigurationResponse, Error, TVariables>({
+    return useMutation<MailConfigurationActionResponse, Error, TVariables>({
         mutationFn,
-        onSuccess: (response) => {
-            qc.setQueryData(queryKeys.settings.fallbackMailConfiguration(), response);
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: queryKeys.settings.fallbackMailConfiguration() });
             qc.invalidateQueries({ queryKey: queryKeys.settings.mailConfigurations() });
         },
     });
@@ -130,10 +130,15 @@ const useFallbackMutation = <TVariables,>(mutationFn: (variables: TVariables) =>
 export const useSaveFallbackMailConfiguration = () =>
     useFallbackMutation<SaveMailConfigurationPayload>(saveFallbackMailConfiguration);
 
-export const useSendFallbackMailCode = () =>
-    useMutation<MailConfigurationActionResponse, Error, void>({ mutationFn: sendFallbackMailCode });
+export const useMakeDefaultFallbackMailConfiguration = () =>
+    useFallbackMutation<number>(makeDefaultFallbackMailConfiguration);
 
-export const useVerifyFallbackMailConfiguration = () => useFallbackMutation<string>(verifyFallbackMailConfiguration);
+/** Sending a code changes nothing, so nothing is refreshed. */
+export const useSendFallbackMailCode = () =>
+    useMutation<MailConfigurationActionResponse, Error, number>({ mutationFn: sendFallbackMailCode });
+
+export const useVerifyFallbackMailConfiguration = () =>
+    useFallbackMutation<{ id: number; code: string }>(({ id, code }) => verifyFallbackMailConfiguration(id, code));
 
 /**
  * Hook to fetch app configurations by module.

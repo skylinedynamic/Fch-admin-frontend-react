@@ -328,7 +328,7 @@ export interface MailConfigurationsResponse {
         providers: MailProviderOption[];
         /** Mail goes out under the partner's own verified default. */
         uses_own_configuration: boolean;
-        fallback: { is_configured: boolean; is_verified: boolean };
+        fallback: { is_configured: boolean; is_verified: boolean; from_address: string | null };
         can_manage_fallback: boolean;
     };
 }
@@ -337,8 +337,11 @@ export interface FallbackMailConfigurationResponse {
     status: boolean;
     message?: string;
     data: {
-        configuration: MailConfiguration | null;
+        /** One per provider, like a partner's own. */
+        configurations: MailConfiguration[];
         providers: MailProviderOption[];
+        /** The one mail goes out with now; null when none can send. */
+        sending_id: number | null;
     };
 }
 

@@ -19,6 +19,7 @@ import {
     fetchBorrowerProgress,
     updateTaskVerificationStatus,
     fetchCreditProfile,
+    deleteCreditProfile,
     fetchClientCapitalAccessOverview,
     fetchClientCapitalAccessStrategies
 } from './services';
@@ -185,6 +186,17 @@ export const useClientCreditProfile = (id: string | number, enabled: boolean = t
         queryKey: clientKeys.creditProfile(id),
         queryFn: () => fetchCreditProfile(id),
         enabled: enabled && !!id,
+    });
+};
+
+/** Removes all of a client's credit profile data; the profile is re-read. */
+export const useDeleteClientCreditProfile = (id: string | number) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => deleteCreditProfile(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: clientKeys.creditProfile(id) });
+        },
     });
 };
 

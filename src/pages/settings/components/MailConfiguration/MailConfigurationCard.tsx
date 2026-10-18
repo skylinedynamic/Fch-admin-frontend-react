@@ -27,13 +27,15 @@ interface MailConfigurationCardProps {
     /** Which settings mail goes out with, shown under the banner. */
     notice?: React.ReactNode;
     providers: MailProviderOption[];
-    /** The saved providers - for the fallback, its one configuration. */
+    /** The saved providers, one configuration each. */
     configurations: MailConfiguration[];
     save: (payload: SaveMailConfigurationPayload) => Promise<{ message?: string }>;
     sendCode: (configuration: MailConfiguration) => Promise<MailConfigurationActionResponse>;
     verify: (configuration: MailConfiguration, code: string) => Promise<unknown>;
-    /** Choosing which verified provider sends; the fallback has only one. */
+    /** Choosing which verified provider sends. */
     makeDefault?: (configuration: MailConfiguration) => Promise<unknown>;
+    /** Opens Test Mail; the button shows only when given. */
+    onTestMail?: () => void;
 }
 
 /**
@@ -55,6 +57,7 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
     sendCode,
     verify,
     makeDefault,
+    onTestMail,
 }) => {
     const initial = configurations.find((c) => c.is_default)?.provider ?? configurations[0]?.provider ?? providers[0]?.value ?? '';
     const [selected, setSelected] = useState(initial);
@@ -98,9 +101,6 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
     // Saving changed settings throws away their verification (the API checks
     // the settings against those the code went through).
     const needsReverifying = Boolean(configuration?.is_verified) && isMailFormChanged(form, savedForm);
-
-    // The fallback is one configuration: saving another provider replaces it.
-    const replacing = !makeDefault && configurations.length > 0 && configuration === null;
 
     const update = (field: string, value: string) => {
         setForm((current) => ({ ...current, [field]: value }));
@@ -193,11 +193,6 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
                                     <p className="text-muted mb-0 fs-13">
                                         Currently configuring <strong>{provider.label}</strong> configuration.
                                     </p>
-                                    {replacing && (
-                                        <p className="text-muted mb-0 fs-13">
-                                            The fallback uses <strong>{providers.find((p) => p.value === configurations[0].provider)?.label}</strong> now; saving switches it to {provider.label}.
-                                        </p>
-                                    )}
                                     {/* The configuration mail goes out with says this in its delivery
                                         status; only another verified provider needs it here. */}
                                     {configuration?.is_verified && configuration.verified_to && makeDefault && !configuration.is_default && (
@@ -252,6 +247,16 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
                         <div className="row mt-5 pt-3 border-top">
                             <div className="col-12">
                                 <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                                    {onTestMail && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-soft-primary px-4 py-2 fw-bold d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 w-100 w-sm-auto"
+                                            onClick={onTestMail}
+                                        >
+                                            <i className="ri-mail-send-line fs-18" aria-hidden="true"></i>
+                                            <span>Test Mail</span>
+                                        </button>
+                                    )}
                                     <button
                                         type="submit"
                                         className="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 shadow-sm w-100 w-sm-auto"
