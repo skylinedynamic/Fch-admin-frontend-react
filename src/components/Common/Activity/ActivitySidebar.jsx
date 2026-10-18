@@ -432,10 +432,12 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 return (
                     <span className="d-inline-flex align-items-center flex-wrap gap-1">
                         <span className="text-dark me-1">{prefix}</span>
-                        <span className="text-nowrap d-inline-flex align-items-center">
-                            <span style={{ color: getStatusColor(oldStatus) }}>{oldStatus}</span>
+                        {/* Each status stays on one line, but the pair may wrap: forced onto
+                            one line, long pairs ran off the right edge of the sidebar. */}
+                        <span className="d-inline-flex align-items-center flex-wrap">
+                            <span className="text-nowrap" style={{ color: getStatusColor(oldStatus) }}>{oldStatus}</span>
                             <span className="text-muted px-1" style={{ fontSize: '11px' }}>→</span>
-                            <span style={{ color: getStatusColor(newStatus) }}>{newStatus}</span>
+                            <span className="text-nowrap" style={{ color: getStatusColor(newStatus) }}>{newStatus}</span>
                         </span>
                     </span>
                 );
