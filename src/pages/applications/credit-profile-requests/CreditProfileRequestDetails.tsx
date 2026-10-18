@@ -106,12 +106,12 @@ export default function CreditProfileRequestDetails() {
                                 against 2, which left half the card empty. */}
                             <div className="cpr-fields cpr-fields-2">
                                 <CprField label="Full Name" icon="ri-account-circle-line" value={fullName} copyValue={fullName} />
-                                <CprField label="Date of Birth" icon="ri-cake-2-line" value={request.date_of_birth || '—'} />
+                                <CprField label="Date of Birth" icon="ri-cake-2-line" value={request.date_of_birth} />
                                 <CprField
                                     label="Social Security Number"
                                     icon="ri-lock-line"
                                     copyValue={request.ssn}
-                                    value={
+                                    value={request.ssn && (
                                         <>
                                             <span className="font-monospace">{formatSSN(request.ssn, showFullSSN)}</span>
                                             <button
@@ -123,19 +123,19 @@ export default function CreditProfileRequestDetails() {
                                                 {showFullSSN ? 'Hide' : 'Reveal'}
                                             </button>
                                         </>
-                                    }
+                                    )}
                                 />
                                 <CprField
                                     label="Email Address"
                                     icon="ri-mail-line"
                                     copyValue={request.email}
-                                    value={<a href={`mailto:${request.email}`} className="text-primary text-decoration-none">{request.email}</a>}
+                                    value={request.email && <a href={`mailto:${request.email}`} className="text-primary text-decoration-none">{request.email}</a>}
                                 />
                                 <CprField
                                     label="Phone Number"
                                     icon="ri-phone-line"
                                     copyValue={request.phone}
-                                    value={<a href={`tel:${request.phone}`} className="text-dark text-decoration-none">{request.phone}</a>}
+                                    value={request.phone && <a href={`tel:${request.phone}`} className="text-dark text-decoration-none">{request.phone}</a>}
                                 />
                             </div>
                         </CprCard>
@@ -151,14 +151,14 @@ export default function CreditProfileRequestDetails() {
                                     label="Street Address"
                                     icon="ri-road-map-line"
                                     copyValue={request.address}
-                                    value={
+                                    value={request.address && (
                                         <>
                                             {request.address}
                                             {request.apt_suite_other && (
                                                 <span className="text-muted ms-1 fs-13">({request.apt_suite_other})</span>
                                             )}
                                         </>
-                                    }
+                                    )}
                                 />
                                 <CprField label="City" icon="ri-building-2-line" value={request.city} copyValue={request.city} />
                                 <CprField label="State" icon="ri-map-2-line" value={request.state} copyValue={request.state} />

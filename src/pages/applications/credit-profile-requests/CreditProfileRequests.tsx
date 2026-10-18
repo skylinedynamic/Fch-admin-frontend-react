@@ -91,8 +91,11 @@ export default function CreditProfileRequests() {
     };
 
     const applicantNameBodyTemplate = (rowData: CreditProfileRequest) => {
-        const middle = rowData.middle_name ? ` ${rowData.middle_name}` : '';
-        return <span className="fw-medium">{`${rowData.first_name}${middle} ${rowData.last_name}`}</span>;
+        // A request opened by an update request may hold no name (see the API's
+        // CreditProfileRequestService::requestUpdate).
+        const name = [rowData.first_name, rowData.middle_name, rowData.last_name].filter(Boolean).join(' ');
+        if (!name) return <span className="text-muted">—</span>;
+        return <span className="fw-medium">{name}</span>;
     };
 
     const ssnBodyTemplate = (rowData: CreditProfileRequest) => {
