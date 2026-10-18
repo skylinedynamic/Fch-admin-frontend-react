@@ -484,8 +484,9 @@ export default function FundingApplicationDetails() {
                                                     <i className={`${getFileIcon(file.extension)} fs-18`}></i>
                                                 </div>
                                             </div>
-                                            <div className="flex-grow-1 ms-3">
-                                                <h6 className="fs-13 mb-0">
+                                            {/* minWidth 0 lets a long name shrink and end in "…" instead of pushing the download icon out of the box. */}
+                                            <div className="flex-grow-1 ms-3" style={{ minWidth: 0 }}>
+                                                <h6 className="fs-13 mb-0 text-truncate" title={file.original_name}>
                                                     <a href="#" onClick={(e) => downloadDocumentFile(e, file)} className="text-reset">{file.original_name}</a>
                                                 </h6>
                                             </div>
@@ -777,7 +778,7 @@ export default function FundingApplicationDetails() {
                                         </ol>
                                     </nav>
                                 </div>
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                <div className="page-actions page-actions-wrap d-flex align-items-center flex-wrap gap-2 mt-2 mt-lg-0">
                                     {isHost && (
                                         <Link to={`/intake-review/funding-application/${id}/audit-history`} className="btn btn-primary w-lg waves-effect">
                                             <i className="ri-history-line align-middle me-1"></i> Audit History
@@ -795,7 +796,7 @@ export default function FundingApplicationDetails() {
                                     {canEditApplication && (
                                         <Link
                                             to={`/fund-application/${app.funding_request_id}`}
-                                            className="btn btn-warning waves-effect"
+                                            className="btn btn-warning waves-effect py-2 fw-normal"
                                             title="Editing will require the borrower to re-sign the application"
                                         >
                                             <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application

@@ -173,7 +173,7 @@ export default function FundingRequestDetail() {
                             { label: 'Details' }
                         ]}
                     >
-                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <div className="page-actions page-actions-wrap d-flex align-items-center flex-wrap gap-2 mt-2 mt-lg-0">
                             {(review?.borrower?.id || review?.borrower_id) && (
                                 <Link to={`/clients/${review.borrower?.id || review.borrower_id}`} className="btn btn-info waves-effect">
                                     <i className="ri-user-line align-middle me-1"></i> Go to Client
@@ -195,7 +195,7 @@ export default function FundingRequestDetail() {
                                 review.funding_application.status !== FUNDING_APPLICATION_STATUS.DRAFT && (
                                 <Link
                                     to={`/fund-application/${review.id}`}
-                                    className="btn btn-warning waves-effect"
+                                    className="btn btn-warning waves-effect py-2 fw-normal"
                                     title="Editing will require the borrower to re-sign the application"
                                 >
                                     <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application
