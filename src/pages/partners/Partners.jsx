@@ -5,8 +5,9 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchPartners, allUsers, deletePartners, archivePartners, unarchivePartners, fetchPartnerStats } from '../../modules/partner/services';
+import { fetchPartners, allUsers, deletePartners, checkPartnersDeletable, archivePartners, unarchivePartners, fetchPartnerStats } from '../../modules/partner/services';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import PartnerDeleteBlockedModal from './components/PartnerDeleteBlockedModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../components/Loader/TableLoader';
@@ -60,6 +61,9 @@ export default function Partners() {
     const [selectedPartners, setSelectedPartners] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteRows, setDeleteRows] = useState([]);
+    const [blockedPartners, setBlockedPartners] = useState([]);
+    const [blockedSelectionSize, setBlockedSelectionSize] = useState(0);
+    const [checkingDeletable, setCheckingDeletable] = useState(false);
 
     // Dropdown data
     const [partnersList, setPartnersList] = useState([]);
@@ -301,11 +305,36 @@ export default function Partners() {
 
 
     // Delete handlers
-    const openDeleteModal = () => {
+    // A partner with a paid invoice (or clients/users under it) cannot be deleted.
+    // Check first, so the user is told why instead of being asked to confirm.
+    const showBlocked = (rows, selectedCount) => {
+        setBlockedPartners(rows);
+        setBlockedSelectionSize(selectedCount);
+    };
+
+    const openDeleteModal = async () => {
         if (!selectedPartners || selectedPartners.length === 0) {
             toast.warn('Please select at least one partner to delete.');
             return;
         }
+        const ids = selectedPartners.map(p => p.id);
+
+        setCheckingDeletable(true);
+        try {
+            const blocked = (await checkPartnersDeletable(ids))
+                .filter(row => !row.is_deletable)
+                .map(row => ({ id: row.id, name: row.name }));
+            if (blocked.length > 0) {
+                showBlocked(blocked, ids.length);
+                return;
+            }
+        } catch {
+            // The check is a courtesy - the delete itself still refuses a blocked
+            // partner, and that answer opens the same modal.
+        } finally {
+            setCheckingDeletable(false);
+        }
+
         setDeleteRows(selectedPartners);
         setShowDeleteModal(true);
     };
@@ -352,6 +381,13 @@ export default function Partners() {
             setSelectedPartners([]);
             setAppliedFilters({ ...appliedFilters });
         } catch (err) {
+            // The API keeps blocked partners (422 naming them) - same modal, no toast.
+            const blocked = err.response?.data?.errors?.blocked;
+            if (err.response?.status === 422 && Array.isArray(blocked) && blocked.length > 0) {
+                setShowDeleteModal(false);
+                showBlocked(blocked, ids.length);
+                return;
+            }
             toast.error(err.response?.data?.message || 'Failed to delete partners');
         } finally {
             setLoading(false);
@@ -391,7 +427,7 @@ export default function Partners() {
                                     )}
                                     {hasPermission('delete partners') && (
                                         <li>
-                                            <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                            <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal} disabled={checkingDeletable}>
                                                 <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                             </button>
                                         </li>
@@ -578,6 +614,14 @@ export default function Partners() {
                     onClose={() => setShowDeleteModal(false)}
                     loading={loading}
                     text="The selected partners and all associated data will be deleted."
+                />
+
+                <PartnerDeleteBlockedModal
+                    show={blockedPartners.length > 0}
+                    blocked={blockedPartners}
+                    selectedCount={blockedSelectionSize}
+                    canEdit={hasPermission('update partners')}
+                    onClose={() => setBlockedPartners([])}
                 />
             </div>
         </div>

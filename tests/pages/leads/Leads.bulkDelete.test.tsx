@@ -107,3 +107,74 @@ describe('Leads - delete selected', () => {
     expect(bulk).toHaveBeenCalledWith({ ids: [12] })
   })
 })
+
+describe('Leads - a converted lead cannot be deleted', () => {
+  const withConverted = [
+    { id: 11, opportunity: 'Alpha Co', contact_person: 'Ann', email: 'ann@example.test', status: 'New Lead', lead_type: 'Borrower' },
+    { id: 13, opportunity: 'Gamma Co', contact_person: 'Cara', email: 'cara@example.test', status: 'Lead Completed', lead_type: 'Borrower', convert_to: 'Borrower' },
+  ]
+
+  beforeEach(() => {
+    server.use(http.post('*/common/leads/fetch-leads', () => HttpResponse.json({ status: true, data: withConverted, meta: { total: 2 } })))
+  })
+
+  it('shows "Lead Cannot Be Deleted" instead of the confirmation, and deletes nothing', async () => {
+    const bulk = vi.fn()
+    server.use(http.post('*/common/leads/multiple-delete', () => { bulk(); return HttpResponse.json({ status: true }) }))
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+
+    await screen.findByText('Cara')
+    await user.click(rowCheckbox('Cara'))
+    await user.click(await screen.findByRole('button', { name: /delete selected/i }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Lead Cannot Be Deleted' })
+    expect(within(dialog).getByTestId('blocked-message').textContent).toBe('This lead has already been converted and cannot be deleted.')
+    expect(screen.queryByRole('button', { name: /yes, delete it/i })).not.toBeInTheDocument()
+    expect(bulk).not.toHaveBeenCalled()
+    // Close is the only action, so it is the main (primary) button.
+    expect(within(dialog).getAllByRole('button', { name: 'Close' })[1]).toHaveClass('btn-primary')
+
+    await user.click(within(dialog).getAllByRole('button', { name: 'Close' })[1])
+    expect(screen.queryByRole('dialog', { name: 'Lead Cannot Be Deleted' })).not.toBeInTheDocument()
+  })
+
+  it('names the converted lead among several and says how to delete the rest', async () => {
+    const bulk = vi.fn()
+    server.use(http.post('*/common/leads/multiple-delete', () => { bulk(); return HttpResponse.json({ status: true }) }))
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+
+    await screen.findByText('Cara')
+    await user.click(rowCheckbox('Ann'))
+    await user.click(rowCheckbox('Cara'))
+    await user.click(await screen.findByRole('button', { name: /delete selected/i }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Lead Cannot Be Deleted' })
+    expect(within(dialog).getByTestId('blocked-message').textContent).toBe('Cara has already been converted and cannot be deleted.')
+    expect(within(dialog).getByTestId('blocked-others')).toHaveTextContent('Unselect this lead to delete the other selected leads.')
+    expect(bulk).not.toHaveBeenCalled()
+  })
+
+  it('shows the same modal, not an error toast, when the API refuses a converted lead', async () => {
+    // The list does not yet know it was converted (e.g. converted in another tab).
+    server.use(
+      http.post('*/common/leads/fetch-leads', () => HttpResponse.json({ status: true, data: [{ ...withConverted[1], convert_to: null }], meta: { total: 1 } })),
+      http.post('*/common/leads/multiple-delete', () =>
+        HttpResponse.json(
+          { status: false, message: 'This lead has already been converted and cannot be deleted.', errors: { converted: [{ id: 13, name: 'Cara' }] } },
+          { status: 422 }
+        )
+      )
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+
+    await screen.findByText('Cara')
+    await user.click(rowCheckbox('Cara'))
+    await user.click(await screen.findByRole('button', { name: /delete selected/i }))
+    await user.click(await screen.findByRole('button', { name: /yes, delete it/i }))
+
+    expect(await screen.findByRole('dialog', { name: 'Lead Cannot Be Deleted' })).toBeInTheDocument()
+  })
+})
