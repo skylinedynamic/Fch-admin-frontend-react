@@ -42,6 +42,13 @@ describe('NonHostPartnerRoute', () => {
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
   })
 
+  /** My Subscription is the partner's own account - its staff never reach it (findings O23). */
+  it('redirects the partner staff (an Employee login)', () => {
+    useAuthStore.setState({ user: { ...partnerWithPayment, entity_type: 'Employee' } })
+    renderAt()
+    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+  })
+
   it('redirects a partner with no first_payment_date yet', () => {
     useAuthStore.setState({ user: { ...partnerWithPayment, first_payment_date: null } })
     renderAt()

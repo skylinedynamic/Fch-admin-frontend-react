@@ -4,7 +4,6 @@ import { usePermissions } from "../../lib/auth/usePermissions";
 import { useAuthStore } from "../../store/auth/authStore";
 import { useConfigStore } from "../../store/config";
 import faviconImg from "../../../assets/images/Favicon.png";
-import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from "../../config/appConfig";
 import { NOTIFICATIONS_ROUTE } from "../../config/notifications";
 import { useUnreadNotificationCount, formatUnreadCount } from "../../modules/notifications";
@@ -252,9 +251,6 @@ const menuItems = [
       },
     ],
   },
-  // Hidden for now: the Embedded Form feature is on hold pending the open
-  // defects (client IP, credit-score bands, form validation, conversion flow).
-  // Routes still exist, so this block is all that needs restoring.
   {
     label: "Embedded Form",
     icon: "ri-survey-line",
@@ -277,7 +273,7 @@ const menuItems = [
     to: "/settings",
     icon: "ri-file-settings-fill",
     label: "Settings",
-    permission: ["update payment settings", "update partner agreement settings", "update borrower agreement settings"],
+    permission: ["update payment settings", "update partner agreement settings", "update borrower agreement settings", "update email configuration settings", "update sms configuration settings", "update branding settings", "update domain configuration settings", "update microbilt settings"],
     isHostOnly: false,
   },
 ];
@@ -492,86 +488,6 @@ export default function Sidebar() {
         >
           <i className="ri-menu-line"></i>
         </button>
-      </div>
-
-      <div className="dropdown sidebar-user m-1 rounded">
-        <button
-          type="button"
-          className="btn material-shadow-none"
-          id="page-header-user-dropdown"
-          data-bs-toggle="dropdown"
-          aria-haspopup="true"
-          aria-expanded="false"
-        >
-          <span className="d-flex align-items-center gap-2">
-            <img
-              className="rounded header-profile-user"
-              src={avatarDefault}
-              alt="Header Avatar"
-            />
-            <span className="text-start">
-              <span className="d-block fw-medium sidebar-user-name-text">
-                Anna Adame
-              </span>
-              <span className="d-block fs-14 sidebar-user-name-sub-text">
-                <i className="ri ri-circle-fill fs-10 text-success align-baseline"></i>{" "}
-                <span className="align-middle">Online</span>
-              </span>
-            </span>
-          </span>
-        </button>
-        <div className="dropdown-menu dropdown-menu-end">
-          <h6 className="dropdown-header">Welcome Anna!</h6>
-          <a className="dropdown-item" href="#">
-            <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>{" "}
-            <span className="align-middle">Profile</span>
-          </a>
-          <a className="dropdown-item" href="#">
-            <i className="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i>{" "}
-            <span className="align-middle">Messages</span>
-          </a>
-          <a className="dropdown-item" href="#">
-            <i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i>{" "}
-            <span className="align-middle">Help</span>
-          </a>
-          <div className="dropdown-divider"></div>
-          <a className="dropdown-item" href="#">
-            <i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i>{" "}
-            <span className="align-middle">
-              Balance : <b>$5971.67</b>
-            </span>
-          </a>
-          <a className="dropdown-item" href="#">
-            <span className="badge bg-success-subtle text-success mt-1 float-end">
-              New
-            </span>
-            <i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i>{" "}
-            <span className="align-middle">Settings</span>
-          </a>
-          <Link className="dropdown-item" to="/profile" onClick={closeSidebarOnMobile}>
-            <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>{" "}
-            <span className="align-middle">Profile</span>
-          </Link>
-          <a
-            className="dropdown-item"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              closeSidebarOnMobile();
-              import("../../lib/auth").then(({ logout, clearAuth }) => {
-                logout()
-                  .catch(() => { })
-                  .finally(() => {
-                    clearAuth();
-                    window.location.href = "/login";
-                  });
-              });
-            }}
-          >
-            <i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i>{" "}
-            <span className="align-middle">Logout</span>
-          </a>
-        </div>
       </div>
 
       <div id="scrollbar" data-simplebar className="h-100">

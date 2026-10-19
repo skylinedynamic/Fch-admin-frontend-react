@@ -295,11 +295,15 @@ const Resource: React.FC = () => {
                 { label: 'Total Resources', value: (resources.legal_registration?.length || 0) + (resources.education_help?.length || 0) + (resources.download_assets?.length || 0) + (resources.training_academy?.length || 0), icon: 'ri-stack-fill', color: 'primary' },
                 { label: 'Education & Help', value: resources.education_help?.length || 0, icon: 'ri-book-open-fill', color: 'primary' },
                 { label: 'Training Academy', value: resources.training_academy?.length || 0, icon: 'ri-video-fill', color: 'primary' },
-                { label: 'Business Services', value: resources.business_services?.length || 0, icon: 'ri-briefcase-fill', color: 'primary', link: '/business-services' }
+                { label: 'Business Services', value: resources.business_services?.length || 0, icon: 'ri-briefcase-fill', color: 'primary', link: '/resources#business-services' }
               ].map((stat, i) => (
                 <div className="col-md-3" key={i}>
                   {stat.link ? (
-                    <Link to={stat.link} className="card shadow-sm border-0 rounded-2 card-animate d-block text-decoration-none">
+                    <Link
+                      to={stat.link}
+                      className="card shadow-sm border-0 rounded-2 card-animate d-block text-decoration-none"
+                      onClick={() => document.getElementById(stat.link.split('#')[1] || '')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    >
                       <div className="card-body py-3 px-4 d-flex align-items-center">
                         <div className={`avatar-md rounded bg-${bgClass(stat.color)} d-flex align-items-center justify-content-center me-3 shadow-none`}>
                           <i className={`${stat.icon} text-${colorClass(stat.color)} resource-card-icon`}></i>
@@ -371,7 +375,7 @@ const Resource: React.FC = () => {
                   </div>
 
                   <div className="col-md-6">
-                    <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
+                    <div id="business-services" className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                       <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h6 className="fw-semibold text-dark mb-0 fs-15">Business Services</h6>
                         {hasPermission('create resources') && (

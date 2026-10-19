@@ -104,7 +104,14 @@ const ResourceForm: React.FC = () => {
     const handleInputChange = (e: any) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-        if (validationErrors[name]) setValidationErrors(prev => ({ ...prev, [name]: [] }));
+        // Drop the key rather than emptying it: an empty array is still truthy,
+        // so the field kept its invalid state after being corrected.
+        if (validationErrors[name]) {
+            setValidationErrors(prev => {
+                const { [name]: _cleared, ...rest } = prev;
+                return rest;
+            });
+        }
     };
 
     const handleArrayChange = (field: 'overview' | 'impact', index: number, value: string) => {
@@ -175,6 +182,8 @@ const ResourceForm: React.FC = () => {
                 }, 100);
             } else {
                 setValidationErrors({ general: [msg] });
+                // Nothing on the form renders `general`, so say it here.
+                toast.error(msg);
             }
         }
     };

@@ -19,7 +19,8 @@ const request = {
   state: 'Texas',
   zip: '78701',
   ssn: '123456789',
-  date_of_birth: '1990-01-01',
+  // Ready to display, as the API sends it - see CreditProfileRequestResource.
+  date_of_birth: 'December 16, 1992',
   phone: '5125550100',
   email: 'giselle@example.com',
   created_at: '2026-10-01T10:00:00Z',
@@ -75,6 +76,45 @@ describe('Credit profile request details', () => {
 
     await screen.findByRole('button', { name: /reveal/i })
     expect(screen.queryByRole('link', { name: /go to borrower credit profile/i })).not.toBeInTheDocument()
+  })
+
+  it('prints the date of birth exactly as the API sent it', async () => {
+    serveRequest()
+    renderDetails()
+
+    expect(await screen.findByText('December 16, 1992')).toBeInTheDocument()
+  })
+
+  // The API's string is a calendar date. Parsing it in the browser is what
+  // used to hand a viewer behind UTC the previous day, so it must not be.
+  it.each(['America/Los_Angeles', 'America/New_York', 'Asia/Dhaka'])(
+    'shows the same date of birth to a viewer in %s',
+    async (timeZone) => {
+      const original = process.env.TZ
+      process.env.TZ = timeZone
+      try {
+        serveRequest()
+        renderDetails()
+
+        expect(await screen.findByText('December 16, 1992')).toBeInTheDocument()
+        expect(screen.queryByText('December 15, 1992')).not.toBeInTheDocument()
+        expect(screen.queryByText('December 17, 1992')).not.toBeInTheDocument()
+      } finally {
+        process.env.TZ = original
+      }
+    },
+  )
+
+  it('shows "Not provided" when there is no date of birth, like any empty detail', async () => {
+    server.use(
+      http.get('*/admin/credit-profile-requests/7', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...request, date_of_birth: null } }),
+      ),
+    )
+    renderDetails()
+
+    const label = await screen.findByText('Date of Birth')
+    expect(label.closest('.cpr-field')).toHaveTextContent('Not provided')
   })
 
   it('leaves a gap between the SSN and its Reveal button', async () => {
