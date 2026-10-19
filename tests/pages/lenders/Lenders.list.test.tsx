@@ -29,7 +29,8 @@ describeListPage(
     // No selection check here: this table always renders its checkbox column; only the
     // "Delete Selected" action behind it is permission-gated.
     bulkDelete: {
-      permission: 'delete lenders', method: 'delete', path: '/admin/lenders/61',
+      // The selection goes in one call, all or none (was one DELETE per lender).
+      permission: 'delete lenders', method: 'post', path: '/admin/lenders/multiple-delete', body: (ids) => ({ ids }),
       successToast: 'Selected lenders deleted successfully', errorToast: 'Lender is used by a funding sequence.',
     },
   },
