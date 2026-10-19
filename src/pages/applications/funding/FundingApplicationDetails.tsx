@@ -11,7 +11,8 @@ import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
-import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip } from '../../../modules/application/services';
+import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip, downloadFundingApplicationDocument } from '../../../modules/application/services';
+import { handleFileDownload } from '../../../utils/fileDownload';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 // @ts-ignore
@@ -428,6 +429,7 @@ export default function FundingApplicationDetails() {
             <DetailRow label="Purpose of Funds" value={app.purpose_of_funds} />
             {app.purpose_note && <DetailRow label="Purpose of Funding Note" value={app.purpose_note} />}
             <DetailRow label="Preferred Funding Type" value={app.preferred_funding_type} />
+            <DetailRow label="Additional Funding Types" value={app.additional_funding_types?.join(', ')} />
             <DetailRow label="Timeframe Needed" value={app.timeframe_needed} />
             <div className="col-12 mb-3">
                 <label className="form-label fs-13">Collateral Available?</label>
@@ -450,12 +452,28 @@ export default function FundingApplicationDetails() {
         }
     };
 
+    // Saves the file in place. A plain <a href download> to the API's storage URL
+    // is cross-origin, so the browser ignored `download` and opened a new tab.
+    const downloadDocumentFile = (e: React.MouseEvent, file: { id: number | string; original_name?: string; url?: string }) => {
+        e.preventDefault();
+        handleFileDownload(
+            () => downloadFundingApplicationDocument(file.id),
+            file.original_name || 'document',
+            file.url
+        );
+    };
+
     const renderDocumentUpload = () => (
         <div className="row">
             {app.documents && app.documents.length > 0 ? (
                 app.documents.map((docType, index) => (
                     <div key={index} className="col-12 mb-4">
-                        <h6 className="fs-15 fw-bold mb-3 border-bottom pb-2">{docType.type}</h6>
+                        <h6 className="fs-15 fw-bold mb-3 border-bottom pb-2">
+                            {docType.type}
+                            <span className="ms-2 badge bg-primary-subtle text-primary fs-12">
+                                {docType.files.length} {docType.files.length === 1 ? 'file' : 'files'}
+                            </span>
+                        </h6>
                         <div className="card border shadow-none">
                             <ul className="list-group list-group-flush">
                                 {docType.files.map((file) => (
@@ -466,15 +484,16 @@ export default function FundingApplicationDetails() {
                                                     <i className={`${getFileIcon(file.extension)} fs-18`}></i>
                                                 </div>
                                             </div>
-                                            <div className="flex-grow-1 ms-3">
-                                                <h6 className="fs-13 mb-0">
-                                                    <a href={file.url} target="_blank" rel="noreferrer" className="text-reset">{file.original_name}</a>
+                                            {/* minWidth 0 lets a long name shrink and end in "…" instead of pushing the download icon out of the box. */}
+                                            <div className="flex-grow-1 ms-3" style={{ minWidth: 0 }}>
+                                                <h6 className="fs-13 mb-0 text-truncate" title={file.original_name}>
+                                                    <a href="#" onClick={(e) => downloadDocumentFile(e, file)} className="text-reset">{file.original_name}</a>
                                                 </h6>
                                             </div>
                                             <div className="flex-shrink-0">
-                                                <a href={file.url} download={file.original_name} target="_blank" rel="noreferrer" className="btn btn-icon btn-sm btn-ghost-primary text-primary" title="Download">
+                                                <button type="button" onClick={(e) => downloadDocumentFile(e, file)} className="btn btn-icon btn-sm btn-ghost-primary text-primary" title="Download">
                                                     <i className="ri-download-2-line fs-18"></i>
-                                                </a>
+                                                </button>
                                             </div>
                                         </div>
                                     </li>
@@ -759,7 +778,7 @@ export default function FundingApplicationDetails() {
                                         </ol>
                                     </nav>
                                 </div>
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                <div className="page-actions page-actions-wrap d-flex align-items-center flex-wrap gap-2 mt-2 mt-lg-0">
                                     {isHost && (
                                         <Link to={`/intake-review/funding-application/${id}/audit-history`} className="btn btn-primary w-lg waves-effect">
                                             <i className="ri-history-line align-middle me-1"></i> Audit History
@@ -777,7 +796,7 @@ export default function FundingApplicationDetails() {
                                     {canEditApplication && (
                                         <Link
                                             to={`/fund-application/${app.funding_request_id}`}
-                                            className="btn btn-warning waves-effect"
+                                            className="btn btn-warning waves-effect py-2 fw-normal"
                                             title="Editing will require the borrower to re-sign the application"
                                         >
                                             <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application

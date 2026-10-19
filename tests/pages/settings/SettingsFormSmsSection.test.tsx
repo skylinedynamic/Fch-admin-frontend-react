@@ -19,7 +19,12 @@ function renderSettings() {
     http.get('*/common/sms-configuration', () =>
       HttpResponse.json({ status: true, data: { configuration: null, options: { countries: [] } } })
     ),
-    http.get('*/common/email-configurations', () => HttpResponse.json({ status: true, data: [] }))
+    http.get('*/common/mail-configurations', () =>
+      HttpResponse.json({
+        status: true,
+        data: { configurations: [], providers: [], uses_own_configuration: false, fallback: { is_configured: false, is_verified: false }, can_manage_fallback: false },
+      })
+    )
   )
 
   return renderWithProviders(

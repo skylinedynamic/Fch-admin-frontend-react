@@ -45,6 +45,16 @@ const serveList = (rows: unknown[] = [row]) =>
 describe('Request Credit Profile list', () => {
   afterEach(() => server.resetHandlers())
 
+  it('shows an empty name or SSN as a dash, never "null"', async () => {
+    // A request opened by an update request, from a profile with no name or SSN.
+    serveList([{ ...row, first_name: null, middle_name: null, last_name: null, ssn: null }])
+    renderWithProviders(<CreditProfileRequests />)
+
+    const shown = (await screen.findByText('Noel Holdings LLC')).closest('tr') as HTMLElement
+    expect(shown.textContent).not.toMatch(/null/)
+    expect(within(shown).getAllByText('—').length).toBeGreaterThanOrEqual(2)
+  })
+
   it('shows Applicant first, then Company, with no Borrower or Action column', async () => {
     serveList()
     renderWithProviders(<CreditProfileRequests />)

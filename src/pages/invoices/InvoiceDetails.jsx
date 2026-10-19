@@ -5,6 +5,7 @@ import { fetchInvoiceDetails, downloadInvoice } from '../../modules/invoice/serv
 import { toast } from 'react-toastify';
 import { INVOICE_STATUS_COLORS, STATUS_PAID, STATUS_PROCESSING } from '../../config/invoiceConfig';
 import { useAuthStore } from '../../store/auth';
+import { useConfigStore } from '../../store/config';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import InvoicePaymentModal from './components/InvoicePaymentModal';
 import { InvoicePartyLines } from './components/InvoicePartyDetails';
@@ -73,6 +74,8 @@ export default function InvoiceDetails() {
     };
 
     const handlePaymentSuccess = () => {
+        // Paid: show the partner what is left to set up (ConfigurationGuardModal).
+        useConfigStore.getState().openSetupPrompt();
         // Reload details after payment
         setLoading(true);
         fetchInvoiceDetails(id).then(res => {

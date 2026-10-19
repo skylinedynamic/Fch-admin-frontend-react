@@ -20,19 +20,21 @@ export interface CreditProfileRequest {
     credit_authorizations?: CreditAuthorization[];
     /** Latest iSoftPull pull, e.g. "Sep 16, 2026 02:30 AM" in the viewer's time zone. Host partner only. */
     credit_last_pulled_at?: string | null;
-    first_name: string;
+    // Empty where a request opened by the borrower's "Request update" could not
+    // take the detail from their profile (the request form requires them all).
+    first_name: string | null;
     middle_name: string | null;
-    last_name: string;
-    address: string;
+    last_name: string | null;
+    address: string | null;
     apt_suite_other: string | null;
-    city: string;
-    state: string;
-    zip: string;
-    ssn: string;
+    city: string | null;
+    state: string | null;
+    zip: string | null;
+    ssn: string | null;
     /** Details: ready to display, e.g. "May 12, 1990" - print as-is, do not parse. List: raw ISO from the model. */
-    date_of_birth: string;
-    phone: string;
-    email: string;
+    date_of_birth: string | null;
+    phone: string | null;
+    email: string | null;
     created_at: string;
     updated_at: string;
     borrower?: CreditProfileRequestBorrower;

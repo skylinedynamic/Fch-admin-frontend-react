@@ -49,6 +49,13 @@ type ConfigState = {
   setGlobalConfigs: (branding: BrandingConfig | null, flags: StatusFlags | null) => void;
   setPaymentMethodSettings: (isFreshPayment: boolean | null) => void;
   clearConfigs: () => void;
+  /**
+   * The setup list shown right after the partner pays (ConfigurationGuardModal),
+   * on any page. Not persisted: a reload does not bring it back.
+   */
+  setupPromptOpen: boolean;
+  openSetupPrompt: () => void;
+  closeSetupPrompt: () => void;
 };
 
 export const useConfigStore = create<ConfigState>()(
@@ -66,11 +73,15 @@ export const useConfigStore = create<ConfigState>()(
             is_fresh_payment: isFreshPayment,
           },
         })),
-      clearConfigs: () => set({ branding: null, statusFlags: null }),
+      clearConfigs: () => set({ branding: null, statusFlags: null, setupPromptOpen: false }),
+      setupPromptOpen: false,
+      openSetupPrompt: () => set({ setupPromptOpen: true }),
+      closeSetupPrompt: () => set({ setupPromptOpen: false }),
     }),
     {
       name: 'app-config-store',
       storage: createJSONStorage(() => localStorage),
+      partialize: ({ branding, statusFlags }) => ({ branding, statusFlags }),
     }
   )
 );

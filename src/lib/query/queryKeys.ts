@@ -71,5 +71,7 @@ export const queryKeys = {
   settings: {
     all: ['settings'] as const,
     smsConfiguration: () => [...queryKeys.settings.all, 'smsConfiguration'] as const,
+    mailConfigurations: () => [...queryKeys.settings.all, 'mailConfigurations'] as const,
+    fallbackMailConfiguration: () => [...queryKeys.settings.all, 'fallbackMailConfiguration'] as const,
   },
 } as const
