@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
-import { getLenders, deleteLender, getLenderProductCategories } from '../../modules/lender/services';
+import { getLenders, deleteLenders, checkLendersDeletable, getLenderProductCategories } from '../../modules/lender/services';
+import LenderDeleteBlockedModal, { BlockedLender } from './components/LenderDeleteBlockedModal';
 import { Lender } from '../../modules/lender/types';
 import { DataTable, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -27,7 +28,9 @@ export default function LendersList() {
     const [sortOrder, setSortOrder] = useState<string>('');
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [lenderToDelete, setLenderToDelete] = useState<number | null>(null);
+    const [blockedLenders, setBlockedLenders] = useState<BlockedLender[]>([]);
+    const [blockedSelectionSize, setBlockedSelectionSize] = useState(0);
+    const [checkingDeletable, setCheckingDeletable] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [selectedLenders, setSelectedLenders] = useState<Lender[]>([]);
 
@@ -79,25 +82,61 @@ export default function LendersList() {
         };
     }, [appliedSearch, page, perPage, sortField, sortOrder]);
 
+    // A lender assigned to a funding request (or in a funding sequence) cannot be
+    // deleted. Check first, so the user is told why instead of being asked to confirm.
+    const showBlocked = (rows: BlockedLender[], selectedCount: number) => {
+        setBlockedLenders(rows);
+        setBlockedSelectionSize(selectedCount);
+    };
+
+    const openDeleteModal = async () => {
+        if (selectedLenders.length === 0) {
+            toast.warn('Please select at least one lender to delete.');
+            return;
+        }
+        const ids = selectedLenders.map(l => l.id!);
+
+        setCheckingDeletable(true);
+        try {
+            const blocked = (await checkLendersDeletable(ids))
+                .filter(row => !row.is_deletable)
+                .map(row => ({ id: row.id, name: row.name }));
+            if (blocked.length > 0) {
+                showBlocked(blocked, ids.length);
+                return;
+            }
+        } catch {
+            // The check is a courtesy - the delete itself still refuses a lender
+            // in use, and that answer opens the same modal.
+        } finally {
+            setCheckingDeletable(false);
+        }
+
+        setShowDeleteModal(true);
+    };
+
     const confirmDelete = async () => {
-        if (selectedLenders.length === 0 && !lenderToDelete) return;
+        if (selectedLenders.length === 0) return;
+        const ids = selectedLenders.map(l => l.id!);
         setDeleting(true);
         try {
-            if (selectedLenders.length > 0) {
-                await Promise.all(selectedLenders.map(lender => deleteLender(lender.id!)));
-                toast.success('Selected lenders deleted successfully');
-                setSelectedLenders([]);
-            } else if (lenderToDelete) {
-                await deleteLender(lenderToDelete);
-                toast.success('Lender deleted successfully');
-            }
+            // One call, all or none - one refused lender no longer leaves the others deleted.
+            await deleteLenders(ids);
+            toast.success('Selected lenders deleted successfully');
+            setSelectedLenders([]);
             setShowDeleteModal(false);
             fetchLenders();
         } catch (error: any) {
+            // The API keeps lenders in use (422 naming them) - same modal, no toast.
+            const blocked: BlockedLender[] | undefined = error?.response?.data?.errors?.blocked;
+            if (error?.response?.status === 422 && Array.isArray(blocked) && blocked.length > 0) {
+                setShowDeleteModal(false);
+                showBlocked(blocked, ids.length);
+                return;
+            }
             toast.error(error?.response?.data?.message || 'Failed to delete lender(s)');
         } finally {
             setDeleting(false);
-            setLenderToDelete(null);
         }
     };
 
@@ -144,7 +183,7 @@ export default function LendersList() {
                                 </button>
                                 <ul className="dropdown-menu dropdown-menu-end">
                                     <li>
-                                        <button type="button" className="dropdown-item text-danger" onClick={() => setShowDeleteModal(true)}>
+                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal} disabled={checkingDeletable}>
                                             <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                         </button>
                                     </li>
@@ -262,7 +301,15 @@ export default function LendersList() {
                 onClose={() => setShowDeleteModal(false)}
                 onConfirm={confirmDelete}
                 loading={deleting}
-                text="Are you sure you want to delete this lender?"
+                text="The selected lenders will be deleted."
+            />
+
+            <LenderDeleteBlockedModal
+                show={blockedLenders.length > 0}
+                blocked={blockedLenders}
+                selectedCount={blockedSelectionSize}
+                canEdit={hasPermission('update lenders')}
+                onClose={() => setBlockedLenders([])}
             />
         </div>
     );
