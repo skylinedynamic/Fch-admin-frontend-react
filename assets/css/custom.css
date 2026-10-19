@@ -8204,3 +8204,12 @@ File: Custom Css File
     animation: none;
   }
 }
+
+/* A Flatpickr opened with static: true (the co-borrower modal's date of birth)
+   is wrapped in .flatpickr-wrapper, inline-block by default - so the field took
+   the calendar input's own width instead of its column's. As in the borrower
+   portal: the wrapper fills its container. */
+.flatpickr-wrapper {
+    display: block !important;
+    width: 100% !important;
+}

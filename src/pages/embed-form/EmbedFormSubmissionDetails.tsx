@@ -697,7 +697,7 @@ export default function EmbedFormSubmissionDetails() {
                                                 submission.last_4_ssn ? (
                                                     <span className="font-monospace d-inline-flex align-items-center gap-1">
                                                         <i className="ri-lock-2-line text-muted" />
-                                                        {`•••-••-${submission.last_4_ssn}`}
+                                                        {`***-**-${submission.last_4_ssn}`}
                                                     </span>
                                                 ) : null
                                             }
@@ -749,7 +749,7 @@ export default function EmbedFormSubmissionDetails() {
                                                         value={co.last_4_ssn ? (
                                                             <span className="font-monospace d-inline-flex align-items-center gap-1">
                                                                 <i className="ri-lock-2-line text-muted" />
-                                                                {`•••-••-${co.last_4_ssn}`}
+                                                                {`***-**-${co.last_4_ssn}`}
                                                             </span>
                                                         ) : null}
                                                     />

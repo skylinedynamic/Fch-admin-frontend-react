@@ -21,6 +21,10 @@ const PROVIDER_AUTHORIZE = PAYMENT_METHOD_PROVIDER[4];
 const PROVIDER_CASH = PAYMENT_METHOD_PROVIDER[5];
 const PROVIDER_BANK = PAYMENT_METHOD_PROVIDER[6];
 
+/** A US routing (ABA) number is written as nine digits; the API checks it (App\Rules\RoutingNumber). */
+const ROUTING_DIGITS = 9;
+const BANK_FIELD_ERROR = /^bank_details\.(\d+)\.(\w+)$/;
+
 interface PaymentMethodConfigFormProps {
     provider: PartnerPaymentProvider;
     onBack: () => void;
@@ -421,6 +425,19 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
         } catch (error: any) {
             console.error(`Failed to save ${provider.name} config:`, error);
+            // A bank row's own error (bank_details.0.routing_number) goes under its field.
+            const serverErrors: Record<string, string | string[]> = error.response?.data?.errors || {};
+            const rowErrors: Record<number, Record<string, string>> = {};
+            Object.entries(serverErrors).forEach(([key, message]) => {
+                const match = BANK_FIELD_ERROR.exec(key);
+                if (match) {
+                    const row = Number(match[1]);
+                    rowErrors[row] = { ...rowErrors[row], [match[2]]: Array.isArray(message) ? message[0] : message };
+                }
+            });
+            if (Object.keys(rowErrors).length > 0) {
+                setBankErrors(rowErrors);
+            }
             toast.error(error.response?.data?.message || 'Failed to save configuration.');
         } finally {
             setLoading(false);
@@ -875,14 +892,22 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                                                     </div>
                                                                                 </td>
                                                                                 <td>
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        className="form-control form-control-sm fs-13"
-                                                                                        value={bank.routing_number || ''}
-                                                                                        onChange={(e) => handleBankDetailChange(index, 'routing_number', e.target.value)}
-                                                                                        placeholder="Routing Number"
-                                                                                        disabled={loading || toggling || !status}
-                                                                                    />
+                                                                                    <div>
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            inputMode="numeric"
+                                                                                            className={`form-control form-control-sm fs-13 ${rowErrors.routing_number ? 'is-invalid border-danger' : ''}`}
+                                                                                            value={bank.routing_number || ''}
+                                                                                            onChange={(e) => handleBankDetailChange(index, 'routing_number', e.target.value.replace(/\D/g, '').slice(0, ROUTING_DIGITS))}
+                                                                                            placeholder="Routing Number"
+                                                                                            disabled={loading || toggling || !status}
+                                                                                        />
+                                                                                        {rowErrors.routing_number && (
+                                                                                            <div className="text-danger fs-11 mt-1">
+                                                                                                {rowErrors.routing_number}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
                                                                                 </td>
                                                                                 <td>
                                                                                     <input

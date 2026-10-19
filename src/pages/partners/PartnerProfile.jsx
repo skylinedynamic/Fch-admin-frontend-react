@@ -8,7 +8,7 @@ import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfile
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
-import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
+import { validateRequired, validateEmail } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';

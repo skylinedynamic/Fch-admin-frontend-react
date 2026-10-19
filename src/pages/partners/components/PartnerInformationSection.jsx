@@ -6,7 +6,7 @@ import { Calendar } from 'primereact/calendar';
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
-import { formatPhoneNumber, formatZipCode } from '../../../utils/formatters';
+import { formatPhoneNumber, formatZipCode, formatBusinessEIN, displayEIN } from '../../../utils/formatters';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import InstallmentDetailsModal from '../../../components/Common/Payment/InstallmentDetailsModal';
@@ -157,6 +157,11 @@ export default function PartnerInformationSection({
     const handleZipChange = (e) => {
         e.target.value = formatZipCode(e.target.value);
         handleInputChange(e);
+    };
+
+    // A Tax ID is an EIN: written XX-XXXXXXX, kept by the API as nine digits.
+    const handleTaxIdChange = (e) => {
+        handleInputChange({ target: { name: 'tax_id', value: formatBusinessEIN(e.target.value) || '' } });
     };
 
     return (
@@ -515,7 +520,7 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Tax ID</label>
-                    <input type="text" className="form-control" name="tax_id" placeholder="Enter tax ID" value={formData.tax_id} onChange={handleInputChange} />
+                    <input type="text" inputMode="numeric" className="form-control" name="tax_id" placeholder="XX-XXXXXXX" value={displayEIN(formData.tax_id)} onChange={handleTaxIdChange} />
                 </div>
             </div>
 

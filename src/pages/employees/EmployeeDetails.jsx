@@ -20,7 +20,7 @@ import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
 import { useAuthStore } from '../../store/auth/authStore';
 import { locationData, PAID_BY_NONE } from '../../config';
 import { fetchEmployeeCompensation, saveEmployeeCompensation, buildCompensationRows, compensationRowsToFields } from '../../modules/compensation';
-import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
+import { validateRequired, validateEmail } from '../../components/errors/validation';
 
 import EmployeeForm from './components/EmployeeForm';
 import CommissionsSection from '../../components/Compensation/CommissionsSection';
@@ -305,7 +305,7 @@ export default function EmployeeDetails() {
         }
         break;
       case 'phone_number_1':
-        error = validatePhone(value);
+        error = validateRequired(value, 'Phone number');
         break;
       case 'role_id':
         // Only validate role_id if create_account is checked

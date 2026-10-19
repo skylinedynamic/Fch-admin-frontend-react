@@ -38,7 +38,9 @@ export default function SiteSettings() {
             // Accurately merge all dynamic keys from the database into the form state
             setFormData(prev => ({
                 ...prev,
-                ...s
+                ...s,
+                // A US number, shown (XXX) XXX-XXXX however it was stored.
+                ...(s.phone_number ? { phone_number: formatPhoneNumber(s.phone_number) ?? s.phone_number } : {})
             }));
 
         }
@@ -428,7 +430,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Phone Number <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-center justify-content-center ${validationErrors.phone_number ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-phone-line fs-16"></i></span>
-                                                        <input type="text" className={`form-control ps-2 ${validationErrors.phone_number ? 'is-invalid border-danger' : ''}`} name="phone_number" value={formData.phone_number || ''} onChange={handleChange} placeholder="+1 234 567 890" />
+                                                        <input type="text" className={`form-control ps-2 ${validationErrors.phone_number ? 'is-invalid border-danger' : ''}`} name="phone_number" value={formData.phone_number || ''} onChange={handleChange} placeholder="(555) 555-5555" />
                                                         {validationErrors.phone_number && <div className="invalid-feedback d-block mt-1">{validationErrors.phone_number}</div>}
                                                     </div>
                                                 </div>
