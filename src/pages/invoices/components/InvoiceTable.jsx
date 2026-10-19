@@ -8,6 +8,7 @@ import { INVOICE_STATUS_COLORS, INVOICE_STATUS_OPTIONS, STATUS_PAID, STATUS_PROC
 import InvoicePaymentModal from './InvoicePaymentModal';
 import InvoicePreviewModal from './InvoicePreviewModal';
 import { useAuthStore } from '../../../store/auth';
+import { useConfigStore } from '../../../store/config';
 import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 
 export default function InvoiceTable({
@@ -43,6 +44,8 @@ export default function InvoiceTable({
     const handlePaymentSuccess = () => {
         setShowPaymentModal(false);
         if (onRefresh) onRefresh();
+        // Paid: show the partner what is left to set up (ConfigurationGuardModal).
+        useConfigStore.getState().openSetupPrompt();
     };
 
     const statusFilterElement = (options) => {

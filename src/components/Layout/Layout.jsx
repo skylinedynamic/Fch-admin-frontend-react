@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import Header from './Header.jsx'
 import Sidebar from './Sidebar.jsx'
 import Footer from './Footer.jsx'
+import MailNotVerifiedBanner from './MailNotVerifiedBanner.tsx'
 import GlobalModals from '../Common/Modals/GlobalModals.jsx'
 import SupportChatWidget from '../Common/ChatWidget/SupportChatWidget.tsx'
 
@@ -18,6 +19,7 @@ export default function Layout() {
         }}
       />
       <div className="main-content">
+        <MailNotVerifiedBanner />
         <Outlet />
         <Footer />
       </div>

@@ -3,8 +3,6 @@ import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
 import {
   sendTestMail,
-  fetchEmailConfigurations,
-  saveEmailConfiguration,
   fetchGlobalConfigurations,
   fetchAppConfigurations,
   saveAppConfigurations,
@@ -28,23 +26,6 @@ describe('settings services', () => {
     )
     await sendTestMail({ to: 'test@example.com' } as any)
     expect(receivedBody).toEqual({ to: 'test@example.com' })
-  })
-
-  it('fetchEmailConfigurations GETs the config', async () => {
-    server.use(http.get('*/common/email-configurations', () => HttpResponse.json({ status: true, data: {} })))
-    await expect(fetchEmailConfigurations()).resolves.toEqual({ status: true, data: {} })
-  })
-
-  it('saveEmailConfiguration posts the payload as-is', async () => {
-    let receivedBody: unknown = null
-    server.use(
-      http.post('*/common/email-configurations', async ({ request }) => {
-        receivedBody = await request.json()
-        return HttpResponse.json({ status: true })
-      })
-    )
-    await saveEmailConfiguration({ smtp_host: 'smtp.test.com' })
-    expect(receivedBody).toEqual({ smtp_host: 'smtp.test.com' })
   })
 
   it('fetchGlobalConfigurations hits the partner-theme endpoint', async () => {

@@ -275,3 +275,81 @@ export interface SendTestSmsResponse {
     status: boolean;
     message: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* Mail configuration                                                  */
+/* ------------------------------------------------------------------ */
+
+export interface MailProviderFieldOption {
+    value: string;
+    label: string;
+}
+
+/** One field of a provider's form, as config/mail_configuration.php describes it. */
+export interface MailProviderField {
+    key: string;
+    label: string;
+    type: 'text' | 'number' | 'password' | 'select';
+    required: boolean;
+    /** Never returned in clear; left blank on save to keep the stored value. */
+    secret: boolean;
+    options: MailProviderFieldOption[];
+}
+
+export interface MailProviderOption {
+    value: string;
+    label: string;
+    fields: MailProviderField[];
+}
+
+/**
+ * One saved provider. Its provider fields sit alongside these keys (for
+ * example `smtp_host`); a secret field is only ever the mask or null.
+ */
+export interface MailConfiguration {
+    id: number;
+    provider: string;
+    provider_label: string;
+    from_address: string | null;
+    bcc_emails: string | null;
+    is_default: boolean;
+    is_verified: boolean;
+    verified_at: string | null;
+    verified_to: string | null;
+    updated_at: string | null;
+    [field: string]: string | number | boolean | null;
+}
+
+export interface MailConfigurationsResponse {
+    status: boolean;
+    message?: string;
+    data: {
+        configurations: MailConfiguration[];
+        providers: MailProviderOption[];
+        /** Mail goes out under the partner's own verified default. */
+        uses_own_configuration: boolean;
+        fallback: { is_configured: boolean; is_verified: boolean; from_address: string | null };
+        can_manage_fallback: boolean;
+    };
+}
+
+export interface FallbackMailConfigurationResponse {
+    status: boolean;
+    message?: string;
+    data: {
+        /** One per provider, like a partner's own. */
+        configurations: MailConfiguration[];
+        providers: MailProviderOption[];
+        /** The one mail goes out with now; null when none can send. */
+        sending_id: number | null;
+    };
+}
+
+/** `provider`, `from_address`, `bcc_emails`, then the provider's own fields. */
+export type SaveMailConfigurationPayload = { provider: string; from_address: string } & Record<string, string | number | null>;
+
+export interface MailConfigurationActionResponse {
+    status: boolean;
+    message: string;
+    data: MailConfiguration | null;
+}

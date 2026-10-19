@@ -72,6 +72,7 @@ import { useSiteSettings } from './modules/cms/queries';
 import { useGlobalConfigurations } from './modules/settings/queries';
 import { useConfigStore } from './store/config';
 import { applyBrandTheme } from './utils/brandingTheme';
+import { applyPortalMeta } from './utils/portalMeta';
 import { useQueryClient } from '@tanstack/react-query';
 import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
@@ -153,25 +154,12 @@ export default function App() {
       // Persist global config in Zustand
       setGlobalConfigs(activeBranding, activeFlags);
 
-      const { site_name, favicon_full_url } = activeBranding;
-
       // Every brand colour, including the derived contrast tokens that keep text
       // readable on a light brand colour.
       applyBrandTheme(activeBranding);
 
-      // 1. Dynamic Browser Title
-      if (site_name) {
-        document.title = site_name;
-      }
-
-      // 2. Dynamic Favicon
-      if (favicon_full_url && favicon_full_url !== 'null') {
-        document.querySelectorAll("link[rel~='icon']").forEach(el => el.remove());
-        const favLink = document.createElement('link');
-        favLink.rel = 'icon';
-        favLink.href = favicon_full_url.includes('?') ? `${favicon_full_url}&_t=${Date.now()}` : `${favicon_full_url}?_t=${Date.now()}`;
-        document.head.appendChild(favLink);
-      }
+      // Title, description, preview tags and favicon, as the partner's.
+      applyPortalMeta(activeBranding);
     }
   }, [globalConfigData, user, setGlobalConfigs]);
 
@@ -284,6 +272,7 @@ export default function App() {
             {/* Settings Route */}
             <Route element={<PermissionRoute permission={["update payment settings", "update partner agreement settings", "update borrower agreement settings", "update email configuration settings", "update sms configuration settings", "update branding settings", "update domain configuration settings", "update microbilt settings"]} />}>
               <Route path="settings" element={<Settings />} />
+              <Route path="settings/:section" element={<Settings />} />
             </Route>
 
             <Route path="profile" element={<Profile />} />
@@ -404,7 +393,9 @@ export default function App() {
             {/* General Settings */}
             <Route element={<PermissionRoute permission="update borrower agreement settings" />}>
               <Route path="settings" element={<Settings />} />
-              <Route path="admin/settings" element={<Settings />} />
+              <Route path="settings/:section" element={<Settings />} />
+              {/* Old address: Settings lives under /settings now. */}
+              <Route path="admin/settings" element={<Navigate to="/settings" replace />} />
             </Route>
 
             {/* Resources Modules */}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, CardBody, Form, FormGroup, Label, Input, Button, Spinner, Table } from 'reactstrap';
 import { toast } from 'react-toastify';
-import { parseCreditProfilePDF, saveCreditProfile, useClientCreditProfile, clientKeys } from '../../../modules/client';
+import { parseCreditProfilePDF, saveCreditProfile, useClientCreditProfile, useDeleteClientCreditProfile, clientKeys } from '../../../modules/client';
+import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { Dropdown } from 'primereact/dropdown';
 import CreditProfileSkeleton from '../../../components/Loader/CreditProfileSkeleton';
@@ -113,8 +114,11 @@ export default function CreditProfileSection({
     onRefresh,
     isHost = false
 }: CreditProfileSectionProps) {
-    // Non-host partners can only VIEW credit profile data — no upload, no edit, no save.
+    // Only the host partner's team uploads, updates or removes a credit profile;
+    // every other partner only reads it. The API enforces the same.
     const readOnly = !isHost;
+    const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
+    const deleteProfile = useDeleteClientCreditProfile(clientId);
     const [profile, setProfile] = useState<CreditProfile>({});
     const [pdfUrl, setPdfUrl] = useState<string>('');
     const [documentId, setDocumentId] = useState<number | string | null>(null);
@@ -204,6 +208,7 @@ export default function CreditProfileSection({
     };
 
     const uploadFile = async (file: File) => {
+        if (readOnly) return;
         if (file.type !== 'application/pdf') {
             toast.error('Only PDF files are supported.');
             return;
@@ -230,7 +235,6 @@ export default function CreditProfileSection({
                 }
 
                 // Auto-save the parsed data so it persists in the database immediately.
-                // This is essential for non-host partners who don't have a manual Save button.
                 try {
                     const personalInfo = parsed.personal_info || {};
                     const payload = {
@@ -539,6 +543,19 @@ export default function CreditProfileSection({
         }
     };
 
+    // Removes all of the client's credit profile data, once confirmed.
+    const handleDelete = async () => {
+        try {
+            const response = await deleteProfile.mutateAsync();
+            setConfirmDelete(false);
+            triggerReupload();
+            toast.success(response?.message || 'Credit profile data removed.');
+            onRefresh?.();
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'The credit profile could not be removed.');
+        }
+    };
+
     const triggerReupload = () => {
         if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
         setProfile({});
@@ -571,45 +588,79 @@ export default function CreditProfileSection({
 
         return (
             <Form onSubmit={handleSave}>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    id="credit-report-upload"
-                    accept="application/pdf"
-                    onChange={handleFileChange}
-                    className="d-none"
+                {!readOnly && (
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        id="credit-report-upload"
+                        accept="application/pdf"
+                        onChange={handleFileChange}
+                        className="d-none"
+                    />
+                )}
+                <DynamicActionModal
+                    show={confirmDelete}
+                    title="Delete Credit Profile Data"
+                    description={
+                        <>
+                            This removes all of this client&apos;s credit profile data: the uploaded report, scores,
+                            addresses, trade lines and inquiries. It cannot be undone.
+                        </>
+                    }
+                    iconClass="ri-delete-bin-line"
+                    confirmText="Yes, Delete All"
+                    confirmBtnClass="btn-danger"
+                    loading={deleteProfile.isPending}
+                    onConfirm={handleDelete}
+                    onClose={() => setConfirmDelete(false)}
                 />
                 <Row>
                     {/* Left side: Editable parsed data form with sub-tabs */}
                     {!hideData && (
                         <Col lg={hidePdf ? 12 : 6}>
                             <Card className="border shadow-none mb-0" style={{ height: 'calc(100vh - 360px)', display: 'flex', flexDirection: 'column' }}>
-                                <div className="card-header bg-light d-flex align-items-center justify-content-between py-3">
-                                    <h6 className="card-title mb-0">Extracted Credit Metrics</h6>
-                                    <div className="d-flex align-items-center gap-2">
+                                <div className="card-header bg-light d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
+                                    <h6 className="card-title mb-0 text-nowrap">Extracted Credit Metrics</h6>
+                                    <div className="d-flex flex-wrap align-items-center justify-content-end gap-2">
 
-                                        {/* Re-upload & Save */}
-                                        <Button
-                                            type="button"
-                                            color="outline-danger"
-                                            size="sm"
-                                            onClick={triggerReupload}
-                                            disabled={isUploading || isSaving}
-                                        >
-                                            {isUploading ? (
-                                                <>
-                                                    <Spinner size="sm" className="me-1" /> Parsing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className="ri-upload-2-line align-middle me-1"></i> Re-upload PDF
-                                                </>
-                                            )}
-                                        </Button>
+                                        {/* Re-upload, remove & save: the host partner's team only */}
+                                        {!readOnly && (
+                                            <Button
+                                                type="button"
+                                                color="outline-primary"
+                                                size="sm"
+                                                className="text-nowrap"
+                                                onClick={triggerReupload}
+                                                disabled={isUploading || isSaving}
+                                            >
+                                                {isUploading ? (
+                                                    <>
+                                                        <Spinner size="sm" className="me-1" /> Parsing...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="ri-upload-2-line align-middle me-1"></i> Re-upload PDF
+                                                    </>
+                                                )}
+                                            </Button>
+                                        )}
+                                        {!readOnly && (
+                                            <Button
+                                                type="button"
+                                                color="outline-danger"
+                                                size="sm"
+                                                className="text-nowrap"
+                                                onClick={() => setConfirmDelete(true)}
+                                                disabled={isUploading || isSaving || deleteProfile.isPending}
+                                            >
+                                                <i className="ri-delete-bin-line align-middle me-1"></i> Delete Credit Profile
+                                            </Button>
+                                        )}
                                         <Button
                                             type="button"
                                             color="soft-secondary"
                                             size="sm"
+                                            className="text-nowrap"
                                             onClick={() => {
                                                 setHideData(true);
                                                 setHidePdf(false);
@@ -621,6 +672,7 @@ export default function CreditProfileSection({
                                             type="button"
                                             color="soft-secondary"
                                             size="sm"
+                                            className="text-nowrap"
                                             onClick={() => {
                                                 const next = !hidePdf;
                                                 setHidePdf(next);
@@ -636,6 +688,7 @@ export default function CreditProfileSection({
                                                 type="submit"
                                                 color="primary"
                                                 size="sm"
+                                                className="text-nowrap"
                                                 disabled={isSaving || isUploading}
                                             >
                                                 {isSaving ? (
@@ -1593,6 +1646,17 @@ export default function CreditProfileSection({
                     )}
                 </Row>
             </Form>
+        );
+    }
+
+    // No profile yet: only the host partner's team can upload one.
+    if (readOnly) {
+        return (
+            <div className="rounded border p-4 text-center bg-light">
+                <i className="ri-file-chart-line display-5 text-muted"></i>
+                <h5 className="mt-2 mb-1">No credit profile yet</h5>
+                <p className="text-muted mb-0">The host partner uploads this client&apos;s credit report. It will show here once it has.</p>
+            </div>
         );
     }
 

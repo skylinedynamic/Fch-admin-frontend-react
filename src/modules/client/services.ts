@@ -219,6 +219,12 @@ export const fetchCreditProfile = async (borrowerId: string | number) => {
     return data;
 };
 
+// Remove all of a client's credit profile data (host partner only)
+export const deleteCreditProfile = async (borrowerId: string | number) => {
+    const { data } = await apiClient.delete(`/common/borrowers/${borrowerId}/credit-profile`);
+    return data;
+};
+
 // Fetch Capital Access Overview for a specific client
 export const fetchClientCapitalAccessOverview = async (id: string | number) => {
     const { data } = await apiClient.get(`/common/borrowers/${id}/capital-access-overview`);

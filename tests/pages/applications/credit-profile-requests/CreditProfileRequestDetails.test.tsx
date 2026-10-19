@@ -105,7 +105,7 @@ describe('Credit profile request details', () => {
     },
   )
 
-  it('shows a dash when there is no date of birth', async () => {
+  it('shows "Not provided" when there is no date of birth, like any empty detail', async () => {
     server.use(
       http.get('*/admin/credit-profile-requests/7', () =>
         HttpResponse.json({ status: true, message: 'ok', data: { ...request, date_of_birth: null } }),
@@ -114,7 +114,7 @@ describe('Credit profile request details', () => {
     renderDetails()
 
     const label = await screen.findByText('Date of Birth')
-    expect(label.closest('.cpr-field')).toHaveTextContent('—')
+    expect(label.closest('.cpr-field')).toHaveTextContent('Not provided')
   })
 
   it('leaves a gap between the SSN and its Reveal button', async () => {
@@ -132,5 +132,32 @@ describe('Credit profile request details', () => {
 
     const reveal = await screen.findByRole('button', { name: /reveal/i })
     expect(reveal).toHaveClass('ms-2')
+  })
+
+  it('shows "Not provided" for details an update request could not take from the profile', async () => {
+    // A borrower who never submitted the form asked for an update: the request
+    // was opened from their profile, which held no SSN, ZIP, phone, email,
+    // address or date of birth.
+    server.use(
+      http.get('*/admin/credit-profile-requests/7', () =>
+        HttpResponse.json({
+          status: true,
+          message: 'ok',
+          data: { ...request, ssn: null, zip: null, phone: null, email: null, address: null, date_of_birth: null },
+        }),
+      ),
+    )
+
+    renderDetails()
+
+    const field = async (label: string) => (await screen.findByText(label)).closest('.cpr-field') as HTMLElement
+    for (const label of ['Date of Birth', 'Social Security Number', 'Email Address', 'Phone Number', 'Street Address', 'Zip Code']) {
+      expect(await field(label)).toHaveTextContent('Not provided')
+    }
+    // Nothing to reveal, mail or call.
+    expect(screen.queryByRole('button', { name: /reveal/i })).not.toBeInTheDocument()
+    expect(document.querySelector('a[href="mailto:null"], a[href="tel:null"], a[href="mailto:"], a[href="tel:"]')).toBeNull()
+    // What the profile did hold still shows.
+    expect(await field('City')).toHaveTextContent('Austin')
   })
 })

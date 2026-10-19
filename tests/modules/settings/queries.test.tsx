@@ -3,17 +3,17 @@ import { server } from '../../mocks/server'
 import { queryKeys } from '../../../src/lib/query/queryKeys'
 import {
   useAppConfigurations,
-  useEmailConfigurations,
   useGlobalConfigurations,
+  useMailConfigurations,
+  useMakeDefaultMailConfiguration,
   useSaveAppConfigurations,
-  useSaveEmailConfiguration,
+  useSaveMailConfiguration,
   useSaveSmsConfiguration,
   useScoreConfigurations,
   useSendTestMail,
   useSendTestSms,
   useSmsConfiguration,
   useTimeSettings,
-  useToggleEmailConfigStatus,
   useUpdateScoreConfigurations,
   useUpdateTimeSettings,
 } from '../../../src/modules/settings/queries'
@@ -32,12 +32,13 @@ describe('settings read hooks', () => {
     expect((queryClient.getQueryData(['globalConfigurations']) as any).data.site_name).toBe('FCF')
   })
 
-  it('useEmailConfigurations reads the email configuration', async () => {
-    const seen = stub('get', '/common/email-configurations', { status: true, data: [{ id: 1 }] })
+  it('useMailConfigurations reads the mail configurations', async () => {
+    const seen = stub('get', '/common/mail-configurations', { status: true, data: { configurations: [{ id: 1 }] } })
 
-    await runQuery(() => useEmailConfigurations())
+    const { queryClient } = await runQuery(() => useMailConfigurations())
 
     expect(seen.calls).toBe(1)
+    expect(queryClient.getQueryData(queryKeys.settings.mailConfigurations())).toBeTruthy()
   })
 
   it('useAppConfigurations asks for one module and caches per module', async () => {
@@ -70,7 +71,7 @@ describe('settings read hooks', () => {
 
   it('every read hook can be switched off', () => {
     expectIdle(() => useGlobalConfigurations(false))
-    expectIdle(() => useEmailConfigurations(false))
+    expectIdle(() => useMailConfigurations(false))
     expectIdle(() => useAppConfigurations('branding', false))
     expectIdle(() => useScoreConfigurations(false))
     expectIdle(() => useTimeSettings(false))
@@ -83,23 +84,23 @@ describe('settings read hooks', () => {
 })
 
 describe('settings write hooks', () => {
-  it('useSaveEmailConfiguration refreshes the email and the global configuration', async () => {
-    const seen = stub('post', '/common/email-configurations', { status: true })
-    const payload = { email_provider: 'smtp', smtp_host: 'smtp.x.com' }
+  it('useSaveMailConfiguration refreshes the mail and the global configuration', async () => {
+    const seen = stub('post', '/common/mail-configurations', { status: true })
+    const payload = { provider: 'smtp', from_address: 'mail@x.com', smtp_host: 'smtp.x.com' }
 
-    const { invalidated } = await runMutation(() => useSaveEmailConfiguration(), payload)
+    const { invalidated } = await runMutation(() => useSaveMailConfiguration(), payload)
 
     expect(seen.bodies[0]).toEqual(payload)
-    expect(invalidated).toEqual([['emailConfigurations'], ['globalConfigurations']])
+    expect(invalidated).toEqual([queryKeys.settings.mailConfigurations(), ['globalConfigurations']])
   })
 
-  it('useToggleEmailConfigStatus toggles and refreshes both', async () => {
-    const seen = stub('get', '/common/email-configurations/toggle-status', { status: true })
+  it('useMakeDefaultMailConfiguration switches the sending provider and refreshes both', async () => {
+    const seen = stub('post', '/common/mail-configurations/7/default', { status: true })
 
-    const { invalidated } = await runMutation(() => useToggleEmailConfigStatus(), undefined as never)
+    const { invalidated } = await runMutation(() => useMakeDefaultMailConfiguration(), 7)
 
     expect(seen.calls).toBe(1)
-    expect(invalidated).toEqual([['emailConfigurations'], ['globalConfigurations']])
+    expect(invalidated).toEqual([queryKeys.settings.mailConfigurations(), ['globalConfigurations']])
   })
 
   it('useSaveAppConfigurations flattens the settings next to the module name', async () => {
@@ -161,9 +162,9 @@ describe('settings write hooks', () => {
   })
 
   it('a failed save does not touch the cache', async () => {
-    stub('post', '/common/email-configurations', { status: false, message: 'Invalid' }, 422)
+    stub('post', '/common/mail-configurations', { status: false, message: 'Invalid' }, 422)
 
-    const { invalidated, error } = await runMutation(() => useSaveEmailConfiguration(), {})
+    const { invalidated, error } = await runMutation(() => useSaveMailConfiguration(), { provider: 'smtp', from_address: '' })
 
     expect(error).toBeTruthy()
     expect(invalidated).toEqual([])

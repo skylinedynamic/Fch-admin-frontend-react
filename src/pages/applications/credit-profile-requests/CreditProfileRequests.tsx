@@ -19,8 +19,9 @@ export default function CreditProfileRequests() {
     const [searchText, setSearchText] = useState<string>('');
     const [appliedSearch, setAppliedSearch] = useState<string>('');
 
-    // Sorting state
-    const [sortField, setSortField] = useState<string>('id');
+    // Sorting state. Latest request first: a borrower's request is updated in
+    // place when they submit again, so "latest" is updated_at.
+    const [sortField, setSortField] = useState<string>('updated_at');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     useEffect(() => {
@@ -90,8 +91,11 @@ export default function CreditProfileRequests() {
     };
 
     const applicantNameBodyTemplate = (rowData: CreditProfileRequest) => {
-        const middle = rowData.middle_name ? ` ${rowData.middle_name}` : '';
-        return <span className="fw-medium">{`${rowData.first_name}${middle} ${rowData.last_name}`}</span>;
+        // A request opened by an update request may hold no name (see the API's
+        // CreditProfileRequestService::requestUpdate).
+        const name = [rowData.first_name, rowData.middle_name, rowData.last_name].filter(Boolean).join(' ');
+        if (!name) return <span className="text-muted">—</span>;
+        return <span className="fw-medium">{name}</span>;
     };
 
     const ssnBodyTemplate = (rowData: CreditProfileRequest) => {
@@ -101,9 +105,11 @@ export default function CreditProfileRequests() {
         return <span>***-**-{last4}</span>;
     };
 
+    // When the request was last submitted - a resubmission updates the row.
     const dateBodyTemplate = (rowData: CreditProfileRequest) => {
-        if (!rowData.created_at) return <span className="text-muted">—</span>;
-        const date = new Date(rowData.created_at);
+        const requestedAt = rowData.updated_at || rowData.created_at;
+        if (!requestedAt) return <span className="text-muted">—</span>;
+        const date = new Date(requestedAt);
         return (
             <span className="text-muted">
                 {date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -192,7 +198,7 @@ export default function CreditProfileRequests() {
                                             <Column header="Email" field="email" sortable style={{ minWidth: '180px' }} />
                                             <Column header="Phone" field="phone" sortable style={{ minWidth: '140px' }} />
                                             <Column header="SSN" field="ssn" body={ssnBodyTemplate} style={{ minWidth: '120px' }} />
-                                            <Column header="Request Date" field="created_at" body={dateBodyTemplate} sortable style={{ minWidth: '130px' }} />
+                                            <Column header="Request Date" field="updated_at" body={dateBodyTemplate} sortable style={{ minWidth: '130px' }} />
                                             <Column header="Status" field="request_status" body={statusBodyTemplate} style={{ minWidth: '120px' }} />
                                         </DataTable>
                                     </div>

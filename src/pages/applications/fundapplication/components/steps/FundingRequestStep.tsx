@@ -4,7 +4,8 @@ import type { FundingRequest } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
 import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
-import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER } from '../../../../../data/profile'
+import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../../../../data/profile'
+import ChipMultiSelect from '../../../../../components/Common/ChipMultiSelect'
 import { useFundingRequest, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { toast } from 'react-toastify'
@@ -23,29 +24,8 @@ interface FundingRequestStepProps {
   fundingSequenceId?: number | string | null
 }
 
-const matchPurpose = (raw: string | null | undefined): string => {
-  if (!raw) return ''
-  const trimmed = raw.trim()
-
-  if (trimmed.includes(',')) {
-    return trimmed
-  }
-
-  const exact = purposeOfFundingOptions.find(o => o.value.toLowerCase() === trimmed.toLowerCase())
-  if (exact) return exact.value
-
-  const lowerAll = trimmed.toLowerCase()
-  if (lowerAll === 'working capital') return 'Working Capital'
-  if (lowerAll.includes('equipment')) return 'Equipment Purchase'
-  if (lowerAll.includes('inventory')) return 'Inventory'
-  if (lowerAll.includes('payroll')) return 'Payroll'
-  if (lowerAll.includes('real estate') || lowerAll.includes('property')) return 'Commercial Real Estate Purchase'
-  if (lowerAll.includes('line of credit')) return 'Business Line of Credit'
-  if (lowerAll.includes('expansion')) return 'Business Expansion'
-  if (lowerAll.includes('acquisition')) return 'Business Acquisition'
-
-  return trimmed
-}
+/** A saved purpose_of_funds string, normalised: the known purposes as listed, joined again. */
+const matchPurpose = (raw: string | null | undefined): string => joinPurposes(splitPurposes(raw))
 
 const matchTimeframe = (raw: string | null | undefined): string => {
   if (!raw) return ''
@@ -123,14 +103,16 @@ export default function FundingRequestStep({
     return opts
   }, [funding.fundingType, urlFundingType, apiData?.preferred_funding_type])
 
+  const selectedPurposes = React.useMemo(() => splitPurposes(funding.purpose), [funding.purpose])
+  const hasOtherPurpose = selectedPurposes.includes(FUNDING_PURPOSE_OTHER)
+
+  // The listed purposes, plus any saved one not on the list, so it shows and is kept.
   const dynamicPurposeOptions = React.useMemo(() => {
-    const opts = [...purposeOfFundingOptions]
-    const currentPurpose = funding.purpose
-    if (currentPurpose && !opts.find(o => o.value.toLowerCase() === currentPurpose.toLowerCase())) {
-      opts.unshift({ label: currentPurpose, value: currentPurpose })
-    }
-    return opts
-  }, [funding.purpose])
+    const extra = selectedPurposes
+      .filter(p => !purposeOfFundingOptions.some(o => o.value === p))
+      .map(p => ({ label: p, value: p }))
+    return [...extra, ...purposeOfFundingOptions]
+  }, [selectedPurposes])
 
   const dynamicTimeframeOptions = React.useMemo(() => {
     const opts = [...timeframeOptions]
@@ -152,10 +134,11 @@ export default function FundingRequestStep({
       requested_amount: unformatCurrency(funding.requestedAmount) || null,
       purpose_of_funds: funding.purpose || null,
       preferred_funding_type: funding.fundingType || null,
+      additional_funding_types: withoutPreferredFundingType(funding.additionalFundingTypes, funding.fundingType),
       approved_funding: funding.approvedFunding || null,
       timeframe_needed: funding.timeframe || null,
       collateral_available: funding.collateral || null,
-      purpose_note: funding.purpose === FUNDING_PURPOSE_OTHER ? (funding.purposeNote || null) : null,
+      purpose_note: hasOtherPurpose ? (funding.purposeNote || null) : null,
     }
 
     try {
@@ -175,7 +158,7 @@ export default function FundingRequestStep({
       }
       return false
     }
-  }, [fundingRequestId, effectiveRequestId, apiData, fundingSequenceId, funding, saveMutation])
+  }, [fundingRequestId, effectiveRequestId, apiData, fundingSequenceId, funding, hasOtherPurpose, saveMutation])
 
   // Register save function
   useEffect(() => {
@@ -208,6 +191,7 @@ export default function FundingRequestStep({
         purpose: resolvedPurpose,
         approvedFunding: resolvedApprovedFunding,
         fundingType: resolvedFundingType,
+        additionalFundingTypes: withoutPreferredFundingType(apiData.additional_funding_types, resolvedFundingType),
         timeframe: resolvedTimeframe,
         collateral: apiData.collateral_available || '',
         purposeNote: apiData.purpose_note || '',
@@ -247,7 +231,7 @@ export default function FundingRequestStep({
     funding.requestedAmount &&
     funding.purpose &&
     funding.fundingType &&
-    (funding.purpose !== FUNDING_PURPOSE_OTHER || funding.purposeNote)
+    (!hasOtherPurpose || funding.purposeNote)
   )
 
   if (loading || isApiLoading) {
@@ -271,29 +255,30 @@ export default function FundingRequestStep({
         {hasError('requested_amount') && <div className="invalid-feedback">{getFieldError('requested_amount')}</div>}
       </div>
       <div className="col-md-6">
-        <label className="form-label">
+        <label className="form-label" htmlFor="purpose_of_funds">
           Purpose of Funds <span className="text-danger">*</span>
         </label>
-        <CustomDropdown
-          value={funding.purpose}
-          onChange={(value) => setFunding({
+        {/* Several purposes at once, sent joined in the one purpose_of_funds string. */}
+        <ChipMultiSelect
+          inputId="purpose_of_funds"
+          value={selectedPurposes}
+          onChange={(purposes) => setFunding({
             ...funding,
-            purpose: value,
-            purposeNote: value === FUNDING_PURPOSE_OTHER ? funding.purposeNote : ''
+            purpose: joinPurposes(purposes),
+            purposeNote: purposes.includes(FUNDING_PURPOSE_OTHER) ? funding.purposeNote : ''
           })}
           options={dynamicPurposeOptions}
-          optionLabel="label"
-          optionValue="value"
           placeholder="Select purpose of funds"
-          className={`w-100 ${hasError('purpose_of_funds') ? 'is-invalid' : ''}`}
-          searchable
+          invalid={hasError('purpose_of_funds')}
+          filter
+          filterPlaceholder="Search purposes"
         />
         {hasError('purpose_of_funds') && (
           <div className="invalid-feedback d-block">{getFieldError('purpose_of_funds')}</div>
         )}
       </div>
 
-      {funding.purpose === FUNDING_PURPOSE_OTHER && (
+      {hasOtherPurpose && (
         <div className="col-md-6">
           <label className="form-label">
             Purpose Note <span className="text-danger">*</span>
@@ -341,7 +326,11 @@ export default function FundingRequestStep({
         </label>
         <CustomDropdown
           value={funding.fundingType}
-          onChange={(value) => setFunding({ ...funding, fundingType: value })}
+          onChange={(value) => setFunding({
+            ...funding,
+            fundingType: value,
+            additionalFundingTypes: withoutPreferredFundingType(funding.additionalFundingTypes, value),
+          })}
           options={dynamicFundingTypeOptions}
           optionLabel="label"
           optionValue="value"
@@ -350,6 +339,23 @@ export default function FundingRequestStep({
         />
         {hasError('preferred_funding_type') && (
           <div className="invalid-feedback d-block">{getFieldError('preferred_funding_type')}</div>
+        )}
+      </div>
+      <div className="col-md-6">
+        <label className="form-label" htmlFor="additional_funding_types">Additional Funding Types</label>
+        {/* Every funding type but the preferred one, several at once. */}
+        <ChipMultiSelect
+          inputId="additional_funding_types"
+          value={funding.additionalFundingTypes ?? []}
+          onChange={(types) => setFunding({ ...funding, additionalFundingTypes: types })}
+          options={additionalFundingTypeOptions(funding.fundingType)}
+          placeholder="Select any other funding types"
+          filter
+          filterPlaceholder="Search funding types"
+          invalid={hasError('additional_funding_types')}
+        />
+        {hasError('additional_funding_types') && (
+          <div className="invalid-feedback d-block">{getFieldError('additional_funding_types')}</div>
         )}
       </div>
       <div className="col-md-6">

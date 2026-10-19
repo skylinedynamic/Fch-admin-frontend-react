@@ -1305,6 +1305,29 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         align-items: center !important;
         justify-content: center !important;
     }
+
+    /* Headers with several actions (Funding Request / Funding Application details):
+       the actions take their own full-width row under the title and wrap onto a
+       second line when needed, instead of squeezing until the labels break. */
+    /* Selectors are deliberately one class stronger than the general header rules
+       above (.d-flex.align-items-center.justify-content-between.flex-row and
+       .d-flex.gap-2 .btn), which would otherwise keep the row on one line and
+       squeeze the buttons until their labels are clipped. */
+    .d-flex.align-items-center.justify-content-between.flex-row:has(.page-actions-wrap) {
+        flex-wrap: wrap !important;
+    }
+
+    .page-actions.d-flex:has(.page-actions-wrap),
+    .page-actions.page-actions-wrap.d-flex {
+        width: 100% !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+    }
+
+    .page-actions.page-actions-wrap.d-flex .btn {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+    }
 }
 
 

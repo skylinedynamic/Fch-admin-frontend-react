@@ -80,3 +80,32 @@ describe('FundingApplicationDetails — Edit Funding Application', () => {
     expect(editLink()).not.toBeInTheDocument()
   })
 })
+
+describe('FundingApplicationDetails — Funding Request tab', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+  })
+
+  const openFundingRequestTab = () => {
+    renderWithProviders(<FundingApplicationDetails />)
+    screen.getAllByText('Funding Request')[0].closest('button, a, li, .list-group-item')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  }
+
+  it('lists the additional funding types after the preferred one', async () => {
+    detail.application = { ...editable, preferred_funding_type: 'Term Loan', additional_funding_types: ['SBA Loan', 'Line of Credit'] }
+    openFundingRequestTab()
+
+    const preferred = await screen.findByText('Preferred Funding Type')
+    const additional = screen.getByText('Additional Funding Types')
+    expect(preferred.compareDocumentPosition(additional) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByText('SBA Loan, Line of Credit')).toBeInTheDocument()
+  })
+
+  it('shows a dash when none were chosen', async () => {
+    detail.application = { ...editable, preferred_funding_type: 'Term Loan', additional_funding_types: [] }
+    openFundingRequestTab()
+
+    const additional = await screen.findByText('Additional Funding Types')
+    expect(additional.nextElementSibling).toHaveTextContent('-')
+  })
+})
