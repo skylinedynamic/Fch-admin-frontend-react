@@ -7,6 +7,7 @@ import EmployeeDetails from '../src/pages/employees/EmployeeDetails.jsx';
 import SignIn from '../src/pages/singin/SignIn.jsx';
 import ForgotPassword from '../src/pages/singin/ForgotPassword.jsx';
 import ResetPassword from '../src/pages/singin/ResetPassword.jsx';
+import EmailChangeLinkPage from './pages/email-change/EmailChangeLinkPage';
 import Users from '../src/pages/users/Users.jsx';
 import UserDetails from '../src/pages/users/UserDetails.jsx';
 import UnderConstruction from '../src/pages/UnderConstruction.jsx';
@@ -174,6 +175,8 @@ export default function App() {
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="reset-password" element={<ResetPassword />} />
         </Route>
+        {/* The links in the email-change emails: they open signed in or not. */}
+        <Route path="email-change/:action/:user/:hash" element={<EmailChangeLinkPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="partners/download-agreement/:userId" element={<DownloadAgreement />} />
           <Route path="borrowers/download-agreement/:userId" element={<DownloadAgreement />} />
