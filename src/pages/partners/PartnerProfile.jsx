@@ -619,16 +619,7 @@ export default function PartnerProfile() {
                 } catch (e) {
                     toast.error(e.response?.data?.message || 'Failed to attach documents');
                 }
-                const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription', 'tenantConfig'];
-                const currentIndex = tabOrder.indexOf(activeTab);
-                const nextTab = tabOrder[currentIndex + 1];
-
-                if (nextTab) {
-                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: nextTab } }), 800);
-                } else {
-                    // If on last tab, stay on current tab
-                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: activeTab } }), 800);
-                }
+                // Stay on the tab that was saved.
             } else {
                 const response = await createPartner(formDataToSend);
                 toast.success('Partner created successfully');
@@ -657,8 +648,8 @@ export default function PartnerProfile() {
                     } catch (e) {
                         toast.error(e.response?.data?.message || 'Failed to attach documents');
                     }
-                    // Redirect to the partner profile page with Status & Agent tab active
-                    setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab: 'statusAgent' } }), 800);
+                    // Open the new partner on the tab it was created from.
+                    setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab } }), 800);
                 } else {
                     // Fallback to partners list if no ID returned
                     setTimeout(() => navigate('/partners'), 800);
