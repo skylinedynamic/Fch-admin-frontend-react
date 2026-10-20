@@ -68,6 +68,11 @@ export const queryKeys = {
     list: (params: object) => [...queryKeys.notifications.lists(), params] as const,
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
   },
+  account: {
+    all: ['account'] as const,
+    emailChangeLink: (action: string, user: string, hash: string, query: string) =>
+      [...queryKeys.account.all, 'emailChangeLink', action, user, hash, query] as const,
+  },
   settings: {
     all: ['settings'] as const,
     smsConfiguration: () => [...queryKeys.settings.all, 'smsConfiguration'] as const,
