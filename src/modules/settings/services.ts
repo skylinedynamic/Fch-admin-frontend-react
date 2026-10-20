@@ -194,6 +194,12 @@ export interface PartnerPaymentProvider {
     is_default: boolean;
     is_configured: boolean;
     payment_mode?: string;
+    /**
+     * What the method still needs before payers are offered it, for its active
+     * mode (e.g. a missing Stripe key, no bank account). Empty when it's ready.
+     */
+    setup_issues?: string[];
+    can_take_payments?: boolean;
 }
 
 export interface PartnerPaymentProviderConfig {
@@ -204,6 +210,10 @@ export interface PartnerPaymentProviderConfig {
     is_default: boolean;
     configuration: Record<string, any>;
     bank_details?: any[];
+    /** What the method is still missing for its active mode (read-only, from the API). */
+    setup_issues?: string[];
+    /** Whether payers are offered the method meanwhile (false for Stripe or Bank Transfer that isn't set up). */
+    can_take_payments?: boolean;
 }
 
 export const fetchPartnerPaymentProviders = async (): Promise<{ status: boolean; data: PartnerPaymentProvider[] }> => {

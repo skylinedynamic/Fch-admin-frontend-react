@@ -7,6 +7,13 @@ import PaymentMethodConfigForm from './PaymentMethodConfigForm';
 
 import { getProviderDesc } from '../../../../config';
 
+/**
+ * Switched on, but payers aren't offered it until it's set up for its mode.
+ * The row is marked; what is missing is shown on the method's own page.
+ */
+const needsSetup = (provider: PartnerPaymentProvider): boolean =>
+    provider.status && (provider.setup_issues?.length ?? 0) > 0;
+
 export default function PaymentMethodConfig(): React.JSX.Element {
     const [providers, setProviders] = useState<PartnerPaymentProvider[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -93,6 +100,15 @@ export default function PaymentMethodConfig(): React.JSX.Element {
                                                         <span className={`status-dot ${provider.status ? 'status-dot-active' : 'status-dot-inactive'}`} />
                                                         {provider.status ? 'Active' : 'Inactive'}
                                                     </span>
+                                                    {needsSetup(provider) && (
+                                                        <span
+                                                            className="badge d-inline-flex align-items-center gap-1 px-2 py-1 fs-11 bg-warning-subtle text-warning"
+                                                            title={provider.setup_issues?.join(' ')}
+                                                        >
+                                                            <i className="ri-error-warning-line"></i>
+                                                            Not configured
+                                                        </span>
+                                                    )}
                                                     {provider.status && provider.payment_mode && (
                                                         <span className={`badge d-inline-flex align-items-center px-2 py-1 fs-11 ${provider.payment_mode === 'production' ? 'bg-warning-subtle text-warning' : 'bg-info-subtle text-info'}`}>
                                                             {provider.payment_mode === 'production' ? '🚀 Production' : '🧪 Sandbox'}

@@ -10,6 +10,7 @@ import PaymentMethodStatusModal from '../../../../components/Common/Modals/Payme
 import { useAuthStore } from '../../../../store/auth/authStore';
 import { apiClient } from '../../../../lib/http/apiClient';
 import { PAYMENT_METHOD_PROVIDER, PAYMENT_ENVIRONMENT_LABELS } from '../../../../config/paymentConfig';
+import PaymentSetupAlert from './PaymentSetupAlert';
 
 const MODE_SANDBOX = PAYMENT_ENVIRONMENT_LABELS[0].toLowerCase();
 const MODE_PRODUCTION = PAYMENT_ENVIRONMENT_LABELS[1].toLowerCase();
@@ -24,6 +25,9 @@ const PROVIDER_BANK = PAYMENT_METHOD_PROVIDER[6];
 /** A US routing (ABA) number is written as nine digits; the API checks it (App\Rules\RoutingNumber). */
 const ROUTING_DIGITS = 9;
 const BANK_FIELD_ERROR = /^bank_details\.(\d+)\.(\w+)$/;
+// Stripe's answer when the keys are saved: configuration.<mode>.<key> -> the field in the form.
+const STRIPE_FIELD_ERROR = /^configuration\.(sandbox|production)\.(publishable_key|secret_key)$/;
+const STRIPE_FIELD: Record<string, string> = { publishable_key: 'stripe_key', secret_key: 'stripe_secret' };
 
 interface PaymentMethodConfigFormProps {
     provider: PartnerPaymentProvider;
@@ -46,6 +50,18 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
     const [status, setStatus] = useState<boolean>(false);
     const [toggling, setToggling] = useState<boolean>(false);
     const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+    // What the method is still missing, and whether payers can use it meanwhile, as the API last said.
+    const [setupIssues, setSetupIssues] = useState<string[]>([]);
+    const [canTakePayments, setCanTakePayments] = useState<boolean>(false);
+
+    /** Takes the setup state from a details, save or status response, when it has one. */
+    const applySetup = (linkage?: { setup_issues?: string[]; can_take_payments?: boolean } | null) => {
+        if (Array.isArray(linkage?.setup_issues)) {
+            setSetupIssues(linkage.setup_issues);
+            // An API that doesn't say is treated as "payers can't use it".
+            setCanTakePayments(linkage.can_take_payments === true);
+        }
+    };
 
     const handleStatusToggleConfirm = async () => {
         const newStatus = !status;
@@ -58,6 +74,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             if (response && response.status && response.data && response.data.id) {
                 setLinkageId(response.data.id);
             }
+            applySetup(response?.data);
             setStatus(newStatus);
             toast.success(`${provider.name} status updated successfully.`);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
@@ -104,6 +121,8 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 setLinkageId(linkage.id || null);
                 setIsDefault(!!linkage.is_default);
                 setStatus(!!linkage.status);
+                setSetupIssues([]);
+                applySetup(linkage);
                 const config = linkage.configuration || {};
                 const paymentMode = linkage.payment_mode || config.payment_mode || MODE_SANDBOX;
 
@@ -415,6 +434,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 configuration: configuration,
                 bank_details: isBank ? bankDetails : undefined
             } as any);
+            applySetup(response?.data);
             if (response && response.status && response.data && response.data.id) {
                 setLinkageId(response.data.id);
                 if (isBank && response.data.bank_details) {
@@ -437,6 +457,16 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             });
             if (Object.keys(rowErrors).length > 0) {
                 setBankErrors(rowErrors);
+            }
+            const keyErrors: FormErrors = {};
+            Object.entries(serverErrors).forEach(([key, message]) => {
+                const match = STRIPE_FIELD_ERROR.exec(key);
+                if (match) {
+                    keyErrors[`${STRIPE_FIELD[match[2]]}_${match[1]}`] = Array.isArray(message) ? message[0] : message;
+                }
+            });
+            if (Object.keys(keyErrors).length > 0) {
+                setErrors(prev => ({ ...prev, ...keyErrors }));
             }
             toast.error(error.response?.data?.message || 'Failed to save configuration.');
         } finally {
@@ -497,6 +527,18 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                 </div>
                             </div>
                         </div>
+
+                        {status && setupIssues.length > 0 && (
+                            <div className="mb-4">
+                                <PaymentSetupAlert
+                                    title={canTakePayments ? `${provider.name} isn't fully set up` : `${provider.name} can't take payments yet`}
+                                    description={canTakePayments
+                                        ? 'Add what is missing below and save.'
+                                        : `Payers aren't offered ${provider.name} until it's set up.`}
+                                    issues={setupIssues}
+                                />
+                            </div>
+                        )}
 
                         <form onSubmit={handleSubmit}>
                             <div
