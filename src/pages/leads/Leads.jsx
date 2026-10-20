@@ -11,6 +11,7 @@ import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import DeleteBlockedModal from '../../components/Common/Modals/DeleteBlockedModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../components/Loader/TableLoader';
@@ -61,6 +62,9 @@ export default function Leads() {
     const [selectedLeads, setSelectedLeads] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteRows, setDeleteRows] = useState([]);
+    // Converted leads in a delete selection: they are kept, and the user is told.
+    const [convertedLeads, setConvertedLeads] = useState([]);
+    const [convertedSelectionSize, setConvertedSelectionSize] = useState(0);
 
     // Dropdown data
     const [salespersonsList, setSalespersonsList] = useState([]);
@@ -277,8 +281,23 @@ export default function Leads() {
             toast.warn('Please select at least one lead to delete.');
             return;
         }
+        // A lead already converted to a client or partner cannot be deleted.
+        const converted = selectedLeads
+            .filter((lead) => !!lead.convert_to)
+            .map((lead) => ({ id: lead.id, name: leadName(lead) }));
+        if (converted.length > 0) {
+            showConverted(converted, selectedLeads.length);
+            return;
+        }
         setDeleteRows(selectedLeads);
         setShowDeleteModal(true);
+    };
+
+    const leadName = (lead) => lead.contact_person || lead.company_name || lead.lead_id || `Lead #${lead.id}`;
+
+    const showConverted = (rows, selectedCount) => {
+        setConvertedLeads(rows);
+        setConvertedSelectionSize(selectedCount);
     };
 
     const handleDeleteConfirm = async () => {
@@ -290,6 +309,13 @@ export default function Leads() {
             setSelectedLeads([]);
             setAppliedFilters({ ...appliedFilters });
         } catch (err) {
+            // The API keeps converted leads (422 naming them) - same modal, no toast.
+            const converted = err.response?.data?.errors?.converted;
+            if (err.response?.status === 422 && Array.isArray(converted) && converted.length > 0) {
+                setShowDeleteModal(false);
+                showConverted(converted, deleteRows.length);
+                return;
+            }
             console.error('Delete lead error:', err);
             const errorMessage = err.response?.data?.message || 'Failed to delete leads';
             toast.error(errorMessage);
@@ -668,7 +694,24 @@ export default function Leads() {
                     onConfirm={handleDeleteConfirm}
                     onClose={() => setShowDeleteModal(false)}
                     loading={loading}
-                    text="The selected leads and all associated data will be deleted."
+                    text="The selected leads will be deleted."
+                />
+
+                <DeleteBlockedModal
+                    show={convertedLeads.length > 0}
+                    title={convertedLeads.length === 1 ? 'Lead Cannot Be Deleted' : 'Leads Cannot Be Deleted'}
+                    message={
+                        convertedLeads.length === 1
+                            ? `${convertedSelectionSize === 1 ? 'This lead' : convertedLeads[0].name} has already been converted and cannot be deleted.`
+                            : 'These leads have already been converted and cannot be deleted.'
+                    }
+                    items={convertedLeads}
+                    note={
+                        convertedSelectionSize > convertedLeads.length
+                            ? `${convertedLeads.length === 1 ? 'Unselect this lead' : 'Unselect these leads'} to delete the other selected leads.`
+                            : undefined
+                    }
+                    onClose={() => setConvertedLeads([])}
                 />
 
                 <PaidVersionOnlyModal

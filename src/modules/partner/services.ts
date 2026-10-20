@@ -81,6 +81,19 @@ export const deletePartners = async (ids: Array<number | string>) => {
   return res.data;
 };
 
+export interface PartnerDeletableCheck {
+  id: number;
+  name: string;
+  is_deletable: boolean;
+  reason: string | null;
+}
+
+/** Whether each partner can be deleted - one with a paid invoice (or clients/users under it) cannot. */
+export const checkPartnersDeletable = async (ids: Array<number | string>): Promise<PartnerDeletableCheck[]> => {
+  const { data } = await apiClient.post('/admin/partners/check-deletable', { ids });
+  return data?.data ?? [];
+};
+
 /**
  * Archiving takes a partner out of the working list without deleting anything.
  * The record, its documents and its history are untouched, it stays findable by
