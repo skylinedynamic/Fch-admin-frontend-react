@@ -257,7 +257,7 @@ export default function FundingApplicationDetails() {
         if (!ssn) return '-';
         const cleaned = ssn.toString().replace(/\D/g, '');
         if (cleaned.length === 9) {
-            return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 9)}`;
+            return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 5)}-${cleaned.slice(5)}`;
         }
         return ssn;
     };
@@ -720,10 +720,9 @@ export default function FundingApplicationDetails() {
                                         <td className="fw-medium">{history.user_name || 'System'}</td>
                                         <td className="text-capitalize">{history.user_type || 'System'}</td>
                                         <td>
-                                            <span className={`badge ${
-                                                history.action === 'generated' ? 'bg-success' : 
-                                                history.action.includes('with_password') ? 'bg-warning' : 'bg-primary'
-                                            }`}>
+                                            <span className={`badge ${history.action === 'generated' ? 'bg-success' :
+                                                    history.action.includes('with_password') ? 'bg-warning' : 'bg-primary'
+                                                }`}>
                                                 {history.action.replace(/_/g, ' ')}
                                             </span>
                                         </td>
