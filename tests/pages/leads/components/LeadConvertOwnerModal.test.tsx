@@ -41,11 +41,36 @@ describe('LeadConvertOwnerModal', () => {
     return { onSelect, onHide }
   }
 
-  it('names the lead and whose it is', () => {
+  it('sums up the lead and whose it is', () => {
     renderModal()
 
-    expect(screen.getByText(/^Lead:/)).toHaveTextContent('Lead: Lee Lead · Lead Co 7')
-    expect(screen.getByText(/^Owned by:/)).toHaveTextContent('Owned by: WLP Co')
+    expect(screen.getAllByRole('term').map((t) => t.textContent)).toEqual(['Lead', 'Owned by'])
+    expect(screen.getAllByRole('definition').map((d) => d.textContent)).toEqual(['Lee LeadLead Co 7', 'WLP Co'])
+  })
+
+  it('shows each partner as a card with its initials, role and what picking it means', () => {
+    renderModal()
+
+    const [owner, host] = screen.getAllByRole('radio').map((r) => r.closest('label') as HTMLElement)
+    expect(owner).toHaveTextContent('WC')
+    expect(owner).toHaveTextContent('WLP Co')
+    expect(owner).toHaveTextContent('Lead owner')
+    expect(owner).toHaveTextContent('The partner who brought in this lead manages the borrower.')
+    expect(host).toHaveTextContent('HC')
+    expect(host).toHaveTextContent('Host partner')
+    expect(host).toHaveTextContent('Your company manages the borrower directly.')
+  })
+
+  it('marks the picked card', async () => {
+    renderModal()
+    const [owner, host] = screen.getAllByRole('radio').map((r) => r.closest('label') as HTMLElement)
+    expect(owner).toHaveClass('border-primary')
+    expect(host).not.toHaveClass('border-primary')
+
+    await userEvent.click(screen.getByRole('radio', { name: /Host Co/ }))
+
+    expect(host).toHaveClass('border-primary')
+    expect(owner).not.toHaveClass('border-primary')
   })
 
   it('lists the lead owner first, already selected, then the host', () => {

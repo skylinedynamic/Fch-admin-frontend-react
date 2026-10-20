@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams, useLocation, Navigate } 
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead, fetchGlobalStats } from '../../modules/leads/services';
+import { isMissingConvertInfo } from '../../modules/leads/logic';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -270,8 +271,7 @@ export default function LeadDetails() {
         // counts as incomplete - only the details needed to actually reach the
         // person do. The borrower and partner records they convert into accept a
         // blank address too.
-        const isMissingInfo = !formData.contact_person || !formData.email || !formData.phone_number || !formData.country;
-        if (isMissingInfo) {
+        if (isMissingConvertInfo(formData)) {
             setShowMissingInfoModal(true);
         } else {
             setShowConvertModal(true);

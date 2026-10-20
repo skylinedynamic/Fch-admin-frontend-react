@@ -6,6 +6,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchLeads, deleteLead, convertLead, updateLeadContactInfo } from '../../modules/leads/services';
+import { isMissingConvertInfo } from '../../modules/leads/logic';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -317,9 +318,7 @@ export default function Leads() {
     const openConvertModal = (rowData) => {
         setTargetLead(rowData);
         chooseOwnerThen(rowData, () => {
-            const hasName = rowData.contact_person || rowData.contact_person;
-            const isMissingInfo = !hasName || !rowData.email || !rowData.phone_number || !rowData.country || !rowData.state || !rowData.city;
-            if (isMissingInfo) {
+            if (isMissingConvertInfo(rowData)) {
                 setShowMissingInfoModal(true);
             } else {
                 setShowConvertModal(true);
@@ -581,7 +580,7 @@ export default function Leads() {
                                             {hasPermission('delete leads') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                                             {/* <Column field="opportunity" header="Opportunity" body={opportunityBodyTemplate} sortable filter filterPlaceholder="Search by opportunity" style={{ minWidth: '180px' }} /> */}
                                             <Column field="contact_person" header="Lead" body={(rowData) => <LeadNameCell lead={rowData} />} sortable filter showFilterMatchModes filterPlaceholder="Search by contact" style={{ minWidth: '150px' }} />
-                                            <Column field="email" header="Contact Info" body={(rowData) => <LeadContactInfoCell lead={rowData} />} sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ minWidth: '190px' }} />
+                                            <Column field="email" header="Contact Info" body={(rowData) => <LeadContactInfoCell lead={rowData} />} sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ width: '250px', minWidth: '250px' }} />
                                             <Column
                                                 header="Source"
                                                 body={(rowData) => (
@@ -597,7 +596,7 @@ export default function Leads() {
                                                         )}
                                                     </div>
                                                 )}
-                                                style={{ minWidth: '120px' }}
+                                                style={{ width: '120px', minWidth: '100px' }}
                                             />
                                             {isHost && <Column field="partner_name" header="Partner" body={(rowData) => <LeadPartnerCell lead={rowData} />} sortable filter showFilterMatchModes filterPlaceholder="Search by partner" style={{ minWidth: '130px' }} />}
                                             <Column field="salesperson_name" header="SalesPerson" body={(rowData) => nullSafeBodyTemplate(rowData, 'salesperson_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by salesperson" style={{ minWidth: '120px' }} />

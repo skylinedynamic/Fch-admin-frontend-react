@@ -133,6 +133,49 @@ test.describe('Leads › host converting another partner\'s lead', () => {
     expect(overflow).toBeLessThanOrEqual(1)
   })
 
+  for (const width of [1440, 1920]) {
+    test(`Contact Info and Source keep their width on a ${width}px screen, the others taking the extra room`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await seedSession(page, HOST_USER)
+      await stubApi(page, [{ ...WLP_LEAD, salesperson_name: 'Sal Person' }], convertBodies)
+      await page.goto('/leads')
+      await expect(rowOf(page, 'Lee Lead 7')).toBeVisible()
+
+      const widthOf = (name: RegExp) => page.getByRole('columnheader', { name }).evaluate((el) => el.getBoundingClientRect().width)
+      expect(await widthOf(/^Contact Info/)).toBeLessThanOrEqual(192)
+      expect(await widthOf(/^Source/)).toBeLessThanOrEqual(152)
+
+      // At that width the header stays on one line and a typical email doesn't wrap.
+      const lineHeight = (locator: ReturnType<typeof page.locator>) => locator.evaluate((el) => el.getBoundingClientRect().height)
+      const header = page.getByRole('columnheader', { name: /^Contact Info/ }).locator('.p-column-title')
+      expect(await lineHeight(header)).toBeLessThan(24)
+      const email = rowOf(page, 'Lee Lead 7').getByText('lead-7@example.test')
+      expect(await lineHeight(email)).toBeLessThan(26)
+    })
+  }
+
+  test('Contact Info and Source stay narrow, a long email wrapping after its @', async ({ page }) => {
+    // Wide enough for the table's minimum, so the columns are not stretched to fill it.
+    await page.setViewportSize({ width: 1280, height: 900 })
+    const longEmail = 'christopher.longname@fourcornerholdings.example'
+    await seedSession(page, HOST_USER)
+    await stubApi(page, [{ ...WLP_LEAD, email: longEmail, lead_source: 'Personal Network (Friends/Family)' }], convertBodies)
+    await page.goto('/leads')
+
+    const row = rowOf(page, 'Lee Lead 7')
+    await expect(row).toContainText(longEmail)
+    await expect(row).toContainText('Personal Network (Friends/Family)')
+
+    const widthOf = (name: RegExp) => page.getByRole('columnheader', { name }).evaluate((el) => el.getBoundingClientRect().width)
+    expect(await widthOf(/^Contact Info/)).toBeLessThanOrEqual(240)
+    // Its longest word, "(Friends/Family)", can't break, so it sets this width.
+    expect(await widthOf(/^Source/)).toBeLessThanOrEqual(150)
+
+    // The email breaks only between its two halves.
+    const halves = await row.locator('.text-nowrap', { hasText: /@|fourcorner/ }).allTextContents()
+    expect(halves).toEqual(['christopher.longname@', 'fourcornerholdings.example'])
+  })
+
   test('the Partner filter narrows the list to that partner', async ({ page }) => {
     const fetchBodies: Record<string, unknown>[] = []
     await seedSession(page, HOST_USER)
@@ -170,8 +213,18 @@ test.describe('Leads › host converting another partner\'s lead', () => {
       await rowButton.click()
 
       const ownerModal = shownModal(page)
-      await expect(ownerModal.getByText('Owned by: WLP Co')).toBeVisible()
+      await expect(ownerModal.getByRole('definition').filter({ hasText: 'WLP Co' })).toBeVisible()
       await expect(ownerModal.getByRole('radio', { name: /WLP Co, Lead owner/ })).toBeChecked()
+
+      // The two partners sit side by side as a grid of cards.
+      // Measured once the modal's opening animation has settled.
+      const cards = async () => Promise.all([
+        ownerModal.locator('label', { hasText: 'Lead owner' }).boundingBox(),
+        ownerModal.locator('label', { hasText: 'Host partner' }).boundingBox(),
+      ])
+      await expect.poll(async () => { const [o, h] = await cards(); return Math.abs(o!.y - h!.y) }).toBeLessThan(2)
+      const [ownerCard, hostCard] = await cards()
+      expect(hostCard!.x).toBeGreaterThan(ownerCard!.x + ownerCard!.width - 1)
       if (convertAs === 'host') await ownerModal.locator('label', { hasText: company }).click()
       await ownerModal.getByRole('button', { name: /Continue/ }).click()
 
@@ -205,5 +258,35 @@ test.describe('Leads › host converting another partner\'s lead', () => {
     await expect.poll(() => convertBodies.length).toBe(1)
     expect(convertBodies[0]).not.toHaveProperty('convert_as')
     await expect(page.locator('.modal.show label', { hasText: 'Lead owner' })).toHaveCount(0)
+  })
+})
+
+// Converting asks for missing details only when a field the missing-info form
+// marks required is empty; state and city are optional.
+test.describe('Leads › missing info before converting', () => {
+  test('a lead with no state or city goes straight to the conversion', async ({ page }) => {
+    const convertBodies: Record<string, unknown>[] = []
+    await seedSession(page, HOST_USER)
+    await stubApi(page, [{ ...HOST_LEAD, state: '', city: null }], convertBodies)
+    await page.goto('/leads')
+
+    await rowOf(page, 'Lee Lead 8').getByRole('button', { name: /Convert to Borrower/ }).click()
+
+    await expect(shownModal(page).getByText('Convert Lead to Borrower')).toBeVisible()
+    await expect(page.getByText('Borrower Conversion: Missing Info')).toBeHidden()
+    await shownModal(page).getByRole('button', { name: 'Convert to Borrower' }).click()
+    await expect.poll(() => convertBodies.length).toBe(1)
+  })
+
+  test('a lead with no phone number is asked for it first', async ({ page }) => {
+    const convertBodies: Record<string, unknown>[] = []
+    await seedSession(page, HOST_USER)
+    await stubApi(page, [{ ...HOST_LEAD, phone_number: '', state: '', city: null }], convertBodies)
+    await page.goto('/leads')
+
+    await rowOf(page, 'Lee Lead 8').getByRole('button', { name: /Convert to Borrower/ }).click()
+
+    await expect(shownModal(page).getByText('Borrower Conversion: Missing Info')).toBeVisible()
+    expect(convertBodies).toHaveLength(0)
   })
 })

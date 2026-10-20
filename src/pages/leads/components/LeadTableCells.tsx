@@ -20,16 +20,39 @@ export function LeadNameCell({ lead }: { lead: Pick<Lead, 'contact_person' | 'co
     );
 }
 
+/**
+ * An email that, when its column is narrow, wraps only right after the @ -
+ * never inside the name or the domain.
+ */
+function EmailText({ email }: { email: string }) {
+    const at = email.indexOf('@');
+    if (at < 0) return <span className="text-nowrap">{email}</span>;
+
+    return (
+        <span>
+            <span className="text-nowrap">{email.slice(0, at + 1)}</span>
+            <wbr />
+            <span className="text-nowrap">{email.slice(at + 1)}</span>
+        </span>
+    );
+}
+
 export function LeadContactInfoCell({ lead }: { lead: Pick<Lead, 'email' | 'phone_number'> }) {
     if (isBlank(lead.email) && isBlank(lead.phone_number)) return <Missing />;
 
     return (
         <div className="d-flex flex-column">
             {!isBlank(lead.email) && (
-                <span className="text-body text-nowrap"><i className="ri-mail-line text-muted align-middle me-1"></i>{lead.email}</span>
+                <span className="d-flex align-items-start text-body fs-13">
+                    <i className="ri-mail-line text-muted me-1"></i>
+                    <EmailText email={lead.email} />
+                </span>
             )}
             {!isBlank(lead.phone_number) && (
-                <span className="text-muted fs-12"><i className="ri-phone-line align-middle me-1"></i>{lead.phone_number}</span>
+                <span className="d-flex align-items-start text-muted fs-12">
+                    <i className="ri-phone-line me-1"></i>
+                    <span className="text-nowrap">{lead.phone_number}</span>
+                </span>
             )}
         </div>
     );

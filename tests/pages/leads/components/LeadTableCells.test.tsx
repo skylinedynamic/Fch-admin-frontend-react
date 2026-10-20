@@ -21,11 +21,18 @@ describe('LeadTableCells', () => {
     expect(container).toHaveTextContent(/^Null$/)
   })
 
-  it('stacks the phone under the email, keeping the email on one line', () => {
+  it('stacks the phone under the email, letting a long email wrap only after the @', () => {
     const { container } = render(<LeadContactInfoCell lead={{ email: 'lee-lead@example.test', phone_number: '(555) 123-4567' }} />)
 
     expect(container).toHaveTextContent('lee-lead@example.test(555) 123-4567')
-    expect(screen.getByText('lee-lead@example.test')).toHaveClass('text-nowrap')
+    // A break is allowed only between "name@" and the domain; neither half
+    // breaks inside itself, and the phone stays on one line.
+    const email = screen.getByText((_, el) => el?.textContent === 'lee-lead@example.test' && !!el.querySelector(':scope > wbr'))
+    const halves = Array.from(email.querySelectorAll('.text-nowrap')).map((h) => h.textContent)
+    expect(halves).toEqual(['lee-lead@', 'example.test'])
+    expect(email.querySelector('wbr')).not.toBeNull()
+    expect(email).not.toHaveClass('text-nowrap')
+    expect(screen.getByText('(555) 123-4567')).toHaveClass('text-nowrap')
   })
 
   it('shows whichever contact detail exists, or Null for neither', () => {

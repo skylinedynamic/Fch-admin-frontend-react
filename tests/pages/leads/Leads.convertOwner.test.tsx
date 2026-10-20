@@ -226,3 +226,44 @@ describe('Leads › host converting another partner\'s lead', () => {
     expect(convertBodies[0]).not.toHaveProperty('convert_as')
   })
 })
+
+/**
+ * Converting asks for missing details only when a field the missing-info form
+ * marks required is empty - contact person, email, phone or country. State and
+ * city are optional, so a lead without them goes straight to the conversion.
+ */
+describe('Leads › missing info before converting', () => {
+  afterEach(() => {
+    cleanup()
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  const missingInfoTitle = () => screen.queryByText('Borrower Conversion: Missing Info')
+  const isShown = (el: HTMLElement | null) => !!el?.closest('.modal')?.classList.contains('show')
+
+  it('goes straight to converting a lead with no state or city', async () => {
+    signInAs(true)
+    const convertBodies = serve([{ ...HOST_LEAD, state: '', city: null }])
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+
+    await user.click(await convertButtonFor('Lee 8'))
+    await user.click(await modalButton('Convert to Borrower'))
+
+    await waitFor(() => expect(convertBodies).toHaveLength(1))
+    expect(isShown(missingInfoTitle())).toBe(false)
+  })
+
+  it('still asks for a required detail that is missing', async () => {
+    signInAs(true)
+    const convertBodies = serve([{ ...HOST_LEAD, phone_number: '', state: '', city: null }])
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+
+    await user.click(await convertButtonFor('Lee 8'))
+
+    await waitFor(() => expect(isShown(missingInfoTitle())).toBe(true))
+    expect(convertBodies).toHaveLength(0)
+  })
+})
