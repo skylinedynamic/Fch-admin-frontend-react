@@ -110,6 +110,8 @@ export interface DisclosuresConsentResponse {
 }
 export interface FundingRequestData {
   id: number | null
+  /** The application's borrower - the file manager opens borrowers/{borrower_id}. */
+  borrower_id?: number | null
   funding_request_id?: number | null
   funding_sequence_id?: number | null
   requested_amount: string | null

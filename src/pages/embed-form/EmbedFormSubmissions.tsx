@@ -150,11 +150,15 @@ export default function EmbedFormSubmissions() {
 
             if (res.status) {
                 const data = res.data?.data || res.data || [];
-                const total = res.data?.meta?.total ?? res.data?.total ?? data.length;
+                // The API answers { status, message, data: [...], meta }, so meta
+                // sits beside data, not inside it. Reading it from data left the
+                // total at the size of the current page - the cards and the
+                // paginator both stopped at ten.
+                const total = res.meta?.total ?? res.data?.meta?.total ?? res.data?.total ?? data.length;
                 setSubmissions(data);
                 setTotalRecords(total);
 
-                const backendStats = res.data?.meta?.stats || res.data?.stats;
+                const backendStats = res.meta?.stats || res.data?.meta?.stats || res.data?.stats;
                 if (backendStats) {
                     setStats(backendStats);
                 } else {

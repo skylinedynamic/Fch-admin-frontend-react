@@ -28,7 +28,9 @@ export default function Payments() {
 
     // Filter states
     const [filters, setFilters] = useState({});
-    const [searchText, setSearchText] = useState('');
+    // The invoice list's "Review" button links here with ?search=<invoice id>.
+    const urlSearch = new URLSearchParams(window.location.search).get('search') || '';
+    const [searchText, setSearchText] = useState(urlSearch);
     const [selectedStatus, setSelectedStatus] = useState(null);
     const [selectedEnvironment, setSelectedEnvironment] = useState(null);
     const [selectedMethod, setSelectedMethod] = useState(null);
@@ -38,7 +40,7 @@ export default function Payments() {
     const [dateRange, setDateRange] = useState([]);
 
     // Applied filter states (to trigger fetch)
-    const [appliedSearchText, setAppliedSearchText] = useState('');
+    const [appliedSearchText, setAppliedSearchText] = useState(urlSearch);
     const [appliedStatus, setAppliedStatus] = useState(null);
     const [appliedEnvironment, setAppliedEnvironment] = useState(null);
     const [appliedMethod, setAppliedMethod] = useState(null);

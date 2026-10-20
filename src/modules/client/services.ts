@@ -49,6 +49,19 @@ export const deleteClients = async (ids: (string | number)[]): Promise<any> => {
     return data;
 };
 
+export interface ClientDeletableCheck {
+    id: number;
+    name: string;
+    is_deletable: boolean;
+    reason: string | null;
+}
+
+/** Whether each client can be deleted - a client with a paid invoice cannot. */
+export const checkClientsDeletable = async (ids: (string | number)[]): Promise<ClientDeletableCheck[]> => {
+    const { data } = await apiClient.post(`/common/borrowers/check-deletable`, { ids });
+    return data?.data ?? [];
+};
+
 /**
  * Archiving takes a client out of the working list without deleting anything.
  * The record, its documents and its history are untouched, it stays findable by

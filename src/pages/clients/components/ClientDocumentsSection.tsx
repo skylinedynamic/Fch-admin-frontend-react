@@ -52,7 +52,11 @@ export default function ClientDocumentsSection({ isLoading: parentLoading = fals
 
     // Permissions check
     const hasPermission = (permission: string) => {
-        return user?.permissions?.includes(permission) || user?.role_name == 'Developer' || user?.is_host == 1;
+        // The host account itself may do everything here. Being on the host's
+        // team is not the same thing: a host employee is limited to what their
+        // role grants, like anyone else.
+        const isHostAccount = user?.is_host == 1 && user?.entity_type === 'Partner';
+        return user?.permissions?.includes(permission) || user?.role_name == 'Developer' || isHostAccount;
     };
 
     const canView = hasPermission('view borrower documents');

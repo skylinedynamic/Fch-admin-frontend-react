@@ -231,7 +231,7 @@ describe('Funding application › Step 4: Funding Request › Purpose of Funds',
     await user.click(picker(container, 'purpose_of_funds').querySelector('.p-multiselect-trigger') as HTMLElement)
     await user.type(await screen.findByPlaceholderText(/search purpose/i), 'Payroll')
     await user.click(await screen.findByText('Payroll', { selector: '.p-multiselect-item span' }))
-    expect(chipsOf(container, 'purpose_of_funds')).toEqual(['Working Capital', 'Payroll'])
+    await waitFor(() => expect(chipsOf(container, 'purpose_of_funds')).toEqual(['Working Capital', 'Payroll']))
 
     expect(await save()).toBe(true)
     expect(posted.purpose_of_funds).toBe('Working Capital, Payroll')

@@ -4,6 +4,8 @@ import { useDeleteClients, useArchiveClients, useUnarchiveClients, usePartners, 
 import { getUser } from '../../lib/auth';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import ClientDeleteBlockedModal, { BlockedClient } from './components/ClientDeleteBlockedModal';
+import { checkClientsDeletable } from '../../modules/client/services';
 import ClientStats from './components/ClientStats';
 import ClientListTable from './components/ClientListTable';
 import { Client, ClientListStatistics } from '../../modules/client/types';
@@ -22,6 +24,9 @@ export default function Clients() {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
     const [deleteRows, setDeleteRows] = useState<Client[]>([]);
+    const [checkingDeletable, setCheckingDeletable] = useState<boolean>(false);
+    const [blockedClients, setBlockedClients] = useState<BlockedClient[]>([]);
+    const [blockedSelectionSize, setBlockedSelectionSize] = useState<number>(0);
 
     // User context
     const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -50,12 +55,37 @@ export default function Clients() {
     const archiveClientsMutation = useArchiveClients();
     const unarchiveClientsMutation = useUnarchiveClients();
 
+    // A client with a paid invoice cannot be deleted. Check first, so the user
+    // is told why (and offered Edit Client) instead of being asked to confirm.
+    const showBlocked = (rows: BlockedClient[], selectedCount: number) => {
+        setBlockedClients(rows);
+        setBlockedSelectionSize(selectedCount);
+    };
+
     // Delete handlers
-    const openDeleteModal = () => {
+    const openDeleteModal = async () => {
         if (!selectedClients || selectedClients.length === 0) {
             toast.warn('Please select at least one client to delete.');
             return;
         }
+        const ids = selectedClients.map(c => c.id).filter((id): id is string | number => id !== undefined);
+
+        setCheckingDeletable(true);
+        try {
+            const blocked = (await checkClientsDeletable(ids))
+                .filter(row => !row.is_deletable)
+                .map(row => ({ id: row.id, name: row.name }));
+            if (blocked.length > 0) {
+                showBlocked(blocked, ids.length);
+                return;
+            }
+        } catch {
+            // The check is a courtesy - the delete itself still refuses a
+            // client with a paid invoice, and that answer opens the same modal.
+        } finally {
+            setCheckingDeletable(false);
+        }
+
         setDeleteRows(selectedClients);
         setShowDeleteModal(true);
     };
@@ -99,6 +129,12 @@ export default function Clients() {
             setShowDeleteModal(false);
             setSelectedClients([]);
         } catch (err: any) {
+            const blocked: BlockedClient[] | undefined = err.response?.data?.errors?.blocked;
+            if (err.response?.status === 422 && Array.isArray(blocked) && blocked.length > 0) {
+                setShowDeleteModal(false);
+                showBlocked(blocked, ids.length);
+                return;
+            }
             const errorMsg = err.response?.data?.message || err.message || 'Failed to delete clients.';
             toast.error(errorMsg);
         }
@@ -136,7 +172,7 @@ export default function Clients() {
                                     )}
                                     {hasPermission('delete clients') && (
                                         <li>
-                                            <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                            <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal} disabled={checkingDeletable}>
                                                 <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                             </button>
                                         </li>
@@ -192,6 +228,14 @@ export default function Clients() {
                     onClose={() => setShowDeleteModal(false)}
                     loading={deleteClientsMutation.isPending}
                     text="The selected clients and all associated data will be deleted."
+                />
+
+                <ClientDeleteBlockedModal
+                    show={blockedClients.length > 0}
+                    blocked={blockedClients}
+                    selectedCount={blockedSelectionSize}
+                    canEdit={hasPermission('update clients')}
+                    onClose={() => setBlockedClients([])}
                 />
             </div>
         </div>

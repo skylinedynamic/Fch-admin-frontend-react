@@ -56,6 +56,25 @@ export const deleteFundingSequencing = async (id: number | string) => {
     return data;
 };
 
+/** Delete the selected funding sequences in one call - all or none. */
+export const deleteFundingSequencings = async (ids: Array<number | string>) => {
+    const { data } = await apiClient.post('/admin/funding-sequencings/multiple-delete', { ids });
+    return data;
+};
+
+export interface FundingSequencingDeletableCheck {
+    id: number;
+    name: string;
+    is_deletable: boolean;
+    reason: string | null;
+}
+
+/** Whether each funding sequence can be deleted - one used by a funding request cannot. */
+export const checkFundingSequencingsDeletable = async (ids: Array<number | string>): Promise<FundingSequencingDeletableCheck[]> => {
+    const { data } = await apiClient.post('/admin/funding-sequencings/check-deletable', { ids });
+    return data?.data ?? [];
+};
+
 export const updateFundingSequencingStatus = async (id: number | string, status: string) => {
     const { data } = await apiClient.patch(`/admin/funding-sequencings/${id}/status`, { status });
     return data;

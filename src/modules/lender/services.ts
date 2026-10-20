@@ -31,6 +31,25 @@ export const deleteLender = async (id: number | string) => {
     return data;
 };
 
+/** Delete the selected lenders in one call - all or none. */
+export const deleteLenders = async (ids: Array<number | string>) => {
+    const { data } = await apiClient.post('/admin/lenders/multiple-delete', { ids });
+    return data;
+};
+
+export interface LenderDeletableCheck {
+    id: number;
+    name: string;
+    is_deletable: boolean;
+    reason: string | null;
+}
+
+/** Whether each lender can be deleted - one assigned to a funding request (or in a funding sequence) cannot. */
+export const checkLendersDeletable = async (ids: Array<number | string>): Promise<LenderDeletableCheck[]> => {
+    const { data } = await apiClient.post('/admin/lenders/check-deletable', { ids });
+    return data?.data ?? [];
+};
+
 // Lender Product Categories
 export const getLenderProductCategories = async () => {
     const { data } = await apiClient.get('/admin/lenders/product-categories');

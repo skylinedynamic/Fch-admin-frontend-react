@@ -10,7 +10,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { MultiSelect } from 'primereact/multiselect';
 import { LENDER_STATUS } from '../../config/statusOptions';
-import { PRODUCT_CATEGORIES, SUBMISSION_METHODS } from '../../config/lender';
+import { SUBMISSION_METHODS } from '../../config/lender';
 import { useSummernote } from '../../hooks/useSummernote';
 import LenderProductCategoryModal from './components/LenderProductCategoryModal';
 import '../../../assets/css/lenders.css';
@@ -24,6 +24,10 @@ export default function LenderForm() {
     const [initialLoading, setInitialLoading] = useState(isEditMode);
     
     const [categoriesList, setCategoriesList] = useState<any[]>([]);
+    // Only categories the API returned are offered. A hardcoded list used to
+    // stand in until they loaded, but its values are names where the API
+    // requires ids, so picking one early made the save fail.
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     const initialFormState: any = {
@@ -84,6 +88,8 @@ export default function LenderForm() {
             setCategoriesList(res.data || []);
         } catch (error) {
             console.error('Failed to fetch categories', error);
+        } finally {
+            setCategoriesLoading(false);
         }
     };
 
@@ -209,7 +215,8 @@ export default function LenderForm() {
                                                 <MultiSelect
                                                     inputId="product_categories"
                                                     value={formData.product_categories || []}
-                                                    options={categoriesList.length > 0 ? categoriesList.map(cat => ({ label: cat.name, value: cat.id })) : PRODUCT_CATEGORIES.map(cat => ({ label: cat.label, value: cat.value }))}
+                                                    options={categoriesList.map(cat => ({ label: cat.name, value: cat.id }))}
+                                                    disabled={categoriesLoading}
                                                     onChange={(e) => handleChange({ target: { name: 'product_categories', value: e.value } } as any)}
                                                     optionLabel="label"
                                                     optionValue="value"

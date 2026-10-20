@@ -243,6 +243,10 @@ export default function EmbedFormSubmissionDetails() {
         try {
             const res = await updateEmbedFormSubmissionStatus(submission.id, nextStatus);
             if (res.status) {
+                // Take the status the server saved rather than leaving the
+                // optimistic one in place: a details request still in flight
+                // when the dropdown is used would otherwise put the old value back.
+                setSubmission((prev: any) => ({ ...prev, status: res?.data?.status || nextStatus }));
                 toast.success(res?.message || 'Status updated successfully.');
             } else {
                 setSubmission((prev: any) => ({ ...prev, status: previousStatus }));
