@@ -56,7 +56,9 @@ export default function FederalComplianceStep({
   }
 
   // Memoized save handler
-  const handleSave = useCallback(async (): Promise<boolean> => {
+  // `successMessage`: the final "Save & Notify" saves the whole application, so
+  // it says so; a save from a tab switch keeps the step's own message.
+  const handleSave = useCallback(async (successMessage = 'Federal compliance disclosures saved successfully!'): Promise<boolean> => {
     setValidationErrors({})
 
     const payload = {
@@ -76,7 +78,7 @@ export default function FederalComplianceStep({
 
     try {
       await saveCompliance(payload)
-      toast.success('Federal compliance disclosures saved successfully!')
+      toast.success(successMessage)
       return true
     } catch (error: any) {
       // The partner backed out of the re-signature confirmation - nothing was
@@ -136,7 +138,7 @@ export default function FederalComplianceStep({
   }
 
   const handleConfirm = async () => {
-    const success = await handleSave()
+    const success = await handleSave('Funding application saved successfully!')
     if (success) {
       setShowModal(false)
       onNext()
