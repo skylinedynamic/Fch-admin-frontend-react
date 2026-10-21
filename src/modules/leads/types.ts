@@ -35,8 +35,18 @@ export interface Lead {
   partner?: {
     id: number;
     full_name: string;
+    company_name?: string | null;
   };
+  convert_to?: string | null;
+  /** Set only for the host converting another partner's borrower lead. */
+  convert_on_behalf_of?: LeadOnBehalfOf | null;
   partner_manager: string;
   created_at?: string;
   updated_at?: string;
+}
+
+/** The partner the host converts another partner's lead for - the borrower stays theirs. */
+export interface LeadOnBehalfOf {
+  id: number;
+  company_name: string | null;
 }

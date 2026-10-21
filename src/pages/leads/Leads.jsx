@@ -6,6 +6,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchLeads, deleteLeads, convertLead, updateLeadContactInfo } from '../../modules/leads/services';
+import { isMissingConvertInfo, showsLeadType } from '../../modules/leads/logic';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -20,6 +21,10 @@ import { toast } from 'react-toastify';
 import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import LeadConvertModal from './components/LeadConvertModal';
+import LeadConvertOwnerModal from './components/LeadConvertOwnerModal';
+import { useLeadConvertOwner } from './hooks/useLeadConvertOwner';
+import { LeadNameCell, LeadContactInfoCell, LeadPartnerCell, LeadStatusCell } from './components/LeadTableCells';
+import { usePartnerOptions, partnerOptionLabel } from '../../modules/partner';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
 import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
@@ -51,11 +56,13 @@ export default function Leads() {
     const [selectedLeadType, setSelectedLeadType] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [selectedSalesperson, setSelectedSalesperson] = useState('');
+    const [selectedPartner, setSelectedPartner] = useState('');
     const [filters, setFilters] = useState({});
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedLeadType, setAppliedLeadType] = useState('');
     const [appliedStatus, setAppliedStatus] = useState('');
     const [appliedSalesperson, setAppliedSalesperson] = useState('');
+    const [appliedPartner, setAppliedPartner] = useState('');
     const [appliedFilters, setAppliedFilters] = useState({});
 
     // Checkbox selection state
@@ -69,6 +76,8 @@ export default function Leads() {
     // Dropdown data
     const [salespersonsList, setSalespersonsList] = useState([]);
     const [referralPartners, setReferralPartners] = useState([]);
+    const { data: partnersList = [] } = usePartnerOptions(isHost);
+    const partnerOptions = partnersList.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
 
     // Conversion Modal state
     const [showConvertModal, setShowConvertModal] = useState(false);
@@ -78,6 +87,7 @@ export default function Leads() {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [convertErrors, setConvertErrors] = useState({});
     const [missingInfoErrors, setMissingInfoErrors] = useState({});
+    const { ownerModalProps, confirmOwnerThen } = useLeadConvertOwner();
 
     // Statistics data
     const [stats, setStats] = useState({
@@ -100,6 +110,7 @@ export default function Leads() {
             status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
             lead_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
             salesperson_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
         };
         setFilters(initial);
@@ -115,30 +126,35 @@ export default function Leads() {
         // Add class to body to prevent global scroll
         document.body.classList.add('table-page-fit-active');
 
-        // Load salespersons and referral partners
-        const loadInitialData = async () => {
-            try {
-                const [usersRes, referralRes] = await Promise.all([
-                    allUsers(),
-                    fetchReferralPartners()
-                ]);
-                if (usersRes.status) {
-                    setSalespersonsList(usersRes.data.map(user => ({
-                        label: user.name,
-                        value: user.id
-                    })));
-                }
-                setReferralPartners(referralRes || []);
-            } catch (err) {
-                console.error('Failed to load initial data:', err);
-            }
-        };
-        loadInitialData();
+        // Load referral partners
+        fetchReferralPartners()
+            .then((referralRes) => setReferralPartners(referralRes || []))
+            .catch((err) => console.error('Failed to load initial data:', err));
 
         return () => {
             document.body.classList.remove('table-page-fit-active');
         };
     }, []);
+
+    // Lead Owner filter: the host's chosen partner's team, else the caller's own
+    // team. A different partner clears the owner picked from the previous team.
+    useEffect(() => {
+        const partnerId = isHost && selectedPartner ? selectedPartner : null;
+        let cancelled = false;
+        setSelectedSalesperson('');
+
+        allUsers(partnerId ? { partner_id: partnerId } : {})
+            .then((usersRes) => {
+                if (!cancelled && usersRes.status) {
+                    setSalespersonsList(usersRes.data.map(user => ({ label: user.name, value: user.id })));
+                }
+            })
+            .catch((err) => console.error('Failed to load lead owners:', err));
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isHost, selectedPartner]);
 
     const statisticsConfig = [
         { title: "Total Leads", dataKey: "total_leads", icon: "ri-coupon-line", colorVariant: "secondary" },
@@ -159,6 +175,7 @@ export default function Leads() {
                     lead_type: appliedLeadType || '',
                     status: appliedStatus || '',
                     salesperson_id: appliedSalesperson || '',
+                    ...(isHost && appliedPartner ? { partner_id: appliedPartner } : {}),
                     filters: appliedFilters,
                     page,
                     per_page: perPage,
@@ -194,7 +211,7 @@ export default function Leads() {
         }, 300);
 
         return () => clearTimeout(timeout);
-    }, [appliedSearchText, appliedLeadType, appliedStatus, appliedSalesperson, appliedFilters, page, perPage, sortField, sortOrder]);
+    }, [appliedSearchText, appliedLeadType, appliedStatus, appliedSalesperson, appliedPartner, appliedFilters, page, perPage, sortField, sortOrder]);
 
     // Filter handlers
     const handleApplyFilters = () => {
@@ -202,6 +219,7 @@ export default function Leads() {
         setAppliedLeadType(selectedLeadType);
         setAppliedStatus(selectedStatus);
         setAppliedSalesperson(selectedSalesperson);
+        setAppliedPartner(selectedPartner);
         setAppliedFilters(filters);
         setPage(1);
     };
@@ -211,10 +229,12 @@ export default function Leads() {
         setSelectedLeadType('');
         setSelectedStatus('');
         setSelectedSalesperson('');
+        setSelectedPartner('');
         setAppliedSearchText('');
         setAppliedLeadType('');
         setAppliedStatus('');
         setAppliedSalesperson('');
+        setAppliedPartner('');
         initFilters();
         setPage(1);
     };
@@ -326,13 +346,13 @@ export default function Leads() {
 
     const openConvertModal = (rowData) => {
         setTargetLead(rowData);
-        const hasName = rowData.contact_person || rowData.contact_person;
-        const isMissingInfo = !hasName || !rowData.email || !rowData.phone_number || !rowData.country || !rowData.state || !rowData.city;
-        if (isMissingInfo) {
-            setShowMissingInfoModal(true);
-        } else {
-            setShowConvertModal(true);
-        }
+        confirmOwnerThen(rowData, () => {
+            if (isMissingConvertInfo(rowData)) {
+                setShowMissingInfoModal(true);
+            } else {
+                setShowConvertModal(true);
+            }
+        });
     };
 
     const handleMissingInfoConfirm = async (updatedData) => {
@@ -473,15 +493,16 @@ export default function Leads() {
                                 }}>
                                     {loading ? (
                                         <FilterLoader config={[
-                                            { col: "col-xxl-3 col-sm-12" }, // Search
-                                            ...(isHost ? [{ col: "col-xxl-2 col-sm-4" }] : []), // Lead Type
-                                            { col: `col-xxl-${isHost ? '2' : '3'} col-sm-4` }, // Status
-                                            { col: `col-xxl-${isHost ? '2' : '3'} col-sm-4` }, // Salesperson
-                                            { col: "col-xxl-3 col-sm-12", isButton: true } // Buttons
+                                            { col: `col-xxl-${isHost ? '2' : '3'} col-sm-12` }, // Search
+                                            ...(isHost ? [{ col: "col-xxl-2 col-sm-6" }] : []), // Lead Type
+                                            { col: `col-xxl-${isHost ? '2' : '3'} col-sm-${isHost ? '6' : '4'}` }, // Status
+                                            ...(isHost ? [{ col: "col-xxl-2 col-sm-6" }] : []), // Partner
+                                            { col: `col-xxl-${isHost ? '2' : '3'} col-sm-${isHost ? '6' : '4'}` }, // Salesperson
+                                            { col: `col-xxl-${isHost ? '2' : '3'} col-sm-12`, isButton: true } // Buttons
                                         ]} />
                                     ) : (
                                         <div className="row g-3 mb-3">
-                                            <div className="col-xxl-3 col-sm-12">
+                                            <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-12`}>
                                                 <div className="search-box">
                                                     <input
                                                         type="text"
@@ -495,7 +516,7 @@ export default function Leads() {
                                                 </div>
                                             </div>
                                             {isHost && (
-                                                <div className="col-xxl-2 col-sm-4">
+                                                <div className="col-xxl-2 col-sm-6">
                                                     <Dropdown
                                                         value={selectedLeadType}
                                                         options={[{ label: 'All Lead Types', value: '' }, ...LEAD_TYPE_OPTIONS]}
@@ -505,7 +526,7 @@ export default function Leads() {
                                                     />
                                                 </div>
                                             )}
-                                            <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
+                                            <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-${isHost ? '6' : '4'}`}>
                                                 <Dropdown
                                                     value={selectedStatus}
                                                     options={[{ label: 'All Status', value: '' }, ...LEAD_STATUS_OPTIONS]}
@@ -514,7 +535,19 @@ export default function Leads() {
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>
-                                            <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
+                                            {isHost && (
+                                                <div className="col-xxl-2 col-sm-6">
+                                                    <Dropdown
+                                                        value={selectedPartner}
+                                                        options={[{ label: 'All Partners', value: '' }, ...partnerOptions]}
+                                                        onChange={(e) => setSelectedPartner(e.value)}
+                                                        placeholder="All Partners"
+                                                        filter
+                                                        className="w-100 employee-filter-dropdown"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-${isHost ? '6' : '4'}`}>
                                                 <Dropdown
                                                     value={selectedSalesperson}
                                                     options={[{ label: 'All Lead Owner', value: '' }, ...salespersonsList]}
@@ -524,7 +557,7 @@ export default function Leads() {
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>
-                                            <div className="col-xxl-3 col-sm-12">
+                                            <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-12`}>
                                                 <div className="d-flex gap-2">
                                                     <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                         <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
@@ -539,7 +572,7 @@ export default function Leads() {
                                 </form>
 
                                 {loading ? (
-                                    <TableLoader rows={10} columns={new Array(10).fill({ style: { minWidth: '100px' } })} />
+                                    <TableLoader rows={10} columns={new Array(isHost ? 8 : 7).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
@@ -575,10 +608,8 @@ export default function Leads() {
                                         >
                                             {hasPermission('delete leads') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                                             {/* <Column field="opportunity" header="Opportunity" body={opportunityBodyTemplate} sortable filter filterPlaceholder="Search by opportunity" style={{ minWidth: '180px' }} /> */}
-                                            <Column field="contact_person" header="Contact" body={(rowData) => nullSafeBodyTemplate(rowData, 'contact_person')} sortable filter showFilterMatchModes filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
-                                            <Column field="company_name" header="Company Name" body={(rowData) => nullSafeBodyTemplate(rowData, 'company_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by organization" style={{ minWidth: '180px' }} />
-                                            <Column field="email" header="Email" body={(rowData) => nullSafeBodyTemplate(rowData, 'email')} sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
-                                            <Column field="phone_number" header="Phone" body={(rowData) => nullSafeBodyTemplate(rowData, 'phone_number')} sortable filter showFilterMatchModes filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
+                                            <Column field="contact_person" header="Lead" body={(rowData) => <LeadNameCell lead={rowData} />} sortable filter showFilterMatchModes filterPlaceholder="Search by contact" style={{ minWidth: '150px' }} />
+                                            <Column field="email" header="Contact Info" body={(rowData) => <LeadContactInfoCell lead={rowData} />} sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ width: '250px', minWidth: '250px' }} />
                                             <Column
                                                 header="Source"
                                                 body={(rowData) => (
@@ -594,11 +625,11 @@ export default function Leads() {
                                                         )}
                                                     </div>
                                                 )}
-                                                style={{ minWidth: '160px' }}
+                                                style={{ width: '120px', minWidth: '100px' }}
                                             />
-                                            <Column field="salesperson_name" header="SalesPerson" body={(rowData) => nullSafeBodyTemplate(rowData, 'salesperson_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by salesperson" style={{ minWidth: '160px' }} />
-                                            {isHost && <Column field="lead_type" header="Type" body={(rowData) => nullSafeBodyTemplate(rowData, 'lead_type')} sortable filter showFilterMatchModes filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />}
-                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
+                                            {isHost && <Column field="partner_name" header="Partner" body={(rowData) => <LeadPartnerCell lead={rowData} />} sortable filter showFilterMatchModes filterPlaceholder="Search by partner" style={{ minWidth: '130px' }} />}
+                                            <Column field="salesperson_name" header="SalesPerson" body={(rowData) => nullSafeBodyTemplate(rowData, 'salesperson_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by salesperson" style={{ minWidth: '120px' }} />
+                                            <Column field="status" header="Status" body={(rowData) => <LeadStatusCell badge={statusBodyTemplate(rowData)} leadType={rowData.lead_type} showType={showsLeadType(currentUser)} />} sortable filter showFilterMatchModes filterPlaceholder="Search by status" style={{ minWidth: '110px' }} />
                                             <Column
                                                 header="Action"
                                                 body={(rowData) => {
@@ -610,7 +641,7 @@ export default function Leads() {
                                                     if (isConverted) {
                                                         return (
                                                             <div className="d-flex">
-                                                                <span className="badge bg-success-subtle text-success fs-12 p-2" style={{ whiteSpace: 'nowrap' }}>
+                                                                <span className="badge bg-success-subtle text-success fs-12 p-2 text-wrap text-start lh-base">
                                                                     <i className="ri-checkbox-circle-line align-middle me-1"></i>
                                                                     Converted as a {targetType}
                                                                 </span>
@@ -622,7 +653,7 @@ export default function Leads() {
                                                     if (emailAlreadyConvertedTo) {
                                                         return (
                                                             <div className="d-flex">
-                                                                <span className="badge bg-success-subtle text-success fs-12 p-2" style={{ whiteSpace: 'nowrap' }}>
+                                                                <span className="badge bg-success-subtle text-success fs-12 p-2 text-wrap text-start lh-base">
                                                                     <i className="ri-checkbox-circle-line align-middle me-1"></i>
                                                                     Already a {emailAlreadyConvertedTo}
                                                                 </span>
@@ -652,6 +683,8 @@ export default function Leads() {
                         </div>
                     </div>
                 </div>
+
+                <LeadConvertOwnerModal {...ownerModalProps} lead={targetLead} />
 
                 <LeadConvertModal
                     show={showConvertModal}

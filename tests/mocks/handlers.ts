@@ -14,4 +14,8 @@ export const handlers: HttpHandler[] = [
   http.get('*/common/notifications', () =>
     HttpResponse.json({ status: true, data: [], meta: { current_page: 1, last_page: 1, per_page: 5, total: 0, unread_count: 0 } })
   ),
+  // The host's partner filter (usePartnerOptions) loads on the Partners, Leads,
+  // Clients, Commissions, Verification Center and Change Requests screens.
+  // Default it to empty; partner-filter tests override it with server.use().
+  http.post('*/common/get-all-partners', () => HttpResponse.json({ status: true, data: [] })),
 ]

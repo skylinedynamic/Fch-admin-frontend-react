@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
-import { fetchPartners } from '../../../modules/partner/services';
 import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 import { 
     ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST,
