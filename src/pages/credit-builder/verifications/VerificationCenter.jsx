@@ -9,7 +9,7 @@ import PageHeader from '../../common/PageHeader';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { fetchVerificationRequests } from '../../../modules/verification-center/services';
-import { fetchPartners } from '../../../modules/partner/services';
+import { usePartnerOptions, partnerOptionLabel } from '../../../modules/partner';
 
 export default function VerificationCenter() {
     const { user } = useAuthStore();
@@ -38,31 +38,14 @@ export default function VerificationCenter() {
     // UI Filter State
     const [searchText, setSearchText] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
-    const [partnersList, setPartnersList] = useState([]);
+    // Partners for the host's filter
+    const { data: partnerOptions = [] } = usePartnerOptions(isHost);
+    const partnersList = partnerOptions.map((partner) => ({ id: partner.id, displayLabel: partnerOptionLabel(partner) }));
     const [selectedPartner, setSelectedPartner] = useState('');
     const [appliedPartner, setAppliedPartner] = useState('');
 
 
-    // Load partners if host
     useEffect(() => {
-        if (isHost) {
-            const loadPartners = async () => {
-                try {
-                    const result = await fetchPartners();
-                    if (result.status) {
-                        const formattedPartners = (result.data || []).map(partner => ({
-                            id: partner.id,
-                            displayLabel: partner.full_name
-                        }));
-                        setPartnersList(formattedPartners);
-                    }
-                } catch (err) {
-                    console.error('Failed to load partners:', err);
-                }
-            };
-            loadPartners();
-        }
-
         // Add class to body to prevent global scroll
         document.body.classList.add('table-page-fit-active');
 
@@ -222,6 +205,7 @@ export default function VerificationCenter() {
                                                     optionLabel="label"
                                                     optionValue="value"
                                                     placeholder="All Partners"
+                                                    filter
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>

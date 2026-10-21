@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { server } from '../../mocks/server'
 import { queryKeys } from '../../../src/lib/query/queryKeys'
 import {
-  usePartners,
+  usePartnerOptions,
   usePartner,
   useCreatePartner,
   useUpdatePartner,
@@ -13,17 +13,12 @@ import { expectIdle, runMutation, runQuery, stub } from '../queryHarness'
 
 afterEach(() => server.resetHandlers())
 
+const OPTIONS = [
+  { id: 1, full_name: 'Mia Host', company_name: 'Host Co' },
+  { id: 2, full_name: 'Wil Label', company_name: 'WLP Co' },
+]
+
 describe('partner queries', () => {
-  it('usePartners fetches the list', async () => {
-    const seen = stub('post', '/admin/partners/fetch-partners', { status: true, data: [{ id: 2, company_name: 'Acme' }], meta: { total: 1 } })
-
-    const { result, queryClient } = await runQuery(() => usePartners())
-
-    expect(seen.calls).toBe(1)
-    expect(result.current.isSuccess).toBe(true)
-    expect(queryClient.getQueryData(queryKeys.partner.list())).toBeDefined()
-  })
-
   it('usePartner does not fetch when disabled', () => {
     expectIdle(() => usePartner(1, false))
   })
@@ -35,6 +30,40 @@ describe('partner queries', () => {
 
     expect(result.current.isSuccess).toBe(true)
     expect(queryClient.getQueryData(queryKeys.partner.detail(2))).toBeDefined()
+  })
+})
+
+describe('usePartnerOptions', () => {
+  it('can be switched off (non-host users never load the partner list)', () => {
+    expectIdle(() => usePartnerOptions(false))
+  })
+
+  it('loads every partner, cached under the partner options key', async () => {
+    const seen = stub('post', '/common/get-all-partners', { status: true, message: 'ok', data: OPTIONS })
+
+    const { result, queryClient } = await runQuery(() => usePartnerOptions())
+
+    expect(seen.calls).toBe(1)
+    expect(result.current.data).toEqual(OPTIONS)
+    expect(queryClient.getQueryData(queryKeys.partner.options())).toEqual(OPTIONS)
+  })
+
+  it('returns an empty list when the API reports failure', async () => {
+    stub('post', '/common/get-all-partners', { status: false, message: 'no' })
+
+    const { result } = await runQuery(() => usePartnerOptions())
+
+    expect(result.current.data).toEqual([])
+  })
+
+  it('shares one request between the dropdowns using it', async () => {
+    const seen = stub('post', '/common/get-all-partners', { status: true, message: 'ok', data: OPTIONS })
+    const { queryClient } = await runQuery(() => usePartnerOptions())
+
+    const { result } = await runQuery(() => usePartnerOptions(), queryClient)
+
+    expect(result.current.data).toEqual(OPTIONS)
+    expect(seen.calls).toBe(1)
   })
 })
 

@@ -1,9 +1,58 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { createPartner, updatePartner, fetchSubscriptionStats, getPartner, fetchPartnerById } from '../../../src/modules/partner/services'
+import { createPartner, updatePartner, fetchSubscriptionStats, getPartner, fetchPartnerById, fetchPartnerOptions, allUsers } from '../../../src/modules/partner/services'
 
 afterEach(() => server.resetHandlers())
+
+describe('allUsers', () => {
+  const serveTeam = () => {
+    const bodies: unknown[] = []
+    server.use(
+      http.post('*/common/get-all-users', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json({ status: true, data: [{ id: 5, name: 'Wil Label' }] })
+      })
+    )
+    return bodies
+  }
+
+  it('asks for the caller\'s own team by default', async () => {
+    const bodies = serveTeam()
+
+    await expect(allUsers()).resolves.toMatchObject({ data: [{ id: 5, name: 'Wil Label' }] })
+    expect(bodies).toEqual([{}])
+  })
+
+  it('asks the host for another partner\'s team when given one', async () => {
+    const bodies = serveTeam()
+
+    await allUsers({ partner_id: 2 })
+
+    expect(bodies).toEqual([{ partner_id: 2 }])
+  })
+})
+
+describe('fetchPartnerOptions', () => {
+  it('posts to get-all-partners for every partner a filter dropdown lists', async () => {
+    let method = ''
+    server.use(
+      http.all('*/common/get-all-partners', ({ request }) => {
+        method = request.method
+        return HttpResponse.json({ status: true, message: 'ok', data: [{ id: 2, full_name: 'Wil Label', company_name: 'WLP Co' }] })
+      })
+    )
+
+    await expect(fetchPartnerOptions()).resolves.toEqual([{ id: 2, full_name: 'Wil Label', company_name: 'WLP Co' }])
+    expect(method).toBe('POST')
+  })
+
+  it('is an empty list when the response carries none', async () => {
+    server.use(http.post('*/common/get-all-partners', () => HttpResponse.json({ status: true, message: 'ok' })))
+
+    await expect(fetchPartnerOptions()).resolves.toEqual([])
+  })
+})
 
 describe('partner services', () => {
   it('createPartner posts a plain object with default JSON content-type', async () => {
