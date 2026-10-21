@@ -10,6 +10,14 @@ export const MODULE_AGREEMENT = 'agreement';
 export const MODULE_CREDIT_PROFILE = 'credit_profile';
 export const MODULE_OPENAI = 'openai';
 
+/**
+ * What the settings API returns in place of a stored secret (reCAPTCHA secret,
+ * MicroBilt client secret, Credit Profile OpenAI key). The form never fills it
+ * into an input: a blank secret on save keeps the stored one.
+ */
+export const SETTINGS_SECRET_MASK = '••••••••';
+export const SAVED_SECRET_PLACEHOLDER = 'Saved - leave blank to keep';
+
 export const ENTITY_TYPE_LEAD = 'Lead';
 export const ENTITY_TYPE_PARTNER = 'Partner';
 export const ENTITY_TYPE_BORROWER = 'Borrower';

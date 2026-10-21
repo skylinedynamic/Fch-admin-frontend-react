@@ -26,6 +26,15 @@ async function openList(page: Page, user: Record<string, unknown> = DEVELOPER): 
 }
 
 test.describe('Tiers list', () => {
+  // BUG-007: the empty table said "No available options".
+  test('an empty result shows a proper empty message', async ({ page }) => {
+    await seedSession(page, DEVELOPER)
+    await mockApi(page, [{ method: 'POST', match: `${BASE}/tiers/fetch-tiers`, body: paginated([]) }])
+    await page.goto('/tiers')
+    await expect(page.getByText('No tiers found')).toBeVisible()
+    await expect(page.getByText('No available options')).toHaveCount(0)
+  })
+
   test('renders tiers from the API', async ({ page }) => {
     await openList(page)
     await expect(page.getByText('Vendor Credit')).toBeVisible()

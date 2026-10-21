@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams, useLocation, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
-import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead, fetchGlobalStats } from '../../modules/leads/services';
+import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead } from '../../modules/leads/services';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
-import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
-import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
@@ -84,14 +82,6 @@ export default function LeadDetails() {
     const [users, setUsers] = useState([]);
     const [referralPartners, setReferralPartners] = useState([]);
 
-    const [profileStats, setProfileStats] = useState({
-        total_meetings: 0,
-        total_clients: 0,
-        total_invoice: 0,
-        enrollment_type: 'N/A',
-        total_tickets: 0
-    });
-    const [statsLoading, setStatsLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
     // Conversion and Payment Modal states
@@ -505,36 +495,6 @@ export default function LeadDetails() {
         loadLead();
     }, [id]);
 
-    // Fetch Stats
-    useEffect(() => {
-        const loadStats = async () => {
-            if (!id) return;
-            try {
-                setStatsLoading(true);
-                const result = await fetchGlobalStats({ id });
-                if (result.status && result.data) {
-                    setProfileStats(result.data);
-                }
-            } catch (err) {
-                console.error('Failed to load stats:', err);
-            } finally {
-                setStatsLoading(false);
-            }
-        };
-
-        if (id) {
-            loadStats();
-        }
-    }, [id]);
-
-    const metricsConfig = [
-        { label: 'Meetings', dataKey: 'total_meetings', icon: 'ri-calendar-line' },
-        { label: 'Total Clients', dataKey: 'total_clients', icon: 'ri-star-line' },
-        { label: 'Invoiced', dataKey: 'total_invoice', icon: 'ri-file-edit-line' },
-        { label: 'Subscriptions', dataKey: 'enrollment_type', icon: 'ri-money-dollar-circle-line' },
-        { label: 'Tickets', dataKey: 'total_tickets', icon: 'ri-lifebuoy-line' },
-    ];
-
     return (
         <>
             {!hasPermission('view leads') && <Navigate to="/" replace />}
@@ -569,27 +529,9 @@ export default function LeadDetails() {
                         </div>
                     </PageHeader>
 
-                    {/* Metrics Strip */}
-                    <div className="row pt-1">
-                        <div className="col-12">
-                            <div className="d-flex flex-wrap metrics-strip justify-content-center">
-                                {statsLoading ? (
-                                    [1, 2, 3, 4, 5].map((_, index) => (
-                                        <ProfileMetricCardSkeleton key={index} />
-                                    ))
-                                ) : (
-                                    metricsConfig.map((metric, index) => (
-                                        <ProfileMetricCard
-                                            key={index}
-                                            label={metric.label}
-                                            value={profileStats[metric.dataKey]}
-                                            icon={metric.icon}
-                                        />
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                    {/* No metrics strip: a lead has no meetings, clients, invoices,
+                        subscriptions or tickets of its own, and the partner-wide
+                        numbers it used to show were the same on every lead (BUG-016). */}
 
                     <div className="row">
                         {/* Main Content */}

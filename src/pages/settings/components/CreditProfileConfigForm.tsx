@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { fetchAppConfigurations, saveAppConfigurations } from '../../../modules/settings/services';
-import { MODULE_CREDIT_PROFILE } from '../../../config/appConfig';
+import { MODULE_CREDIT_PROFILE, SAVED_SECRET_PLACEHOLDER } from '../../../config/appConfig';
 
 import { MicroBiltConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
@@ -29,6 +29,9 @@ const CreditProfileConfigForm: React.FC = () => {
         openai_model: '',
     });
     const [errors, setErrors] = useState<FormErrors>({});
+    // The API reports a stored OpenAI key only as set (a mask), never the key
+    // itself. Its input starts blank; saving it blank keeps the stored one.
+    const [apiKeySaved, setApiKeySaved] = useState<boolean>(false);
 
     useEffect(() => {
         loadParsingConfig();
@@ -42,9 +45,10 @@ const CreditProfileConfigForm: React.FC = () => {
             setFormData(prev => ({
                 ...prev,
                 parser_mode: configData.credit_profile_parser_mode || '',
-                openai_api_key: configData.credit_profile_openai_api_key || '',
+                openai_api_key: '',
                 openai_model: configData.credit_profile_openai_model || '',
             }));
+            setApiKeySaved(Boolean(configData.credit_profile_openai_api_key));
         } catch (error) {
             console.error('Failed to load parsing configuration:', error);
             toast.error('Failed to load parsing configuration.');
@@ -88,7 +92,7 @@ const CreditProfileConfigForm: React.FC = () => {
             newErrors.parser_mode = 'Please select a parsing mode.';
         }
         if (formData.parser_mode === 'openai') {
-            if (!formData.openai_api_key.trim()) {
+            if (!formData.openai_api_key.trim() && !apiKeySaved) {
                 newErrors.openai_api_key = 'OpenAI API Key is required when OpenAI parsing is selected.';
             }
             if (!formData.openai_model.trim()) {
@@ -213,7 +217,8 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 name="openai_api_key"
                                                                 value={formData.openai_api_key}
                                                                 onChange={handleInputChange}
-                                                                placeholder="sk-..."
+                                                                placeholder={apiKeySaved ? SAVED_SECRET_PLACEHOLDER : 'sk-...'}
+                                                                autoComplete="new-password"
                                                             />
                                                             <button
                                                                 type="button"
