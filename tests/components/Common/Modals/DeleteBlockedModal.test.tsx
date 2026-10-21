@@ -1,4 +1,28 @@
 import { describe, expect, it, vi } from 'vitest'
+
+// Bootstrap's real Modal fires its show-transition callback after the test has
+// unmounted and throws against an element that is gone - an unhandled error
+// that fails the run. A synchronous fake (as in EditConfirmationModal.test.tsx)
+// avoids depending on transition events.
+vi.mock('bootstrap/js/dist/modal', () => {
+  class FakeModal {
+    private el: HTMLElement
+    constructor(el: HTMLElement) {
+      this.el = el
+    }
+    show() {
+      this.el.classList.add('show')
+      this.el.removeAttribute('aria-hidden')
+    }
+    hide() {
+      this.el.classList.remove('show')
+      this.el.setAttribute('aria-hidden', 'true')
+    }
+    dispose() {}
+  }
+  return { default: FakeModal }
+})
+
 import { render, screen } from '@testing-library/react'
 import DeleteBlockedModal from '../../../../src/components/Common/Modals/DeleteBlockedModal'
 
