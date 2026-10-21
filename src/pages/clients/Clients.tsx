@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDeleteClients, useArchiveClients, useUnarchiveClients, usePartners, useAllUsers, useBorrowerTiers } from '../../modules/client/queries';
+import { useDeleteClients, useArchiveClients, useUnarchiveClients, useAllUsers, useBorrowerTiers } from '../../modules/client/queries';
+import { usePartnerOptions, partnerOptionLabel } from '../../modules/partner';
 import { getUser } from '../../lib/auth';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
@@ -41,7 +42,8 @@ export default function Clients() {
     }, []);
 
     // Global data needed for filters
-    const { data: partnersList = [] } = usePartners(isHost);
+    const { data: partnerOptions = [] } = usePartnerOptions(isHost);
+    const partnersList = partnerOptions.map((partner) => ({ id: partner.id, displayLabel: partnerOptionLabel(partner) }));
     const { data: assignedUsersList = [] } = useAllUsers();
     const { data: tiersList = [] } = useBorrowerTiers();
 

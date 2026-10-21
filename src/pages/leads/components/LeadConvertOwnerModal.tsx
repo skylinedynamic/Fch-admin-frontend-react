@@ -1,46 +1,34 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 // @ts-ignore
 import Modal from 'bootstrap/js/dist/modal';
-import { LEAD_CONVERT_AS, type Lead, type LeadConvertAs, type LeadConvertAsOption } from '../../../modules/leads/types';
+import type { Lead } from '../../../modules/leads/types';
 
-const FALLBACK_OWNER_NAME: Record<LeadConvertAs, string> = {
-    [LEAD_CONVERT_AS.HOST]: 'Host Partner',
-    [LEAD_CONVERT_AS.LEAD_PARTNER]: 'Lead Owner Partner',
+const FALLBACK_PARTNER_NAME = 'the lead partner';
+
+/** A little wider than Bootstrap's 500px default, short of modal-lg's 800px. */
+const DIALOG_MAX_WIDTH = '600px';
+
+type OwnerLead = Pick<Lead, 'contact_person' | 'company_name' | 'email' | 'convert_on_behalf_of'> & {
+    phone_number?: string | null;
 };
-
-const OWNER_ROLE: Record<LeadConvertAs, { label: string; description: string }> = {
-    [LEAD_CONVERT_AS.LEAD_PARTNER]: {
-        label: 'Lead owner',
-        description: 'The partner who brought in this lead manages the borrower.',
-    },
-    [LEAD_CONVERT_AS.HOST]: {
-        label: 'Host partner',
-        description: 'Your company manages the borrower directly.',
-    },
-};
-
-/** The lead owner is offered first, and is the default. */
-const DEFAULT_CHOICE: LeadConvertAs = LEAD_CONVERT_AS.LEAD_PARTNER;
-
-const ownerName = (option: LeadConvertAsOption): string =>
-    option.company_name || FALLBACK_OWNER_NAME[option.value];
-
-const initialsOf = (name: string): string =>
-    name.split(/\s+/).filter((word) => /^[a-z0-9]/i.test(word)).slice(0, 2).map((word) => word[0].toUpperCase()).join('');
 
 interface LeadConvertOwnerModalProps {
     show: boolean;
-    options: LeadConvertAsOption[];
-    lead?: Pick<Lead, 'contact_person' | 'company_name'> | null;
-    onSelect: (value: LeadConvertAs) => void;
+    lead?: OwnerLead | null;
+    onContinue: () => void;
     onHide: () => void;
 }
 
-/** Asks the host which partner another partner's lead becomes a borrower of. */
-export default function LeadConvertOwnerModal({ show, options, lead, onSelect, onHide }: LeadConvertOwnerModalProps) {
+const hasText = (value?: string | null): value is string => !!value && value.trim() !== '';
+
+/**
+ * Shows the host the lead it is converting and alerts that the lead is
+ * another partner's: it is converted on that partner's behalf, and the
+ * borrower belongs to that partner.
+ */
+export default function LeadConvertOwnerModal({ show, lead, onContinue, onHide }: LeadConvertOwnerModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<Modal | null>(null);
-    const [selected, setSelected] = useState<LeadConvertAs>(DEFAULT_CHOICE);
 
     useEffect(() => {
         if (!modalRef.current) return;
@@ -53,8 +41,6 @@ export default function LeadConvertOwnerModal({ show, options, lead, onSelect, o
     }, []);
 
     useEffect(() => {
-        if (show) setSelected(DEFAULT_CHOICE);
-
         const modal = modalInstanceRef.current;
         if (!modal) return;
         if (show) {
@@ -64,14 +50,19 @@ export default function LeadConvertOwnerModal({ show, options, lead, onSelect, o
         }
     }, [show]);
 
-    const ordered = [...options].sort((a, b) => Number(b.value === DEFAULT_CHOICE) - Number(a.value === DEFAULT_CHOICE));
-    const leadOwner = options.find((option) => option.value === LEAD_CONVERT_AS.LEAD_PARTNER);
-    const selectedOption = options.find((option) => option.value === selected);
-    const hasText = (value?: string | null) => !!value && value.trim() !== '';
+    const companyName = lead?.convert_on_behalf_of?.company_name;
+    const partnerName = hasText(companyName) ? companyName : FALLBACK_PARTNER_NAME;
+    const details: { label: string; value?: string | null }[] = [
+        { label: 'Lead', value: lead?.contact_person },
+        { label: 'Company', value: lead?.company_name },
+        { label: 'Email', value: lead?.email },
+        { label: 'Phone', value: lead?.phone_number },
+        { label: 'Lead Partner', value: partnerName },
+    ];
 
     return (
         <div className="modal fade flip" ref={modalRef} tabIndex={-1} aria-hidden="true" aria-labelledby="lead-convert-owner-title">
-            <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: DIALOG_MAX_WIDTH }}>
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-header p-3 bg-light border-bottom">
                         <h5 id="lead-convert-owner-title" className="modal-title fs-16 d-flex align-items-center gap-2">
@@ -82,67 +73,29 @@ export default function LeadConvertOwnerModal({ show, options, lead, onSelect, o
                     </div>
 
                     <div className="modal-body p-4">
-                        <div className="bg-light rounded p-3 mb-4">
+                        {show && (
+                            <div className="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
+                                <div className="avatar-sm flex-shrink-0">
+                                    <span className="avatar-title rounded-circle bg-warning-subtle text-warning fs-22">
+                                        <i className="ri-error-warning-line"></i>
+                                    </span>
+                                </div>
+                                <div>
+                                    This lead belongs to <strong>{partnerName}</strong>. You are converting it to a borrower on behalf
+                                    of <strong>{partnerName}</strong> - the borrower will belong to {partnerName}, not to your company.
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-light rounded p-3">
                             <dl className="row g-3 mb-0">
-                                <div className="col-sm-6">
-                                    <dt className="text-muted text-uppercase fs-11 fw-medium mb-1">Lead</dt>
-                                    <dd className="mb-0">
-                                        <span className="d-block fw-semibold text-body">{hasText(lead?.contact_person) ? lead?.contact_person : '-'}</span>
-                                        {hasText(lead?.company_name) && <span className="d-block text-muted fs-13">{lead?.company_name}</span>}
-                                    </dd>
-                                </div>
-                                <div className="col-sm-6">
-                                    <dt className="text-muted text-uppercase fs-11 fw-medium mb-1">Owned by</dt>
-                                    <dd className="mb-0 fw-semibold text-body">{leadOwner ? ownerName(leadOwner) : 'Another partner'}</dd>
-                                </div>
-                            </dl>
-                        </div>
-
-                        <h6 id="lead-convert-owner-question" className="fs-14 fw-semibold mb-1">Borrower belongs to</h6>
-                        <p className="text-muted fs-13 mb-3">Choose the partner that will manage this borrower.</p>
-
-                        <div className="row g-3" role="radiogroup" aria-labelledby="lead-convert-owner-question">
-                            {ordered.map((option) => {
-                                const role = OWNER_ROLE[option.value];
-                                const name = ownerName(option);
-                                const inputId = `lead-convert-as-${option.value}`;
-                                const checked = selected === option.value;
-                                return (
-                                    <div className="col-sm-6" key={option.value}>
-                                        <label
-                                            htmlFor={inputId}
-                                            className={`card h-100 mb-0 shadow-none border ${checked ? 'border-primary bg-primary-subtle' : ''}`}
-                                            style={{ cursor: 'pointer' }}
-                                        >
-                                            <div className="card-body p-3">
-                                                <div className="d-flex align-items-start gap-3">
-                                                    <div className="avatar-sm flex-shrink-0">
-                                                        <span className={`avatar-title rounded-circle fs-15 fw-semibold ${checked ? 'bg-primary text-white' : 'bg-light text-primary'}`}>
-                                                            {initialsOf(name)}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex-grow-1 overflow-hidden">
-                                                        <h6 className="fs-14 fw-semibold text-body mb-1">{name}</h6>
-                                                        <div className="d-flex">
-                                                            <span className="badge bg-white text-body border fs-11">{role.label}</span>
-                                                        </div>
-                                                    </div>
-                                                    <input
-                                                        id={inputId}
-                                                        type="radio"
-                                                        name="lead-convert-as"
-                                                        className="form-check-input mt-0 flex-shrink-0"
-                                                        aria-label={`${name}, ${role.label}`}
-                                                        checked={checked}
-                                                        onChange={() => setSelected(option.value)}
-                                                    />
-                                                </div>
-                                                <p className="text-muted fs-13 mb-0 mt-3">{role.description}</p>
-                                            </div>
-                                        </label>
+                                {details.map(({ label, value }) => (
+                                    <div className="col-sm-6" key={label}>
+                                        <dt className="text-muted text-uppercase fs-11 fw-medium mb-1">{label}</dt>
+                                        <dd className="mb-0 fw-semibold text-body text-break">{hasText(value) ? value : '-'}</dd>
                                     </div>
-                                );
-                            })}
+                                ))}
+                            </dl>
                         </div>
                     </div>
 
@@ -151,12 +104,7 @@ export default function LeadConvertOwnerModal({ show, options, lead, onSelect, o
                             <button type="button" className="btn btn-light" onClick={onHide}>
                                 Cancel
                             </button>
-                            <button
-                                type="button"
-                                className="btn btn-primary"
-                                disabled={!selectedOption}
-                                onClick={() => selectedOption && onSelect(selectedOption.value)}
-                            >
+                            <button type="button" className="btn btn-primary" onClick={onContinue}>
                                 Continue <i className="ri-arrow-right-line align-middle ms-1"></i>
                             </button>
                         </div>

@@ -24,104 +24,82 @@ vi.mock('bootstrap/js/dist/modal', () => {
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/react'
 import LeadConvertOwnerModal from '../../../../src/pages/leads/components/LeadConvertOwnerModal'
-import { LEAD_CONVERT_AS } from '../../../../src/modules/leads/types'
 
-const OPTIONS = [
-  { value: LEAD_CONVERT_AS.HOST, company_name: 'Host Co' },
-  { value: LEAD_CONVERT_AS.LEAD_PARTNER, company_name: 'WLP Co' },
-]
-
-const LEAD = { contact_person: 'Lee Lead', company_name: 'Lead Co 7' }
+const LEAD = {
+  contact_person: 'Lee Lead',
+  company_name: 'Lead Co 7',
+  email: 'lee@example.test',
+  phone_number: '(555) 123-4567',
+  convert_on_behalf_of: { id: 2, company_name: 'WLP Co' },
+}
 
 describe('LeadConvertOwnerModal', () => {
   const renderModal = (props: Partial<React.ComponentProps<typeof LeadConvertOwnerModal>> = {}) => {
-    const onSelect = vi.fn()
+    const onContinue = vi.fn()
     const onHide = vi.fn()
-    render(<LeadConvertOwnerModal show options={OPTIONS} lead={LEAD} onSelect={onSelect} onHide={onHide} {...props} />)
-    return { onSelect, onHide }
+    render(<LeadConvertOwnerModal show lead={LEAD} onContinue={onContinue} onHide={onHide} {...props} />)
+    return { onContinue, onHide }
   }
 
-  it('sums up the lead and whose it is', () => {
+  it('shows the lead\'s details and the partner that owns it', () => {
     renderModal()
 
-    expect(screen.getAllByRole('term').map((t) => t.textContent)).toEqual(['Lead', 'Owned by'])
-    expect(screen.getAllByRole('definition').map((d) => d.textContent)).toEqual(['Lee LeadLead Co 7', 'WLP Co'])
+    expect(screen.getAllByRole('term').map((t) => t.textContent)).toEqual(['Lead', 'Company', 'Email', 'Phone', 'Lead Partner'])
+    expect(screen.getAllByRole('definition').map((d) => d.textContent)).toEqual(['Lee Lead', 'Lead Co 7', 'lee@example.test', '(555) 123-4567', 'WLP Co'])
   })
 
-  it('shows each partner as a card with its initials, role and what picking it means', () => {
+  it('alerts the host that it is the partner\'s lead, converted on that partner\'s behalf', () => {
     renderModal()
 
-    const [owner, host] = screen.getAllByRole('radio').map((r) => r.closest('label') as HTMLElement)
-    expect(owner).toHaveTextContent('WC')
-    expect(owner).toHaveTextContent('WLP Co')
-    expect(owner).toHaveTextContent('Lead owner')
-    expect(owner).toHaveTextContent('The partner who brought in this lead manages the borrower.')
-    expect(host).toHaveTextContent('HC')
-    expect(host).toHaveTextContent('Host partner')
-    expect(host).toHaveTextContent('Your company manages the borrower directly.')
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveClass('alert-warning')
+    expect(alert).toHaveTextContent('This lead belongs to WLP Co. You are converting it to a borrower on behalf of WLP Co - the borrower will belong to WLP Co, not to your company.')
   })
 
-  it('marks the picked card', async () => {
-    renderModal()
-    const [owner, host] = screen.getAllByRole('radio').map((r) => r.closest('label') as HTMLElement)
-    expect(owner).toHaveClass('border-primary')
-    expect(host).not.toHaveClass('border-primary')
-
-    await userEvent.click(screen.getByRole('radio', { name: /Host Co/ }))
-
-    expect(host).toHaveClass('border-primary')
-    expect(owner).not.toHaveClass('border-primary')
-  })
-
-  it('lists the lead owner first, already selected, then the host', () => {
+  it('leads the alert with a round warning icon', () => {
     renderModal()
 
-    const rows = screen.getAllByRole('radio')
-    expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual(['WLP Co, Lead owner', 'Host Co, Host partner'])
-    expect(rows[0]).toBeChecked()
-    expect(rows[1]).not.toBeChecked()
+    const badge = screen.getByRole('alert').querySelector('.avatar-title')
+    expect(badge).toHaveClass('rounded-circle', 'bg-warning-subtle', 'text-warning')
+    expect(badge?.querySelector('i')).toHaveClass('ri-error-warning-line')
+    expect(screen.getByRole('alert').firstElementChild).toContainElement(badge as HTMLElement)
   })
 
-  it('continues as the lead owner without another click', async () => {
-    const { onSelect } = renderModal()
+  it('is a little wider than a default modal', () => {
+    renderModal()
+
+    expect(document.querySelector('.modal-dialog')).toHaveStyle({ maxWidth: '600px' })
+    expect(document.querySelector('.modal-dialog')).not.toHaveClass('modal-lg')
+  })
+
+  it('offers no choice of owner', () => {
+    renderModal()
+
+    expect(screen.queryAllByRole('radio')).toHaveLength(0)
+  })
+
+  it('shows a dash for a missing detail and names an unnamed partner generically', () => {
+    renderModal({ lead: { ...LEAD, company_name: '', phone_number: null, convert_on_behalf_of: { id: 2, company_name: null } } })
+
+    expect(screen.getAllByRole('definition').map((d) => d.textContent)).toEqual(['Lee Lead', '-', 'lee@example.test', '-', 'the lead partner'])
+    expect(screen.getByRole('alert')).toHaveTextContent('This lead belongs to the lead partner.')
+  })
+
+  it('continues to the conversion', async () => {
+    const { onContinue, onHide } = renderModal()
 
     await userEvent.click(screen.getByRole('button', { name: /Continue/ }))
 
-    expect(onSelect).toHaveBeenCalledWith('lead_partner')
+    expect(onContinue).toHaveBeenCalledOnce()
+    expect(onHide).not.toHaveBeenCalled()
   })
 
-  it('continues as the host once the host is picked', async () => {
-    const { onSelect } = renderModal()
-
-    await userEvent.click(screen.getByRole('radio', { name: /Host Co/ }))
-    await userEvent.click(screen.getByRole('button', { name: /Continue/ }))
-
-    expect(onSelect).toHaveBeenCalledWith('host')
-  })
-
-  it('falls back to the role when a partner has no company name', () => {
-    renderModal({ options: [{ value: LEAD_CONVERT_AS.HOST, company_name: null }, { value: LEAD_CONVERT_AS.LEAD_PARTNER, company_name: '' }] })
-
-    expect(screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label'))).toEqual(['Lead Owner Partner, Lead owner', 'Host Partner, Host partner'])
-  })
-
-  it('selects the lead owner again each time it opens', async () => {
-    const onSelect = vi.fn()
-    const { rerender } = render(<LeadConvertOwnerModal show options={OPTIONS} lead={LEAD} onSelect={onSelect} onHide={vi.fn()} />)
-    await userEvent.click(screen.getByRole('radio', { name: /Host Co/ }))
-
-    rerender(<LeadConvertOwnerModal show={false} options={OPTIONS} lead={LEAD} onSelect={onSelect} onHide={vi.fn()} />)
-    rerender(<LeadConvertOwnerModal show options={OPTIONS} lead={LEAD} onSelect={onSelect} onHide={vi.fn()} />)
-
-    expect(screen.getByRole('radio', { name: /WLP Co/ })).toBeChecked()
-  })
-
-  it('closes without a choice on Cancel', async () => {
-    const { onSelect, onHide } = renderModal()
+  it('closes without converting on Cancel', async () => {
+    const { onContinue, onHide } = renderModal()
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(onHide).toHaveBeenCalledOnce()
-    expect(onSelect).not.toHaveBeenCalled()
+    expect(onContinue).not.toHaveBeenCalled()
   })
 })

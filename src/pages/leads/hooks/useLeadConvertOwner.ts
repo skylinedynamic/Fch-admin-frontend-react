@@ -1,32 +1,25 @@
 import { useRef, useState } from 'react';
-import type { Lead, LeadConvertAs, LeadConvertAsOption } from '../../../modules/leads/types';
+import type { Lead } from '../../../modules/leads/types';
 
 /**
- * The host converting another partner's borrower lead first picks whose
- * borrower it becomes. `chooseOwnerThen` runs the convert flow straight away
- * for any other lead, or once an owner is picked; `withConvertAs` adds that
- * pick to the convert payload.
+ * The host converting another partner's borrower lead is first told it does
+ * so on that partner's behalf. `confirmOwnerThen` runs the convert flow
+ * straight away for any other lead, or once the host continues.
  */
 export function useLeadConvertOwner() {
-    const [options, setOptions] = useState<LeadConvertAsOption[]>([]);
     const [show, setShow] = useState(false);
-    const [convertAs, setConvertAs] = useState<LeadConvertAs | null>(null);
     const pendingRef = useRef<(() => void) | null>(null);
 
-    const chooseOwnerThen = (lead: Pick<Lead, 'convert_as_options'> | null | undefined, next: () => void) => {
-        setConvertAs(null);
-        const leadOptions = lead?.convert_as_options ?? [];
-        if (leadOptions.length === 0) {
+    const confirmOwnerThen = (lead: Pick<Lead, 'convert_on_behalf_of'> | null | undefined, next: () => void) => {
+        if (!lead?.convert_on_behalf_of) {
             next();
             return;
         }
-        setOptions(leadOptions);
         pendingRef.current = next;
         setShow(true);
     };
 
-    const onSelect = (value: LeadConvertAs) => {
-        setConvertAs(value);
+    const onContinue = () => {
         setShow(false);
         const next = pendingRef.current;
         pendingRef.current = null;
@@ -38,12 +31,8 @@ export function useLeadConvertOwner() {
         setShow(false);
     };
 
-    const withConvertAs = <T extends object>(payload: T): T | (T & { convert_as: LeadConvertAs }) =>
-        convertAs ? { ...payload, convert_as: convertAs } : payload;
-
     return {
-        ownerModalProps: { show, options, onSelect, onHide },
-        chooseOwnerThen,
-        withConvertAs,
+        ownerModalProps: { show, onContinue, onHide },
+        confirmOwnerThen,
     };
 }

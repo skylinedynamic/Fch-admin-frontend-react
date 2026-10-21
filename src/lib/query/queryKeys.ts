@@ -4,6 +4,7 @@ export const queryKeys = {
     all: ['partner'] as const,
     list: () => [...queryKeys.partner.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.partner.all, 'detail', id] as const,
+    options: () => [...queryKeys.partner.all, 'options'] as const,
   },
   borrower: {
     all: ['borrower'] as const,

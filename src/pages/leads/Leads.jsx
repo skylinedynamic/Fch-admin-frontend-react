@@ -23,7 +23,7 @@ import LeadConvertModal from './components/LeadConvertModal';
 import LeadConvertOwnerModal from './components/LeadConvertOwnerModal';
 import { useLeadConvertOwner } from './hooks/useLeadConvertOwner';
 import { LeadNameCell, LeadContactInfoCell, LeadPartnerCell, LeadStatusCell } from './components/LeadTableCells';
-import { usePartners } from '../../modules/client';
+import { usePartnerOptions, partnerOptionLabel } from '../../modules/partner';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
 import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
@@ -72,8 +72,8 @@ export default function Leads() {
     // Dropdown data
     const [salespersonsList, setSalespersonsList] = useState([]);
     const [referralPartners, setReferralPartners] = useState([]);
-    const { data: partnersList = [] } = usePartners(isHost);
-    const partnerOptions = partnersList.map((p) => ({ label: p.company_name || p.full_name, value: p.id }));
+    const { data: partnersList = [] } = usePartnerOptions(isHost);
+    const partnerOptions = partnersList.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
 
     // Conversion Modal state
     const [showConvertModal, setShowConvertModal] = useState(false);
@@ -83,7 +83,7 @@ export default function Leads() {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [convertErrors, setConvertErrors] = useState({});
     const [missingInfoErrors, setMissingInfoErrors] = useState({});
-    const { ownerModalProps, chooseOwnerThen, withConvertAs } = useLeadConvertOwner();
+    const { ownerModalProps, confirmOwnerThen } = useLeadConvertOwner();
 
     // Statistics data
     const [stats, setStats] = useState({
@@ -317,7 +317,7 @@ export default function Leads() {
 
     const openConvertModal = (rowData) => {
         setTargetLead(rowData);
-        chooseOwnerThen(rowData, () => {
+        confirmOwnerThen(rowData, () => {
             if (isMissingConvertInfo(rowData)) {
                 setShowMissingInfoModal(true);
             } else {
@@ -363,7 +363,7 @@ export default function Leads() {
         const targetType = targetLead.lead_type == ENTITY_TYPE_PARTNER ? ENTITY_TYPE_PARTNER : ENTITY_TYPE_BORROWER;
         try {
             setConversionLoading(true);
-            const response = await convertLead(targetLead.id, withConvertAs(payload));
+            const response = await convertLead(targetLead.id, payload);
 
             if (response.status || response.id) {
                 toast.success(`Lead successfully converted to ${targetType}`);

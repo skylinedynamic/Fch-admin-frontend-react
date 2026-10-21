@@ -1,9 +1,16 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Partner, TenantConfig } from './types';
+import type { Partner, PartnerOption, TenantConfig } from './types';
 
+/** The Partners table: paginated, filtered and sorted. */
 export const fetchPartners = async (payload: any = {}) => {
   const response = await apiClient.post('/admin/partners/fetch-partners', payload);
   return response.data;
+};
+
+/** Every partner, sorted by name, for the host's partner filter dropdowns. */
+export const fetchPartnerOptions = async (): Promise<PartnerOption[]> => {
+  const response = await apiClient.post('/common/get-all-partners');
+  return response.data?.data ?? [];
 };
 
 export const getPartner = async (id: string | number): Promise<Partner> => {

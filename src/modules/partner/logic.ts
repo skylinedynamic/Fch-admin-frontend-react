@@ -1,5 +1,6 @@
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
 import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
+import type { PartnerOption } from './types';
 
 /**
  * Resolves matching partner plan ID from available partner plans based on partner_type and enrollment_type.
@@ -165,4 +166,13 @@ export const buildPartnerFormDataPayload = (
     }
 
     return formDataToSend;
+};
+
+/**
+ * A partner's label in a filter dropdown: "Company (Full name)", whichever of
+ * the two it has, or its number with neither.
+ */
+export const partnerOptionLabel = (partner: PartnerOption): string => {
+    if (partner.full_name && partner.company_name) return `${partner.company_name} (${partner.full_name})`;
+    return partner.company_name || partner.full_name || `Partner #${partner.id}`;
 };

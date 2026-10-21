@@ -2,11 +2,12 @@ import { test, expect, type Page, type Route } from '@playwright/test'
 
 // Leads, as the host partner sees them: every partner's leads, each with the
 // partner that owns it (just before the salesperson), and a Partner filter.
-// Converting another partner's borrower lead first asks which partner the
-// borrower belongs to - the lead owner (selected by default) or the host - and
-// the conversion carries that choice as convert_as. fch-api's HostLeadAccessTest covers the API side (who
-// sees which leads, and which partner the borrower is filed under). Backend
-// calls are intercepted at the API origin (see activity-visibility.spec.ts).
+// The host converts another partner's lead on that partner's behalf: a modal
+// shows the lead's details and alerts that it is that partner's lead, with no
+// choice of owner. fch-api's HostLeadAccessTest covers the API side (who sees
+// which leads, and that the borrower is always filed under the lead's own
+// partner). Backend calls are intercepted at the API origin (see
+// activity-visibility.spec.ts).
 const API_ORIGIN = 'http://127.0.0.1:8000/api/v1'
 
 const HOST_USER = {
@@ -36,7 +37,7 @@ const THEME = {
   site_name: 'Four Corner Funding', site_slogan: null,
 }
 
-const leadOf = (id: number, partner: { id: number; company_name: string }, convertAsOptions: unknown[]) => ({
+const leadOf = (id: number, partner: { id: number; company_name: string }, onBehalfOf: unknown = null) => ({
   id,
   lead_type: 'Borrower',
   status: 'New Lead',
@@ -51,14 +52,11 @@ const leadOf = (id: number, partner: { id: number; company_name: string }, conve
   convert_to: null,
   convert_email_already: false,
   partner: { id: partner.id, full_name: 'Owner', company_name: partner.company_name },
-  convert_as_options: convertAsOptions,
+  convert_on_behalf_of: onBehalfOf,
 })
 
-const WLP_LEAD = leadOf(7, { id: 2, company_name: 'WLP Co' }, [
-  { value: 'host', company_name: 'Host Co' },
-  { value: 'lead_partner', company_name: 'WLP Co' },
-])
-const HOST_LEAD = leadOf(8, { id: 1, company_name: 'Host Co' }, [])
+const WLP_LEAD = leadOf(7, { id: 2, company_name: 'WLP Co' }, { id: 2, company_name: 'WLP Co' })
+const HOST_LEAD = leadOf(8, { id: 1, company_name: 'Host Co' })
 const BORROWER_PLAN = { id: 11, name: 'Standard', enrollment_type: 'One Time', total_amount: 500, platform_fee: 0 }
 
 async function seedSession(page: Page, user: typeof HOST_USER) {
@@ -81,7 +79,7 @@ function jsonOk(route: Route, data: unknown, extra: Record<string, unknown> = {}
 async function stubApi(page: Page, leads: unknown[], convertBodies: Record<string, unknown>[], fetchBodies: Record<string, unknown>[] = []) {
   await page.route(`${API_ORIGIN}/**`, (route) => jsonOk(route, []))
   await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => jsonOk(route, { ...THEME, branding: THEME }))
-  await page.route(`${API_ORIGIN}/admin/partners/fetch-partners`, (route) => jsonOk(route, PARTNERS))
+  await page.route(`${API_ORIGIN}/common/get-all-partners`, (route) => jsonOk(route, PARTNERS))
   await page.route(`${API_ORIGIN}/common/leads/fetch-leads`, (route) => {
     const body = route.request().postDataJSON() ?? {}
     fetchBodies.push(body)
@@ -184,7 +182,7 @@ test.describe('Leads › host converting another partner\'s lead', () => {
     await expect(rowOf(page, 'Lee Lead 8')).toBeVisible()
 
     await page.locator('.p-dropdown', { hasText: 'All Partners' }).click()
-    await page.locator('.p-dropdown-panel .p-dropdown-item', { hasText: /^WLP Co$/ }).click()
+    await page.locator('.p-dropdown-panel .p-dropdown-item', { hasText: /^WLP Co \(Wil Label\)$/ }).click()
     await page.getByRole('button', { name: /Filters/ }).click()
 
     await expect.poll(() => fetchBodies[fetchBodies.length - 1]?.partner_id).toBe(2)
@@ -194,7 +192,7 @@ test.describe('Leads › host converting another partner\'s lead', () => {
 
   test('a white-label partner sees no owner column', async ({ page }) => {
     await seedSession(page, WLP_USER)
-    await stubApi(page, [{ ...WLP_LEAD, convert_as_options: [] }], convertBodies)
+    await stubApi(page, [{ ...WLP_LEAD, convert_on_behalf_of: null }], convertBodies)
     await page.goto('/leads')
 
     await expect(rowOf(page, 'Lee Lead 7')).toBeVisible()
@@ -202,62 +200,79 @@ test.describe('Leads › host converting another partner\'s lead', () => {
     await expect(page.locator('.p-dropdown', { hasText: 'All Partners' })).toHaveCount(0)
   })
 
-  for (const [company, convertAs] of [['Host Co', 'host'], ['WLP Co', 'lead_partner']] as const) {
-    test(`choosing ${company} converts the lead as its borrower`, async ({ page }) => {
-      await seedSession(page, HOST_USER)
-      await stubApi(page, [WLP_LEAD], convertBodies)
-      await page.goto('/leads')
+  test('another partner\'s lead shows its details and alerts that it converts on that partner\'s behalf', async ({ page }) => {
+    await seedSession(page, HOST_USER)
+    await stubApi(page, [WLP_LEAD], convertBodies)
+    await page.goto('/leads')
 
-      const rowButton = rowOf(page, 'Lee Lead 7').getByRole('button', { name: /Convert to Borrower/ })
-      await expect(rowButton).toHaveText('Convert to Borrower')
-      await rowButton.click()
+    const rowButton = rowOf(page, 'Lee Lead 7').getByRole('button', { name: /Convert to Borrower/ })
+    await expect(rowButton).toHaveText('Convert to Borrower')
+    await rowButton.click()
 
-      const ownerModal = shownModal(page)
-      await expect(ownerModal.getByRole('definition').filter({ hasText: 'WLP Co' })).toBeVisible()
-      await expect(ownerModal.getByRole('radio', { name: /WLP Co, Lead owner/ })).toBeChecked()
+    const ownerModal = shownModal(page)
+    await expect(ownerModal.getByRole('alert')).toHaveText(
+      'This lead belongs to WLP Co. You are converting it to a borrower on behalf of WLP Co - the borrower will belong to WLP Co, not to your company.'
+    )
+    for (const value of ['Lee Lead 7', 'Lead Co 7', 'lead-7@example.test', '(555) 123-4567', 'WLP Co']) {
+      await expect(ownerModal.getByRole('definition').filter({ hasText: value })).toBeVisible()
+    }
+    await expect(ownerModal.getByRole('radio')).toHaveCount(0)
+    await ownerModal.getByRole('button', { name: /Continue/ }).click()
 
-      // The two partners sit side by side as a grid of cards.
-      // Measured once the modal's opening animation has settled.
-      const cards = async () => Promise.all([
-        ownerModal.locator('label', { hasText: 'Lead owner' }).boundingBox(),
-        ownerModal.locator('label', { hasText: 'Host partner' }).boundingBox(),
-      ])
-      await expect.poll(async () => { const [o, h] = await cards(); return Math.abs(o!.y - h!.y) }).toBeLessThan(2)
-      const [ownerCard, hostCard] = await cards()
-      expect(hostCard!.x).toBeGreaterThan(ownerCard!.x + ownerCard!.width - 1)
-      if (convertAs === 'host') await ownerModal.locator('label', { hasText: company }).click()
-      await ownerModal.getByRole('button', { name: /Continue/ }).click()
+    await shownModal(page).getByRole('button', { name: 'Convert to Borrower' }).click()
 
-      await shownModal(page).getByRole('button', { name: 'Convert to Borrower' }).click()
+    await expect.poll(() => convertBodies.length).toBe(1)
+    expect(convertBodies[0]).toMatchObject({ plan_id: 11 })
+    expect(convertBodies[0]).not.toHaveProperty('convert_as')
+  })
 
-      await expect.poll(() => convertBodies.length).toBe(1)
-      expect(convertBodies[0]).toMatchObject({ convert_as: convertAs, plan_id: 11 })
-    })
-  }
-
-  test('cancelling the choice converts nothing', async ({ page }) => {
+  test('the on-behalf modal is a little wider than a default one, its alert led by a round icon', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
     await seedSession(page, HOST_USER)
     await stubApi(page, [WLP_LEAD], convertBodies)
     await page.goto('/leads')
 
     await rowOf(page, 'Lee Lead 7').getByRole('button', { name: /Convert to Borrower/ }).click()
+    const ownerModal = shownModal(page)
+    const alert = ownerModal.getByRole('alert')
+    await expect(alert).toBeVisible()
+
+    // Measured once the modal's opening animation has settled.
+    const dialogWidth = () => ownerModal.locator('.modal-dialog').evaluate((el) => el.getBoundingClientRect().width)
+    await expect.poll(dialogWidth).toBe(600)
+
+    const icon = alert.locator('.avatar-title')
+    await expect(icon).toBeVisible()
+    const [iconBox, alertBox] = [await icon.boundingBox(), await alert.boundingBox()]
+    expect(iconBox!.width).toBeGreaterThanOrEqual(32)
+    expect(Math.abs(iconBox!.width - iconBox!.height)).toBeLessThan(1)
+    expect(iconBox!.x - alertBox!.x).toBeLessThan(24)
+  })
+
+  test('cancelling the alert converts nothing', async ({ page }) => {
+    await seedSession(page, HOST_USER)
+    await stubApi(page, [WLP_LEAD], convertBodies)
+    await page.goto('/leads')
+
+    await rowOf(page, 'Lee Lead 7').getByRole('button', { name: /Convert to Borrower/ }).click()
+    await expect(shownModal(page).getByRole('alert')).toBeVisible()
     await shownModal(page).getByRole('button', { name: 'Cancel' }).click()
 
     await expect(page.locator('.modal.show')).toHaveCount(0)
     expect(convertBodies).toHaveLength(0)
   })
 
-  test('the host\'s own lead converts without the choice', async ({ page }) => {
+  test('the host\'s own lead converts without the alert', async ({ page }) => {
     await seedSession(page, HOST_USER)
     await stubApi(page, [HOST_LEAD], convertBodies)
     await page.goto('/leads')
 
     await rowOf(page, 'Lee Lead 8').getByRole('button', { name: /Convert to Borrower/ }).click()
+    await expect(shownModal(page).getByRole('alert')).toHaveCount(0)
     await shownModal(page).getByRole('button', { name: 'Convert to Borrower' }).click()
 
     await expect.poll(() => convertBodies.length).toBe(1)
     expect(convertBodies[0]).not.toHaveProperty('convert_as')
-    await expect(page.locator('.modal.show label', { hasText: 'Lead owner' })).toHaveCount(0)
   })
 })
 

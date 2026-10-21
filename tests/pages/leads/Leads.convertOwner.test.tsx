@@ -30,17 +30,18 @@ vi.mock('bootstrap/js/dist/modal', () => {
 import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
 import { server } from '../../mocks/server'
+import { PARTNER_OPTIONS, dropdownLabels, dropdownShowing, searchDropdown } from '../../mocks/partnerOptions'
 import { cleanup, renderWithProviders, screen, waitFor } from '../../test-utils'
 import { useAuthStore } from '../../../src/store/auth/authStore'
 import Leads from '../../../src/pages/leads/Leads'
 
 /**
  * Leads, as the host partner sees them: every partner's leads, each with the
- * partner that owns it. Converting another partner's borrower lead first asks
- * whose borrower it becomes - the host's or the lead owner partner's - and
- * sends that choice with the conversion.
+ * partner that owns it. The host converts another partner's lead on that
+ * partner's behalf - with no choice of owner, after an alert saying so;
+ * fch-api files the borrower under the lead's partner.
  */
-const leadOf = (id: number, partner: { id: number; company_name: string }, convertAsOptions: unknown[]) => ({
+const leadOf = (id: number, partner: { id: number; company_name: string }, onBehalfOf: unknown = null) => ({
   id,
   lead_type: 'Borrower',
   status: 'New Lead',
@@ -55,16 +56,13 @@ const leadOf = (id: number, partner: { id: number; company_name: string }, conve
   convert_to: null,
   convert_email_already: false,
   partner: { id: partner.id, full_name: 'Owner', company_name: partner.company_name },
-  convert_as_options: convertAsOptions,
+  convert_on_behalf_of: onBehalfOf,
 })
 
 const HOST = { id: 1, company_name: 'Host Co' }
 const WLP = { id: 2, company_name: 'WLP Co' }
-const WLP_LEAD = leadOf(7, WLP, [
-  { value: 'host', company_name: 'Host Co' },
-  { value: 'lead_partner', company_name: 'WLP Co' },
-])
-const HOST_LEAD = leadOf(8, HOST, [])
+const WLP_LEAD = leadOf(7, WLP, WLP)
+const HOST_LEAD = leadOf(8, HOST)
 
 const BORROWER_PLAN = { id: 11, name: 'Standard', enrollment_type: 'One Time', total_amount: 500, platform_fee: 0 }
 
@@ -103,12 +101,11 @@ const modalButton = (name: string) =>
 
 const rowOf = (contact: string) => screen.getByText(contact).closest('tr') as HTMLElement
 
-/** Serves the host's partner list, and records every fetch-leads body. */
-function servePartners() {
+/** Serves the host's partner options, and records every fetch-leads body. */
+function servePartners(partners: unknown[] = [{ id: 1, full_name: 'Hal Host', company_name: 'Host Co' }, { id: 2, full_name: 'Wil Label', company_name: 'WLP Co' }]) {
   const fetchBodies: Record<string, unknown>[] = []
   server.use(
-    http.post('*/admin/partners/fetch-partners', () =>
-      HttpResponse.json({ status: true, data: [{ id: 1, full_name: 'Hal Host', company_name: 'Host Co' }, { id: 2, full_name: 'Wil Label', company_name: 'WLP Co' }] })),
+    http.post('*/common/get-all-partners', () => HttpResponse.json({ status: true, data: partners })),
   )
   server.events.on('request:start', async ({ request }) => {
     if (request.method === 'POST' && request.url.endsWith('/common/leads/fetch-leads')) {
@@ -170,8 +167,8 @@ describe('Leads › host converting another partner\'s lead', () => {
     const partnerLabel = screen.getAllByText('All Partners').find((el) => el.classList.contains('p-dropdown-label')) as HTMLElement
     await user.click(partnerLabel.closest('.p-dropdown') as HTMLElement)
     const option = await waitFor(() => {
-      const found = Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent === 'WLP Co')
-      if (!found) throw new Error('no "WLP Co" option')
+      const found = Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent === 'WLP Co (Wil Label)')
+      if (!found) throw new Error('no "WLP Co (Wil Label)" option')
       return found as HTMLElement
     })
     await user.click(option)
@@ -180,9 +177,33 @@ describe('Leads › host converting another partner\'s lead', () => {
     await waitFor(() => expect(fetchBodies[fetchBodies.length - 1]).toMatchObject({ partner_id: 2 }))
   })
 
+  it('lists every partner in the Partner filter, not just one page of them', async () => {
+    signInAs(true)
+    servePartners(PARTNER_OPTIONS)
+    serve([WLP_LEAD])
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+    await screen.findByText('Lee 7')
+
+    const labels = await dropdownLabels(user, await dropdownShowing('All Partners'))
+
+    expect(labels).toEqual(['All Partners', ...PARTNER_OPTIONS.map((p) => `${p.company_name} (${p.full_name})`)])
+  })
+
+  it('searches the Partner filter', async () => {
+    signInAs(true)
+    servePartners(PARTNER_OPTIONS)
+    serve([WLP_LEAD])
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+    await screen.findByText('Lee 7')
+
+    expect(await searchDropdown(user, await dropdownShowing('All Partners'), 'Company 12')).toEqual(['Company 12 (Partner 12)'])
+  })
+
   it('does not show the owner column to a white-label or certified partner', async () => {
     signInAs(false)
-    serve([{ ...WLP_LEAD, convert_as_options: [] }])
+    serve([{ ...WLP_LEAD, convert_on_behalf_of: null }])
     renderWithProviders(<Leads />, { route: '/leads' })
 
     await screen.findByText('Lee 7')
@@ -190,7 +211,7 @@ describe('Leads › host converting another partner\'s lead', () => {
     expect(screen.queryAllByText('All Partners')).toHaveLength(0)
   })
 
-  it('asks whose borrower the lead becomes, then converts it as chosen', async () => {
+  it('alerts the host it converts another partner\'s lead on that partner\'s behalf, then converts it', async () => {
     signInAs(true)
     const convertBodies = serve([WLP_LEAD])
     const user = userEvent.setup()
@@ -198,19 +219,38 @@ describe('Leads › host converting another partner\'s lead', () => {
 
     await user.click(await convertButtonFor('Lee 7'))
 
-    const asOwner = await screen.findByRole('radio', { name: /WLP Co/ })
-    expect(asOwner).toBeChecked()
-    await user.click(screen.getByRole('radio', { name: /Host Co/ }))
+    const alert = await screen.findByRole('alert')
+    const ownerModal = alert.closest('.modal') as HTMLElement
+    expect(alert).toHaveTextContent('You are converting it to a borrower on behalf of WLP Co')
+    expect(ownerModal).toHaveClass('show')
+    expect(ownerModal).toHaveTextContent('lead-7@example.test')
+    expect(screen.queryAllByRole('radio')).toHaveLength(0)
     await user.click(screen.getByRole('button', { name: /Continue/ }))
-    expect(asOwner.closest('.modal')).not.toHaveClass('show')
+    expect(ownerModal).not.toHaveClass('show')
 
     await user.click(await modalButton('Convert to Borrower'))
 
     await waitFor(() => expect(convertBodies).toHaveLength(1))
-    expect(convertBodies[0]).toMatchObject({ convert_as: 'host', plan_id: 11 })
+    expect(convertBodies[0]).toMatchObject({ plan_id: 11 })
+    expect(convertBodies[0]).not.toHaveProperty('convert_as')
   })
 
-  it('converts the host\'s own lead without asking', async () => {
+  it('converts nothing when the host cancels the alert', async () => {
+    signInAs(true)
+    const convertBodies = serve([WLP_LEAD])
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+
+    await user.click(await convertButtonFor('Lee 7'))
+    const ownerModal = (await screen.findByRole('alert')).closest('.modal') as HTMLElement
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(ownerModal).not.toHaveClass('show')
+    expect(document.querySelectorAll('.modal.show')).toHaveLength(0)
+    expect(convertBodies).toHaveLength(0)
+  })
+
+  it('converts the host\'s own lead without the alert', async () => {
     signInAs(true)
     const convertBodies = serve([HOST_LEAD])
     const user = userEvent.setup()
@@ -222,7 +262,7 @@ describe('Leads › host converting another partner\'s lead', () => {
     await user.click(await modalButton('Convert to Borrower'))
 
     await waitFor(() => expect(convertBodies).toHaveLength(1))
-    expect(screen.queryByRole('radio', { name: /Host Co/, hidden: true })).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(convertBodies[0]).not.toHaveProperty('convert_as')
   })
 })

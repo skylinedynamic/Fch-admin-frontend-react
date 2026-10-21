@@ -6,6 +6,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchPartners, allUsers, deletePartners, archivePartners, unarchivePartners, fetchPartnerStats } from '../../modules/partner/services';
+import { usePartnerOptions, partnerOptionLabel } from '../../modules/partner';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
@@ -62,7 +63,8 @@ export default function Partners() {
     const [deleteRows, setDeleteRows] = useState([]);
 
     // Dropdown data
-    const [partnersList, setPartnersList] = useState([]);
+    const { data: partnerOptions = [] } = usePartnerOptions();
+    const partnersList = partnerOptions.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
     const [assignedUsersList, setAssignedUsersList] = useState([]);
 
     // Statistics data
@@ -101,22 +103,6 @@ export default function Partners() {
 
         // Add class to body to prevent global scroll
         document.body.classList.add('table-page-fit-active');
-
-        // Load partners for dropdown
-        const loadPartnersList = async () => {
-            try {
-                const result = await fetchPartners();
-                if (result.status) {
-                    setPartnersList((result.data || []).map(p => ({
-                        label: p.full_name,
-                        value: p.id
-                    })));
-                }
-            } catch (err) {
-                console.error('Failed to load partners list:', err);
-            }
-        };
-        loadPartnersList();
 
         // Load assigned users
         const loadAssignedUsers = async () => {
@@ -467,6 +453,7 @@ export default function Partners() {
                                                     options={[{ label: 'All Partners', value: '' }, ...partnersList]}
                                                     onChange={(e) => setSelectedPartner(e.value)}
                                                     placeholder="All Partners"
+                                                    filter
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>
