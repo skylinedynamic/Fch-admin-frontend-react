@@ -5,6 +5,9 @@ import { server } from '../../../mocks/server'
 import { renderWithProviders, screen } from '../../../test-utils'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import FundingRequestDetail from '../../../../src/pages/applications/funding-request/FundingRequestDetail'
+import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
+import { FUNDING_APPLICATION_STATUS } from '../../../../src/config/borrower'
+import { PARTNER_TYPES } from '../../../../src/config/partnerTypeOptions'
 
 // The activity sidebar pulls in Summernote, which needs a real canvas.
 vi.mock('../../../../src/components/Common/Activity/ActivitySidebar', () => ({ default: () => null }))
@@ -73,5 +76,60 @@ describe('Funding Request Details: action buttons', () => {
     expect(screen.getByPlaceholderText(/reason/i)).toBeInTheDocument()
     expect(confirm).toHaveClass('btn-primary')
     expect(confirm).not.toHaveClass('btn-dark')
+  })
+})
+
+// An approved request whose submitted application is still at status key 9 or below.
+const approvedWithApplication = {
+  ...review,
+  status: FUNDING_REVIEW_STATUS.APPROVED,
+  partner_id: 2,
+  funding_application: { id: 80, status: FUNDING_APPLICATION_STATUS.PENDING, is_editable: true },
+}
+
+describe('Funding Request Details: Edit Funding Application', () => {
+  const signIn = (user: Record<string, unknown>) =>
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Someone', permissions: [], ...user } } as never)
+
+  beforeEach(() => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: approvedWithApplication })
+      )
+    )
+  })
+
+  afterEach(() => server.resetHandlers())
+
+  const editLink = () => screen.findByRole('link', { name: /edit funding application/i })
+
+  it("offers it to the host, even on another partner's request, opening the edit form on it", async () => {
+    signIn({ is_host: 1, partner_id: 1 })
+    renderPage()
+
+    expect(await editLink()).toHaveAttribute('href', `/fund-application/${review.id}`)
+  })
+
+  it("offers it to a white-label partner on its own borrower's request", async () => {
+    signIn({ is_host: 0, partner_id: 2, partner_type: PARTNER_TYPES.WHITE_LABEL })
+    renderPage()
+
+    expect(await editLink()).toHaveAttribute('href', `/fund-application/${review.id}`)
+  })
+
+  it("never offers it to a white-label partner on another partner's request", async () => {
+    signIn({ is_host: 0, partner_id: 9, partner_type: PARTNER_TYPES.WHITE_LABEL })
+    renderPage()
+
+    await screen.findByRole('link', { name: /go to client/i })
+    expect(screen.queryByRole('link', { name: /edit funding application/i })).not.toBeInTheDocument()
+  })
+
+  it("never offers it to a certified partner, even on its own borrower's request", async () => {
+    signIn({ is_host: 0, partner_id: 2, partner_type: PARTNER_TYPES.CERTIFIED })
+    renderPage()
+
+    await screen.findByRole('link', { name: /go to client/i })
+    expect(screen.queryByRole('link', { name: /edit funding application/i })).not.toBeInTheDocument()
   })
 })

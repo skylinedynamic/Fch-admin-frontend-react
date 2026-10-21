@@ -48,7 +48,7 @@ const leadOf = (id: number, partnerId: number, overrides: Record<string, unknown
   phone_number: '(555) 123-4567',
   country: 'United States',
   lead_source: 'Website',
-  convert_to: null,
+  convert_to: null as string | null,
   convert_email_already: false,
   salesperson_id: partnerId === 2 ? 22 : 11,
   salesperson_name: partnerId === 2 ? 'Sal WLP' : 'Hal Host',
