@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams, useLocation, Navigate } 
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead, fetchGlobalStats } from '../../modules/leads/services';
-import { isMissingConvertInfo } from '../../modules/leads/logic';
+import { isMissingConvertInfo, isLeadTypeLocked, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../modules/leads/logic';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -341,31 +341,46 @@ export default function LeadDetails() {
     const { editorRef: requirementDetailsRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 250 }, activeTab === 'leadDetails' && !isLoading);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [usersRes, referralRes] = await Promise.all([
-                    allUsers(),
-                    fetchReferralPartners()
-                ]);
-                if (usersRes.status) {
-                    const userData = usersRes.data || [];
-                    setUsers(userData);
+        fetchReferralPartners()
+            .then((referralRes) => setReferralPartners(referralRes || []))
+            .catch((err) => console.error(err));
+    }, []);
 
-                    // Default Lead Owner (salesperson_id) for new lead
-                    if (!id && currentUser?.id) {
-                        const exists = userData.some(u => u.id == currentUser.id);
-                        if (exists) {
-                            setFormData(prev => ({ ...prev, salesperson_id: currentUser.id }));
-                        }
+    // The Lead Owner is one of the lead's own partner's team: the host working
+    // another partner's lead picks from that partner's team. An existing lead's
+    // partner is known once it has loaded.
+    const teamPartnerId = leadTeamPartnerId(currentUser, formData);
+    const leadLoaded = !id || formData.id != null;
+
+    useEffect(() => {
+        if (!leadLoaded) return;
+        let cancelled = false;
+
+        const loadTeam = async () => {
+            try {
+                const usersRes = await allUsers(teamPartnerId ? { partner_id: teamPartnerId } : {});
+                if (cancelled || !usersRes.status) return;
+
+                const userData = usersRes.data || [];
+                setUsers(userData);
+
+                // Default Lead Owner (salesperson_id) for new lead
+                if (!id && currentUser?.id) {
+                    const exists = userData.some(u => u.id == currentUser.id);
+                    if (exists) {
+                        setFormData(prev => ({ ...prev, salesperson_id: currentUser.id }));
                     }
                 }
-                setReferralPartners(referralRes || []);
             } catch (err) {
                 console.error(err);
             }
         };
-        fetchData();
-    }, [id, currentUser?.id]);
+        loadTeam();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [id, currentUser?.id, leadLoaded, teamPartnerId]);
 
     // Cascading logic for location
     useEffect(() => {
@@ -624,7 +639,7 @@ export default function LeadDetails() {
                                                                     {errors.probability && <div className="invalid-feedback d-block">{errors.probability}</div>}
                                                                 </div>
                                                             </div>
-                                                            {isHost && (
+                                                            {showsLeadType(currentUser) && (
                                                                 <div className="col-lg-6">
                                                                     <div className="mb-3">
                                                                         <label className="form-label">Lead Type <span className="text-danger">*</span></label>
@@ -632,6 +647,7 @@ export default function LeadDetails() {
                                                                             value={formData.lead_type}
                                                                             options={LEAD_TYPE_OPTIONS}
                                                                             onChange={(e) => handleInputChange({ target: { name: 'lead_type', value: e.value } })}
+                                                                            disabled={isLeadTypeLocked(currentUser, id ? formData : null)}
                                                                             placeholder="Select type"
                                                                             className={`w-100 ${errors.lead_type ? 'p-invalid' : ''}`}
                                                                         />
@@ -659,7 +675,7 @@ export default function LeadDetails() {
                                                                     </label>
                                                                     <Dropdown
                                                                         value={formData.salesperson_id}
-                                                                        options={Array.isArray(users) ? users.map(user => ({ label: user.name, value: user.id })) : []}
+                                                                        options={leadOwnerOptions(users, id ? formData : null)}
                                                                         onChange={(e) => handleInputChange({ target: { name: 'salesperson_id', value: e.value } })}
                                                                         placeholder="Select Lead Owner"
                                                                         filter

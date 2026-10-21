@@ -6,7 +6,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchLeads, deleteLead, convertLead, updateLeadContactInfo } from '../../modules/leads/services';
-import { isMissingConvertInfo } from '../../modules/leads/logic';
+import { isMissingConvertInfo, showsLeadType } from '../../modules/leads/logic';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -122,30 +122,35 @@ export default function Leads() {
         // Add class to body to prevent global scroll
         document.body.classList.add('table-page-fit-active');
 
-        // Load salespersons and referral partners
-        const loadInitialData = async () => {
-            try {
-                const [usersRes, referralRes] = await Promise.all([
-                    allUsers(),
-                    fetchReferralPartners()
-                ]);
-                if (usersRes.status) {
-                    setSalespersonsList(usersRes.data.map(user => ({
-                        label: user.name,
-                        value: user.id
-                    })));
-                }
-                setReferralPartners(referralRes || []);
-            } catch (err) {
-                console.error('Failed to load initial data:', err);
-            }
-        };
-        loadInitialData();
+        // Load referral partners
+        fetchReferralPartners()
+            .then((referralRes) => setReferralPartners(referralRes || []))
+            .catch((err) => console.error('Failed to load initial data:', err));
 
         return () => {
             document.body.classList.remove('table-page-fit-active');
         };
     }, []);
+
+    // Lead Owner filter: the host's chosen partner's team, else the caller's own
+    // team. A different partner clears the owner picked from the previous team.
+    useEffect(() => {
+        const partnerId = isHost && selectedPartner ? selectedPartner : null;
+        let cancelled = false;
+        setSelectedSalesperson('');
+
+        allUsers(partnerId ? { partner_id: partnerId } : {})
+            .then((usersRes) => {
+                if (!cancelled && usersRes.status) {
+                    setSalespersonsList(usersRes.data.map(user => ({ label: user.name, value: user.id })));
+                }
+            })
+            .catch((err) => console.error('Failed to load lead owners:', err));
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isHost, selectedPartner]);
 
     const statisticsConfig = [
         { title: "Total Leads", dataKey: "total_leads", icon: "ri-coupon-line", colorVariant: "secondary" },
@@ -600,7 +605,7 @@ export default function Leads() {
                                             />
                                             {isHost && <Column field="partner_name" header="Partner" body={(rowData) => <LeadPartnerCell lead={rowData} />} sortable filter showFilterMatchModes filterPlaceholder="Search by partner" style={{ minWidth: '130px' }} />}
                                             <Column field="salesperson_name" header="SalesPerson" body={(rowData) => nullSafeBodyTemplate(rowData, 'salesperson_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by salesperson" style={{ minWidth: '120px' }} />
-                                            <Column field="status" header="Status" body={(rowData) => <LeadStatusCell badge={statusBodyTemplate(rowData)} leadType={rowData.lead_type} showType={isHost} />} sortable filter showFilterMatchModes filterPlaceholder="Search by status" style={{ minWidth: '110px' }} />
+                                            <Column field="status" header="Status" body={(rowData) => <LeadStatusCell badge={statusBodyTemplate(rowData)} leadType={rowData.lead_type} showType={showsLeadType(currentUser)} />} sortable filter showFilterMatchModes filterPlaceholder="Search by status" style={{ minWidth: '110px' }} />
                                             <Column
                                                 header="Action"
                                                 body={(rowData) => {

@@ -69,7 +69,7 @@ const BORROWER_PLAN = { id: 11, name: 'Standard', enrollment_type: 'One Time', t
 const signInAs = (isHost: boolean) =>
   useAuthStore.setState({
     token: 'tok',
-    user: { id: 1, name: 'Signed In', is_host: isHost ? 1 : 0, entity_type: 'Partner', permissions: ['update leads', 'delete leads'] },
+    user: { id: 1, name: 'Signed In', is_host: isHost ? 1 : 0, partner_id: isHost ? 1 : 2, entity_type: 'Partner', permissions: ['update leads', 'delete leads'] },
   })
 
 function serve(leads: unknown[]) {
@@ -154,6 +154,52 @@ describe('Leads › host converting another partner\'s lead', () => {
     for (const value of ['Lee 7', 'Lead Co 7', 'lead-7@example.test', '(555) 123-4567', 'Website', 'WLP Co', 'Sal Person', 'New Lead', 'Borrower']) {
       expect(row).toHaveTextContent(value)
     }
+  })
+
+  it('shows the host every lead\'s type - its own and other partners\'', async () => {
+    signInAs(true)
+    serve([WLP_LEAD, { ...HOST_LEAD, lead_type: 'Partner' }])
+    renderWithProviders(<Leads />, { route: '/leads' })
+
+    await screen.findByText('Lee 7')
+    const statusCell = (contact: string) =>
+      Array.from(rowOf(contact).querySelectorAll('td')).find((td) => td.textContent?.includes('New Lead')) as HTMLElement
+    expect(statusCell('Lee 8')).toHaveTextContent(/^New LeadPartner$/)
+    expect(statusCell('Lee 7')).toHaveTextContent(/^New LeadBorrower$/)
+  })
+
+  it('lists the chosen partner\'s team in the Lead Owner filter, clearing an owner picked before', async () => {
+    signInAs(true)
+    const fetchBodies = servePartners()
+    serve([WLP_LEAD, HOST_LEAD])
+    const teamBodies: Record<string, unknown>[] = []
+    server.use(
+      http.post('*/common/get-all-users', async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>
+        teamBodies.push(body)
+        return HttpResponse.json({
+          status: true,
+          data: body.partner_id === 2 ? [{ id: 21, name: 'Wil Label' }, { id: 22, name: 'Sal WLP' }] : [{ id: 11, name: 'Hal Host' }],
+        })
+      })
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<Leads />, { route: '/leads' })
+    await screen.findByText('Lee 7')
+
+    expect(await dropdownLabels(user, await dropdownShowing('All Lead Owner'))).toEqual(['All Lead Owner', 'Hal Host'])
+    await user.click(Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent === 'Hal Host') as HTMLElement)
+
+    const partnerLabels = await dropdownLabels(user, await dropdownShowing('All Partners'))
+    expect(partnerLabels).toContain('WLP Co (Wil Label)')
+    await user.click(Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent === 'WLP Co (Wil Label)') as HTMLElement)
+
+    await waitFor(() => expect(teamBodies).toContainEqual({ partner_id: 2 }))
+    expect(await dropdownLabels(user, await dropdownShowing('All Lead Owner'))).toEqual(['All Lead Owner', 'Wil Label', 'Sal WLP'])
+    await user.keyboard('{Escape}')
+
+    await user.click(screen.getByRole('button', { name: /Filters/ }))
+    await waitFor(() => expect(fetchBodies[fetchBodies.length - 1]).toMatchObject({ partner_id: 2, salesperson_id: '' }))
   })
 
   it('lets the host narrow the list to one partner', async () => {

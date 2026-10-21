@@ -1,9 +1,37 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { createPartner, updatePartner, fetchSubscriptionStats, getPartner, fetchPartnerById, fetchPartnerOptions } from '../../../src/modules/partner/services'
+import { createPartner, updatePartner, fetchSubscriptionStats, getPartner, fetchPartnerById, fetchPartnerOptions, allUsers } from '../../../src/modules/partner/services'
 
 afterEach(() => server.resetHandlers())
+
+describe('allUsers', () => {
+  const serveTeam = () => {
+    const bodies: unknown[] = []
+    server.use(
+      http.post('*/common/get-all-users', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json({ status: true, data: [{ id: 5, name: 'Wil Label' }] })
+      })
+    )
+    return bodies
+  }
+
+  it('asks for the caller\'s own team by default', async () => {
+    const bodies = serveTeam()
+
+    await expect(allUsers()).resolves.toMatchObject({ data: [{ id: 5, name: 'Wil Label' }] })
+    expect(bodies).toEqual([{}])
+  })
+
+  it('asks the host for another partner\'s team when given one', async () => {
+    const bodies = serveTeam()
+
+    await allUsers({ partner_id: 2 })
+
+    expect(bodies).toEqual([{ partner_id: 2 }])
+  })
+})
 
 describe('fetchPartnerOptions', () => {
   it('posts to get-all-partners for every partner a filter dropdown lists', async () => {
