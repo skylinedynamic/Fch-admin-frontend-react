@@ -19,7 +19,6 @@ import {
   useCreateClient,
   useDeleteClient,
   useDeleteClients,
-  usePartners,
   useSaveClientChecklist,
   useUnarchiveClients,
   useUpdateBusinessFinancials,
@@ -168,29 +167,8 @@ describe('client mutations', () => {
   })
 })
 
+// The partner dropdowns' source is modules/partner usePartnerOptions (tests/modules/partner/queries.test.tsx).
 describe('dropdown source hooks', () => {
-  it('usePartners maps partners to id / names / display label', async () => {
-    stub('post', '/admin/partners/fetch-partners', { status: true, data: [{ id: 2, full_name: 'John Partner', company_name: 'Tech Solutions', email: 'x' }] })
-
-    const { result } = await runQuery(() => usePartners())
-
-    expect(result.current.data).toEqual([
-      { id: 2, full_name: 'John Partner', company_name: 'Tech Solutions', displayLabel: 'John Partner (Tech Solutions)' },
-    ])
-  })
-
-  it('usePartners returns an empty list when the API reports failure', async () => {
-    stub('post', '/admin/partners/fetch-partners', { status: false, message: 'no' })
-
-    const { result } = await runQuery(() => usePartners())
-
-    expect(result.current.data).toEqual([])
-  })
-
-  it('usePartners can be switched off (non-host users never load the partner list)', () => {
-    expectIdle(() => usePartners(false))
-  })
-
   it('useAllUsers maps users to id / name / label', async () => {
     stub('post', '/common/get-all-users', { status: true, data: [{ id: 5, name: 'Sam Sales', email: 'x' }] })
 

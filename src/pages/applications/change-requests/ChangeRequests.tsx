@@ -8,7 +8,8 @@ import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { useChangeRequests, useUpdateChangeRequestStatus } from '../../../modules/change-request';
 import type { ChangeRequest, ChangeRequestStatus } from '../../../modules/change-request';
-import { fetchPartners, fetchBorrowers } from '../../../modules/partner/services';
+import { fetchBorrowers } from '../../../modules/partner/services';
+import { usePartnerOptions, partnerOptionLabel } from '../../../modules/partner';
 import {
     CHANGE_REQUEST_STATUS,
     CHANGE_REQUEST_STATUS_OPTIONS,
@@ -46,10 +47,10 @@ export default function ChangeRequests() {
     // Applied (what hits the API)
     const [applied, setApplied] = useState({ search: '', status: '', partner_id: '', borrower_id: '' });
 
-    // Dropdown data
-    const [partners, setPartners] = useState<{ label: string; value: number }[]>([]);
+    // Dropdown data - the partner list is the host's only
+    const { data: partnerOptions = [], isLoading: loadingPartners } = usePartnerOptions(user?.is_host == 1);
+    const partners = partnerOptions.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
     const [borrowers, setBorrowers] = useState<{ label: string; value: number }[]>([]);
-    const [loadingPartners, setLoadingPartners] = useState(false);
     const [loadingBorrowers, setLoadingBorrowers] = useState(false);
 
     // Pagination
@@ -85,23 +86,6 @@ export default function ChangeRequests() {
     const totalRecords = apiResponse?.meta?.total || 0;
     const statistics = (apiResponse as any)?.statistics || {};
     const loading = isLoading || isFetching;
-
-    // ── Load partners once ────────────────────────────────────────────
-    useEffect(() => {
-        setLoadingPartners(true);
-        fetchPartners({ per_page: 500 })
-            .then((res: any) => {
-                const list = res?.data || [];
-                setPartners(list.map((p: any) => ({
-                    label: p.full_name && p.company_name
-                        ? `${p.full_name} (${p.company_name})`
-                        : (p.company_name || p.full_name || `Partner #${p.id}`),
-                    value: p.id
-                })));
-            })
-            .catch(() => { })
-            .finally(() => setLoadingPartners(false));
-    }, []);
 
     // ── Load borrowers (optionally filtered by partner) ──────────────
     useEffect(() => {

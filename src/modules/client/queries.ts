@@ -25,7 +25,6 @@ import {
 } from './services';
 import type { BorrowerTier, BorrowerProgress } from './types';
 import { fetchAllBorrowers, getAllUsers } from '../borrower/services';
-import { fetchPartners } from '../partner/services';
 import type { Client, ClientFilterParams } from './types';
 
 // Query Keys
@@ -42,7 +41,6 @@ export const clientKeys = {
     capitalAccessStrategies: (id: string | number) => [...clientKeys.detail(id), 'capitalAccessStrategies'] as const,
     businessFinancials: (id: string | number) => [...clientKeys.detail(id), 'businessFinancials'] as const,
     listStats: (partnerId?: string | number) => [...clientKeys.lists(), 'stats', partnerId] as const,
-    partners: () => ['partners'] as const,
     users: () => ['users'] as const,
     tiers: () => ['tiers'] as const,
     plans: () => ['plans', 'host'] as const,
@@ -213,24 +211,6 @@ export const useClientCapitalAccessStrategies = (id: string | number, enabled: b
         queryKey: clientKeys.capitalAccessStrategies(id),
         queryFn: () => fetchClientCapitalAccessStrategies(id),
         enabled: enabled && !!id,
-    });
-};
-
-
-export const usePartners = (enabled: boolean = true) => {
-    return useQuery({
-        queryKey: clientKeys.partners(),
-        queryFn: async () => {
-            const result = await fetchPartners();
-            return result.status ? (result.data || []).map((partner: any) => ({
-                id: partner.id,
-                full_name: partner.full_name,
-                company_name: partner.company_name,
-                displayLabel: `${partner.full_name} (${partner.company_name})`
-            })) : [];
-        },
-        enabled,
-        staleTime: 5 * 60 * 1000,
     });
 };
 

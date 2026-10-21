@@ -13,7 +13,7 @@ import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
 import { useCommissions } from '../../modules/commission/queries';
 import { CommissionListItem } from '../../modules/commission/types';
-import { fetchPartners } from '../../modules/partner/services';
+import { usePartnerOptions, partnerOptionLabel } from '../../modules/partner';
 import { useAuthStore } from '../../store/auth/authStore';
 import { PAYMENT_STATUS_OPTIONS, COMMISSION_STATUS_OPTIONS, PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP } from '../../config/statusOptions';
 import { formatCurrency } from '../../utils/helper';
@@ -25,8 +25,9 @@ export default function CommissionList() {
     const { user } = useAuthStore();
     const isPartner = user?.is_host == false;
 
-    // State for partner dropdown options (only used for non-partner users)
-    const [partnersList, setPartnersList] = useState<Array<{ label: string, value: number }>>([]);
+    // Partner dropdown options (only loaded for non-partner users, who see the filter)
+    const { data: partnerOptions = [] } = usePartnerOptions(!isPartner);
+    const partnersList = partnerOptions.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
 
     // Pagination state
     const [page, setPage] = useState<number>(1);
@@ -117,25 +118,8 @@ export default function CommissionList() {
         });
     };
 
-    // Load partners for dropdown filter on mount (only for non-partner users)
     useEffect(() => {
-        // Skip fetching partners if user is a partner (they won't see the filter)
         if (isPartner) return;
-
-        const loadPartnersList = async () => {
-            try {
-                const result = await fetchPartners();
-                if (result.status) {
-                    setPartnersList((result.data || []).map((p: any) => ({
-                        label: p.full_name + ' (' + p.company_name + ')',
-                        value: p.id
-                    })));
-                }
-            } catch (err) {
-                console.error('Failed to load partners list:', err);
-            }
-        };
-        loadPartnersList();
 
         // Add class to body to prevent global scroll
         document.body.classList.add('table-page-fit-active');
