@@ -10,6 +10,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
+import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
 import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip, downloadFundingApplicationDocument } from '../../../modules/application/services';
 import { handleFileDownload } from '../../../utils/fileDownload';
@@ -87,7 +88,9 @@ export default function FundingApplicationDetails() {
     // Editable while the request is approved and the application is at status
     // key 9 or below. The server works that out from the lifecycle key and
     // sends it as is_editable, so no status names are compared here.
+    // The host edits any partner's application; a white-label partner only its own borrowers'.
     const canEditApplication =
+        (isHost || (user?.partner_type === PARTNER_TYPES.WHITE_LABEL && app?.partner_id == authPartnerId)) &&
         app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
         !!app?.funding_request_id &&
         !!app?.is_editable;

@@ -4,6 +4,7 @@ import FundingApplicationDetails from '../../../../src/pages/applications/fundin
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import { FUNDING_APPLICATION_STATUS } from '../../../../src/config/borrower'
 import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
+import { PARTNER_TYPES } from '../../../../src/config/partnerTypeOptions'
 
 const detail = vi.hoisted(() => ({ application: {} as Record<string, unknown> }))
 
@@ -75,6 +76,37 @@ describe('FundingApplicationDetails — Edit Funding Application', () => {
 
   it('hides it when the application has no funding request to open the form on', () => {
     detail.application = { ...editable, funding_request_id: null }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
+  })
+
+  it("offers the host Edit on another partner's application too", () => {
+    detail.application = { ...editable, partner_id: 7 }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).toHaveAttribute('href', '/fund-application/29')
+  })
+
+  it("offers it to a white-label partner on its own borrower's application", () => {
+    detail.application = { ...editable, partner_id: 2 }
+    useAuthStore.setState({ user: { id: 2, is_host: false, partner_id: 2, partner_type: PARTNER_TYPES.WHITE_LABEL, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).toHaveAttribute('href', '/fund-application/29')
+  })
+
+  it("never offers it to a white-label partner on another partner's application", () => {
+    detail.application = { ...editable, partner_id: 7 }
+    useAuthStore.setState({ user: { id: 2, is_host: false, partner_id: 2, partner_type: PARTNER_TYPES.WHITE_LABEL, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
+  })
+
+  it("never offers it to a certified partner, even on its own borrower's application", () => {
+    detail.application = { ...editable, partner_id: 3 }
+    useAuthStore.setState({ user: { id: 3, is_host: false, partner_id: 3, partner_type: PARTNER_TYPES.CERTIFIED, permissions: [] } as never })
     renderWithProviders(<FundingApplicationDetails />)
 
     expect(editLink()).not.toBeInTheDocument()

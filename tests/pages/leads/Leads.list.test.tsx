@@ -23,7 +23,9 @@ describeListPage(
       { id: 51, contact_person: 'Lena Lead', company_name: 'Lead Works', email: 'lena@example.test', phone_number: '(555) 010-0001', lead_type: 'Borrower', status: 'New', country: 'United States', state: 'Texas', city: 'Austin', convert_to: null },
       { id: 52, contact_person: 'Cora Converted', company_name: 'Done Deal', email: 'cora@example.test', phone_number: '(555) 010-0003', lead_type: 'Partner', status: 'Won', convert_to: 'Partner' },
     ],
-    shows: ['Lena Lead', 'Lead Works', 'cora@example.test', 'Converted as a Partner'],
+    // The Contact Info column breaks an email after its @ so it can wrap, so
+    // the second row is matched by its company instead of its email.
+    shows: ['Lena Lead', 'Lead Works', 'Done Deal', 'Converted as a Partner'],
     emptyText: 'No leads found',
     search: { placeholder: 'Search here...' },
     create: { permission: 'create leads', label: /add lead/i, role: 'button', target: '/leads/create' },
