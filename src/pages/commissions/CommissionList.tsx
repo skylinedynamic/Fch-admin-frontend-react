@@ -78,7 +78,7 @@ export default function CommissionList() {
             avg_commission_rate: apiStatistics?.avg_commission_rate || 0,
             partner_commission_amount: apiStatistics?.partner_commission_amount || 0,
             total_funded_amount: apiStatistics?.total_funded_amount || 0,
-            total_deals: apiStatistics?.total_deals || 0
+            completed_deals: apiStatistics?.completed_deals || 0
         };
     }, [commissionData]);
 
@@ -101,7 +101,7 @@ export default function CommissionList() {
         }
 
         if (isPartner) {
-            stats.push({ title: "Total Deals", value: statistics.total_deals, icon: "ri-group-line", colorVariant: "success" });
+            stats.push({ title: "Completed Deals", value: statistics.completed_deals, icon: "ri-group-line", colorVariant: "success" });
         }
 
         return stats;

@@ -5,6 +5,7 @@ export interface CommissionStatistics {
     total_commission_amount: string;
     avg_commission_rate: number;
     total_deals: number;
+    completed_deals: number;
     partner_commission_amount: string;
     total_funded_amount: number;
 }
