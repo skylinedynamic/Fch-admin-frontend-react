@@ -1,28 +1,49 @@
 // Common fields shared between list and detail
 import { PaginatedApiResponse } from '../application/types';
 
+/**
+ * The Commissions list cards. Which fields arrive depends on `viewer` (see
+ * ./viewer): owners get their share by payment status, host staff their own
+ * payout, partner staff only deal counts.
+ */
 export interface CommissionStatistics {
-    total_commission_amount: string;
-    avg_commission_rate: number;
+    viewer?: string;
     total_deals: number;
     completed_deals: number;
-    partner_commission_amount: string;
     total_funded_amount: number;
+    // Owners
+    total_commission_amount?: number | string;
+    paid_amount?: number;
+    pending_amount?: number;
+    unpaid_amount?: number;
+    avg_commission_rate?: number;
+    // Host owner only
+    partner_commission_amount?: number | string;
+    paid_to_staff?: number;
+    /** The whole commission on the deals: host and partner shares together. */
+    deal_commission_amount?: number;
+    /** What the host still has to pay out on funded deals (partner shares + staff payouts). */
+    payouts_due_amount?: number;
+    // Host staff only
+    my_paid_amount?: number;
+    my_expected_amount?: number;
+    my_expected_deals?: number;
 }
 
 export interface CommissionPaginatedResponse extends PaginatedApiResponse<CommissionListItem> {
     statistics: CommissionStatistics;
 }
 
+/** The money fields arrive only for viewers allowed to see them (see ./viewer). */
 interface CommissionBase {
     id: number;
     funding_application_id: number;
-    total_commission: string;
-    admin_commission: string;
-    partner_commission: string;
-    total_commission_amount: string;
-    admin_commission_amount: string;
-    partner_commission_amount: string;
+    total_commission?: string;
+    admin_commission?: string;
+    partner_commission?: string;
+    total_commission_amount?: string;
+    admin_commission_amount?: string;
+    partner_commission_amount?: string;
     commission_status: string;
     currency: string;
     currency_symbol: string;
@@ -37,9 +58,12 @@ export interface CommissionListItem extends CommissionBase {
     payment_status: string;
     note: string | null;
     date: string;
+    /** Host staff only: their payout from this deal. */
+    my_payout?: number | null;
 }
 
 export interface CommissionDetail extends CommissionBase {
+    viewer?: string;
     commission_payment_status: string;
     payout_date: string | null;
     commission_note: string | null;
@@ -73,8 +97,8 @@ export interface CommissionDetail extends CommissionBase {
     partner_type: string;
     partner_logo: string | null;
 
-    /** Clients of the host partner only; null otherwise. */
-    payout: CommissionPayout | null;
+    /** Clients of the host partner only; null otherwise. Not sent to partner staff. */
+    payout?: CommissionPayout | null;
 }
 
 /** Who a commission is paid out to: the partner whose client it is, or the user assigned to a host-partner client. */

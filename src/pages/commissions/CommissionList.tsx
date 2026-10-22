@@ -13,6 +13,8 @@ import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
 import { useCommissions } from '../../modules/commission/queries';
 import { CommissionListItem } from '../../modules/commission/types';
+import { COMMISSION_VIEWER, resolveCommissionViewer } from '../../modules/commission';
+import { commissionCards } from './components/commissionCards';
 import { usePartnerOptions, partnerOptionLabel } from '../../modules/partner';
 import { useAuthStore } from '../../store/auth/authStore';
 import { PAYMENT_STATUS_OPTIONS, COMMISSION_STATUS_OPTIONS, PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP } from '../../config/statusOptions';
@@ -69,43 +71,15 @@ export default function CommissionList() {
     // Use Query Wrapper
     const { data: commissionData, isLoading, isFetching } = useCommissions(queryPayload);
 
-    // Calculate statistics from API data
-    const statistics = useMemo(() => {
-        // If the API provides summary data in the response, use it (Global stats)
-        const apiStatistics = commissionData?.statistics;
-        return {
-            total_commissions: apiStatistics?.total_commission_amount || 0,
-            avg_commission_rate: apiStatistics?.avg_commission_rate || 0,
-            partner_commission_amount: apiStatistics?.partner_commission_amount || 0,
-            total_funded_amount: apiStatistics?.total_funded_amount || 0,
-            completed_deals: apiStatistics?.completed_deals || 0
-        };
-    }, [commissionData]);
-
-    const statisticsConfig = useMemo(() => {
-        const stats: Array<{
-            title: string;
-            value: number | string;
-            icon: string;
-            colorVariant: string;
-            isCurrency?: boolean;
-            isPercent?: boolean;
-        }> = [
-                { title: "Total Funded Amount", value: statistics.total_funded_amount, icon: "ri-time-line", colorVariant: "warning", isCurrency: true },
-                { title: "Total Commission", value: statistics.total_commissions, icon: "ri-money-dollar-circle-line", colorVariant: "secondary", isCurrency: true },
-                { title: "Avg Commission Rate", value: statistics.avg_commission_rate, icon: "ri-percent-line", colorVariant: "info", isPercent: true }
-            ];
-
-        if (!isPartner) {
-            stats.push({ title: "Partner Commission", value: statistics.partner_commission_amount, icon: "ri-user-line", colorVariant: "success", isCurrency: true });
-        }
-
-        if (isPartner) {
-            stats.push({ title: "Completed Deals", value: statistics.completed_deals, icon: "ri-group-line", colorVariant: "success" });
-        }
-
-        return stats;
-    }, [statistics, isPartner]);
+    // Who is looking decides the cards and the amount columns (see modules/commission/viewer).
+    const viewer = resolveCommissionViewer(commissionData?.statistics?.viewer, user);
+    const statisticsConfig = useMemo(
+        () => commissionCards(viewer, commissionData?.statistics),
+        [viewer, commissionData]
+    );
+    const showsHostShare = viewer === COMMISSION_VIEWER.HOST_OWNER;
+    const showsPartnerShare = showsHostShare || viewer === COMMISSION_VIEWER.PARTNER_OWNER;
+    const showsMyPayout = viewer === COMMISSION_VIEWER.HOST_STAFF;
 
     const handleApplyFilters = () => {
         setPage(1);
@@ -328,8 +302,9 @@ export default function CommissionList() {
                                             <Column field="commission_status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '110px' }} />
                                             <Column header="Requested Amount" field="requested_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.requested_amount ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} sortable style={{ minWidth: '140px' }} />
                                             <Column header="Funded Amount" field="funded_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.funded_amount ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} sortable style={{ minWidth: '140px' }} />
-                                            {!isPartner && <Column header="Admin Comm." field="admin_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.admin_commission_amount ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} sortable style={{ minWidth: '140px' }} />}
-                                            <Column header="Partner Comm." field="partner_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.partner_commission_amount ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} sortable style={{ minWidth: '140px' }} />
+                                            {showsHostShare && <Column header="Admin Comm." field="admin_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.admin_commission_amount ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} sortable style={{ minWidth: '140px' }} />}
+                                            {showsPartnerShare && <Column header="Partner Comm." field="partner_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.partner_commission_amount ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} sortable style={{ minWidth: '140px' }} />}
+                                            {showsMyPayout && <Column header="My Payout" field="my_payout" body={(rowData: CommissionListItem) => formatCurrency(rowData.my_payout ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} style={{ minWidth: '140px' }} />}
                                             <Column field="payment_status" header="Payment Status" body={paymentStatusBodyTemplate} sortable style={{ minWidth: '110px' }} />
                                         </DataTable>
                                     </div>

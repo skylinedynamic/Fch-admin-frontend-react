@@ -77,6 +77,20 @@ describe('Dashboard', () => {
     expect(await screen.findByText(RESTRICTED)).toBeInTheDocument()
   })
 
+  it("shows the commission card in the viewer's terms - partner staff get their deals, not money", async () => {
+    signIn({ is_host: 0, partner_id: 5, entity_type: 'Employee' })
+    allowBackgroundCalls()
+    api('get', '/common/dashboard', {
+      status: true,
+      data: { counts: { total_clients: 4, total_leads: 2, funding_application: 1 }, commission: { viewer: 'partner_staff', deals: 3, completed_deals: 1 } },
+    })
+    renderPage(<Dashboard />, { path: '/' })
+
+    const card = (await screen.findByText('My Deals')).closest('.card') as HTMLElement
+    expect(card).toHaveTextContent('3')
+    expect(screen.queryByText('Total Commission')).not.toBeInTheDocument()
+  })
+
   it('does not show the banner during an active free trial', async () => {
     mount({ is_host: 0, partner_id: 5 }, { is_host: false, is_free_trail: true, free_trail_end_date: '2999-01-01' })
 

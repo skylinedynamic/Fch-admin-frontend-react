@@ -3,12 +3,14 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
 import { useCommission } from '../../modules/commission/queries';
 import { CommissionDetail } from '../../modules/commission/types';
+import { COMMISSION_VIEWER, resolveCommissionViewer } from '../../modules/commission';
 import { useAuthStore } from '../../store/auth/authStore';
 import CommissionDetailsLoader from '../../components/Loader/CommissionDetailsLoader';
 import ErrorPage from '../Utility/ErrorPage';
 import { PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP, PAYMENT_STATUS_OPTIONS } from '../../config/statusOptions';
 import { FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../config/borrower';
 import { formatCurrency } from '../../utils/helper';
+import { PAYOUT_TYPE_COMMISSION } from '../../config/compensationOptions';
 import PayoutSection from './components/PayoutSection';
 
 const DetailRow = ({ label, value, className = 'col-md-6 mb-3' }: { label: string; value: React.ReactNode; className?: string }) => (
@@ -53,8 +55,16 @@ export default function CommissionDetails() {
 
     const commission = commissionState || fetchedCommission;
 
-    // Determine if user is partner (is_host === false means partner)
-    const isPartner = user?.is_host == false;
+    // Who is looking decides which money the page shows (see modules/commission/viewer).
+    const viewer = resolveCommissionViewer(commission?.viewer, user);
+    // Host staff follow their own payout here; only the host's side pays (the API says can_pay).
+    const showsPayout = viewer === COMMISSION_VIEWER.HOST_OWNER || viewer === COMMISSION_VIEWER.HOST_STAFF;
+    const commissionCard = !commission ? null : {
+        [COMMISSION_VIEWER.HOST_OWNER]: { title: 'Total Commission', amount: commission.total_commission_amount, rate: commission.total_commission },
+        [COMMISSION_VIEWER.PARTNER_OWNER]: { title: 'Your Commission', amount: commission.partner_commission_amount, rate: commission.partner_commission },
+        [COMMISSION_VIEWER.HOST_STAFF]: { title: 'My Commission', amount: commission.payout?.amount, rate: commission.payout?.payout_type === PAYOUT_TYPE_COMMISSION ? commission.payout?.rate : null },
+        [COMMISSION_VIEWER.PARTNER_STAFF]: null,
+    }[viewer];
 
 
 
@@ -121,15 +131,18 @@ export default function CommissionDetails() {
                             subValue={`Funded Amount - ${formatCurrency(commission.funded_amount, commission.currency_symbol, commission.conversion_rate, 0)}`}
                         />
                     </div>
-                    <div className="col-xl-3 col-md-6 mb-3 mb-xl-0">
-                        <StatCard
-                            title={isPartner ? "Your Commission" : "Total Commission"}
-                            value={formatCurrency(isPartner ? commission.partner_commission_amount : commission.total_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}
-                            icon="ri-wallet-line"
-                            color="success"
-                            subValue={`${isPartner ? commission.partner_commission : commission.total_commission}% Rate`}
-                        />
-                    </div>
+                    {/* The viewer's own money from the deal; partner staff get none (see modules/commission/viewer). */}
+                    {commissionCard && (
+                        <div className="col-xl-3 col-md-6 mb-3 mb-xl-0">
+                            <StatCard
+                                title={commissionCard.title}
+                                value={formatCurrency(commissionCard.amount ?? 0, commission.currency_symbol, commission.conversion_rate, 0)}
+                                icon="ri-wallet-line"
+                                color="success"
+                                subValue={commissionCard.rate != null ? `${commissionCard.rate}% Rate` : undefined}
+                            />
+                        </div>
+                    )}
                     <div className="col-xl-3 col-md-6 mb-3 mb-xl-0">
                         <StatCard
                             title="Commission Status"
@@ -268,7 +281,7 @@ export default function CommissionDetails() {
                     <div className="col-lg-4">
 
                         {/* Payout — to the partner, or the assigned user of a host-partner client (Admin View Only) */}
-                        {!isPartner && commission.payout && (
+                        {showsPayout && commission.payout && (
                             <PayoutSection
                                 commissionId={commission.id}
                                 payout={commission.payout}
@@ -278,7 +291,7 @@ export default function CommissionDetails() {
                         )}
 
                         {/* Commission Breakdown (Admin View Only) */}
-                        {!isPartner && (
+                        {viewer === COMMISSION_VIEWER.HOST_OWNER && (
                             <div className="card border-0 shadow-sm mb-4">
                                 <div className="card-header bg-transparent border-bottom">
                                     <h5 className="card-title mb-0 d-flex align-items-center">
