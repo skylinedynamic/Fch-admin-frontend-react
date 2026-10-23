@@ -4512,3 +4512,13 @@
 {"method":"GET","path":"/common/mail-configurations","specific":false}
 {"method":"GET","path":"/common/locations","specific":false}
 {"method":"GET","path":"/common/user-details","specific":false}
+{"method":"GET","path":"/common/reminders/due","specific":false}
+{"method":"GET","path":"/common/notifications","specific":false}
+{"method":"GET","path":"/common/agreement-sign/check","specific":false}
+{"method":"GET","path":"/common/partner-theme","specific":false}
+{"method":"GET","path":"/common/locations","specific":false}
+{"method":"GET","path":"/common/user-details","specific":false}
+{"method":"GET","path":"/common/reminders/due","specific":false}
+{"method":"GET","path":"/common/notifications","specific":false}
+{"method":"GET","path":"/common/agreement-sign/check","specific":false}
+{"method":"GET","path":"/common/partner-theme","specific":false}
