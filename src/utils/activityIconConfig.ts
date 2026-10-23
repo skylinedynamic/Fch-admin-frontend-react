@@ -19,6 +19,7 @@ import {
     LOG_TYPE_PARTNER_CREATE,
     LOG_TYPE_PARTNER_UPDATE,
     LOG_TYPE_PARTNER_CONTACT_UPDATE,
+    LOG_TYPE_PARTNER_CONFIGURATION_UPDATE,
     LOG_TYPE_PARTNER_DELETE,
     LOG_TYPE_PARTNER_PAYMENT,
     LOG_TYPE_BORROWER_CREATE,
@@ -80,6 +81,11 @@ export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): Ava
 
     if (logTypeRaw === LOG_TYPE_TASK_VERIFICATION) {
         return { icon: 'ri-survey-line', bgClass: 'bg-primary-subtle text-primary' };
+    }
+
+    // The host changed one of the partner's settings.
+    if (logTypeRaw === LOG_TYPE_PARTNER_CONFIGURATION_UPDATE) {
+        return { icon: 'ri-settings-3-line', bgClass: 'bg-primary-subtle text-primary' };
     }
 
     // 2. Base Entity Avatars

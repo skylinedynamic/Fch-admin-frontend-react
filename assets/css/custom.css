@@ -7137,9 +7137,17 @@ File: Custom Css File
   color: #4a3500;
 }
 
-.ef-convert-notice--existing .ef-convert-notice__icon { color: #b07400; }
-.ef-convert-notice--existing .ef-convert-notice__title { color: #6b4500; }
-.ef-convert-notice--existing .ef-convert-notice__funding { border-color: #f0d58f; }
+.ef-convert-notice--existing .ef-convert-notice__icon {
+  color: #b07400;
+}
+
+.ef-convert-notice--existing .ef-convert-notice__title {
+  color: #6b4500;
+}
+
+.ef-convert-notice--existing .ef-convert-notice__funding {
+  border-color: #f0d58f;
+}
 
 .ef-convert-notice--new {
   border-color: #4a9fd8;
@@ -7147,9 +7155,17 @@ File: Custom Css File
   color: #0c3550;
 }
 
-.ef-convert-notice--new .ef-convert-notice__icon { color: #0b5a8a; }
-.ef-convert-notice--new .ef-convert-notice__title { color: #08466c; }
-.ef-convert-notice--new .ef-convert-notice__funding { border-color: #b6d8f0; }
+.ef-convert-notice--new .ef-convert-notice__icon {
+  color: #0b5a8a;
+}
+
+.ef-convert-notice--new .ef-convert-notice__title {
+  color: #08466c;
+}
+
+.ef-convert-notice--new .ef-convert-notice__funding {
+  border-color: #b6d8f0;
+}
 
 /* ==========================================================================
    Partners & Leads — top stat cards, table card, and skeleton loaders
@@ -7910,6 +7926,7 @@ File: Custom Css File
   position: static !important;
   top: auto !important;
 }
+
 /*
  * Several-at-once pickers - `.chip-multiselect` (components/Common/ChipMultiSelect):
  * Purpose of Funds and Additional Funding Types on the funding application's
@@ -7918,13 +7935,15 @@ File: Custom Css File
  * boxes in the primary colour. Kept identical to the borrower portal's copy.
  */
 .chip-multiselect .p-multiselect {
-    position: relative; /* the appendTo="self" panel is placed against the field */
-    width: 100%;
-    border-color: #ced4da; /* the same at rest, on hover and on focus */
-    min-height: 37.5px;
-    height: auto;
-    border-radius: 4px;
-    align-items: center;
+  position: relative;
+  /* the appendTo="self" panel is placed against the field */
+  width: 100%;
+  border-color: #ced4da;
+  /* the same at rest, on hover and on focus */
+  min-height: 37.5px;
+  height: auto;
+  border-radius: 4px;
+  align-items: center;
 }
 
 /* No hover or focus colour: the border and shadow stay as they are at rest -
@@ -7934,122 +7953,122 @@ File: Custom Css File
 .chip-multiselect .p-multiselect:not(.p-disabled).p-inputwrapper-focus,
 .chip-multiselect-panel .p-multiselect-filter-container .p-inputtext:enabled:hover,
 .chip-multiselect-panel .p-multiselect-filter-container .p-inputtext:enabled:focus {
-    border-color: #ced4da;
-    box-shadow: none;
-    outline: 0 none;
+  border-color: #ced4da;
+  box-shadow: none;
+  outline: 0 none;
 }
 
 .chip-multiselect .p-multiselect .p-multiselect-label-container {
-    overflow: visible;
+  overflow: visible;
 }
 
 .chip-multiselect .p-multiselect .p-multiselect-label {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 8px;
-    white-space: normal;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  white-space: normal;
 }
 
 .chip-multiselect .p-multiselect .p-multiselect-label.p-placeholder {
-    padding: 8px 12px;
-    font-size: 13px;
-    color: var(--vz-secondary-color, #878a99);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--vz-secondary-color, #878a99);
 }
 
 .chip-multiselect .p-multiselect .p-multiselect-token {
-    flex-shrink: 0;
-    max-width: 100%;
-    margin: 0;
-    gap: 6px;
-    padding: 2px 6px 2px 10px;
-    border: 1px solid rgba(var(--vz-primary-rgb, 64, 81, 137), 0.18);
-    border-radius: 20px;
-    background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
-    color: var(--vz-primary, #405189);
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.4;
+  flex-shrink: 0;
+  max-width: 100%;
+  margin: 0;
+  gap: 6px;
+  padding: 2px 6px 2px 10px;
+  border: 1px solid rgba(var(--vz-primary-rgb, 64, 81, 137), 0.18);
+  border-radius: 20px;
+  background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
+  color: var(--vz-primary, #405189);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .chip-multiselect .p-multiselect .p-multiselect-token-label {
-    margin-right: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  margin-right: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chip-multiselect .p-multiselect .p-multiselect-token-icon {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    border-radius: 50%;
-    color: var(--vz-primary, #405189);
-    font-size: 11px;
-    line-height: 16px;
-    text-align: center;
-    opacity: 0.65;
-    transition: all 0.15s ease-in-out;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border-radius: 50%;
+  color: var(--vz-primary, #405189);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  opacity: 0.65;
+  transition: all 0.15s ease-in-out;
 }
 
 .chip-multiselect .p-multiselect .p-multiselect-token-icon:hover {
-    background: var(--vz-primary, #405189);
-    color: #fff;
-    opacity: 1;
+  background: var(--vz-primary, #405189);
+  color: #fff;
+  opacity: 1;
 }
 
 /* The list: pinned under the field at its width, search-only header. */
 .chip-multiselect .chip-multiselect-panel.p-multiselect-panel {
-    top: calc(100% + 3px) !important;
-    left: -1px !important;
-    width: calc(100% + 2px);
-    min-width: 0;
-    max-width: none;
-    border: 1px solid var(--vz-border-color, #e9ebec);
-    border-radius: 4px;
-    box-shadow: 0 5px 20px rgba(30, 32, 37, 0.12);
-    transform-origin: top !important;
-    z-index: 1056;
+  top: calc(100% + 3px) !important;
+  left: -1px !important;
+  width: calc(100% + 2px);
+  min-width: 0;
+  max-width: none;
+  border: 1px solid var(--vz-border-color, #e9ebec);
+  border-radius: 4px;
+  box-shadow: 0 5px 20px rgba(30, 32, 37, 0.12);
+  transform-origin: top !important;
+  z-index: 1056;
 }
 
 .chip-multiselect-panel .p-multiselect-header {
-    gap: 8px;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--vz-border-color, #e9ebec);
-    border-radius: 4px 4px 0 0;
-    background: var(--vz-light, #f3f6f9);
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vz-border-color, #e9ebec);
+  border-radius: 4px 4px 0 0;
+  background: var(--vz-light, #f3f6f9);
 }
 
 .chip-multiselect-panel .p-multiselect-filter-container {
-    width: 100%;
+  width: 100%;
 }
 
 .chip-multiselect-panel .p-multiselect-filter-container .p-inputtext {
-    width: 100%;
-    padding: 6px 10px 6px 30px;
-    border-radius: 4px;
-    font-size: 13px;
+  width: 100%;
+  padding: 6px 10px 6px 30px;
+  border-radius: 4px;
+  font-size: 13px;
 }
 
 .chip-multiselect-panel .p-multiselect-filter-container .p-multiselect-filter-icon {
-    right: auto;
-    left: 10px;
-    margin-top: -0.5rem;
-    color: var(--vz-secondary-color, #878a99);
+  right: auto;
+  left: 10px;
+  margin-top: -0.5rem;
+  color: var(--vz-secondary-color, #878a99);
 }
 
 .chip-multiselect-panel .p-multiselect-items-wrapper {
-    max-height: 240px;
+  max-height: 240px;
 }
 
 .chip-multiselect-panel .p-multiselect-item {
-    margin: 2px 6px;
-    padding: 7px 10px;
-    border-radius: 4px;
-    font-size: 13px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  margin: 2px 6px;
+  padding: 7px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* A ticked option's checkbox in the primary colour, not PrimeReact's blue.
@@ -8057,17 +8076,17 @@ File: Custom Css File
    rule above sets it with !important. */
 .chip-multiselect-panel .p-checkbox.p-highlight .p-checkbox-box,
 .chip-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight {
-    border-color: var(--vz-primary, #405189) !important;
-    background: var(--vz-primary, #405189);
+  border-color: var(--vz-primary, #405189) !important;
+  background: var(--vz-primary, #405189);
 }
 
 .chip-multiselect-panel .p-checkbox .p-checkbox-box {
-    box-shadow: none;
+  box-shadow: none;
 }
 
 .chip-multiselect-panel .p-multiselect-item.p-highlight {
-    background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
-    color: var(--vz-primary, #405189);
+  background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
+  color: var(--vz-primary, #405189);
 }
 
 
@@ -8243,7 +8262,7 @@ File: Custom Css File
 /* The banner has taken the header offset, so the page after it drops its own:
    custom.min.css forces .page-content's 70px top padding with !important.
    Table pages (.page-content-fit) carry no offset of their own. */
-.main-content > .mail-not-verified-banner ~ .page-content:not(.page-content-fit) {
+.main-content>.mail-not-verified-banner~.page-content:not(.page-content-fit) {
   margin-top: 0 !important;
   padding-top: 0.5rem !important;
 }
@@ -8282,11 +8301,13 @@ File: Custom Css File
 }
 
 @keyframes mail-banner-breathe {
+
   0%,
   100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(var(--vz-danger-rgb), 0.35);
   }
+
   50% {
     transform: scale(1.06);
     box-shadow: 0 0 0 7px rgba(var(--vz-danger-rgb), 0);
@@ -8306,4 +8327,505 @@ File: Custom Css File
 .flatpickr-wrapper {
     display: block !important;
     width: 100% !important;
+}
+/* ==========================================================================
+   Partner profile › Configuration — a partner's Email, SMS, Branding and
+   Payment settings, edited by the host (PartnerConfigurationSection)
+   ========================================================================== */
+
+.partner-config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Partner details: a small summary of whose settings these are. */
+.partner-config__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e9ebec;
+  border-radius: 4px;
+  background: #f8f9fb;
+}
+
+.partner-config__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-color, #001f3f);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.partner-config__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.partner-config__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.partner-config__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.partner-config__badge {
+  display: inline-block;
+  padding: 0 0.375rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 1.6;
+  font-weight: 500;
+  color: #495057;
+  background: #fff;
+}
+
+.partner-config__badge.is-active {
+  border-color: #0ab39c;
+  color: #087d6d;
+}
+
+.partner-config__badge.is-muted {
+  color: #6c757d;
+}
+
+.partner-config__contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0 0 0 auto;
+}
+
+.partner-config__contact dt {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6c757d;
+}
+
+.partner-config__contact dd {
+  margin: 0;
+  font-size: 11px;
+  color: #212529;
+  word-break: break-word;
+}
+
+.partner-config__note {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #b6d8f0;
+  border-radius: 4px;
+  background: #eef6fd;
+  color: #0c3550;
+  font-size: 11px;
+}
+
+/* Section menu on the left, the open section on the right. */
+.partner-config__layout {
+  display: grid;
+  grid-template-columns: minmax(170px, 200px) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.partner-config__menu {
+  padding: 0.375rem;
+  border: 1px solid #e9ebec;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.partner-config__menu-title {
+  padding: 0.25rem 0.5rem 0.375rem;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6c757d;
+}
+
+.partner-config__menu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  margin-bottom: 0.125rem;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.partner-config__menu-item:last-child {
+  margin-bottom: 0;
+}
+
+.partner-config__menu-item:hover {
+  background: #f3f6f9;
+}
+
+.partner-config__menu-item:focus-visible {
+  outline: 2px solid var(--primary-color, #001f3f);
+  outline-offset: 1px;
+}
+
+.partner-config__menu-item.is-active {
+  border-left-color: var(--primary-color, #001f3f);
+  background: #f3f6f9;
+}
+
+.partner-config__menu-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.partner-config__menu-item.is-active .partner-config__menu-label {
+  color: var(--primary-color, #001f3f);
+}
+
+.partner-config__menu-description {
+  font-size: 10px;
+  line-height: 1.3;
+  color: #6c757d;
+}
+
+.partner-config__panel {
+  min-width: 0;
+  border: 1px solid #e9ebec;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.partner-config__panel-header {
+  padding: 0.5rem 0.875rem;
+  border-bottom: 1px solid #e9ebec;
+}
+
+.partner-config__panel-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.partner-config__panel-subtitle {
+  margin: 0;
+  font-size: 10.5px;
+  color: #6c757d;
+}
+
+.partner-config__panel-body {
+  padding: 0.75rem;
+  font-size: 11.5px;
+}
+
+/* The Settings screens shown inside the tab, compact: smaller text, padding
+   and controls than on the Settings page itself (which these rules do not
+   touch). */
+.partner-config__panel-body h4,
+.partner-config__panel-body h5,
+.partner-config__panel-body .card-title {
+  font-size: 12.5px;
+  margin-bottom: 0.375rem;
+}
+
+.partner-config__panel-body h6 {
+  font-size: 11.5px;
+  margin-bottom: 0.25rem;
+}
+
+.partner-config__panel-body .form-label,
+.partner-config__panel-body label,
+.partner-config__panel-body .form-text,
+.partner-config__panel-body p,
+.partner-config__panel-body small,
+.partner-config__panel-body .text-muted {
+  font-size: 11px;
+}
+
+.partner-config__panel-body .form-label {
+  margin-bottom: 0.25rem;
+}
+
+.partner-config__panel-body p {
+  margin-bottom: 0.5rem;
+}
+
+.partner-config__panel-body .card {
+  margin-bottom: 0.75rem;
+}
+
+.partner-config__panel-body .card-header {
+  padding: 0.5rem 0.75rem;
+}
+
+.partner-config__panel-body .card-body {
+  padding: 0.75rem;
+}
+
+.partner-config__panel-body .alert {
+  padding: 0.375rem 0.625rem;
+  margin-bottom: 0.5rem;
+  font-size: 11px;
+}
+
+/* Every field one size: text inputs (incl. -sm and the colour fields' hex
+   input), selects, input-group addons and PrimeReact dropdowns. !important
+   because some of these forms set height and font size inline. */
+.partner-config__panel-body input.form-control,
+.partner-config__panel-body .form-select,
+.partner-config__panel-body .input-group-text,
+.partner-config__panel-body .p-dropdown {
+  height: 32px !important;
+  min-height: 32px !important;
+  font-size: 11.5px !important;
+  line-height: 1.4;
+}
+
+.partner-config__panel-body input.form-control,
+.partner-config__panel-body .form-select,
+.partner-config__panel-body .input-group-text {
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.partner-config__panel-body .p-dropdown {
+  display: flex;
+  align-items: center;
+  background: #fff;
+}
+
+/* The dropdown is one field: its text part takes the dropdown's own background
+   (no separate box or shadow), also when disabled. */
+.partner-config__panel-body .p-dropdown .p-dropdown-label,
+.partner-config__panel-body .p-dropdown .p-dropdown-label * {
+  font-size: 11.5px !important;
+}
+
+.partner-config__panel-body .p-dropdown .p-dropdown-label {
+  padding: 0 0.5rem;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.partner-config__panel-body .p-dropdown.p-disabled {
+  background: #f3f6f9;
+}
+
+/* Inside the tab the screens are plain content, not cards within the panel. */
+.partner-config__panel-body .card {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  margin-bottom: 0 !important;
+}
+
+.partner-config__panel-body .card>.card-header {
+  padding: 0 0 0.5rem !important;
+  background: transparent !important;
+}
+
+.partner-config__panel-body .card>.card-body {
+  padding: 0.625rem 0 0 !important;
+}
+
+.partner-config__panel-body .card>.card-footer {
+  padding: 0.625rem 0 0 !important;
+  background: transparent !important;
+}
+
+/* …but cards inside that outer one are the screen's sections (e.g. Branding's
+   name, logos and colours): they keep a light outline and header strip, so one
+   section is told from the next. */
+.partner-config__panel-body .card .card {
+  border: 1px solid #e9ebec !important;
+  border-radius: 4px !important;
+  /* The header strip keeps to the section's 4px corners. */
+  overflow: hidden;
+  background: #fff !important;
+  margin-bottom: 0.625rem !important;
+}
+
+.partner-config__panel-body .card .card>.card-header {
+  padding: 0.375rem 0.625rem !important;
+  background: #f8f9fb !important;
+  border-bottom: 1px dashed #e9ebec;
+}
+
+.partner-config__panel-body .card .card>.card-body {
+  padding: 0.625rem !important;
+}
+
+/* Bootstrap's size utilities (fs-13 … fs-16) set !important sizes; bring them
+   to the tab's scale. */
+.partner-config__panel-body .fs-16,
+.partner-config__panel-body .fs-15,
+.partner-config__panel-body .fs-14 {
+  font-size: 12.5px !important;
+}
+
+.partner-config__panel-body .fs-13,
+.partner-config__panel-body .fs-12 {
+  font-size: 11px !important;
+}
+
+/* Branding's colour swatch sits beside the hex field; match its height. */
+.partner-config__panel-body label.position-relative.flex-shrink-0 {
+  min-height: 32px !important;
+  width: 34px !important;
+  padding: 4px !important;
+}
+
+.partner-config__panel-body textarea.form-control {
+  font-size: 11.5px;
+}
+
+/* Every button the same height and at least the same width (not the icon
+   buttons inside input groups, e.g. show password). */
+.partner-config__panel-body .btn:not(.input-group .btn):not(.btn-close):not(.btn-sm) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  min-width: 112px;
+  /* Never wider than its place (e.g. Branding's narrow logo tiles). */
+  max-width: 100%;
+  padding: 0 0.75rem;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* Small buttons stay small (e.g. Branding's "Choose" in each logo tile). */
+.partner-config__panel-body .btn-sm {
+  max-width: 100%;
+  font-size: 11px;
+}
+
+/* The forms use min-w-0 to let a text column shrink in a flex row; Bootstrap
+   has no such utility, so without this the text runs past its tile. */
+.partner-config__panel-body .min-w-0 {
+  min-width: 0;
+}
+
+.partner-config__panel-body .input-group .btn {
+  height: 32px;
+  padding: 0 0.5rem;
+  font-size: 11.5px;
+}
+
+/* A dropdown inside an input group joins its label box on the left: square
+   corners there, like the text fields (PrimeReact's own radius otherwise wins
+   over the component's rounded-start-0). */
+.partner-config__panel-body .input-group .p-dropdown {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+/* Alerts and info banners: smaller text, icon and padding. */
+.partner-config__panel-body .mail-unverified-alert {
+  padding: 0.5rem 0.75rem !important;
+  gap: 0.625rem !important;
+  margin-bottom: 0.625rem !important;
+}
+
+.partner-config__panel-body .mail-unverified-alert>i {
+  font-size: 20px !important;
+}
+
+.partner-config__panel-body .mail-unverified-alert .alert-heading {
+  font-size: 12px !important;
+  margin-bottom: 0.125rem !important;
+}
+
+.partner-config__panel-body .mail-unverified-alert p,
+.partner-config__panel-body .mail-unverified-alert div {
+  font-size: 11px;
+}
+
+/* Info boxes only - badges share the bg-info-subtle class (e.g. "Sandbox"). */
+.partner-config__panel-body .bg-info-subtle:not(.badge) {
+  padding: 0.5rem 0.75rem !important;
+  gap: 0.625rem !important;
+  margin-bottom: 0.625rem !important;
+}
+
+.partner-config__panel-body .bg-info-subtle:not(.badge) img {
+  height: 32px !important;
+}
+
+.partner-config__panel-body .bg-info-subtle:not(.badge) h6 {
+  font-size: 12px !important;
+  margin-bottom: 0.125rem !important;
+}
+
+.partner-config__panel-body .bg-info-subtle:not(.badge) p {
+  font-size: 11px !important;
+}
+
+/* Every badge one size (Active, Inactive, Sandbox, Production, Default, …). */
+.partner-config__panel-body .badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.25rem;
+  height: 20px;
+  padding: 0 0.5rem !important;
+  margin: 0 !important;
+  font-size: 10.5px !important;
+  line-height: 1;
+}
+
+.partner-config__panel-body .mail-delivery-status h6 {
+  font-size: 12px !important;
+}
+
+.partner-config__panel-body .mail-delivery-status p {
+  font-size: 11px !important;
+}
+
+.partner-config__panel-body .mb-3 {
+  margin-bottom: 0.625rem !important;
+}
+
+.partner-config__panel-body .mb-4 {
+  margin-bottom: 0.875rem !important;
+}
+
+.partner-config__panel-body .row {
+  --bs-gutter-y: 0.25rem;
+}
+
+/* Tablet and phone: the menu goes above the section. */
+@media (max-width: 991.98px) {
+  .partner-config__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .partner-config__contacts {
+    margin-left: 0;
+  }
 }
