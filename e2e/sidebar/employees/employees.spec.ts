@@ -116,6 +116,37 @@ test.describe('Employee create', () => {
     return api
   }
 
+  // The same rule as Users › Add User: at the seat limit a partner on a free
+  // trial is told it is a paid feature, a paid partner is offered a seat.
+  async function openCreateAtSeatLimit(page: Page, isFreeTrial: boolean) {
+    await seedSession(page, { is_host: 0, entity_type: 'Partner', permissions: ['view employees', 'create employees'] } as never)
+    const api = await mockApi(page, [
+      { method: 'GET', match: '/common/user-details', body: ok({ user: { is_host: 0, is_free_trail: isFreeTrial } }) },
+      { method: 'GET', match: '/common/user-count', body: ok({ count: 3, seat_limit: 3, per_user_price: 49 }) },
+    ])
+    await page.goto('/employees/create')
+    await expect(page.getByPlaceholder('Enter full name')).toBeVisible()
+    return api
+  }
+
+  test('a free-trial partner at the seat limit is told it is a paid feature', async ({ page }) => {
+    await openCreateAtSeatLimit(page, true)
+    await page.locator('#createAccountCheckbox').check({ force: true })
+
+    await expect(page.getByText('Paid Version Only')).toBeVisible()
+    await expect(page.getByText(/This feature is available in Paid version/)).toBeVisible()
+    await expect(page.getByText('User Limit Reached')).toBeHidden()
+    await expect(page.locator('#createAccountCheckbox')).not.toBeChecked()
+  })
+
+  test('a paid partner at the seat limit is offered a seat to buy', async ({ page }) => {
+    await openCreateAtSeatLimit(page, false)
+    await page.locator('#createAccountCheckbox').check({ force: true })
+
+    await expect(page.getByText('User Limit Reached')).toBeVisible()
+    await expect(page.getByText('Paid Version Only')).toBeHidden()
+  })
+
   test('server validation errors are shown inline', async ({ page }) => {
     const api = await openCreate(page)
     api.add({

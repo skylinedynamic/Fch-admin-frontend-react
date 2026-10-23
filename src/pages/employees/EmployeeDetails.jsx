@@ -16,6 +16,8 @@ import { fetchRoles, getUserCount, purchaseUserSeats } from '../../modules/user/
 import { fetchInvoiceDetails } from '../../modules/invoice/services';
 import { getUserDetails } from '../../lib/auth/authApi';
 import UserLimitModal from '../users/components/UserLimitModal';
+import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
+import { checkSeatLimit } from '../../utils/seatLimit';
 import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
 import { useAuthStore } from '../../store/auth/authStore';
 import { locationData, PAID_BY_NONE } from '../../config';
@@ -61,6 +63,8 @@ export default function EmployeeDetails() {
   // User Limit States
   const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showFreeTrialLimitModal, setShowFreeTrialLimitModal] = useState(false);
+  const [allowedFreeTrialCount, setAllowedFreeTrialCount] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0, invoiceId: null, userId: null, entityId: null, entityType: null });
   const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
@@ -359,10 +363,10 @@ export default function EmployeeDetails() {
               setLoadingLimitCheck(true);
 
               const data = await getUserCount();
-              const currentCount = parseInt(data?.data?.count || 0);
-              const totalAllowed = parseInt(data?.data?.seat_limit || data?.data?.user_seats || userSubscription?.user_seats || 3);
+              // The same rule as the Users page's Add User.
+              const seats = checkSeatLimit(data?.data, user, userSubscription);
 
-              if (currentCount >= totalAllowed) {
+              if (seats.status !== 'available') {
                 // Limit reached! Uncheck the box and show modal
                 setEmployee((prev) => ({
                   ...prev,
@@ -371,13 +375,20 @@ export default function EmployeeDetails() {
                   user: {}
                 }));
 
+                if (seats.status === 'free_trial') {
+                  // No seats can be bought on a free trial.
+                  setAllowedFreeTrialCount(seats.limit);
+                  setShowFreeTrialLimitModal(true);
+                  return;
+                }
+
                 setLimitData({
-                  count: currentCount,
+                  count: seats.count,
                   price: data?.data?.per_user_price || '0',
-                  limit: totalAllowed,
+                  limit: seats.limit,
                   quantity: 1,
                   months: 1,
-                  totalPrice: parseFloat(data?.data?.per_user_price || 0)
+                  totalPrice: seats.price
                 });
                 setShowLimitModal(true);
                 return;
@@ -921,6 +932,16 @@ export default function EmployeeDetails() {
           userCount={limitData.count}
           freeLimit={limitData.limit}
           perUserPrice={limitData.price}
+        />
+
+        <PaidVersionOnlyModal
+          show={showFreeTrialLimitModal}
+          onHide={() => setShowFreeTrialLimitModal(false)}
+          message={
+            <>
+              This feature is available in Paid version. You can only add <strong>{allowedFreeTrialCount}</strong> users in Free trial.
+            </>
+          }
         />
 
         <InvoicePaymentModal
