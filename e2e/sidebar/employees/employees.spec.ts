@@ -133,22 +133,21 @@ test.describe('Employee create', () => {
     await expect(page).toHaveURL(/\/employees\/create/)
   })
 
-  // What the real API answers when only name, position and email are filled in.
+  // What the real API answers when only name, position and email are filled in:
+  // only the country is still missing - the other details are optional.
   test('the fields the API requires are reported next to each of them', async ({ page }) => {
     const api = await openCreate(page)
     api.add({
       method: 'POST', match: CREATE, status: 422,
-      body: failure('Department is required.', {
-        department: 'Department is required.', phone_number_1: 'Phone number is required.',
-        address: 'Address is required.', state: 'State is required.', city: 'City is required.',
-      } as never),
+      body: failure('Country is required.', { country: 'Country is required.' } as never),
     })
     await page.getByPlaceholder('Enter full name').fill('Nina New')
     await page.getByPlaceholder('Enter position').fill('Analyst')
     await page.locator('input[name="email"]').fill('nina@example.test')
     await page.getByRole('button', { name: /save/i }).click()
+    await expect(page.getByText('Country is required.').first()).toBeVisible()
     for (const message of ['Department is required.', 'Phone number is required.', 'Address is required.', 'State is required.', 'City is required.']) {
-      await expect(page.getByText(message).first()).toBeVisible()
+      await expect(page.getByText(message)).toHaveCount(0)
     }
     await expect(page).toHaveURL(/\/employees\/create/)
   })

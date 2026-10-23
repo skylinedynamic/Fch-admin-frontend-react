@@ -158,7 +158,8 @@ test.describe('User details - edit', () => {
     await page.getByRole('button', { name: /update/i }).click()
     await expect(page.getByText('Name is required')).toBeVisible()
     await expect(page.getByText('Email is required')).toBeVisible()
-    await expect(page.getByText('Phone number is required')).toBeVisible()
+    // The phone number is optional.
+    await expect(page.getByText('Phone number is required')).toHaveCount(0)
     expect(api.find('PUT', '/common/users/11')).toHaveLength(0)
   })
 
@@ -241,7 +242,7 @@ test.describe('User details - edit', () => {
 })
 
 test.describe('User details - create', () => {
-  test('requires employee, name, email, phone, role and password before saving', async ({ page }) => {
+  test('requires employee, name, email, role and password before saving - not the phone', async ({ page }) => {
     await seedSession(page, { permissions: ['view users', 'create users'] })
     const api = await mockApi(page, [{ method: 'POST', match: '/common/roles/fetch-roles', body: ok(ROLES) }])
     await page.goto('/users/create')
@@ -249,7 +250,7 @@ test.describe('User details - create', () => {
     await expect(page.getByText('Please select an employee')).toBeVisible()
     await expect(page.getByText('Name is required')).toBeVisible()
     await expect(page.getByText('Email is required')).toBeVisible()
-    await expect(page.getByText('Phone number is required')).toBeVisible()
+    await expect(page.getByText('Phone number is required')).toHaveCount(0)
     await expect(page.getByText('Role is required')).toBeVisible()
     await expect(page.getByText('Password is required')).toBeVisible()
     expect(api.find('POST', /\/common\/users$/)).toHaveLength(0)

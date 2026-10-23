@@ -164,6 +164,33 @@ describe('UserDetails - adding a user', () => {
     expect(toast.success).toHaveBeenCalledWith('User created successfully')
   })
 
+  it('treats the phone number as optional', async () => {
+    mockLookups()
+    let received: Record<string, unknown> | null = null
+    server.use(
+      http.post('*/common/users', async ({ request }) => {
+        received = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ status: true, message: 'User created successfully.', data: { id: 51 } })
+      })
+    )
+    const user = userEvent.setup()
+    const { container } = renderPage()
+
+    await waitFor(() => expect(container.querySelector('#user-employee')).not.toBeNull())
+    // Not marked as required.
+    expect(container.querySelector('label[for="phone_number"]')?.textContent?.trim()).toBe('Phone Number')
+
+    await choose(user, container, 'user-employee', 'Jane Doe')
+    await user.clear(screen.getByLabelText(/phone number/i))
+    await choose(user, container, 'role_id', 'Staff')
+    await user.type(screen.getByLabelText(/^password/i), 'secret123')
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+    expect(await screen.findByText('Users list page')).toBeInTheDocument()
+    expect(screen.queryByText('Phone number is required')).not.toBeInTheDocument()
+    expect(received).toMatchObject({ employee_id: 7, phone_number: '' })
+  })
+
   it('will not submit without an employee', async () => {
     mockLookups()
     const post = vi.fn()

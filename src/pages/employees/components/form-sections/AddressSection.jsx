@@ -25,7 +25,7 @@ export default function AddressSection({
         <>
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Address <span className="text-danger">*</span></label>
+                    <label className="form-label">Address</label>
                     <input
                         type="text"
                         className={`form-control ${errors.address ? 'is-invalid' : ''}`}
@@ -57,7 +57,7 @@ export default function AddressSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">State <span className="text-danger">*</span></label>
+                    <label className="form-label">State</label>
                     <Dropdown
                         inputId="state"
                         value={employee.state}
@@ -75,7 +75,7 @@ export default function AddressSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">City <span className="text-danger">*</span></label>
+                    <label className="form-label">City</label>
                     <Dropdown
                         inputId="city"
                         value={employee.city}

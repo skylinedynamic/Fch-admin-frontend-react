@@ -64,11 +64,6 @@ const UserModal = ({
       isValid = false;
     }
 
-    if (!user.phone_number) {
-      tempErrors.phone_number = "Phone number is required";
-      isValid = false;
-    }
-
     if (!user.role_id) {
       tempErrors.role_id = "Role is required";
       isValid = false;
@@ -176,7 +171,7 @@ const UserModal = ({
                 </div>
                 <div className="mb-3">
                   <label className="form-label text-muted small fw-semibold text-uppercase mb-1">
-                    Phone Number <span className="text-danger">*</span>
+                    Phone Number
                   </label>
                   <input
                     type="text"

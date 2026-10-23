@@ -15,6 +15,7 @@ Several features or tasks on the same date means several files with the same dat
 | File | Title |
 |---|---|
 | [2026-10-23-embed-form-convert-client-message.md](2026-10-23-embed-form-convert-client-message.md) | Embed Form — Convert modal says clearly whether the client exists |
+| [2026-10-23-user-phone-number-optional.md](2026-10-23-user-phone-number-optional.md) | Users — phone number is optional |
 
 ### 2026-10-14
 
