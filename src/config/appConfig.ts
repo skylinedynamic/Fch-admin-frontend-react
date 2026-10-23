@@ -32,6 +32,11 @@ export const LOG_TYPE_EMAIL_UPDATE = 'email_update';
 export const LOG_TYPE_PARTNER_CREATE = 'partner_create';
 export const LOG_TYPE_PARTNER_UPDATE = 'partner_update';
 export const LOG_TYPE_PARTNER_CONTACT_UPDATE = 'partner_contact_update';
+/** The host changed the partner's Email, SMS, Branding or Payment settings (Partner profile › Configuration). */
+export const LOG_TYPE_PARTNER_CONFIGURATION_UPDATE = 'partner_configuration_update';
+
+// Window event the activity sidebar listens for to reload its entries.
+export const REFRESH_ACTIVITIES_EVENT = 'refreshActivities';
 export const LOG_TYPE_PARTNER_DELETE = 'partner_delete';
 export const LOG_TYPE_EMAIL_SENT = 'email_sent';
 export const LOG_TYPE_ACTIVITY = 'activity';

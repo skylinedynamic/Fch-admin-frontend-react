@@ -4,10 +4,13 @@ import { fetchPartnerPaymentProviders } from '../../../../modules/settings/servi
 import type { PartnerPaymentProvider } from '../../../../modules/settings/services';
 import PaymentMethodsLoader from '../../../../components/Loader/PaymentMethodsLoader';
 import PaymentMethodConfigForm from './PaymentMethodConfigForm';
+import { useConfigPartnerId } from '../../../../modules/settings/configPartner';
 
 import { getProviderDesc } from '../../../../config';
 
 export default function PaymentMethodConfig(): React.JSX.Element {
+    // Partner profile › Configuration: that partner's providers; otherwise the user's own.
+    const configPartnerId = useConfigPartnerId();
     const [providers, setProviders] = useState<PartnerPaymentProvider[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [selectedProvider, setSelectedProvider] = useState<PartnerPaymentProvider | null>(null);
@@ -15,7 +18,7 @@ export default function PaymentMethodConfig(): React.JSX.Element {
     const loadProviders = async () => {
         setLoading(true);
         try {
-            const response = await fetchPartnerPaymentProviders();
+            const response = await fetchPartnerPaymentProviders(configPartnerId);
             if (response.status) {
                 setProviders(response.data || []);
             } else {

@@ -8,6 +8,7 @@ import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../../components/Common/Modals/DynamicActionModal';
 import PaymentMethodStatusModal from '../../../../components/Common/Modals/PaymentMethodStatusModal';
 import { useAuthStore } from '../../../../store/auth/authStore';
+import { useConfigPartnerId } from '../../../../modules/settings/configPartner';
 import { apiClient } from '../../../../lib/http/apiClient';
 import { PAYMENT_METHOD_PROVIDER, PAYMENT_ENVIRONMENT_LABELS } from '../../../../config/paymentConfig';
 
@@ -32,6 +33,8 @@ interface FormErrors {
 
 export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMethodConfigFormProps): React.JSX.Element {
     const user = useAuthStore((state: any) => state.user);
+    // Partner profile › Configuration: that partner's provider settings; otherwise the user's own.
+    const configPartnerId = useConfigPartnerId();
     const queryClient = useQueryClient();
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
@@ -50,7 +53,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             const response = await updatePartnerPaymentProviderStatus({
                 payment_provider_id: provider.id,
                 status: newStatus
-            });
+            }, configPartnerId);
             if (response && response.status && response.data && response.data.id) {
                 setLinkageId(response.data.id);
             }
@@ -94,7 +97,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
     const loadConfig = async () => {
         try {
             setFetching(true);
-            const response = await fetchPartnerPaymentProviderConfig(provider.id);
+            const response = await fetchPartnerPaymentProviderConfig(provider.id, configPartnerId);
             if (response && response.status && response.data) {
                 const linkage = response.data;
                 setLinkageId(linkage.id || null);
@@ -410,7 +413,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 is_default: isDefault,
                 configuration: configuration,
                 bank_details: isBank ? bankDetails : undefined
-            } as any);
+            } as any, configPartnerId);
             if (response && response.status && response.data && response.data.id) {
                 setLinkageId(response.data.id);
                 if (isBank && response.data.bank_details) {
