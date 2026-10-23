@@ -7057,6 +7057,100 @@ File: Custom Css File
   line-height: 1;
 }
 
+.ef-convert-modal__icon.is-existing {
+  color: #8a5a00;
+  background: #fff1d6;
+}
+
+.ef-convert-modal__icon.is-new {
+  color: #0b5a8a;
+  background: #dcecfa;
+}
+
+.ef-convert-modal__details {
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius);
+  padding: 0.75rem 0.875rem;
+}
+
+.ef-convert-modal__details-label {
+  margin-bottom: 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ef-muted);
+}
+
+/* The modal's main message: whether the client exists, and that a funding
+   application is generated. Heavier than a plain alert so it isn't missed. */
+.ef-convert-notice {
+  display: flex;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border: 2px solid;
+  border-radius: var(--ef-radius);
+}
+
+.ef-convert-notice__icon {
+  flex-shrink: 0;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.ef-convert-notice__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ef-convert-notice__title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ef-convert-notice__text {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ef-convert-notice__funding {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid;
+  border-radius: var(--ef-radius);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ef-convert-notice__funding i {
+  font-size: 16px;
+  color: var(--primary-color);
+}
+
+.ef-convert-notice--existing {
+  border-color: #f0b849;
+  background: #fff8e6;
+  color: #4a3500;
+}
+
+.ef-convert-notice--existing .ef-convert-notice__icon { color: #b07400; }
+.ef-convert-notice--existing .ef-convert-notice__title { color: #6b4500; }
+.ef-convert-notice--existing .ef-convert-notice__funding { border-color: #f0d58f; }
+
+.ef-convert-notice--new {
+  border-color: #4a9fd8;
+  background: #eef6fd;
+  color: #0c3550;
+}
+
+.ef-convert-notice--new .ef-convert-notice__icon { color: #0b5a8a; }
+.ef-convert-notice--new .ef-convert-notice__title { color: #08466c; }
+.ef-convert-notice--new .ef-convert-notice__funding { border-color: #b6d8f0; }
+
 /* ==========================================================================
    Partners & Leads — top stat cards, table card, and skeleton loaders
    ========================================================================== */

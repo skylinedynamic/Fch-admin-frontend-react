@@ -103,9 +103,10 @@ export default function DeleteBlockedModal({ show, title, message, items = [], o
                                 </ul>
                             )}
                             {note && (
-                                <div className="alert alert-info fs-13 text-start mt-3 mb-0 py-2" data-testid="blocked-others">
-                                    <i className="ri-information-line me-1 align-bottom"></i>
-                                    {note}
+                                // Icon and text side by side, so a wrapped line starts under the text.
+                                <div className="alert alert-info d-flex align-items-start gap-2 fs-13 text-start mt-3 mb-0 py-2 px-3" role="note" data-testid="blocked-others">
+                                    <i className="ri-information-line fs-15 lh-sm flex-shrink-0" aria-hidden="true"></i>
+                                    <span className="lh-sm" style={{ textWrap: 'pretty' }}>{note}</span>
                                 </div>
                             )}
                         </div>
