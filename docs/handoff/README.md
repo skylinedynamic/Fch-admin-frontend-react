@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-25
+
+| File | Title |
+|---|---|
+| [2026-10-25-tier-1-add-task-knows-its-tier-and-vendors.md](2026-10-25-tier-1-add-task-knows-its-tier-and-vendors.md) | Manage Tier — Add Task on Tier 1 always asks for its vendor, and says when vendors are loading (BUG-095) |
+
 ### 2026-10-24
 
 | File | Title |
