@@ -23,8 +23,24 @@ test.describe('Reminders', () => {
     await expect(page.getByText('Send documents')).toBeVisible()
   })
 
-  test('shows the empty state', async ({ page }) => {
+  test("shows the empty state - for today, the date the list opens on", async ({ page }) => {
     await open(page, [])
+    await expect(page.getByText('No reminders for today.')).toBeVisible()
+  })
+
+  // BUG-056: the list opens on today's reminders; it says so, and Show all
+  // dates lists every reminder - older and dismissed ones included.
+  test("says it shows today's reminders, and Show all dates drops the date", async ({ page }) => {
+    const api = await open(page, [])
+    // The list's own requests - not the one-row "any pending?" check.
+    const lastListRequest = () => api.find('POST', FETCH).filter((c) => c.json.per_page !== 1).at(-1)!.json
+    await expect(page.getByText('Showing reminders for today.')).toBeVisible()
+    expect(lastListRequest()).toHaveProperty('start_date')
+
+    await page.getByRole('button', { name: 'Show all dates' }).click()
+
+    await expect.poll(lastListRequest).not.toHaveProperty('start_date')
+    await expect(page.getByText('Showing reminders for today.')).toHaveCount(0)
     await expect(page.getByText('No reminders found')).toBeVisible()
   })
 

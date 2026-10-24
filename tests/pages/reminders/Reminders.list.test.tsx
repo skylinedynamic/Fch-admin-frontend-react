@@ -27,7 +27,8 @@ describeListPage(
       { id: 1302, reference: 'Activity', reference_type: 'activity', summary: 'Send documents', status: 'dismissed', reminder_date: '2026-03-01 10:00' },
     ],
     shows: ['Call the lender', 'Send documents'],
-    emptyText: 'No reminders found',
+    // The list opens on today's reminders (BUG-056), so an empty list says so.
+    emptyText: 'No reminders for today.',
     search: { placeholder: 'Search subject or client...' },
   },
   toast
