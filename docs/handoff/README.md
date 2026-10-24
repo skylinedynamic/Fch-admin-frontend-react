@@ -18,6 +18,7 @@ Several features or tasks on the same date means several files with the same dat
 | [2026-10-24-mail-banner-blank-app-crash.md](2026-10-24-mail-banner-blank-app-crash.md) | Mail-not-verified banner no longer blanks the whole app |
 | [2026-10-24-credit-accounts-bulk-delete-status-and-form.md](2026-10-24-credit-accounts-bulk-delete-status-and-form.md) | Credit Accounts — delete selected, status on the details page, form redesign (BUG-042) |
 | [2026-10-24-blog-duplicate-title-no-silent-failure.md](2026-10-24-blog-duplicate-title-no-silent-failure.md) | CMS Blogs — duplicate title no longer fails silently (BUG-045) |
+| [2026-10-24-client-assign-to-lists-the-clients-partner-team.md](2026-10-24-client-assign-to-lists-the-clients-partner-team.md) | Clients — "Assign to" lists the client's partner's team (BUG-055) |
 
 ### 2026-10-23
 
