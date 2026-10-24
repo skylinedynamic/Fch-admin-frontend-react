@@ -157,6 +157,43 @@ test.describe('Blog editor', () => {
     await expect(page).toHaveURL(/\/cms\/blogs$/)
   })
 
+  // BUG-045: the API makes a new post's address from its title, unique (title-2, …).
+  test('a new post is sent without a slug of its own', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({ method: 'POST', match: new RegExp(`${CMS}/blogs$`), body: ok({ id: 101, slug: 'fresh-post-2' }) })
+    await page.getByPlaceholder('Enter post title').fill('Fresh post')
+    await page.locator('button[form="blog-form"]').click()
+    const call = await expectCall(api, 'POST', new RegExp(`${CMS}/blogs$`))
+    expect(call.json).toMatchObject({ title: 'Fresh post' })
+    expect(call.json).not.toHaveProperty('slug')
+    await expect(page.getByText('Blog created successfully')).toBeVisible()
+  })
+
+  // BUG-045: a taken address used to fail silently - no slug field to show it on.
+  test('a taken web address is shown under the title, not swallowed', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({
+      method: 'POST', match: new RegExp(`${CMS}/blogs$`), status: 422,
+      body: laravelFailure({ slug: ['The slug has already been taken.'] }),
+    })
+    await page.getByPlaceholder('Enter post title').fill('QA Draft Post')
+    await page.locator('button[form="blog-form"]').click()
+    await expect(page.getByText(/another post already uses this title's web address/i)).toBeVisible()
+    await expect(page.getByPlaceholder('Enter post title')).toHaveClass(/is-invalid/)
+    await expect(page).toHaveURL(/\/cms\/blogs\/create/)
+  })
+
+  test('a refusal on a field the form does not show is toasted', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({
+      method: 'POST', match: new RegExp(`${CMS}/blogs$`), status: 422,
+      body: laravelFailure({ og_title: ['The og title may not be greater than 255 characters.'] }),
+    })
+    await page.getByPlaceholder('Enter post title').fill('Fresh post')
+    await page.locator('button[form="blog-form"]').click()
+    await expect(page.getByText('The og title may not be greater than 255 characters.').first()).toBeVisible()
+  })
+
   test('a general failure is toasted', async ({ page }) => {
     const api = await openCreate(page)
     api.add({ method: 'POST', match: new RegExp(`${CMS}/blogs$`), status: 500, body: failure('Blog storage is full.') })
