@@ -555,6 +555,10 @@ export default function LeadDetails() {
                         </div>
                     </PageHeader>
 
+                    {/* No metrics strip: a lead has no meetings, clients, invoices,
+                        subscriptions or tickets of its own, and the partner-wide
+                        numbers it used to show were the same on every lead (BUG-016). */}
+
                     <div className="row">
                         {/* Main Content */}
                         <div className={id ? "col-xxl-8" : "col-12"}>

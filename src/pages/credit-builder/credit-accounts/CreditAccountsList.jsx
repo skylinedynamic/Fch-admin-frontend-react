@@ -307,6 +307,8 @@ export default function CreditAccountsList() {
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
+                                            // BUG-007: without it PrimeReact shows its dropdown default, "No available options".
+                                            emptyMessage="No credit accounts found"
                                             value={accounts}
                                             paginator
                                             lazy

@@ -17,6 +17,15 @@ async function openList(page: Page, permissions: string[] = ALL): Promise<ApiMoc
 }
 
 test.describe('Credit accounts list', () => {
+  // BUG-007: the empty table said "No available options".
+  test('an empty result shows a proper empty message', async ({ page }) => {
+    await seedSession(page, { permissions: ALL })
+    await mockApi(page, [{ method: 'POST', match: `${BASE}/fetch-accounts`, body: paginated([]) }])
+    await page.goto('/credit-accounts')
+    await expect(page.getByText('No credit accounts found')).toBeVisible()
+    await expect(page.getByText('No available options')).toHaveCount(0)
+  })
+
   test('renders accounts with issuer and status', async ({ page }) => {
     await openList(page)
     await expect(page.getByRole('link', { name: 'Spark Classic' })).toBeVisible()

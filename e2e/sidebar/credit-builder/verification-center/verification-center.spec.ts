@@ -12,6 +12,15 @@ const REQUESTS = [
 ]
 
 test.describe('Verification center queue', () => {
+  // BUG-007: the empty table said "No available options".
+  test('an empty result shows a proper empty message', async ({ page }) => {
+    await seedSession(page)
+    await mockApi(page, [{ method: 'POST', match: `${CB}/verification-center-fetch-all`, body: paginated([]) }])
+    await page.goto('/verification-center')
+    await expect(page.getByText('No verification requests found')).toBeVisible()
+    await expect(page.getByText('No available options')).toHaveCount(0)
+  })
+
   async function open(page: Page): Promise<ApiMock> {
     await seedSession(page)
     const api = await mockApi(page, [{ method: 'POST', match: `${CB}/verification-center-fetch-all`, body: paginated(QUEUE) }])

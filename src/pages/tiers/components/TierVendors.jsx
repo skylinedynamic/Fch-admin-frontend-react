@@ -356,6 +356,8 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                 ]} />
             ) : (
                 <DataTable
+                    // BUG-007: without it PrimeReact shows its dropdown default, "No available options".
+                    emptyMessage="No vendors found"
                     value={vendorsData?.data || []}
                     paginator
                     rows={perPage}

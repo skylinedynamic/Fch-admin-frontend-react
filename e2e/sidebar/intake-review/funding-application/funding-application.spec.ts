@@ -31,6 +31,19 @@ test.describe('Funding applications', () => {
     await expect.poll(() => JSON.stringify(api.find('POST', LIST).at(-1)?.json ?? {})).toContain('gus')
   })
 
+  // BUG-048 (OP-FAPP-03): the filter offered pre-qualification statuses and
+  // the chosen one never reached the list.
+  test('the status filter offers funding application statuses and sends the one picked', async ({ page }) => {
+    const api = await openList(page)
+    await page.locator('.employee-filter-dropdown').click()
+    const panel = page.locator('.p-dropdown-panel')
+    await expect(panel.getByRole('option', { name: 'Closed (Completed)' })).toBeVisible()
+    await expect(panel.getByRole('option', { name: 'Intake Received' })).toHaveCount(0)
+    await panel.getByRole('option', { name: 'Closed (Completed)' }).click()
+    await page.getByRole('button', { name: 'Filters' }).click()
+    await expect.poll(() => api.find('POST', LIST).at(-1)?.json?.status).toBe('Closed (Completed)')
+  })
+
   test('shows the empty state', async ({ page }) => {
     await seedSession(page, { permissions: ['view funding application'] })
     await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([]) }])

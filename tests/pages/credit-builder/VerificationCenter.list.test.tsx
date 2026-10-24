@@ -23,6 +23,8 @@ describeListPage(
       { borrower_id: 2, borrower_name: 'Mara Quill', partner_name: 'Globex Capital', tier_name: 'Tier 0', pending_count: 0, request_date: '2026-03-02' },
     ],
     shows: ['Johnathan Smithfield', 'Mara Quill', 'Globex Capital', 'Tier 0'],
+    // BUG-007: the table said "No available options" (PrimeReact's dropdown default).
+    emptyText: 'No verification requests found',
     search: { placeholder: 'Search borrower, partner or tier...' },
   },
   toast

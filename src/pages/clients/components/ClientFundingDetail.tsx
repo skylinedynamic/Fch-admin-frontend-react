@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { fetchClientReadinessFactors } from '../../../modules/client';
 import { QUALIFY_REASONS_MAP, READINESS_BADGE_STYLES, META_ITEM_LABELS, FACTOR_ICON_STYLES, READINESS_FACTOR_LABELS, FACTOR_STATUS_VALUES, BADGE_LABELS } from '../../../config/funding';
 import { FundingDetailLoader } from '../../../components/Loader/FundingSkeletonLoader';
+import { formatSpeedToFunds } from '../../../utils/formatters';
 
 const ReadinessItem: React.FC<{ factor: any, isLast: boolean }> = ({ factor, isLast }) => {
     const s = (factor.status || '').toLowerCase();
@@ -104,7 +105,7 @@ export default function ClientFundingDetail({ clientId, fundingData, onBack, ico
     const metaItems = [
         { label: META_ITEM_LABELS.RECOMMENDED_RANGE, value: amount_range || '—' },
         { label: META_ITEM_LABELS.TERM, value: terms || '—' },
-        { label: META_ITEM_LABELS.SPEED_TO_FUNDS, value: speed_to_funds ? `${speed_to_funds} Days` : '—' },
+        { label: META_ITEM_LABELS.SPEED_TO_FUNDS, value: formatSpeedToFunds(speed_to_funds) },
         { label: META_ITEM_LABELS.USES, value: Array.isArray(uses) && uses.length > 0 ? uses.join(', ') : '—' },
     ];
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { fetchAppConfigurations, saveAppConfigurations } from '../../../modules/settings/services';
-import { MODULE_MICROBILT } from '../../../config/appConfig';
+import { MODULE_MICROBILT, SAVED_SECRET_PLACEHOLDER } from '../../../config/appConfig';
 import { MicroBiltConfig } from '../../../modules/settings/types';
 import { MicroBiltConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
@@ -38,6 +38,9 @@ const MicroBiltConfigForm: React.FC = () => {
     });
 
     const [errors, setErrors] = useState<FormErrors>({});
+    // The API reports a stored client secret only as set (a mask), never the
+    // secret itself. Its input starts blank; saving it blank keeps the stored one.
+    const [savedSecrets, setSavedSecrets] = useState({ sandbox: false, production: false });
 
     const API_KEYS = [
         'microbilt_mode',
@@ -64,10 +67,14 @@ const MicroBiltConfigForm: React.FC = () => {
                     mode: configData.microbilt_mode || '',
                     base_url_sandbox: configData.microbilt_base_url_sandbox || '',
                     client_id_sandbox: configData.microbilt_client_id_sandbox || '',
-                    client_secret_sandbox: configData.microbilt_client_secret_sandbox || '',
+                    client_secret_sandbox: '',
                     base_url_production: configData.microbilt_base_url_production || '',
                     client_id_production: configData.microbilt_client_id_production || '',
-                    client_secret_production: configData.microbilt_client_secret_production || ''
+                    client_secret_production: ''
+                });
+                setSavedSecrets({
+                    sandbox: Boolean(configData.microbilt_client_secret_sandbox),
+                    production: Boolean(configData.microbilt_client_secret_production),
                 });
             }
         } catch (error) {
@@ -126,7 +133,7 @@ const MicroBiltConfigForm: React.FC = () => {
 
         if (!formData[baseUrlKey]) newErrors[`base_url${suffix}`] = 'Base URL is required.';
         if (!formData[clientIdKey]) newErrors[`client_id${suffix}`] = 'Client ID is required.';
-        if (!formData[clientSecretKey]) newErrors[`client_secret${suffix}`] = 'Client Secret is required.';
+        if (!formData[clientSecretKey] && !savedSecrets[isSandbox ? 'sandbox' : 'production']) newErrors[`client_secret${suffix}`] = 'Client Secret is required.';
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -277,7 +284,8 @@ const MicroBiltConfigForm: React.FC = () => {
                                                     name={`client_secret${suffix}`}
                                                     value={formData[`client_secret${suffix}`] as keyof FormData || ''}
                                                     onChange={handleInputChange}
-                                                    placeholder="Enter Client Secret"
+                                                    placeholder={savedSecrets[isSandbox ? 'sandbox' : 'production'] ? SAVED_SECRET_PLACEHOLDER : 'Enter Client Secret'}
+                                                    autoComplete="new-password"
                                                     style={{ boxShadow: 'none' }}
                                                 />
                                                 {errors[`client_secret${suffix}`] && (
