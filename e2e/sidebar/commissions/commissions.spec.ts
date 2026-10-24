@@ -63,6 +63,21 @@ test.describe('Commissions', () => {
     await expect(page.getByRole('columnheader', { name: /My Payout/ })).toHaveCount(0)
   })
 
+  // BUG-073: Date, Borrower and Partner sent their display fields as sort_field,
+  // which the API could not sort by (500, empty page). Each header now sends
+  // the key the API sorts by.
+  for (const [header, key] of [
+    ['Date', 'created_at'], ['Borrower', 'borrower_name'], ['Partner', 'partner_name'],
+    ['Requested Amount', 'requested_amount'], ['Funded Amount', 'funded_amount'],
+  ] as const) {
+    test(`sorting by ${header} sends ${key}`, async ({ page }) => {
+      const api = await openList(page)
+      await page.getByRole('columnheader', { name: new RegExp(`^${header}$`) }).click()
+      await expect.poll(() => api.find('POST', LIST).at(-1)?.json.sort_field).toBe(key)
+      await expect(page.getByText('Johnathan Smithfield')).toBeVisible()
+    })
+  }
+
   test('search is sent to the API and Clear resets it', async ({ page }) => {
     const api = await openList(page)
     await page.getByPlaceholder('Search borrower or ID...').fill('smith')
