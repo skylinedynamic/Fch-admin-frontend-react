@@ -111,6 +111,7 @@ export const PERSONA_PROFILES = {
         "view configuration",
         "view contacts",
         "view credit accounts",
+        "manage credit profile requests",
         "view demo request",
         "view employees",
         "view funding",
