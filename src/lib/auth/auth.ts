@@ -142,9 +142,6 @@ async function syncConfigurations(user: any): Promise<void> {
         localStorage.setItem('global_configurations', JSON.stringify(res.data));
         
         // Also cache individually for backward compatibility if components rely on it
-        if (res.data.email_configuration) {
-            localStorage.setItem('cached_email_config', JSON.stringify(res.data.email_configuration));
-        }
         if (res.data.branding) {
             localStorage.setItem('cached_branding_config', JSON.stringify(res.data.branding));
         }

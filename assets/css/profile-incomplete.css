@@ -66,6 +66,32 @@
     margin-bottom: 12px;
 }
 
+/* A section that opens its own settings page. */
+.cgm-item-link {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.cgm-item-link:hover,
+.cgm-item-link:focus-visible {
+    border-color: var(--primary-color, #d1d5db);
+    background: #fff;
+}
+
+.cgm-item-link .cgm-item-title,
+.cgm-item-link .cgm-item-desc {
+    display: block;
+}
+
+.cgm-item-arrow {
+    margin-left: auto;
+    font-size: 20px;
+    color: #9ca3af;
+}
+
 .cgm-icon-box {
     width: 46px;
     height: 46px;

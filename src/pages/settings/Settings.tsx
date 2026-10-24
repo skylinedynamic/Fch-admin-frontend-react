@@ -1,29 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import PageHeader from '../common/PageHeader';
+import React, { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import SettingsForm from './components/SettingsForm';
+import { SETTINGS_BASE_PATH, sectionFromSlug, settingsPath, settingsSectionTitle } from '../../config/settingsSections';
 import "../../../assets/css/settings-redesign.css";
 
-// interface FormData and Errors removed as they are now handled by sub-components
-
+/**
+ * Settings. Each menu section is a route of its own (/settings/branding,
+ * /settings/email-configuration, ...): the path picks the section, and choosing
+ * one from the menu changes the path. /settings itself, or a path it does not
+ * know, opens the first section the user may see.
+ */
 const Settings: React.FC = () => {
-    const [fetching, setFetching] = useState<boolean>(false); // No longer fetching top-level, sub-components fetch their own config
-    const [activeSection, setActiveSection] = useState<string>('payment');
+    const [fetching] = useState<boolean>(false); // Sub-components fetch their own config
+    const { section } = useParams();
+    const navigate = useNavigate();
+    const activeSection = sectionFromSlug(section) ?? '';
 
-    const getBreadcrumbTitle = () => {
-        switch (activeSection) {
-            case 'payment': return 'Payment Method';
-            case 'agreement': return 'Agreement Builder';
-            case 'general_settings': return 'Email Configuration';
-            case 'branding': return 'Site Branding';
-            case 'domain_configuration': return 'Custom Domain';
-            case 'microbilt': return 'MicroBilt Config';
-            case 'credit_profile': return 'Credit Profile';
-            case 'score_calculation': return 'Score Calculation';
-            case 'test_mail': return 'Test Mail';
-            default: return 'Settings';
-        }
-    }
+    // Picking the first section for a path with none replaces that history
+    // entry, so the back button does not land on it again.
+    const setActiveSection = (id: string) =>
+        navigate(settingsPath(id), { replace: activeSection === '' });
 
     return (
         <div className="page-content settings-page-wrapper">
@@ -38,16 +34,10 @@ const Settings: React.FC = () => {
                                     <ol className="breadcrumb m-0 fs-12 settings-breadcrumb">
                                         <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
                                         <li className="breadcrumb-item">
-                                            <span
-                                                className="text-muted"
-                                                style={{ cursor: 'pointer' }}
-                                                onClick={() => setActiveSection('payment')}
-                                            >
-                                                Settings
-                                            </span>
+                                            <Link to={SETTINGS_BASE_PATH} className="text-muted">Settings</Link>
                                         </li>
                                         <li className="breadcrumb-item active" aria-current="page">
-                                            {getBreadcrumbTitle()}
+                                            {settingsSectionTitle(activeSection)}
                                         </li>
                                     </ol>
                                 </nav>

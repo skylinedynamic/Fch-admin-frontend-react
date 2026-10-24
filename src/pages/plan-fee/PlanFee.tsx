@@ -56,7 +56,7 @@ const groupMeta: Record<string, { title: string; icon: string; bg: string; text:
         desc: 'Direct borrower signup rates'
     },
     [PLAN_GROUP_BORROWER_FEE]: {
-        title: 'Borrower Fee Plans',
+        title: 'Client Activation Fee Plans',
         icon: 'ri-bank-card-line',
         bg: 'bg-warning-subtle',
         text: 'text-warning',
@@ -319,12 +319,12 @@ export default function PlanFee() {
                             </div>
 
                             <div className="card-body p-4 pt-3">
-                                {/* Polished Alert Note Banner for Borrower Fee */}
+                                {/* Polished Alert Note Banner for Client Activation Fee */}
                                 {activeTab === PLAN_GROUP_BORROWER_FEE && (
                                     <div className="alert alert-warning bg-warning-subtle border-0 text-dark p-3 rounded-3 mb-3 fs-13 shadow-xs">
                                         <div className="d-flex align-items-center gap-2 mb-1.5">
                                             <i className="ri-information-fill fs-18 text-warning flex-shrink-0"></i>
-                                            <strong className="text-dark fw-bold">Borrower Fee Policy:</strong>
+                                            <strong className="text-dark fw-bold">Client Activation Fee Policy:</strong>
                                         </div>
                                         <div className="ms-4 text-muted">
                                             <span>For each borrower, partner has to pay the enrollment fee:</span>

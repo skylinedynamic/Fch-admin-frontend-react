@@ -46,7 +46,7 @@ interface CprFieldProps {
     label: string;
     value: React.ReactNode;
     icon?: string;
-    copyValue?: string;
+    copyValue?: string | null;
 }
 
 export const CprField = ({ label, value, icon, copyValue }: CprFieldProps) => {

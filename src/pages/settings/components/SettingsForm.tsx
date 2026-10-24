@@ -12,7 +12,8 @@ import CreditProfileConfigForm from './CreditProfileConfigForm';
 import ScoreCalculationConfigForm from './ScoreCalculationConfigForm';
 import OpenAiConfigForm from './OpenAiConfigForm';
 import PaymentMethodConfig from './PaymentMethodConfig/PaymentMethodConfig';
-import EmailConfigurationForm from './EmailConfigurationForm';
+import MailConfigurationSection from './MailConfiguration/MailConfigurationSection';
+import { useMailConfigurations } from '../../../modules/settings/queries';
 import SmsConfigurationForm from './SmsConfiguration/SmsConfigurationForm';
 import { SMS_CONFIGURATION_PERMISSION, SMS_CONFIGURATION_SECTION } from '../../../config/smsConfiguration';
 // @ts-ignore
@@ -46,8 +47,28 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         sections.push({ id: 'agreement', label: 'Agreement Builder', icon: 'ri-file-text-line' });
     }
 
-    if (hasPermission('update email configuration settings')) {
+    // Test Mail — only for host partners or white-label partners, and only once
+    // their own mail configuration is verified: before that there is nothing of
+    // theirs to test. It sits right under Email Configuration.
+    const canEmail = hasPermission('update email configuration settings');
+    const canTestMail = Boolean(
+        user &&
+        user.entity_type === ENTITY_TYPE_PARTNER &&
+        (
+            user.is_host == 1 ||
+            user.is_host == true ||
+            user.partner_type === PARTNER_TYPES.WHITE_LABEL
+        )
+    );
+    const { data: mailData, isLoading: mailLoading } = useMailConfigurations(canEmail && canTestMail);
+    const showTestMail = canTestMail && Boolean(mailData?.data.uses_own_configuration);
+
+    if (canEmail) {
         sections.push({ id: 'email_configuration', label: 'Email Configuration', icon: 'ri-mail-settings-line' });
+    }
+
+    if (showTestMail) {
+        sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
     }
 
     if (hasPermission(SMS_CONFIGURATION_PERMISSION)) {
@@ -88,28 +109,16 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         sections.push({ id: 'openai', label: 'OpenAI Configuration', icon: 'ri-sparkling-2-line' });
     }
 
-    // Test Mail — only for host partners or white-label partners
-    if (
-        user &&
-        user.entity_type === ENTITY_TYPE_PARTNER &&
-        (
-            user.is_host == 1 ||
-            user.is_host == true ||
-            user.partner_type === PARTNER_TYPES.WHITE_LABEL
-        )
-    ) {
-        sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
-    }
-
-    // Auto-select first available section if the active one isn't available
+    // Auto-select first available section if the active one isn't available.
+    // Not while the mail configuration loads: Test Mail depends on it.
     useEffect(() => {
-        if (!fetching && sections.length > 0) {
+        if (!fetching && !mailLoading && sections.length > 0) {
             const currentSectionAvailable = sections.find(s => s.id === activeSection);
             if (!currentSectionAvailable) {
                 setActiveSection(sections[0].id);
             }
         }
-    }, [fetching, activeSection, sections.length]);
+    }, [fetching, mailLoading, activeSection, sections.length]);
 
     if (fetching) return (
         <div className="row g-3 animate__animated animate__fadeIn">
@@ -199,7 +208,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                 ) : activeSection === 'openai' ? (
                     <OpenAiConfigForm />
                 ) : activeSection === 'email_configuration' ? (
-                    <EmailConfigurationForm />
+                    <MailConfigurationSection onTestMail={canTestMail ? () => setActiveSection('test_mail') : undefined} />
                 ) : activeSection === SMS_CONFIGURATION_SECTION ? (
                     <SmsConfigurationForm />
                 ) : activeSection === 'branding' ? (

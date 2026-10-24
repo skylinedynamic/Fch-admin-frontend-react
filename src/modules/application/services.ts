@@ -125,6 +125,13 @@ export const downloadFundingSignature = async (id: string | number, password?: s
   window.URL.revokeObjectURL(url);
 };
 
+/** One uploaded file of a funding application, as a blob (for an in-place download). */
+export const downloadFundingApplicationDocument = async (documentId: string | number): Promise<any> => {
+  return apiClient.get(`/common/funding-application/documents/${Number(documentId)}/download`, {
+    responseType: 'blob'
+  });
+};
+
 export const downloadFundingZip = async (id: string | number, password?: string): Promise<void> => {
   const urlPath = `/common/request-application/funding-application/${id}/download-zip` + (password ? `?password=${encodeURIComponent(password)}` : '');
   const response = await apiClient.get(urlPath, {

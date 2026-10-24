@@ -10,6 +10,10 @@ import type {
     SaveSmsConfigurationPayload,
     SendTestSmsPayload,
     SendTestSmsResponse,
+    MailConfigurationsResponse,
+    FallbackMailConfigurationResponse,
+    SaveMailConfigurationPayload,
+    MailConfigurationActionResponse,
 } from './types';
 
 // Base API path
@@ -20,18 +24,63 @@ export const sendTestMail = async (payload: SendTestMailPayload): Promise<SendTe
     return data;
 };
 
-export const fetchEmailConfigurations = async (): Promise<any> => {
-    const { data } = await apiClient.get('/common/email-configurations');
+// Mail configuration: the partner's providers, each verified by a code sent
+// through it, and the platform-wide fallback the host partner keeps - which,
+// like a partner, has one configuration per provider.
+const MAIL = '/common/mail-configurations';
+
+export const fetchMailConfigurations = async (): Promise<MailConfigurationsResponse> => {
+    const { data } = await apiClient.get(MAIL);
     return data;
 };
 
-export const saveEmailConfiguration = async (payload: any): Promise<any> => {
-    const { data } = await apiClient.post('/common/email-configurations', payload);
+export const saveMailConfiguration = async (payload: SaveMailConfigurationPayload): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(MAIL, payload);
     return data;
 };
 
-export const toggleEmailConfigStatus = async (): Promise<any> => {
-    const { data } = await apiClient.get('/common/email-configurations/toggle-status');
+export const deleteMailConfiguration = async (id: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.delete(`${MAIL}/${id}`);
+    return data;
+};
+
+export const makeDefaultMailConfiguration = async (id: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/${id}/default`);
+    return data;
+};
+
+export const sendMailConfigurationCode = async (id: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/${id}/send-code`);
+    return data;
+};
+
+export const verifyMailConfiguration = async (id: number, code: string): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/${id}/verify`, { code });
+    return data;
+};
+
+export const fetchFallbackMailConfiguration = async (): Promise<FallbackMailConfigurationResponse> => {
+    const { data } = await apiClient.get(`${MAIL}/fallback`);
+    return data;
+};
+
+export const saveFallbackMailConfiguration = async (payload: SaveMailConfigurationPayload): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/fallback`, payload);
+    return data;
+};
+
+export const makeDefaultFallbackMailConfiguration = async (id: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/fallback/${id}/default`);
+    return data;
+};
+
+export const sendFallbackMailCode = async (id: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/fallback/${id}/send-code`);
+    return data;
+};
+
+export const verifyFallbackMailConfiguration = async (id: number, code: string): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/fallback/${id}/verify`, { code });
     return data;
 };
 

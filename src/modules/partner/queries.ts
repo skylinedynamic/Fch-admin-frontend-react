@@ -1,12 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
-import { createPartner, deletePartner, fetchPartnerById, fetchPartners, updatePartner, fetchSubscriptionStats } from './services'
+import { createPartner, deletePartner, fetchPartnerById, fetchPartnerOptions, updatePartner, fetchSubscriptionStats } from './services'
 import type { Partner, SubscriptionStats } from './types'
 
-export const usePartners = () => {
+/** Every partner for the host's filter dropdowns, loaded once and shared. */
+export const usePartnerOptions = (enabled = true) => {
   return useQuery({
-    queryKey: queryKeys.partner.list(),
-    queryFn: fetchPartners,
+    queryKey: queryKeys.partner.options(),
+    queryFn: fetchPartnerOptions,
+    enabled,
+    staleTime: 5 * 60 * 1000,
   })
 }
 

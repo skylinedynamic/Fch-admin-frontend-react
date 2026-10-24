@@ -2,9 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     sendTestMail,
     fetchGlobalConfigurations,
-    fetchEmailConfigurations,
-    saveEmailConfiguration,
-    toggleEmailConfigStatus,
+    fetchMailConfigurations,
+    saveMailConfiguration,
+    deleteMailConfiguration,
+    makeDefaultMailConfiguration,
+    sendMailConfigurationCode,
+    verifyMailConfiguration,
+    fetchFallbackMailConfiguration,
+    saveFallbackMailConfiguration,
+    makeDefaultFallbackMailConfiguration,
+    sendFallbackMailCode,
+    verifyFallbackMailConfiguration,
     fetchAppConfigurations,
     saveAppConfigurations,
     fetchScoreConfigurations,
@@ -24,6 +32,10 @@ import type {
     SaveSmsConfigurationPayload,
     SendTestSmsPayload,
     SendTestSmsResponse,
+    MailConfigurationsResponse,
+    FallbackMailConfigurationResponse,
+    SaveMailConfigurationPayload,
+    MailConfigurationActionResponse,
 } from './types';
 
 /**
@@ -48,43 +60,85 @@ export const useGlobalConfigurations = (enabled = true) => {
 };
 
 /**
- * Hook to fetch email configurations.
+ * The partner's mail providers, the fallback's status, and the provider forms.
  */
-export const useEmailConfigurations = (enabled = true) => {
-    return useQuery({
-        queryKey: ['emailConfigurations'],
-        queryFn: fetchEmailConfigurations,
+export const useMailConfigurations = (enabled = true) => {
+    return useQuery<MailConfigurationsResponse>({
+        queryKey: queryKeys.settings.mailConfigurations(),
+        queryFn: fetchMailConfigurations,
         enabled,
     });
 };
 
 /**
- * Hook to save or update email configurations.
+ * Every change to a provider can change which settings mail is sent with, and
+ * whether email counts as set up - so the list and the global flags refresh.
  */
-export const useSaveEmailConfiguration = () => {
+const useMailMutation = <TVariables, TResponse = MailConfigurationActionResponse>(
+    mutationFn: (variables: TVariables) => Promise<TResponse>
+) => {
     const qc = useQueryClient();
-    return useMutation<any, Error, any>({
-        mutationFn: saveEmailConfiguration,
+    return useMutation<TResponse, Error, TVariables>({
+        mutationFn,
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['emailConfigurations'] });
+            qc.invalidateQueries({ queryKey: queryKeys.settings.mailConfigurations() });
             qc.invalidateQueries({ queryKey: ['globalConfigurations'] });
         },
     });
 };
 
+export const useSaveMailConfiguration = () => useMailMutation<SaveMailConfigurationPayload>(saveMailConfiguration);
+
+export const useDeleteMailConfiguration = () => useMailMutation<number>(deleteMailConfiguration);
+
+export const useMakeDefaultMailConfiguration = () => useMailMutation<number>(makeDefaultMailConfiguration);
+
+/** Sending a code changes nothing, so nothing is refreshed. */
+export const useSendMailConfigurationCode = () =>
+    useMutation<MailConfigurationActionResponse, Error, number>({ mutationFn: sendMailConfigurationCode });
+
+export const useVerifyMailConfiguration = () =>
+    useMailMutation<{ id: number; code: string }>(({ id, code }) => verifyMailConfiguration(id, code));
+
 /**
- * Hook to toggle email configurations status.
+ * The platform-wide fallback's providers. Only the host partner's own account may
+ * read it, so callers pass `enabled` from `can_manage_fallback`.
  */
-export const useToggleEmailConfigStatus = () => {
+export const useFallbackMailConfiguration = (enabled = true) => {
+    return useQuery<FallbackMailConfigurationResponse>({
+        queryKey: queryKeys.settings.fallbackMailConfiguration(),
+        queryFn: fetchFallbackMailConfiguration,
+        enabled,
+    });
+};
+
+/**
+ * Any change to a fallback provider can change which one mail goes out with,
+ * and the partner list carries the fallback's status - so both refresh.
+ */
+const useFallbackMutation = <TVariables,>(mutationFn: (variables: TVariables) => Promise<MailConfigurationActionResponse>) => {
     const qc = useQueryClient();
-    return useMutation<any, Error, void>({
-        mutationFn: toggleEmailConfigStatus,
+    return useMutation<MailConfigurationActionResponse, Error, TVariables>({
+        mutationFn,
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['emailConfigurations'] });
-            qc.invalidateQueries({ queryKey: ['globalConfigurations'] });
+            qc.invalidateQueries({ queryKey: queryKeys.settings.fallbackMailConfiguration() });
+            qc.invalidateQueries({ queryKey: queryKeys.settings.mailConfigurations() });
         },
     });
 };
+
+export const useSaveFallbackMailConfiguration = () =>
+    useFallbackMutation<SaveMailConfigurationPayload>(saveFallbackMailConfiguration);
+
+export const useMakeDefaultFallbackMailConfiguration = () =>
+    useFallbackMutation<number>(makeDefaultFallbackMailConfiguration);
+
+/** Sending a code changes nothing, so nothing is refreshed. */
+export const useSendFallbackMailCode = () =>
+    useMutation<MailConfigurationActionResponse, Error, number>({ mutationFn: sendFallbackMailCode });
+
+export const useVerifyFallbackMailConfiguration = () =>
+    useFallbackMutation<{ id: number; code: string }>(({ id, code }) => verifyFallbackMailConfiguration(id, code));
 
 /**
  * Hook to fetch app configurations by module.

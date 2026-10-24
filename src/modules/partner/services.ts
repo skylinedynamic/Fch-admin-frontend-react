@@ -1,9 +1,16 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Partner, TenantConfig } from './types';
+import type { Partner, PartnerOption, TenantConfig } from './types';
 
+/** The Partners table: paginated, filtered and sorted. */
 export const fetchPartners = async (payload: any = {}) => {
   const response = await apiClient.post('/admin/partners/fetch-partners', payload);
   return response.data;
+};
+
+/** Every partner, sorted by name, for the host's partner filter dropdowns. */
+export const fetchPartnerOptions = async (): Promise<PartnerOption[]> => {
+  const response = await apiClient.post('/common/get-all-partners');
+  return response.data?.data ?? [];
 };
 
 export const getPartner = async (id: string | number): Promise<Partner> => {
@@ -37,8 +44,9 @@ export const deletePartner = async (id: string | number): Promise<void> => {
   await apiClient.delete(`/admin/partners/${id}`);
 };
 
-export const allUsers = async (): Promise<any> => {
-  const { data } = await apiClient.post('common/get-all-users ', {});
+/** The caller's team - or, for the host, the team of the partner it names. */
+export const allUsers = async (payload: { partner_id?: number } = {}): Promise<any> => {
+  const { data } = await apiClient.post('common/get-all-users', payload);
   return data;
 };
 
@@ -79,6 +87,19 @@ export const deletePartnerDocument = async (docId: string | number) => {
 export const deletePartners = async (ids: Array<number | string>) => {
   const res = await apiClient.post('/admin/partners/multiple-delete', { ids });
   return res.data;
+};
+
+export interface PartnerDeletableCheck {
+  id: number;
+  name: string;
+  is_deletable: boolean;
+  reason: string | null;
+}
+
+/** Whether each partner can be deleted - one with a paid invoice (or clients/users under it) cannot. */
+export const checkPartnersDeletable = async (ids: Array<number | string>): Promise<PartnerDeletableCheck[]> => {
+  const { data } = await apiClient.post('/admin/partners/check-deletable', { ids });
+  return data?.data ?? [];
 };
 
 /**

@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { Route, Routes, useLocation } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 
 import ConfigurationGuardModal from '../../../src/components/Common/ConfigurationGuardModal';
 import { PARTNER_TYPES } from '../../../src/config/partnerTypeOptions';
@@ -10,11 +12,9 @@ import { renderWithProviders, screen } from '../../test-utils';
  * The guard that stops a partner working on a page whose global settings are not
  * finished yet.
  *
- * The Embedded Form configuration page belongs in that set: the form it
- * configures sends a notification on every submission, and a White-Label partner
- * with no mail configuration of its own sends nothing at all (the API refuses to
- * fall back to the host's mailbox). Letting the partner publish a form that
- * silently drops its leads is the failure these cover.
+ * Email configuration is not one of them: until a White-Label partner's own
+ * mail configuration is verified, its mail goes out with the platform's fallback
+ * configuration, and the banner on every page says so. Nothing is blocked for it.
  *
  * The host is never guarded - it is the tenant everyone else falls back to.
  */
@@ -54,14 +54,25 @@ describe('ConfigurationGuardModal on the Embedded Form configuration page', () =
         useConfigStore.setState({ branding: null, statusFlags: null } as never);
     });
 
-    it('warns a white-label partner whose email configuration is missing', () => {
+    it('does not stop a white-label partner whose only gap is the email configuration', () => {
+        // Its mail goes out with the fallback configuration meanwhile; the
+        // banner on every page says so.
         signIn();
         setFlags({ ...completeFlags, is_fresh_email: false });
 
         renderAt(EMBED_FORM_CONFIG_ROUTE);
 
-        expect(screen.getByText('Configuration Incomplete')).toBeInTheDocument();
-        expect(screen.getByText('Email Configuration')).toBeInTheDocument();
+        expect(screen.queryByText('Configuration Incomplete')).not.toBeInTheDocument();
+    });
+
+    it('does not list the email configuration beside a section that is missing', () => {
+        signIn();
+        setFlags({ ...completeFlags, is_fresh_email: false, is_fresh_settings: false });
+
+        renderAt(EMBED_FORM_CONFIG_ROUTE);
+
+        expect(screen.getByText('Branding Configuration')).toBeInTheDocument();
+        expect(screen.queryByText('Email Configuration')).not.toBeInTheDocument();
     });
 
     it('warns a white-label partner whose branding is missing', () => {
@@ -120,10 +131,124 @@ describe('ConfigurationGuardModal on the Embedded Form configuration page', () =
         // Only the configuration page is guarded. Reading leads that already
         // arrived is not blocked by settings being unfinished.
         signIn();
-        setFlags({ ...completeFlags, is_fresh_email: false });
+        setFlags({ ...completeFlags, is_fresh_settings: false });
 
         renderAt('/embed-form/loan-applications');
 
         expect(screen.queryByText('Configuration Incomplete')).not.toBeInTheDocument();
+    });
+});
+
+function Where() {
+    return <output aria-label="location">{useLocation().pathname}</output>;
+}
+
+/** The modal, with a router that keeps it mounted across navigation. */
+function renderRouted(route: string) {
+    return renderWithProviders(
+        <>
+            <ConfigurationGuardModal />
+            <Routes>
+                <Route path="*" element={<Where />} />
+            </Routes>
+        </>,
+        { route },
+    );
+}
+
+const location = () => screen.getByLabelText('location').textContent;
+
+describe('ConfigurationGuardModal sections', () => {
+    beforeEach(() => {
+        useAuthStore.setState({ user: null } as never);
+        useConfigStore.setState({ branding: null, statusFlags: null, setupPromptOpen: false } as never);
+    });
+
+    it.each([
+        ['Branding Configuration', { is_fresh_settings: false }, '/settings/branding'],
+        ['Payment Integration', { is_fresh_payment: false }, '/settings/payment-integration'],
+    ])('opens the %s settings itself', async (section, missing, path) => {
+        signIn();
+        setFlags({ ...completeFlags, ...missing });
+        const user = userEvent.setup();
+
+        renderRouted('/clients');
+        await user.click(screen.getByRole('button', { name: new RegExp(section) }));
+
+        expect(location()).toBe(path);
+    });
+});
+
+describe('ConfigurationGuardModal after a payment', () => {
+    beforeEach(() => {
+        useAuthStore.setState({ user: null } as never);
+        useConfigStore.setState({ branding: null, statusFlags: null, setupPromptOpen: false } as never);
+    });
+
+    it('lists what is left to configure once the partner has paid, on any page', () => {
+        signIn();
+        setFlags({ ...completeFlags, is_fresh_email: false, is_fresh_settings: false });
+        useConfigStore.getState().openSetupPrompt();
+
+        renderRouted('/invoices');
+
+        expect(screen.getByText('Configuration Incomplete')).toBeInTheDocument();
+        expect(screen.getByText(/payment is complete/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Branding Configuration/ })).toBeInTheDocument();
+        // Not required: the fallback sends meanwhile, and the banner says so.
+        expect(screen.queryByRole('button', { name: /Email Configuration/ })).not.toBeInTheDocument();
+    });
+
+    it('can be put off until later', async () => {
+        signIn();
+        setFlags({ ...completeFlags, is_fresh_settings: false });
+        useConfigStore.getState().openSetupPrompt();
+        const user = userEvent.setup();
+
+        renderRouted('/invoices');
+        await user.click(screen.getByRole('button', { name: /later/i }));
+
+        expect(screen.queryByText('Configuration Incomplete')).not.toBeInTheDocument();
+        expect(useConfigStore.getState().setupPromptOpen).toBe(false);
+    });
+
+    it('closes once a section is opened from it', async () => {
+        signIn();
+        setFlags({ ...completeFlags, is_fresh_settings: false });
+        useConfigStore.getState().openSetupPrompt();
+        const user = userEvent.setup();
+
+        renderRouted('/invoices');
+        await user.click(screen.getByRole('button', { name: /Branding Configuration/ }));
+
+        expect(location()).toBe('/settings/branding');
+        expect(screen.queryByText('Configuration Incomplete')).not.toBeInTheDocument();
+    });
+
+    it('stays away after a payment when only the email configuration is left', () => {
+        signIn();
+        setFlags({ ...completeFlags, is_fresh_email: false });
+        useConfigStore.getState().openSetupPrompt();
+
+        renderRouted('/invoices');
+
+        expect(screen.queryByText('Configuration Incomplete')).not.toBeInTheDocument();
+    });
+
+    it('stays away when nothing is left to configure', () => {
+        signIn();
+        setFlags(completeFlags);
+        useConfigStore.getState().openSetupPrompt();
+
+        renderRouted('/invoices');
+
+        expect(screen.queryByText('Configuration Incomplete')).not.toBeInTheDocument();
+    });
+
+    it('is not kept across a reload', () => {
+        useConfigStore.getState().openSetupPrompt();
+
+        const persisted = JSON.parse(window.localStorage.getItem('app-config-store') ?? '{}');
+        expect(persisted.state?.setupPromptOpen).toBeUndefined();
     });
 });

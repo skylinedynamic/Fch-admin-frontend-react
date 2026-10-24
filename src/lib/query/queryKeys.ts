@@ -4,6 +4,7 @@ export const queryKeys = {
     all: ['partner'] as const,
     list: () => [...queryKeys.partner.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.partner.all, 'detail', id] as const,
+    options: () => [...queryKeys.partner.all, 'options'] as const,
   },
   borrower: {
     all: ['borrower'] as const,
@@ -68,8 +69,15 @@ export const queryKeys = {
     list: (params: object) => [...queryKeys.notifications.lists(), params] as const,
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
   },
+  account: {
+    all: ['account'] as const,
+    emailChangeLink: (action: string, user: string, hash: string, query: string) =>
+      [...queryKeys.account.all, 'emailChangeLink', action, user, hash, query] as const,
+  },
   settings: {
     all: ['settings'] as const,
     smsConfiguration: () => [...queryKeys.settings.all, 'smsConfiguration'] as const,
+    mailConfigurations: () => [...queryKeys.settings.all, 'mailConfigurations'] as const,
+    fallbackMailConfiguration: () => [...queryKeys.settings.all, 'fallbackMailConfiguration'] as const,
   },
 } as const

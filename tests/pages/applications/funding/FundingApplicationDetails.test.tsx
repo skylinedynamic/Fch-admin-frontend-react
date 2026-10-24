@@ -4,6 +4,7 @@ import FundingApplicationDetails from '../../../../src/pages/applications/fundin
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import { FUNDING_APPLICATION_STATUS } from '../../../../src/config/borrower'
 import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
+import { PARTNER_TYPES } from '../../../../src/config/partnerTypeOptions'
 
 const detail = vi.hoisted(() => ({ application: {} as Record<string, unknown> }))
 
@@ -78,5 +79,65 @@ describe('FundingApplicationDetails — Edit Funding Application', () => {
     renderWithProviders(<FundingApplicationDetails />)
 
     expect(editLink()).not.toBeInTheDocument()
+  })
+
+  it("offers the host Edit on another partner's application too", () => {
+    detail.application = { ...editable, partner_id: 7 }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).toHaveAttribute('href', '/fund-application/29')
+  })
+
+  it("offers it to a white-label partner on its own borrower's application", () => {
+    detail.application = { ...editable, partner_id: 2 }
+    useAuthStore.setState({ user: { id: 2, is_host: false, partner_id: 2, partner_type: PARTNER_TYPES.WHITE_LABEL, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).toHaveAttribute('href', '/fund-application/29')
+  })
+
+  it("never offers it to a white-label partner on another partner's application", () => {
+    detail.application = { ...editable, partner_id: 7 }
+    useAuthStore.setState({ user: { id: 2, is_host: false, partner_id: 2, partner_type: PARTNER_TYPES.WHITE_LABEL, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
+  })
+
+  it("never offers it to a certified partner, even on its own borrower's application", () => {
+    detail.application = { ...editable, partner_id: 3 }
+    useAuthStore.setState({ user: { id: 3, is_host: false, partner_id: 3, partner_type: PARTNER_TYPES.CERTIFIED, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
+  })
+})
+
+describe('FundingApplicationDetails — Funding Request tab', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+  })
+
+  const openFundingRequestTab = () => {
+    renderWithProviders(<FundingApplicationDetails />)
+    screen.getAllByText('Funding Request')[0].closest('button, a, li, .list-group-item')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  }
+
+  it('lists the additional funding types after the preferred one', async () => {
+    detail.application = { ...editable, preferred_funding_type: 'Term Loan', additional_funding_types: ['SBA Loan', 'Line of Credit'] }
+    openFundingRequestTab()
+
+    const preferred = await screen.findByText('Preferred Funding Type')
+    const additional = screen.getByText('Additional Funding Types')
+    expect(preferred.compareDocumentPosition(additional) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByText('SBA Loan, Line of Credit')).toBeInTheDocument()
+  })
+
+  it('shows a dash when none were chosen', async () => {
+    detail.application = { ...editable, preferred_funding_type: 'Term Loan', additional_funding_types: [] }
+    openFundingRequestTab()
+
+    const additional = await screen.findByText('Additional Funding Types')
+    expect(additional.nextElementSibling).toHaveTextContent('-')
   })
 })

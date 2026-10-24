@@ -7,7 +7,8 @@ import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
-import { fetchFundingSequencings, deleteFundingSequencing, updateFundingSequencingStatus, getFundingGroups } from '../../modules/funding/services';
+import { fetchFundingSequencings, deleteFundingSequencings, checkFundingSequencingsDeletable, updateFundingSequencingStatus, getFundingGroups } from '../../modules/funding/services';
+import FundingSequenceDeleteBlockedModal, { BlockedSequence } from './components/FundingSequenceDeleteBlockedModal';
 import { getLenderProductCategories } from '../../modules/lender/services';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -50,6 +51,9 @@ export default function FundingList() {
     const [selectedFundings, setSelectedFundings] = useState<any[]>([]);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
     const [deleteRows, setDeleteRows] = useState<any[]>([]);
+    const [blockedSequences, setBlockedSequences] = useState<BlockedSequence[]>([]);
+    const [blockedSelectionSize, setBlockedSelectionSize] = useState(0);
+    const [checkingDeletable, setCheckingDeletable] = useState(false);
 
     // Initialize filters
     const initFilters = () => {
@@ -225,11 +229,36 @@ export default function FundingList() {
     };
 
     // Delete handlers
-    const openDeleteModal = () => {
+    // A funding sequence used by a funding request cannot be deleted. Check
+    // first, so the user is told why instead of being asked to confirm.
+    const showBlocked = (rows: BlockedSequence[], selectedCount: number) => {
+        setBlockedSequences(rows);
+        setBlockedSelectionSize(selectedCount);
+    };
+
+    const openDeleteModal = async () => {
         if (!selectedFundings || selectedFundings.length === 0) {
             toast.warn('Please select at least one funding to delete.');
             return;
         }
+        const ids = selectedFundings.map(f => f.id);
+
+        setCheckingDeletable(true);
+        try {
+            const blocked = (await checkFundingSequencingsDeletable(ids))
+                .filter(row => !row.is_deletable)
+                .map(row => ({ id: row.id, name: row.name }));
+            if (blocked.length > 0) {
+                showBlocked(blocked, ids.length);
+                return;
+            }
+        } catch {
+            // The check is a courtesy - the delete itself still refuses a sequence
+            // in use, and that answer opens the same modal.
+        } finally {
+            setCheckingDeletable(false);
+        }
+
         setDeleteRows(selectedFundings);
         setShowDeleteModal(true);
     };
@@ -238,13 +267,21 @@ export default function FundingList() {
         const ids = deleteRows.map(f => f.id);
         try {
             setLoading(true);
-            await Promise.all(ids.map(id => deleteFundingSequencing(id)));
+            // One call, all or none - one refused sequence no longer leaves the others deleted.
+            await deleteFundingSequencings(ids);
             toast.success('Funding options deleted successfully');
             setShowDeleteModal(false);
             setSelectedFundings([]);
             loadData();
-        } catch (err) {
-            toast.error('Failed to delete funding options');
+        } catch (err: any) {
+            // The API keeps sequences in use (422 naming them) - same modal, no toast.
+            const blocked: BlockedSequence[] | undefined = err?.response?.data?.errors?.blocked;
+            if (err?.response?.status === 422 && Array.isArray(blocked) && blocked.length > 0) {
+                setShowDeleteModal(false);
+                showBlocked(blocked, ids.length);
+                return;
+            }
+            toast.error(err?.response?.data?.message || 'Failed to delete funding options');
         } finally {
             setLoading(false);
         }
@@ -276,7 +313,7 @@ export default function FundingList() {
                                 </button>
                                 <ul className="dropdown-menu dropdown-menu-end">
                                     <li>
-                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal} disabled={checkingDeletable}>
                                             <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                         </button>
                                     </li>
@@ -445,7 +482,16 @@ export default function FundingList() {
                 onConfirm={handleDeleteConfirm}
                 onClose={() => setShowDeleteModal(false)}
                 loading={loading}
-                text="The selected funding options and all associated data will be deleted."
+                text="The selected funding options will be deleted."
+            />
+
+            {/* The page has no edit permission of its own - any row opens the edit page. */}
+            <FundingSequenceDeleteBlockedModal
+                show={blockedSequences.length > 0}
+                blocked={blockedSequences}
+                selectedCount={blockedSelectionSize}
+                canEdit
+                onClose={() => setBlockedSequences([])}
             />
         </div>
     );

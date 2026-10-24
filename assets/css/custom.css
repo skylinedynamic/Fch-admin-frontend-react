@@ -7816,3 +7816,391 @@ File: Custom Css File
   position: static !important;
   top: auto !important;
 }
+/*
+ * Several-at-once pickers - `.chip-multiselect` (components/Common/ChipMultiSelect):
+ * Purpose of Funds and Additional Funding Types on the funding application's
+ * Funding Request step, in both portals: 37.5px tall, 4px corners, chips that
+ * wrap a row at a time inside the field, no hover or focus colour, ticked
+ * boxes in the primary colour. Kept identical to the borrower portal's copy.
+ */
+.chip-multiselect .p-multiselect {
+    position: relative; /* the appendTo="self" panel is placed against the field */
+    width: 100%;
+    border-color: #ced4da; /* the same at rest, on hover and on focus */
+    min-height: 37.5px;
+    height: auto;
+    border-radius: 4px;
+    align-items: center;
+}
+
+/* No hover or focus colour: the border and shadow stay as they are at rest -
+   on the field and on the search box in its list. */
+.chip-multiselect .p-multiselect:not(.p-disabled):hover,
+.chip-multiselect .p-multiselect:not(.p-disabled).p-focus,
+.chip-multiselect .p-multiselect:not(.p-disabled).p-inputwrapper-focus,
+.chip-multiselect-panel .p-multiselect-filter-container .p-inputtext:enabled:hover,
+.chip-multiselect-panel .p-multiselect-filter-container .p-inputtext:enabled:focus {
+    border-color: #ced4da;
+    box-shadow: none;
+    outline: 0 none;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-label-container {
+    overflow: visible;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    white-space: normal;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-label.p-placeholder {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--vz-secondary-color, #878a99);
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-token {
+    flex-shrink: 0;
+    max-width: 100%;
+    margin: 0;
+    gap: 6px;
+    padding: 2px 6px 2px 10px;
+    border: 1px solid rgba(var(--vz-primary-rgb, 64, 81, 137), 0.18);
+    border-radius: 20px;
+    background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
+    color: var(--vz-primary, #405189);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-token-label {
+    margin-right: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-token-icon {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border-radius: 50%;
+    color: var(--vz-primary, #405189);
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+    opacity: 0.65;
+    transition: all 0.15s ease-in-out;
+}
+
+.chip-multiselect .p-multiselect .p-multiselect-token-icon:hover {
+    background: var(--vz-primary, #405189);
+    color: #fff;
+    opacity: 1;
+}
+
+/* The list: pinned under the field at its width, search-only header. */
+.chip-multiselect .chip-multiselect-panel.p-multiselect-panel {
+    top: calc(100% + 3px) !important;
+    left: -1px !important;
+    width: calc(100% + 2px);
+    min-width: 0;
+    max-width: none;
+    border: 1px solid var(--vz-border-color, #e9ebec);
+    border-radius: 4px;
+    box-shadow: 0 5px 20px rgba(30, 32, 37, 0.12);
+    transform-origin: top !important;
+    z-index: 1056;
+}
+
+.chip-multiselect-panel .p-multiselect-header {
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--vz-border-color, #e9ebec);
+    border-radius: 4px 4px 0 0;
+    background: var(--vz-light, #f3f6f9);
+}
+
+.chip-multiselect-panel .p-multiselect-filter-container {
+    width: 100%;
+}
+
+.chip-multiselect-panel .p-multiselect-filter-container .p-inputtext {
+    width: 100%;
+    padding: 6px 10px 6px 30px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.chip-multiselect-panel .p-multiselect-filter-container .p-multiselect-filter-icon {
+    right: auto;
+    left: 10px;
+    margin-top: -0.5rem;
+    color: var(--vz-secondary-color, #878a99);
+}
+
+.chip-multiselect-panel .p-multiselect-items-wrapper {
+    max-height: 240px;
+}
+
+.chip-multiselect-panel .p-multiselect-item {
+    margin: 2px 6px;
+    padding: 7px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* A ticked option's checkbox in the primary colour, not PrimeReact's blue.
+   !important only on the border: the global `.p-checkbox .p-checkbox-box`
+   rule above sets it with !important. */
+.chip-multiselect-panel .p-checkbox.p-highlight .p-checkbox-box,
+.chip-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight {
+    border-color: var(--vz-primary, #405189) !important;
+    background: var(--vz-primary, #405189);
+}
+
+.chip-multiselect-panel .p-checkbox .p-checkbox-box {
+    box-shadow: none;
+}
+
+.chip-multiselect-panel .p-multiselect-item.p-highlight {
+    background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.1);
+    color: var(--vz-primary, #405189);
+}
+
+
+/* Settings > Email Configuration: verifying a mail configuration with a code. */
+.mail-verify-card {
+  border: 1px solid rgba(var(--vz-primary-rgb), 0.18);
+  border-left: 3px solid var(--vz-primary);
+  border-radius: 4px;
+  /* A soft wash of the theme colour, so the step stands out from the form. */
+  background: linear-gradient(90deg, rgba(var(--vz-primary-rgb), 0.07), rgba(var(--vz-primary-rgb), 0.02));
+  overflow: hidden;
+}
+
+.mail-verify-head {
+  padding: 18px 20px;
+}
+
+.mail-verify-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--vz-primary);
+  font-size: 21px;
+  box-shadow: 0 2px 8px rgba(var(--vz-primary-rgb), 0.18);
+}
+
+.mail-verify-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 220px;
+  padding: 10px 22px;
+  font-weight: 600;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(var(--vz-primary-rgb), 0.25);
+}
+
+.mail-verify-send i {
+  font-size: 17px;
+}
+
+@media (max-width: 767.98px) {
+  .mail-verify-send {
+    width: 100%;
+  }
+}
+
+.mail-verify-body {
+  padding: 16px 20px 18px;
+  border-top: 1px solid rgba(var(--vz-primary-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mail-verify-error {
+  padding: 10px 20px;
+  border-top: 1px solid rgba(var(--vz-danger-rgb, 240, 101, 72), 0.25);
+  background: rgba(var(--vz-danger-rgb, 240, 101, 72), 0.08);
+  color: var(--vz-danger, #f06548);
+}
+
+/* Six boxes drawn over one real input. */
+.mail-otp {
+  position: relative;
+}
+
+.mail-otp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  cursor: text;
+  z-index: 1;
+}
+
+.mail-otp-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 46px;
+  border: 1px solid var(--vz-input-border-custom, #ced4da);
+  border-radius: 4px;
+  background: var(--vz-input-bg-custom, #fff);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--vz-body-color, #212529);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mail-otp-box.is-filled {
+  border-color: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.45);
+}
+
+.mail-otp-box.is-active {
+  border-color: var(--vz-primary, #405189);
+  box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb, 64, 81, 137), 0.15);
+}
+
+.mail-otp-box.is-invalid {
+  border-color: var(--vz-danger, #f06548);
+}
+
+/* The danger notice over the Email Configuration form. */
+.mail-unverified-alert {
+  border: 0;
+  border-left: 5px solid var(--vz-danger, #f06548);
+  border-radius: 4px;
+}
+
+/* Settings > Email Configuration: which verified configuration mail goes out with. */
+.mail-delivery-status {
+  background: var(--vz-card-bg, #fff);
+  border: 1px solid var(--vz-border-color, #e9ebec);
+  border-left: 4px solid var(--vz-success, #0ab39c);
+  border-radius: 4px;
+  padding: 14px 18px;
+}
+
+.mail-delivery-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 50rem;
+  background: rgba(var(--vz-success-rgb, 10, 179, 156), 0.1);
+  color: var(--vz-success, #0ab39c);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mail-delivery-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px rgba(var(--vz-success-rgb, 10, 179, 156), 0.2);
+}
+
+/* Mail-not-verified banner (components/Layout/MailNotVerifiedBanner.tsx).
+   It sits just under the fixed 70px header, inside the page gutters. Most
+   pages offset the header on .page-content; table pages
+   (body.table-page-fit-active) offset it on .main-content instead - so the
+   banner adds the header offset only on the former. */
+.mail-not-verified-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  /* Lined up with the page beneath: .page-content's and .container-fluid's
+     padding, 12px each. */
+  margin: calc(70px + 0.75rem) var(--vz-grid-gutter-width) 0;
+  padding: 0.625rem 0.75rem 0.625rem 0.875rem;
+  /* The theme's alert-danger colours, bordered on the left only. */
+  border: 0;
+  border-left: 3px solid var(--vz-danger);
+  border-radius: 4px;
+}
+
+/* Table pages carry no header offset of their own, and inset their content
+   15px rather than 24px. */
+.table-page-fit-active .mail-not-verified-banner {
+  margin: 0.75rem 15px 0;
+  flex-shrink: 0;
+}
+
+/* The banner has taken the header offset, so the page after it drops its own:
+   custom.min.css forces .page-content's 70px top padding with !important.
+   Table pages (.page-content-fit) carry no offset of their own. */
+.main-content > .mail-not-verified-banner ~ .page-content:not(.page-content-fit) {
+  margin-top: 0 !important;
+  padding-top: 0.5rem !important;
+}
+
+.mail-not-verified-banner__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(var(--vz-danger-rgb), 0.16);
+  color: var(--vz-danger);
+  font-size: 17px;
+  animation: mail-banner-breathe 2.4s ease-in-out infinite;
+}
+
+.mail-not-verified-banner__text {
+  flex: 1 1 260px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.mail-not-verified-banner__text strong,
+.mail-not-verified-banner__address {
+  font-weight: 600;
+}
+
+.mail-not-verified-banner__address {
+  word-break: break-all;
+}
+
+.mail-not-verified-banner .btn {
+  border-radius: 4px;
+}
+
+@keyframes mail-banner-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--vz-danger-rgb), 0.35);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 7px rgba(var(--vz-danger-rgb), 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mail-not-verified-banner__icon {
+    animation: none;
+  }
+}

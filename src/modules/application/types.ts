@@ -397,6 +397,8 @@ export interface FundingApplicationDetails {
     purpose_of_funds: string;
     purpose_note: string | null;
     preferred_funding_type: string;
+    /** The other funding types the applicant would also consider. */
+    additional_funding_types?: string[];
     timeframe_needed: string;
     collateral_available: string;
     credit_pull_authorization: boolean;

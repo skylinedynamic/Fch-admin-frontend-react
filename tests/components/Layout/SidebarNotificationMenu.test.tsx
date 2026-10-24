@@ -14,7 +14,7 @@ const unread = (count: number) =>
     })
   )
 
-describe('Sidebar "Notification" menu', () => {
+describe('Sidebar "Notifications" menu', () => {
   beforeEach(() => {
     countRequests = 0
     // No permissions at all: the menu is for every signed-in user.
@@ -26,7 +26,7 @@ describe('Sidebar "Notification" menu', () => {
     renderWithProviders(<Sidebar />)
 
     // The menu re-renders once the count arrives, so find the link by its final name.
-    const link = await screen.findByRole('link', { name: /^notification\s*4$/i })
+    const link = await screen.findByRole('link', { name: /^notifications\s*4$/i })
     expect(link).toHaveAttribute('href', '/notifications')
   })
 
@@ -36,8 +36,8 @@ describe('Sidebar "Notification" menu', () => {
 
     await waitFor(() => expect(countRequests).toBeGreaterThan(0))
 
-    // Exactly "Notification": no "0" badge appended.
-    expect(await screen.findByRole('link', { name: /^notification$/i })).toHaveAttribute('href', '/notifications')
+    // Exactly "Notifications": no "0" badge appended.
+    expect(await screen.findByRole('link', { name: /^notifications$/i })).toHaveAttribute('href', '/notifications')
   })
 
   it('stays usable when the subscription is restricted (the bell works there too)', () => {

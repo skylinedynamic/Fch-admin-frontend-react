@@ -139,6 +139,77 @@ export const fundingTypeOptions: OptionType[] = [
   { label: 'Refinance / Debt Consolidation', value: 'Refinance / Debt Consolidation' },
 ]
 
+/**
+ * The Additional Funding Types choices on the funding application's Funding
+ * Request step: every funding type except the preferred one, which cannot be
+ * picked twice (the API refuses it too).
+ */
+export const additionalFundingTypeOptions = (preferred: string | null | undefined): OptionType[] =>
+  fundingTypeOptions.filter((o) => o.value !== preferred)
+
+/** The chosen additional types, without one that has just become the preferred type. */
+export const withoutPreferredFundingType = (
+  chosen: string[] | null | undefined,
+  preferred: string | null | undefined
+): string[] => (chosen ?? []).filter((type) => type !== preferred)
+
+/** Purpose of Funds is sent and stored as one string, the purposes joined by this. */
+export const PURPOSE_SEPARATOR = ', '
+
+const knownPurpose = (text: string): string | undefined =>
+  purposeOfFundingOptions.find((o) => o.value.toLowerCase() === text.trim().toLowerCase())?.value
+
+/** An older single free-text purpose (pre-qualification, embed form), read as the list item it means. */
+const legacyPurpose = (text: string): string => {
+  const lower = text.toLowerCase()
+  if (lower.includes('equipment')) return 'Equipment Purchase'
+  if (lower.includes('inventory')) return 'Inventory'
+  if (lower.includes('payroll')) return 'Payroll'
+  if (lower.includes('real estate') || lower.includes('property')) return 'Commercial Real Estate Purchase'
+  if (lower.includes('line of credit')) return 'Business Line of Credit'
+  if (lower.includes('expansion')) return 'Business Expansion'
+  if (lower.includes('acquisition')) return 'Business Acquisition'
+  return text
+}
+
+/**
+ * The purposes in a saved purpose_of_funds string. A purpose's own comma
+ * ("Furniture, Fixtures & Equipment (FF&E)") is kept by matching the known
+ * purposes first, longest run of pieces first; anything else stays as written.
+ */
+export const splitPurposes = (raw: string | null | undefined): string[] => {
+  const text = (raw ?? '').trim()
+  if (!text) return []
+
+  if (!text.includes(',')) {
+    return [knownPurpose(text) ?? legacyPurpose(text)]
+  }
+
+  const pieces = text.split(',')
+  const purposes: string[] = []
+  for (let i = 0; i < pieces.length; ) {
+    let taken = 1
+    let purpose = pieces[i].trim()
+    for (let j = pieces.length; j > i + 1; j--) {
+      const known = knownPurpose(pieces.slice(i, j).join(','))
+      if (known) {
+        purpose = known
+        taken = j - i
+        break
+      }
+    }
+    purpose = knownPurpose(purpose) ?? purpose
+    if (purpose && !purposes.some((p) => p.toLowerCase() === purpose.toLowerCase())) {
+      purposes.push(purpose)
+    }
+    i += taken
+  }
+  return purposes
+}
+
+/** The chosen purposes as the one purpose_of_funds string. */
+export const joinPurposes = (purposes: string[]): string => purposes.join(PURPOSE_SEPARATOR)
+
 export const timeframeOptions: OptionType[] = [
   { label: 'Immediately', value: 'Immediately' },
   { label: '1-2 Weeks', value: '1-2 Weeks' },

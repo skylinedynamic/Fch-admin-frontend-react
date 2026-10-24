@@ -22,6 +22,7 @@ import { toast } from 'react-toastify';
 
 import { useAuthStore } from '../../../store/auth/authStore';
 import { getDocStatusBadgeConfig } from '../../../utils/badgeHelper';
+import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 
 export default function FundingRequestDetail() {
     const { id } = useParams();
@@ -173,9 +174,9 @@ export default function FundingRequestDetail() {
                             { label: 'Details' }
                         ]}
                     >
-                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <div className="page-actions page-actions-wrap d-flex align-items-center flex-wrap gap-2 mt-2 mt-lg-0">
                             {(review?.borrower?.id || review?.borrower_id) && (
-                                <Link to={`/clients/${review.borrower?.id || review.borrower_id}`} className="btn btn-info waves-effect">
+                                <Link to={`/clients/${review.borrower?.id || review.borrower_id}`} className="btn btn-primary waves-effect">
                                     <i className="ri-user-line align-middle me-1"></i> Go to Client
                                 </Link>
                             )}
@@ -188,14 +189,16 @@ export default function FundingRequestDetail() {
                                     <i className="ri-file-list-3-line align-middle"></i> Process Application
                                 </Link>
                             )}
-                            {/* Already submitted but still at status key 9 or below: the application can be edited. */}
-                            {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id &&
+                            {/* Already submitted but still at status key 9 or below: the host edits any partner's,
+                                a white-label partner only its own borrowers'. */}
+                            {(isHost || (currentUser?.partner_type === PARTNER_TYPES.WHITE_LABEL && review?.partner_id == currentUser?.partner_id)) &&
+                                review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id &&
                                 review.funding_application?.is_editable &&
                                 review.funding_application.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
                                 review.funding_application.status !== FUNDING_APPLICATION_STATUS.DRAFT && (
                                 <Link
                                     to={`/fund-application/${review.id}`}
-                                    className="btn btn-warning waves-effect"
+                                    className="btn btn-warning waves-effect py-2 fw-normal"
                                     title="Editing will require the borrower to re-sign the application"
                                 >
                                     <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application
@@ -488,7 +491,6 @@ export default function FundingRequestDetail() {
                                             <thead className="bg-light">
                                                 <tr>
                                                     <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-2 fr-style-55c8853f">File Name</th>
-                                                    <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 fr-style-55d69cc0">Document Type</th>
                                                     <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 fr-style-55d69cc0">Uploaded On</th>
                                                     <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 fr-style-55e26e66">Status</th>
                                                     <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 text-end px-2 fr-style-55e26e66">Action</th>
@@ -496,7 +498,27 @@ export default function FundingRequestDetail() {
                                             </thead>
                                             <tbody>
                                                 {Array.isArray(review.documents_with_urls) && review.documents_with_urls.length > 0 ? (
-                                                    review.documents_with_urls.map((doc: any, idx: number) => {
+                                                    Object.entries(
+                                                        // One title per document type, its files listed under it.
+                                                        (review.documents_with_urls as any[]).reduce((groups: Record<string, any[]>, doc: any) => {
+                                                            const title = doc.document_type || doc.name.replace(/_/g, ' ');
+                                                            (groups[title] ||= []).push(doc);
+                                                            return groups;
+                                                        }, {})
+                                                    ).map(([title, docs]) => {
+                                                        const fileCount = (docs as any[]).filter((d: any) => d.document_id).length;
+                                                        return (
+                                                    <React.Fragment key={title}>
+                                                        <tr className="bg-light-subtle">
+                                                            <td colSpan={4} className="px-2 py-2 fw-semibold text-dark fs-14">
+                                                                <i className="ri-folder-3-line me-2 text-primary"></i>
+                                                                {title}
+                                                                <span className="ms-2 badge bg-primary-subtle text-primary fs-12">
+                                                                    {fileCount} {fileCount === 1 ? 'file' : 'files'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    {(docs as any[]).map((doc: any, idx: number) => {
                                                         const displayFileName = doc.file_name ? doc.file_name : doc.name.replace(/_/g, ' ');
                                                         const config = getFileConfig(doc.url || doc.file_name || displayFileName || '');
 
@@ -522,8 +544,8 @@ export default function FundingRequestDetail() {
                                                         };
 
                                                         return (
-                                                            <tr key={idx}>
-                                                                <td className="px-2 py-3">
+                                                            <tr key={`${title}-${idx}`}>
+                                                                <td className="ps-4 pe-2 py-3">
                                                                     <div className="d-flex align-items-center">
                                                                         <div className="avatar-sm flex-shrink-0">
                                                                             <div className={`avatar-title ${config.bg} ${config.color} rounded fs-20 material-shadow`}>
@@ -538,11 +560,6 @@ export default function FundingRequestDetail() {
                                                                             </h6>
                                                                         </div>
                                                                     </div>
-                                                                </td>
-                                                                <td className="py-3">
-                                                                    <span className="text-muted d-block text-truncate" title={doc.document_type || doc.name.replace(/_/g, ' ')}>
-                                                                        {doc.document_type || doc.name.replace(/_/g, ' ')}
-                                                                    </span>
                                                                 </td>
                                                                 <td className="py-3 text-muted">{doc.uploaded_on || '-'}</td>
                                                                 <td className="py-3">
@@ -566,10 +583,13 @@ export default function FundingRequestDetail() {
                                                                 </td>
                                                             </tr>
                                                         );
+                                                    })}
+                                                    </React.Fragment>
+                                                        );
                                                     })
                                                 ) : (
                                                     <tr>
-                                                        <td colSpan={5} className="text-center text-muted fs-13 py-4">
+                                                        <td colSpan={4} className="text-center text-muted fs-13 py-4">
                                                             <div className="d-flex flex-column align-items-center">
                                                                 <i className="ri-folder-open-line fs-24 text-muted mb-2"></i>
                                                                 No documents found
@@ -582,7 +602,10 @@ export default function FundingRequestDetail() {
                                     </div>
                                     <div className="d-flex justify-content-between align-items-center mt-3">
                                         <span className="text-muted fs-13">
-                                            Showing {review.documents_with_urls?.length > 0 ? 1 : 0} to {review.documents_with_urls?.length || 0} of {review.documents_with_urls?.length || 0} documents
+                                            {(() => {
+                                                const files = (review.documents_with_urls || []).filter((d: any) => d.document_id).length;
+                                                return `Showing ${files > 0 ? 1 : 0} to ${files} of ${files} documents`;
+                                            })()}
                                         </span>
                                         <ul className="pagination pagination-sm mb-0">
                                             <li className="page-item disabled"><span className="page-link"><i className="ri-arrow-left-s-line"></i></span></li>
@@ -636,7 +659,7 @@ export default function FundingRequestDetail() {
                                                     {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
                                                         <button
                                                             type="button"
-                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-1 px-3 h-100 flex-shrink-0"
+                                                            className="btn btn-primary fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-1 px-3 h-100 flex-shrink-0"
                                                             onClick={() => {
                                                                 if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
                                                                     if (isHost && assignedLenderIds.length === 0) {
@@ -683,7 +706,7 @@ export default function FundingRequestDetail() {
                                                     <div className="mt-3">
                                                         <button
                                                             type="button"
-                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
+                                                            className="btn btn-primary fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
                                                             onClick={() => {
                                                                 if (!rejectReason.trim()) {
                                                                     setValidationErrors({ reject_reason: ['The reason / note field is required.'] });

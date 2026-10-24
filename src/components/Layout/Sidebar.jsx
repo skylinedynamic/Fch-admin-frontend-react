@@ -170,7 +170,7 @@ const menuItems = [
   {
     to: NOTIFICATIONS_ROUTE,
     icon: "ri-notification-3-line",
-    label: "Notification",
+    label: "Notifications",
     permission: "", // every signed-in user has an inbox
     showUnreadNotifications: true,
   },
@@ -269,7 +269,8 @@ const menuItems = [
     ],
   },
   {
-    to: "/admin/settings",
+    // Every section is /settings/<section>, so this stays active on all of them.
+    to: "/settings",
     icon: "ri-file-settings-fill",
     label: "Settings",
     permission: ["update payment settings", "update partner agreement settings", "update borrower agreement settings", "update email configuration settings", "update sms configuration settings", "update branding settings", "update domain configuration settings", "update microbilt settings"],
@@ -496,7 +497,7 @@ export default function Sidebar() {
             {visibleMenuItems.map((item) => {
               const itemIsRestricted =
                 isRestricted &&
-                !["Dashboard", "Invoices", "Payments", "Notification"].includes(item.label);
+                !["Dashboard", "Invoices", "Payments", "Notifications"].includes(item.label);
 
               if (item.subItems) {
                 const isExpanded = expandedMenu === item.id;
