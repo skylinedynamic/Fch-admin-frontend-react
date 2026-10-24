@@ -24,6 +24,7 @@ import {
     sendTestSms,
 } from './services';
 import { queryKeys } from '../../lib/query/queryKeys';
+import { useConfigPartnerId } from './configPartner';
 import type {
     SendTestMailPayload,
     SendTestMailResponse,
@@ -62,10 +63,18 @@ export const useGlobalConfigurations = (enabled = true) => {
 /**
  * The partner's mail providers, the fallback's status, and the provider forms.
  */
+/**
+ * The cache key a settings query is held under: the user's own settings, or -
+ * inside a ConfigPartnerProvider - that partner's, so the two never mix.
+ */
+const forPartnerKey = <T extends readonly unknown[]>(key: T, partnerId?: number) =>
+    (partnerId ? [...key, { partnerId }] : key) as readonly unknown[];
+
 export const useMailConfigurations = (enabled = true) => {
+    const partnerId = useConfigPartnerId();
     return useQuery<MailConfigurationsResponse>({
-        queryKey: queryKeys.settings.mailConfigurations(),
-        queryFn: fetchMailConfigurations,
+        queryKey: forPartnerKey(queryKeys.settings.mailConfigurations(), partnerId),
+        queryFn: () => fetchMailConfigurations(partnerId),
         enabled,
     });
 };
@@ -75,11 +84,12 @@ export const useMailConfigurations = (enabled = true) => {
  * whether email counts as set up - so the list and the global flags refresh.
  */
 const useMailMutation = <TVariables, TResponse = MailConfigurationActionResponse>(
-    mutationFn: (variables: TVariables) => Promise<TResponse>
+    mutationFn: (variables: TVariables, partnerId?: number) => Promise<TResponse>
 ) => {
     const qc = useQueryClient();
+    const partnerId = useConfigPartnerId();
     return useMutation<TResponse, Error, TVariables>({
-        mutationFn,
+        mutationFn: (variables) => mutationFn(variables, partnerId),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: queryKeys.settings.mailConfigurations() });
             qc.invalidateQueries({ queryKey: ['globalConfigurations'] });
@@ -94,11 +104,15 @@ export const useDeleteMailConfiguration = () => useMailMutation<number>(deleteMa
 export const useMakeDefaultMailConfiguration = () => useMailMutation<number>(makeDefaultMailConfiguration);
 
 /** Sending a code changes nothing, so nothing is refreshed. */
-export const useSendMailConfigurationCode = () =>
-    useMutation<MailConfigurationActionResponse, Error, number>({ mutationFn: sendMailConfigurationCode });
+export const useSendMailConfigurationCode = () => {
+    const partnerId = useConfigPartnerId();
+    return useMutation<MailConfigurationActionResponse, Error, number>({
+        mutationFn: (id) => sendMailConfigurationCode(id, partnerId),
+    });
+};
 
 export const useVerifyMailConfiguration = () =>
-    useMailMutation<{ id: number; code: string }>(({ id, code }) => verifyMailConfiguration(id, code));
+    useMailMutation<{ id: number; code: string }>(({ id, code }, partnerId) => verifyMailConfiguration(id, code, partnerId));
 
 /**
  * The platform-wide fallback's providers. Only the host partner's own account may
@@ -144,9 +158,10 @@ export const useVerifyFallbackMailConfiguration = () =>
  * Hook to fetch app configurations by module.
  */
 export const useAppConfigurations = (module: string, enabled = true) => {
+    const partnerId = useConfigPartnerId();
     return useQuery({
-        queryKey: ['appConfigurations', module],
-        queryFn: () => fetchAppConfigurations(module),
+        queryKey: forPartnerKey(['appConfigurations', module] as const, partnerId),
+        queryFn: () => fetchAppConfigurations(module, partnerId),
         enabled: !!module && enabled,
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
@@ -157,8 +172,9 @@ export const useAppConfigurations = (module: string, enabled = true) => {
  */
 export const useSaveAppConfigurations = () => {
     const qc = useQueryClient();
+    const partnerId = useConfigPartnerId();
     return useMutation<any, Error, { module: string; settings: object }>({
-        mutationFn: (variables) => saveAppConfigurations(variables.module, variables.settings),
+        mutationFn: (variables) => saveAppConfigurations(variables.module, variables.settings, partnerId),
         onSuccess: (res, variables) => {
             qc.invalidateQueries({ queryKey: ['appConfigurations', variables.module] });
             qc.invalidateQueries({ queryKey: ['globalConfigurations'] });
@@ -208,25 +224,28 @@ export const useUpdateTimeSettings = () => {
  * The signed-in partner's SMS configuration and the options its form offers.
  */
 export const useSmsConfiguration = (enabled = true) => {
+    const partnerId = useConfigPartnerId();
     return useQuery<SmsConfigurationResponse>({
-        queryKey: queryKeys.settings.smsConfiguration(),
-        queryFn: fetchSmsConfiguration,
+        queryKey: forPartnerKey(queryKeys.settings.smsConfiguration(), partnerId),
+        queryFn: () => fetchSmsConfiguration(partnerId),
         enabled,
     });
 };
 
 export const useSaveSmsConfiguration = () => {
     const qc = useQueryClient();
+    const partnerId = useConfigPartnerId();
     return useMutation<SmsConfigurationResponse, Error, SaveSmsConfigurationPayload>({
-        mutationFn: saveSmsConfiguration,
+        mutationFn: (payload) => saveSmsConfiguration(payload, partnerId),
         onSuccess: (response) => {
-            qc.setQueryData(queryKeys.settings.smsConfiguration(), response);
+            qc.setQueryData(forPartnerKey(queryKeys.settings.smsConfiguration(), partnerId), response);
         },
     });
 };
 
 export const useSendTestSms = () => {
+    const partnerId = useConfigPartnerId();
     return useMutation<SendTestSmsResponse, Error, SendTestSmsPayload>({
-        mutationFn: sendTestSms,
+        mutationFn: (payload) => sendTestSms(payload, partnerId),
     });
 };

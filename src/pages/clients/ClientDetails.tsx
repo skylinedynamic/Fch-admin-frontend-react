@@ -276,7 +276,7 @@ export default function ClientDetails() {
 
                 if (clientData && clientData.id) {
                     window.dispatchEvent(new Event('refreshActivities'));
-                    navigate(`/clients/${clientData.id}`, { state: { activeTab: 'businessFinancials' } });
+                    navigate(`/clients/${clientData.id}`, { state: { activeTab: ENROLLMENT_TABS.PERSONAL } });
                 } else {
                     window.dispatchEvent(new Event('refreshActivities'));
                     navigate('/clients');
@@ -303,23 +303,9 @@ export default function ClientDetails() {
                     window.dispatchEvent(new Event('refreshActivities'));
                 }
 
+                // Stay on the tab that was saved.
                 if (updateSuccess) {
                     handleRefresh();
-
-                    const tabOrder = [
-                        ENROLLMENT_TABS.PERSONAL,
-                        ENROLLMENT_TABS.FINANCIALS,
-                        ENROLLMENT_TABS.DOCUMENTS
-                    ];
-                    const currentIndex = tabOrder.indexOf(activeTab);
-                    const nextTab = tabOrder[currentIndex + 1];
-
-                    if (nextTab) {
-                        setTimeout(() => {
-                            setActiveTab(nextTab);
-                            navigate(`/clients/${id}`, { state: { activeTab: nextTab }, replace: true });
-                        }, 800);
-                    }
                 }
             }
         } catch (error: any) {
@@ -645,14 +631,14 @@ export default function ClientDetails() {
                     // Let's navigate to edit page just like success, but maybe with a warning? 
                     // For now, let's just close modal. If they check "Clients" list, the client exists.
                     if (newBorrowerId) {
-                        navigate(`/clients/${newBorrowerId}`, { state: { activeTab: 'businessFinancials' } });
+                        navigate(`/clients/${newBorrowerId}`, { state: { activeTab: ENROLLMENT_TABS.PERSONAL } });
                     }
                 }}
                 onSuccess={() => {
                     setShowPaymentModal(false);
                     // toast.success("Client payment completed successfully!");
                     if (newBorrowerId) {
-                        navigate(`/clients/${newBorrowerId}`, { state: { activeTab: 'businessFinancials' } });
+                        navigate(`/clients/${newBorrowerId}`, { state: { activeTab: ENROLLMENT_TABS.PERSONAL } });
                     } else {
                         navigate('/clients');
                     }

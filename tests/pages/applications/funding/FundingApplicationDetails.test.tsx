@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithProviders, screen } from '../../../test-utils'
+import userEvent from '@testing-library/user-event'
 import FundingApplicationDetails from '../../../../src/pages/applications/funding/FundingApplicationDetails'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import { FUNDING_APPLICATION_STATUS } from '../../../../src/config/borrower'
 import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
+import { PARTNER_TYPES } from '../../../../src/config/partnerTypeOptions'
 
 const detail = vi.hoisted(() => ({ application: {} as Record<string, unknown> }))
 
@@ -78,6 +80,81 @@ describe('FundingApplicationDetails — Edit Funding Application', () => {
     renderWithProviders(<FundingApplicationDetails />)
 
     expect(editLink()).not.toBeInTheDocument()
+  })
+
+  it("offers the host Edit on another partner's application too", () => {
+    detail.application = { ...editable, partner_id: 7 }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).toHaveAttribute('href', '/fund-application/29')
+  })
+
+  it("offers it to a white-label partner on its own borrower's application", () => {
+    detail.application = { ...editable, partner_id: 2 }
+    useAuthStore.setState({ user: { id: 2, is_host: false, partner_id: 2, partner_type: PARTNER_TYPES.WHITE_LABEL, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).toHaveAttribute('href', '/fund-application/29')
+  })
+
+  it("never offers it to a white-label partner on another partner's application", () => {
+    detail.application = { ...editable, partner_id: 7 }
+    useAuthStore.setState({ user: { id: 2, is_host: false, partner_id: 2, partner_type: PARTNER_TYPES.WHITE_LABEL, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
+  })
+
+  it("never offers it to a certified partner, even on its own borrower's application", () => {
+    detail.application = { ...editable, partner_id: 3 }
+    useAuthStore.setState({ user: { id: 3, is_host: false, partner_id: 3, partner_type: PARTNER_TYPES.CERTIFIED, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * Ownership Information: the owner's and each co-borrower's SSN were written
+ * 3-3-3 (325-555-555) by a formatter of the page's own. They show the way every
+ * SSN does: masked ***-**-5555, written 325-55-5555 on the eye button.
+ */
+describe('FundingApplicationDetails — Ownership Information SSN', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+  })
+
+  const openOwnershipTab = () => {
+    renderWithProviders(<FundingApplicationDetails />)
+    screen.getAllByText('Ownership Information')[0].closest('button, a, li, .list-group-item')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  }
+
+  it('shows the owner SSN masked, and written XXX-XX-XXXX on the eye button', async () => {
+    const user = userEvent.setup()
+    detail.application = { ...editable, ssn: '325555555' }
+    openOwnershipTab()
+
+    expect(await screen.findByText('***-**-5555')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Show SSN' }))
+    expect(screen.getByText('325-55-5555')).toBeInTheDocument()
+    expect(screen.queryByText('325-555-555')).not.toBeInTheDocument()
+  })
+
+  it('shows a co-borrower SSN the same way, and each of its rows once', async () => {
+    const user = userEvent.setup()
+    detail.application = {
+      ...editable,
+      ssn: null,
+      has_co_borrower: true,
+      co_borrowers: [{ id: 1, first_name: 'Cora', last_name: 'Co', ssn: '234567890', home_phone: '(555) 234-5678', date_of_birth: '1985-05-05' }],
+    }
+    openOwnershipTab()
+
+    expect(await screen.findByText('***-**-7890')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Show SSN' }))
+    expect(screen.getByText('234-56-7890')).toBeInTheDocument()
+    expect(screen.getAllByText('Home Phone')).toHaveLength(1)
+    expect(screen.getAllByText('Date of Birth')).toHaveLength(2) // the owner's and the co-borrower's
   })
 })
 

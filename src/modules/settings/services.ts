@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { apiClient } from '../../lib/http/apiClient';
+import { REFRESH_ACTIVITIES_EVENT } from '../../config/appConfig';
 import type {
     SendTestMailPayload,
     SendTestMailResponse,
@@ -29,34 +30,46 @@ export const sendTestMail = async (payload: SendTestMailPayload): Promise<SendTe
 // like a partner, has one configuration per provider.
 const MAIL = '/common/mail-configurations';
 
-export const fetchMailConfigurations = async (): Promise<MailConfigurationsResponse> => {
-    const { data } = await apiClient.get(MAIL);
+/**
+ * `partner_id` for Partner profile › Configuration, where the host edits
+ * another partner's settings; nothing for the user's own (see configPartner).
+ */
+const forPartner = (partnerId?: number): { partner_id?: number } => (partnerId ? { partner_id: partnerId } : {});
+
+// A change made for another partner is logged on its activity; reload the sidebar so it shows.
+const afterPartnerChange = <T>(data: T, partnerId?: number): T => {
+    if (partnerId) window.dispatchEvent(new Event(REFRESH_ACTIVITIES_EVENT));
     return data;
 };
 
-export const saveMailConfiguration = async (payload: SaveMailConfigurationPayload): Promise<MailConfigurationActionResponse> => {
-    const { data } = await apiClient.post(MAIL, payload);
+export const fetchMailConfigurations = async (partnerId?: number): Promise<MailConfigurationsResponse> => {
+    const { data } = await apiClient.get(MAIL, { params: forPartner(partnerId) });
     return data;
 };
 
-export const deleteMailConfiguration = async (id: number): Promise<MailConfigurationActionResponse> => {
-    const { data } = await apiClient.delete(`${MAIL}/${id}`);
+export const saveMailConfiguration = async (payload: SaveMailConfigurationPayload, partnerId?: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(MAIL, { ...payload, ...forPartner(partnerId) });
+    return afterPartnerChange(data, partnerId);
+};
+
+export const deleteMailConfiguration = async (id: number, partnerId?: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.delete(`${MAIL}/${id}`, { params: forPartner(partnerId) });
+    return afterPartnerChange(data, partnerId);
+};
+
+export const makeDefaultMailConfiguration = async (id: number, partnerId?: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/${id}/default`, forPartner(partnerId));
+    return afterPartnerChange(data, partnerId);
+};
+
+export const sendMailConfigurationCode = async (id: number, partnerId?: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/${id}/send-code`, forPartner(partnerId));
     return data;
 };
 
-export const makeDefaultMailConfiguration = async (id: number): Promise<MailConfigurationActionResponse> => {
-    const { data } = await apiClient.post(`${MAIL}/${id}/default`);
-    return data;
-};
-
-export const sendMailConfigurationCode = async (id: number): Promise<MailConfigurationActionResponse> => {
-    const { data } = await apiClient.post(`${MAIL}/${id}/send-code`);
-    return data;
-};
-
-export const verifyMailConfiguration = async (id: number, code: string): Promise<MailConfigurationActionResponse> => {
-    const { data } = await apiClient.post(`${MAIL}/${id}/verify`, { code });
-    return data;
+export const verifyMailConfiguration = async (id: number, code: string, partnerId?: number): Promise<MailConfigurationActionResponse> => {
+    const { data } = await apiClient.post(`${MAIL}/${id}/verify`, { code, ...forPartner(partnerId) });
+    return afterPartnerChange(data, partnerId);
 };
 
 export const fetchFallbackMailConfiguration = async (): Promise<FallbackMailConfigurationResponse> => {
@@ -87,19 +100,19 @@ export const verifyFallbackMailConfiguration = async (id: number, code: string):
 
 // SMS configuration of the signed-in user's partner, with the countries and
 // providers the form offers. The auth token comes back masked, never in clear.
-export const fetchSmsConfiguration = async (): Promise<SmsConfigurationResponse> => {
-    const { data } = await apiClient.get('/common/sms-configuration');
+export const fetchSmsConfiguration = async (partnerId?: number): Promise<SmsConfigurationResponse> => {
+    const { data } = await apiClient.get('/common/sms-configuration', { params: forPartner(partnerId) });
     return data;
 };
 
-export const saveSmsConfiguration = async (payload: SaveSmsConfigurationPayload): Promise<SmsConfigurationResponse> => {
-    const { data } = await apiClient.post('/common/sms-configuration', payload);
-    return data;
+export const saveSmsConfiguration = async (payload: SaveSmsConfigurationPayload, partnerId?: number): Promise<SmsConfigurationResponse> => {
+    const { data } = await apiClient.post('/common/sms-configuration', { ...payload, ...forPartner(partnerId) });
+    return afterPartnerChange(data, partnerId);
 };
 
 // Sends a test text with the saved (not necessarily enabled) configuration.
-export const sendTestSms = async (payload: SendTestSmsPayload): Promise<SendTestSmsResponse> => {
-    const { data } = await apiClient.post('/common/sms-configuration/test', payload);
+export const sendTestSms = async (payload: SendTestSmsPayload, partnerId?: number): Promise<SendTestSmsResponse> => {
+    const { data } = await apiClient.post('/common/sms-configuration/test', { ...payload, ...forPartner(partnerId) });
     return data;
 };
 
@@ -109,8 +122,9 @@ export const fetchGlobalConfigurations = async (): Promise<any> => {
 };
 
 // Unified Module Settings Services
-export const fetchAppConfigurations = async (module: string): Promise<any> => {
-    const { data } = await apiClient.post('/common/app-configurations', { module });
+// A partner id is accepted for the branding module only (Partner profile › Configuration).
+export const fetchAppConfigurations = async (module: string, partnerId?: number): Promise<any> => {
+    const { data } = await apiClient.post('/common/app-configurations', { module, ...forPartner(partnerId) });
     return data;
 };
 
@@ -136,9 +150,9 @@ export const fetchBranding = async (): Promise<{
 };
 
 
-export const saveAppConfigurations = async (module: string, settings: object): Promise<any> => {
-    const { data } = await apiClient.post('/common/app-configurations/save', { module, ...settings });
-    return data;
+export const saveAppConfigurations = async (module: string, settings: object, partnerId?: number): Promise<any> => {
+    const { data } = await apiClient.post('/common/app-configurations/save', { module, ...settings, ...forPartner(partnerId) });
+    return afterPartnerChange(data, partnerId);
 };
 
 // Current OpenAI settings. Deliberately never includes the API key itself —
@@ -194,6 +208,12 @@ export interface PartnerPaymentProvider {
     is_default: boolean;
     is_configured: boolean;
     payment_mode?: string;
+    /**
+     * What the method still needs before payers are offered it, for its active
+     * mode (e.g. a missing Stripe key, no bank account). Empty when it's ready.
+     */
+    setup_issues?: string[];
+    can_take_payments?: boolean;
 }
 
 export interface PartnerPaymentProviderConfig {
@@ -204,26 +224,30 @@ export interface PartnerPaymentProviderConfig {
     is_default: boolean;
     configuration: Record<string, any>;
     bank_details?: any[];
+    /** What the method is still missing for its active mode (read-only, from the API). */
+    setup_issues?: string[];
+    /** Whether payers are offered the method meanwhile (false for Stripe or Bank Transfer that isn't set up). */
+    can_take_payments?: boolean;
 }
 
-export const fetchPartnerPaymentProviders = async (): Promise<{ status: boolean; data: PartnerPaymentProvider[] }> => {
-    const { data } = await apiClient.get('/common/partner-payment-providers');
+export const fetchPartnerPaymentProviders = async (partnerId?: number): Promise<{ status: boolean; data: PartnerPaymentProvider[] }> => {
+    const { data } = await apiClient.get('/common/partner-payment-providers', { params: forPartner(partnerId) });
     return data;
 };
 
-export const fetchPartnerPaymentProviderConfig = async (providerId: number): Promise<{ status: boolean; data: PartnerPaymentProviderConfig }> => {
-    const { data } = await apiClient.get(`/common/partner-payment-providers/${providerId}`);
+export const fetchPartnerPaymentProviderConfig = async (providerId: number, partnerId?: number): Promise<{ status: boolean; data: PartnerPaymentProviderConfig }> => {
+    const { data } = await apiClient.get(`/common/partner-payment-providers/${providerId}`, { params: forPartner(partnerId) });
     return data;
 };
 
-export const updatePartnerPaymentProviderConfig = async (payload: PartnerPaymentProviderConfig): Promise<any> => {
-    const { data } = await apiClient.post('/common/partner-payment-providers', payload);
-    return data;
+export const updatePartnerPaymentProviderConfig = async (payload: PartnerPaymentProviderConfig, partnerId?: number): Promise<any> => {
+    const { data } = await apiClient.post('/common/partner-payment-providers', { ...payload, ...forPartner(partnerId) });
+    return afterPartnerChange(data, partnerId);
 };
 
-export const updatePartnerPaymentProviderStatus = async (payload: { payment_provider_id: number; status: boolean }): Promise<any> => {
-    const { data } = await apiClient.post('/common/partner-payment-providers/status', payload);
-    return data;
+export const updatePartnerPaymentProviderStatus = async (payload: { payment_provider_id: number; status: boolean }, partnerId?: number): Promise<any> => {
+    const { data } = await apiClient.post('/common/partner-payment-providers/status', { ...payload, ...forPartner(partnerId) });
+    return afterPartnerChange(data, partnerId);
 };
 
 

@@ -115,7 +115,8 @@ export default function PaymentProviderSelector({ invoice, onSelect }) {
   if (providers.length === 0) {
     return (
       <div className="pps-state">
-        <p className="text-muted mb-0">No active payment providers are available.</p>
+        {/* The API only lists methods that are set up to take a payment. */}
+        <p className="text-muted mb-0">Online payment isn't available for this invoice right now. Please contact support to arrange payment.</p>
       </div>
     );
   }

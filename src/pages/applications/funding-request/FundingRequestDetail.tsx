@@ -22,6 +22,7 @@ import { toast } from 'react-toastify';
 
 import { useAuthStore } from '../../../store/auth/authStore';
 import { getDocStatusBadgeConfig } from '../../../utils/badgeHelper';
+import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 
 export default function FundingRequestDetail() {
     const { id } = useParams();
@@ -188,8 +189,10 @@ export default function FundingRequestDetail() {
                                     <i className="ri-file-list-3-line align-middle"></i> Process Application
                                 </Link>
                             )}
-                            {/* Already submitted but still at status key 9 or below: the application can be edited. */}
-                            {review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id &&
+                            {/* Already submitted but still at status key 9 or below: the host edits any partner's,
+                                a white-label partner only its own borrowers'. */}
+                            {(isHost || (currentUser?.partner_type === PARTNER_TYPES.WHITE_LABEL && review?.partner_id == currentUser?.partner_id)) &&
+                                review?.status === FUNDING_REVIEW_STATUS.APPROVED && review?.id &&
                                 review.funding_application?.is_editable &&
                                 review.funding_application.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
                                 review.funding_application.status !== FUNDING_APPLICATION_STATUS.DRAFT && (

@@ -8,8 +8,10 @@ import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../../components/Common/Modals/DynamicActionModal';
 import PaymentMethodStatusModal from '../../../../components/Common/Modals/PaymentMethodStatusModal';
 import { useAuthStore } from '../../../../store/auth/authStore';
+import { useConfigPartnerId } from '../../../../modules/settings/configPartner';
 import { apiClient } from '../../../../lib/http/apiClient';
 import { PAYMENT_METHOD_PROVIDER, PAYMENT_ENVIRONMENT_LABELS } from '../../../../config/paymentConfig';
+import PaymentSetupAlert from './PaymentSetupAlert';
 
 const MODE_SANDBOX = PAYMENT_ENVIRONMENT_LABELS[0].toLowerCase();
 const MODE_PRODUCTION = PAYMENT_ENVIRONMENT_LABELS[1].toLowerCase();
@@ -20,6 +22,13 @@ const PROVIDER_ECRYPT = PAYMENT_METHOD_PROVIDER[3];
 const PROVIDER_AUTHORIZE = PAYMENT_METHOD_PROVIDER[4];
 const PROVIDER_CASH = PAYMENT_METHOD_PROVIDER[5];
 const PROVIDER_BANK = PAYMENT_METHOD_PROVIDER[6];
+
+/** A US routing (ABA) number is written as nine digits; the API checks it (App\Rules\RoutingNumber). */
+const ROUTING_DIGITS = 9;
+const BANK_FIELD_ERROR = /^bank_details\.(\d+)\.(\w+)$/;
+// Stripe's answer when the keys are saved: configuration.<mode>.<key> -> the field in the form.
+const STRIPE_FIELD_ERROR = /^configuration\.(sandbox|production)\.(publishable_key|secret_key)$/;
+const STRIPE_FIELD: Record<string, string> = { publishable_key: 'stripe_key', secret_key: 'stripe_secret' };
 
 interface PaymentMethodConfigFormProps {
     provider: PartnerPaymentProvider;
@@ -32,6 +41,8 @@ interface FormErrors {
 
 export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMethodConfigFormProps): React.JSX.Element {
     const user = useAuthStore((state: any) => state.user);
+    // Partner profile › Configuration: that partner's provider settings; otherwise the user's own.
+    const configPartnerId = useConfigPartnerId();
     const queryClient = useQueryClient();
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
@@ -42,6 +53,18 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
     const [status, setStatus] = useState<boolean>(false);
     const [toggling, setToggling] = useState<boolean>(false);
     const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+    // What the method is still missing, and whether payers can use it meanwhile, as the API last said.
+    const [setupIssues, setSetupIssues] = useState<string[]>([]);
+    const [canTakePayments, setCanTakePayments] = useState<boolean>(false);
+
+    /** Takes the setup state from a details, save or status response, when it has one. */
+    const applySetup = (linkage?: { setup_issues?: string[]; can_take_payments?: boolean } | null) => {
+        if (Array.isArray(linkage?.setup_issues)) {
+            setSetupIssues(linkage.setup_issues);
+            // An API that doesn't say is treated as "payers can't use it".
+            setCanTakePayments(linkage.can_take_payments === true);
+        }
+    };
 
     const handleStatusToggleConfirm = async () => {
         const newStatus = !status;
@@ -50,10 +73,11 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             const response = await updatePartnerPaymentProviderStatus({
                 payment_provider_id: provider.id,
                 status: newStatus
-            });
+            }, configPartnerId);
             if (response && response.status && response.data && response.data.id) {
                 setLinkageId(response.data.id);
             }
+            applySetup(response?.data);
             setStatus(newStatus);
             toast.success(`${provider.name} status updated successfully.`);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
@@ -94,12 +118,14 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
     const loadConfig = async () => {
         try {
             setFetching(true);
-            const response = await fetchPartnerPaymentProviderConfig(provider.id);
+            const response = await fetchPartnerPaymentProviderConfig(provider.id, configPartnerId);
             if (response && response.status && response.data) {
                 const linkage = response.data;
                 setLinkageId(linkage.id || null);
                 setIsDefault(!!linkage.is_default);
                 setStatus(!!linkage.status);
+                setSetupIssues([]);
+                applySetup(linkage);
                 const config = linkage.configuration || {};
                 const paymentMode = linkage.payment_mode || config.payment_mode || MODE_SANDBOX;
 
@@ -410,7 +436,8 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 is_default: isDefault,
                 configuration: configuration,
                 bank_details: isBank ? bankDetails : undefined
-            } as any);
+            } as any, configPartnerId);
+            applySetup(response?.data);
             if (response && response.status && response.data && response.data.id) {
                 setLinkageId(response.data.id);
                 if (isBank && response.data.bank_details) {
@@ -421,6 +448,29 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
         } catch (error: any) {
             console.error(`Failed to save ${provider.name} config:`, error);
+            // A bank row's own error (bank_details.0.routing_number) goes under its field.
+            const serverErrors: Record<string, string | string[]> = error.response?.data?.errors || {};
+            const rowErrors: Record<number, Record<string, string>> = {};
+            Object.entries(serverErrors).forEach(([key, message]) => {
+                const match = BANK_FIELD_ERROR.exec(key);
+                if (match) {
+                    const row = Number(match[1]);
+                    rowErrors[row] = { ...rowErrors[row], [match[2]]: Array.isArray(message) ? message[0] : message };
+                }
+            });
+            if (Object.keys(rowErrors).length > 0) {
+                setBankErrors(rowErrors);
+            }
+            const keyErrors: FormErrors = {};
+            Object.entries(serverErrors).forEach(([key, message]) => {
+                const match = STRIPE_FIELD_ERROR.exec(key);
+                if (match) {
+                    keyErrors[`${STRIPE_FIELD[match[2]]}_${match[1]}`] = Array.isArray(message) ? message[0] : message;
+                }
+            });
+            if (Object.keys(keyErrors).length > 0) {
+                setErrors(prev => ({ ...prev, ...keyErrors }));
+            }
             toast.error(error.response?.data?.message || 'Failed to save configuration.');
         } finally {
             setLoading(false);
@@ -480,6 +530,18 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                 </div>
                             </div>
                         </div>
+
+                        {status && setupIssues.length > 0 && (
+                            <div className="mb-4">
+                                <PaymentSetupAlert
+                                    title={canTakePayments ? `${provider.name} isn't fully set up` : `${provider.name} can't take payments yet`}
+                                    description={canTakePayments
+                                        ? 'Add what is missing below and save.'
+                                        : `Payers aren't offered ${provider.name} until it's set up.`}
+                                    issues={setupIssues}
+                                />
+                            </div>
+                        )}
 
                         <form onSubmit={handleSubmit}>
                             <div
@@ -875,14 +937,22 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                                                     </div>
                                                                                 </td>
                                                                                 <td>
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        className="form-control form-control-sm fs-13"
-                                                                                        value={bank.routing_number || ''}
-                                                                                        onChange={(e) => handleBankDetailChange(index, 'routing_number', e.target.value)}
-                                                                                        placeholder="Routing Number"
-                                                                                        disabled={loading || toggling || !status}
-                                                                                    />
+                                                                                    <div>
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            inputMode="numeric"
+                                                                                            className={`form-control form-control-sm fs-13 ${rowErrors.routing_number ? 'is-invalid border-danger' : ''}`}
+                                                                                            value={bank.routing_number || ''}
+                                                                                            onChange={(e) => handleBankDetailChange(index, 'routing_number', e.target.value.replace(/\D/g, '').slice(0, ROUTING_DIGITS))}
+                                                                                            placeholder="Routing Number"
+                                                                                            disabled={loading || toggling || !status}
+                                                                                        />
+                                                                                        {rowErrors.routing_number && (
+                                                                                            <div className="text-danger fs-11 mt-1">
+                                                                                                {rowErrors.routing_number}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
                                                                                 </td>
                                                                                 <td>
                                                                                     <input

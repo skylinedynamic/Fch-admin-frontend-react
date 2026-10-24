@@ -145,7 +145,6 @@ export default function UserDetails() {
     if (!values.name) next.name = 'Name is required';
     if (!values.email) next.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(values.email)) next.email = 'Email is invalid';
-    if (!values.phone_number) next.phone_number = 'Phone number is required';
     if (!values.role_id) next.role_id = 'Role is required';
     if (isCreate) {
       if (!values.password) next.password = 'Password is required';
@@ -348,7 +347,7 @@ export default function UserDetails() {
 
                           <div className="col-lg-6">
                             <div className="mb-3">
-                              <label htmlFor="phone_number" className="form-label">Phone Number <span className="text-danger">*</span></label>
+                              <label htmlFor="phone_number" className="form-label">Phone Number</label>
                               <input
                                 id="phone_number"
                                 type="text"

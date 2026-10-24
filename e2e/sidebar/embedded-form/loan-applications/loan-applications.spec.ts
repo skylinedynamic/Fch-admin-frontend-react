@@ -146,25 +146,70 @@ test.describe('Loan application details', () => {
     await expect(statusDropdown(page)).toContainText('New')
   })
 
+  // The modal asks the API what converting would do before it offers Confirm.
+  const PREVIEW = `${EF}/submissions/1401/conversion-preview`
+  const EXISTING = { id: 55, name: 'Ada Existing', email: 'ada@example.test', partner_name: 'Acme', funding_applications_count: 2 }
+  const previewNew = ok({ mode: 'new_borrower', existing_borrower: null })
+
+  test('a new email says a new client and a new funding application will be created', async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'GET', match: PREVIEW, body: previewNew })
+    await page.getByRole('button', { name: /convert to free plan borrower/i }).first().click()
+    const modal = page.locator('.ef-convert-modal.show')
+    await expect(modal.locator('.modal-title')).toHaveText('Create New Client')
+    await expect(modal.getByText('No existing client found')).toBeVisible()
+    await expect(modal.getByText('A new funding application will be generated for this client.')).toBeVisible()
+    await expect(modal.getByRole('button', { name: 'Create Client & Funding Application' })).toBeVisible()
+  })
+
+  test('an existing client is named before Confirm, which then converts onto them', async ({ page }) => {
+    const api = await open(page)
+    const CONVERT = `${EF}/submissions/1401/convert-to-borrower`
+    api.add({ method: 'GET', match: PREVIEW, body: ok({ mode: 'existing_borrower', existing_borrower: EXISTING }) })
+    api.add({ method: 'POST', match: CONVERT, body: ok({ id: 55, funding_application_id: 91, is_existing_borrower: true }, 'Funding application created for the existing borrower.') })
+    await page.getByRole('button', { name: /convert to free plan borrower/i }).first().click()
+    const modal = page.locator('.ef-convert-modal.show')
+    await expect(modal.locator('.modal-title')).toHaveText('Existing Client Found')
+    await expect(modal.getByText('This client already exists')).toBeVisible()
+    await expect(modal.getByText('A new funding application will be generated for this client.')).toBeVisible()
+    await expect(modal.getByText('Ada Existing')).toBeVisible()
+
+    await modal.getByRole('button', { name: 'Use Existing Client & Create Funding Application' }).click()
+    await expect.poll(() => api.find('POST', CONVERT).at(-1)?.json.confirm_existing_borrower).toBe(true)
+    await expect(page.getByText('Funding application created for the existing borrower.')).toBeVisible()
+  })
+
+  test('a submission the API will not convert says why and offers no Confirm', async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'GET', match: PREVIEW, status: 422, body: failure('This application has already been converted.') })
+    await page.getByRole('button', { name: /convert to free plan borrower/i }).first().click()
+    const modal = page.locator('.ef-convert-modal.show')
+    await expect(modal.getByText('This application has already been converted.')).toBeVisible()
+    await expect(modal.locator('.modal-footer .btn-primary')).toHaveCount(0)
+  })
+
   test('converting an application that is already converted shows the refusal', async ({ page }) => {
     const api = await open(page)
+    api.add({ method: 'GET', match: PREVIEW, body: previewNew })
     api.add({ method: 'POST', match: `${EF}/submissions/1401/convert-to-borrower`, status: 422, body: failure('This application has already been converted.') })
     await page.getByRole('button', { name: /convert to free plan borrower/i }).first().click()
     await page.locator('.ef-convert-modal.show .modal-footer .btn-primary').click()
     await expect(page.getByText('This application has already been converted.').first()).toBeVisible()
   })
 
+  // A client created between the preview and Confirm: the API still asks (409).
   test('an existing borrower must be confirmed before the funding application is created', async ({ page }) => {
     const api = await open(page)
     const CONVERT = `${EF}/submissions/1401/convert-to-borrower`
+    api.add({ method: 'GET', match: PREVIEW, body: previewNew })
     api.add({
       method: 'POST', match: CONVERT, status: 409,
-      body: { status: false, message: 'A borrower with this email already exists.', code: 'existing_borrower_confirmation_required', data: { existing_borrower: { id: 55, name: 'Ada Existing', email: 'ada@example.test', partner_name: 'Acme', funding_applications_count: 2 } } },
+      body: { status: false, message: 'A borrower with this email already exists.', code: 'existing_borrower_confirmation_required', data: { existing_borrower: EXISTING } },
     })
     await page.getByRole('button', { name: /convert to free plan borrower/i }).first().click()
     const modal = page.locator('.ef-convert-modal.show')
     await modal.locator('.modal-footer .btn-primary').click()
-    await expect(modal.locator('.modal-title')).toHaveText('Existing Borrower Found')
+    await expect(modal.locator('.modal-title')).toHaveText('Existing Client Found')
     await expect(modal.getByText('Ada Existing')).toBeVisible()
     expect(api.find('POST', CONVERT).at(-1)?.json.confirm_existing_borrower).toBeUndefined()
 

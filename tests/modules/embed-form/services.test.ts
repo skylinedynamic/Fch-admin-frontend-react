@@ -10,9 +10,37 @@ import {
   updateEmbedFormSubmissionStatus,
   downloadEmbedFormAttachment,
   convertEmbedFormSubmissionToBorrower,
+  fetchConversionPreview,
 } from '../../../src/modules/embed-form/services'
+import { CONVERSION_MODE } from '../../../src/modules/embed-form/types'
 
 afterEach(() => server.resetHandlers())
+
+describe('fetchConversionPreview', () => {
+  it('GETs the preview for the submission and returns its data', async () => {
+    const existing = { id: 42, name: 'Odessa Mccall', email: 'odessa@example.test' }
+    server.use(
+      http.get('*/common/embed-forms/submissions/3/conversion-preview', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { mode: 'existing_borrower', existing_borrower: existing } })
+      )
+    )
+
+    await expect(fetchConversionPreview(3)).resolves.toEqual({
+      mode: CONVERSION_MODE.EXISTING,
+      existing_borrower: existing,
+    })
+  })
+
+  it('returns a new-client preview with no existing borrower', async () => {
+    server.use(
+      http.get('*/common/embed-forms/submissions/4/conversion-preview', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { mode: 'new_borrower', existing_borrower: null } })
+      )
+    )
+
+    await expect(fetchConversionPreview(4)).resolves.toEqual({ mode: CONVERSION_MODE.NEW, existing_borrower: null })
+  })
+})
 
 describe('getEmbedFormConfig', () => {
   it('sends partner_id as a query param when provided', async () => {

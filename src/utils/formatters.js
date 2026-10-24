@@ -108,6 +108,16 @@ export const formatBusinessEIN = (value) => {
 };
 
 /**
+ * A stored EIN as the screens show it, XX-XXXXXXX - the API keeps nine digits,
+ * older rows a hyphenated writing. Anything that is not a writing of an EIN is
+ * shown as it is, so opening and saving a record never quietly blanks it.
+ */
+export const displayEIN = (value) => {
+    if (!value) return '';
+    return /^[\d\s-]+$/.test(value) ? formatBusinessEIN(value) : value;
+};
+
+/**
  * Masks or reveals an SSN string in ###-##-#### format.
  * @param value Raw SSN digits
  * @param reveal Whether to reveal the full SSN

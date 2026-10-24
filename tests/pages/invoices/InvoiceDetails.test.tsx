@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { screen, waitFor } from '../../test-utils'
+import { screen, waitFor, within } from '../../test-utils'
 import { allowBackgroundCalls, api, renderPage, signIn, type TestUser } from '../pageHarness'
 
 vi.mock('react-toastify', async (importOriginal) => {
@@ -8,6 +8,8 @@ vi.mock('react-toastify', async (importOriginal) => {
   return { ...actual, toast: Object.assign(vi.fn(), { info: vi.fn(), success: vi.fn(), error: vi.fn(), warn: vi.fn() }) }
 })
 vi.mock('bootstrap/js/dist/modal', () => import('../../mocks/fakeBootstrapModal'))
+// The pay flow is its own screen with its own tests; this page only mounts it.
+vi.mock('../../../src/pages/invoices/components/InvoicePaymentModal', () => ({ default: () => null }))
 
 import { toast } from 'react-toastify'
 import InvoiceDetails from '../../../src/pages/invoices/InvoiceDetails'
@@ -17,11 +19,30 @@ const INVOICE = {
   type: 'Subscription', status: 'Unpaid', entity_type: 'Partner',
 }
 
+const reseller = {
+  name: 'Rita Reseller',
+  company_name: 'Reseller LLC',
+  email: 'reseller@example.test',
+  phone: '555-0200',
+  address: '2 Reseller Rd',
+  city: 'Austin',
+  state: 'TX',
+  postal_code: '73301',
+  country: 'United States',
+}
+
+const BORROWER_FEE = { ...INVOICE, type: 'Borrower Fee', displayable_payment_amount: '$800.00', billed_to: reseller }
+
 const mount = (user: TestUser = { permissions: ['view invoices'] }, invoice: Record<string, unknown> = INVOICE) => {
   signIn(user)
   allowBackgroundCalls()
   api('get', '/common/invoices/1001', { status: true, data: invoice })
   return renderPage(<InvoiceDetails />, { path: '/invoices/:id', route: '/invoices/1001' })
+}
+
+const billedToSection = async () => {
+  const title = await screen.findByRole('heading', { name: 'Billed To' })
+  return within(title.parentElement as HTMLElement)
 }
 
 beforeEach(() => {
@@ -44,6 +65,27 @@ describe('InvoiceDetails', () => {
 
     await screen.findByText('Total Amount')
     expect(screen.getAllByText('-').length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('bills a borrower fee to the partner paying it, not the borrower it is for', async () => {
+    mount({ permissions: ['view invoices'] }, BORROWER_FEE)
+
+    const to = await billedToSection()
+    expect(to.getByText('Rita Reseller')).toBeInTheDocument()
+    expect(to.getByText('Reseller LLC')).toBeInTheDocument()
+    expect(to.getByText('2 Reseller Rd')).toBeInTheDocument()
+    expect(to.getByText('Austin, TX 73301')).toBeInTheDocument()
+    expect(to.getByText('United States')).toBeInTheDocument()
+    expect(to.getByText('555-0200')).toBeInTheDocument()
+    expect(to.getByText('reseller@example.test')).toBeInTheDocument()
+  })
+
+  it('describes the invoice by its own type and amount', async () => {
+    mount({ permissions: ['view invoices'] }, BORROWER_FEE)
+
+    await billedToSection()
+    expect(screen.getByText('Borrower Fee')).toBeInTheDocument()
+    expect(screen.queryByText(/Enrollment Type/)).not.toBeInTheDocument()
   })
 
   it('downloads the PDF returned by the API', async () => {

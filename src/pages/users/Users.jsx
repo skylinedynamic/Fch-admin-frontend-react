@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/auth/authStore';
 import UserLimitModal from './components/UserLimitModal';
 import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
 import { ENTITY_TYPE_PARTNER } from '../../config/appConfig';
+import { checkSeatLimit } from '../../utils/seatLimit';
 
 export default function Users() {
   const [filters, setFilters] = useState({})
@@ -71,26 +72,21 @@ export default function Users() {
       setLoadingLimitCheck(true);
 
       const data = await getUserCount();
-      const currentCount = data.data.count || 0;
-      const totalAllowed = data.data.seat_limit || data.data.user_seats || userSubscription?.user_seats || 3;
+      // The same rule as the employee form's "Create account".
+      const seats = checkSeatLimit(data.data, user, userSubscription);
 
-      if (currentCount < totalAllowed) {
+      if (seats.status === 'available') {
         navigate('/users/create');
+      } else if (seats.status === 'free_trial') {
+        setAllowedFreeTrialCount(seats.limit);
+        setShowFreeTrialLimitModal(true);
       } else {
-        const isPartner = user?.entity_type === ENTITY_TYPE_PARTNER;
-        const isFreeTrial = !!userSubscription?.is_free_trail;
-
-        if (isPartner && isFreeTrial) {
-          setAllowedFreeTrialCount(totalAllowed);
-          setShowFreeTrialLimitModal(true);
-        } else {
-          setLimitData({
-            count: currentCount,
-            price: data.data.per_user_price,
-            limit: totalAllowed,
-          });
-          setShowLimitModal(true);
-        }
+        setLimitData({
+          count: seats.count,
+          price: data.data.per_user_price,
+          limit: seats.limit,
+        });
+        setShowLimitModal(true);
       }
     } catch (error) {
       console.error("Failed to check user limit:", error);

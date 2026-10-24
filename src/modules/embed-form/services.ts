@@ -1,4 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
+import type { ConversionPreview } from './types';
 
 export const getEmbedFormConfig = async (partnerId?: number) => {
   const params = partnerId ? { partner_id: partnerId } : {};
@@ -41,6 +42,12 @@ export const downloadEmbedFormAttachment = async (id: number | string) => {
     responseType: 'blob',
   });
   return response;
+};
+
+/** Whether converting would use an existing client or create a new one. Writes nothing. */
+export const fetchConversionPreview = async (id: number | string): Promise<ConversionPreview> => {
+  const response = await apiClient.get(`/common/embed-forms/submissions/${id}/conversion-preview`);
+  return response.data.data;
 };
 
 export const convertEmbedFormSubmissionToBorrower = async (id: number | string, payload: any = {}) => {
