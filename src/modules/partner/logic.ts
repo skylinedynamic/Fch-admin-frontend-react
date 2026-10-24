@@ -32,6 +32,8 @@ export const mapPartnerBackendErrors = (backendErrors: Record<string, any>): Rec
         'enrollment.months':                    'installment_months',
         'enrollment.monthly_amount':            'installment_monthly_amount',
         'enrollment.remaining_balance':         'installment_remaining_balance',
+        // The create endpoint validates the zip as zip_code; the form field is postal_code.
+        'zip_code':                             'postal_code',
     };
 
     Object.entries(backendErrors).forEach(([field, errorMsg]) => {

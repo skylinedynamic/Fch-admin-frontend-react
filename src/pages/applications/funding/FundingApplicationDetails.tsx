@@ -18,6 +18,7 @@ import { handleFileDownload } from '../../../utils/fileDownload';
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
+import SsnValue from '../../../components/Common/SsnValue';
 import FundedAmountModal from '../../../components/Common/Modals/FundedAmountModal';
 import DownloadPdfModal from './DownloadPdfModal';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
@@ -354,7 +355,7 @@ export default function FundingApplicationDetails() {
             <DetailRow label="First Name" value={app.first_name} />
             <DetailRow label="Last Name" value={app.last_name} />
             <DetailRow label="Date of Birth" value={app.date_of_birth} />
-            <DetailRow label="Social Security Number (SSN)" value={formatSSN(app.ssn)} />
+            <DetailRow label="Social Security Number (SSN)" value={<SsnValue value={app.ssn} />} />
             <DetailRow label="Citizenship Status" value={app.citizenship_status} />
             <DetailRow label="Street Address" value={app.street_address} />
             <DetailRow label="State" value={app.state} />
@@ -384,9 +385,7 @@ export default function FundingApplicationDetails() {
                                     <DetailRow label="Mobile Phone" value={borrower.mobile_phone} />
                                     <DetailRow label="Home Phone" value={borrower.home_phone} />
                                     <DetailRow label="Date of Birth" value={borrower.date_of_birth ? formatApiDate(borrower.date_of_birth) : '-'} />
-                                    <DetailRow label="Home Phone" value={borrower.home_phone} />
-                                    <DetailRow label="Date of Birth" value={borrower.date_of_birth ? formatApiDate(borrower.date_of_birth) : '-'} />
-                                    <DetailRow label="SSN" value={formatSSN(borrower.ssn)} />
+                                    <DetailRow label="SSN" value={<SsnValue value={borrower.ssn} />} />
 
                                     <div className="col-12"><hr className="my-2" /></div>
                                     <h6 className="mb-3 fs-13 text-muted text-uppercase fw-semibold">Address</h6>
@@ -724,7 +723,7 @@ export default function FundingApplicationDetails() {
                                         <td className="text-capitalize">{history.user_type || 'System'}</td>
                                         <td>
                                             <span className={`badge ${history.action === 'generated' ? 'bg-success' :
-                                                    history.action.includes('with_password') ? 'bg-warning' : 'bg-primary'
+                                                history.action.includes('with_password') ? 'bg-warning' : 'bg-primary'
                                                 }`}>
                                                 {history.action.replace(/_/g, ' ')}
                                             </span>

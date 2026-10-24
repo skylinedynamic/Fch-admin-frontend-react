@@ -8,7 +8,7 @@ import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfile
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
-import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
+import { validateRequired, validateEmail } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
@@ -19,6 +19,9 @@ import { Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { refreshUserData } from '../../lib/auth/auth';
 import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
+import { PARTNER_CONFIGURATION_TAB, canManagePartnerConfiguration } from '../../config/partnerConfiguration';
+import { useAuthStore } from '../../store/auth/authStore';
+import PartnerConfigurationSection from './components/PartnerConfigurationSection';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -26,6 +29,9 @@ export default function PartnerProfile() {
     const location = useLocation();
     const [searchParams] = useSearchParams();
     const { hasPermission } = usePermissions();
+    const authUser = useAuthStore((state) => state.user);
+    // Partner profile › Configuration: the host edits this partner's Email, SMS, Branding and Payment settings.
+    const canConfigure = canManagePartnerConfiguration(authUser, hasPermission, id);
 
     // Permission checks
     const canCreate = hasPermission('create partners');
@@ -619,16 +625,7 @@ export default function PartnerProfile() {
                 } catch (e) {
                     toast.error(e.response?.data?.message || 'Failed to attach documents');
                 }
-                const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription', 'tenantConfig'];
-                const currentIndex = tabOrder.indexOf(activeTab);
-                const nextTab = tabOrder[currentIndex + 1];
-
-                if (nextTab) {
-                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: nextTab } }), 800);
-                } else {
-                    // If on last tab, stay on current tab
-                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: activeTab } }), 800);
-                }
+                // Stay on the tab that was saved.
             } else {
                 const response = await createPartner(formDataToSend);
                 toast.success('Partner created successfully');
@@ -657,8 +654,8 @@ export default function PartnerProfile() {
                     } catch (e) {
                         toast.error(e.response?.data?.message || 'Failed to attach documents');
                     }
-                    // Redirect to the partner profile page with Status & Agent tab active
-                    setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab: 'statusAgent' } }), 800);
+                    // Open the new partner on the tab it was created from.
+                    setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab } }), 800);
                 } else {
                     // Fallback to partners list if no ID returned
                     setTimeout(() => navigate('/partners'), 800);
@@ -699,7 +696,7 @@ export default function PartnerProfile() {
                     </Link>
 
                     {/* Generic Partner Save Button */}
-                    {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig'].includes(activeTab) && (
+                    {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig', PARTNER_CONFIGURATION_TAB].includes(activeTab) && (
                         ((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
                             <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
                                 {isSaving ? (
@@ -834,9 +831,37 @@ export default function PartnerProfile() {
                                             </a>
                                         </li>
                                     )}
+                                    {canConfigure && Number(formData.is_host) == 0 && (
+                                        <li className="nav-item">
+                                            <a
+                                                className={`nav-link ${activeTab === PARTNER_CONFIGURATION_TAB ? 'active' : ''}`}
+                                                onClick={() => setActiveTab(PARTNER_CONFIGURATION_TAB)}
+                                                role="tab"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                Configuration
+                                            </a>
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                             <div className="card-body p-4">
+                                {activeTab === PARTNER_CONFIGURATION_TAB && canConfigure && Number(formData.is_host) == 0 ? (
+                                    // Keyed by partner, so another partner's settings never carry over.
+                                    <PartnerConfigurationSection
+                                        key={id}
+                                        partner={{
+                                            id: Number(id),
+                                            company_name: formData.company_name,
+                                            partner_type: formData.partner_type,
+                                            is_host: formData.is_host,
+                                            full_name: formData.full_name,
+                                            email: formData.email,
+                                            phone_number: formData.phone_number,
+                                            status: formData.status,
+                                        }}
+                                    />
+                                ) : (
                                 <PartnerForm
                                     activeTab={activeTab}
                                     formData={formData}
@@ -858,6 +883,7 @@ export default function PartnerProfile() {
                                     setIsSaving={setIsSaving}
                                     wasFreeTrial={wasFreeTrial}
                                 />
+                                )}
                             </div>
                         </div>
                     </div>

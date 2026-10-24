@@ -154,6 +154,11 @@ export type ClientListStatistics = {
     active_borrowers: number;
     inactive_borrowers: number;
     new_this_month: number;
+    /** Suspended clients (a partner's card). */
+    suspended_borrowers?: number;
+    /** The host's own clients, and its partners' (the host's cards). */
+    host_borrowers?: number;
+    partner_borrowers?: number;
 };
 
 export type TierTaskVendor = {

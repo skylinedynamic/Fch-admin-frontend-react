@@ -5,8 +5,9 @@ import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
 
 import { toast } from 'react-toastify';
-import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS } from '../../../utils/formatters';
+import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS, displayEIN } from '../../../utils/formatters';
 import { formatSSN } from '../../../utils/borrowerFormatters';
+import SsnInput from '../../../components/Common/SsnInput';
 import {
     useClient,
     useUpdateClient,
@@ -204,6 +205,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             if (apiData.ssn) {
                 apiData.ssn = formatSSN(apiData.ssn);
             }
+
+            // The API keeps an EIN as its nine digits; the field writes it XX-XXXXXXX.
+            apiData.business_ein = displayEIN(apiData.business_ein);
 
             // Ensure country uses full name for mapping to dropdown value
             if (apiData.country) {
@@ -882,19 +886,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="ssn" className="form-label">Social Security Number</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.ssn ? 'is-invalid' : ''}`}
+                        {/* The one SSN field: masked at rest, edited on a click, in full on the eye button. */}
+                        <SsnInput
                             id="ssn"
-                            name="ssn"
-                            placeholder="XXX-XX-XXXX"
                             value={formData.ssn || ''}
-                            onChange={(e) => {
-                                const formatted = formatSSN(e.target.value);
-                                handleInputChange({ target: { name: 'ssn', value: formatted } });
-                            }}
+                            onChange={(ssn) => handleInputChange({ target: { name: 'ssn', value: ssn } })}
+                            invalid={!!errors.ssn}
                         />
-                        {errors.ssn && <div className="invalid-feedback">{errors.ssn}</div>}
+                        {errors.ssn && <div className="invalid-feedback d-block">{errors.ssn}</div>}
                     </div>
                 </div>
 

@@ -4,7 +4,8 @@ import { Skeleton } from 'primereact/skeleton';
 import { fetchClientById } from '../../../modules/client/services';
 import type { Client } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
-import { formatSSN } from '../../../utils/borrowerFormatters';
+import SsnValue from '../../../components/Common/SsnValue';
+import { displayEIN } from '../../../utils/formatters';
 
 interface ClientDetailsModalProps {
     isOpen: boolean;
@@ -153,7 +154,7 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle,
                                     </div>
                                     <InfoItem label="Phone Number" value={client.phone_number} />
                                     <InfoItem label="Date of Birth" value={client.date_of_birth} />
-                                    <InfoItem label="Social Security Number" value={client.ssn ? formatSSN(client.ssn) : undefined} />
+                                    <InfoItem label="Social Security Number" value={client.ssn ? <SsnValue value={client.ssn} /> : undefined} />
                                     <InfoItem label="Address" value={client.home_address} />
 
                                 </CardBody>
@@ -168,7 +169,7 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle,
                                         <Col md={6}><InfoItem label="Industry Type" value={client.business_industry_type} /></Col>
                                         <Col md={6}><InfoItem label="Business Phone" value={client.business_phone} /></Col>
                                         <Col md={6}><InfoItem label="Business Website" value={client.business_website ? <a href={client.business_website} target="_blank" rel="noreferrer">{client.business_website}</a> : 'N/A'} /></Col>
-                                        <Col md={6}><InfoItem label="Business EIN" value={client.business_ein} /></Col>
+                                        <Col md={6}><InfoItem label="Business EIN" value={client.business_ein ? displayEIN(client.business_ein) : undefined} /></Col>
                                         <Col md={6}><InfoItem label="Years in Business" value={client.years_in_business} /></Col>
                                         <Col md={12}><InfoItem label="Business Address" value={client.business_address} /></Col>
                                         <Col md={4}><InfoItem label="Business City" value={client.business_city} /></Col>

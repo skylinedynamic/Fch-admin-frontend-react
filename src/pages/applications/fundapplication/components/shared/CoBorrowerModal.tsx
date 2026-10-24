@@ -4,11 +4,22 @@ import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { countries } from '../../../../../modules/location'
 import { useValidateCoBorrower } from '../../../../../modules/funding-application/queries'
 import { getCountryCodeByName, getPhoneCodeByName } from '../../../../../utils/countryHelpers'
-import { formatPhoneNumber, formatSSN, unformatSSN, formatZipCode } from '../../../../../utils/borrowerFormatters'
+import { formatPhoneNumber, unformatSSN, formatZipCode } from '../../../../../utils/borrowerFormatters'
+import SsnInput from '../../../../../components/Common/SsnInput'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/themes/material_blue.css'
 import { yearDropdownPlugin } from '../../../../../utils/flatpickrPlugins'
 import { toast } from 'react-toastify'
+
+/** The API's name for each draft field, where it is not just the snake_case of it. */
+const ERROR_KEYS: Partial<Record<keyof CoBorrower, string>> = {
+  ownershipPct: 'ownership',
+  dob: 'date_of_birth',
+  zip: 'zip_code',
+}
+
+const errorKeyOf = (field: string) =>
+  ERROR_KEYS[field as keyof CoBorrower] ?? field.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
 
 type CoBorrowerModalProps = {
   coDraft: CoBorrower
@@ -17,11 +28,23 @@ type CoBorrowerModalProps = {
   isEditing: boolean
 }
 
-export default function CoBorrowerModal({ coDraft, setCoDraft, onSubmit, isEditing }: CoBorrowerModalProps) {
+export default function CoBorrowerModal({ coDraft, setCoDraft: setDraft, onSubmit, isEditing }: CoBorrowerModalProps) {
   const [availableStates, setAvailableStates] = useState<{ name: string; code: string; cities?: string[] }[]>([])
   const [availableCities, setAvailableCities] = useState<{ name: string; code: string }[]>([])
   const [showCityInput, setShowCityInput] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // A field's error is about the value that was sent: once the field is edited,
+  // it no longer applies. Errors on other fields stay until they are fixed.
+  const setCoDraft = (next: CoBorrower) => {
+    const edited = (Object.keys(next) as (keyof CoBorrower)[])
+      .filter((field) => next[field] !== coDraft[field])
+      .map(errorKeyOf)
+    if (edited.some((key) => errors[key])) {
+      setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => !edited.includes(key))))
+    }
+    setDraft(next)
+  }
   const [validating, setValidating] = useState(false)
   const { mutateAsync: validateCoBorrower } = useValidateCoBorrower()
 
@@ -211,7 +234,7 @@ export default function CoBorrowerModal({ coDraft, setCoDraft, onSubmit, isEditi
                     <input
                       type="tel"
                       className={`form-control ${hasError('mobile_phone') ? 'is-invalid' : ''}`}
-                      placeholder="(123) 456-7890"
+                      placeholder="(555) 555-5555"
                       value={coDraft.mobilePhone}
                       onChange={(e) => setCoDraft({ ...coDraft, mobilePhone: formatPhoneNumber(e.target.value) })}
                       maxLength={14}
@@ -229,7 +252,7 @@ export default function CoBorrowerModal({ coDraft, setCoDraft, onSubmit, isEditi
                     <input
                       type="tel"
                       className={`form-control ${hasError('home_phone') ? 'is-invalid' : ''}`}
-                      placeholder="(123) 456-7890"
+                      placeholder="(555) 555-5555"
                       value={coDraft.homePhone}
                       onChange={(e) => setCoDraft({ ...coDraft, homePhone: formatPhoneNumber(e.target.value) })}
                       maxLength={14}
@@ -263,17 +286,12 @@ export default function CoBorrowerModal({ coDraft, setCoDraft, onSubmit, isEditi
                   {hasError('date_of_birth') && <div className="invalid-feedback d-block">{getError('date_of_birth')}</div>}
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label">
+                  <label className="form-label" htmlFor="co-borrower-ssn">
                     Social Security Number (SSN) <span className="text-danger">*</span>
                   </label>
-                  <input
-                    type="text"
-                    className={`form-control ${hasError('ssn') ? 'is-invalid' : ''}`}
-                    placeholder="xxx-xx-xxxx"
-                    value={coDraft.ssn}
-                    onChange={(e) => setCoDraft({ ...coDraft, ssn: formatSSN(e.target.value) })}
-                  />
-                  {hasError('ssn') && <div className="invalid-feedback">{getError('ssn')}</div>}
+                  {/* The one SSN field: masked at rest, edited on a click, in full on the eye button. */}
+                  <SsnInput id="co-borrower-ssn" value={coDraft.ssn} onChange={(ssn) => setCoDraft({ ...coDraft, ssn })} invalid={hasError('ssn')} />
+                  {hasError('ssn') && <div className="invalid-feedback d-block">{getError('ssn')}</div>}
                 </div>
                 <div className="col-md-6">
                   <label className="form-label">

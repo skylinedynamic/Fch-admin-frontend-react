@@ -4,10 +4,20 @@ import { fetchPartnerPaymentProviders } from '../../../../modules/settings/servi
 import type { PartnerPaymentProvider } from '../../../../modules/settings/services';
 import PaymentMethodsLoader from '../../../../components/Loader/PaymentMethodsLoader';
 import PaymentMethodConfigForm from './PaymentMethodConfigForm';
+import { useConfigPartnerId } from '../../../../modules/settings/configPartner';
 
 import { getProviderDesc } from '../../../../config';
 
+/**
+ * Switched on, but payers aren't offered it until it's set up for its mode.
+ * The row is marked; what is missing is shown on the method's own page.
+ */
+const needsSetup = (provider: PartnerPaymentProvider): boolean =>
+    provider.status && (provider.setup_issues?.length ?? 0) > 0;
+
 export default function PaymentMethodConfig(): React.JSX.Element {
+    // Partner profile › Configuration: that partner's providers; otherwise the user's own.
+    const configPartnerId = useConfigPartnerId();
     const [providers, setProviders] = useState<PartnerPaymentProvider[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [selectedProvider, setSelectedProvider] = useState<PartnerPaymentProvider | null>(null);
@@ -15,7 +25,7 @@ export default function PaymentMethodConfig(): React.JSX.Element {
     const loadProviders = async () => {
         setLoading(true);
         try {
-            const response = await fetchPartnerPaymentProviders();
+            const response = await fetchPartnerPaymentProviders(configPartnerId);
             if (response.status) {
                 setProviders(response.data || []);
             } else {
@@ -93,6 +103,15 @@ export default function PaymentMethodConfig(): React.JSX.Element {
                                                         <span className={`status-dot ${provider.status ? 'status-dot-active' : 'status-dot-inactive'}`} />
                                                         {provider.status ? 'Active' : 'Inactive'}
                                                     </span>
+                                                    {needsSetup(provider) && (
+                                                        <span
+                                                            className="badge d-inline-flex align-items-center gap-1 px-2 py-1 fs-11 bg-warning-subtle text-warning"
+                                                            title={provider.setup_issues?.join(' ')}
+                                                        >
+                                                            <i className="ri-error-warning-line"></i>
+                                                            Not configured
+                                                        </span>
+                                                    )}
                                                     {provider.status && provider.payment_mode && (
                                                         <span className={`badge d-inline-flex align-items-center px-2 py-1 fs-11 ${provider.payment_mode === 'production' ? 'bg-warning-subtle text-warning' : 'bg-info-subtle text-info'}`}>
                                                             {provider.payment_mode === 'production' ? '🚀 Production' : '🧪 Sandbox'}
