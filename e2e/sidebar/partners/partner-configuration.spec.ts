@@ -79,6 +79,44 @@ test.describe('Partner profile - Configuration', () => {
     })
   })
 
+  test('a save shows up in the partner\'s activity, with what changed, without a reload', async ({ page }) => {
+    const api = await openProfile(page)
+    // The API logs the change on the partner; the list has it only after the save.
+    let saved = false
+    api.add({ method: 'POST', match: /\/common\/sms-configuration$/, body: () => { saved = true; return ok({ configuration: SMS_SAVED, options: SMS_OPTIONS }, 'SMS settings saved.') } })
+    api.add({
+      method: 'POST',
+      match: '/common/activity-logs/fetch-all-activities',
+      body: () => ok(saved ? [{
+        id: 41, log_type_raw: 'partner_configuration_update', event_label: 'Configuration updated',
+        description: 'Hana Host updated the SMS configuration.', created_at: '2026-10-24T10:00:00Z',
+        attachments: [], signatures: null,
+        field_changes: {
+          from_number: { label: 'From number', from: '+15005550006', to: '+15005550007' },
+          auth_token: { label: 'Auth token', from: null, to: 'Changed' },
+        },
+      }] : []),
+    })
+
+    await configurationTab(page).click()
+    await page.getByRole('tab', { name: 'SMS Configuration' }).click()
+    await expect(page.getByLabel(/from number/i)).toHaveValue('+15005550006')
+    await expect(page.getByText('Configuration updated')).toHaveCount(0)
+    const loadsBefore = api.find('POST', '/common/activity-logs/fetch-all-activities').length
+
+    await page.getByLabel(/from number/i).fill('+15005550007')
+    await page.getByRole('button', { name: /save/i }).last().click()
+
+    // Re-fetched, not reloaded: the page is the same one.
+    await expect.poll(() => api.find('POST', '/common/activity-logs/fetch-all-activities').length).toBeGreaterThan(loadsBefore)
+    const entry = page.locator('.accordion-button', { hasText: 'Configuration updated' })
+    await expect(entry).toBeVisible()
+    await entry.click()
+    const table = page.locator('table').filter({ hasText: 'From number' })
+    await expect(table).toContainText('+15005550007')
+    await expect(table.locator('tr', { hasText: 'Auth token' })).toContainText('Changed')
+  })
+
   test('the partner\'s branding is loaded for it', async ({ page }) => {
     const api = await openProfile(page)
     await configurationTab(page).click()

@@ -40,11 +40,6 @@ export const convertLead = async (id: string | number, payload: any = {}): Promi
   return response.data;
 };
 
-export const fetchGlobalStats = async (payload: any = {}) => {
-  const response = await apiClient.post('/common/stats', payload);
-  return response.data;
-};
-
 export const processPayment = async (payload: any) => {
   const response = await apiClient.post('/process-payment', payload);
   return response.data;

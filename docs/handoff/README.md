@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-24
+
+| File | Title |
+|---|---|
+| [2026-10-24-lead-profile-no-partner-totals.md](2026-10-24-lead-profile-no-partner-totals.md) | Lead profile — no partner totals in the header (BUG-016) |
+
 ### 2026-10-23
 
 | File | Title |

@@ -13,6 +13,7 @@ import { server } from '../../mocks/server'
 import { useAuthStore } from '../../../src/store/auth'
 import PartnerConfigurationSection from '../../../src/pages/partners/components/PartnerConfigurationSection'
 import { PARTNER_TYPES } from '../../../src/config/partnerTypeOptions'
+import { REFRESH_ACTIVITIES_EVENT } from '../../../src/config/appConfig'
 
 /**
  * Partner profile › Configuration: the partner's own settings screens, each
@@ -111,6 +112,28 @@ describe('PartnerConfigurationSection', () => {
 
     await waitFor(() => expect(smsSaves).toHaveLength(1))
     expect(smsSaves[0]).toMatchObject({ partner_id: 42, from_number: '+15005550007' })
+  })
+
+  // The profile's activity sidebar listens for this: the logged change shows without a reload.
+  it('a save tells the partner\'s activity sidebar to reload', async () => {
+    const heard = vi.fn()
+    window.addEventListener(REFRESH_ACTIVITIES_EVENT, heard)
+    try {
+      const user = userEvent.setup()
+      renderWithProviders(<PartnerConfigurationSection partner={WHITE_LABEL} />)
+
+      await user.click(screen.getByRole('tab', { name: 'SMS Configuration' }))
+      await screen.findByLabelText(/from number/i)
+      expect(heard).not.toHaveBeenCalled()
+
+      await user.clear(screen.getByLabelText(/from number/i))
+      await user.type(screen.getByLabelText(/from number/i), '+15005550007')
+      await user.click(screen.getByRole('button', { name: /save/i }))
+
+      await waitFor(() => expect(heard).toHaveBeenCalledTimes(1))
+    } finally {
+      window.removeEventListener(REFRESH_ACTIVITIES_EVENT, heard)
+    }
   })
 
   it('starts with a short summary of the partner whose settings these are', () => {
