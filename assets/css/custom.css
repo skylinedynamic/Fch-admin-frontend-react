@@ -5281,6 +5281,40 @@ File: Custom Css File
   width: 185px !important;
 }
 
+/* Plan & Fee: a field's validation message sits just under its input, out of
+   the row's flow, so a message never pushes the other fields or Save out of
+   line; the card makes room for it while there is one (BUG-096). */
+.plan-fee-input-width,
+.plan-fee-input-width-lg {
+  position: relative;
+}
+
+.plan-fee-field-error {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 220px;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.plan-fee-has-error {
+  padding-bottom: 2.75rem !important;
+}
+
+/* Phone: the fields stack, so the message simply follows its field. */
+@media (max-width: 767.98px) {
+  .plan-fee-field-error {
+    position: static;
+    width: auto;
+  }
+
+  .plan-fee-has-error {
+    padding-bottom: 1rem !important;
+  }
+}
+
 .plan-fee-input-group {
   gap: 0px !important;
 }

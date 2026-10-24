@@ -132,4 +132,88 @@ describe('PlanFee', () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Amount is below the minimum.'))
   })
+
+  // BUG-096: the API checks each value and names the field; the screen shows
+  // that under the field instead of "Failed to update plan", and an empty
+  // amount is sent as empty - for the API to refuse - not as 0.
+  describe('validation messages from the API', () => {
+    const invalid = (errors: Record<string, string>) => ({ status: false, message: Object.values(errors)[0], errors })
+
+    const saveAmount = async (user: ReturnType<typeof userEvent.setup>, container: HTMLElement, value: string) => {
+      await waitFor(() => expect(amountInputs(container).length).toBeGreaterThanOrEqual(2))
+      const amount = amountInputs(container).find((input) => input.value === '499.00')!
+      await user.clear(amount)
+      if (value) await user.type(amount, value)
+      await user.click(screen.getByRole('button', { name: /^\W*save$/i }))
+      await user.click(await screen.findByRole('button', { name: 'Confirm & Save' }))
+      return amount
+    }
+
+    it("shows the API's message under Total Amount, not a generic failure", async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ total_amount: 'The total amount must be greater than 0.' }), 422)
+
+      const amount = await saveAmount(user, container, '0')
+
+      expect(await screen.findByText('The total amount must be greater than 0.')).toBeInTheDocument()
+      expect(amount).toHaveClass('is-invalid')
+      expect(toast.error).not.toHaveBeenCalledWith('Failed to update plan')
+    })
+
+    it('sends an empty amount as empty, not as 0', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      const update = api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ total_amount: 'Enter the total amount.' }), 422)
+
+      await saveAmount(user, container, '')
+
+      await waitFor(() => expect(update.bodies[0]).toMatchObject({ total_amount: '' }))
+      expect(await screen.findByText('Enter the total amount.')).toBeInTheDocument()
+    })
+
+    it('shows a platform fee message under the platform fee', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ platform_fee: 'The platform fee must be greater than 0.' }), 422)
+      await waitFor(() => expect(amountInputs(container).length).toBeGreaterThanOrEqual(2))
+      const fee = amountInputs(container).find((input) => input.value === '99.00')!
+
+      await user.clear(fee)
+      await user.type(fee, '0')
+      await user.click(screen.getByRole('button', { name: /^\W*save$/i }))
+      await user.click(await screen.findByRole('button', { name: 'Confirm & Save' }))
+
+      expect(await screen.findByText('The platform fee must be greater than 0.')).toBeInTheDocument()
+      expect(fee).toHaveClass('is-invalid')
+    })
+
+    it('sends an empty platform fee as empty, not as 0', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      const update = api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ platform_fee: 'Enter the platform fee.' }), 422)
+      await waitFor(() => expect(amountInputs(container).length).toBeGreaterThanOrEqual(2))
+      const fee = amountInputs(container).find((input) => input.value === '99.00')!
+
+      await user.clear(fee)
+      await user.click(screen.getByRole('button', { name: /^\W*save$/i }))
+      await user.click(await screen.findByRole('button', { name: 'Confirm & Save' }))
+
+      await waitFor(() => expect(update.bodies[0]).toMatchObject({ platform_fee: '' }))
+      expect(await screen.findByText('Enter the platform fee.')).toBeInTheDocument()
+    })
+
+    it('editing the field clears its message', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ total_amount: 'The total amount must be greater than 0.' }), 422)
+      const amount = await saveAmount(user, container, '0')
+      await screen.findByText('The total amount must be greater than 0.')
+
+      await user.type(amount, '5')
+
+      expect(screen.queryByText('The total amount must be greater than 0.')).not.toBeInTheDocument()
+      expect(amount).not.toHaveClass('is-invalid')
+    })
+  })
 })
