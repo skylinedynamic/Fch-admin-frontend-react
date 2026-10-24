@@ -6,6 +6,8 @@ import { useAuthStore } from '../../../store/auth';
 import { APP_CONFIG } from '../../../config';
 import { STATUS_PAID } from '../../../config/invoiceConfig';
 import invoiceLogo from "../../../../assets/images/logo-mail.png";
+import InvoicePartyDetails from './InvoicePartyDetails';
+import InvoicePreviewSkeleton from './InvoicePreviewSkeleton';
 
 // Helper to format currency
 const formatCurrency = (amount) => {
@@ -32,12 +34,10 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
     const [downloadLoading, setDownloadLoading] = useState(false);
     const [sendLoading, setSendLoading] = useState(false);
     const [fullInvoice, setFullInvoice] = useState(null);
-    const [fetching, setFetching] = useState(false);
 
     useEffect(() => {
         const loadInvoiceData = async () => {
             if (show && invoice?.id) { // Keep invoice?.id here as it's the prop triggering the fetch
-                setFetching(true);
                 try {
                     const response = await fetchInvoiceDetails(invoice.id); // Keep invoice.id here for the initial fetch
                     if (response.status) {
@@ -51,8 +51,6 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                     console.error('Error fetching invoice details:', error);
                     setFullInvoice(invoice); // Keep invoice here as it's the fallback
                     toast.error('Failed to load full invoice details');
-                } finally {
-                    setFetching(false);
                 }
             } else {
                 setFullInvoice(null);
@@ -151,14 +149,38 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
 
     // Use fullInvoice if available, otherwise fallback to the row-level invoice
     const displayInvoice = fullInvoice || invoice;
-    const isCommissionPayout = displayInvoice?.type === 'commission payout';
+    // This invoice's details have not arrived yet (a failed fetch stores the row
+    // itself as fullInvoice, which ends this too). Showing the half-filled row in
+    // the meantime made the modal jump once the details landed.
+    const detailsPending = !!invoice?.id && fullInvoice?.id !== invoice.id;
+    // The API sends the type as a display label ("Commission Payout").
+    const isCommissionPayout = displayInvoice?.type?.toLowerCase() === 'commission payout';
+
+    // Who issued the invoice and who pays it, resolved by the API. The list row
+    // the modal opens with lacks both, so when the detail fetch fails fall back
+    // to what that row does carry.
+    const branding = displayInvoice?.branding || {};
+    // Invoice paper is white: the document logo, else the sidebar one. A list
+    // row (the fallback) still carries primary_logo as a last resort.
+    const logoUrl = branding.logo_document_full_url || branding.logo_sidebar_full_url || branding.primary_logo;
+    const billedFrom = displayInvoice?.billed_from || {
+        company_name: branding.site_name || APP_CONFIG.name,
+        address: branding.address,
+        city: branding.city,
+        state: branding.state,
+        postal_code: branding.postal_code,
+    };
+    const billedTo = displayInvoice?.billed_to || {
+        name: displayInvoice?.customer_name || displayInvoice?.name,
+        email: displayInvoice?.email,
+        phone: displayInvoice?.phone,
+        address: displayInvoice?.address,
+    };
 
     // Calculations - only if displayInvoice exists
-    const amount = displayInvoice ? (typeof displayInvoice.payable_amount_sub === 'string'
-        ? parseFloat(displayInvoice.payable_amount_sub.replace(/[^0-9.]/g, ''))
-        : displayInvoice.payable_amount_sub || (typeof displayInvoice.payment_amount === 'string'
-            ? parseFloat(displayInvoice.payment_amount.replace(/[^0-9.]/g, ''))
-            : displayInvoice.payment_amount || 0)) : 0;
+    // The invoice's own amount. It used to prefer the subscription's total, which
+    // priced a fee, a down payment or one installment as the whole plan.
+    const amount = parseFloat(String(displayInvoice?.payment_amount ?? '').replace(/[^0-9.]/g, '')) || 0;
 
     const subtotal = amount;
 
@@ -167,19 +189,15 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
             <div className="modal-dialog modal-lg modal-dialog-centered">
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-body p-0">
-                        {!invoice ? (
-                            <div className="p-5 text-center">
-                                <div className="spinner-border text-primary" role="status">
-                                    <span className="visually-hidden">Loading...</span>
-                                </div>
-                            </div>
+                        {!invoice || detailsPending ? (
+                            <InvoicePreviewSkeleton />
                         ) : (
                             <div className="card shadow-none mb-0" id="demo">
                                 <div className="row p-2">
                                     <div className="col-lg-12">
                                         <div className="card-header border-bottom-dashed p-4">
                                             <div className="d-flex flex-column flex-sm-row align-items-center">
-                                                {displayInvoice.branding?.primary_logo && (
+                                                {logoUrl && (
                                                     <div className="flex-grow-1 text-center text-sm-start">
                                                         {/* Fixed 200x60 box with object-fit, matching the borrower
                                                             portal and the sidebar, so a logo is the same size
@@ -187,9 +205,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                             a height-only cap let a wide logo run across the header,
                                                             and `contain` keeps them all inside one box undistorted. */}
                                                         <img
-                                                            src={displayInvoice.branding?.logo_document_full_url
-                                                                || displayInvoice.branding?.logo_sidebar_full_url
-                                                                || displayInvoice.branding?.primary_logo}
+                                                            src={logoUrl}
                                                             className="card-logo card-logo-dark"
                                                             alt="Logo"
                                                             style={{ width: '200px', height: '60px', objectFit: 'contain', objectPosition: 'left center' }}
@@ -208,19 +224,12 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                     <div className="col-lg-12 border-top border-top-dashed">
                                         <div className="card-body p-4">
                                             <div className="row g-3">
-                                                <div className="col-6">
-                                                    <h6 className="text-muted text-uppercase fw-semibold mb-3">Address</h6>
-                                                    <p className="text-muted mb-1">{displayInvoice.branding?.site_name || APP_CONFIG.name}</p>
-                                                    <p className="text-muted mb-1">{displayInvoice.branding?.address || ''}</p>
-                                                    <p className="text-muted mb-0">{displayInvoice.branding?.city}{displayInvoice.branding?.city && ', '}{displayInvoice.branding?.state} {displayInvoice.branding?.postal_code}</p>
-                                                </div>
-                                                <div className="col-6 text-end">
-                                                    <h6 className="text-muted text-uppercase fw-semibold mb-3">{isCommissionPayout ? 'Partner Details' : 'Billing Address'}</h6>
-                                                    <p className="fw-medium mb-2" id="billing-name">{displayInvoice.customer_name || displayInvoice.name || ''}</p>
-                                                    <p className="text-muted mb-1" id="billing-address-line-1">{displayInvoice.address || ''}</p>
-                                                    {displayInvoice.phone && <p className="text-muted mb-1"><span>Phone: </span><span id="billing-phone-no">{displayInvoice.phone}</span></p>}
-                                                    <p className="text-muted mb-0"><span>Email: </span><span id="billing-email">{displayInvoice.email || ''}</span> </p>
-                                                </div>
+                                                <InvoicePartyDetails className="col-6" title="Billed From" party={billedFrom} />
+                                                <InvoicePartyDetails
+                                                    className="col-6 text-end"
+                                                    title={isCommissionPayout ? 'Partner Details' : 'Billed To'}
+                                                    party={billedTo}
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -252,17 +261,20 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                     <div className="col-lg-12">
                                         <div className="card-body p-4">
                                             <div className="table-responsive">
-                                                <table className="table table-borderless text-center table-nowrap align-middle mb-0">
+                                                <table className="table table-borderless text-center table-nowrap align-middle mb-0" aria-label="Invoice items">
                                                     <thead>
                                                         <tr className="table-active">
-                                                            <th scope="col" className="text-start">{isCommissionPayout ? 'Payout Description' : 'Enrollment Details'}</th>
+                                                            <th scope="col" className="text-start">{isCommissionPayout ? 'Payout Description' : 'Description'}</th>
                                                             <th scope="col" className="text-end">Amount</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody id="products-list">
                                                         <tr>
                                                             <td className="text-start">
-                                                                <span className="fw-medium">{displayInvoice.enrollment_type || ''}</span>
+                                                                {/* What the invoice charges for; the plan only on an
+                                                                    invoice that bills for it (the API omits it otherwise). */}
+                                                                <span className="fw-medium">{displayInvoice.type || 'Invoice'}</span>
+                                                                {displayInvoice.enrollment_type && <p className="text-muted mb-0">{displayInvoice.enrollment_type}</p>}
                                                             </td>
                                                             <td className="text-end">{formatCurrency(subtotal)}</td>
                                                         </tr>
@@ -292,7 +304,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 )}
                                                 {displayInvoice.status?.toLowerCase() == STATUS_PAID.toLowerCase() && (
                                                     <>
-                                                        <p className="text-muted mb-1">{isCommissionPayout ? 'Payee Name' : 'Card Holder'}: <span className="fw-medium" id="card-holder-name">{displayInvoice.customer_name || displayInvoice.name}</span></p>
+                                                        <p className="text-muted mb-1">{isCommissionPayout ? 'Payee Name' : 'Card Holder'}: <span className="fw-medium" id="card-holder-name">{billedTo.name || billedTo.company_name}</span></p>
                                                         <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                                                     </>
                                                 )}

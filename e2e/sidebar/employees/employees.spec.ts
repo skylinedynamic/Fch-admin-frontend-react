@@ -116,6 +116,37 @@ test.describe('Employee create', () => {
     return api
   }
 
+  // The same rule as Users › Add User: at the seat limit a partner on a free
+  // trial is told it is a paid feature, a paid partner is offered a seat.
+  async function openCreateAtSeatLimit(page: Page, isFreeTrial: boolean) {
+    await seedSession(page, { is_host: 0, entity_type: 'Partner', permissions: ['view employees', 'create employees'] } as never)
+    const api = await mockApi(page, [
+      { method: 'GET', match: '/common/user-details', body: ok({ user: { is_host: 0, is_free_trail: isFreeTrial } }) },
+      { method: 'GET', match: '/common/user-count', body: ok({ count: 3, seat_limit: 3, per_user_price: 49 }) },
+    ])
+    await page.goto('/employees/create')
+    await expect(page.getByPlaceholder('Enter full name')).toBeVisible()
+    return api
+  }
+
+  test('a free-trial partner at the seat limit is told it is a paid feature', async ({ page }) => {
+    await openCreateAtSeatLimit(page, true)
+    await page.locator('#createAccountCheckbox').check({ force: true })
+
+    await expect(page.getByText('Paid Version Only')).toBeVisible()
+    await expect(page.getByText(/This feature is available in Paid version/)).toBeVisible()
+    await expect(page.getByText('User Limit Reached')).toBeHidden()
+    await expect(page.locator('#createAccountCheckbox')).not.toBeChecked()
+  })
+
+  test('a paid partner at the seat limit is offered a seat to buy', async ({ page }) => {
+    await openCreateAtSeatLimit(page, false)
+    await page.locator('#createAccountCheckbox').check({ force: true })
+
+    await expect(page.getByText('User Limit Reached')).toBeVisible()
+    await expect(page.getByText('Paid Version Only')).toBeHidden()
+  })
+
   test('server validation errors are shown inline', async ({ page }) => {
     const api = await openCreate(page)
     api.add({
@@ -133,22 +164,21 @@ test.describe('Employee create', () => {
     await expect(page).toHaveURL(/\/employees\/create/)
   })
 
-  // What the real API answers when only name, position and email are filled in.
+  // What the real API answers when only name, position and email are filled in:
+  // only the country is still missing - the other details are optional.
   test('the fields the API requires are reported next to each of them', async ({ page }) => {
     const api = await openCreate(page)
     api.add({
       method: 'POST', match: CREATE, status: 422,
-      body: failure('Department is required.', {
-        department: 'Department is required.', phone_number_1: 'Phone number is required.',
-        address: 'Address is required.', state: 'State is required.', city: 'City is required.',
-      } as never),
+      body: failure('Country is required.', { country: 'Country is required.' } as never),
     })
     await page.getByPlaceholder('Enter full name').fill('Nina New')
     await page.getByPlaceholder('Enter position').fill('Analyst')
     await page.locator('input[name="email"]').fill('nina@example.test')
     await page.getByRole('button', { name: /save/i }).click()
+    await expect(page.getByText('Country is required.').first()).toBeVisible()
     for (const message of ['Department is required.', 'Phone number is required.', 'Address is required.', 'State is required.', 'City is required.']) {
-      await expect(page.getByText(message).first()).toBeVisible()
+      await expect(page.getByText(message)).toHaveCount(0)
     }
     await expect(page).toHaveURL(/\/employees\/create/)
   })

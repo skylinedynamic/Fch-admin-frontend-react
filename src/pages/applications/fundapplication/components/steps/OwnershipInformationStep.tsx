@@ -3,6 +3,7 @@ import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/themes/material_blue.css'
 import type { OwnerInfo, CoBorrower } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
+import SsnInput from '../../../../../components/Common/SsnInput'
 import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import CoBorrowerTable from '../shared/CoBorrowerTable'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
@@ -154,7 +155,7 @@ export default function OwnershipInformationStep({
         ssn: apiData.ssn ? formatSSN(apiData.ssn) : prev.ssn,
         citizenship: apiData.citizenship_status || prev.citizenship || citizenshipOptions[0].value,
         streetAddress: apiData.street_address || prev.streetAddress,
-        country: apiData.country || prev.country || getDefaultCountry().name,
+        country: apiData.country || prev.country || getDefaultCountry()?.name || '',
         city: apiData.city || prev.city,
         state: apiData.state || prev.state,
         zip: apiData.zip_code || prev.zip,
@@ -177,7 +178,7 @@ export default function OwnershipInformationStep({
             mobilePhone: cb.mobile_phone,
             homePhone: cb.home_phone,
             streetAddress: cb.street_address,
-            country: getDefaultCountry().name,
+            country: getDefaultCountry()?.name || '',
             city: cb.city,
             state: cb.state,
             zip: cb.zip_code,
@@ -377,20 +378,20 @@ export default function OwnershipInformationStep({
           {hasError('date_of_birth') && <div className="invalid-feedback d-block">{getFieldError('date_of_birth')}</div>}
         </div>
         <div className="col-md-6">
-          <label className="form-label">
+          <label className="form-label" htmlFor="owner-ssn">
             Social Security Number (SSN) <span className="text-danger">*</span>
           </label>
-          <input
-            type="text"
-            className={`form-control ${hasError('ssn') ? 'is-invalid' : ''}`}
-            placeholder="xxx-xx-xxxx"
+          {/* The one SSN field: masked at rest, edited on a click, in full on the eye button. */}
+          <SsnInput
+            id="owner-ssn"
             value={owner.ssn}
-            onChange={(e) => {
-              setOwner({ ...owner, ssn: formatSSN(e.target.value) })
+            onChange={(ssn) => {
+              setOwner({ ...owner, ssn })
               clearError('ssn')
             }}
+            invalid={hasError('ssn')}
           />
-          {hasError('ssn') && <div className="invalid-feedback">{getFieldError('ssn')}</div>}
+          {hasError('ssn') && <div className="invalid-feedback d-block">{getFieldError('ssn')}</div>}
         </div>
 
         <div className="col-md-6">
@@ -405,7 +406,7 @@ export default function OwnershipInformationStep({
             <input
               type="tel"
               className={`form-control ${hasError('phone_number') ? 'is-invalid' : ''}`}
-              placeholder="(123) 456-7890"
+              placeholder="(555) 555-5555"
               value={owner.phoneNumber}
               onChange={(e) => setOwner({ ...owner, phoneNumber: formatPhoneNumber(e.target.value) })}
               maxLength={14}

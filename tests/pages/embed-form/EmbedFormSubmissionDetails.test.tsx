@@ -158,6 +158,16 @@ describe('Loan application details › business and funding answers', () => {
     expect(screen.getByText('12-3456789')).toBeInTheDocument()
   })
 
+  it('shows the SSN as every SSN is shown: ***-**-1234 (the API sends only the last four)', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, last_4_ssn: '6789', co_borrowers: [{ id: 1, first_name: 'Cora', last_name: 'Co', last_4_ssn: '4321' }] })
+    renderPage()
+
+    expect(await screen.findByText('***-**-6789')).toBeInTheDocument()
+    expect(screen.getByText('***-**-4321')).toBeInTheDocument()
+    expect(screen.queryByText(/•••-••-/)).not.toBeInTheDocument()
+  })
+
   it('calls the checking date the business start date', async () => {
     signInWith(['view application'])
     serve(answered)

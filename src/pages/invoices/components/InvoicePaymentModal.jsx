@@ -749,7 +749,12 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
         className={`modal-dialog modal-dialog-centered${isBankTransfer ? ' modal-xl ppm-bank-transfer-dialog' : ''}`}
       >
         <div className="modal-content ppm-content">
-          {!selectedProvider ? (
+          {/* Nothing mounts until the modal is opened. Pages keep this modal in
+              the tree beside the invoice preview and hand it the same invoice,
+              so mounting the provider selector while hidden fetched the payment
+              methods - and, with Stripe as the only one, loaded Stripe.js - on
+              every preview. */}
+          {!show ? null : !selectedProvider ? (
             <>
               <div className="ppm-card-header">
                 <div className="d-flex align-items-center gap-3">

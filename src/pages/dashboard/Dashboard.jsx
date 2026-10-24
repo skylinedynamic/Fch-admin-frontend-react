@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/auth/authStore';
 import { useDashboardData } from '../../modules/dashboard';
 import { formatCurrency } from '../../utils/helper';
 import TableLoader from '../../components/Loader/TableLoader';
+import CommissionKpiCard from './components/CommissionKpiCard';
 import { logout, clearAuth } from '../../lib/auth';
 import '../../../assets/css/reminder.css';
 
@@ -160,15 +161,12 @@ export default function Dashboard() {
                   "/leads",
                   "View all Leads"
                 )}
-                {renderKPI(
-                  "My Commission",
-                  dashboardData?.counts?.total_commission || 0,
-                  "bx bx-wallet",
-                  "primary",
-                  '/commissions',
-                  "View All Commissions",
-                  true
-                )}
+                {/* Commission, in the viewer's terms: host or partner, owner or staff. */}
+                <CommissionKpiCard
+                  commission={dashboardData?.commission}
+                  legacyTotal={dashboardData?.counts?.total_commission}
+                  isLoading={isLoading}
+                />
               </>
             ) : (
               <>
@@ -188,15 +186,11 @@ export default function Dashboard() {
                   "/leads",
                   "View all Leads"
                 )}
-                {renderKPI(
-                  "Total Commission",
-                  dashboardData?.counts?.total_commission || 0,
-                  "bx bx-wallet",
-                  "primary",
-                  '/commissions',
-                  "View All Commissions",
-                  true
-                )}
+                <CommissionKpiCard
+                  commission={dashboardData?.commission}
+                  legacyTotal={dashboardData?.counts?.total_commission}
+                  isLoading={isLoading}
+                />
                 {renderKPI(
                   "Total Funding Applications",
                   dashboardData?.counts?.funding_application || 0,

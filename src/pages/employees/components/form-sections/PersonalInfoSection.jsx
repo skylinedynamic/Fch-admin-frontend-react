@@ -175,7 +175,7 @@ export default function PersonalInfoSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Position <span className="text-danger">*</span></label>
+                    <label className="form-label">Position</label>
                     <input
                         type="text"
                         className={`form-control ${errors.designation ? 'is-invalid' : ''}`}
@@ -192,7 +192,7 @@ export default function PersonalInfoSection({
                 <div className="mb-3">
                     <label className="form-label d-flex justify-content-between align-items-center">
                         <span>
-                            Department <span className="text-danger">*</span>
+                            Department
                         </span>
 
                         <button
@@ -220,7 +220,7 @@ export default function PersonalInfoSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Phone Number <span className="text-danger">*</span></label>
+                    <label className="form-label">Phone Number</label>
                     <div className="input-group">
                         {/* Country Code Display */}
                         {(employee.country === 'USA' || employee.country === 'Canada') && (

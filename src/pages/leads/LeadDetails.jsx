@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams, useLocation, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
-import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead, fetchGlobalStats } from '../../modules/leads/services';
+import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead } from '../../modules/leads/services';
 import { isMissingConvertInfo, isLeadTypeLocked, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../modules/leads/logic';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
-import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
-import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
@@ -24,7 +22,9 @@ import {
     LEAD_INDUSTRY_TYPE_OPTIONS
 } from '../../config/leadOptions';
 import { locationData } from '../../config';
-import { formatPhoneNumber, formatZipCode } from '../../utils/formatters';
+import { formatPhoneNumber, formatZipCode, formatBusinessEIN, displayEIN } from '../../utils/formatters';
+import { formatSSN, unformatSSN } from '../../utils/borrowerFormatters';
+import SsnInput from '../../components/Common/SsnInput';
 import { useSummernote } from '../../hooks/useSummernote';
 import { Calendar } from 'primereact/calendar';
 
@@ -72,7 +72,7 @@ export default function LeadDetails() {
         entity_type: '',
         industry_type: '',
         business_start_date: '',
-        ssn_last_4: '',
+        ssn: '',
         requirement_details: '',
         partner_id: '',
         partner_manager: '',
@@ -85,14 +85,6 @@ export default function LeadDetails() {
     const [users, setUsers] = useState([]);
     const [referralPartners, setReferralPartners] = useState([]);
 
-    const [profileStats, setProfileStats] = useState({
-        total_meetings: 0,
-        total_clients: 0,
-        total_invoice: 0,
-        enrollment_type: 'N/A',
-        total_tickets: 0
-    });
-    const [statsLoading, setStatsLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
     // Conversion and Payment Modal states
@@ -160,6 +152,12 @@ export default function LeadDetails() {
             }
         } else if (name === 'zip_code') {
             setFormData(prev => ({ ...prev, [name]: formatZipCode(value) }));
+        } else if (name === 'ssn') {
+            // Written XXX-XX-XXXX as it is typed; whether it is a valid SSN is the API's call.
+            setFormData(prev => ({ ...prev, [name]: formatSSN(value) }));
+        } else if (name === 'business_ein') {
+            // Written XX-XXXXXXX; the API keeps the nine digits.
+            setFormData(prev => ({ ...prev, [name]: formatBusinessEIN(value) || '' }));
         } else if (name === 'duns_number') {
             // DUNS is strictly 9 digits
             const val = value.replace(/\D/g, '').slice(0, 9);
@@ -242,7 +240,8 @@ export default function LeadDetails() {
                     industry_type: formData.industry_type,
                     industry_type_note: formData.industry_type_note,
                     business_start_date: formData.business_start_date ? normalizeDate(formData.business_start_date) : '',
-                    ssn_last_4: formData.ssn_last_4,
+                    // The nine digits; blank clears the SSN on file.
+                    ssn: formData.ssn ? unformatSSN(formData.ssn) : null,
                     employees: formData.employees
                 };
             }
@@ -505,6 +504,8 @@ export default function LeadDetails() {
                         state: finalState,
                         city: cityValue,
                         legal_business_name: data.company_name,
+                        ssn: data.ssn ? formatSSN(data.ssn) : '',
+                        business_ein: displayEIN(data.business_ein),
                         other_city: otherCityValue,
                         business_start_date: data.business_start_date ? normalizeDate(data.business_start_date) : ''
                     }));
@@ -519,36 +520,6 @@ export default function LeadDetails() {
 
         loadLead();
     }, [id]);
-
-    // Fetch Stats
-    useEffect(() => {
-        const loadStats = async () => {
-            if (!id) return;
-            try {
-                setStatsLoading(true);
-                const result = await fetchGlobalStats({ id });
-                if (result.status && result.data) {
-                    setProfileStats(result.data);
-                }
-            } catch (err) {
-                console.error('Failed to load stats:', err);
-            } finally {
-                setStatsLoading(false);
-            }
-        };
-
-        if (id) {
-            loadStats();
-        }
-    }, [id]);
-
-    const metricsConfig = [
-        { label: 'Meetings', dataKey: 'total_meetings', icon: 'ri-calendar-line' },
-        { label: 'Total Clients', dataKey: 'total_clients', icon: 'ri-star-line' },
-        { label: 'Invoiced', dataKey: 'total_invoice', icon: 'ri-file-edit-line' },
-        { label: 'Subscriptions', dataKey: 'enrollment_type', icon: 'ri-money-dollar-circle-line' },
-        { label: 'Tickets', dataKey: 'total_tickets', icon: 'ri-lifebuoy-line' },
-    ];
 
     return (
         <>
@@ -583,28 +554,6 @@ export default function LeadDetails() {
                             )}
                         </div>
                     </PageHeader>
-
-                    {/* Metrics Strip */}
-                    <div className="row pt-1">
-                        <div className="col-12">
-                            <div className="d-flex flex-wrap metrics-strip justify-content-center">
-                                {statsLoading ? (
-                                    [1, 2, 3, 4, 5].map((_, index) => (
-                                        <ProfileMetricCardSkeleton key={index} />
-                                    ))
-                                ) : (
-                                    metricsConfig.map((metric, index) => (
-                                        <ProfileMetricCard
-                                            key={index}
-                                            label={metric.label}
-                                            value={profileStats[metric.dataKey]}
-                                            icon={metric.icon}
-                                        />
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
 
                     <div className="row">
                         {/* Main Content */}
@@ -842,14 +791,14 @@ export default function LeadDetails() {
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Business EIN</label>
                                                                     <input
-                                                                        type="number"
+                                                                        type="text"
+                                                                        inputMode="numeric"
+                                                                        maxLength={10}
                                                                         className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
                                                                         name="business_ein"
-                                                                        value={formData.business_ein}
+                                                                        value={formData.business_ein || ''}
                                                                         onChange={handleInputChange}
-                                                                        placeholder="Enter 9-digit EIN"
-                                                                        onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
-                                                                        onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
+                                                                        placeholder="XX-XXXXXXX"
                                                                     />
                                                                     {errors.business_ein && <div className="invalid-feedback d-block">{errors.business_ein}</div>}
                                                                 </div>
@@ -865,14 +814,14 @@ export default function LeadDetails() {
                                                                 <div className="mb-3">
                                                                     <label className="form-label">D-U-N-S Number</label>
                                                                     <input
-                                                                        type="number"
+                                                                        type="text"
+                                                                        inputMode="numeric"
+                                                                        maxLength={9}
                                                                         className={`form-control ${errors.duns_number ? 'is-invalid' : ''}`}
                                                                         name="duns_number"
-                                                                        value={formData.duns_number}
+                                                                        value={formData.duns_number || ''}
                                                                         onChange={handleInputChange}
                                                                         placeholder="Enter 9-digit D-U-N-S"
-                                                                        onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
-                                                                        onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
                                                                     />
                                                                     {errors.duns_number && <div className="invalid-feedback d-block">{errors.duns_number}</div>}
                                                                 </div>
@@ -1062,18 +1011,15 @@ export default function LeadDetails() {
                                                             </div>
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">SSN Last 4</label>
-                                                                    <input
-                                                                        type="number"
-                                                                        className={`form-control ${errors.ssn_last_4 ? 'is-invalid' : ''}`}
-                                                                        name="ssn_last_4"
-                                                                        value={formData.ssn_last_4}
-                                                                        onChange={handleInputChange}
-                                                                        placeholder="Enter last 4 digits"
-                                                                        onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }}
-                                                                        onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
+                                                                    <label htmlFor="ssn" className="form-label">Social Security Number</label>
+                                                                    {/* The one SSN field: masked at rest, edited on a click, in full on the eye button. */}
+                                                                    <SsnInput
+                                                                        id="ssn"
+                                                                        value={formData.ssn || ''}
+                                                                        onChange={(ssn) => handleInputChange({ target: { name: 'ssn', value: ssn } })}
+                                                                        invalid={!!errors.ssn}
                                                                     />
-                                                                    {errors.ssn_last_4 && <div className="invalid-feedback d-block">{errors.ssn_last_4}</div>}
+                                                                    {errors.ssn && <div className="invalid-feedback d-block">{errors.ssn}</div>}
                                                                 </div>
                                                             </div>
                                                         </div>

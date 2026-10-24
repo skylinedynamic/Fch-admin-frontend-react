@@ -209,7 +209,6 @@ export default function ContactDetails() {
     const validateForm = () => {
         const newErrors = {};
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/;
 
         if (!contact.full_name?.trim()) {
             newErrors.full_name = 'Full name is required';
@@ -221,10 +220,9 @@ export default function ContactDetails() {
             newErrors.email = 'Please enter a valid email address';
         }
 
+        // Whether it is a real US number is the API's call (App\Rules\UsPhoneNumber).
         if (!contact.mobile_number?.trim()) {
             newErrors.mobile_number = 'Mobile number is required';
-        } else if (!phoneRegex.test(contact.mobile_number)) {
-            newErrors.mobile_number = 'Please enter a valid mobile number (e.g., (555) 555-5555)';
         }
 
         setErrors(newErrors);

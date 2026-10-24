@@ -7,6 +7,7 @@ import { MODULE_BRANDING } from '../../../config/appConfig';
 import { toast } from 'react-toastify';
 import { BrandingSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { useConfigPartner } from '../../../modules/settings/configPartner';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -696,7 +697,9 @@ BrandPreview.displayName = 'BrandPreview';
 
 const BrandingForm: React.FC = () => {
     const user = useAuthStore((s) => s.user);
-    const partnerId = (user?.partner_id as string | number | undefined) || user?.entity_id;
+    // Partner profile › Configuration edits that partner's brand; otherwise it is the user's own.
+    const configPartner = useConfigPartner();
+    const partnerId = configPartner?.id ?? ((user?.partner_id as string | number | undefined) || user?.entity_id);
     const queryClient = useQueryClient();
 
     const [fetching, setFetching] = useState<boolean>(true);
@@ -717,7 +720,7 @@ const BrandingForm: React.FC = () => {
     const loadBranding = async () => {
         try {
             setFetching(true);
-            const res: any = await fetchAppConfigurations(MODULE_BRANDING);
+            const res: any = await fetchAppConfigurations(MODULE_BRANDING, configPartner?.id);
             const saved = res?.data || {};
 
             const clean = (value: any, fallback = '') =>
@@ -829,7 +832,8 @@ const BrandingForm: React.FC = () => {
         }
 
         const cleanPath = file.path.trim().replace(/^\/+/, '');
-        const eType = user?.entity_type || 'site-settings';
+        // Another partner's logos live in that partner's folder.
+        const eType = configPartner ? 'partners' : (user?.entity_type || 'site-settings');
         const isPartner = eType.includes('Partner') || eType === 'partners';
         const prefix = isPartner ? `partners/${partnerId}` : 'site-settings';
 
@@ -897,7 +901,7 @@ const BrandingForm: React.FC = () => {
                 SIDEBAR_OVERRIDES.forEach((key) => { payload[key] = ''; });
             }
 
-            const response: any = await saveAppConfigurations(MODULE_BRANDING, payload);
+            const response: any = await saveAppConfigurations(MODULE_BRANDING, payload, configPartner?.id);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
             queryClient.invalidateQueries({ queryKey: ['public-site-settings'] });
             toast.success(response?.message || 'Brand settings saved');

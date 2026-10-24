@@ -4,6 +4,7 @@ import {
   formatZipCode,
   formatDUNS,
   formatBusinessEIN,
+  displayEIN,
   formatSSN,
   formatDate,
   parseDate,
@@ -34,6 +35,24 @@ describe('formatBusinessEIN', () => {
 
   it('does not insert a dash for 2 or fewer digits', () => {
     expect(formatBusinessEIN('1')).toBe('1')
+  })
+})
+
+describe('displayEIN', () => {
+  // The API keeps an EIN as nine digits; older rows still hold XX-XXXXXXX.
+  it('shows a stored EIN as XX-XXXXXXX either way', () => {
+    expect(displayEIN('534534534')).toBe('53-4534534')
+    expect(displayEIN('53-4534534')).toBe('53-4534534')
+  })
+
+  it('leaves a value that is not a writing of an EIN as it is, so nothing is lost on save', () => {
+    expect(displayEIN('Sit tempora nulla')).toBe('Sit tempora nulla')
+  })
+
+  it('shows nothing for no EIN', () => {
+    expect(displayEIN(null)).toBe('')
+    expect(displayEIN(undefined)).toBe('')
+    expect(displayEIN('')).toBe('')
   })
 })
 
