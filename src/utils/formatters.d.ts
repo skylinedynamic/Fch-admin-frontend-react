@@ -7,3 +7,4 @@ export declare function formatBusinessEIN(value: string | undefined | null): str
 export declare function formatSSN(value: string | undefined | null, reveal?: boolean): string;
 export declare function formatDate(dateStr: string | undefined | null): string;
 export declare function parseDateTime(dateStr: string | undefined | null): string;
+export declare function formatSpeedToFunds(value: string | undefined | null, fallback?: string): string;

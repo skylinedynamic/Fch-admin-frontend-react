@@ -33,6 +33,7 @@ describe('Leads - empty values', () => {
     const row = (await screen.findByText('Gonzales Mooney LLC')).closest('tr') as HTMLElement
     expect(within(row).queryByText(/^null$/i)).not.toBeInTheDocument()
     expect(within(row).getAllByText('—').length).toBeGreaterThanOrEqual(3)
-    expect(screen.getByText('lena@example.test')).toBeInTheDocument()
+    // The email cell splits the address after the @ so it can wrap there.
+    expect(screen.getByText((_, el) => el?.textContent === 'lena@example.test' && !!el.querySelector(':scope > wbr'))).toBeInTheDocument()
   })
 })

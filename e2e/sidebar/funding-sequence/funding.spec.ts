@@ -238,6 +238,9 @@ for (const kind of [
       const call = await expectCall(api, 'PUT', `${kind.api}/1`)
       expect(call.json).toMatchObject({ name: 'Renamed' })
       await expect(page.getByText(kind.updated)).toBeVisible()
+      // BUG-049 (OP-FSEQ-12): a rename never says "added".
+      await expect(page.getByText(kind.added)).toHaveCount(0)
+      expect(api.find('POST', kind.api)).toHaveLength(0)
     })
 
     test('deletes an entry after confirmation', async ({ page }) => {

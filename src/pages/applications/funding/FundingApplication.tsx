@@ -16,7 +16,7 @@ import { FundingApplication as FundingApplicationType, ApplicationQueryParams, A
 import { downloadFundingApplication, downloadFundingSignature } from '../../../modules/application/services';
 import { toast } from 'react-toastify';
 
-import { APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
+import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 import PageHeader from '../../common/PageHeader';
 import { toLocalYmd } from '../../../utils/dates';
 export default function FundingApplication() {
@@ -242,7 +242,7 @@ export default function FundingApplication() {
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <Dropdown
                                                 value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, ...APPLICATION_STATUS_OPTIONS]}
+                                                options={[{ label: 'All Status', value: '' }, ...FUNDING_APPLICATION_STATUS_OPTIONS]}
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 onChange={(e) => setSelectedStatus(e.value)}
