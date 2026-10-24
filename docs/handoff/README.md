@@ -16,6 +16,7 @@ Several features or tasks on the same date means several files with the same dat
 |---|---|
 | [2026-10-24-lead-profile-no-partner-totals.md](2026-10-24-lead-profile-no-partner-totals.md) | Lead profile — no partner totals in the header (BUG-016) |
 | [2026-10-24-mail-banner-blank-app-crash.md](2026-10-24-mail-banner-blank-app-crash.md) | Mail-not-verified banner no longer blanks the whole app |
+| [2026-10-24-credit-accounts-bulk-delete-status-and-form.md](2026-10-24-credit-accounts-bulk-delete-status-and-form.md) | Credit Accounts — delete selected, status on the details page, form redesign (BUG-042) |
 
 ### 2026-10-23
 
