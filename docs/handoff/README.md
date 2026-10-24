@@ -21,6 +21,7 @@ Several features or tasks on the same date means several files with the same dat
 | [2026-10-24-client-assign-to-lists-the-clients-partner-team.md](2026-10-24-client-assign-to-lists-the-clients-partner-team.md) | Clients — "Assign to" lists the client's partner's team (BUG-055) |
 | [2026-10-24-reminders-list-says-it-shows-today.md](2026-10-24-reminders-list-says-it-shows-today.md) | Task & Reminders — the list says it shows today, and Show all dates is one click (BUG-056) |
 | [2026-10-24-commissions-headers-send-the-api-sort-key.md](2026-10-24-commissions-headers-send-the-api-sort-key.md) | Commissions — each header sends the sort key the API knows (BUG-073) |
+| [2026-10-24-appointments-browser-time-zone-and-no-past-times.md](2026-10-24-appointments-browser-time-zone-and-no-past-times.md) | Appointments — booked in the browser's time zone, no past times today (BUG-078, 079, 080) |
 
 ### 2026-10-23
 
