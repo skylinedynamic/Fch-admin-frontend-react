@@ -9,6 +9,7 @@ import {
   formatDate,
   parseDate,
   normalizeDate,
+  formatSpeedToFunds,
 } from '../../src/utils/formatters.js'
 
 describe('formatPhoneNumber', () => {
@@ -111,5 +112,27 @@ describe('normalizeDate', () => {
 
   it('leaves an already MM-DD-YYYY string normalized', () => {
     expect(normalizeDate('1-5-2026')).toBe('01-05-2026')
+  })
+})
+
+/**
+ * BUG-025 (CP-FUND-07): "1-5 Days Days". Speed to funds is free text that
+ * usually has its own unit; " Days" was appended anyway. The client's funding
+ * detail here had the same code as the borrower portal.
+ */
+describe('formatSpeedToFunds', () => {
+  it.each([
+    ['1-5 Days', '1-5 Days'],
+    ['24-72 Hours', '24-72 Hours'],
+    ['1-5', '1-5 Days'],
+    ['7', '7 Days'],
+    ['1-5 Days Days', '1-5 Days'],
+  ])('%s -> %s', (value, expected) => {
+    expect(formatSpeedToFunds(value)).toBe(expected)
+  })
+
+  it('returns the fallback when there is no value', () => {
+    expect(formatSpeedToFunds(null)).toBe('—')
+    expect(formatSpeedToFunds('', 'n/a')).toBe('n/a')
   })
 })

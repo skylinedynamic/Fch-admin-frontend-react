@@ -261,6 +261,23 @@ test.describe('Lender product categories', () => {
     await editor.press('Enter')
     const call = await expectCall(api, 'PUT', '/admin/lenders/product-categories/1')
     expect(call.json).toMatchObject({ name: 'Term Loans Plus' })
+    // BUG-049: a rename says updated, never added.
+    await expect(page.getByText('Product category updated successfully')).toBeVisible()
+    await expect(page.getByText('Product category added successfully')).toHaveCount(0)
+    expect(api.find('POST', CATS)).toHaveLength(0)
+  })
+
+  // BUG-050 (OP-LEND-11): the API's duplicate message is shown as sent (it used
+  // to be the raw key "lender.category_name_unique").
+  test('a duplicate name on rename shows the message under the edited row', async ({ page }) => {
+    const { api, dialog } = await openModal(page)
+    api.add({ method: 'PUT', match: /product-categories\/\d+$/, status: 422, body: failure('Invalid', { name: 'This category name already exists.' } as never) })
+    await dialog.getByTitle('Edit').first().click()
+    const editor = dialog.locator('.bg-light input').first()
+    await editor.fill('Lines of Credit')
+    await editor.press('Enter')
+    await expect(dialog.getByText('This category name already exists.')).toBeVisible()
+    await expect(page.getByText('Product category updated successfully')).toHaveCount(0)
   })
 
   test('Close dismisses the dialog', async ({ page }) => {

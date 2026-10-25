@@ -23,6 +23,8 @@ describeListPage(
       { id: 72, card_name: 'Spark Classic', issuer: 'Capital One', credit_category: 'Business Card', typical_personal_fico_min: 640, time_in_business_min_months: 0, status: 'Inactive' },
     ],
     shows: ['Ink Business Cash', 'Spark Classic', 'Capital One'],
+    // BUG-007: the table said "No available options" (PrimeReact's dropdown default).
+    emptyText: 'No credit accounts found',
     search: { placeholder: 'Search here...' },
     create: { permission: 'create credit accounts', label: /add account/i, role: 'link', target: '/credit-accounts/create' },
   },

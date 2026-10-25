@@ -191,4 +191,35 @@ test.describe('Plan & Fee - saving', () => {
     await confirm(page).click()
     await expect(page.getByText('Failed to update plan')).toBeVisible()
   })
+
+  // BUG-096: the API refuses a bad value with a message for its field; the
+  // screen shows it under that field, and an empty amount is sent as empty.
+  test("the API's refusal shows under Total Amount, not as a generic failure", async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'PUT', match: UPDATE(11), status: 422, body: failure('The total amount must be greater than 0.', { total_amount: 'The total amount must be greater than 0.' }) })
+    const amount = await withValue(page, '499.00')
+    await amount.fill('0')
+    await save(page).click()
+    await confirm(page).click()
+
+    await expect(page.locator('.invalid-feedback', { hasText: 'The total amount must be greater than 0.' })).toBeVisible()
+    await expect(amount).toHaveClass(/is-invalid/)
+    await expect(page.getByText('Failed to update plan')).toHaveCount(0)
+
+    await amount.fill('549')
+    await expect(page.locator('.invalid-feedback')).toHaveCount(0)
+  })
+
+  test('an empty amount is sent as empty for the API to refuse, not as 0', async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'PUT', match: UPDATE(11), status: 422, body: failure('Enter the total amount.', { total_amount: 'Enter the total amount.' }) })
+    await (await withValue(page, '499.00')).fill('')
+    await save(page).click()
+    await confirm(page).click()
+
+    const call = await expectCall(api, 'PUT', UPDATE(11))
+    expect(call.json.total_amount).toBe('')
+    await expect(page.locator('.invalid-feedback', { hasText: 'Enter the total amount.' })).toBeVisible()
+  })
 })
+

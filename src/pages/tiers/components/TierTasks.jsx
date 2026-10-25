@@ -19,12 +19,16 @@ import { useAuthStore } from '../../../store/auth/authStore';
 import { useTierRelatedApis, useTierVendors, useTier } from '../../../modules/tiers/queries';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 
-const TierTasks = forwardRef(({ tierId }, ref) => {
+const TierTasks = forwardRef(({ tierId, tierCode }, ref) => {
     const { user } = useAuthStore();
     const { hasPermission } = usePermissions();
 
     // Fetch Tier Details to get code
     const { data: tier } = useTier(tierId);
+    // The page has already loaded the tier and passes its code; this list's own
+    // request is the fallback. Waiting on it let a Tier 1 task be added as if
+    // it were another tier - without its vendor (BUG-095).
+    const code = tierCode || tier?.data?.code;
 
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -71,7 +75,7 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
 
     // Fetch vendors for this tier (for Related Vendor dropdown)
     // We fetch a large number to ensure we get all for the dropdown
-    const { data: vendorData } = useTierVendors({
+    const { data: vendorData, isLoading: vendorsLoading } = useTierVendors({
         tier_id: tierId,
         per_page: 9999,
         status: 'Active'
@@ -262,7 +266,7 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                 <button className="btn btn-sm btn-soft-primary" onClick={() => openEditModal(rowData)}>
                     <i className="ri-pencil-fill align-bottom" />
                 </button>
-                {tier?.data?.code === 'T1' && (
+                {code === 'T1' && (
                     <button className="btn btn-sm btn-soft-danger" onClick={() => handleDeleteClick(rowData)}>
                         <i className="ri-delete-bin-fill align-bottom" />
                     </button>
@@ -322,6 +326,8 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                 ]} />
             ) : (
                 <DataTable
+                    // BUG-007: without it PrimeReact shows its dropdown default, "No available options".
+                    emptyMessage="No tasks found"
                     value={tasks || []}
                     paginator
                     rows={perPage}
@@ -347,19 +353,19 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                     onRowClick={(e) => {
                         const target = e.originalEvent.target;
                         if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT' && !target.closest('button')) {
-                            if (hasPermission('update tier') && (tier?.data?.code === 'T0' || tier?.data?.code === 'T1')) {
+                            if (hasPermission('update tier') && (code === 'T0' || code === 'T1')) {
                                 openEditModal(e.data);
                             }
                         }
                     }}
-                    rowClassName={() => (hasPermission('update tier') && (tier?.data?.code === 'T0' || tier?.data?.code === 'T1')) ? 'cursor-pointer' : ''}
+                    rowClassName={() => (hasPermission('update tier') && (code === 'T0' || code === 'T1')) ? 'cursor-pointer' : ''}
                 >
-                    {tier?.data?.code === 'T1' && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
+                    {code === 'T1' && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                     <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '25%' }} />
                     <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" style={{ width: '35%' }} />
                     <Column field="estimated_completion_days" header="Estimated Days" sortable filter filterPlaceholder="Search Days" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
                     <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
-                    {(tier?.data?.code === 'T0' || tier?.data?.code === 'T1') && <Column header="Actions" body={actionBodyTemplate} style={{ width: '100px' }} />}
+                    {(code === 'T0' || code === 'T1') && <Column header="Actions" body={actionBodyTemplate} style={{ width: '100px' }} />}
                 </DataTable>
             )}
 
@@ -372,6 +378,8 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                         task={editTask}
                         tierId={tierId}
                         tier={tier?.data}
+                        tierCode={code}
+                        vendorsLoading={vendorsLoading}
                         relatedApis={relatedApis}
                         vendors={vendors}
                         loadingApis={loadingApis}

@@ -12,6 +12,7 @@ import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { SAVED_SECRET_PLACEHOLDER } from '../../config/appConfig';
 
 const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
@@ -31,14 +32,20 @@ export default function SiteSettings() {
     const [validationErrors, setValidationErrors] = useState<Record<string, any>>({});
     const [showFileManager, setShowFileManager] = useState<'primary' | 'secondary' | 'favicon' | false>(false);
 
+    // The API reports the reCAPTCHA secret only as set (a mask), never the
+    // secret itself. The input starts blank; saving it blank keeps the stored one.
+    const [recaptchaSecretSaved, setRecaptchaSecretSaved] = useState(false);
+
     useEffect(() => {
         if (settingsData?.data) {
-            const s = settingsData.data;
+            const { recaptcha_secret_key: savedSecret, ...s } = settingsData.data;
+            setRecaptchaSecretSaved(Boolean(savedSecret));
 
             // Accurately merge all dynamic keys from the database into the form state
             setFormData(prev => ({
                 ...prev,
                 ...s,
+                recaptcha_secret_key: '',
                 // A US number, shown (XXX) XXX-XXXX however it was stored.
                 ...(s.phone_number ? { phone_number: formatPhoneNumber(s.phone_number) ?? s.phone_number } : {})
             }));
@@ -494,7 +501,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">reCAPTCHA Secret Key</label>
                                                     <div className="input-group">
                                                         <span className="input-group-text bg-light d-flex align-items-center justify-content-center" style={{ width: '42px' }}><i className="ri-lock-password-line fs-16"></i></span>
-                                                        <input type="text" className="form-control ps-2" name="recaptcha_secret_key" value={formData.recaptcha_secret_key || ''} onChange={handleChange} placeholder="Secret Key" />
+                                                        <input type="password" className="form-control ps-2" name="recaptcha_secret_key" value={formData.recaptcha_secret_key || ''} onChange={handleChange} placeholder={recaptchaSecretSaved ? SAVED_SECRET_PLACEHOLDER : 'Secret Key'} autoComplete="new-password" />
                                                     </div>
                                                 </div>
                                             </div>

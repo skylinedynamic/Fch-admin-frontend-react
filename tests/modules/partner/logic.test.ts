@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapPartnerBackendErrors, partnerOptionLabel } from '../../../src/modules/partner/logic'
+import { defaultInstallmentMonths, mapPartnerBackendErrors, partnerOptionLabel } from '../../../src/modules/partner/logic'
 
 describe('mapPartnerBackendErrors', () => {
   it('keeps each field\'s message, whether the API sends a string or a list', () => {
@@ -33,5 +33,26 @@ describe('partnerOptionLabel', () => {
 
   it('falls back to the partner number with neither', () => {
     expect(partnerOptionLabel({ id: 9, full_name: '', company_name: null })).toBe('Partner #9')
+  })
+})
+
+// BUG-114: 12 months by default, never more than the plan's "Installment Upto".
+describe('defaultInstallmentMonths', () => {
+  it('is 12 when the plan allows more', () => {
+    expect(defaultInstallmentMonths({ total_installment_count_upto: 24 })).toBe(12)
+  })
+
+  it("is the plan's limit when that is under 12", () => {
+    expect(defaultInstallmentMonths({ total_installment_count_upto: 11 })).toBe(11)
+    expect(defaultInstallmentMonths({ total_installment_count_upto: 6 })).toBe(6)
+  })
+
+  it('is 12 when the plan sets no limit', () => {
+    expect(defaultInstallmentMonths({ total_installment_count_upto: null })).toBe(12)
+    expect(defaultInstallmentMonths(undefined)).toBe(12)
+  })
+
+  it("follows the API's installment_default_months when it sends one", () => {
+    expect(defaultInstallmentMonths({ total_installment_count_upto: 24, installment_default_months: 9 })).toBe(9)
   })
 })

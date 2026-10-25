@@ -290,9 +290,15 @@ export default function Leads() {
         );
     };
 
+    // An empty value shows a muted dash, never the word "Null" (BUG-003). A
+    // cleared field can arrive as the string "null"/"undefined", so those are
+    // empty too.
     const nullSafeBodyTemplate = (rowData, field) => {
         const value = rowData[field];
-        return value && value.trim() !== '' ? value : <span className="text-muted">Null</span>;
+        const text = value === null || value === undefined ? '' : String(value).trim();
+        return text !== '' && !['null', 'undefined'].includes(text.toLowerCase())
+            ? text
+            : <span className="text-muted">—</span>;
     };
 
     // Delete handlers

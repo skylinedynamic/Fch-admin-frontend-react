@@ -87,3 +87,17 @@ export const formatRelativeTime = (value?: string | null, now: Date = new Date()
 
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
+
+/**
+ * A picked calendar date as "YYYY-MM-DD" for an API filter, read in the
+ * viewer's own zone. Not `toISOString().split('T')[0]`: that is the UTC day, so
+ * east of UTC local midnight falls on the previous day - picking 19 Oct in
+ * Dhaka (UTC+6) sent 18 Oct.
+ */
+export const toLocalYmd = (date?: Date | string | null): string | null => {
+  if (!date) return null;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};

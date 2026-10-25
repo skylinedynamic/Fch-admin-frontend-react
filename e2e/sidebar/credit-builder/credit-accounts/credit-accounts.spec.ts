@@ -3,20 +3,31 @@ import { mockApi, ok, paginated, failure, seedSession, expectCall, type ApiMock 
 
 const BASE = '/admin/credit-builder/credit-accounts'
 const ACCOUNTS = [
-  { id: 71, card_name: 'Ink Business Cash', issuer: 'Chase', credit_category: 'Business Card', typical_personal_fico_min: 680, time_in_business_min_months: 6, status: 'Active' },
-  { id: 72, card_name: 'Spark Classic', issuer: 'Capital One', credit_category: 'Business Card', typical_personal_fico_min: 640, time_in_business_min_months: 0, status: 'Inactive' },
+  { id: 71, card_name: 'Ink Business Cash', issuer: 'Chase', credit_category: 'Business Card', typical_personal_fico_min: 680, time_in_business_min_months: 6, status: 'Active', can_delete: true },
+  { id: 72, card_name: 'Spark Classic', issuer: 'Capital One', credit_category: 'Business Card', typical_personal_fico_min: 640, time_in_business_min_months: 0, status: 'Inactive', can_delete: true },
 ]
+// A card a borrower has applied for: kept, so it cannot be selected for deletion.
+const APPLIED = { id: 73, card_name: 'Applied Card', issuer: 'Amex', credit_category: 'Business Card', typical_personal_fico_min: 700, time_in_business_min_months: 12, status: 'Active', can_delete: false }
 const ALL = ['create credit accounts', 'update credit accounts', 'delete credit accounts']
 
-async function openList(page: Page, permissions: string[] = ALL): Promise<ApiMock> {
+async function openList(page: Page, permissions: string[] = ALL, rows: object[] = ACCOUNTS): Promise<ApiMock> {
   await seedSession(page, { permissions })
-  const api = await mockApi(page, [{ method: 'POST', match: `${BASE}/fetch-accounts`, body: paginated(ACCOUNTS) }])
+  const api = await mockApi(page, [{ method: 'POST', match: `${BASE}/fetch-accounts`, body: paginated(rows) }])
   await page.goto('/credit-accounts')
   await expect(page.getByRole('link', { name: 'Ink Business Cash' })).toBeVisible()
   return api
 }
 
 test.describe('Credit accounts list', () => {
+  // BUG-007: the empty table said "No available options".
+  test('an empty result shows a proper empty message', async ({ page }) => {
+    await seedSession(page, { permissions: ALL })
+    await mockApi(page, [{ method: 'POST', match: `${BASE}/fetch-accounts`, body: paginated([]) }])
+    await page.goto('/credit-accounts')
+    await expect(page.getByText('No credit accounts found')).toBeVisible()
+    await expect(page.getByText('No available options')).toHaveCount(0)
+  })
+
   test('renders accounts with issuer and status', async ({ page }) => {
     await openList(page)
     await expect(page.getByRole('link', { name: 'Spark Classic' })).toBeVisible()
@@ -55,35 +66,87 @@ test.describe('Credit accounts list', () => {
     await expect(page).toHaveURL(/\/credit-accounts\/create/)
   })
 
-  test('clicking the status badge toggles the status', async ({ page }) => {
+  // BUG-042: status is set on the details page; the list's badge is a label.
+  test('the status badge is a label - clicking it changes nothing', async ({ page }) => {
     const api = await openList(page)
-    api.add({ method: 'PATCH', match: `${BASE}/71/status`, body: ok({ ...ACCOUNTS[0], status: 'Inactive' }) })
-    await page.locator('tr', { hasText: 'Ink Business Cash' }).getByTitle('Click to change status').click()
-    const call = await expectCall(api, 'PATCH', `${BASE}/71/status`)
-    expect(call.json).toEqual({ status: 'Inactive' })
-    await expect(page.getByText('Status updated to Inactive')).toBeVisible()
-  })
-
-  test('an inactive account toggles back to Active', async ({ page }) => {
-    const api = await openList(page)
-    api.add({ method: 'PATCH', match: `${BASE}/72/status`, body: ok(ACCOUNTS[1]) })
-    await page.locator('tr', { hasText: 'Spark Classic' }).getByTitle('Click to change status').click()
-    const call = await expectCall(api, 'PATCH', `${BASE}/72/status`)
-    expect(call.json).toEqual({ status: 'Active' })
-  })
-
-  test('a failed status change is reported', async ({ page }) => {
-    const api = await openList(page)
-    api.add({ method: 'PATCH', match: `${BASE}/71/status`, status: 500, body: failure('boom') })
-    await page.locator('tr', { hasText: 'Ink Business Cash' }).getByTitle('Click to change status').click()
-    await expect(page.getByText('Failed to update status')).toBeVisible()
-  })
-
-  test('the status badge is inert without the update permission', async ({ page }) => {
-    const api = await openList(page, [])
-    await page.locator('tr', { hasText: 'Ink Business Cash' }).getByText('Active', { exact: true }).click()
+    const badge = page.locator('tr', { hasText: 'Ink Business Cash' }).getByText('Active', { exact: true })
+    await expect(badge).not.toHaveAttribute('title', /.+/)
+    await badge.click()
     await page.waitForTimeout(300)
     expect(api.find('PATCH', '/status')).toHaveLength(0)
+  })
+
+  // BUG-042: cards are deleted from the list, several at once.
+  const rowCheckbox = (page: Page, name: string) => page.locator('tr', { hasText: name }).locator('.p-checkbox').first()
+
+  test('the selected cards are deleted together, then the list reloads', async ({ page }) => {
+    const api = await openList(page)
+    api.add({ method: 'POST', match: `${BASE}/multiple-delete`, body: ok({ deleted: 2 }, 'Credit accounts deleted successfully.') })
+    await rowCheckbox(page, 'Ink Business Cash').click()
+    await rowCheckbox(page, 'Spark Classic').click()
+    const loadsBefore = api.find('POST', `${BASE}/fetch-accounts`).length
+
+    // As on the other lists: once rows are checked, Actions replaces Add Account.
+    await expect(page.getByRole('link', { name: /add account/i })).toHaveCount(0)
+    await page.locator('.btn-group .dropdown-toggle-split').click()
+    await page.getByRole('button', { name: /delete selected/i }).click()
+    await page.getByRole('button', { name: /yes, delete it/i }).click()
+
+    const call = await expectCall(api, 'POST', `${BASE}/multiple-delete`)
+    expect(call.json).toEqual({ ids: [71, 72] })
+    await expect(page.getByText('Credit accounts deleted successfully.')).toBeVisible()
+    await expect.poll(() => api.find('POST', `${BASE}/fetch-accounts`).length).toBeGreaterThan(loadsBefore)
+  })
+
+  const deleteSelected = async (page: Page) => {
+    await page.locator('.btn-group .dropdown-toggle-split').click()
+    await page.getByRole('button', { name: /delete selected/i }).click()
+  }
+
+  test('Delete Selected with a card a borrower applied for says it cannot be deleted', async ({ page }) => {
+    const api = await openList(page, ALL, [...ACCOUNTS, APPLIED])
+    await rowCheckbox(page, 'Ink Business Cash').click()
+    await rowCheckbox(page, 'Applied Card').click()
+    await deleteSelected(page)
+
+    const blocked = page.getByRole('dialog', { name: /cannot be deleted/i })
+    await expect(blocked).toContainText('Applied Card')
+    await expect(blocked).toContainText(/inactive/i)
+    await expect(page.getByRole('button', { name: /yes, delete it/i })).toHaveCount(0)
+    expect(api.find('POST', `${BASE}/multiple-delete`)).toHaveLength(0)
+  })
+
+  test('Open card on that message goes to the card, to switch it to Inactive', async ({ page }) => {
+    const api = await openList(page, ALL, [...ACCOUNTS, APPLIED])
+    api.add({ method: 'GET', match: new RegExp(`${BASE}/73$`), body: ok(APPLIED) })
+    await rowCheckbox(page, 'Applied Card').click()
+    await deleteSelected(page)
+
+    await page.getByRole('dialog', { name: /cannot be deleted/i }).getByRole('button', { name: /open card/i }).click()
+
+    await expect(page).toHaveURL(new RegExp('/credit-accounts/73$'))
+    await expect(page.locator('#card_name')).toHaveValue('Applied Card')
+  })
+
+  test('a delete refused because a borrower applied names the card', async ({ page }) => {
+    const api = await openList(page)
+    api.add({
+      method: 'POST', match: `${BASE}/multiple-delete`, status: 422,
+      body: { status: false, message: 'This card has borrower applications.', errors: { applied: [{ id: 71, name: 'Ink Business Cash' }] } },
+    })
+    await rowCheckbox(page, 'Ink Business Cash').click()
+    await page.locator('.btn-group .dropdown-toggle-split').click()
+    await page.getByRole('button', { name: /delete selected/i }).click()
+    await page.getByRole('button', { name: /yes, delete it/i }).click()
+
+    const blocked = page.getByRole('dialog', { name: /cannot be deleted/i })
+    await expect(blocked).toContainText('Ink Business Cash')
+  })
+
+  test('without the delete permission there are no checkboxes', async ({ page }) => {
+    await openList(page, ['update credit accounts'])
+    await expect(page.locator('tr', { hasText: 'Ink Business Cash' }).locator('.p-checkbox')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /delete selected/i })).toHaveCount(0)
   })
 
   test('non-host users cannot reach credit accounts', async ({ page }) => {
@@ -187,6 +250,21 @@ test.describe('Credit account edit', () => {
     expect(call.json).toMatchObject({ card_name: 'Ink Business Cash', issuer: 'JPMorgan Chase' })
     await expect(page.getByText('Credit Account updated successfully')).toBeVisible()
     await expect(page).toHaveURL(/\/credit-accounts$/)
+  })
+
+  // BUG-042: status is set here.
+  test('the status is changed on the details page', async ({ page }) => {
+    const api = await openEdit(page)
+    api.add({ method: 'PUT', match: new RegExp(`${BASE}/71$`), body: ok({ ...ACCOUNTS[0], status: 'Inactive' }) })
+    const status = page.getByRole('switch', { name: 'Active' })
+    await expect(status).toBeChecked()
+    await status.click()
+    await expect(status).not.toBeChecked()
+    await expect(page.getByText(/no longer offered to borrowers/i)).toBeVisible()
+
+    await page.getByRole('button', { name: /save changes/i }).click()
+    const call = await expectCall(api, 'PUT', new RegExp(`${BASE}/71$`))
+    expect(call.json).toMatchObject({ status: 'Inactive' })
   })
 
   test('an account that fails to load returns to the list', async ({ page }) => {

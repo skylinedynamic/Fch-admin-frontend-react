@@ -16,8 +16,9 @@ import { FundingApplication as FundingApplicationType, ApplicationQueryParams, A
 import { downloadFundingApplication, downloadFundingSignature } from '../../../modules/application/services';
 import { toast } from 'react-toastify';
 
-import { APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
+import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 import PageHeader from '../../common/PageHeader';
+import { toLocalYmd } from '../../../utils/dates';
 export default function FundingApplication() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
@@ -57,8 +58,8 @@ export default function FundingApplication() {
         per_page: perPage,
         search: appliedFilters.search,
         status: appliedFilters.status,
-        start_date: appliedFilters.date_range?.[0] ? new Date(appliedFilters.date_range[0]).toISOString().split('T')[0] : null,
-        end_date: appliedFilters.date_range?.[1] ? new Date(appliedFilters.date_range[1]).toISOString().split('T')[0] : null,
+        start_date: toLocalYmd(appliedFilters.date_range?.[0]),
+        end_date: toLocalYmd(appliedFilters.date_range?.[1]),
         filters: appliedFilters.filters,
         sort_field: sortField,
         sort_order: sortOrder,
@@ -241,7 +242,7 @@ export default function FundingApplication() {
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <Dropdown
                                                 value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, ...APPLICATION_STATUS_OPTIONS]}
+                                                options={[{ label: 'All Status', value: '' }, ...FUNDING_APPLICATION_STATUS_OPTIONS]}
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 onChange={(e) => setSelectedStatus(e.value)}

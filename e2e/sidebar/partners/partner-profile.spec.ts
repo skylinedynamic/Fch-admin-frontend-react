@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, ok, paginated, failure, seedSession, expectCall, confirmDelete, cancelDelete, type ApiMock } from '../../support/helpers'
+import { mockApi, ok, paginated, failure, seedSession, expectCall, confirmDelete, cancelDelete, pickPrime, type ApiMock } from '../../support/helpers'
 
 /**
  * A partner's profile beyond the create form: the stats strip, the tabs
@@ -366,5 +366,47 @@ test.describe('Partner profile - Tenant Config', () => {
     await page.goto('/partners/5?tab=tenantConfig')
     await expect(page.locator('input[name="partner_domain"]')).toHaveValue('portal.acme.test')
     await expect(update(page)).toHaveCount(0)
+  })
+})
+
+// BUG-114: Installment starts at 12 months, or at the plan's "Installment Upto"
+// (Plan & Fee) when that is under 12 - in the calculator and on the card.
+test.describe('Partner create - installment default months', () => {
+  const plan = (upto: number) => ({
+    id: 8, partner_type: 'Certified Partner', enrollment_type: 'Installment', enrollment_type_slug: 'installment',
+    total_amount: 5496.7, platform_fee: 299, total_installment_count_upto: upto, is_installment: true, supports_installment: true,
+    installment_min_months: 2, installment_max_months: upto, installment_default_months: upto > 12 ? 12 : upto,
+  })
+  const field = (page: Page, label: string) =>
+    page.locator('.mb-3', { has: page.locator('label', { hasText: label }) }).locator('.p-dropdown').first()
+  const calculator = (page: Page) => page.locator('.installment-details-modal.show')
+
+  async function chooseInstallment(page: Page, upto: number) {
+    await seedSession(page, { permissions: ADMIN_PERMS })
+    await mockApi(page, [
+      { method: 'GET', match: '/admin/partners/next-id', body: ok({ next_id: 42 }) },
+      { method: 'GET', match: '/common/partner-plans', body: ok([plan(upto)]) },
+    ])
+    await page.goto('/partners/create')
+    await pickPrime(page, field(page, 'Partner Type'), 'Certified Partner')
+    await pickPrime(page, field(page, 'Enrollment Type'), 'Installment')
+    await expect(calculator(page)).toBeVisible()
+  }
+
+  test('a plan allowing 24 months starts at 12 months of $458.06', async ({ page }) => {
+    await chooseInstallment(page, 24)
+    await expect(calculator(page).locator('.idm-dropdown')).toContainText('12 Months')
+    await expect(calculator(page).locator('.idm-monthly-amount')).toHaveText('$458.06')
+  })
+
+  test('a plan allowing 6 months starts at 6 months of $916.12, on the card too', async ({ page }) => {
+    await chooseInstallment(page, 6)
+    await expect(calculator(page).locator('.idm-dropdown')).toContainText('6 Months')
+    await expect(calculator(page).locator('.idm-monthly-amount')).toHaveText('$916.12')
+    // Closed without Apply, the card shows the same default.
+    await calculator(page).locator('.idm-close-btn').click()
+    const card = page.getByText('Installment Duration:').locator('..').locator('..')
+    await expect(card).toContainText('6 Months')
+    await expect(page.getByText('Monthly Installment Amount:').locator('..').locator('..')).toContainText('$916.12')
   })
 })
