@@ -16,6 +16,7 @@ Several features or tasks on the same date means several files with the same dat
 |---|---|
 | [2026-10-26-users-free-trial-seat-limit-is-by-design.md](2026-10-26-users-free-trial-seat-limit-is-by-design.md) | Users — a free-trial partner adds users up to its seat limit, then sees "Paid Version Only" (BUG-112) |
 | [2026-10-26-partner-installment-calculator-default-months.md](2026-10-26-partner-installment-calculator-default-months.md) | Partner create — the installment calculator takes its default months from the plan (BUG-114) |
+| [2026-10-26-certified-partner-configuration-guard-on-clients-and-leads.md](2026-10-26-certified-partner-configuration-guard-on-clients-and-leads.md) | Configuration guard — a Certified partner without an active gateway is stopped on Clients and Leads (BUG-115) |
 
 ### 2026-10-25
 
