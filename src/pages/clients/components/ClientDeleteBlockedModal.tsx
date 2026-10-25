@@ -1,11 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import DeleteBlockedModal, { BlockedItem } from '../../../components/Common/Modals/DeleteBlockedModal';
 
-export type BlockedClient = BlockedItem;
+export type BlockedClient = BlockedItem & {
+    /** What keeps the client: a paid invoice, or a pre-qualification / funding application. */
+    reason_code?: 'paid_invoice' | 'applications' | null;
+};
 
 interface ClientDeleteBlockedModalProps {
     show: boolean;
-    /** The selected clients that must be kept (they have a paid invoice). */
+    /** The selected clients that must be kept (a paid invoice, or an application). */
     blocked: BlockedClient[];
     /** How many clients were selected for deletion. */
     selectedCount: number;
@@ -28,8 +31,12 @@ export default function ClientDeleteBlockedModal({ show, blocked, selectedCount,
         navigate(`/clients/${id}`);
     };
 
+    // A client who applied is told so; a paid one keeps the related-records wording.
+    const subject = selectedCount === 1 ? 'This client' : blocked[0]?.name;
     const message = single
-        ? `${selectedCount === 1 ? 'This client' : blocked[0]?.name} has related records and cannot be deleted. Please change the client's status instead.`
+        ? blocked[0]?.reason_code === 'applications'
+            ? `${subject} has a pre-qualification or funding application and cannot be deleted. Please change the client's status instead.`
+            : `${subject} has related records and cannot be deleted. Please change the client's status instead.`
         : 'These clients have related records and cannot be deleted. Please change their status instead.';
 
     return (

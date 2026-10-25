@@ -54,9 +54,14 @@ export interface ClientDeletableCheck {
     name: string;
     is_deletable: boolean;
     reason: string | null;
+    /** What keeps the client: a paid invoice, or a pre-qualification / funding application. */
+    reason_code?: 'paid_invoice' | 'applications' | null;
 }
 
-/** Whether each client can be deleted - a client with a paid invoice cannot. */
+/**
+ * Whether each client can be deleted - a client with a paid invoice cannot, nor
+ * one (paid or free) with a pre-qualification or funding application.
+ */
 export const checkClientsDeletable = async (ids: (string | number)[]): Promise<ClientDeletableCheck[]> => {
     const { data } = await apiClient.post(`/common/borrowers/check-deletable`, { ids });
     return data?.data ?? [];
