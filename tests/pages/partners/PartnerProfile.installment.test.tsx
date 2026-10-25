@@ -74,4 +74,15 @@ describe('Partner create › installment default months', () => {
     await waitFor(() => expect(duration()).toBe('6 Months'))
     expect(monthly()).toBe('$916.12')
   })
+
+  // The calculator opens with the card's months, not a fixed 12.
+  it.each([[24, '12 Months'], [6, '6 Months']])('the calculator opens at the plan default (Installment Upto %i)', async (upto, label) => {
+    await chooseInstallment(upto)
+    await waitFor(() => expect(duration()).toBe(label))
+
+    await userEvent.setup().click(screen.getByRole('button', { name: /View (Payment|Installment) Details/ }))
+
+    const calculator = screen.getByText('Installment Duration', { selector: 'label' }).closest('.idm-form-group') as HTMLElement
+    await waitFor(() => expect(calculator.querySelector('.p-dropdown-label')).toHaveTextContent(label))
+  })
 })
