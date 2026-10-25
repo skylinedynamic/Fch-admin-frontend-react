@@ -40,6 +40,26 @@ interface EditState {
     total_seat_count: string;
 }
 
+/** The API's message for each refused field, shown under that field (BUG-096). */
+type FieldErrors = Partial<Record<keyof EditState, string>>;
+
+const EDIT_FIELDS: Array<keyof EditState> = ['total_amount', 'platform_fee', 'total_installment_count_upto', 'total_seat_count'];
+
+/** A typed value as sent: a number, or '' when left empty - never turned into 0 - so the API can refuse it. */
+const asSent = (value: string | undefined): number | '' => {
+    const text = String(value ?? '').trim();
+    return text === '' ? '' : Number(text);
+};
+
+/** The 422 field messages - one per field, or a list (Laravel's own shape). */
+const fieldErrorsFrom = (error: unknown): Record<string, string> | null => {
+    const response = (error as { response?: { status?: number; data?: { errors?: Record<string, string | string[]> } } })?.response;
+    if (response?.status !== 422 || !response.data?.errors) return null;
+    return Object.fromEntries(
+        Object.entries(response.data.errors).map(([field, message]) => [field, Array.isArray(message) ? message[0] : message])
+    );
+};
+
 const groupMeta: Record<string, { title: string; icon: string; bg: string; text: string; desc: string; note?: string }> = {
     [PLAN_GROUP_PARTNER_ENROLLMENT]: {
         title: 'Partner Enrollment Plans',
@@ -99,6 +119,7 @@ export default function PlanFee() {
     const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
     const [selectedPlanForUpdate, setSelectedPlanForUpdate] = useState<Plan | null>(null);
     const [includeExistingSubscription, setIncludeExistingSubscription] = useState<boolean>(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<number, FieldErrors>>({});
 
     const loadPlans = async () => {
         setLoading(true);
@@ -146,6 +167,8 @@ export default function PlanFee() {
 
     // Handle input changes
     const handleInputChange = (id: number, field: keyof EditState, value: string) => {
+        // Editing a field clears the API's message for it.
+        setFieldErrors(prev => (prev[id]?.[field] ? { ...prev, [id]: { ...prev[id], [field]: undefined } } : prev));
         setEditedValues(prev => ({
             ...prev,
             [id]: {
@@ -223,19 +246,19 @@ export default function PlanFee() {
             const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
 
             const payload: any = {
-                total_amount: parseFloat(edits.total_amount) || 0,
+                total_amount: asSent(edits.total_amount),
             };
 
             if (showPlatformFee) {
-                payload.platform_fee = parseFloat(edits.platform_fee) || 0;
+                payload.platform_fee = asSent(edits.platform_fee);
             }
 
             if (isInstallment) {
-                payload.total_installment_count_upto = edits.total_installment_count_upto ? parseInt(edits.total_installment_count_upto) : null;
+                payload.total_installment_count_upto = asSent(edits.total_installment_count_upto) === '' ? null : asSent(edits.total_installment_count_upto);
             }
 
             if (activeTab === PLAN_GROUP_USER_SEAT) {
-                payload.total_seat_count = edits.total_seat_count ? parseInt(edits.total_seat_count) : 0;
+                payload.total_seat_count = asSent(edits.total_seat_count) === '' ? 0 : asSent(edits.total_seat_count);
             }
 
             const originalFee = parseFloat(String(selectedPlanForUpdate.platform_fee || 0));
@@ -255,8 +278,20 @@ export default function PlanFee() {
                 toast.error(response.message || 'Failed to update plan');
             }
         } catch (error) {
-            console.error('Error updating plan:', error);
-            toast.error('Failed to update plan');
+            const errors = fieldErrorsFrom(error);
+            if (errors) {
+                // Each refused value's message goes under its field.
+                const shown: FieldErrors = {};
+                EDIT_FIELDS.forEach((field) => { if (errors[field]) shown[field] = errors[field]; });
+                setFieldErrors(prev => ({ ...prev, [id]: shown }));
+                // Anything the screen has no field for is still said.
+                Object.entries(errors)
+                    .filter(([field]) => !EDIT_FIELDS.includes(field as keyof EditState))
+                    .forEach(([, message]) => toast.error(message));
+            } else {
+                console.error('Error updating plan:', error);
+                toast.error('Failed to update plan');
+            }
         } finally {
             setUpdatingId(null);
             setSelectedPlanForUpdate(null);
@@ -387,6 +422,7 @@ export default function PlanFee() {
                                         {activePlansList.map((plan, index) => {
                                             const isInstallment = isInstallmentPlan(plan);
                                             const edits = editedValues[plan.id] || { total_amount: '0', platform_fee: '0', total_installment_count_upto: '' };
+                                            const errs = fieldErrors[plan.id] || {};
                                             const isUpdating = updatingId === plan.id;
                                             const currency = plan.currency_symbol || plan.currency || '$';
                                             const partnerName = formatSlug(plan.partner_type || plan.partner_type_slug || '');
@@ -394,7 +430,7 @@ export default function PlanFee() {
                                             const avatarStyle = getPlanAvatarStyle(index);
 
                                             return (
-                                                <div key={plan.id} className="p-3 bg-light bg-opacity-40 rounded mb-2 transition-all hover-shadow-sm">
+                                                <div key={plan.id} className={`p-3 bg-light bg-opacity-40 rounded mb-2 transition-all hover-shadow-sm${Object.values(errs).some(Boolean) ? ' plan-fee-has-error' : ''}`}>
                                                     <div className="row align-items-center g-3">
                                                         {/* Left Details Column */}
                                                         <div className="col-12 col-md-5 d-flex align-items-center gap-3">
@@ -429,7 +465,7 @@ export default function PlanFee() {
                                                                         <div className="input-group input-group-sm plan-fee-input-group-limit">
                                                                             <input
                                                                                 type="number"
-                                                                                className="form-control form-control-sm bg-white text-center"
+                                                                                className={`form-control form-control-sm bg-white text-center${errs.total_seat_count ? ' is-invalid' : ''}`}
                                                                                 value={edits.total_seat_count ?? '0'}
                                                                                 onChange={(e) => handleInputChange(plan.id, 'total_seat_count', e.target.value)}
                                                                                 min="0"
@@ -438,6 +474,7 @@ export default function PlanFee() {
                                                                             />
                                                                             <span className="input-group-text bg-light text-muted">users</span>
                                                                         </div>
+                                                                        {errs.total_seat_count && <div className="invalid-feedback d-block plan-fee-field-error">{errs.total_seat_count}</div>}
                                                                     </div>
                                                                 )}
 
@@ -448,7 +485,7 @@ export default function PlanFee() {
                                                                         <span className="input-group-text bg-light text-muted">{currency}</span>
                                                                         <input
                                                                             type="number"
-                                                                            className="form-control form-control-sm bg-white"
+                                                                            className={`form-control form-control-sm bg-white${errs.total_amount ? ' is-invalid' : ''}`}
                                                                             value={edits.total_amount}
                                                                             onChange={(e) => handleInputChange(plan.id, 'total_amount', e.target.value)}
                                                                             min="0"
@@ -456,6 +493,7 @@ export default function PlanFee() {
                                                                             disabled={isUpdating}
                                                                         />
                                                                     </div>
+                                                                    {errs.total_amount && <div className="invalid-feedback d-block plan-fee-field-error">{errs.total_amount}</div>}
                                                                 </div>
 
                                                                 {/* Platform Fee */}
@@ -466,7 +504,7 @@ export default function PlanFee() {
                                                                             <span className="input-group-text bg-light text-muted">{currency}</span>
                                                                             <input
                                                                                 type="number"
-                                                                                className="form-control form-control-sm bg-white"
+                                                                                className={`form-control form-control-sm bg-white${errs.platform_fee ? ' is-invalid' : ''}`}
                                                                                 value={edits.platform_fee}
                                                                                 onChange={(e) => handleInputChange(plan.id, 'platform_fee', e.target.value)}
                                                                                 min="0"
@@ -474,6 +512,7 @@ export default function PlanFee() {
                                                                                 disabled={isUpdating}
                                                                             />
                                                                         </div>
+                                                                        {errs.platform_fee && <div className="invalid-feedback d-block plan-fee-field-error">{errs.platform_fee}</div>}
                                                                     </div>
                                                                 )}
 
@@ -484,7 +523,7 @@ export default function PlanFee() {
                                                                         <div className="input-group input-group-sm plan-fee-input-group-limit">
                                                                             <input
                                                                                 type="number"
-                                                                                className="form-control form-control-sm bg-white text-center"
+                                                                                className={`form-control form-control-sm bg-white text-center${errs.total_installment_count_upto ? ' is-invalid' : ''}`}
                                                                                 value={edits.total_installment_count_upto ?? ''}
                                                                                 onChange={(e) => handleInputChange(plan.id, 'total_installment_count_upto', e.target.value)}
                                                                                 min="1"
@@ -493,6 +532,7 @@ export default function PlanFee() {
                                                                             />
                                                                             <span className="input-group-text bg-light text-muted">months</span>
                                                                         </div>
+                                                                        {errs.total_installment_count_upto && <div className="invalid-feedback d-block plan-fee-field-error">{errs.total_installment_count_upto}</div>}
                                                                     </div>
                                                                 )}
 

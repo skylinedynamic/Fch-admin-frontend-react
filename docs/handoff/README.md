@@ -10,6 +10,36 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-25
+
+| File | Title |
+|---|---|
+| [2026-10-25-tier-1-add-task-knows-its-tier-and-vendors.md](2026-10-25-tier-1-add-task-knows-its-tier-and-vendors.md) | Manage Tier — Add Task on Tier 1 always asks for its vendor, and says when vendors are loading (BUG-095) |
+| [2026-10-25-plan-fee-shows-validation-messages-under-each-field.md](2026-10-25-plan-fee-shows-validation-messages-under-each-field.md) | Plan & Fee — the API's validation messages show under each field (BUG-096) |
+| [2026-10-25-dashboard-and-intake-review-follow-permissions.md](2026-10-25-dashboard-and-intake-review-follow-permissions.md) | Request Credit Profile needs "manage credit profile requests" (BUG-097) |
+
+### 2026-10-24
+
+| File | Title |
+|---|---|
+| [2026-10-24-lead-profile-no-partner-totals.md](2026-10-24-lead-profile-no-partner-totals.md) | Lead profile — no partner totals in the header (BUG-016) |
+| [2026-10-24-mail-banner-blank-app-crash.md](2026-10-24-mail-banner-blank-app-crash.md) | Mail-not-verified banner no longer blanks the whole app |
+| [2026-10-24-credit-accounts-bulk-delete-status-and-form.md](2026-10-24-credit-accounts-bulk-delete-status-and-form.md) | Credit Accounts — delete selected, status on the details page, form redesign (BUG-042) |
+| [2026-10-24-blog-duplicate-title-no-silent-failure.md](2026-10-24-blog-duplicate-title-no-silent-failure.md) | CMS Blogs — duplicate title no longer fails silently (BUG-045) |
+| [2026-10-24-client-assign-to-lists-the-clients-partner-team.md](2026-10-24-client-assign-to-lists-the-clients-partner-team.md) | Clients — "Assign to" lists the client's partner's team (BUG-055) |
+| [2026-10-24-reminders-list-says-it-shows-today.md](2026-10-24-reminders-list-says-it-shows-today.md) | Task & Reminders — the list says it shows today, and Show all dates is one click (BUG-056) |
+| [2026-10-24-commissions-headers-send-the-api-sort-key.md](2026-10-24-commissions-headers-send-the-api-sort-key.md) | Commissions — each header sends the sort key the API knows (BUG-073) |
+| [2026-10-24-appointments-browser-time-zone-and-no-past-times.md](2026-10-24-appointments-browser-time-zone-and-no-past-times.md) | Appointments — booked in the browser's time zone, no past times today (BUG-078, 079, 080) |
+
+### 2026-10-23
+
+| File | Title |
+|---|---|
+| [2026-10-23-partner-configuration-tab.md](2026-10-23-partner-configuration-tab.md) | Partner profile › Configuration tab |
+| [2026-10-23-embed-form-convert-client-message.md](2026-10-23-embed-form-convert-client-message.md) | Embed Form — Convert modal says clearly whether the client exists |
+| [2026-10-23-user-phone-number-optional.md](2026-10-23-user-phone-number-optional.md) | Users — phone number is optional |
+| [2026-10-23-employee-create-account-seat-limit-like-users.md](2026-10-23-employee-create-account-seat-limit-like-users.md) | Employees — "Create account" at the seat limit behaves like Users › Add User |
+
 ### 2026-10-14
 
 | File | Title |

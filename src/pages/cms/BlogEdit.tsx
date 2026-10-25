@@ -24,6 +24,10 @@ import '../../assets/css/blog-editor.css';
 const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 const WEBSITE_URL = import.meta.env.VITE_WEBSITE_URL?.replace(/\/$/, '') || '';
 
+/** The fields this form shows an error under; any other is toasted. */
+const SHOWN_ERROR_FIELDS = ['title', 'summary', 'content', 'meta_title', 'meta_description', 'category_id', 'blog_tag_id', 'featured_image'];
+const SLUG_TAKEN_MESSAGE = "Another post already uses this title's web address. Change the title a little.";
+
 export default function BlogEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -176,6 +180,9 @@ export default function BlogEdit() {
         setErrors({});
         const data = new FormData();
         Object.entries(formData).forEach(([key, value]) => {
+            // A new post's address is made from its title by the API, unique
+            // (title-2, …) - the slug here is only the preview (BUG-045).
+            if (key === 'slug' && !id) return;
             if (key === 'blog_tag_id') {
                 if (Array.isArray(value)) {
                     value.forEach(id => data.append('blog_tag_id[]', id.toString()));
@@ -201,9 +208,20 @@ export default function BlogEdit() {
                 const backendErrors = error.response.data.errors;
                 const mappedErrors: Record<string, string> = {};
                 Object.keys(backendErrors).forEach(key => {
-                    mappedErrors[key] = backendErrors[key][0];
+                    // A list per field (Laravel), or one message (BaseApiRequest).
+                    mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                 });
+                // There is no slug field: a taken address is the title's to fix.
+                if (mappedErrors.slug) {
+                    mappedErrors.title = mappedErrors.title || SLUG_TAKEN_MESSAGE;
+                    delete mappedErrors.slug;
+                }
                 setErrors(mappedErrors);
+                // A refusal on a field this form does not show is toasted, never silent.
+                const unshown = Object.keys(mappedErrors).filter((key) => !SHOWN_ERROR_FIELDS.includes(key));
+                if (unshown.length > 0) {
+                    toast.error(mappedErrors[unshown[0]]);
+                }
             } else {
                 toast.error(error.response?.data?.message || "Failed to save blog");
             }

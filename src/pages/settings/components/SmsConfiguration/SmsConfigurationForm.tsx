@@ -5,6 +5,7 @@ import FormLoader from '../../../../components/Loader/FormLoader';
 import { useSaveSmsConfiguration, useSmsConfiguration } from '../../../../modules/settings/queries';
 import type { SaveSmsConfigurationPayload, SmsConfiguration } from '../../../../modules/settings/types';
 import { useAuthStore } from '../../../../store/auth/authStore';
+import { useConfigPartner } from '../../../../modules/settings/configPartner';
 import SmsField from './SmsField';
 import TestSmsPanel from './TestSmsPanel';
 import { apiErrorMessage, apiFieldErrors } from './apiErrors';
@@ -31,7 +32,11 @@ const toFormState = (configuration: SmsConfiguration | null, country: string, pr
  */
 const SmsConfigurationForm: React.FC = () => {
     const { data, isLoading, isError } = useSmsConfiguration();
-    const isHost = useAuthStore((state) => Boolean(state.user?.is_host));
+    // Whose texts these are: the partner being configured (Partner profile ›
+    // Configuration), otherwise the signed-in user's own.
+    const configPartner = useConfigPartner();
+    const isSignedInHost = useAuthStore((state) => Boolean(state.user?.is_host));
+    const isHost = configPartner ? Number(configPartner.is_host) === 1 : isSignedInHost;
     const save = useSaveSmsConfiguration();
 
     const configuration = data?.data.configuration ?? null;

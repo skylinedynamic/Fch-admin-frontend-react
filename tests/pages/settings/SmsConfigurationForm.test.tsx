@@ -142,7 +142,7 @@ describe('SmsConfigurationForm', () => {
     server.use(
       http.post('*/common/sms-configuration', () =>
         HttpResponse.json(
-          { status: false, message: 'Invalid', errors: { auth_token: 'This field is required to enable SMS.' } },
+          { status: false, message: 'Invalid', errors: { auth_token: 'This field is required.' } },
           { status: 422 }
         )
       )
@@ -153,7 +153,7 @@ describe('SmsConfigurationForm', () => {
     await user.click(await screen.findByLabelText(/enable sms/i))
     await user.click(screen.getByRole('button', { name: /save configuration/i }))
 
-    expect(await screen.findByText('This field is required to enable SMS.')).toBeInTheDocument()
+    expect(await screen.findByText('This field is required.')).toBeInTheDocument()
   })
 
   it('sends a test SMS to the number entered', async () => {

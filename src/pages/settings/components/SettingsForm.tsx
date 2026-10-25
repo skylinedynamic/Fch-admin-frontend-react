@@ -61,7 +61,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         )
     );
     const { data: mailData, isLoading: mailLoading } = useMailConfigurations(canEmail && canTestMail);
-    const showTestMail = canTestMail && Boolean(mailData?.data.uses_own_configuration);
+    const showTestMail = canTestMail && Boolean(mailData?.data?.uses_own_configuration);
 
     if (canEmail) {
         sections.push({ id: 'email_configuration', label: 'Email Configuration', icon: 'ri-mail-settings-line' });

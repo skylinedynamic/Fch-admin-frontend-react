@@ -3,9 +3,11 @@ import { test, expect, type Page, type Route } from '@playwright/test'
 // Embed Form › Loan Applications › details: converting a submission whose email
 // already belongs to a borrower.
 //
-// The API answers the first convert with 409 and who the borrower is; the page
-// shows them and converts only on the partner's confirmation, sending
-// confirm_existing_borrower. The API used to answer 500 here (a mangled
+// The Convert modal first asks GET .../conversion-preview, so it names the
+// existing client (and says a new funding application will be generated)
+// before Confirm. Confirming sends confirm_existing_borrower. If a client
+// appears after the preview, the API still answers the convert with 409 and
+// who the borrower is, and the modal switches to them. The API used to answer 500 here (a mangled
 // exception class name in fch-api's EmbedFormService), so the partner never saw
 // the question - the backend side is covered by fch-api's
 // EmbedFormConvertExistingBorrowerTest. Backend calls are intercepted at the
@@ -110,35 +112,58 @@ test.describe('Embed Form › Loan application › convert onto an existing borr
     await page.goto('/embed-form/loan-applications/3')
   })
 
-  async function startConvert(page: Page) {
+  const PREVIEW = `${API_ORIGIN}/common/embed-forms/submissions/3/conversion-preview`
+  const CONFIRM_EXISTING = /Use Existing Client & Create Funding Application/
+
+  async function openModal(page: Page) {
     await page.getByRole('button', { name: /Convert to Free Plan Borrower/ }).first().click()
-    // The modal's own confirm button carries the same label.
-    await page.locator('.modal').getByRole('button', { name: /Convert to Free Plan Borrower/ }).click()
   }
 
-  test('asks the partner to confirm the borrower that already has this email', async ({ page }) => {
-    await startConvert(page)
+  test('names the existing client before anything is sent', async ({ page }) => {
+    await page.route(PREVIEW, (route) => jsonOk(route, { mode: 'existing_borrower', existing_borrower: EXISTING_BORROWER }))
+    await openModal(page)
 
-    const modal = page.locator('.modal')
-    await expect(modal.getByText('Existing Borrower Found')).toBeVisible()
-    await expect(modal.getByText(/A borrower with this email already exists/)).toBeVisible()
+    const modal = page.locator('.modal.show')
+    await expect(modal.getByText('Existing Client Found')).toBeVisible()
+    await expect(modal.getByText('This client already exists')).toBeVisible()
+    await expect(modal.getByText(/No new client account will be created/)).toBeVisible()
+    await expect(modal.getByText('A new funding application will be generated for this client.')).toBeVisible()
     await expect(modal.getByText('Mccall Holdings LLC')).toBeVisible()
-    expect(convertBodies).toHaveLength(1)
-    expect(convertBodies[0]).not.toHaveProperty('confirm_existing_borrower')
+    expect(convertBodies).toHaveLength(0)
   })
 
-  test('converts onto that borrower once confirmed', async ({ page }) => {
-    await startConvert(page)
-    await page.locator('.modal').getByRole('button', { name: /Confirm & Create Funding Application/ }).click()
+  test('converts onto that client once confirmed', async ({ page }) => {
+    await page.route(PREVIEW, (route) => jsonOk(route, { mode: 'existing_borrower', existing_borrower: EXISTING_BORROWER }))
+    await openModal(page)
+    await page.locator('.modal.show').getByRole('button', { name: CONFIRM_EXISTING }).click()
 
+    await expect.poll(() => convertBodies.length).toBe(1)
+    expect(convertBodies[0]).toMatchObject({ confirm_existing_borrower: true })
+    // The modal closes once converted.
+    await expect(page.locator('.modal.show')).toHaveCount(0)
+  })
+
+  test('switches to the existing client when one appears after the preview', async ({ page }) => {
+    await page.route(PREVIEW, (route) => jsonOk(route, { mode: 'new_borrower', existing_borrower: null }))
+    await openModal(page)
+
+    const modal = page.locator('.modal.show')
+    await expect(modal.getByText('No existing client found')).toBeVisible()
+    await modal.getByRole('button', { name: /Create Client & Funding Application/ }).click()
+
+    await expect(modal.getByText('This client already exists')).toBeVisible()
+    expect(convertBodies).toHaveLength(1)
+    expect(convertBodies[0]).not.toHaveProperty('confirm_existing_borrower')
+
+    await modal.getByRole('button', { name: CONFIRM_EXISTING }).click()
     await expect.poll(() => convertBodies.length).toBe(2)
     expect(convertBodies[1]).toMatchObject({ confirm_existing_borrower: true })
-    await expect(page.getByText('Existing Borrower Found')).toHaveCount(0)
   })
 
   test('offers the new funding application as soon as it is created', async ({ page }) => {
-    await startConvert(page)
-    await page.locator('.modal').getByRole('button', { name: /Confirm & Create Funding Application/ }).click()
+    await page.route(PREVIEW, (route) => jsonOk(route, { mode: 'existing_borrower', existing_borrower: EXISTING_BORROWER }))
+    await openModal(page)
+    await page.locator('.modal.show').getByRole('button', { name: CONFIRM_EXISTING }).click()
 
     const view = page.getByRole('button', { name: /View Funding Application/ })
     await expect(view).toBeVisible()

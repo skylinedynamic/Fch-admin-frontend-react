@@ -7,10 +7,31 @@ import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import FilterLoader from '../../../components/Loader/FilterLoader';
-import { fetchCreditAccounts, deleteCreditAccount, updateCreditAccountStatus } from '../../../modules/credit-accounts/services';
+import { fetchCreditAccounts, deleteCreditAccounts } from '../../../modules/credit-accounts/services';
+import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
+import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { STATUS_OPTIONS, STATUS_CLASS_MAP, CREDIT_CATEGORY_OPTIONS } from '../../../config/creditBuilder';
+
+/** Why the cards cannot be deleted - on Delete Selected, or when the API refused. The cards are listed under it. */
+const blockedMessage = ({ reason, items, selected }) => {
+    const one = items.length === 1;
+    if (reason === 'delete') {
+        return one
+            ? 'A borrower applied for this card after the list loaded, so nothing was deleted.'
+            : 'Borrowers applied for these cards after the list loaded, so nothing was deleted.';
+    }
+    const others = selected > items.length;
+    if (one) {
+        return others
+            ? "Borrowers have applied for this card, so it can't be deleted. Unselect it to delete the others."
+            : "Borrowers have applied for this card, so it can't be deleted.";
+    }
+    return others
+        ? "Borrowers have applied for these cards, so they can't be deleted. Unselect them to delete the others."
+        : "Borrowers have applied for these cards, so they can't be deleted.";
+};
 
 export default function CreditAccountsList() {
     const { hasPermission } = usePermissions();
@@ -35,6 +56,28 @@ export default function CreditAccountsList() {
     const [appliedFilters, setAppliedFilters] = useState({});
     const [selectedStatus, setSelectedStatus] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState(null);
+
+    // Delete selected: only cards no borrower has applied for (can_delete).
+    const canDelete = hasPermission('delete credit accounts');
+    const [selectedAccounts, setSelectedAccounts] = useState([]);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    // Cards that cannot be deleted because borrowers applied for them: shown on
+    // Delete Selected ('selection') or when the API refuses a delete ('delete').
+    const [blocked, setBlocked] = useState({ reason: null, items: [], selected: 0 });
+    const closeBlocked = () => setBlocked({ reason: null, items: [], selected: 0 });
+    const blockedItem = (account) => ({ id: account.id, name: account.card_name || account.name });
+
+    // Delete Selected: a card a borrower has applied for is kept - say which
+    // instead of asking to confirm, as Leads does for converted leads.
+    const openDeleteModal = () => {
+        const kept = selectedAccounts.filter((account) => account.can_delete === false);
+        if (kept.length > 0) {
+            setBlocked({ reason: 'selection', items: kept.map(blockedItem), selected: selectedAccounts.length });
+            return;
+        }
+        setShowDeleteModal(true);
+    };
 
     // Initialize filters
     const initFilters = () => {
@@ -139,17 +182,8 @@ export default function CreditAccountsList() {
     const statusBodyTemplate = (rowData) => {
         const status = rowData.status || 'Active';
         const badgeClass = STATUS_CLASS_MAP[status] || 'bg-light text-muted';
-        const canUpdate = hasPermission('update credit accounts');
-        return (
-            <span
-                className={`badge ${badgeClass} fs-12 ${canUpdate ? 'cursor-pointer' : ''}`}
-                onClick={() => canUpdate && handleStatusChange(rowData.id, status)}
-                style={{ cursor: canUpdate ? 'pointer' : 'default' }}
-                title={canUpdate ? 'Click to change status' : ''}
-            >
-                {status}
-            </span>
-        );
+        // Status is set on the card's details page.
+        return <span className={`badge ${badgeClass} fs-12`}>{status}</span>;
     };
 
     const statusFilterTemplate = (options) => {
@@ -184,26 +218,25 @@ export default function CreditAccountsList() {
 
 
 
-    const handleStatusChange = async (id, currentStatus) => {
-        const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+    const handleDeleteConfirm = async () => {
         try {
-            await updateCreditAccountStatus(id, newStatus);
-            toast.success(`Status updated to ${newStatus}`);
+            setDeleting(true);
+            const response = await deleteCreditAccounts(selectedAccounts.map((account) => account.id));
+            toast.success(response?.message || 'Credit accounts deleted successfully');
+            setShowDeleteModal(false);
+            setSelectedAccounts([]);
             loadData();
         } catch (err) {
-            console.error(err);
-            toast.error('Failed to update status');
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this account?')) return;
-        try {
-            await deleteCreditAccount(id);
-            toast.success('Account deleted successfully');
-            loadData();
-        } catch (err) {
-            toast.error('Failed to delete account');
+            // A borrower applied for one meanwhile: nothing was deleted - say which.
+            const applied = err.response?.data?.errors?.applied;
+            setShowDeleteModal(false);
+            if (err.response?.status === 422 && Array.isArray(applied) && applied.length > 0) {
+                setBlocked({ reason: 'delete', items: applied.map(blockedItem), selected: selectedAccounts.length });
+                return;
+            }
+            toast.error(err.response?.data?.message || 'Failed to delete credit accounts');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -228,11 +261,25 @@ export default function CreditAccountsList() {
                 >
                     <div className="mt-0">
                         <div className="btn-group">
-                            {hasPermission('create credit accounts') && (
+                            {canDelete && selectedAccounts.length > 0 ? (
+                                <>
+                                    <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                    <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span className="visually-hidden">Toggle Dropdown</span>
+                                    </button>
+                                    <ul className="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                                <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </>
+                            ) : hasPermission('create credit accounts') ? (
                                 <Link to="/credit-accounts/create" className="btn btn-primary fw-medium waves-effect waves-light">
                                     <i className="ri-add-fill me-1 align-bottom"></i> Add Account
                                 </Link>
-                            )}
+                            ) : null}
                         </div>
                     </div>
                 </PageHeader>
@@ -330,7 +377,10 @@ export default function CreditAccountsList() {
                                             dataKey="id"
                                             scrollable
                                             scrollHeight="flex"
+                                            selection={selectedAccounts}
+                                            onSelectionChange={(e) => setSelectedAccounts(e.value)}
                                         >
+                                            {canDelete && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
 
                                             <Column header="Image" body={imageBodyTemplate} style={{ minWidth: '60px' }} />
                                             <Column field="card_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search" style={{ minWidth: '200px' }} />
@@ -348,6 +398,30 @@ export default function CreditAccountsList() {
                     </div>
                 </div>
             </div>
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onConfirm={handleDeleteConfirm}
+                onClose={() => setShowDeleteModal(false)}
+                loading={deleting}
+                text={selectedAccounts.length === 1 ? 'The selected credit account will be deleted.' : `The ${selectedAccounts.length} selected credit accounts will be deleted.`}
+            />
+
+            <DeleteBlockedModal
+                show={blocked.items.length > 0}
+                tone="danger"
+                title={blocked.items.length === 1 ? 'Card Cannot Be Deleted' : 'Cards Cannot Be Deleted'}
+                message={blockedMessage(blocked)}
+                items={blocked.items}
+                onItemClick={(cardId) => { closeBlocked(); navigate(`/credit-accounts/${cardId}`); }}
+                note="To stop offering a card, switch it to Inactive on its page. Borrowers' applications are kept."
+                primaryAction={blocked.items.length === 1 ? {
+                    label: 'Open card',
+                    icon: 'ri-external-link-line',
+                    onClick: () => { const cardId = blocked.items[0].id; closeBlocked(); navigate(`/credit-accounts/${cardId}`); },
+                } : undefined}
+                onClose={closeBlocked}
+            />
         </div>
     );
 }

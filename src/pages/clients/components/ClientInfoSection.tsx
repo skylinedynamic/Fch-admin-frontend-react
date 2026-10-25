@@ -103,7 +103,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const rawFormIsFreeTrail = formData.is_free_trail as unknown;
     const isFormFreeTrailActive = rawFormIsFreeTrail == 1 || rawFormIsFreeTrail === true || rawFormIsFreeTrail === 'true' || rawFormIsFreeTrail === '1';
     const [isSynced, setIsSynced] = useState(false); // Track if data has been synced from API
-    const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
+    // Who the client may be assigned to: its partner's team (null until loaded).
+    const [users, setUsers] = useState<{ id: number; name: string }[] | null>(null);
     const [showInstallmentModal, setShowInstallmentModal] = useState(false);
 
     // Fetch Plans
@@ -269,11 +270,15 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // plan_id now comes directly from the API — no retry/matching effect needed.
 
-    // Fetch Users for Assign to dropdown
+    // Fetch Users for Assign to dropdown - the client's partner's team, so the
+    // host on a partner's client picks from that partner's staff (BUG-055). A
+    // new client is filed under your own partner, so it gets your team.
+    const clientLoaded = !clientId || !!fetchedData;
     useEffect(() => {
+        if (!clientLoaded) return;
         const fetchUsers = async () => {
             try {
-                const response = await allUsers();
+                const response = await allUsers(borrowerPartnerId ? { partner_id: Number(borrowerPartnerId) } : {});
                 if (response.status && response.data) {
                     setUsers(response.data);
                 }
@@ -282,7 +287,16 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             }
         };
         fetchUsers();
-    }, []);
+    }, [clientLoaded, borrowerPartnerId]);
+
+    // An assignee saved before the team rule may sit outside the team; it is
+    // kept (the API accepts the current one), so show it rather than a blank field.
+    const savedAssigneeId = fetchedData?.data?.assign_id ?? fetchedData?.assign_id ?? null;
+    const savedAssigneeName = fetchedData?.data?.assign_name ?? fetchedData?.assign_name ?? null;
+    const assignOptions = (users ?? []).map(user => ({ label: user.name, value: user.id }));
+    if (users && savedAssigneeId && savedAssigneeName && !users.some(user => String(user.id) === String(savedAssigneeId))) {
+        assignOptions.push({ label: `${savedAssigneeName} (not on this partner's team)`, value: savedAssigneeId });
+    }
 
     // Local Location Options Logic
     const [businessStates, setBusinessStates] = useState<{ label: string; value: string }[]>([]);
@@ -1281,7 +1295,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <Dropdown
                             inputId="assign_id"
                             value={formData.assign_id}
-                            options={users.map(user => ({ label: user.name, value: user.id }))}
+                            options={assignOptions}
                             onChange={(e) => handleInputChange({ target: { name: 'assign_id', value: e.value } })}
                             optionLabel="label"
                             optionValue="value"

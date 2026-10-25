@@ -28,6 +28,56 @@ test.describe('Commissions', () => {
     await expect(page.getByRole('columnheader', { name: /Partner Comm\./ })).toBeVisible()
   })
 
+  // The API says who is looking (statistics.viewer); the screen shows only that viewer's money.
+  test('host staff see their own payout, not the host or partner shares', async ({ page }) => {
+    await seedSession(page, { permissions: ['view commission'], is_host: 1, entity_type: 'Employee' })
+    await mockApi(page, [{
+      method: 'POST', match: LIST,
+      body: paginated([{ ...ROWS[0], admin_commission_amount: undefined, partner_commission_amount: undefined, my_payout: 900 }], {
+        statistics: { viewer: 'host_staff', my_paid_amount: 900, my_expected_amount: 400, my_expected_deals: 1, total_deals: 2, completed_deals: 1, total_funded_amount: 90000 },
+      }),
+    }])
+    await page.goto('/commissions')
+    await expect(page.getByText('Johnathan Smithfield')).toBeVisible()
+
+    await expect(page.getByText('Awaiting Payment')).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: /My Payout/ })).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: /Admin Comm\./ })).toHaveCount(0)
+    await expect(page.getByRole('columnheader', { name: /Partner Comm\./ })).toHaveCount(0)
+  })
+
+  test('partner staff see their deals with no commission money', async ({ page }) => {
+    await seedSession(page, { permissions: ['view commission'], is_host: false, partner_id: 5, entity_type: 'Employee' })
+    await mockApi(page, [{
+      method: 'POST', match: LIST,
+      body: paginated([{ ...ROWS[0], admin_commission_amount: undefined, partner_commission_amount: undefined }], {
+        statistics: { viewer: 'partner_staff', total_deals: 3, completed_deals: 1, total_funded_amount: 90000 },
+      }),
+    }])
+    await page.goto('/commissions')
+    await expect(page.getByText('Johnathan Smithfield')).toBeVisible()
+
+    await expect(page.getByText('My Deals')).toBeVisible()
+    await expect(page.getByText('Total Commission')).toHaveCount(0)
+    await expect(page.getByRole('columnheader', { name: /Partner Comm\./ })).toHaveCount(0)
+    await expect(page.getByRole('columnheader', { name: /My Payout/ })).toHaveCount(0)
+  })
+
+  // BUG-073: Date, Borrower and Partner sent their display fields as sort_field,
+  // which the API could not sort by (500, empty page). Each header now sends
+  // the key the API sorts by.
+  for (const [header, key] of [
+    ['Date', 'created_at'], ['Borrower', 'borrower_name'], ['Partner', 'partner_name'],
+    ['Requested Amount', 'requested_amount'], ['Funded Amount', 'funded_amount'],
+  ] as const) {
+    test(`sorting by ${header} sends ${key}`, async ({ page }) => {
+      const api = await openList(page)
+      await page.getByRole('columnheader', { name: new RegExp(`^${header}$`) }).click()
+      await expect.poll(() => api.find('POST', LIST).at(-1)?.json.sort_field).toBe(key)
+      await expect(page.getByText('Johnathan Smithfield')).toBeVisible()
+    })
+  }
+
   test('search is sent to the API and Clear resets it', async ({ page }) => {
     const api = await openList(page)
     await page.getByPlaceholder('Search borrower or ID...').fill('smith')

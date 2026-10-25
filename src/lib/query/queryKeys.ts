@@ -11,6 +11,10 @@ export const queryKeys = {
     list: () => [...queryKeys.borrower.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.borrower.all, 'detail', id] as const,
   },
+  embedForm: {
+    all: ['embedForm'] as const,
+    conversionPreview: (id: string | number) => [...queryKeys.embedForm.all, 'conversion-preview', id] as const,
+  },
   employee: {
     all: ['employee'] as const,
     list: () => [...queryKeys.employee.all, 'list'] as const,
