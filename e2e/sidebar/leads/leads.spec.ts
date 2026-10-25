@@ -29,6 +29,18 @@ async function openList(page: Page, permissions: string[]): Promise<ApiMock> {
 }
 
 test.describe('Leads list', () => {
+  // BUG-003: an empty contact / email / phone showed the word "Null".
+  test('empty contact, email and phone show a dash, not "Null"', async ({ page }) => {
+    await seedSession(page, { permissions: ['view leads'] })
+    await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([{ id: 61, contact_person: null, company_name: 'Gonzales Mooney LLC', email: '', phone_number: 'null', lead_type: 'Borrower', status: 'New Lead' }]) }])
+    await page.goto('/leads')
+    const row = page.locator('tr', { hasText: 'Gonzales Mooney LLC' })
+    await expect(row).toBeVisible()
+    await expect(row.getByText(/^null$/i)).toHaveCount(0)
+    // Contact, Email, Phone - and SalesPerson, empty in this row too.
+    await expect(row.getByText('—')).toHaveCount(4)
+  })
+
   test('renders leads from the API', async ({ page }) => {
     await openList(page, ['view leads'])
     await expect(page.getByText('Half Data LLC')).toBeVisible()

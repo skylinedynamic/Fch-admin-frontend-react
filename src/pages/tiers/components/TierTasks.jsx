@@ -326,6 +326,8 @@ const TierTasks = forwardRef(({ tierId, tierCode }, ref) => {
                 ]} />
             ) : (
                 <DataTable
+                    // BUG-007: without it PrimeReact shows its dropdown default, "No available options".
+                    emptyMessage="No tasks found"
                     value={tasks || []}
                     paginator
                     rows={perPage}

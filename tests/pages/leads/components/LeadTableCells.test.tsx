@@ -7,7 +7,12 @@ import {
   LeadStatusCell,
 } from '../../../../src/pages/leads/components/LeadTableCells'
 
-/** The Leads table's stacked cells: every value shows, a missing one as "Null" or not at all. */
+/**
+ * The Leads table's stacked cells: every value shows, a missing one as a
+ * muted dash or not at all. Defect (BUG-003, OP-LEAD-04): a missing value
+ * showed the word "Null", and the string "null" a cleared field carries was
+ * shown as text.
+ */
 describe('LeadTableCells', () => {
   it('stacks the company under the contact', () => {
     const { container } = render(<LeadNameCell lead={{ contact_person: 'Lee Lead', company_name: 'Lead Co' }} />)
@@ -15,10 +20,10 @@ describe('LeadTableCells', () => {
     expect(container).toHaveTextContent('Lee LeadLead Co')
   })
 
-  it('shows Null for a lead with no contact, and no empty company line', () => {
+  it('shows a dash for a lead with no contact, and no empty company line', () => {
     const { container } = render(<LeadNameCell lead={{ contact_person: '', company_name: '  ' }} />)
 
-    expect(container).toHaveTextContent(/^Null$/)
+    expect(container).toHaveTextContent(/^—$/)
   })
 
   it('stacks the phone under the email, letting a long email wrap only after the @', () => {
@@ -35,12 +40,12 @@ describe('LeadTableCells', () => {
     expect(screen.getByText('(555) 123-4567')).toHaveClass('text-nowrap')
   })
 
-  it('shows whichever contact detail exists, or Null for neither', () => {
+  it('shows whichever contact detail exists, or a dash for neither', () => {
     const { container, rerender } = render(<LeadContactInfoCell lead={{ email: '', phone_number: '(555) 123-4567' }} />)
     expect(container).toHaveTextContent(/^\(555\) 123-4567$/)
 
     rerender(<LeadContactInfoCell lead={{ email: '', phone_number: '' }} />)
-    expect(container).toHaveTextContent(/^Null$/)
+    expect(container).toHaveTextContent(/^—$/)
   })
 
   it('shows the partner company over its owner, or the owner alone', () => {
@@ -51,7 +56,7 @@ describe('LeadTableCells', () => {
     expect(container).toHaveTextContent(/^Wil Label$/)
 
     rerender(<LeadPartnerCell lead={{ partner: undefined }} />)
-    expect(container).toHaveTextContent(/^Null$/)
+    expect(container).toHaveTextContent(/^—$/)
   })
 
   it('puts the lead type under the status only when asked', () => {
@@ -61,5 +66,15 @@ describe('LeadTableCells', () => {
 
     rerender(<LeadStatusCell badge={badge} leadType="Borrower" showType={false} />)
     expect(container).toHaveTextContent(/^New Lead$/)
+  })
+})
+
+describe('LeadTableCells - "null" text from the API', () => {
+  it('treats the strings "null" and "undefined" as empty', () => {
+    const { container, rerender } = render(<LeadContactInfoCell lead={{ email: 'null', phone_number: 'undefined' }} />)
+    expect(container).toHaveTextContent(/^—$/)
+
+    rerender(<LeadNameCell lead={{ contact_person: 'NULL', company_name: 'null' }} />)
+    expect(container).toHaveTextContent(/^—$/)
   })
 })

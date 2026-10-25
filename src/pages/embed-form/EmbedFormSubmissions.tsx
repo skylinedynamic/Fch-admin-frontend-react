@@ -521,7 +521,9 @@ export default function EmbedFormSubmissions() {
                                     )}
                                 </form>
 
-                                {loading && !submissions.length ? (
+                                {/* The table skeletons on every load - sort, page, filter -
+                                    not only the first one; the cards and filters above stay. */}
+                                {loading ? (
                                     <TableLoader
                                         rows={10}
                                         columns={new Array(7).fill({ style: { minWidth: '150px' } })}

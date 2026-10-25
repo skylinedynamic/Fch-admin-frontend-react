@@ -25,6 +25,8 @@ describeListPage(
       { id: 2, name: 'Tier 1', title: 'Vendor Credit', subtitle: 'Net-30 accounts', order: 2, code: 'T1', status: 'active' },
     ],
     shows: ['Business Foundation', 'Vendor Credit', 'Net-30 accounts'],
+    // BUG-007: the table said "No available options" (PrimeReact's dropdown default).
+    emptyText: 'No tiers found',
     search: { placeholder: 'Search here...' },
     create: { permission: 'update tier', label: /add tier/i, role: 'link', target: '/tiers/create' },
   },
