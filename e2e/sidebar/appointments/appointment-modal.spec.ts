@@ -130,3 +130,77 @@ test.describe('Appointment dialog - time and time zone', () => {
     await expect(dialog(page).getByText('Jane Borrower already has an appointment from 9:00 AM to 9:30 AM. Choose another time.')).toBeVisible()
   })
 })
+
+// BUG-102: a meeting a white-label client booked with its partner. The partner
+// (whoever it was booked with) can reschedule, confirm or cancel it; only the
+// person who booked it edits or deletes it.
+test.describe('Appointment dialog - the person it was booked with', () => {
+  const CLIENT = { id: 50, name: 'QA-TEST Wanda Client One' }
+  const WANDA = { id: 7, name: 'Wanda', entity_type: 'Partner', entity_id: 3 }
+  const BOOKING = {
+    id: 1, subject: 'QA-TEST Run1 WL client booking', appointment_date: '2026-10-28 09:00:00', duration_minutes: 30,
+    meeting_type: 'Business Review', status: 'pending', scheduled_by: CLIENT, assigned_for: WANDA,
+  }
+  const PERMISSIONS = ['view appointments', 'update appointments', 'delete appointments']
+  const DETAIL = /\/common\/appointments\/1$/
+
+  async function openBooking(page: Page, userId: number, booking: Record<string, unknown> = BOOKING): Promise<ApiMock> {
+    await page.clock.setFixedTime(MORNING)
+    await seedSession(page, { id: userId, permissions: PERMISSIONS, is_host: 0, entity_type: 'Partner', entity_id: 3, partner_id: 3 })
+    const api = await mockApi(page, [
+      { method: 'POST', match: '/common/appointments/fetch-all', body: ok([booking]) },
+      { method: 'GET', match: DETAIL, body: ok(booking) },
+      { method: 'PUT', match: DETAIL, body: ok(booking, 'Appointment updated successfully') },
+      { method: 'POST', match: SELECTABLE, body: ok([]) },
+    ])
+    await page.goto('/appointments')
+    await page.locator('.upcoming-event-card', { hasText: 'QA-TEST Run1 WL client booking' }).click()
+    await expect(dialog(page).getByRole('heading', { name: 'QA-TEST Run1 WL client booking' })).toBeVisible()
+    return api
+  }
+
+  test('the partner sees Reschedule, Confirm and Cancel Appointment, not Delete', async ({ page }) => {
+    await openBooking(page, WANDA.id)
+    await expect(dialog(page).getByRole('button', { name: /Reschedule/ })).toBeVisible()
+    await expect(dialog(page).getByRole('button', { name: /^\W*Confirm$/ })).toBeVisible()
+    await expect(dialog(page).getByRole('button', { name: /Cancel Appointment/ })).toBeVisible()
+    await expect(dialog(page).getByRole('button', { name: /Delete/ })).toHaveCount(0)
+  })
+
+  test('Confirm sets the status to confirmed', async ({ page }) => {
+    const api = await openBooking(page, WANDA.id)
+    await dialog(page).getByRole('button', { name: /^\W*Confirm$/ }).click()
+    const call = await expectCall(api, 'PUT', DETAIL)
+    expect(call.json).toEqual({ assigned_for: WANDA.id, status: 'confirmed' })
+    await expect(page.getByText('Appointment updated successfully')).toBeVisible()
+  })
+
+  test('Cancel Appointment asks first, then sets the status to cancelled', async ({ page }) => {
+    const api = await openBooking(page, WANDA.id)
+    await dialog(page).getByRole('button', { name: /Cancel Appointment/ }).click()
+    await dialog(page).getByRole('button', { name: 'Yes, cancel it' }).click()
+    const call = await expectCall(api, 'PUT', DETAIL)
+    expect(call.json).toEqual({ assigned_for: WANDA.id, status: 'cancelled' })
+    await expect(page.getByText('Appointment updated successfully')).toBeVisible()
+  })
+
+  test('Reschedule moves the time without changing who it is with', async ({ page }) => {
+    const api = await openBooking(page, WANDA.id)
+    await dialog(page).getByRole('button', { name: /Reschedule/ }).click()
+    await expect(dialog(page).getByText('Edit Appointment')).toBeVisible()
+    await expect(dialog(page).getByText('Meeting with host')).toHaveCount(0)
+    await pickPrime(page, dialog(page).locator('.time-slot-container .p-dropdown').first(), '10:00 AM')
+    await dialog(page).getByRole('button', { name: 'Save Changes' }).click()
+    const call = await expectCall(api, 'PUT', DETAIL)
+    expect(call.json).toMatchObject({ assigned_for: WANDA.id, appointment_date: '2026-10-28 10:00:00', duration_minutes: 30 })
+    expect(call.json).not.toHaveProperty('entity_type')
+    expect(call.json).not.toHaveProperty('meeting_with_host')
+  })
+
+  test('the person who booked it still gets Edit and Delete, and no Confirm', async ({ page }) => {
+    await openBooking(page, CLIENT.id)
+    await expect(dialog(page).getByRole('button', { name: /Edit/ })).toBeVisible()
+    await expect(dialog(page).getByRole('button', { name: /Delete/ })).toBeVisible()
+    await expect(dialog(page).getByRole('button', { name: /^\W*Confirm$/ })).toHaveCount(0)
+  })
+})

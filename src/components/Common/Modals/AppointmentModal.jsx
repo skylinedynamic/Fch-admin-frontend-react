@@ -14,9 +14,10 @@ import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useSummernote } from '../../../hooks/useSummernote';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import ConfirmationModal from './ConfirmationModal';
 
 // Config
-import { APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from '../../../config';
+import { APPOINTMENT_STATUS, APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from '../../../config';
 import { browserTimeZone, defaultStart, localDateString, startSlotsFrom, timeAfter, timeZoneLabel } from '../../../utils/appointmentTime';
 
 // Styles
@@ -35,6 +36,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    // True while the cancel question is open; closing it without cancelling
+    // returns to the details (Bootstrap also reports the close afterwards).
+    const askingCancelRef = useRef(false);
     const [formErrors, setFormErrors] = useState({});
 
     const currentUser = useAuthStore((state) => state.user);
@@ -75,7 +81,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         assignedFor: '',
         appointmentCode: '',
         category: '',
+        assignedForUserId: '',
+        status: '',
+        isPast: false,
     });
+
+    // The two people on a meeting may change it (BUG-102): whoever booked it
+    // edits or deletes it; whoever it was booked with reschedules, confirms or
+    // cancels it.
+    const canUpdate = hasPermission('update appointments');
+    const isScheduler = currentUser?.id == displayData.scheduledById;
+    const isInvitee = !isScheduler && !!displayData.assignedForUserId && currentUser?.id == displayData.assignedForUserId;
+    const isOpenStatus = displayData.status === APPOINTMENT_STATUS.PENDING || displayData.status === APPOINTMENT_STATUS.CONFIRMED;
+    const canConfirm = isInvitee && canUpdate && !displayData.isPast && displayData.status === APPOINTMENT_STATUS.PENDING;
+    const canCancel = isInvitee && canUpdate && !displayData.isPast && isOpenStatus;
 
     const [originalData, setOriginalData] = useState(null);
 
@@ -333,6 +352,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 assignedForAvatar: apt.assigned_for?.image || apt.assigned_for?.avatar || apt.assigned_for?.profile_picture || null,
                 appointmentCode: apt.appointment_code || '',
                 category: apt.meeting_type || 'Business Review',
+                assignedForUserId: apt.assigned_for?.id,
+                status: apt.status || '',
+                isPast: start < new Date(),
             });
 
             const h_full = start.getHours().toString().padStart(2, '0');
@@ -509,6 +531,14 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
         };
 
+        // The invitee only moves the meeting: who it is with stays as booked.
+        if (isInvitee) {
+            delete payload.entity_type;
+            delete payload.entity_id;
+            delete payload[isHost ? 'meeting_with' : 'meeting_with_host'];
+            payload.assigned_for = displayData.assignedForUserId;
+        }
+
         try {
             setIsSubmitting(true);
             let response;
@@ -545,6 +575,45 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         if (!selectedEventId) return;
         if (modalInstance) modalInstance.hide();
         setShowDeleteConfirm(true);
+    };
+
+    const updateStatus = async (status) => {
+        try {
+            setIsUpdatingStatus(true);
+            const response = await updateAppointment(selectedEventId, {
+                assigned_for: displayData.assignedForUserId,
+                status,
+            });
+            if (response && response.status) {
+                toast.success(response.message || "Appointment updated successfully");
+                askingCancelRef.current = false;
+                setShowCancelConfirm(false);
+                if (modalInstance) modalInstance.hide();
+                if (onSuccess) onSuccess();
+            } else {
+                toast.error(response?.message || "Failed to update appointment");
+            }
+        } catch (error) {
+            if (error.response?.status !== 403) {
+                toast.error(error.response?.data?.message || "Failed to update appointment");
+            }
+        } finally {
+            setIsUpdatingStatus(false);
+        }
+    };
+
+    const confirmCancel = () => {
+        if (!selectedEventId) return;
+        if (modalInstance) modalInstance.hide();
+        askingCancelRef.current = true;
+        setShowCancelConfirm(true);
+    };
+
+    const handleCancelConfirmClose = () => {
+        setShowCancelConfirm(false);
+        if (!askingCancelRef.current) return;
+        askingCancelRef.current = false;
+        if (modalInstance) modalInstance.show();
     };
 
     const handleDelete = async () => {
@@ -656,7 +725,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                 ) : (
                                     <div className="event-details position-relative">
                                         <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
-                                            {(hasPermission('update appointments') && currentUser?.id == displayData.scheduledById) && (
+                                            {(canUpdate && (isScheduler || isInvitee)) && (
                                                 <button
                                                     className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
                                                     onClick={() => setViewMode(false)}
@@ -665,7 +734,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         transition: "all 0.2s ease"
                                                     }}
                                                 >
-                                                    <i className="ri-pencil-fill fs-14 me-1"></i> Edit
+                                                    {isInvitee ? (
+                                                        <><i className="ri-calendar-schedule-line fs-14 me-1"></i> Reschedule</>
+                                                    ) : (
+                                                        <><i className="ri-pencil-fill fs-14 me-1"></i> Edit</>
+                                                    )}
                                                 </button>
                                             )}
                                         </div>
@@ -771,10 +844,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             </div>
                                         </div>
 
-                                        <div className="mt-4 pt-3 border-top d-flex justify-content-end">
-                                            {(hasPermission('delete appointments') && currentUser?.id == displayData.scheduledById) && (
+                                        <div className="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                                            {(hasPermission('delete appointments') && isScheduler) && (
                                                 <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
                                                     <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
+                                                </button>
+                                            )}
+                                            {canCancel && (
+                                                <button className="btn btn-soft-danger fw-medium" onClick={confirmCancel} disabled={isUpdatingStatus}>
+                                                    <i className="ri-close-circle-line me-1"></i> Cancel Appointment
+                                                </button>
+                                            )}
+                                            {canConfirm && (
+                                                <button className="btn btn-success fw-medium" onClick={() => updateStatus(APPOINTMENT_STATUS.CONFIRMED)} disabled={isUpdatingStatus}>
+                                                    <i className="ri-check-line me-1"></i> Confirm
                                                 </button>
                                             )}
                                         </div>
@@ -802,6 +885,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             {formErrors.meeting_type && <div className="text-danger fs-11 mt-1">{formErrors.meeting_type}</div>}
                                         </div>
 
+                                        {/* The invitee cannot change who the meeting is with (BUG-102). */}
+                                        {!isInvitee && (
                                         <div className="col-12 mb-3">
                                             <div className="d-flex align-items-center justify-content-between mb-2 mt-1">
                                                 <label className="form-label mb-0">
@@ -850,6 +935,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
                                             </div>
                                         </div>
+                                        )}
 
                                         <div className="col-12 position-relative px-0 mb-2" style={{ minHeight: '38px' }}>
                                             <div className="row mx-0">
@@ -1007,6 +1093,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 onClose={handleConfirmClose}
                 loading={isDeleting}
                 text="Are you sure you want to delete this appointment? This action cannot be undone."
+            />
+            <ConfirmationModal
+                show={showCancelConfirm}
+                onHide={handleCancelConfirmClose}
+                onConfirm={() => updateStatus(APPOINTMENT_STATUS.CANCELLED)}
+                loading={isUpdatingStatus}
+                title="Cancel this appointment?"
+                message="The person who booked it will see it as cancelled."
+                confirmText="Yes, cancel it"
+                variant="danger"
             />
         </>
     );
