@@ -4,7 +4,7 @@ import "../../../assets/css/dropdown-validation.css";
 import PageHeader from '../common/PageHeader';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors } from '../../modules/partner';
+import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
@@ -526,8 +526,10 @@ export default function PartnerProfile() {
                     fees.installment_applied = true;
                     fees.enrollment_amount = selectedPlan.total_amount || 0;
                     fees.installment_down_payment = 0;
-                    fees.installment_months = 12;
-                    fees.installment_monthly_amount = (selectedPlan.total_amount || 0) / 12;
+                    // 12, or the plan's Installment Upto when lower (BUG-114).
+                    const months = defaultInstallmentMonths(selectedPlan);
+                    fees.installment_months = months;
+                    fees.installment_monthly_amount = (selectedPlan.total_amount || 0) / months;
                     fees.installment_remaining_balance = selectedPlan.total_amount || 0;
                 } else {
                     fees.installment_applied = false;
