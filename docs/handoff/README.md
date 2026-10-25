@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-26
+
+| File | Title |
+|---|---|
+| [2026-10-26-users-free-trial-seat-limit-is-by-design.md](2026-10-26-users-free-trial-seat-limit-is-by-design.md) | Users — a free-trial partner adds users up to its seat limit, then sees "Paid Version Only" (BUG-112) |
+
 ### 2026-10-25
 
 | File | Title |
