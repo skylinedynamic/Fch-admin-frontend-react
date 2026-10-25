@@ -105,8 +105,18 @@ describe('FundingApplicationDetails — Edit Funding Application', () => {
     expect(editLink()).not.toBeInTheDocument()
   })
 
-  it("never offers it to a certified partner, even on its own borrower's application", () => {
+  // Certified partners edit their own borrowers' applications the same as
+  // white-label ones (it used to be white-label only).
+  it("offers it to a certified partner on its own borrower's application", () => {
     detail.application = { ...editable, partner_id: 3 }
+    useAuthStore.setState({ user: { id: 3, is_host: false, partner_id: 3, partner_type: PARTNER_TYPES.CERTIFIED, permissions: [] } as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).toHaveAttribute('href', '/fund-application/29')
+  })
+
+  it("never offers it to a certified partner on another partner's application", () => {
+    detail.application = { ...editable, partner_id: 7 }
     useAuthStore.setState({ user: { id: 3, is_host: false, partner_id: 3, partner_type: PARTNER_TYPES.CERTIFIED, permissions: [] } as never })
     renderWithProviders(<FundingApplicationDetails />)
 

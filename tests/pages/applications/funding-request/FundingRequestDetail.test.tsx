@@ -125,8 +125,79 @@ describe('Funding Request Details: Edit Funding Application', () => {
     expect(screen.queryByRole('link', { name: /edit funding application/i })).not.toBeInTheDocument()
   })
 
-  it("never offers it to a certified partner, even on its own borrower's request", async () => {
+  const withApplication = (status: string) =>
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...approvedWithApplication, funding_application: { id: 80, status, is_editable: true } } })
+      )
+    )
+  const processLink = () => screen.findByRole('link', { name: /process application/i })
+
+  // A Draft / On Hold application keeps Process Application for everyone, as
+  // before, and also offers the host Edit Funding Application.
+  it.each([FUNDING_APPLICATION_STATUS.DRAFT, FUNDING_APPLICATION_STATUS.ON_HOLD])(
+    'offers the host both Process Application and Edit on a %s application',
+    async (status) => {
+      withApplication(status)
+      signIn({ is_host: 1, partner_id: 1 })
+      renderPage()
+
+      expect(await processLink()).toHaveAttribute('href', `/fund-application/${review.id}`)
+      expect(await editLink()).toHaveAttribute('href', `/fund-application/${review.id}`)
+    }
+  )
+
+  // A certified partner is treated as a white-label one here: on its own
+  // borrower's Draft / On Hold application it keeps Process Application and
+  // also gets Edit.
+  it.each([FUNDING_APPLICATION_STATUS.DRAFT, FUNDING_APPLICATION_STATUS.ON_HOLD])(
+    "offers a certified partner Process Application and Edit on its own borrower's %s application",
+    async (status) => {
+      withApplication(status)
+      signIn({ is_host: 0, partner_id: 2, partner_type: PARTNER_TYPES.CERTIFIED })
+      renderPage()
+
+      expect(await processLink()).toHaveAttribute('href', `/fund-application/${review.id}`)
+      expect(await editLink()).toHaveAttribute('href', `/fund-application/${review.id}`)
+    }
+  )
+
+  it("offers the partner Edit on its own borrower's Draft application", async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...approvedWithApplication, funding_application: { id: 80, status: FUNDING_APPLICATION_STATUS.DRAFT, is_editable: true } } })
+      )
+    )
+    signIn({ is_host: 0, partner_id: 2, partner_type: PARTNER_TYPES.WHITE_LABEL })
+    renderPage()
+
+    expect(await editLink()).toHaveAttribute('href', `/fund-application/${review.id}`)
+  })
+
+  it('offers Process Application while no application exists', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...approvedWithApplication, funding_application: null } })
+      )
+    )
+    signIn({ is_host: 1, partner_id: 1 })
+    renderPage()
+
+    expect(await screen.findByRole('link', { name: /process application/i })).toHaveAttribute('href', `/fund-application/${review.id}`)
+    expect(screen.queryByRole('link', { name: /edit funding application/i })).not.toBeInTheDocument()
+  })
+
+  // Certified partners edit their own borrowers' applications the same as
+  // white-label ones (it used to be white-label only).
+  it("offers it to a certified partner on its own borrower's request", async () => {
     signIn({ is_host: 0, partner_id: 2, partner_type: PARTNER_TYPES.CERTIFIED })
+    renderPage()
+
+    expect(await editLink()).toHaveAttribute('href', `/fund-application/${review.id}`)
+  })
+
+  it("never offers it to a certified partner on another partner's request", async () => {
+    signIn({ is_host: 0, partner_id: 9, partner_type: PARTNER_TYPES.CERTIFIED })
     renderPage()
 
     await screen.findByRole('link', { name: /go to client/i })

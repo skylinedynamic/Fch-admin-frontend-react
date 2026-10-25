@@ -281,27 +281,48 @@ export default function App() {
             <Route path="profile" element={<Profile />} />
 
 
-            {/* Credit Builder Menu Routes - Host Only */}
+            {/* Credit Builder Menu Routes - Host Only, and each behind the
+                permission its sidebar item asks for (BUG-125): host staff
+                without it used to open them by URL. */}
             <Route element={<HostRoute />}>
-              <Route path="tiers" element={<TiersList />} />
-              <Route path="tiers/create" element={<TierForm />} />
-              <Route path="tiers/:id" element={<TierForm />} />
-              <Route path="credit-accounts" element={<CreditAccountsList />} />
-              <Route path="credit-accounts/create" element={<CreditAccountForm />} />
-              <Route path="credit-accounts/:id" element={<CreditAccountForm />} />
-              <Route path="capital-access" element={<CapitalAccessList />} />
-              <Route path="capital-access/create" element={<CapitalAccessForm />} />
-              <Route path="capital-access/:id" element={<CapitalAccessForm />} />
-              <Route path="verification-center" element={<VerificationCenter />} />
-              <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
-              <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
-              <Route path="funding" element={<FundingList />} />
-              <Route path="funding/create" element={<FundingSequencingForm />} />
-              <Route path="funding/:id" element={<FundingSequencingForm />} />
-              <Route path="funding/visibility-rules/:id/*" element={<FundingSequencingForm />} />
-              <Route path="lenders" element={<LendersList />} />
-              <Route path="lenders/create" element={<LenderForm />} />
-              <Route path="lenders/:id" element={<LenderForm />} />
+              <Route element={<PermissionRoute permission="view tier" />}>
+                <Route path="tiers" element={<TiersList />} />
+                <Route path="tiers/:id" element={<TierForm />} />
+                <Route element={<PermissionRoute permission="update tier" />}>
+                  <Route path="tiers/create" element={<TierForm />} />
+                </Route>
+              </Route>
+              <Route element={<PermissionRoute permission="view credit accounts" />}>
+                <Route path="credit-accounts" element={<CreditAccountsList />} />
+                <Route path="credit-accounts/:id" element={<CreditAccountForm />} />
+                {/* Capital Access: its menu item uses the credit account permissions. */}
+                <Route path="capital-access" element={<CapitalAccessList />} />
+                <Route path="capital-access/:id" element={<CapitalAccessForm />} />
+                <Route element={<PermissionRoute permission="create credit accounts" />}>
+                  <Route path="credit-accounts/create" element={<CreditAccountForm />} />
+                  <Route path="capital-access/create" element={<CapitalAccessForm />} />
+                </Route>
+              </Route>
+              <Route element={<PermissionRoute permission="view verification request" />}>
+                <Route path="verification-center" element={<VerificationCenter />} />
+                <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
+                <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
+              </Route>
+              <Route element={<PermissionRoute permission="view funding" />}>
+                <Route path="funding" element={<FundingList />} />
+                <Route path="funding/:id" element={<FundingSequencingForm />} />
+                <Route path="funding/visibility-rules/:id/*" element={<FundingSequencingForm />} />
+                <Route element={<PermissionRoute permission="create funding" />}>
+                  <Route path="funding/create" element={<FundingSequencingForm />} />
+                </Route>
+              </Route>
+              <Route element={<PermissionRoute permission="view lenders" />}>
+                <Route path="lenders" element={<LendersList />} />
+                <Route path="lenders/:id" element={<LenderForm />} />
+                <Route element={<PermissionRoute permission="create lenders" />}>
+                  <Route path="lenders/create" element={<LenderForm />} />
+                </Route>
+              </Route>
             </Route>
 
             {/* Payment Method Routes - Host Partner Only */}
