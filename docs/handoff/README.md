@@ -11,6 +11,8 @@ Several features or tasks on the same date means several files with the same dat
 ## Index
 
 ### 2026-10-26
+- [2026-10-26-list-sort-direction.md](2026-10-26-list-sort-direction.md) — BUG-010: Capital Access, Credit Accounts, Employees and Manage Tier sort A-Z on the first header click.
+- [2026-10-26-upcoming-billings-date-order.md](2026-10-26-upcoming-billings-date-order.md) — BUG-012: Upcoming Billings lists the soonest billing date first; Amount no longer sorts.
 - [2026-10-26-upcoming-billings-search-on-enter.md](2026-10-26-upcoming-billings-search-on-enter.md) — BUG-006: Upcoming Billings search applies on Enter like other lists.
 
 | File | Title |

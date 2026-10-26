@@ -19,6 +19,14 @@ async function openList(page: Page, permissions: string[] = ALL, rows: object[] 
 }
 
 test.describe('Credit accounts list', () => {
+  test('loads id desc, and the first header click asks for ascending (BUG-010)', async ({ page }) => {
+    const api = await openList(page)
+    expect(api.find('POST', `${BASE}/fetch-accounts`)[0].json).toMatchObject({ sort_field: 'id', sort_order: 'desc' })
+
+    await page.getByRole('columnheader', { name: /^Name/ }).locator('.p-column-title').click()
+    await expect.poll(() => api.find('POST', `${BASE}/fetch-accounts`).at(-1)?.json).toMatchObject({ sort_field: 'card_name', sort_order: 'asc' })
+  })
+
   // BUG-007: the empty table said "No available options".
   test('an empty result shows a proper empty message', async ({ page }) => {
     await seedSession(page, { permissions: ALL })

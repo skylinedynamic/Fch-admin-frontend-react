@@ -19,6 +19,14 @@ async function openList(page: Page, permissions: string[]): Promise<ApiMock> {
 }
 
 test.describe('Employees list', () => {
+  test('loads id desc, and the first header click asks for ascending (BUG-010)', async ({ page }) => {
+    const api = await openList(page, ['view employees'])
+    expect(api.find('POST', LIST)[0].json).toMatchObject({ sort_field: 'id', sort_order: 'desc' })
+
+    await page.getByRole('columnheader', { name: /^Employee Name/ }).locator('.p-column-title').click()
+    await expect.poll(() => api.find('POST', LIST).at(-1)?.json).toMatchObject({ sort_field: 'full_name', sort_order: 'asc' })
+  })
+
   test('renders employees from the API', async ({ page }) => {
     await openList(page, ['view employees'])
     await expect(page.getByText('Omar Operator')).toBeVisible()

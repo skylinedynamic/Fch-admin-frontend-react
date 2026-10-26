@@ -26,6 +26,14 @@ async function openList(page: Page, user: Record<string, unknown> = DEVELOPER): 
 }
 
 test.describe('Tiers list', () => {
+  test('loads order asc, and the first header click asks for ascending (BUG-010)', async ({ page }) => {
+    const api = await openList(page)
+    expect(api.find('POST', `${BASE}/tiers/fetch-tiers`)[0].json).toMatchObject({ sort_field: 'order', sort_order: 'asc' })
+
+    await page.getByRole('columnheader', { name: /^Name/ }).locator('.p-column-title').click()
+    await expect.poll(() => api.find('POST', `${BASE}/tiers/fetch-tiers`).at(-1)?.json).toMatchObject({ sort_field: 'name', sort_order: 'asc' })
+  })
+
   // BUG-007: the empty table said "No available options".
   test('an empty result shows a proper empty message', async ({ page }) => {
     await seedSession(page, DEVELOPER)

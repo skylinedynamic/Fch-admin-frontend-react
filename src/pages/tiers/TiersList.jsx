@@ -29,7 +29,9 @@ export default function TiersList() {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
-    const [sortField, setSortField] = useState('name');
+    // Tier order, as the API lists them - not a column, so no header starts
+    // pre-sorted and a header's first click is ascending.
+    const [sortField, setSortField] = useState('order');
     const [sortOrder, setSortOrder] = useState('asc');
 
     // PrimeReact DataTable Filters (for column-specific filters if used)

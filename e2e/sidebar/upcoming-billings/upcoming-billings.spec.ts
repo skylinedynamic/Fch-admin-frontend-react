@@ -39,6 +39,12 @@ test.describe('Upcoming billing', () => {
     await expect.poll(() => api.find('POST', LIST).some((c) => c.json?.search === 'zzqxnomatch')).toBe(true)
   })
 
+  test('lists the soonest billing date first and Amount does not sort (BUG-012)', async ({ page }) => {
+    const api = await openList(page)
+    expect(api.find('POST', LIST)[0].json).toMatchObject({ sort_field: 'upcoming_billing_date', sort_order: 'asc' })
+    await expect(page.getByRole('columnheader', { name: /^Amount/ })).not.toHaveClass(/p-sortable-column/)
+  })
+
   test('shows the empty state', async ({ page }) => {
     await seedSession(page, { permissions: ['view subscriptions'] })
     await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([]) }])

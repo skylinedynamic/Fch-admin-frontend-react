@@ -47,7 +47,7 @@ export default function CreditAccountsList() {
 
     // Sorting state
     const [sortField, setSortField] = useState('id');
-    const [sortOrder, setSortOrder] = useState('asc');
+    const [sortOrder, setSortOrder] = useState('desc');
 
     // Filter states
     const [searchText, setSearchText] = useState('');
