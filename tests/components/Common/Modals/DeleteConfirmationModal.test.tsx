@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderWithProviders, screen } from '../../../test-utils'
+// The real Bootstrap modal cannot show under jsdom (it throws on a null style), like the other modal tests.
+vi.mock('bootstrap/js/dist/modal', () => import('../../../mocks/fakeBootstrapModal'))
+
 import DeleteConfirmationModal from '../../../../src/components/Common/Modals/DeleteConfirmationModal'
 
 /**
