@@ -32,6 +32,13 @@ test.describe('Upcoming billing', () => {
     await expect.poll(() => api.find('POST', LIST).some((c) => c.json?.search === 'acme')).toBe(true)
   })
 
+  test('pressing Enter in the search box applies the search (BUG-006)', async ({ page }) => {
+    const api = await openList(page)
+    await page.getByPlaceholder('Search by name, email...').fill('zzqxnomatch')
+    await page.getByPlaceholder('Search by name, email...').press('Enter')
+    await expect.poll(() => api.find('POST', LIST).some((c) => c.json?.search === 'zzqxnomatch')).toBe(true)
+  })
+
   test('shows the empty state', async ({ page }) => {
     await seedSession(page, { permissions: ['view subscriptions'] })
     await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([]) }])

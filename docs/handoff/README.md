@@ -11,6 +11,7 @@ Several features or tasks on the same date means several files with the same dat
 ## Index
 
 ### 2026-10-26
+- [2026-10-26-upcoming-billings-search-on-enter.md](2026-10-26-upcoming-billings-search-on-enter.md) — BUG-006: Upcoming Billings search applies on Enter like other lists.
 
 | File | Title |
 |---|---|

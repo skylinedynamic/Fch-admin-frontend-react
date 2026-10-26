@@ -24,7 +24,7 @@ describeListPage(
     ],
     shows: ['Acme Funding', 'Monthly'],
     emptyText: 'No upcoming billing found',
-    search: { placeholder: 'Search by name, email...' },
+    search: { placeholder: 'Search by name, email...', apply: 'enter' },
   },
   toast
 )

@@ -66,9 +66,9 @@ export default function BillingFilters({
         { col: 'col-xxl-3 col-sm-12', isButton: true } // Filters & Clear
     ];
 
-    // Deliberately not a <form>. Nothing here applies on change or on Enter — the
-    // filters are staged locally and only take effect when Filters is clicked, so
-    // typing a search term does not fire a request per keystroke or per Enter.
+    // Deliberately not a <form>. Nothing applies on change — the filters are staged
+    // locally and take effect when Filters is clicked, or on Enter in the search box
+    // like every other list, so typing does not fire a request per keystroke.
     return (
         <>
             {loading ? (
@@ -83,12 +83,7 @@ export default function BillingFilters({
                                 placeholder="Search by name, email..."
                                 value={searchText}
                                 onChange={(e) => setSearchText(e.target.value)}
-                                onKeyDown={(e) => {
-                                    // Enter must not apply the filter.
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                    }
-                                }}
+                                onKeyDown={(e) => e.key === 'Enter' && onApply()}
                             />
                             <i className="ri-search-line search-icon"></i>
                         </div>
