@@ -230,6 +230,7 @@ export default function FundingRequestDetail() {
                                 createdAt={review.created_at}
                                 updatedAt={review.updated_at}
                                 rejectReason={review.reject_reason}
+                                statusDates={review.status_dates}
                             />
                             {isHost && review.matched_lenders && review.matched_lenders.length > 0 && (
                                 <>

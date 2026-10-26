@@ -296,7 +296,7 @@ export default function FundingRequestStep({
 
       <div className="col-md-6">
         <label className="form-label">
-          Approved Funding <span className="text-danger">*</span>
+          Approved Funding Product <span className="text-danger">*</span>
         </label>
         {/* <CustomDropdown
               value={funding.approvedFunding}

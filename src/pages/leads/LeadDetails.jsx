@@ -167,37 +167,10 @@ export default function LeadDetails() {
         }
     };
 
-    const validateForm = () => {
-        const newErrors = {};
-
-        if (!formData.contact_person?.trim()) {
-            newErrors.contact_person = 'Contact Person is required.';
-        }
-
-        // Email and phone belong to the Contact Info tab only.
-        if (activeTab === 'contactInfo') {
-            if (!formData.email?.trim()) {
-                newErrors.email = 'Contact Email is required.';
-            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-                newErrors.email = 'Please enter a valid email address.';
-            }
-
-            if (!formData.phone_number?.trim()) {
-                newErrors.phone_number = 'Phone Number is required.';
-            }
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
+    // Required fields are the API's call: checking a few here first held the
+    // request back, so its other errors only came on the next Save (BUG-017).
     const handleSave = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
-
-        if (!validateForm()) {
-            // toast.error('Please fill in all required fields correctly');
-            return;
-        }
 
         setErrors({});
         setIsSaving(true);
