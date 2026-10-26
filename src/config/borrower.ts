@@ -178,3 +178,6 @@ export const FREE_PLAN_FILTER_OPTIONS = [
   { label: 'Free Plan', value: '1' },
   { label: 'Regular Plan', value: '0' }
 ];
+
+/** The currency a client's business financials use until one is chosen (BUG-077). */
+export const DEFAULT_BORROWER_CURRENCY = 'USD';

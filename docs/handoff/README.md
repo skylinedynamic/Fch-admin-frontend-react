@@ -10,6 +10,9 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-27
+- [2026-10-27-business-financials-default-currency.md](2026-10-27-business-financials-default-currency.md) — BUG-077: Business Financials saves the USD it shows when no currency is stored.
+
 ### 2026-10-26
 - [2026-10-26-employee-alternate-mobile-error.md](2026-10-26-employee-alternate-mobile-error.md) — Employee Alternate Mobile and Zip Code show the API validation message under the field.
 - [2026-10-26-client-lead-not-found.md](2026-10-26-client-lead-not-found.md) — BUG-030: another partner's client or lead shows "Not Found" instead of an empty page.
