@@ -30,7 +30,9 @@ export default function CapitalAccessSection({ clientId }: CapitalAccessSectionP
     const status = overview?.readiness_status ?? 'N/A';
     const statusColor = overview?.readiness_status_color;
     const factors = overview?.factors ?? [];
-    const totalAccess = overview?.estimated_total_access ?? '$0';
+    // Short ($1.4M, the API's formatCompactCurrency), the full amount on hover (BUG-031).
+    const totalAccessFull = overview?.estimated_total_access ?? '$0';
+    const totalAccess = overview?.estimated_total_access_compact || totalAccessFull;
     const exposureBreakdown = overview?.exposure_breakdown ?? [];
     const currentPlay = overview?.current_play ?? null;
     const reasonCode = overview?.reason_code ?? null;
@@ -335,12 +337,14 @@ export default function CapitalAccessSection({ clientId }: CapitalAccessSectionP
                         <div className="ca-metric-card h-100">
                             <div className="ca-metric-header">
                                 <div className="ca-metric-title-block">
+                                    {/* The plays the client qualifies for, less those completed: what is left (BUG-031). */}
                                     <h6 className="ca-metric-card-label">
-                                        Estimated Total Access
+                                        Estimated Remaining Access
                                     </h6>
-                                    <div className="ca-access-value animate__animated animate__fadeIn">
+                                    <div className="ca-access-value animate__animated animate__fadeIn" title={totalAccessFull}>
                                         {totalAccess}
                                     </div>
+                                    <small className="text-muted d-block mt-1">From the plays the client qualifies for and has not completed yet</small>
                                 </div>
                                 <div className="ca-metric-icon-wrapper access-icon">
                                     <i className="ri-money-dollar-box-line"></i>
