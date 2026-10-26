@@ -19,6 +19,7 @@ The host has no limit and skips the check. A page opened from the list with a pu
 
 ## Testing
 - The new tests failed first, then passed. `tests/pages/users`: 21/21.
+- Full Vitest run: 1838 passed, 2 expected fail (262 files). `npm run typecheck`: 0 errors. Mock E2E for appointments, invoices, embedded form and users after `npm run build`: 119/119.
 
 ## Open items
 - None.

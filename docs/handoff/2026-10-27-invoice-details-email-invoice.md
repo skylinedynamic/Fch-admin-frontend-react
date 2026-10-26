@@ -14,6 +14,7 @@ The details page shows an "E-Mail Invoice" button next to Download PDF. It appea
 
 ## Testing
 - The new tests failed first, then passed. `tests/pages/invoices`: 41/41.
+- Full Vitest run: 1838 passed, 2 expected fail (262 files). `npm run typecheck`: 0 errors. Mock E2E for appointments, invoices, embedded form and users after `npm run build`: 119/119.
 
 ## Open items
 - The preview modal still offers E-Mail Invoice on Processing invoices (it only hides it for Paid). It was left unchanged.

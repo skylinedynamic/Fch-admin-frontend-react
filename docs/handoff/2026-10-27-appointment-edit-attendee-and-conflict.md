@@ -23,6 +23,7 @@ Causes:
 - The new tests failed first (the client was missing from the picker).
 - With the pre-save check switched off, the conflict test fails; switched back on, all pass.
 - `AppointmentModal.test.tsx`: 13/13.
+- Full Vitest run: 1838 passed, 2 expected fail (262 files). `npm run typecheck`: 0 errors. Mock E2E for appointments, invoices, embedded form and users after `npm run build`: 119/119.
 
 ## Open items
 - The API still accepts an overlapping booking if a client skips the form's check.

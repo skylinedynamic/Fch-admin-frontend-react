@@ -20,6 +20,7 @@ Embedded Form › Loan Applications › a submission set to Rejected › Convert
 
 ## Testing
 - The new tests failed first, then passed. `tests/pages/embed-form`: 29/29.
+- Full Vitest run: 1838 passed, 2 expected fail (262 files). `npm run typecheck`: 0 errors. Mock E2E for appointments, invoices, embedded form and users after `npm run build`: 119/119.
 
 ## Open items
 - None.
