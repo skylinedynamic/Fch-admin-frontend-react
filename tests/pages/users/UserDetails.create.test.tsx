@@ -164,6 +164,32 @@ describe('UserDetails - adding a user', () => {
     expect(toast.success).toHaveBeenCalledWith('User created successfully')
   })
 
+  // BUG-123: the email typed in the form was replaced by the employee record's.
+  it("sends the email typed in the form, not the employee record's", async () => {
+    mockLookups()
+    let received: Record<string, unknown> | null = null
+    server.use(
+      http.post('*/common/users', async ({ request }) => {
+        received = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ status: true, message: 'User created successfully.', data: { id: 50 } })
+      })
+    )
+    const user = userEvent.setup()
+    const { container } = renderPage()
+
+    await waitFor(() => expect(container.querySelector('#user-employee')).not.toBeNull())
+    await choose(user, container, 'user-employee', 'Jane Doe')
+    const email = screen.getByLabelText(/email address/i)
+    await user.clear(email)
+    await user.type(email, 'jane.login@example.test')
+    await choose(user, container, 'role_id', 'Staff')
+    await user.type(screen.getByLabelText(/^password/i), 'secret123')
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+    expect(await screen.findByText('Users list page')).toBeInTheDocument()
+    expect(received).toMatchObject({ employee_id: 7, email: 'jane.login@example.test' })
+  })
+
   it('treats the phone number as optional', async () => {
     mockLookups()
     let received: Record<string, unknown> | null = null
