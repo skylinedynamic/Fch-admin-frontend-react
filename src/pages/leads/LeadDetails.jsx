@@ -33,6 +33,7 @@ import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfi
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
+import ErrorPage from '../Utility/ErrorPage';
 
 export default function LeadDetails() {
     const { id } = useParams();
@@ -44,6 +45,7 @@ export default function LeadDetails() {
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'leadDetails');
     const [isLoading, setIsLoading] = useState(!!id);
+    const [notFound, setNotFound] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         lead_id: '',
@@ -511,8 +513,14 @@ export default function LeadDetails() {
                     }));
                 }
             } catch (err) {
-                console.error('Failed to load lead details:', err);
-                toast.error('Failed to load lead details');
+                // Another partner's lead (or a deleted one): the API answers
+                // 404/403 - shown as Lead Not Found, not an empty page (BUG-030).
+                if ([403, 404].includes(err?.response?.status)) {
+                    setNotFound(true);
+                } else {
+                    console.error('Failed to load lead details:', err);
+                    toast.error('Failed to load lead details');
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -520,6 +528,10 @@ export default function LeadDetails() {
 
         loadLead();
     }, [id]);
+
+    if (notFound) {
+        return <ErrorPage status={404} title="Lead Not Found" message="The lead you are looking for does not exist or you do not have permission to view it." />;
+    }
 
     return (
         <>
