@@ -11,6 +11,10 @@ Several features or tasks on the same date means several files with the same dat
 ## Index
 
 ### 2026-10-27
+- [2026-10-27-invoice-details-email-invoice.md](2026-10-27-invoice-details-email-invoice.md) — BUG-091: the invoice details page can e-mail an unpaid invoice.
+- [2026-10-27-rejected-loan-application-convert-disabled.md](2026-10-27-rejected-loan-application-convert-disabled.md) — BUG-098: Convert is disabled on a rejected loan application.
+- [2026-10-27-add-user-seat-limit-purchase.md](2026-10-27-add-user-seat-limit-purchase.md) — BUG-109: Add User at the seat limit opens the seat purchase window and keeps what was typed.
+- [2026-10-27-appointment-edit-attendee-and-conflict.md](2026-10-27-appointment-edit-attendee-and-conflict.md) — BUG-100: editing an appointment keeps its attendee and checks conflicts before saving.
 - [2026-10-27-business-financials-default-currency.md](2026-10-27-business-financials-default-currency.md) — BUG-077: Business Financials saves the USD it shows when no currency is stored.
 
 ### 2026-10-26

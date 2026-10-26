@@ -9,6 +9,7 @@ import {
     updateEmbedFormSubmissionStatus,
     downloadEmbedFormAttachment
 } from '../../modules/embed-form/services';
+import { REJECTED_CANNOT_CONVERT, SUBMISSION_STATUS } from '../../modules/embed-form/types';
 import { handleFileDownload } from '../../utils/fileDownload';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { formatApiDate } from '../../utils/dates';
@@ -326,8 +327,8 @@ export default function EmbedFormSubmissionDetails() {
         return groups;
     }, [attachments]);
 
-    const isConverted = submission?.status === 'converted';
-    const isRejected = submission?.status === 'rejected';
+    const isConverted = submission?.status === SUBMISSION_STATUS.CONVERTED;
+    const isRejected = submission?.status === SUBMISSION_STATUS.REJECTED;
     const convertedBorrower = submission?.converted_borrower;
     const convertedBorrowerId = convertedBorrower?.id || submission?.converted_borrower_id || null;
     // The funding application the conversion created. Its page sits behind
@@ -609,15 +610,21 @@ export default function EmbedFormSubmissionDetails() {
                                                 )}
                                             </>
                                         ) : canConvert ? (
-                                            <button
-                                                type="button"
-                                                className="btn btn-primary ef-convert-btn ef-convert-btn--lg"
-                                                onClick={() => setShowConvertModal(true)}
-                                                disabled={conversionLoading}
-                                            >
-                                                <i className="ri-vip-crown-2-line" />
-                                                <span>Convert to Free Plan Borrower</span>
-                                            </button>
+                                            <div className="d-flex flex-column align-items-start gap-1">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary ef-convert-btn ef-convert-btn--lg"
+                                                    onClick={() => setShowConvertModal(true)}
+                                                    disabled={conversionLoading || isRejected}
+                                                    aria-describedby={isRejected ? 'ef-convert-blocked' : undefined}
+                                                >
+                                                    <i className="ri-vip-crown-2-line" />
+                                                    <span>Convert to Free Plan Borrower</span>
+                                                </button>
+                                                {isRejected && (
+                                                    <small id="ef-convert-blocked" className="text-muted fs-12">{REJECTED_CANNOT_CONVERT}</small>
+                                                )}
+                                            </div>
                                         ) : null}
                                     </div>
                                 </div>
