@@ -5,7 +5,9 @@ import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
 import { cmsService } from '../../modules/cms/services';
-import { useBlog, useSaveBlog, useCategories, useTags, useCreateCategory, useCreateTag } from '../../modules/cms/queries';
+import { useBlog, useSaveBlog, useCategories, useTags, useCreateCategory, useCreateTag, useUpdateCategory, useUpdateTag } from '../../modules/cms/queries';
+import TaxonomyChips, { firstFieldError } from './components/TaxonomyChips';
+import { blockedFromError } from './components/TaxonomyDeleteBlockedModal';
 import { toast } from 'react-toastify';
 import { BlogFormData, Blog } from '../../modules/cms/types';
 import CmsFormLoader from '../../components/Loader/CmsFormLoader';
@@ -33,6 +35,8 @@ export default function BlogEdit() {
     const { data: tagsData, refetch: refetchTags } = useTags();
     const createCategoryMutation = useCreateCategory();
     const createTagMutation = useCreateTag();
+    const updateCategoryMutation = useUpdateCategory();
+    const updateTagMutation = useUpdateTag();
 
     const [showCatModal, setShowCatModal] = useState<boolean>(false);
     const [showTagModal, setShowTagModal] = useState<boolean>(false);
@@ -142,10 +146,10 @@ export default function BlogEdit() {
             setShowCatModal(false);
             setNewCatName('');
             refetchCategories();
-            toast.success("Category added");
+            toast.success("Category added successfully");
         } catch (error: any) {
             if (error.response?.data?.errors) {
-                setErrors(prev => ({ ...prev, new_category: error.response.data.errors.name?.[0] }));
+                setErrors(prev => ({ ...prev, new_category: firstFieldError(error.response.data.errors, 'name') || '' }));
             } else {
                 toast.error("Failed to add category");
             }
@@ -161,13 +165,51 @@ export default function BlogEdit() {
             setShowTagModal(false);
             setNewTagName('');
             refetchTags();
-            toast.success("Tag added");
+            toast.success("Tag added successfully");
         } catch (error: any) {
             if (error.response?.data?.errors) {
-                setErrors(prev => ({ ...prev, new_tag: error.response.data.errors.name?.[0] }));
+                setErrors(prev => ({ ...prev, new_tag: firstFieldError(error.response.data.errors, 'name') || '' }));
             } else {
                 toast.error("Failed to add tag");
             }
+        }
+    };
+
+    // Rename / delete from the Existing Categories and Tags chips (BUG-059).
+    // A refused rename is rethrown so the chip shows the API's message.
+    const renameCategory = async (catId: number, name: string) => {
+        await updateCategoryMutation.mutateAsync({ id: catId, data: { name } });
+        refetchCategories();
+        toast.success("Category updated successfully");
+    };
+
+    const deleteCategory = async (catId: number) => {
+        try {
+            await cmsService.deleteCategories([catId]);
+            setFormData(prev => (String(prev.category_id) === String(catId) ? { ...prev, category_id: '' } : prev));
+            refetchCategories();
+            toast.success("Category deleted successfully");
+        } catch (e) {
+            if (blockedFromError(e)) throw e; // TaxonomyChips shows why it was kept
+            toast.error("Failed to delete category");
+        }
+    };
+
+    const renameTag = async (tagId: number, name: string) => {
+        await updateTagMutation.mutateAsync({ id: tagId, data: { name } });
+        refetchTags();
+        toast.success("Tag updated successfully");
+    };
+
+    const deleteTag = async (tagId: number) => {
+        try {
+            await cmsService.deleteTags([tagId]);
+            setFormData(prev => ({ ...prev, blog_tag_id: (prev.blog_tag_id || []).filter((t: any) => String(t) !== String(tagId)) }));
+            refetchTags();
+            toast.success("Tag deleted successfully");
+        } catch (e) {
+            if (blockedFromError(e)) throw e; // TaxonomyChips shows why it was kept
+            toast.error("Failed to delete tag");
         }
     };
 
@@ -603,6 +645,7 @@ export default function BlogEdit() {
             <Dialog
                 header="Add New Category"
                 visible={showCatModal}
+                baseZIndex={1000}
                 style={{ width: '30vw' }}
                 onHide={() => setShowCatModal(false)}
             >
@@ -657,32 +700,12 @@ export default function BlogEdit() {
                             <hr className="my-4" />
                             <div className="field">
                                 <label className="mb-3">Existing Categories</label>
-                                <div className="d-flex flex-wrap gap-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                    {categoriesData?.data?.map((cat: any) => (
-                                        <span
-                                            key={cat.id}
-                                            className="badge bg-light text-dark border d-inline-flex align-items-center"
-                                            style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
-                                        >
-                                            {cat.name}
-                                            <button
-                                                type="button"
-                                                className="btn-close btn-close-sm ms-2"
-                                                onClick={async () => {
-                                                    if (window.confirm(`Delete category "${cat.name}"?`)) {
-                                                        try {
-                                                            await cmsService.deleteCategories([cat.id]);
-                                                            refetchCategories();
-                                                            toast.success("Category deleted");
-                                                        } catch (e) { toast.error("Failed to delete category"); }
-                                                    }
-                                                }}
-                                                aria-label="Delete"
-                                                style={{ fontSize: '0.65rem', opacity: 0.5 }}
-                                            ></button>
-                                        </span>
-                                    ))}
-                                </div>
+                                <TaxonomyChips
+                                    items={categoriesData?.data || []}
+                                    kind="Category"
+                                    onRename={renameCategory}
+                                    onDelete={deleteCategory}
+                                />
                             </div>
                         </>
                     )}
@@ -693,6 +716,7 @@ export default function BlogEdit() {
             <Dialog
                 header="Add New Tag"
                 visible={showTagModal}
+                baseZIndex={1000}
                 style={{ width: '30vw' }}
                 onHide={() => setShowTagModal(false)}
             >
@@ -747,32 +771,12 @@ export default function BlogEdit() {
                             <hr className="my-4" />
                             <div className="field">
                                 <label className="mb-3">Existing Tags</label>
-                                <div className="d-flex flex-wrap gap-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                    {tagsData?.data?.map((tag: any) => (
-                                        <span
-                                            key={tag.id}
-                                            className="badge bg-light text-dark border d-inline-flex align-items-center"
-                                            style={{ fontSize: '0.875rem', padding: '0.5rem 0.75rem' }}
-                                        >
-                                            {tag.name}
-                                            <button
-                                                type="button"
-                                                className="btn-close btn-close-sm ms-2"
-                                                onClick={async () => {
-                                                    if (window.confirm(`Delete tag "${tag.name}"?`)) {
-                                                        try {
-                                                            await cmsService.deleteTags([tag.id]);
-                                                            refetchTags();
-                                                            toast.success("Tag deleted");
-                                                        } catch (e) { toast.error("Failed to delete tag"); }
-                                                    }
-                                                }}
-                                                aria-label="Delete"
-                                                style={{ fontSize: '0.65rem', opacity: 0.5 }}
-                                            ></button>
-                                        </span>
-                                    ))}
-                                </div>
+                                <TaxonomyChips
+                                    items={tagsData?.data || []}
+                                    kind="Tag"
+                                    onRename={renameTag}
+                                    onDelete={deleteTag}
+                                />
                             </div>
                         </>
                     )}

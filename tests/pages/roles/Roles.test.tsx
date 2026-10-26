@@ -23,6 +23,9 @@ const PERMISSIONS = [
   { module: 'clients', permissions: [{ id: 3, name: 'view clients' }, { id: 4, name: 'delete clients' }] },
 ]
 
+const formLabels = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('label.form-label')).map((label) => label.textContent?.replace(/\s+/g, ' ').trim())
+
 const card = (container: HTMLElement, name: string) =>
   Array.from(container.querySelectorAll('.role-summary-card')).find((el) => el.textContent?.includes(name)) as HTMLElement
 
@@ -76,6 +79,19 @@ describe('RolesPermissions', () => {
     await screen.findByRole('heading', { name: 'Agent' })
 
     expect(screen.getByRole('link', { name: /add role/i })).toHaveAttribute('href', '/roles-permissions/create')
+  })
+
+  /** Defect (BUG-039): the delete-role confirmation said "Deleting employees will remove all information." */
+  it('asks about deleting the role, not employees', async () => {
+    const user = userEvent.setup()
+    const { container } = mount()
+    await screen.findByRole('heading', { name: 'Agent' })
+
+    await user.click(card(container, 'Agent').querySelector('.btn-outline-danger')!)
+
+    expect(await screen.findByText('Delete Role?', { selector: 'h4' })).toBeInTheDocument()
+    expect(screen.getByText('This will permanently remove the role and all its associated permissions.')).toBeInTheDocument()
+    expect(screen.queryByText(/employees/i)).not.toBeInTheDocument()
   })
 
   it('deletes a role after confirmation', async () => {
@@ -132,16 +148,40 @@ describe('CreateRole', () => {
     return renderPage(<CreateRole />, { path: '/roles-permissions/create' })
   }
 
-  it('does nothing when the name is empty', async () => {
+  /** Defect (BUG-038): an empty name returned before the request, so Save showed nothing. */
+  it('sends an empty name and shows the API "role name is required" under the marked field', async () => {
     const user = userEvent.setup()
     mount()
-    const create = api('post', '/common/roles', { status: true })
-    await screen.findByPlaceholderText('Enter a role name')
+    const create = api('post', '/common/roles', invalid({ name: 'The role name is required.' }), 422)
+    const input = await screen.findByPlaceholderText('Enter a role name')
 
     await user.click(screen.getByRole('button', { name: /save/i }))
 
-    expect(create.calls).toBe(0)
+    expect(await screen.findByText('The role name is required.')).toBeInTheDocument()
+    expect(create.bodies[0]).toMatchObject({ name: '' })
+    expect(input).toHaveClass('is-invalid')
     expect(screen.queryByTestId('landing')).not.toBeInTheDocument()
+  })
+
+  it('marks Role name and Role Permissions as required, not the Module Permissions box', async () => {
+    const { container } = mount()
+    await screen.findByPlaceholderText('Enter a role name')
+
+    expect(formLabels(container)).toEqual(expect.arrayContaining(['Role name *', 'Role Permissions *']))
+    expect(screen.getByRole('heading', { name: 'Module Permissions' })).toBeInTheDocument()
+  })
+
+  it('shows "permissions are required" above the permissions box, not inside it', async () => {
+    const user = userEvent.setup()
+    const { container } = mount()
+    api('post', '/common/roles', invalid({ permission_ids: 'Permissions are required.' }), 422)
+
+    await user.type(await screen.findByPlaceholderText('Enter a role name'), 'Agent')
+    await user.click(screen.getByRole('button', { name: /save/i }))
+
+    const message = await screen.findByText('Permissions are required.')
+    expect(container.querySelector('.perm-card')!.contains(message)).toBe(false)
+    expect(container.querySelector('.perm-card')).toHaveClass('border-danger')
   })
 
   it('posts the ticked permission ids', async () => {
@@ -199,7 +239,7 @@ describe('CreateRole', () => {
 
   it('shows API validation errors under the fields and stays on the page', async () => {
     const user = userEvent.setup()
-    mount()
+    const { container } = mount()
     api('post', '/common/roles', invalid({ name: 'The name has already been taken.', permission_ids: 'Select at least one permission.' }), 422)
 
     await user.type(await screen.findByPlaceholderText('Enter a role name'), 'Agent')
@@ -207,6 +247,7 @@ describe('CreateRole', () => {
 
     expect(await screen.findByText('The name has already been taken.')).toBeInTheDocument()
     expect(screen.getByText('Select at least one permission.')).toBeInTheDocument()
+    expect(container.querySelector('.perm-card')).toHaveClass('border-danger')
     expect(screen.queryByTestId('landing')).not.toBeInTheDocument()
   })
 })
@@ -242,15 +283,42 @@ describe('EditRole', () => {
     expect(await screen.findByTestId('landing')).toHaveTextContent('navigated:/roles-permissions')
   })
 
-  it('does not save when the name is cleared', async () => {
+  /** Defect (BUG-038): a cleared name returned before the request, so Update showed nothing. */
+  it('shows the API "role name is required" when the name is cleared', async () => {
     const user = userEvent.setup()
     mount()
-    const update = api('put', '/common/roles/2', { status: true })
+    const update = api('put', '/common/roles/2', invalid({ name: 'The role name is required.' }), 422)
     await waitFor(() => expect(screen.getByPlaceholderText('Enter a role name')).toHaveValue('Agent'))
 
     await user.clear(screen.getByPlaceholderText('Enter a role name'))
     await user.click(screen.getByRole('button', { name: /update/i }))
 
-    expect(update.calls).toBe(0)
+    expect(await screen.findByText('The role name is required.')).toBeInTheDocument()
+    expect(update.bodies[0]).toMatchObject({ name: '' })
+    expect(screen.getByPlaceholderText('Enter a role name')).toHaveClass('is-invalid')
+    expect(screen.queryByTestId('landing')).not.toBeInTheDocument()
+  })
+
+  it('marks Role name and Role Permissions as required, not the Module Permissions box', async () => {
+    const { container } = mount()
+    await waitFor(() => expect(screen.getByPlaceholderText('Enter a role name')).toHaveValue('Agent'))
+
+    expect(formLabels(container)).toEqual(expect.arrayContaining(['Role name *', 'Role Permissions *']))
+    expect(screen.getByRole('heading', { name: 'Module Permissions' })).toBeInTheDocument()
+  })
+
+  it('marks the permissions box when the API says permissions are required', async () => {
+    const user = userEvent.setup()
+    const { container } = mount()
+    api('put', '/common/roles/2', invalid({ permission_ids: 'Permissions are required.' }), 422)
+    await waitFor(() => expect(container.querySelectorAll('input[id^="perm-clients-"]:checked')).toHaveLength(1))
+    expect(container.querySelector('.perm-card')).not.toHaveClass('border-danger')
+
+    await user.click(container.querySelector('input[id^="perm-clients-"]:checked')!)
+    await user.click(screen.getByRole('button', { name: /update/i }))
+
+    const message = await screen.findByText('Permissions are required.')
+    expect(container.querySelector('.perm-card')!.contains(message)).toBe(false)
+    expect(container.querySelector('.perm-card')).toHaveClass('border-danger')
   })
 })

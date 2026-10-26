@@ -358,13 +358,12 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     const getSubtitle = (activity) => {
         const logType = (activity.log_type_raw || activity.log_type || '').toLowerCase();
         const isEdited = !!activity.is_edited;
-        const dateToUse = isEdited
-            ? (activity.edited_at || activity.updated_at || activity.activity_date || activity.created_at)
-            : (activity.activity_date || activity.created_at);
+        // An entry keeps its own date when edited (BUG-020); the edit time goes in the tooltip.
+        const dateToUse = activity.activity_date || activity.created_at;
         const formattedDate = formatRelativeDate(dateToUse);
-        const originalDateStr = activity.activity_date || activity.created_at;
-        const editedTooltip = isEdited && originalDateStr
-            ? `Originally: ${formatRelativeDate(originalDateStr)} (${originalDateStr})`
+        const editedAt = activity.edited_at || activity.updated_at;
+        const editedTooltip = isEdited && editedAt
+            ? `Edited: ${formatRelativeDate(editedAt)} (${editedAt})`
             : 'Edited';
         
         if (logType === 'email' || logType === 'email sent') {
@@ -456,14 +455,16 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
     const getTitle = (activity) => {
         let title = '';
-        const logType = (activity.log_type || '').toLowerCase();
-        if (activity.event_label) {
+        // log_type is the API's human label ("Activity Created"); log_type_raw is the type.
+        const logType = (activity.log_type_raw || activity.log_type || '').toLowerCase();
+        // A manual activity is titled by what was written (BUG-020), not the generic event label.
+        if (logType === 'activity') {
+            const refType = activity.reference ? activity.reference : 'Activity';
+            title = activity.subject ? `${refType}: ${activity.subject}` : (activity.event_label || `${refType} Logged`);
+        } else if (activity.event_label) {
             title = activity.event_label;
         } else if (logType === 'email' || logType === 'email sent') {
             title = activity.subject ? `Email Sent: ${activity.subject}` : 'Email Sent';
-        } else if (logType === 'activity') {
-            const refType = activity.reference ? activity.reference : 'Activity';
-            title = activity.subject ? `${refType}: ${activity.subject}` : `${refType} Logged`;
         } else {
             title = activity.subject || activity.log_type || 'Activity';
         }
