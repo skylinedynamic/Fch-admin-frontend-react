@@ -19,6 +19,7 @@ Several features or tasks on the same date means several files with the same dat
 | [2026-10-26-certified-partner-configuration-guard-on-clients-and-leads.md](2026-10-26-certified-partner-configuration-guard-on-clients-and-leads.md) | Configuration guard — a Certified partner without an active gateway is stopped on Clients and Leads (BUG-115) |
 | [2026-10-26-custom-domain-field-errors-and-optional-borrower-domain.md](2026-10-26-custom-domain-field-errors-and-optional-borrower-domain.md) | Custom Domain and Tenant Config — refused domains show under the field, the whole field turns red, the borrower domain is optional (BUG-121) |
 | [2026-10-26-invoice-modal-date-and-amount.md](2026-10-26-invoice-modal-date-and-amount.md) | Invoices — the details modal shows the invoice's own amount and date (BUG-122) |
+| [2026-10-26-partner-subscription-total-and-installment-balance.md](2026-10-26-partner-subscription-total-and-installment-balance.md) | Partner profile › Subscription — "Total Amount" is the whole enrollment, "Installment Balance" the rest (BUG-126) |
 
 ### 2026-10-25
 
