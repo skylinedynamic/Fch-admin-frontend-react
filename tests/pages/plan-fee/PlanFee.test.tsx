@@ -13,6 +13,7 @@ import { toast } from 'react-toastify'
 import PlanFee from '../../../src/pages/plan-fee/PlanFee'
 
 const FETCH = '/admin/plan-fee/fetch-subscription-plans'
+const CHECK = (id: number) => `/admin/plan-fee/validate-subscription-plan/${id}`
 
 const plan = (over: Record<string, unknown> = {}) => ({
   id: 11, partner_type: 'White-Label Partner (WL)', partner_type_slug: 'wl', enrollment_type: 'Monthly', enrollment_type_slug: 'monthly',
@@ -25,6 +26,7 @@ const mount = (response: unknown = { status: true, data: { partner_enrollment: [
   signIn()
   allowBackgroundCalls()
   const fetch = api('post', FETCH, response)
+  api('put', '/admin/plan-fee/validate-subscription-plan/:id', { status: true, message: 'The values are valid.', data: null })
   const view = renderPage(<PlanFee />, { path: '/plan-and-fee' })
   return { fetch, ...view }
 }
@@ -136,8 +138,12 @@ describe('PlanFee', () => {
   // BUG-096: the API checks each value and names the field; the screen shows
   // that under the field instead of "Failed to update plan", and an empty
   // amount is sent as empty - for the API to refuse - not as 0.
+  // BUG-096: Save first asks the API to check the values (the same rules as
+  // saving, nothing saved). A refused value shows under its field and the
+  // "Confirm Rate Changes" dialog never opens; good values open it as before.
   describe('validation messages from the API', () => {
     const invalid = (errors: Record<string, string>) => ({ status: false, message: Object.values(errors)[0], errors })
+    const confirmDialog = () => screen.queryByRole('button', { name: 'Confirm & Save' })
 
     const saveAmount = async (user: ReturnType<typeof userEvent.setup>, container: HTMLElement, value: string) => {
       await waitFor(() => expect(amountInputs(container).length).toBeGreaterThanOrEqual(2))
@@ -145,68 +151,81 @@ describe('PlanFee', () => {
       await user.clear(amount)
       if (value) await user.type(amount, value)
       await user.click(screen.getByRole('button', { name: /^\W*save$/i }))
-      await user.click(await screen.findByRole('button', { name: 'Confirm & Save' }))
       return amount
     }
 
-    it("shows the API's message under Total Amount, not a generic failure", async () => {
+    it("refuses a bad value at Save - its message under Total Amount, and no confirmation", async () => {
       const user = userEvent.setup()
       const { container } = mount()
-      api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ total_amount: 'The total amount must be greater than 0.' }), 422)
+      api('put', CHECK(11), invalid({ total_amount: 'The total amount must be greater than 0.' }), 422)
+      const update = api('put', '/admin/plan-fee/update-subscription-plan/11', { status: true, message: 'ok', data: null })
 
       const amount = await saveAmount(user, container, '0')
 
       expect(await screen.findByText('The total amount must be greater than 0.')).toBeInTheDocument()
       expect(amount).toHaveClass('is-invalid')
+      expect(confirmDialog()).not.toBeInTheDocument()
+      expect(update.calls).toBe(0)
       expect(toast.error).not.toHaveBeenCalledWith('Failed to update plan')
+    })
+
+    it('keeps the refused value in the box, beside its message', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      api('put', CHECK(11), invalid({ total_amount: 'The total amount must be greater than 0.' }), 422)
+
+      const amount = await saveAmount(user, container, '0')
+
+      expect(await screen.findByText('The total amount must be greater than 0.')).toBeInTheDocument()
+      expect(amount).toHaveValue(0)
     })
 
     it('sends an empty amount as empty, not as 0', async () => {
       const user = userEvent.setup()
       const { container } = mount()
-      const update = api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ total_amount: 'Enter the total amount.' }), 422)
+      const check = api('put', CHECK(11), invalid({ total_amount: 'Enter the total amount.' }), 422)
 
       await saveAmount(user, container, '')
 
-      await waitFor(() => expect(update.bodies[0]).toMatchObject({ total_amount: '' }))
+      await waitFor(() => expect(check.bodies[0]).toMatchObject({ total_amount: '' }))
       expect(await screen.findByText('Enter the total amount.')).toBeInTheDocument()
+      expect(confirmDialog()).not.toBeInTheDocument()
     })
 
     it('shows a platform fee message under the platform fee', async () => {
       const user = userEvent.setup()
       const { container } = mount()
-      api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ platform_fee: 'The platform fee must be greater than 0.' }), 422)
+      api('put', CHECK(11), invalid({ platform_fee: 'The platform fee must be greater than 0.' }), 422)
       await waitFor(() => expect(amountInputs(container).length).toBeGreaterThanOrEqual(2))
       const fee = amountInputs(container).find((input) => input.value === '99.00')!
 
       await user.clear(fee)
       await user.type(fee, '0')
       await user.click(screen.getByRole('button', { name: /^\W*save$/i }))
-      await user.click(await screen.findByRole('button', { name: 'Confirm & Save' }))
 
       expect(await screen.findByText('The platform fee must be greater than 0.')).toBeInTheDocument()
       expect(fee).toHaveClass('is-invalid')
+      expect(confirmDialog()).not.toBeInTheDocument()
     })
 
     it('sends an empty platform fee as empty, not as 0', async () => {
       const user = userEvent.setup()
       const { container } = mount()
-      const update = api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ platform_fee: 'Enter the platform fee.' }), 422)
+      const check = api('put', CHECK(11), invalid({ platform_fee: 'Enter the platform fee.' }), 422)
       await waitFor(() => expect(amountInputs(container).length).toBeGreaterThanOrEqual(2))
       const fee = amountInputs(container).find((input) => input.value === '99.00')!
 
       await user.clear(fee)
       await user.click(screen.getByRole('button', { name: /^\W*save$/i }))
-      await user.click(await screen.findByRole('button', { name: 'Confirm & Save' }))
 
-      await waitFor(() => expect(update.bodies[0]).toMatchObject({ platform_fee: '' }))
+      await waitFor(() => expect(check.bodies[0]).toMatchObject({ platform_fee: '' }))
       expect(await screen.findByText('Enter the platform fee.')).toBeInTheDocument()
     })
 
     it('editing the field clears its message', async () => {
       const user = userEvent.setup()
       const { container } = mount()
-      api('put', '/admin/plan-fee/update-subscription-plan/11', invalid({ total_amount: 'The total amount must be greater than 0.' }), 422)
+      api('put', CHECK(11), invalid({ total_amount: 'The total amount must be greater than 0.' }), 422)
       const amount = await saveAmount(user, container, '0')
       await screen.findByText('The total amount must be greater than 0.')
 
@@ -214,6 +233,31 @@ describe('PlanFee', () => {
 
       expect(screen.queryByText('The total amount must be greater than 0.')).not.toBeInTheDocument()
       expect(amount).not.toHaveClass('is-invalid')
+    })
+
+    it('opens the confirmation for good values, and saves what was checked', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      const check = api('put', CHECK(11), { status: true, message: 'The values are valid.', data: null })
+      const update = api('put', '/admin/plan-fee/update-subscription-plan/11', { status: true, message: 'Saved', data: null })
+
+      await saveAmount(user, container, '549')
+      await user.click(await screen.findByRole('button', { name: 'Confirm & Save' }))
+
+      await waitFor(() => expect(update.calls).toBe(1))
+      expect(check.bodies[0]).toMatchObject({ total_amount: 549 })
+      expect(update.bodies[0]).toMatchObject({ total_amount: 549 })
+    })
+
+    it('says so when the check itself cannot be made, and opens no confirmation', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      api('put', CHECK(11), { message: 'boom' }, 500)
+
+      await saveAmount(user, container, '549')
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to update plan'))
+      expect(confirmDialog()).not.toBeInTheDocument()
     })
   })
 })

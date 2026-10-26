@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchPlanFeeSubscriptions, updatePlanFeeSubscription } from '../../modules/subscription-plan';
+import { fetchPlanFeeSubscriptions, updatePlanFeeSubscription, validatePlanFeeSubscription } from '../../modules/subscription-plan';
 import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody } from 'reactstrap';
 import PlanFeeSkeletonLoader from '../../components/Loader/PlanFeeSkeletonLoader';
@@ -198,8 +198,49 @@ export default function PlanFee() {
         return checkIsInstallmentPlan(plan);
     };
 
+    // What is sent for a plan's edits - the same to the check and to the save.
+    const buildPayload = (plan: Plan, edits: EditState) => {
+        const isInstallment = isInstallmentPlan(plan);
+        const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
+
+        const payload: any = {
+            total_amount: asSent(edits.total_amount),
+        };
+
+        if (showPlatformFee) {
+            payload.platform_fee = asSent(edits.platform_fee);
+        }
+
+        if (isInstallment) {
+            payload.total_installment_count_upto = asSent(edits.total_installment_count_upto) === '' ? null : asSent(edits.total_installment_count_upto);
+        }
+
+        if (activeTab === PLAN_GROUP_USER_SEAT) {
+            payload.total_seat_count = asSent(edits.total_seat_count) === '' ? 0 : asSent(edits.total_seat_count);
+        }
+
+        return payload;
+    };
+
+    // A refusal from the API: each message under its field, anything the
+    // screen has no field for toasted, anything else a generic failure.
+    const showRefusal = (id: number, error: unknown) => {
+        const errors = fieldErrorsFrom(error);
+        if (errors) {
+            const shown: FieldErrors = {};
+            EDIT_FIELDS.forEach((field) => { if (errors[field]) shown[field] = errors[field]; });
+            setFieldErrors(prev => ({ ...prev, [id]: shown }));
+            Object.entries(errors)
+                .filter(([field]) => !EDIT_FIELDS.includes(field as keyof EditState))
+                .forEach(([, message]) => toast.error(message));
+        } else {
+            console.error('Error updating plan:', error);
+            toast.error('Failed to update plan');
+        }
+    };
+
     // Initiate update modal confirmation
-    const handleInitiateUpdate = (plan: Plan) => {
+    const handleInitiateUpdate = async (plan: Plan) => {
         const edits = editedValues[plan.id];
         if (!edits) return;
 
@@ -227,9 +268,20 @@ export default function PlanFee() {
             return;
         }
 
-        setSelectedPlanForUpdate(plan);
-        setIncludeExistingSubscription(false);
-        setShowConfirmModal(true);
+        // Ask the API to check the values first (the same rules as saving,
+        // nothing saved): a refused value shows under its field, and only
+        // accepted values reach the "Confirm Rate Changes" dialog (BUG-096).
+        setUpdatingId(plan.id);
+        try {
+            await validatePlanFeeSubscription(plan.id, buildPayload(plan, edits));
+            setSelectedPlanForUpdate(plan);
+            setIncludeExistingSubscription(false);
+            setShowConfirmModal(true);
+        } catch (error) {
+            showRefusal(plan.id, error);
+        } finally {
+            setUpdatingId(null);
+        }
     };
 
     const handleExecuteUpdate = async () => {
@@ -242,24 +294,8 @@ export default function PlanFee() {
         setUpdatingId(id);
 
         try {
-            const isInstallment = isInstallmentPlan(selectedPlanForUpdate);
             const showPlatformFee = activeTab !== PLAN_GROUP_BORROWER_FEE && activeTab !== PLAN_GROUP_USER_SEAT && activeTab !== PLAN_GROUP_BORROWER_ENROLLMENT;
-
-            const payload: any = {
-                total_amount: asSent(edits.total_amount),
-            };
-
-            if (showPlatformFee) {
-                payload.platform_fee = asSent(edits.platform_fee);
-            }
-
-            if (isInstallment) {
-                payload.total_installment_count_upto = asSent(edits.total_installment_count_upto) === '' ? null : asSent(edits.total_installment_count_upto);
-            }
-
-            if (activeTab === PLAN_GROUP_USER_SEAT) {
-                payload.total_seat_count = asSent(edits.total_seat_count) === '' ? 0 : asSent(edits.total_seat_count);
-            }
+            const payload = buildPayload(selectedPlanForUpdate, edits);
 
             const originalFee = parseFloat(String(selectedPlanForUpdate.platform_fee || 0));
             const editedFee = parseFloat(edits.platform_fee || '0');
@@ -278,20 +314,8 @@ export default function PlanFee() {
                 toast.error(response.message || 'Failed to update plan');
             }
         } catch (error) {
-            const errors = fieldErrorsFrom(error);
-            if (errors) {
-                // Each refused value's message goes under its field.
-                const shown: FieldErrors = {};
-                EDIT_FIELDS.forEach((field) => { if (errors[field]) shown[field] = errors[field]; });
-                setFieldErrors(prev => ({ ...prev, [id]: shown }));
-                // Anything the screen has no field for is still said.
-                Object.entries(errors)
-                    .filter(([field]) => !EDIT_FIELDS.includes(field as keyof EditState))
-                    .forEach(([, message]) => toast.error(message));
-            } else {
-                console.error('Error updating plan:', error);
-                toast.error('Failed to update plan');
-            }
+            // Checked already, but the save is refused the same way if a value changed meanwhile.
+            showRefusal(id, error);
         } finally {
             setUpdatingId(null);
             setSelectedPlanForUpdate(null);

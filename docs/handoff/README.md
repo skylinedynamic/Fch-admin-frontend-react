@@ -21,6 +21,7 @@ Several features or tasks on the same date means several files with the same dat
 | [2026-10-26-invoice-modal-date-and-amount.md](2026-10-26-invoice-modal-date-and-amount.md) | Invoices — the details modal shows the invoice's own amount and date (BUG-122) |
 | [2026-10-26-partner-subscription-total-and-installment-balance.md](2026-10-26-partner-subscription-total-and-installment-balance.md) | Partner profile › Subscription — "Total Amount" is the whole enrollment, "Installment Balance" the rest (BUG-126) |
 | [2026-10-26-client-capital-access-estimated-remaining-access.md](2026-10-26-client-capital-access-estimated-remaining-access.md) | Clients › Capital Access — the estimate is labelled "Estimated Remaining Access" (BUG-031) |
+| [2026-10-26-plan-fee-refused-at-save-before-confirmation.md](2026-10-26-plan-fee-refused-at-save-before-confirmation.md) | Plan & Fee — a bad value is refused at Save, before the confirmation dialog (BUG-096 retest) |
 
 ### 2026-10-25
 
