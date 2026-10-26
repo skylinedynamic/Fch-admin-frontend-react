@@ -11,6 +11,7 @@ Several features or tasks on the same date means several files with the same dat
 ## Index
 
 ### 2026-10-26
+- [2026-10-26-employee-alternate-mobile-error.md](2026-10-26-employee-alternate-mobile-error.md) — Employee Alternate Mobile and Zip Code show the API validation message under the field.
 - [2026-10-26-client-lead-not-found.md](2026-10-26-client-lead-not-found.md) — BUG-030: another partner's client or lead shows "Not Found" instead of an empty page.
 - [2026-10-26-list-sort-direction.md](2026-10-26-list-sort-direction.md) — BUG-010: Capital Access, Credit Accounts, Employees and Manage Tier sort A-Z on the first header click.
 - [2026-10-26-upcoming-billings-date-order.md](2026-10-26-upcoming-billings-date-order.md) — BUG-012: Upcoming Billings lists the soonest billing date first; Amount no longer sorts.
