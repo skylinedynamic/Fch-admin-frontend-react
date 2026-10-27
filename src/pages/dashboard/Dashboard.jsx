@@ -9,6 +9,9 @@ import TableLoader from '../../components/Loader/TableLoader';
 import { logout, clearAuth } from '../../lib/auth';
 import '../../../assets/css/reminder.css';
 
+/** Recent Funding Applications: how wide a long list of funding types may grow. */
+const FUNDING_TYPE_MAX_WIDTH = 260;
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { isRestricted } = usePermissions();
@@ -292,7 +295,8 @@ export default function Dashboard() {
                                 <th scope="col">Funding Type</th>
                                 <th scope="col">Date</th>
                                 <th scope="col">Borrower</th>
-                                <th scope="col">Entity Type</th>
+                                {/* The company on each application: one person can apply for several. */}
+                                <th scope="col">Company Name</th>
                                 {/* <th scope="col">Industry</th> */}
                                 <th scope="col">Requested Amount</th>
                                 <th scope="col">Funded Amount</th>
@@ -303,10 +307,15 @@ export default function Dashboard() {
                               {dashboardData?.latest_funding_applications?.length > 0 ? (
                                 dashboardData.latest_funding_applications.map((app) => (
                                   <tr key={app.id}>
-                                    <td className="fw-medium">{app.purpose_of_funds || 'N/A'}</td>
+                                    {/* A long list of funding types stays on one short line; the full text is on hover. */}
+                                    <td className="fw-medium">
+                                      <div className="text-truncate" style={{ maxWidth: FUNDING_TYPE_MAX_WIDTH }} title={app.purpose_of_funds || 'N/A'}>
+                                        {app.purpose_of_funds || 'N/A'}
+                                      </div>
+                                    </td>
                                     <td>{app.formatted_created_at}</td>
                                     <td>{app.borrower || 'N/A'}</td>
-                                    <td>{app.entity_type || 'N/A'}</td>
+                                    <td>{app.business_name || 'N/A'}</td>
                                     {/* <td>{app.industry_type || 'N/A'}</td> */}
                                     <td>{formatCurrency(app.requested_amount, app.currency_symbol, app.conversion_rate)}</td>
                                     <td>{formatCurrency(app.total_funded_amount, app.currency_symbol, app.conversion_rate)}</td>
