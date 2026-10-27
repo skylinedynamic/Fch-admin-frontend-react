@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatRelativeTime, toLocalYmd } from '../../src/utils/dates'
+import { formatRelativeTime, mergePickedDateTime, toLocalYmd, toLocalDateTimeString } from '../../src/utils/dates'
 
 describe('formatRelativeTime', () => {
   const now = new Date('2026-10-01T12:00:00Z')
@@ -41,5 +41,42 @@ describe('toLocalYmd', () => {
   it('is null for no date', () => {
     expect(toLocalYmd(null)).toBeNull()
     expect(toLocalYmd(undefined)).toBeNull()
+  })
+})
+
+/**
+ * Defect (BUG-057): the New Event date picker overwrote the time of a typed
+ * date with the previous time ("19 Oct, 2026 03:34 PM" was saved as 02:18 PM),
+ * and the default was now + 1 hour instead of now.
+ */
+describe('mergePickedDateTime', () => {
+  const previous = new Date(2026, 9, 27, 14, 18)
+
+  it('keeps the typed date and time as-is', () => {
+    const typed = new Date(2026, 9, 19, 15, 34)
+    const input = document.createElement('input')
+
+    const result = mergePickedDateTime(typed, previous, { target: input })
+
+    expect(result).toEqual(new Date(2026, 9, 19, 15, 34, 0, 0))
+  })
+
+  it('keeps the previous time when a day is clicked in the panel', () => {
+    const clicked = new Date(2026, 9, 19, 0, 0)
+    const cell = document.createElement('span')
+
+    const result = mergePickedDateTime(clicked, previous, { target: cell })
+
+    expect(result).toEqual(new Date(2026, 9, 19, 14, 18, 0, 0))
+  })
+
+  it('returns null when the picker is cleared', () => {
+    expect(mergePickedDateTime(null, previous)).toBeNull()
+  })
+})
+
+describe('toLocalDateTimeString', () => {
+  it('formats a Date as local "YYYY-MM-DD HH:mm:ss" with no zone shift', () => {
+    expect(toLocalDateTimeString(new Date(2026, 9, 27, 14, 16, 5))).toBe('2026-10-27 14:16:05')
   })
 })

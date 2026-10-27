@@ -47,7 +47,7 @@ test.describe('Commissions', () => {
   })
 
   test('partner staff see their deals with no commission money', async ({ page }) => {
-    await seedSession(page, { permissions: ['view commission'], is_host: false, partner_id: 5, entity_type: 'Employee' })
+    await seedSession(page, { permissions: ['view commission'], is_host: 0, partner_id: 5, entity_type: 'Employee' })
     await mockApi(page, [{
       method: 'POST', match: LIST,
       body: paginated([{ ...ROWS[0], admin_commission_amount: undefined, partner_commission_amount: undefined }], {
