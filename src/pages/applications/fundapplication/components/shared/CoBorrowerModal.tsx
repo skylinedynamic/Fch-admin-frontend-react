@@ -26,9 +26,11 @@ type CoBorrowerModalProps = {
   setCoDraft: (data: CoBorrower) => void
   onSubmit: (e: React.FormEvent) => void
   isEditing: boolean
+  /** What the owner and the other co-borrowers already hold, so the API can refuse a share that would pass 100% (BUG-108). */
+  otherOwnershipTotal?: number
 }
 
-export default function CoBorrowerModal({ coDraft, setCoDraft: setDraft, onSubmit, isEditing }: CoBorrowerModalProps) {
+export default function CoBorrowerModal({ coDraft, setCoDraft: setDraft, onSubmit, isEditing, otherOwnershipTotal }: CoBorrowerModalProps) {
   const [availableStates, setAvailableStates] = useState<{ name: string; code: string; cities?: string[] }[]>([])
   const [availableCities, setAvailableCities] = useState<{ name: string; code: string }[]>([])
   const [showCityInput, setShowCityInput] = useState(false)
@@ -98,6 +100,7 @@ export default function CoBorrowerModal({ coDraft, setCoDraft: setDraft, onSubmi
       last_name: coDraft.lastName,
       role: coDraft.role,
       ownership: coDraft.ownershipPct,
+      ...(otherOwnershipTotal !== undefined ? { other_ownership_total: otherOwnershipTotal } : {}),
       email: coDraft.email,
       mobile_phone: coDraft.mobilePhone,
       home_phone: coDraft.homePhone,
