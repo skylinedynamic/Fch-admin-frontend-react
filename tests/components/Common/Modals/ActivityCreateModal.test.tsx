@@ -91,3 +91,148 @@ describe('ActivityCreateModal visibility radio group', () => {
     await waitFor(() => expect(receivedVisibility).toBe('everyone'))
   })
 })
+
+describe('ActivityCreateModal "Want to Assign" (Task)', () => {
+  const STAFF = [
+    { id: 12, name: 'Avery Staff', email: 'avery@example.test' },
+    { id: 14, name: 'Blake Ops', email: 'blake@example.test' },
+  ]
+
+  beforeEach(() => {
+    delete (window as any)._activityEntityContext
+    server.use(http.post('*/common/get-all-users', () => HttpResponse.json({ status: true, data: STAFF })))
+  })
+
+  afterEach(() => {
+    delete (window as any)._activityEntityContext
+  })
+
+  const reference = () => document.getElementById('activityReference') as HTMLSelectElement
+  const pickReference = (value: string) => fireEvent.change(reference(), { target: { name: 'reference', value } })
+
+  function renderOpen() {
+    renderWithProviders(<ActivityCreateModal entityId={1} entityType="Client" onActivityCreated={undefined} />)
+    openAsContext({ isHost: true })
+  }
+
+  it('offers the switch only when the Reference is Task', () => {
+    renderOpen()
+
+    expect(screen.queryByLabelText('Want to Assign')).not.toBeInTheDocument()
+
+    pickReference('Task')
+    expect(screen.getByLabelText('Want to Assign')).not.toBeChecked()
+
+    pickReference('Meeting')
+    expect(screen.queryByLabelText('Want to Assign')).not.toBeInTheDocument()
+  })
+
+  it('opens the assignment section below the reminder with the eligible staff, priorities and statuses', async () => {
+    renderOpen()
+    pickReference('Task')
+
+    expect(screen.queryByLabelText(/^Assigned To/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Want to Assign'))
+
+    const assignedTo = screen.getByLabelText(/^Assigned To/) as HTMLSelectElement
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Avery Staff', hidden: true })).toBeInTheDocument())
+    expect(Array.from(assignedTo.options).map((o) => o.text)).toEqual(['Select staff member', 'Avery Staff', 'Blake Ops'])
+
+    expect(screen.getByLabelText(/^Due Date \/ Time/)).toBeInTheDocument()
+
+    const priority = screen.getByLabelText(/^Priority/) as HTMLSelectElement
+    expect(Array.from(priority.options).map((o) => o.text)).toEqual(['Low', 'Medium', 'High'])
+    expect(priority.value).toBe('medium')
+
+    const status = screen.getByLabelText(/^Status/) as HTMLSelectElement
+    expect(Array.from(status.options).map((o) => o.text)).toEqual(['Open', 'In Progress', 'Complete'])
+    expect(status.value).toBe('open')
+
+    // The section sits after the "Set Reminder" switch.
+    const reminderSwitch = screen.getByLabelText('Set Reminder')
+    expect(reminderSwitch.compareDocumentPosition(assignedTo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('sends who, when, priority and status with the new Task', async () => {
+    let body: FormData | null = null
+    server.use(
+      http.post('*/common/activity-logs', async ({ request }) => {
+        body = await request.formData()
+        return HttpResponse.json({ status: true, message: 'Activity created', data: { id: 1 } }, { status: 201 })
+      })
+    )
+
+    renderOpen()
+    pickReference('Task')
+    fireEvent.change(document.getElementById('activitySummary')!, { target: { name: 'summary', value: 'Collect bank statements' } })
+    fireEvent.click(screen.getByLabelText('Want to Assign'))
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Blake Ops', hidden: true })).toBeInTheDocument())
+
+    fireEvent.change(screen.getByLabelText(/^Assigned To/), { target: { name: 'assigned_to', value: '14' } })
+    fireEvent.change(screen.getByLabelText(/^Priority/), { target: { name: 'task_priority', value: 'high' } })
+    fireEvent.change(screen.getByLabelText(/^Status/), { target: { name: 'task_status', value: 'in_progress' } })
+    // Typed the way the picker displays it (dd M, yy hh:mm a).
+    fireEvent.input(screen.getByLabelText(/^Due Date \/ Time/), { target: { value: '02 Nov, 2030 03:30 PM' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /create/i, hidden: true }))
+
+    await waitFor(() => expect(body).not.toBeNull())
+    // Sent as wall-clock time in the viewer's timezone, separate from the activity date.
+    expect(body!.get('task_due_at')).toBe('2030-11-02 15:30:00')
+    expect(body!.get('task_due_at')).not.toBe(body!.get('activity_date'))
+    expect(body!.get('reference')).toBe('Task')
+    expect(body!.get('assign_task')).toBe('1')
+    expect(body!.get('assigned_to')).toBe('14')
+    expect(body!.get('task_priority')).toBe('high')
+    expect(body!.get('task_status')).toBe('in_progress')
+  })
+
+  it('sends no task fields once the Reference is changed away from Task', async () => {
+    let body: FormData | null = null
+    server.use(
+      http.post('*/common/activity-logs', async ({ request }) => {
+        body = await request.formData()
+        return HttpResponse.json({ status: true, message: 'Activity created', data: { id: 1 } }, { status: 201 })
+      })
+    )
+
+    renderOpen()
+    pickReference('Task')
+    fireEvent.click(screen.getByLabelText('Want to Assign'))
+    pickReference('Call')
+
+    fireEvent.click(screen.getByRole('button', { name: /create/i, hidden: true }))
+
+    await waitFor(() => expect(body).not.toBeNull())
+    expect(body!.has('assign_task')).toBe(false)
+    expect(body!.has('assigned_to')).toBe(false)
+    expect(body!.has('task_priority')).toBe(false)
+  })
+
+  it('shows the API\'s validation messages under each task field', async () => {
+    server.use(
+      http.post('*/common/activity-logs', () =>
+        HttpResponse.json(
+          {
+            status: false,
+            message: 'Validation failed',
+            errors: {
+              assigned_to: 'Please select who the task is assigned to.',
+              task_due_at: 'Please select when the task is due.',
+            },
+          },
+          { status: 422 }
+        )
+      )
+    )
+
+    renderOpen()
+    pickReference('Task')
+    fireEvent.click(screen.getByLabelText('Want to Assign'))
+    fireEvent.click(screen.getByRole('button', { name: /create/i, hidden: true }))
+
+    expect(await screen.findByText('Please select who the task is assigned to.')).toBeInTheDocument()
+    expect(screen.getByText('Please select when the task is due.')).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Assigned To/)).toHaveClass('is-invalid')
+  })
+})

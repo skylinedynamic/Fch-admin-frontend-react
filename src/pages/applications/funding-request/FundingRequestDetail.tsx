@@ -729,6 +729,8 @@ export default function FundingRequestDetail() {
                                     entityType={ENTITY_TYPE_FUNDING_REQUEST}
                                     loading={isUpdatingOrFetching}
                                     partnerId={review.partner_id}
+                                    // No owner field of its own: its borrower's "Assign to".
+                                    taskOwner={review.borrower?.assign_id ? { id: review.borrower.assign_id } : null}
                                     borrowerEmail={review.borrower?.user?.email || review.borrower?.email}
                                     partnerEmail={review.partner?.user?.email || review.partner?.email}
                                     hostEmail={review.host_email}

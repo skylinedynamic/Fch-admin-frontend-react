@@ -1,3 +1,5 @@
+import { DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from '../../config/activityTask';
+
 // The activity's summary becomes the reminder's title too. The API's
 // Store/UpdateActivityLogRequest enforce the same limit.
 export const ACTIVITY_SUMMARY_MAX_LENGTH = 200;
@@ -13,6 +15,11 @@ export const ACTIVITY_CREATE_ERROR_FIELDS = [
     'attachments',
     'remind_at',
     'visibility',
+    'assign_task',
+    'assigned_to',
+    'task_due_at',
+    'task_priority',
+    'task_status',
 ] as const;
 
 export const ACTIVITY_EDIT_ERROR_FIELDS = [
@@ -23,6 +30,43 @@ export const ACTIVITY_EDIT_ERROR_FIELDS = [
     'remind_at',
     'visibility',
 ] as const;
+
+// "Want to Assign": only a Task activity can be handed to a staff member, with
+// its own due date, priority and status (values in config/activityTask.ts).
+export const ACTIVITY_TASK_REFERENCE = 'Task';
+export { TASK_PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from '../../config/activityTask';
+
+export const DEFAULT_TASK_ASSIGNMENT = {
+    assign_task: false,
+    assigned_to: '',
+    task_due_at: '',
+    task_priority: DEFAULT_TASK_PRIORITY,
+    task_status: DEFAULT_TASK_STATUS,
+};
+
+export interface TaskAssignmentForm {
+    reference?: string;
+    assign_task?: boolean;
+    assigned_to?: string | number;
+    task_due_at?: string;
+    task_priority?: string;
+    task_status?: string;
+}
+
+// The create request's task fields — none at all unless a Task is being assigned.
+export const buildTaskAssignmentFields = (form: TaskAssignmentForm): Record<string, string> => {
+    if (!form.assign_task || form.reference !== ACTIVITY_TASK_REFERENCE) {
+        return {};
+    }
+
+    return {
+        assign_task: '1',
+        assigned_to: String(form.assigned_to ?? ''),
+        task_due_at: form.task_due_at ?? '',
+        task_priority: form.task_priority ?? '',
+        task_status: form.task_status ?? '',
+    };
+};
 
 // The 4-level visibility model. Host users get all 4; Partner users get
 // "Private (Only Me)", "Internal" (team scoped), and "Everyone (Including Borrower)".

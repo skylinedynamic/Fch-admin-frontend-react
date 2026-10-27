@@ -1,7 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Calendar } from 'primereact/calendar';
-import { REMINDER_TYPES } from '../../../config/reminders';
-import { parseDate } from '../../../utils/formatters';
 
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
@@ -12,8 +9,11 @@ import {
     normalizeActivityFieldErrors,
     getActivityValidationToast,
     getVisibilityOptions,
+    ACTIVITY_TASK_REFERENCE,
+    DEFAULT_TASK_ASSIGNMENT,
+    buildTaskAssignmentFields,
 } from '../../../modules/activity-log/constants';
-import { TimeInputs } from '../TimeInputs';
+import { useTaskAssignees } from '../../../modules/activity-log/queries';
 import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 import {
     ENTITY_TYPE_LEAD,
@@ -23,14 +23,20 @@ import {
     ENTITY_TYPE_FUNDING_APPLICATION,
     FUTURE_ACTIVITY_REFERENCES,
     getReminderMsToSubtract,
-    REMINDER_PRESETS
 } from '../../../config/appConfig';
-
-const REFERENCE_OPTIONS = REMINDER_TYPES.map(t => t.value);
+import ActivitySelect from './activity-create/ActivitySelect';
+import DateTimeField from './activity-create/DateTimeField';
+import VisibilityPicker from './activity-create/VisibilityPicker';
+import ToggleCard from './activity-create/ToggleCard';
+import ReminderFields from './activity-create/ReminderFields';
+import TaskAssignmentFields from './activity-create/TaskAssignmentFields';
+import AttachmentPicker from './activity-create/AttachmentPicker';
+import { REFERENCE_SELECT_OPTIONS } from './activity-create/options';
+import { TASK_OWNER_LABELS } from '../../../config/activityTask';
+import './activity-create/activityCreateModal.css';
 
 
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
-    const referenceRef = useRef(null);
     const textareaRef = useRef(null); // Local ref to capture the DOM node
 
     const getDefaultDateTime = () => {
@@ -40,13 +46,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         return (new Date(now - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
     };
 
-    const [isSaving, setIsSaving] = useState(false);
-    const [errors, setErrors] = useState({});
-    const [isHostUser, setIsHostUser] = useState(false);
-    const [formData, setFormData] = useState({
+    const getEmptyForm = () => ({
         reference: 'Call',
         activity_date: getDefaultDateTime(),
-        assigned_to: '',
         summary: '',
         message_body: '',
         attachments: [],
@@ -55,8 +57,39 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         remind_at: '',
         reminder_preset: '30_minutes',
         reminder_time_value: '30',
-        reminder_time_unit: 'Minutes'
+        reminder_time_unit: 'Minutes',
+        ...DEFAULT_TASK_ASSIGNMENT,
     });
+
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [isHostUser, setIsHostUser] = useState(false);
+    const [formData, setFormData] = useState(getEmptyForm);
+
+    const [taskTeamPartnerId, setTaskTeamPartnerId] = useState(null);
+    // The record's responsible staff member ({ id, name }) and which kind of record it is.
+    const [taskOwnerRef, setTaskOwnerRef] = useState(null);
+    const [taskEntityType, setTaskEntityType] = useState(null);
+
+    const isTask = formData.reference === ACTIVITY_TASK_REFERENCE;
+    const isAssigningTask = isTask && formData.assign_task;
+    // Assigned To lists the staff of the partner that owns the record; the
+    // Partner page sends none, so the API gives the host's own staff.
+    const { data: staffMembers = [], isLoading: isLoadingStaff } = useTaskAssignees(taskTeamPartnerId, isAssigningTask);
+
+    // Shown above Assigned To: details from the staff list, else the name the page gave.
+    const taskOwner = (() => {
+        if (!taskOwnerRef?.id) return null;
+        const member = staffMembers.find(m => String(m.id) === String(taskOwnerRef.id));
+        const name = member?.full_name || taskOwnerRef.name;
+        if (!name) return null;
+        return {
+            label: TASK_OWNER_LABELS[taskEntityType] || TASK_OWNER_LABELS[ENTITY_TYPE_BORROWER],
+            name,
+            email: member?.email,
+            phone: member?.phone_number,
+        };
+    })();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -66,8 +99,11 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         }));
     };
 
-    const handleFileChange = (e) => {
-        const files = Array.from(e.target.files);
+    const setField = (name, value) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const addAttachments = (files) => {
         setFormData(prev => ({
             ...prev,
             attachments: [...prev.attachments, ...files]
@@ -161,6 +197,10 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 data.append('reminder_time_unit', formData.reminder_time_unit || 'Minutes');
             }
 
+            Object.entries(buildTaskAssignmentFields(formData)).forEach(([field, value]) => {
+                data.append(field, value);
+            });
+
             const ctx = window._activityEntityContext || {};
             const resolvedEntityId = entityId ?? ctx.entityId;
             const resolvedEntityType = entityType ?? ctx.entityType;
@@ -211,20 +251,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
 
             // Reset form explicitly right away to clear Summernote
             setErrors({});
-            setFormData({
-                reference: 'Call',
-                activity_date: getDefaultDateTime(),
-                assigned_to: '',
-                summary: '',
-                message_body: '',
-                attachments: [],
-                visibility: 'private',
-                remind_me: false,
-                remind_at: '',
-                reminder_preset: '30_minutes',
-                reminder_time_value: '30',
-                reminder_time_unit: 'Minutes'
-            });
+            setFormData(getEmptyForm());
 
             // Robust Close Modal
             const closeModal = () => {
@@ -301,37 +328,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         return () => clearTimeout(timer);
     }, [errors.description]);
 
-    // Initialize Choices.js
-    useEffect(() => {
-        const instances = [];
-        if (window.Choices) {
-            [referenceRef].forEach(ref => {
-                if (ref.current) {
-                    try {
-                        const instance = new window.Choices(ref.current, {
-                            searchEnabled: false,
-                            removeItemButton: false,
-                            itemSelectText: '',
-                        });
-                        instances.push(instance);
-
-                        ref.current.addEventListener('change', (e) => {
-                            const { name, value } = e.target;
-                            setFormData(prev => ({ ...prev, [name]: value }));
-                        });
-                    } catch (e) {
-                        console.warn('Choices.js init failed', e);
-                    }
-                }
-            });
-        }
-        return () => {
-            instances.forEach(instance => instance.destroy());
-        };
-    }, []);
-
-
-
     // Reset validation and form on modal close/open
     useEffect(() => {
         const modalEl = document.getElementById('activityCreateModal');
@@ -343,22 +339,13 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             const ctx = window._activityEntityContext || {};
             const hostUser = !!ctx.isHost;
             setIsHostUser(hostUser);
+            const ctxEntityType = entityType ?? ctx.entityType;
+            setTaskTeamPartnerId(ctxEntityType !== ENTITY_TYPE_PARTNER && ctx.partnerId ? Number(ctx.partnerId) : null);
+            setTaskEntityType(ctxEntityType ?? null);
+            setTaskOwnerRef(ctx.taskOwner ?? null);
 
             setErrors({});
-            setFormData({
-                reference: 'Call',
-                activity_date: getDefaultDateTime(),
-                assigned_to: '',
-                summary: '',
-                message_body: '',
-                attachments: [],
-                visibility: 'private',
-                remind_me: false,
-                remind_at: '',
-                reminder_preset: '30_minutes',
-                reminder_time_value: '30',
-                reminder_time_unit: 'Minutes'
-            });
+            setFormData(getEmptyForm());
 
             // Force Summernote HTML clear via jQuery, as a safety fallback
             const $ = window.jQuery || window.$;
@@ -428,333 +415,156 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         }
     }
 
+    const activityDateInvalid = !!(errors.activity_date || realTimeDateError);
+    const summaryLength = (formData.summary || '').length;
+
     return (
-        <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-focus="false">
+        <div className="modal fade acm" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-focus="false">
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
-                <div className="modal-content border-0">
-                    <div className="modal-header p-3 ps-4 bg-primary">
-                        <h5 className="modal-title text-white" id="activityCreateLabel">
-                            <i className="ri-calendar-event-line align-middle me-2"></i>New Activity
-                        </h5>
-                        <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div className="modal-content">
+                    <div className="modal-header acm-header">
+                        <div className="acm-header__title">
+                            <span className="acm-header__icon" aria-hidden="true">
+                                <i className="ri-calendar-event-line"></i>
+                            </span>
+                            <h5 className="modal-title" id="activityCreateLabel">New Activity</h5>
+                        </div>
+                        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
-                    <style>{`
-                        /* Forcefully hide the native select that Bootstrap keeps making visible */
-                        .choices select.form-select,
-                        select#activityReference {
-                            display: none !important;
-                            opacity: 0 !important;
-                            visibility: hidden !important;
-                        }
-                        
-                        /* Fix dropdown overlapping the focus ring */
-                        .choices.is-open .choices__list--dropdown {
-                            margin-top: 5px !important;
-                            border-radius: 0.375rem !important;
-                            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-                            z-index: 1060 !important;
-                            /* Restoring your exact padding */
-                            padding-left: 16px !important;
-                            padding-bottom: 16px !important;
-                        }
-                    `}</style>
-
-                    <div className="modal-body p-4">
+                    <div className="modal-body acm-body">
                         {errors.log_type && (
                             <div className="alert alert-danger py-2 mb-3">
                                 {errors.log_type[0]}
                             </div>
                         )}
-                        <form>
-                            <div className="row g-3">
-                                <div className="col-md-6">
-                                    <label className="form-label">Reference <span className="text-danger">*</span></label>
-                                    <select
-                                        className={`form-select ${errors.reference ? 'is-invalid' : ''}`}
-                                        id="activityReference"
-                                        name="reference"
-                                        ref={referenceRef}
-                                        value={formData.reference}
-                                        onChange={handleInputChange}
-                                        required
-                                        style={{ display: 'none' }}
-                                    >
-                                        {REFERENCE_OPTIONS.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                    {errors.reference && <div className="invalid-feedback">{errors.reference[0]}</div>}
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label">Date <span className="text-danger">*</span></label>
-                                    <style>{`
-                                        .custom-datepicker.is-invalid .p-calendar .p-inputtext,
-                                        .custom-datepicker.is-invalid .p-calendar .p-button {
-                                            border-color: #dc3545 !important;
-                                        }
-                                        .custom-datepicker .p-timepicker {
-                                            display: none;
-                                        }
-                                    `}</style>
-                                    <div className={`custom-datepicker ${(errors.activity_date || realTimeDateError) ? 'is-invalid' : ''}`}>
-                                        <Calendar
-                                            value={formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : null}
-                                            onChange={(e) => {
-                                                const pickedDate = e.value;
-                                                if (pickedDate) {
-                                                    const prev = formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : new Date();
-                                                    const merged = new Date(pickedDate);
-                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
-                                                    const tzOffset = merged.getTimezoneOffset() * 60000;
-                                                    const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
-                                                    setFormData(prev2 => ({ ...prev2, activity_date: localISOTime }));
-                                                } else {
-                                                    setFormData(prev2 => ({ ...prev2, activity_date: "" }));
-                                                }
-                                            }}
-                                            minDate={(FUTURE_ACTIVITY_REFERENCES.includes(formData.reference) || formData.remind_me) ? new Date() : null}
-                                            dateFormat="dd M, yy"
-                                            showTime
-                                            hourFormat="12"
-                                            placeholder="Select date & time"
-                                            showIcon
-                                            className={`w-100 ${(errors.activity_date || realTimeDateError) ? 'p-invalid' : ''}`}
-                                            inputClassName={`form-control ${(errors.activity_date || realTimeDateError) ? 'is-invalid' : ''}`}
-                                            appendTo="self"
-                                            footerTemplate={() => (
-                                                <TimeInputs
-                                                    value={formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : null}
-                                                    onChange={(newDateTime) => {
-                                                        const tzOffset = newDateTime.getTimezoneOffset() * 60000;
-                                                        const localISOTime = (new Date(newDateTime - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
-                                                        setFormData(prev => ({ ...prev, activity_date: localISOTime }));
-                                                    }}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-                                    {errors.activity_date && <div className="text-danger mt-1 small">{errors.activity_date[0]}</div>}
-                                    {!errors.activity_date && realTimeDateError && <div className="text-danger mt-1 small">{realTimeDateError}</div>}
-                                </div>
-                                <div className="col-12">
-                                    <div className="d-flex justify-content-between align-items-baseline">
-                                        <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
-                                            Summary <span className="text-danger">*</span>
+                        <form onSubmit={(e) => e.preventDefault()}>
+                            <section className="acm-section">
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <label className="form-label" htmlFor="activityReference">
+                                            Reference <span className="text-danger">*</span>
                                         </label>
-                                        {/* The summary is the reminder's title too — capped at ACTIVITY_SUMMARY_MAX_LENGTH (the API enforces the same). */}
-                                        <span className={`fs-11 ${(formData.summary || '').length >= ACTIVITY_SUMMARY_MAX_LENGTH ? 'text-danger' : 'text-muted'}`}>
-                                            {(formData.summary || '').length}/{ACTIVITY_SUMMARY_MAX_LENGTH}
-                                        </span>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
-                                        id="activitySummary"
-                                        name="summary"
-                                        value={formData.summary}
-                                        onChange={handleInputChange}
-                                        maxLength={ACTIVITY_SUMMARY_MAX_LENGTH}
-                                        required
-                                    />
-                                    {errors.subject && <div className="invalid-feedback">{errors.subject[0]}</div>}
-                                </div>
-                                <div className="col-12">
-                                    <label className={`form-label ${errors.description ? 'text-danger' : ''}`}>Message</label>
-                                    <textarea
-                                        id="activityMessageEditor"
-                                        ref={setEditorRef}
-                                        className="d-none"
-                                        name="message_body"
-                                    ></textarea>
-                                    {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
-                                </div>
-                                <div className="col-12">
-                                    <label className={`form-label ${errors.visibility ? 'text-danger' : ''}`}>
-                                        Visibility <span className="text-danger">*</span>
-                                    </label>
-                                    <div className="d-flex flex-wrap gap-3">
-                                        {getVisibilityOptions(isHostUser).map(opt => (
-                                            <div className="form-check" key={opt.value}>
-                                                <input
-                                                    className="form-check-input"
-                                                    type="radio"
-                                                    name="visibility"
-                                                    id={`activityVisibility_${opt.value}`}
-                                                    value={opt.value}
-                                                    checked={formData.visibility === opt.value}
-                                                    onChange={handleInputChange}
-                                                />
-                                                <label className="form-check-label" htmlFor={`activityVisibility_${opt.value}`}>
-                                                    {opt.label}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {errors.visibility && <div className="text-danger mt-1 small">{errors.visibility[0]}</div>}
-                                </div>
-                                <div className="col-12 mt-3">
-                                    <div className="row">
-                                        <div className="col-md-6">
-                                            <div className="form-check form-switch mt-md-4 mb-3">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    role="switch"
-                                                    id="remindMeSwitch"
-                                                    checked={formData.remind_me}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, remind_me: e.target.checked }))}
-                                                />
-                                                <label className="form-check-label ms-2" htmlFor="remindMeSwitch">
-                                                    Set Reminder
-                                                </label>
-                                            </div>
-                                        </div>
-                                        {formData.remind_me && (
-                                            <div className="col-md-6">
-                                            <label className="form-label text-muted small">Reminder Time <span className="text-danger">*</span></label>
-                                            <div className={`d-flex gap-2 ${formData.reminder_preset === 'custom_time_before' ? 'flex-column flex-xl-row' : 'flex-column'}`}>
-                                                <select
-                                                    className={`form-select flex-grow-1 ${errors.remind_at ? 'is-invalid' : ''}`}
-                                                    name="reminder_preset"
-                                                    value={formData.reminder_preset}
-                                                    onChange={handleInputChange}
-                                                >
-                                                    {REMINDER_PRESETS.map((preset) => (
-                                                        <option key={preset.value} value={preset.value}>
-                                                            {preset.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-
-                                                {formData.reminder_preset === 'custom_time_before' && (
-                                                    <div className="d-flex gap-2" style={{ minWidth: 'fit-content' }}>
-                                                        <input
-                                                            type="number"
-                                                            className={`form-control ${errors.remind_at ? 'is-invalid' : ''}`}
-                                                            style={{ width: '70px' }}
-                                                            name="reminder_time_value"
-                                                            value={formData.reminder_time_value}
-                                                            onChange={handleInputChange}
-                                                            min="1"
-                                                        />
-                                                        <select
-                                                            className={`form-select ${errors.remind_at ? 'is-invalid' : ''}`}
-                                                            style={{ width: '120px' }}
-                                                            name="reminder_time_unit"
-                                                            value={formData.reminder_time_unit}
-                                                            onChange={handleInputChange}
-                                                        >
-                                                            <option value="Minutes">Minutes</option>
-                                                            <option value="Hours">Hours</option>
-                                                            <option value="Days">Days</option>
-                                                            <option value="Weeks">Weeks</option>
-                                                            <option value="Months">Months</option>
-                                                        </select>
-                                                    </div>
-                                                )}
-
-                                                {formData.reminder_preset === 'custom_date_time' && (
-                                                    <div className="custom-datepicker mt-1">
-                                                        <Calendar
-                                                            value={formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : null}
-                                                            onChange={(e) => {
-                                                                const pickedDate = e.value;
-                                                                if (pickedDate) {
-                                                                    const prev = formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : new Date();
-                                                                    const merged = new Date(pickedDate);
-                                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
-                                                                    const tzOffset = merged.getTimezoneOffset() * 60000;
-                                                                    const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
-                                                                    setFormData(prev2 => ({ ...prev2, remind_at: localISOTime }));
-                                                                } else {
-                                                                    setFormData(prev2 => ({ ...prev2, remind_at: '' }));
-                                                                }
-                                                            }}
-                                                            dateFormat="dd M, yy"
-                                                            showTime
-                                                            hourFormat="12"
-                                                            placeholder="Select date & time"
-                                                            showIcon
-                                                            className="w-100"
-                                                            appendTo="self"
-                                                            footerTemplate={() => (
-                                                                <TimeInputs
-                                                                    value={formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : null}
-                                                                    onChange={(newDateTime) => {
-                                                                        const tzOffset = newDateTime.getTimezoneOffset() * 60000;
-                                                                        const localISOTime = (new Date(newDateTime - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
-                                                                        setFormData(prev => ({ ...prev, remind_at: localISOTime }));
-                                                                    }}
-                                                                />
-                                                            )}
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {errors.remind_at && <div className="text-danger mt-1 small">{errors.remind_at[0]}</div>}
-                                            {!errors.remind_at && realTimeReminderError && <div className="text-danger mt-1 small">{realTimeReminderError}</div>}
-                                        </div>
-                                    )}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="row mt-3">
-                                <div className="col-12 mt-3">
-                                    <label className="form-label mb-2">Select Attachments</label>
-                                    <div className="d-flex align-items-center gap-2">
-                                        <button
-                                            type="button"
-                                            id="activityAttachmentBtn"
-                                            className="btn btn-light btn-sm"
-                                            onClick={() => document.getElementById('activityAttachmentInput').click()}
-                                        >
-                                            + Add Attachment
-                                        </button>
-                                        <input
-                                            type="file"
-                                            id="activityAttachmentInput"
-                                            className="d-none"
-                                            multiple
-                                            onChange={handleFileChange}
+                                        <ActivitySelect
+                                            id="activityReference"
+                                            value={formData.reference}
+                                            options={REFERENCE_SELECT_OPTIONS}
+                                            onChange={(value) => setField('reference', value)}
+                                            invalid={!!errors.reference}
                                         />
+                                        {errors.reference && <div className="text-danger mt-1 small">{errors.reference[0]}</div>}
                                     </div>
-                                    <div id="activityAttachmentList" className="mt-2">
-                                        {formData.attachments.map((file, index) => {
-                                            const fileError = errors[`attachments.${index}`];
-                                            return (
-                                                <div key={index} className="mb-2">
-                                                    <div className={`d-flex align-items-center justify-content-between border rounded p-2 ${fileError ? 'border-danger' : ''}`}>
-                                                        <span className={`${fileError ? 'text-danger fw-medium' : 'text-muted'} small`}>
-                                                            <i className="ri-attachment-2 me-1"></i>
-                                                            {file.name}
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-sm btn-ghost-danger p-0"
-                                                            onClick={() => removeAttachment(index)}
-                                                        >
-                                                            <i className="ri-close-line fs-16"></i>
-                                                        </button>
-                                                    </div>
-                                                    {fileError && <div className="text-danger mt-1 small ps-1">{fileError[0]}</div>}
-                                                </div>
-                                            );
-                                        })}
+                                    <div className="col-md-6">
+                                        <label className="form-label" htmlFor="activityDate">
+                                            Date <span className="text-danger">*</span>
+                                        </label>
+                                        <DateTimeField
+                                            inputId="activityDate"
+                                            value={formData.activity_date}
+                                            onChange={(value) => setField('activity_date', value)}
+                                            minDate={(FUTURE_ACTIVITY_REFERENCES.includes(formData.reference) || formData.remind_me) ? new Date() : null}
+                                            invalid={activityDateInvalid}
+                                        />
+                                        {errors.activity_date && <div className="text-danger mt-1 small">{errors.activity_date[0]}</div>}
+                                        {!errors.activity_date && realTimeDateError && <div className="text-danger mt-1 small">{realTimeDateError}</div>}
                                     </div>
-                                    {/* Show general attachment group errors if any */}
-                                    {errors.attachments && (
-                                        <div className="text-danger mt-1 small">
-                                            {errors.attachments[0]}
+                                    <div className="col-12">
+                                        <div className="d-flex justify-content-between align-items-baseline">
+                                            <label className={`form-label ${errors.subject ? 'text-danger' : ''}`} htmlFor="activitySummary">
+                                                Summary <span className="text-danger">*</span>
+                                            </label>
+                                            {/* The summary is the reminder's title too — capped at ACTIVITY_SUMMARY_MAX_LENGTH (the API enforces the same). */}
+                                            <span className={`acm-counter ${summaryLength >= ACTIVITY_SUMMARY_MAX_LENGTH ? 'is-full' : ''}`}>
+                                                {summaryLength}/{ACTIVITY_SUMMARY_MAX_LENGTH}
+                                            </span>
                                         </div>
-                                    )}
+                                        <input
+                                            type="text"
+                                            className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
+                                            id="activitySummary"
+                                            name="summary"
+                                            value={formData.summary}
+                                            onChange={handleInputChange}
+                                            maxLength={ACTIVITY_SUMMARY_MAX_LENGTH}
+                                            placeholder="What is this activity about?"
+                                            required
+                                        />
+                                        {errors.subject && <div className="invalid-feedback">{errors.subject[0]}</div>}
+                                    </div>
+                                    <div className="col-12">
+                                        <label className={`form-label ${errors.description ? 'text-danger' : ''}`}>Message</label>
+                                        <div className="acm-editor">
+                                            <textarea
+                                                id="activityMessageEditor"
+                                                ref={setEditorRef}
+                                                className="d-none"
+                                                name="message_body"
+                                            ></textarea>
+                                        </div>
+                                        {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
+                                    </div>
                                 </div>
-                            </div>
+                            </section>
+
+                            <section className="acm-section">
+                                <VisibilityPicker
+                                    options={getVisibilityOptions(isHostUser)}
+                                    value={formData.visibility}
+                                    onChange={(value) => setField('visibility', value)}
+                                    error={errors.visibility?.[0]}
+                                />
+                            </section>
+
+                            <section className="acm-section acm-section--stack">
+                                <ToggleCard
+                                    id="remindMeSwitch"
+                                    title="Set Reminder"
+                                    icon="ri-alarm-line"
+                                    checked={formData.remind_me}
+                                    onChange={(checked) => setField('remind_me', checked)}
+                                >
+                                    <ReminderFields
+                                        values={formData}
+                                        onChange={setField}
+                                        error={errors.remind_at?.[0]}
+                                        warning={realTimeReminderError}
+                                    />
+                                </ToggleCard>
+
+                                {isTask && (
+                                    <ToggleCard
+                                        id="assignTaskSwitch"
+                                        title="Want to Assign"
+                                        icon="ri-user-shared-line"
+                                        checked={formData.assign_task}
+                                        onChange={(checked) => setField('assign_task', checked)}
+                                        error={errors.assign_task?.[0]}
+                                    >
+                                        <TaskAssignmentFields
+                                            values={formData}
+                                            onChange={setField}
+                                            staff={staffMembers}
+                                            isLoadingStaff={isLoadingStaff}
+                                            errors={errors}
+                                            owner={taskOwner}
+                                        />
+                                    </ToggleCard>
+                                )}
+                            </section>
+
+                            <section className="acm-section">
+                                <AttachmentPicker
+                                    files={formData.attachments}
+                                    onAdd={addAttachments}
+                                    onRemove={removeAttachment}
+                                    errors={errors}
+                                />
+                            </section>
                         </form>
                     </div>
-                    <div className="modal-footer">
+                    <div className="modal-footer acm-footer">
                         <button type="button" className="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={isSaving || realTimeDateError || realTimeReminderError}>
+                        <button type="button" className="btn btn-primary acm-submit" onClick={handleCreate} disabled={isSaving || realTimeDateError || realTimeReminderError}>
                             {isSaving ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>

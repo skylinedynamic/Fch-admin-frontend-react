@@ -10,6 +10,13 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-27
+
+| File | Title |
+|---|---|
+| [2026-10-27-activity-log-assign-task-to-staff.md](2026-10-27-activity-log-assign-task-to-staff.md) | Activity log — assign a Task to a staff member |
+| [2026-10-27-funding-applications-company-name-column.md](2026-10-27-funding-applications-company-name-column.md) | Funding Applications list — Company Name column |
+
 ### 2026-10-23
 
 | File | Title |

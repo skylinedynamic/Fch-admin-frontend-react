@@ -1343,7 +1343,12 @@ export default function FundingApplicationDetails() {
                                 entityId={id}
                                 entityType="Funding Application"
                                 loading={isLoading}
-                                partnerId={undefined}
+                                partnerId={app?.partner_id}
+                                taskOwner={(() => {
+                                    // No owner field of its own: its borrower's "Assign to".
+                                    const assignId = (app as FundingApplicationDetailsType & { borrower?: { assign_id?: number | string | null } | null })?.borrower?.assign_id;
+                                    return assignId ? { id: assignId } : null;
+                                })()}
                                 partnerEmail={undefined}
                                 hostEmail={undefined}
                                 isHost={isHost}

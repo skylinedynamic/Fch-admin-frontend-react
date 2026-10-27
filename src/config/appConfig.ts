@@ -75,6 +75,9 @@ export const PASSWORD_GENERATE_LENGTH = 14;
 
 export const FUTURE_ACTIVITY_REFERENCES = ['Task', 'Meeting'];
 
+// Units of the "Custom Time Before" reminder option (see getReminderMsToSubtract).
+export const REMINDER_TIME_UNITS = ['Minutes', 'Hours', 'Days', 'Weeks', 'Months'] as const;
+
 export const REMINDER_PRESETS = [
     { value: '5_minutes', label: '5 Minutes Before' },
     { value: '10_minutes', label: '10 Minutes Before' },

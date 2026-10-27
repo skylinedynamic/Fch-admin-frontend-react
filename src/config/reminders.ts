@@ -1,3 +1,5 @@
+import type { ThemeTone } from './activityTask';
+
 export const REMINDER_TYPES = [
     { label: 'Event', value: 'Event' },
     { label: 'Meeting', value: 'Meeting' },
@@ -23,6 +25,16 @@ export const REMINDER_STATUS_OPTIONS = [
     { label: 'Missed', value: REMINDER_STATUS_MISSED },
     { label: 'Dismissed', value: REMINDER_STATUS_CANCELLED }
 ];
+
+// Colour of each type's icon in the New Activity modal's Reference list.
+export const REMINDER_TYPE_TONES: Record<string, ThemeTone> = {
+    'Event': 'info',
+    'Meeting': 'primary',
+    'Call': 'success',
+    'Email': 'warning',
+    'Task': 'danger',
+    'Other': 'secondary'
+};
 
 export const REMINDER_TYPE_ICONS: Record<string, string> = {
     'Call': 'ri-phone-line',

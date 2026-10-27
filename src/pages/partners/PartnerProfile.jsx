@@ -900,7 +900,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} taskOwner={formData.agent ? { id: formData.agent, name: formData.assigned_user_name } : null} />
                         </div>
                     )}
                 </div>

@@ -8,6 +8,11 @@ import {
   VISIBILITY_BADGE_STYLES,
   normalizeActivityFieldErrors,
   getActivityValidationToast,
+  ACTIVITY_TASK_REFERENCE,
+  TASK_PRIORITY_OPTIONS,
+  TASK_STATUS_OPTIONS,
+  DEFAULT_TASK_ASSIGNMENT,
+  buildTaskAssignmentFields,
 } from '../../../src/modules/activity-log/constants'
 
 describe('visibility field wiring', () => {
@@ -84,5 +89,68 @@ describe('getActivityValidationToast with a visibility error', () => {
     const errors = normalizeActivityFieldErrors({ visibility: 'Please select who can see this activity.' })
     const message = getActivityValidationToast(errors, [])
     expect(message).toBe('Please select who can see this activity.')
+  })
+})
+
+describe('task assignment ("Want to Assign")', () => {
+  it('only a Task can be assigned', () => {
+    expect(ACTIVITY_TASK_REFERENCE).toBe('Task')
+  })
+
+  it('offers Low, Medium and High priorities, in that order', () => {
+    expect(TASK_PRIORITY_OPTIONS).toEqual([
+      { value: 'low', label: 'Low' },
+      { value: 'medium', label: 'Medium' },
+      { value: 'high', label: 'High' },
+    ])
+  })
+
+  it('offers Open, In Progress and Complete statuses, in that order', () => {
+    expect(TASK_STATUS_OPTIONS).toEqual([
+      { value: 'open', label: 'Open' },
+      { value: 'in_progress', label: 'In Progress' },
+      { value: 'complete', label: 'Complete' },
+    ])
+  })
+
+  it('starts a new assignment at Medium priority and Open', () => {
+    expect(DEFAULT_TASK_ASSIGNMENT).toEqual({
+      assign_task: false,
+      assigned_to: '',
+      task_due_at: '',
+      task_priority: 'medium',
+      task_status: 'open',
+    })
+  })
+
+  it('sends the four task fields when a Task is being assigned', () => {
+    expect(
+      buildTaskAssignmentFields({
+        reference: 'Task',
+        assign_task: true,
+        assigned_to: 12,
+        task_due_at: '2026-11-02 15:30:00',
+        task_priority: 'high',
+        task_status: 'in_progress',
+      })
+    ).toEqual({
+      assign_task: '1',
+      assigned_to: '12',
+      task_due_at: '2026-11-02 15:30:00',
+      task_priority: 'high',
+      task_status: 'in_progress',
+    })
+  })
+
+  it('sends nothing when the switch is off, or the reference is no longer Task', () => {
+    const assigned = { assign_task: true, assigned_to: 12, task_due_at: '2026-11-02 15:30:00', task_priority: 'high', task_status: 'open' }
+    expect(buildTaskAssignmentFields({ ...assigned, reference: 'Task', assign_task: false })).toEqual({})
+    expect(buildTaskAssignmentFields({ ...assigned, reference: 'Call' })).toEqual({})
+  })
+
+  it('shows the task fields\' errors inline on the create form', () => {
+    for (const field of ['assign_task', 'assigned_to', 'task_due_at', 'task_priority', 'task_status']) {
+      expect(ACTIVITY_CREATE_ERROR_FIELDS).toContain(field)
+    }
   })
 })

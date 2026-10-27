@@ -24,7 +24,7 @@ import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
-export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '145px', disableSticky = false }) {
+export default function ActivitySidebar({ entityId, entityType, partnerId, taskOwner = /** @type {{ id: number | string, name?: string | null } | null} */ (null), borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '145px', disableSticky = false }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -170,12 +170,13 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
             entityId,
             entityType,
             partnerId,
+            taskOwner,
             borrowerEmail,
             partnerEmail,
             hostEmail,
             isHost
         };
-    }, [entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost]);
+    }, [entityId, entityType, partnerId, taskOwner, borrowerEmail, partnerEmail, hostEmail, isHost]);
 
     const handleLoadMore = () => {
         if (!hasMore || loadingMore) return;
@@ -575,7 +576,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                             className="btn btn-light btn-sm text-nowrap"
                             data-bs-toggle="modal"
                             data-bs-target="#emailComposeModal"
-                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost }; }}
+                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, taskOwner, borrowerEmail, partnerEmail, hostEmail, isHost }; }}
                         >
                             <i className="ri-mail-line align-middle me-1"></i>New Email
                         </button>
@@ -584,7 +585,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                             className="btn btn-light btn-sm text-nowrap"
                             data-bs-toggle="modal"
                             data-bs-target="#activityCreateModal"
-                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost }; }}
+                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, taskOwner, borrowerEmail, partnerEmail, hostEmail, isHost }; }}
                         >
                             <i className="ri-calendar-line align-middle me-1"></i>New Event
                         </button>
