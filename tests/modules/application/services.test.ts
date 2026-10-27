@@ -235,13 +235,17 @@ describe('downloadFundingApplication', () => {
     vi.restoreAllMocks()
   })
 
-  it('appends the password as a query param and derives the filename from Content-Disposition', async () => {
+  // BUG-094: the password used to go in the query string (and so into server
+  // and proxy logs); it is now POSTed in the body.
+  it('posts the password in the body, not the URL, and derives the filename from Content-Disposition', async () => {
     window.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
     window.URL.revokeObjectURL = vi.fn()
     let requestedUrl = ''
+    let requestedBody: unknown = null
     server.use(
-      http.get('*/common/request-application/funding-application/9/download-application', ({ request }) => {
+      http.post('*/common/request-application/funding-application/9/download-application', async ({ request }) => {
         requestedUrl = request.url
+        requestedBody = await request.json()
         return new HttpResponse('pdf-bytes', {
           headers: { 'Content-Disposition': 'attachment; filename="Custom_Name.pdf"' },
         })
@@ -259,7 +263,8 @@ describe('downloadFundingApplication', () => {
 
     await downloadFundingApplication(9, 'p@ss word')
 
-    expect(requestedUrl).toContain('/download-application?password=p%40ss%20word')
+    expect(requestedUrl).not.toContain('password')
+    expect(requestedBody).toEqual({ password: 'p@ss word' })
     expect(clickSpy).toHaveBeenCalled()
     expect(appendSpy).toHaveBeenCalled()
     expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')
@@ -269,7 +274,7 @@ describe('downloadFundingApplication', () => {
     window.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
     window.URL.revokeObjectURL = vi.fn()
     server.use(
-      http.get('*/common/request-application/funding-application/11/download-application', () => new HttpResponse('pdf-bytes'))
+      http.post('*/common/request-application/funding-application/11/download-application', () => new HttpResponse('pdf-bytes'))
     )
 
     let downloadAttr = ''

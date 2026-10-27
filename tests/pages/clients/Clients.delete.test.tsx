@@ -270,3 +270,84 @@ describe('Clients - deleting a client without a paid invoice', () => {
     expect(screen.queryByRole('dialog', { name: /cannot be deleted/i })).not.toBeInTheDocument()
   })
 })
+
+/**
+ * A client who has applied - a pre-qualification or a funding application - is
+ * kept too, paid or free. The modal says why, so the user knows it is the
+ * application, not a payment, and changes the status instead.
+ */
+describe('Clients - deleting a client who has a pre-qualification or funding application', () => {
+  const APPLICATIONS_SENTENCE = "has a pre-qualification or funding application and cannot be deleted. Please change the client's status instead."
+
+  function checkReturnsWithReasons(rows: Array<{ id: number; name: string; is_deletable: boolean; reason_code: string | null }>) {
+    server.use(
+      http.post('*/common/borrowers/check-deletable', () =>
+        HttpResponse.json({ status: true, data: rows.map(r => ({ ...r, reason: r.is_deletable ? null : 'kept' })) })
+      )
+    )
+  }
+
+  it('says the client has a pre-qualification or funding application, and deletes nothing', async () => {
+    checkReturnsWithReasons([{ id: 5, name: 'Kailash Bajaj', is_deletable: false, reason_code: 'applications' }])
+    const user = userEvent.setup()
+    renderClients()
+
+    await deleteSelection(user, 'select one')
+
+    const dialog = await screen.findByRole('dialog', { name: 'Client Cannot Be Deleted' })
+    expect(within(dialog).getByTestId('blocked-message').textContent).toBe(`This client ${APPLICATIONS_SENTENCE}`)
+    expect(within(dialog).getByRole('button', { name: /Go to Client/ })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Are you sure?' })).not.toBeInTheDocument()
+    expect(deleteCalls).toBe(0)
+  })
+
+  it('names the one client who applied when several are selected', async () => {
+    checkReturnsWithReasons([
+      { id: 5, name: 'Kailash Bajaj', is_deletable: false, reason_code: 'applications' },
+      { id: 6, name: 'Free Client', is_deletable: true, reason_code: null },
+      { id: 7, name: 'Another Client', is_deletable: true, reason_code: null },
+    ])
+    const user = userEvent.setup()
+    renderClients()
+
+    await deleteSelection(user, 'select three')
+
+    const dialog = await screen.findByRole('dialog', { name: 'Client Cannot Be Deleted' })
+    expect(within(dialog).getByTestId('blocked-message').textContent).toBe(`Kailash Bajaj ${APPLICATIONS_SENTENCE}`)
+    expect(deleteCalls).toBe(0)
+  })
+
+  it('still gives the paid-invoice client the related-records message', async () => {
+    checkReturnsWithReasons([{ id: 5, name: 'Reagan Hardin', is_deletable: false, reason_code: 'paid_invoice' }])
+    const user = userEvent.setup()
+    renderClients()
+
+    await deleteSelection(user, 'select one')
+
+    const dialog = await screen.findByRole('dialog', { name: 'Client Cannot Be Deleted' })
+    expect(within(dialog).getByTestId('blocked-message').textContent).toBe(
+      "This client has related records and cannot be deleted. Please change the client's status instead."
+    )
+  })
+
+  it('shows the application reason when the delete itself is refused for it', async () => {
+    checkReturnsWithReasons([{ id: 5, name: 'Kailash Bajaj', is_deletable: true, reason_code: null }])
+    server.use(
+      http.post('*/common/borrowers-multiple-delete', () =>
+        HttpResponse.json(
+          { status: false, message: 'kept', errors: { blocked: [{ id: 5, name: 'Kailash Bajaj', reason_code: 'applications' }] } },
+          { status: 422 }
+        )
+      )
+    )
+    const user = userEvent.setup()
+    renderClients()
+
+    await deleteSelection(user, 'select one')
+    await user.click(within(await screen.findByRole('dialog', { name: 'Are you sure?' })).getByRole('button', { name: 'Yes, Delete It' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Client Cannot Be Deleted' })
+    expect(within(dialog).getByTestId('blocked-message').textContent).toBe(`This client ${APPLICATIONS_SENTENCE}`)
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+})

@@ -5,6 +5,7 @@ import { PreQualificationApplicationDetails as PreQualificationApplicationDetail
 import { PRE_QUALIFICATION_STATUS_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
+import { readableLabel } from '../../../utils/underwritingLabels';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { usePreQualificationApplicationDetails, useUpdateApplicationStatus, useRunAiPreQualification } from '../../../modules/application/queries';
@@ -79,7 +80,7 @@ const STEPS = [
     { id: 1, title: 'Personal Info', icon: 'ri-user-line' },
     { id: 2, title: 'Business Details', icon: 'ri-briefcase-line' },
     { id: 3, title: 'Funding Needs', icon: 'ri-money-dollar-circle-line' },
-    // Available ONLY to FCH Admin and White-Label Partners (WLP). Certified Partners cannot see this.
+    // Available to FCH Admin and to White-Label and Certified Partners (client view only).
     { id: 4, title: 'AI Underwriting Result', icon: 'ri-sparkling-2-line' }
 ];
 
@@ -108,6 +109,10 @@ function renderSourceBadge(status?: string) {
     if (val.includes('verified')) {
         return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold uw-source-badge uw-source-badge--verified">Verified</span>;
     }
+    // The agent's NOT_PROVIDED was badged "Borrower Reported" (BUG-061).
+    if (val.includes('not_provided') || val.includes('not provided')) {
+        return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold uw-source-badge uw-source-badge--reported">Not Provided</span>;
+    }
     if (val.includes('derived')) {
         return <span className="badge rounded-pill px-2 py-1 text-uppercase fw-semibold uw-source-badge uw-source-badge--derived">Derived Data</span>;
     }
@@ -122,13 +127,14 @@ export default function PreQualificationDetails() {
     const { user } = useAuthStore();
     const isHost = Boolean(user?.is_host == 1 || user?.is_host === true);
     const isHostPartner = Boolean(isHost && user?.entity_type === ENTITY_TYPE_PARTNER);
-    const isWhiteLabelPartner = Boolean(
+    const partnerType = user?.partner_type || (user as any)?.partner?.partner_type;
+    const isClientViewPartner = Boolean(
         user?.entity_type === ENTITY_TYPE_PARTNER &&
-        (user?.partner_type === PARTNER_TYPES.WHITE_LABEL || (user as any)?.partner?.partner_type === PARTNER_TYPES.WHITE_LABEL)
+        (partnerType === PARTNER_TYPES.WHITE_LABEL || partnerType === PARTNER_TYPES.CERTIFIED)
     );
-    // AI Underwriting Result tab (Step 4) is strictly available ONLY to Host and White-Label Partners (WLP).
-    // Certified Partners (and any non-WLP partners) must NEVER see or access the AI underwriting result.
-    const canViewUnderwritingResult = Boolean(isHost || isWhiteLabelPartner);
+    // AI Underwriting Result tab (Step 4) is available to Host and to White-Label and Certified Partners.
+    // Partners only ever get the Client Readiness view — the API strips the internal evaluation for them.
+    const canViewUnderwritingResult = Boolean(isHost || isClientViewPartner);
     const visibleSteps = STEPS.filter((step) => step.id !== 4 || canViewUnderwritingResult);
     const { hasPermission } = usePermissions();
     const [aueViewMode, setAueViewMode] = useState<'internal' | 'client'>('internal');
@@ -571,10 +577,10 @@ export default function PreQualificationDetails() {
                                         {client.readiness_snapshot.map((item, idx) => (
                                             <tr key={idx}>
                                                 <td className="ps-4 py-3 fw-semibold text-dark fs-13">
-                                                    {item.area}
+                                                    {readableLabel(item.area)}
                                                 </td>
                                                 <td className="py-3 fs-13 uw-cell">
-                                                    {item.assessment}
+                                                    {readableLabel(item.assessment)}
                                                 </td>
                                                 <td className="pe-4 py-3 text-end">
                                                     {renderSourceBadge(item.source_status)}
@@ -658,7 +664,7 @@ export default function PreQualificationDetails() {
                                                 ></i>
                                                 <span className="uw-item-text uw-item-text--warning"
                                                 >
-                                                    {item}
+                                                    {readableLabel(item)}
                                                 </span>
                                             </div>
                                         ))}
@@ -1101,11 +1107,11 @@ export default function PreQualificationDetails() {
                                                 <tbody>
                                                     {ai.internal.borrower_request_snapshot.map((row, idx) => (
                                                         <tr key={idx}>
-                                                            <td className="fw-medium">{(row.field || '').replace(/_/g, ' ')}</td>
+                                                            <td className="fw-medium">{readableLabel(row.field || '')}</td>
                                                             <td className="fs-13">{row.value === null || row.value === undefined ? '—' : String(row.value)}</td>
                                                             <td>
                                                                 <span className="badge bg-light text-muted text-uppercase fs-11">
-                                                                    {(row.source_status || '').replace(/_/g, ' ')}
+                                                                    {readableLabel(row.source_status || '')}
                                                                 </span>
                                                             </td>
                                                         </tr>
