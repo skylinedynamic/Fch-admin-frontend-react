@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
+// @ts-expect-error -- untyped third-party module
 import Modal from 'bootstrap/js/dist/modal'
 import PaidVersionOnlyModal from '../../../../src/components/Common/Modals/PaidVersionOnlyModal'
 
