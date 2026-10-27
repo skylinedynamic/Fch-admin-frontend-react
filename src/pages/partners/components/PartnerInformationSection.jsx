@@ -15,6 +15,7 @@ import { getCountryPhoneInfo } from '../../../config/locations';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
 import { ENROLLMENT_TYPE_ONE_TIME, ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_OPTIONS } from '../../../config/subscriptionConfig';
 import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
+import { defaultInstallmentMonths } from '../../../modules/partner';
 
 
 export default function PartnerInformationSection({
@@ -1039,7 +1040,8 @@ export default function PartnerInformationSection({
                 show={showInstallmentModal}
                 onHide={() => setShowInstallmentModal(false)}
                 totalAmount={selectedPlan?.total_amount || formData.enrollment_amount || formData.total_subscription_amount || 0}
-                defaultMonths={selectedPlan?.total_installments_count || 12}
+                // The same months the installment card starts with (BUG-114).
+                defaultMonths={defaultInstallmentMonths(selectedPlan)}
                 planLabel={enrollmentTypeName}
                 partnerType={partnerTypeName}
                 appliedTotalAmount={formData.enrollment_amount}
@@ -1048,7 +1050,7 @@ export default function PartnerInformationSection({
                 appliedApplied={formData.installment_applied}
                 installmentMinMonths={selectedPlan?.installment_min_months}
                 installmentMaxMonths={selectedPlan?.installment_max_months}
-                installmentDefaultMonths={selectedPlan?.installment_default_months}
+                installmentDefaultMonths={defaultInstallmentMonths(selectedPlan)}
                 onApply={(data) => {
                     handleInputChange({ target: { name: 'enrollment_amount', value: data.totalAmount } });
                     handleInputChange({ target: { name: 'installment_down_payment', value: data.downPayment } });

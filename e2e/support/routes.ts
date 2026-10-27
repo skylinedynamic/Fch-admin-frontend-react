@@ -12,6 +12,8 @@ export type Guard =
   | { kind: 'permission'; any: string[] }
   /** HostRoute: is_host only. */
   | { kind: 'host' }
+  /** HostRoute, then PermissionRoute inside it: is_host first, then any one of the permissions. */
+  | { kind: 'hostPermission'; any: string[] }
   /** PartnerHostRoute: is_host AND the partner account itself (not an employee). */
   | { kind: 'partnerHost' }
   /** NonHostPartnerRoute: a non-host partner account with a first payment date. */
@@ -59,7 +61,7 @@ export const ROUTES: RouteCheck[] = [
   { name: 'Verification center', path: '/verification-center', guard: { kind: 'host' }, api: { method: 'POST', path: '/common/credit-builder/verification-center-fetch-all', body: { page: 1, per_page: 5 } } },
   { name: 'Funding sequences', path: '/funding', guard: { kind: 'host' }, api: { method: 'POST', path: '/common/funding-sequencings/fetch', body: { page: 1, per_page: 5 } } },
   { name: 'Lenders', path: '/lenders', guard: { kind: 'host' }, api: { method: 'GET', path: '/admin/lenders?page=1&per_page=5' } },
-  { name: 'Credit profile requests', path: '/intake-review/credit-profile-requests', guard: { kind: 'host' }, api: { method: 'POST', path: '/admin/credit-profile-requests', body: { page: 1, per_page: 5 } } },
+  { name: 'Credit profile requests', path: '/intake-review/credit-profile-requests', guard: { kind: 'hostPermission', any: ['manage credit profile requests'] }, api: { method: 'POST', path: '/admin/credit-profile-requests', body: { page: 1, per_page: 5 } } },
 
   { name: 'Payment gateways', path: '/payment-methods', guard: { kind: 'partnerHost' }, api: { method: 'GET', path: '/admin/payment-methods' } },
   { name: 'Plan & fee', path: '/plan-and-fee', guard: { kind: 'partnerHost' }, api: { method: 'POST', path: '/admin/plan-fee/fetch-subscription-plans', body: {} } },
@@ -133,6 +135,9 @@ export function expectedOutcome(route: RouteCheck, user: SessionUser, sub: Sessi
       return 'allowed'
     case 'host':
       return host ? 'allowed' : 'home'
+    case 'hostPermission':
+      if (!host) return 'home'
+      return expectedOutcome({ ...route, guard: { kind: 'permission', any: route.guard.any } }, user, sub)
     case 'partnerHost':
       return host && partnerAccount ? 'allowed' : 'home'
     case 'nonHostPartner':

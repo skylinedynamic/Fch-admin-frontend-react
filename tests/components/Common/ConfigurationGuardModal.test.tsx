@@ -252,3 +252,31 @@ describe('ConfigurationGuardModal after a payment', () => {
         expect(persisted.state?.setupPromptOpen).toBeUndefined();
     });
 });
+
+// BUG-115: the API now sends a Certified partner's own payment flag (it used to
+// send the host's). With every gateway inactive the flag comes back null.
+describe('ConfigurationGuardModal for a certified partner without an active gateway', () => {
+    beforeEach(() => {
+        useAuthStore.setState({ user: null } as never);
+        useConfigStore.setState({ branding: null, statusFlags: null } as never);
+    });
+
+    it.each(['/clients/create', '/leads/create'])('stops it on %s and points to Payment Integration', (route) => {
+        signIn({ partner_type: PARTNER_TYPES.CERTIFIED });
+        setFlags({ ...completeFlags, is_fresh_payment: null });
+
+        renderAt(route);
+
+        expect(screen.getByText('Configuration Incomplete')).toBeInTheDocument();
+        expect(screen.getByText('Payment Integration')).toBeInTheDocument();
+    });
+
+    it("does not ask a certified partner for branding - that is the host's", () => {
+        signIn({ partner_type: PARTNER_TYPES.CERTIFIED });
+        setFlags({ ...completeFlags, is_fresh_settings: null });
+
+        renderAt('/clients/create');
+
+        expect(screen.queryByText('Configuration Incomplete')).not.toBeInTheDocument();
+    });
+});

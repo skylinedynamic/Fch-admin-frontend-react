@@ -10,6 +10,8 @@ import { mockApi, ok, failure, seedSession, expectCall, type ApiMock } from '../
 const HOST_PARTNER = { is_host: 1, entity_type: 'Partner', entity_id: 1 }
 const FETCH = '/admin/plan-fee/fetch-subscription-plans'
 const UPDATE = (id: number) => `/admin/plan-fee/update-subscription-plan/${id}`
+// Save checks the values here first, saving nothing (BUG-096); unmocked it answers OK.
+const CHECK = (id: number) => `/admin/plan-fee/validate-subscription-plan/${id}`
 
 const plan = (id: number, over: Record<string, unknown> = {}) => ({
   id, partner_type: 'White-Label Partner (WL)', partner_type_slug: 'wl', enrollment_type: 'Monthly', enrollment_type_slug: 'monthly',
@@ -88,7 +90,7 @@ test.describe('Plan & Fee - saving', () => {
     const api = await open(page)
     await save(page).click()
     await expect(page.getByText('No changes detected for this plan.')).toBeVisible()
-    expect(api.find('PUT', '/admin/plan-fee/')).toHaveLength(0)
+    expect(api.find('PUT', '/admin/plan-fee/update-subscription-plan/')).toHaveLength(0)
   })
 
   test('a changed amount shows the before and after, then saves on confirmation', async ({ page }) => {
@@ -170,7 +172,7 @@ test.describe('Plan & Fee - saving', () => {
     await save(page).click()
     await page.getByRole('button', { name: 'Cancel' }).click()
     await expect(confirm(page)).toBeHidden()
-    expect(api.find('PUT', '/admin/plan-fee/')).toHaveLength(0)
+    expect(api.find('PUT', '/admin/plan-fee/update-subscription-plan/')).toHaveLength(0)
     await expect(await withValue(page, '549')).toBeVisible()
   })
 
@@ -191,4 +193,49 @@ test.describe('Plan & Fee - saving', () => {
     await confirm(page).click()
     await expect(page.getByText('Failed to update plan')).toBeVisible()
   })
+
+  // BUG-096: Save first asks the API to check the values. A refused value shows
+  // under its field and the "Confirm Rate Changes" dialog never opens; an
+  // empty amount is sent as empty for the API to refuse.
+  test('a bad value is refused at Save - its message under Total Amount, and no confirmation', async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'PUT', match: CHECK(11), status: 422, body: failure('The total amount must be greater than 0.', { total_amount: 'The total amount must be greater than 0.' }) })
+    const amount = await withValue(page, '499.00')
+    await amount.fill('0')
+    await save(page).click()
+
+    await expect(page.locator('.invalid-feedback', { hasText: 'The total amount must be greater than 0.' })).toBeVisible()
+    await expect(amount).toHaveClass(/is-invalid/)
+    await expect(amount).toHaveValue('0')
+    await expect(confirm(page)).toHaveCount(0)
+    expect(api.find('PUT', UPDATE(11))).toHaveLength(0)
+    await expect(page.getByText('Failed to update plan')).toHaveCount(0)
+
+    await amount.fill('549')
+    await expect(page.locator('.invalid-feedback')).toHaveCount(0)
+  })
+
+  test('an empty amount is sent as empty for the API to refuse, not as 0', async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'PUT', match: CHECK(11), status: 422, body: failure('Enter the total amount.', { total_amount: 'Enter the total amount.' }) })
+    await (await withValue(page, '499.00')).fill('')
+    await save(page).click()
+
+    const call = await expectCall(api, 'PUT', CHECK(11))
+    expect(call.json.total_amount).toBe('')
+    await expect(page.locator('.invalid-feedback', { hasText: 'Enter the total amount.' })).toBeVisible()
+    await expect(confirm(page)).toHaveCount(0)
+  })
+
+  test('good values pass the check, then the confirmation saves them', async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'PUT', match: UPDATE(11), body: ok(null) })
+    await (await withValue(page, '499.00')).fill('549')
+    await save(page).click()
+    await confirm(page).click()
+
+    expect((await expectCall(api, 'PUT', CHECK(11))).json).toMatchObject({ total_amount: 549 })
+    expect((await expectCall(api, 'PUT', UPDATE(11))).json).toMatchObject({ total_amount: 549 })
+  })
 })
+

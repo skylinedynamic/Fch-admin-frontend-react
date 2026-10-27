@@ -10,13 +10,19 @@ const TierTaskModal = ({
     task,
     tierId,
     tier,
+    // The tier's code from the page that already loaded it (BUG-095); the
+    // tier object is a fallback that may still be on its way.
+    tierCode,
     relatedApis = [],
     vendors = [],
+    vendorsLoading = false,
     loadingApis = false,
     loadingSave,
     serverErrors = {}
 }) => {
     const isEdit = !!task;
+    // Tier 1 tasks are verified through a vendor; every other tier's through an API.
+    const isVendorTier = (tierCode ?? tier?.code) === 'T1';
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
 
@@ -121,9 +127,9 @@ const TierTaskModal = ({
         let isValid = true;
 
         if (!formData.manual_verification) {
-            if (tier?.code === 'T1') {
+            if (isVendorTier) {
                 if (!formData.vendor_id) {
-                    tempErrors.vendor_id = "Vendor is required for automated tasks";
+                    tempErrors.vendor_id = "Vendor is required";
                     isValid = false;
                 }
             }
@@ -144,7 +150,7 @@ const TierTaskModal = ({
             };
 
             // Handle conditional IDs
-            if (tier?.code === 'T1') {
+            if (isVendorTier) {
                 payload.vendor_id = formData.vendor_id || null;
                 payload.related_api_id = null; // Ensure this is null for T1
             } else {
@@ -223,8 +229,8 @@ const TierTaskModal = ({
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label">{tier?.code === 'T1' ? 'Related Vendor' : 'Verified By Api'}</label>
-                                    {tier?.code === 'T1' ? (
+                                    <label className="form-label">{isVendorTier ? 'Related Vendor' : 'Verified By Api'}</label>
+                                    {isVendorTier ? (
                                         <>
                                             <Dropdown
                                                 value={formData.vendor_id}
@@ -243,10 +249,15 @@ const TierTaskModal = ({
                                                         setErrors(prev => ({ ...prev, vendor_id: null }));
                                                     }
                                                 }}
-                                                placeholder="Select Vendor"
+                                                placeholder={vendorsLoading ? 'Loading vendors…' : 'Select Vendor'}
+                                                disabled={vendorsLoading}
+                                                emptyMessage="No active vendors on this tier. Add one in the Vendors tab."
+                                                emptyFilterMessage="No vendor matches that search."
                                                 className={`w-100 ${getError('vendor_id') ? 'p-invalid' : ''}`}
                                                 showClear
-                                                appendTo={document.body}
+                                                // Inside the dialog: a panel on the page body sits outside the
+                                                // Bootstrap modal's focus trap, and the two can fight over focus.
+                                                appendTo="self"
                                                 filter
                                             />
                                             {getError('vendor_id') && <div className="text-danger small mt-1">{getError('vendor_id')}</div>}
@@ -273,7 +284,7 @@ const TierTaskModal = ({
                                                 placeholder={loadingApis ? "Loading..." : "Select Verification API"}
                                                 className={`w-100 ${getError('related_api_id') ? 'p-invalid' : ''}`}
                                                 showClear
-                                                appendTo={document.body}
+                                                appendTo="self"
                                             />
                                             {getError('related_api_id') && <div className="text-danger small mt-1">{getError('related_api_id')}</div>}
                                         </>

@@ -19,7 +19,8 @@ import {
     getEffectiveReminderStatusLabel,
     getReminderClientPath,
     getReminderClientLinkLabel,
-    getReminderTypeIcon
+    getReminderTypeIcon,
+    describeDateRange
 } from '../../config/reminders';
 import type { Reminder } from '../../config/reminders';
 import { fetchReminders as fetchReminderList, type ReminderListFilters } from '../../modules/reminders';
@@ -158,6 +159,14 @@ export default function ReminderList() {
 
     const handleSearchSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
+        applyFilters();
+    };
+
+    // The list opens on today's reminders; say so, so an empty day never reads
+    // as "no reminders" and older ones are one click away (BUG-056).
+    const dateRangeLabel = describeDateRange(dateRange);
+    const showAllDates = () => {
+        setDateRange(null);
         applyFilters();
     };
 
@@ -426,6 +435,16 @@ export default function ReminderList() {
                                         </div>
                                     </form>
 
+                                    {dateRangeLabel && (
+                                        <div className="d-flex align-items-center flex-wrap gap-2 mb-2 fs-13 text-muted">
+                                            <i className="ri-calendar-2-line"></i>
+                                            <span>Showing reminders for {dateRangeLabel}.</span>
+                                            <button type="button" className="btn btn-link btn-sm p-0 fs-13" onClick={showAllDates}>
+                                                Show all dates
+                                            </button>
+                                        </div>
+                                    )}
+
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
                                             value={reminders}
@@ -445,7 +464,7 @@ export default function ReminderList() {
                                             scrollHeight="flex"
                                             className="p-datatable-sm fs-13"
                                             responsiveLayout="scroll"
-                                            emptyMessage="No reminders found"
+                                            emptyMessage={dateRangeLabel ? `No reminders for ${dateRangeLabel}.` : 'No reminders found'}
                                             selectionMode="checkbox"
                                             selection={selectedReminders}
                                             onSelectionChange={(e: { value: Reminder[] }) => setSelectedReminders(e.value)}

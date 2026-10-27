@@ -1,6 +1,20 @@
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
-import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
+import { DEFAULT_INSTALLMENT_MONTHS, ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
 import type { PartnerOption } from './types';
+
+/**
+ * The installment months a new enrollment starts with: 12, or the plan's
+ * "Installment Upto" (Plan & Fee) when that is lower. The API sends the same
+ * rule as installment_default_months; the limit is the fallback.
+ */
+export const defaultInstallmentMonths = (
+    plan: { installment_default_months?: number | null; total_installment_count_upto?: number | null } | null | undefined
+): number => {
+    const fromApi = Number(plan?.installment_default_months);
+    if (fromApi > 0) return fromApi;
+    const upto = Number(plan?.total_installment_count_upto);
+    return upto > 0 ? Math.min(DEFAULT_INSTALLMENT_MONTHS, upto) : DEFAULT_INSTALLMENT_MONTHS;
+};
 
 /**
  * Resolves matching partner plan ID from available partner plans based on partner_type and enrollment_type.

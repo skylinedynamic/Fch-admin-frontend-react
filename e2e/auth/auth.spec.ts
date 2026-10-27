@@ -10,6 +10,19 @@ test.describe('Sign in', () => {
     await expect(page.getByRole('link', { name: /forgot password/i })).toHaveAttribute('href', '/forgot-password')
   })
 
+  // BUG-118: the footer names the brand, and never reads "(c) 2026 . All rights reserved."
+  test('the footer names the company the portal is branded as', async ({ page }) => {
+    await mockApi(page, [{ method: 'GET', match: '/common/branding', body: { success: true, data: { branding: { site_name: 'Four Corner Funding' }, css_vars: null } } }])
+    await page.goto('/login')
+    await expect(page.locator('footer')).toHaveText(`© ${new Date().getFullYear()} Four Corner Funding. All rights reserved.`)
+  })
+
+  test('the footer leaves no gap when the branding fails to load', async ({ page }) => {
+    await mockApi(page, [{ method: 'GET', match: '/common/branding', status: 500, body: { message: 'Server Error' } }])
+    await page.goto('/login')
+    await expect(page.locator('footer')).toHaveText(`© ${new Date().getFullYear()}. All rights reserved.`)
+  })
+
   test('toggles password visibility', async ({ page }) => {
     await mockApi(page)
     await page.goto('/login')

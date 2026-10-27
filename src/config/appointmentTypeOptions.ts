@@ -58,6 +58,14 @@ export const TIME_SLOTS = [
     { label: "11:30 PM", value: "23:30" },
 ];
 
+// Statuses the API accepts on an appointment update (Appointment::STATUSES).
+export const APPOINTMENT_STATUS = {
+    PENDING: "pending",
+    CONFIRMED: "confirmed",
+    CANCELLED: "cancelled",
+    COMPLETED: "completed",
+} as const;
+
 export const APPOINTMENT_STATUS_CONFIG = {
     pending: {
         label: "Pending",

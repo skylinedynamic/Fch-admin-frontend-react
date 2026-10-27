@@ -24,6 +24,7 @@ describeListPage(
     ],
     shows: ['Foundation 100 Play', 'Growth 250 Play', 'Inactive'],
     emptyText: 'No capital programs found',
+    sort: { initial: { field: 'id', order: 'desc' }, header: 'Program Name', field: 'name' },
     search: { placeholder: 'Search capital programs...' },
     create: { permission: 'create credit accounts', label: /add capital program/i, role: 'link', target: '/capital-access/create' },
     selection: { permission: 'delete credit accounts' },

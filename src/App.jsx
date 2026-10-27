@@ -379,8 +379,10 @@ export default function App() {
               </Route>
 
               <Route element={<HostRoute />}>
-                <Route path="credit-profile-requests" element={<CreditProfileRequests />} />
-                <Route path="credit-profile-requests/:id" element={<CreditProfileRequestDetails />} />
+                <Route element={<PermissionRoute permission="manage credit profile requests" />}>
+                  <Route path="credit-profile-requests" element={<CreditProfileRequests />} />
+                  <Route path="credit-profile-requests/:id" element={<CreditProfileRequestDetails />} />
+                </Route>
               </Route>
 
             </Route>

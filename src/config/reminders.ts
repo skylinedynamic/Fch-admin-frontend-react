@@ -34,6 +34,24 @@ export const REMINDER_TYPE_ICONS: Record<string, string> = {
     'Other': 'ri-calendar-todo-line'
 };
 
+// How the list's Date Range filter reads above the table: "today" for the
+// default, otherwise the dates as the picker shows them; null when no full
+// date is set.
+const formatRangeDate = (d: Date): string =>
+    d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+
+const isSameDay = (a: Date, b: Date): boolean =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+export const describeDateRange = (range: (Date | null)[] | null | undefined, today: Date = new Date()): string | null => {
+    const start = range?.[0];
+    if (!start) return null;
+    const end = range?.[1] ?? start;
+    if (isSameDay(start, today) && isSameDay(end, today)) return 'today';
+    if (isSameDay(start, end)) return formatRangeDate(start);
+    return `${formatRangeDate(start)} – ${formatRangeDate(end)}`;
+};
+
 export const getReminderTypeIcon = (type: string | undefined): string => {
     return (type && REMINDER_TYPE_ICONS[type]) || 'ri-group-line';
 };
