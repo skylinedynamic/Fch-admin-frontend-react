@@ -28,6 +28,7 @@ import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { scrollToFirstError } from '../../utils/formUtils';
 import { Navigate } from 'react-router-dom';
+import ErrorPage from '../Utility/ErrorPage';
 import { useAuthStore } from '../../store/auth/authStore';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
 // @ts-ignore
@@ -121,7 +122,7 @@ export default function ClientDetails() {
 
     // Profile Stats Query
     const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useClientProfileStats(id as string, !!id);
-    const { data: clientFullData, refetch: refetchClient } = useClient(id as string, !!id);
+    const { data: clientFullData, error: clientError, refetch: refetchClient } = useClient(id as string, !!id);
 
     const handleRefresh = () => {
         refetchStats();
@@ -352,6 +353,13 @@ export default function ClientDetails() {
             setIsSaving(false);
         }
     };
+
+    // Another partner's client (or a deleted one): the API answers 404/403 -
+    // say so rather than show an empty profile (BUG-030).
+    const clientStatus = (clientError as { response?: { status?: number } } | null)?.response?.status;
+    if (clientStatus === 404 || clientStatus === 403) {
+        return <ErrorPage status={404} title="Client Not Found" message="The client you are looking for does not exist or you do not have permission to view it." />;
+    }
 
     return (
         <div className="page-content">

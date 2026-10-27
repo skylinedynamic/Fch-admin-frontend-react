@@ -124,6 +124,36 @@ describe('Loan application details › View Funding Application', () => {
   })
 })
 
+// BUG-098: a Rejected application could still be converted (the API now refuses it too).
+describe('Loan application details › Convert on a rejected application', () => {
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  const rejected = { ...converted, status: 'rejected', converted_borrower_id: null, converted_borrower: null, converted_funding_application_id: null }
+
+  it('is disabled, and says the status has to change first', async () => {
+    signInWith(['view application', 'convert application'])
+    serve(rejected)
+    renderPage()
+
+    const [convert] = await screen.findAllByRole('button', { name: /Convert to Free Plan Borrower/ })
+    expect(convert).toBeDisabled()
+    expect(screen.getByText('Rejected applications cannot be converted. Change the status to convert it.')).toBeInTheDocument()
+  })
+
+  it('stays enabled on an application in review', async () => {
+    signInWith(['view application', 'convert application'])
+    serve({ ...rejected, status: 'reviewing' })
+    renderPage()
+
+    const [convert] = await screen.findAllByRole('button', { name: /Convert to Free Plan Borrower/ })
+    expect(convert).toBeEnabled()
+    expect(screen.queryByText(/Rejected applications cannot be converted/)).not.toBeInTheDocument()
+  })
+})
+
 /**
  * The business EIN, the business start date (stored as
  * business_checking_start_date), the requested amount in its currency and the

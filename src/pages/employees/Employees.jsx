@@ -133,6 +133,7 @@ export default function Employees() {
           onConfirm={handleDeleteConfirm}
           onClose={closeDeleteModal}
           loading={loading}
+          text="Deleting employees will remove all information."
         />
       </div>
     </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar } from 'primereact/calendar';
+import { mergePickedDateTime } from '../../../utils/dates';
 import { REMINDER_TYPES } from '../../../config/reminders';
 import {
     FUTURE_ACTIVITY_REFERENCES,
@@ -205,7 +206,8 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
             if (backendErrors && typeof backendErrors === 'object') {
                 const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
                 setErrors(normalizedErrors);
-                toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_EDIT_ERROR_FIELDS));
+                const toastMessage = getActivityValidationToast(normalizedErrors, ACTIVITY_EDIT_ERROR_FIELDS);
+                if (toastMessage) toast.error(toastMessage);
             } else if (err.response?.status !== 403) {
                 // 404, 500 — the server's own message (403 is already toasted by the API client).
                 toast.error(responseData?.message || 'Failed to update activity');
@@ -284,9 +286,8 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
                                             onChange={(e) => {
                                                 const pickedDate = e.value;
                                                 if (pickedDate) {
-                                                    const prev = formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : new Date();
-                                                    const merged = new Date(pickedDate);
-                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                                                    const prev = formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : null;
+                                                    const merged = mergePickedDateTime(pickedDate, prev, e.originalEvent);
                                                     const tzOffset = merged.getTimezoneOffset() * 60000;
                                                     const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
                                                     setFormData(prev2 => ({ ...prev2, activity_date: localISOTime }));
@@ -450,9 +451,8 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
                                                                 onChange={(e) => {
                                                                     const pickedDate = e.value;
                                                                     if (pickedDate) {
-                                                                        const prev = formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : new Date();
-                                                                        const merged = new Date(pickedDate);
-                                                                        merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                                                                        const prev = formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : null;
+                                                                        const merged = mergePickedDateTime(pickedDate, prev, e.originalEvent);
                                                                         const tzOffset = merged.getTimezoneOffset() * 60000;
                                                                         const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
                                                                         setFormData(prev2 => ({ ...prev2, remind_at: localISOTime }));

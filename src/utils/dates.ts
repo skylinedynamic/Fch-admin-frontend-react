@@ -101,3 +101,31 @@ export const toLocalYmd = (date?: Date | string | null): string | null => {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
+
+/** A Date as local "YYYY-MM-DD HH:mm:ss", the shape the activity API takes. */
+export const toLocalDateTimeString = (date: Date): string => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${toLocalYmd(date)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
+/**
+ * The value for a date-time picker's onChange (BUG-057). Clicking a day in the
+ * panel gives that day at midnight, so the previously chosen time is kept; a
+ * date typed into the input already carries its own time, so it is used as-is.
+ */
+export const mergePickedDateTime = (
+  picked: Date | null | undefined,
+  previous: Date | null | undefined,
+  originalEvent?: { target?: EventTarget | null } | null
+): Date | null => {
+  if (!picked) return null;
+  const merged = new Date(picked);
+  const typed = (originalEvent?.target as HTMLElement | null)?.tagName === 'INPUT';
+  if (typed) {
+    merged.setSeconds(0, 0);
+  } else {
+    const prev = previous || new Date();
+    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+  }
+  return merged;
+};

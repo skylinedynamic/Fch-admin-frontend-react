@@ -189,7 +189,7 @@ export default function LendersList() {
                                     </li>
                                 </ul>
                             </>
-                        ) : (
+                        ) : hasPermission('create lenders') ? (
                             <button
                                 type="button"
                                 className="btn btn-primary fw-medium waves-effect waves-light"
@@ -197,7 +197,7 @@ export default function LendersList() {
                             >
                                 <i className="ri-add-fill me-1 align-bottom"></i> Add Lender
                             </button>
-                        )}
+                        ) : null}
                     </div>
                 </PageHeader>
 

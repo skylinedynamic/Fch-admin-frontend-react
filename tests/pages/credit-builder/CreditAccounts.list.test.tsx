@@ -25,6 +25,7 @@ describeListPage(
     shows: ['Ink Business Cash', 'Spark Classic', 'Capital One'],
     // BUG-007: the table said "No available options" (PrimeReact's dropdown default).
     emptyText: 'No credit accounts found',
+    sort: { initial: { field: 'id', order: 'desc' }, header: 'Name', field: 'card_name' },
     search: { placeholder: 'Search here...' },
     create: { permission: 'create credit accounts', label: /add account/i, role: 'link', target: '/credit-accounts/create' },
   },

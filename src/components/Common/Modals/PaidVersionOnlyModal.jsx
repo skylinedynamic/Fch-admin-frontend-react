@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
+import { hideAndDisposeModal } from '../../../utils/bootstrapModal';
 
 export default function PaidVersionOnlyModal({ show, onHide, title = 'Paid Version Only', message }) {
     const modalRef = useRef(null);
@@ -27,16 +28,12 @@ export default function PaidVersionOnlyModal({ show, onHide, title = 'Paid Versi
         }
     }, [show]);
 
-    // Cleanup on unmount
+    // Cleanup on unmount. Not hide() + dispose() back to back: unmounted while
+    // still opening, the show animation then calls focus() on a disposed modal.
     useEffect(() => {
+        const element = modalRef.current;
         return () => {
-            const modal = modalInstanceRef.current;
-            if (modal) {
-                try {
-                    modal.hide();
-                    if (typeof modal.dispose === 'function') modal.dispose();
-                } catch (_) {}
-            }
+            hideAndDisposeModal(modalInstanceRef.current, element);
             modalInstanceRef.current = null;
         };
     }, []);

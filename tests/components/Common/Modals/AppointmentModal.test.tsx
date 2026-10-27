@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { act, renderWithProviders, screen, waitFor, within } from '../../../test-utils'
 import { allowBackgroundCalls, api, signIn } from '../../../pages/pageHarness'
+import { http, HttpResponse } from 'msw'
+import { server } from '../../../mocks/server'
+import { toast } from 'react-toastify'
 
 vi.mock('react-toastify', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-toastify')>()
@@ -34,9 +37,10 @@ const appointment = (extra: Record<string, unknown> = {}) => ({
   ...extra,
 })
 
-const open = async (userId: number, apt = appointment(), permissions = ALL) => {
+const open = async (userId: number, apt = appointment(), permissions = ALL, stubs: () => void = () => {}) => {
   signIn({ id: userId, is_host: 0, permissions })
   allowBackgroundCalls()
+  stubs()
   api('get', '/common/appointments/1', { status: true, data: apt })
   const update = api('put', '/common/appointments/1', { status: true, message: 'Appointment updated' })
   const onSuccess = vi.fn()
@@ -164,3 +168,91 @@ describe('AppointmentModal - who may change an appointment (BUG-102)', () => {
     expect(body).not.toHaveProperty('meeting_with_host')
   })
 })
+
+/**
+ * BUG-100: Wanda edited her appointment with her client - the form showed
+ * "Meeting with host" ticked and "Appointment With" empty, and Save said
+ * "Appointment updated successfully." while a "Scheduling Conflict" alert
+ * appeared too: the save went out before the conflict check had answered.
+ */
+describe('AppointmentModal - a partner editing the appointment it booked with its client (BUG-100)', () => {
+  const CLIENT = { id: CLIENT_ID, name: 'QA-TEST Wanda Client One', entity_type: 'Borrower', entity_id: 9 }
+  const withClient = appointment({ scheduled_by: { id: PARTNER_ID, name: 'Wanda' }, assigned_for: CLIENT })
+
+  const serveSelectableUsers = () =>
+    server.use(
+      http.post('*/common/appointments/fetch-selectable-users', async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({
+          status: true,
+          data: body.meeting_with_host
+            ? [{ id: 2, name: 'Host Admin (Host)', entity_type: 'Partner', entity_id: 1 }]
+            : [{ ...CLIENT, name: 'QA-TEST Wanda Client One (Client)' }],
+        })
+      })
+    )
+
+  const availability = (data: Record<string, unknown>) => {
+    const seen = { calls: 0 }
+    const stub = () =>
+      server.use(
+        http.post('*/common/appointments/check-availability', () => {
+          seen.calls += 1
+          return HttpResponse.json({ status: true, data })
+        })
+      )
+    return { seen, stub }
+  }
+
+  const edit = async (check: { stub: () => void }) => {
+    const opened = await open(PARTNER_ID, withClient, ALL, () => {
+      serveSelectableUsers()
+      check.stub()
+    })
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /edit/i }))
+    // The attendee picker's own label: who it is with.
+    await waitFor(() => expect(Array.from(document.querySelectorAll('.p-dropdown-label'), (el) => el.textContent)).toContain('QA-TEST Wanda Client One (Client)'))
+    return { ...opened, user }
+  }
+
+  it('shows the client as who it is with, and does not tick "Meeting with host"', async () => {
+    await edit(availability({ available: true }))
+
+    expect(screen.getByLabelText(/meeting with host/i)).not.toBeChecked()
+    expect(screen.queryByText('Select Users')).not.toBeInTheDocument()
+  })
+
+  it('checks for a conflict before saving, and saves nothing when there is one', async () => {
+    const check = availability({
+      available: false,
+      scheduler_conflicts: [{ id: 99, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }],
+      assignee_conflicts: [],
+    })
+    const { update, user } = await edit(check)
+
+    // Straight away - before the background check (500ms after a change) has run.
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Cannot save appointment: Time slot conflicts with another appointment'))
+    expect(check.seen.calls).toBeGreaterThan(0)
+    expect(update.calls).toBe(0)
+    expect(toast.success).not.toHaveBeenCalled()
+    expect(screen.getByText('Scheduling Conflict')).toBeInTheDocument()
+  })
+
+  it('without a conflict, saves once with the client and says only that it was updated', async () => {
+    // The only appointment at that time is this one.
+    const check = availability({ available: false, scheduler_conflicts: [{ id: 1, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }], assignee_conflicts: [] })
+    const { update, user, onSuccess } = await edit(check)
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => expect(update.calls).toBe(1))
+    expect(update.bodies[0]).toMatchObject({ assigned_for: CLIENT_ID, entity_id: 9, meeting_with_host: 0 })
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+    expect(toast.success).toHaveBeenCalledTimes(1)
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+})
+

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { fetchPlanFeeSubscriptions, updatePlanFeeSubscription } from '../../../src/modules/subscription-plan/services'
+import { fetchPlanFeeSubscriptions, updatePlanFeeSubscription, validatePlanFeeSubscription } from '../../../src/modules/subscription-plan/services'
 
 afterEach(() => server.resetHandlers())
 
@@ -28,5 +28,21 @@ describe('subscription-plan services', () => {
     )
     await updatePlanFeeSubscription(4, { fee: 49 })
     expect(calledPath.endsWith('/admin/plan-fee/update-subscription-plan/4')).toBe(true)
+  })
+
+  // BUG-096: the check before the confirmation dialog - same payload, saves nothing.
+  it('validatePlanFeeSubscription PUTs the payload to the check route', async () => {
+    let calledPath = ''
+    let receivedBody: unknown = null
+    server.use(
+      http.put('*/admin/plan-fee/validate-subscription-plan/4', async ({ request }) => {
+        calledPath = new URL(request.url).pathname
+        receivedBody = await request.json()
+        return HttpResponse.json({ status: true, message: 'The values are valid.', data: null })
+      })
+    )
+    await validatePlanFeeSubscription(4, { total_amount: 49 })
+    expect(calledPath.endsWith('/admin/plan-fee/validate-subscription-plan/4')).toBe(true)
+    expect(receivedBody).toEqual({ total_amount: 49 })
   })
 })

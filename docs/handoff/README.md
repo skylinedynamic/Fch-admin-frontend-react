@@ -10,6 +10,32 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-27
+- [2026-10-27-login-footer-without-a-brand-name.md](2026-10-27-login-footer-without-a-brand-name.md) — BUG-118: the login footer leaves no gap when the branding has no name.
+- [2026-10-27-invoice-details-email-invoice.md](2026-10-27-invoice-details-email-invoice.md) — BUG-091: the invoice details page can e-mail an unpaid invoice.
+- [2026-10-27-rejected-loan-application-convert-disabled.md](2026-10-27-rejected-loan-application-convert-disabled.md) — BUG-098: Convert is disabled on a rejected loan application.
+- [2026-10-27-add-user-seat-limit-purchase.md](2026-10-27-add-user-seat-limit-purchase.md) — BUG-109: Add User at the seat limit opens the seat purchase window and keeps what was typed.
+- [2026-10-27-appointment-edit-attendee-and-conflict.md](2026-10-27-appointment-edit-attendee-and-conflict.md) — BUG-100: editing an appointment keeps its attendee and checks conflicts before saving.
+- [2026-10-27-business-financials-default-currency.md](2026-10-27-business-financials-default-currency.md) — BUG-077: Business Financials saves the USD it shows when no currency is stored.
+
+### 2026-10-26
+- [2026-10-26-employee-alternate-mobile-error.md](2026-10-26-employee-alternate-mobile-error.md) — Employee Alternate Mobile and Zip Code show the API validation message under the field.
+- [2026-10-26-client-lead-not-found.md](2026-10-26-client-lead-not-found.md) — BUG-030: another partner's client or lead shows "Not Found" instead of an empty page.
+- [2026-10-26-list-sort-direction.md](2026-10-26-list-sort-direction.md) — BUG-010: Capital Access, Credit Accounts, Employees and Manage Tier sort A-Z on the first header click.
+- [2026-10-26-upcoming-billings-date-order.md](2026-10-26-upcoming-billings-date-order.md) — BUG-012: Upcoming Billings lists the soonest billing date first; Amount no longer sorts.
+- [2026-10-26-upcoming-billings-search-on-enter.md](2026-10-26-upcoming-billings-search-on-enter.md) — BUG-006: Upcoming Billings search applies on Enter like other lists.
+
+| File | Title |
+|---|---|
+| [2026-10-26-users-free-trial-seat-limit-is-by-design.md](2026-10-26-users-free-trial-seat-limit-is-by-design.md) | Users — a free-trial partner adds users up to its seat limit, then sees "Paid Version Only" (BUG-112) |
+| [2026-10-26-partner-installment-calculator-default-months.md](2026-10-26-partner-installment-calculator-default-months.md) | Partner create — the installment calculator takes its default months from the plan (BUG-114) |
+| [2026-10-26-certified-partner-configuration-guard-on-clients-and-leads.md](2026-10-26-certified-partner-configuration-guard-on-clients-and-leads.md) | Configuration guard — a Certified partner without an active gateway is stopped on Clients and Leads (BUG-115) |
+| [2026-10-26-custom-domain-field-errors-and-optional-borrower-domain.md](2026-10-26-custom-domain-field-errors-and-optional-borrower-domain.md) | Custom Domain and Tenant Config — refused domains show under the field, the whole field turns red, the borrower domain is optional (BUG-121) |
+| [2026-10-26-invoice-modal-date-and-amount.md](2026-10-26-invoice-modal-date-and-amount.md) | Invoices — the details modal shows the invoice's own amount and date (BUG-122) |
+| [2026-10-26-partner-subscription-total-and-installment-balance.md](2026-10-26-partner-subscription-total-and-installment-balance.md) | Partner profile › Subscription — "Total Amount" is the whole enrollment, "Installment Balance" the rest (BUG-126) |
+| [2026-10-26-client-capital-access-estimated-remaining-access.md](2026-10-26-client-capital-access-estimated-remaining-access.md) | Clients › Capital Access — the estimate is labelled "Estimated Remaining Access" (BUG-031) |
+| [2026-10-26-plan-fee-refused-at-save-before-confirmation.md](2026-10-26-plan-fee-refused-at-save-before-confirmation.md) | Plan & Fee — a bad value is refused at Save, before the confirmation dialog (BUG-096 retest) |
+
 ### 2026-10-25
 
 | File | Title |

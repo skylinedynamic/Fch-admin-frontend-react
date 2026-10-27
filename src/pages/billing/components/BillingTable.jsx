@@ -148,7 +148,7 @@ export default function BillingTable({
             >
                 <Column field="partner_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by Name" style={{ minWidth: '200px' }} />
                 <Column field="upcoming_billing_type" header="Billing Type" body={typeBodyTemplate} sortable filter filterPlaceholder="Search by type" style={{ minWidth: '150px' }} />
-                <Column field="upcoming_billing_amount" header="Amount" body={amountBodyTemplate} sortable filter filterPlaceholder="Search by amount" style={{ minWidth: '130px' }} />
+                <Column field="upcoming_billing_amount" header="Amount" body={amountBodyTemplate} filter filterPlaceholder="Search by amount" style={{ minWidth: '130px' }} />
                 <Column field="upcoming_billing_date" header="Upcoming Billing Date" body={dateBodyTemplate} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '200px' }} />
                 <Column field="outstanding_amount" header="Outstanding" body={outstandingBodyTemplate} style={{ minWidth: '130px' }} />
                 <Column field="enrollment_type" header="Enrollment Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '180px' }} />

@@ -379,33 +379,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 entity_type: ''
             });
 
-            // Set meeting_with checkbox state FIRST
-            // Auto-check if:
-            // - Host user and assigned to Partner
-            // - Partner user and assigned to Borrower/Host
-            let meetingWithValue = apt.meeting_with === 1 || apt.meeting_with_host === 1;
-
-            console.log('[AppointmentModal] Checkbox logic:', {
-                isHost,
-                assigned_for: apt.assigned_for,
-                entity_type: apt.assigned_for?.entity_type,
-                initial_meetingWithValue: meetingWithValue
-            });
-
-            if (apt.assigned_for && apt.assigned_for.entity_type) {
-                const entityType = apt.assigned_for.entity_type.toLowerCase();
-                console.log('[AppointmentModal] Checking entity_type:', entityType);
-
-                if (isHost && entityType === 'partner') {
-                    console.log('[AppointmentModal] Host + Partner detected - checking checkbox');
-                    meetingWithValue = true;
-                } else if (!isHost && (entityType === 'borrower' || entityType === 'host')) {
-                    console.log('[AppointmentModal] Partner + Borrower/Host detected - checking checkbox');
-                    meetingWithValue = true;
-                }
-            }
-
-            console.log('[AppointmentModal] Final meetingWithValue:', meetingWithValue);
+            // The checkbox follows who the meeting is with. Ticked, the
+            // picker lists partner accounts: other partners for the host
+            // ("Meeting with partner"), the host for a partner ("Meeting with
+            // host"); unticked, the caller's own team and clients. A partner's
+            // meeting with its client was ticked, so the picker held the
+            // host's users and showed no attendee (BUG-100).
+            const attendeeType = apt.assigned_for?.entity_type?.toLowerCase();
+            const meetingWithValue = attendeeType
+                ? attendeeType === 'partner'
+                : apt.meeting_with === 1 || apt.meeting_with_host === 1;
             setIsMeetingWithChecked(meetingWithValue);
 
             // Load selectable users with the correct meeting_with state
@@ -496,11 +479,28 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             return;
         }
 
-        // Check for conflicts before submission
-        if (availabilityConflicts && availabilityConflicts.available === false) {
+        // Check for conflicts before submission - asked afresh: the background
+        // check runs 500ms after a change, so a quick Save went out before it
+        // answered and the conflict showed beside "updated successfully" (BUG-100).
+        let conflicts = availabilityConflicts;
+        if (formData.entity_id) {
+            try {
+                const response = await checkAvailability({
+                    assigned_for: formData.entity_id,
+                    entity_type: formData.entity_type,
+                    appointment_date: `${formData.date} ${formData.timeStart}:00`,
+                    id: isNewEvent ? undefined : selectedEventId
+                });
+                conflicts = response.data && response.data.available === false ? response.data : null;
+                setAvailabilityConflicts(conflicts);
+            } catch (error) {
+                // The server takes the booking either way; go on with what is known.
+            }
+        }
+        if (conflicts && conflicts.available === false) {
             const allConflicts = [
-                ...(availabilityConflicts.assignee_conflicts || []),
-                ...(availabilityConflicts.scheduler_conflicts || [])
+                ...(conflicts.assignee_conflicts || []),
+                ...(conflicts.scheduler_conflicts || [])
             ];
             const matchingConflict = allConflicts.find(c => {
                 const cStart = c.start_time || "";
@@ -512,6 +512,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
             if (matchingConflict) {
                 toast.error('Cannot save appointment: Time slot conflicts with another appointment');
+                setLastConflictingAttempt({
+                    attemptedStart: formData.timeStart,
+                    attemptedEnd: formData.timeEnd,
+                    conflict: matchingConflict
+                });
                 setIsConflictVisible(true);
                 return;
             }

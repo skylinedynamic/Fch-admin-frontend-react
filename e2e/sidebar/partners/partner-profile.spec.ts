@@ -355,6 +355,23 @@ test.describe('Partner profile - Tenant Config', () => {
     await expect(page.getByText('The partner domain has already been taken.').first()).toBeVisible()
   })
 
+  // BUG-121: a domain that is not a host name is refused under its field only;
+  // the borrower domain may be left empty.
+  test('a refused domain is shown under its field, with no toast', async ({ page }) => {
+    const message = 'Enter a valid domain, e.g. admin.example.com.'
+    const api = await openProfile(page, 'tenantConfig', handlers)
+    api.add({ method: 'POST', match: '/admin/partners/tenant-config/5', status: 422, body: failure(message, { partner_domain: message }) })
+    await expect(page.locator('input[name="partner_domain"]')).toHaveValue('portal.acme.test')
+    await page.locator('input[name="partner_domain"]').fill('not a domain')
+    await page.locator('input[name="borrower_domain"]').fill('')
+    await update(page).click()
+
+    const call = await expectCall(api, 'POST', '/admin/partners/tenant-config/5')
+    expect(call.json).toMatchObject({ partner_domain: 'not a domain', borrower_domain: null })
+    await expect(page.locator('#tenant-config-form .invalid-feedback')).toHaveText(message)
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
+  })
+
   test('a failed load is reported', async ({ page }) => {
     await openProfile(page, 'tenantConfig', [{ method: 'GET', match: '/admin/partners/tenant-config/5', status: 500, body: failure('boom') }])
     await expect(page.getByText('Failed to fetch tenant configuration').first()).toBeVisible()

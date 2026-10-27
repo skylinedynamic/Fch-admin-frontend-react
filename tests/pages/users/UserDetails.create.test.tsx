@@ -17,6 +17,8 @@ vi.mock('react-toastify', async (importOriginal) => {
   return { ...actual, toast: Object.assign(vi.fn(), { info: vi.fn(), success: vi.fn(), error: vi.fn() }) }
 })
 
+vi.mock('bootstrap/js/dist/modal', () => import('../../mocks/fakeBootstrapModal'))
+
 import UserDetails from '../../../src/pages/users/UserDetails'
 
 const employees = [
@@ -164,6 +166,32 @@ describe('UserDetails - adding a user', () => {
     expect(toast.success).toHaveBeenCalledWith('User created successfully')
   })
 
+  // BUG-123: the email typed in the form was replaced by the employee record's.
+  it("sends the email typed in the form, not the employee record's", async () => {
+    mockLookups()
+    let received: Record<string, unknown> | null = null
+    server.use(
+      http.post('*/common/users', async ({ request }) => {
+        received = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ status: true, message: 'User created successfully.', data: { id: 50 } })
+      })
+    )
+    const user = userEvent.setup()
+    const { container } = renderPage()
+
+    await waitFor(() => expect(container.querySelector('#user-employee')).not.toBeNull())
+    await choose(user, container, 'user-employee', 'Jane Doe')
+    const email = screen.getByLabelText(/email address/i)
+    await user.clear(email)
+    await user.type(email, 'jane.login@example.test')
+    await choose(user, container, 'role_id', 'Staff')
+    await user.type(screen.getByLabelText(/^password/i), 'secret123')
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+    expect(await screen.findByText('Users list page')).toBeInTheDocument()
+    expect(received).toMatchObject({ employee_id: 7, email: 'jane.login@example.test' })
+  })
+
   it('treats the phone number as optional', async () => {
     mockLookups()
     let received: Record<string, unknown> | null = null
@@ -258,6 +286,88 @@ describe('UserDetails - adding a user on a newly bought seat', () => {
 
     await waitFor(() => expect(received).not.toBeNull())
     expect(received).toMatchObject({ employee_id: 7, is_paid: true, months: 3 })
+  })
+})
+
+/**
+ * BUG-109: opened directly at the seat limit, Add User only toasted "User
+ * limit reached" - the window to buy a seat was on the Users list alone, and
+ * going back for it lost what had been typed.
+ */
+describe('UserDetails - adding a user at the seat limit', () => {
+  const partnerAdmin = { id: 1, is_host: 0, entity_type: 'Partner', permissions: ['create users'] }
+
+  async function fillAndSave(user: ReturnType<typeof userEvent.setup>, container: HTMLElement) {
+    await waitFor(() => expect(container.querySelector('#user-employee')).not.toBeNull())
+    await choose(user, container, 'user-employee', 'Jane Doe')
+    await choose(user, container, 'role_id', 'Staff')
+    await user.type(screen.getByLabelText(/^password/i), 'secret123')
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
+  }
+
+  it('offers to buy a seat, and creates the user as a paid seat with what was typed', async () => {
+    useAuthStore.setState({ user: partnerAdmin, userSubscription: { is_free_trail: false, user_seats: 3 } } as never)
+    mockLookups()
+    let received: Record<string, unknown> | null = null
+    server.use(
+      http.get('*/common/user-count', () => HttpResponse.json({ status: true, data: { count: 3, seat_limit: 3, per_user_price: 49 } })),
+      http.post('*/common/users', async ({ request }) => {
+        received = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ status: true, message: 'ok', data: { id: 52 } })
+      })
+    )
+    const user = userEvent.setup()
+    const { container } = renderPage()
+
+    await fillAndSave(user, container)
+
+    expect(await screen.findByText('User Limit Reached')).toBeInTheDocument()
+    expect(received).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: /^proceed$/i }))
+
+    await waitFor(() => expect(received).not.toBeNull())
+    expect(received).toMatchObject({ employee_id: 7, role_id: 2, password: 'secret123', is_paid: true, months: 1 })
+  })
+
+  it('creates the user straight away while a seat is free', async () => {
+    useAuthStore.setState({ user: partnerAdmin, userSubscription: { is_free_trail: false, user_seats: 3 } } as never)
+    mockLookups()
+    let received: Record<string, unknown> | null = null
+    server.use(
+      http.get('*/common/user-count', () => HttpResponse.json({ status: true, data: { count: 1, seat_limit: 3, per_user_price: 49 } })),
+      http.post('*/common/users', async ({ request }) => {
+        received = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ status: true, message: 'ok', data: { id: 53 } })
+      })
+    )
+    const user = userEvent.setup()
+    const { container } = renderPage()
+
+    await fillAndSave(user, container)
+
+    expect(await screen.findByText('Users list page')).toBeInTheDocument()
+    expect(received).not.toHaveProperty('is_paid')
+  })
+
+  it('tells a free-trial partner that more users are a paid feature, and creates nothing', async () => {
+    useAuthStore.setState({ user: partnerAdmin, userSubscription: { is_free_trail: true, user_seats: 3 } } as never)
+    mockLookups()
+    let created = false
+    server.use(
+      http.get('*/common/user-count', () => HttpResponse.json({ status: true, data: { count: 3, seat_limit: 3 } })),
+      http.post('*/common/users', () => {
+        created = true
+        return HttpResponse.json({ status: true, data: { id: 54 } })
+      })
+    )
+    const user = userEvent.setup()
+    const { container } = renderPage()
+
+    await fillAndSave(user, container)
+
+    expect(await screen.findByText(/You can only add/)).toBeInTheDocument()
+    expect(created).toBe(false)
   })
 })
 

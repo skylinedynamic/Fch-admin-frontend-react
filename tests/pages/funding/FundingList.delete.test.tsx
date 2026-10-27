@@ -78,7 +78,8 @@ beforeEach(() => {
   deleteBodies = []
   toast.success.mockClear()
   toast.error.mockClear()
-  useAuthStore.setState({ user: { id: 1, is_host: 1, permissions: [] } } as never)
+  // Delete Selected needs the delete permission (BUG-125).
+  useAuthStore.setState({ user: { id: 1, is_host: 1, permissions: ['delete funding'] } } as never)
   server.use(
     http.post('*/common/funding-sequencings/fetch', () => HttpResponse.json({ status: true, data: sequences, meta: { total: 3 } })),
     http.get('*/admin/funding-groups', () => HttpResponse.json({ status: true, data: [] })),

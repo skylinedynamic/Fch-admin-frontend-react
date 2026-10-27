@@ -4,6 +4,8 @@ import PageHeader from '../common/PageHeader';
 import { useSeoSettings, useDeleteSeoSettings } from '../../modules/cms/queries';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import type { DataTableFilterMeta } from 'primereact/datatable';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
@@ -19,6 +21,22 @@ interface SeoSetting {
     keywords?: string;
     og_image?: string;
 }
+
+// One rule per column (the API takes one value and match mode per column), Starts with by default.
+const FILTER_FIELDS = ['page_name', 'path', 'meta_title'] as const;
+const emptyColumnFilters = (): DataTableFilterMeta =>
+    Object.fromEntries(FILTER_FIELDS.map((field) => [field, { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] }]));
+
+/** The column filters as the API takes them: filters[field] = {value, match_mode}. */
+const toApiFilters = (meta: DataTableFilterMeta) => {
+    const filters: Record<string, { value: string; match_mode: string }> = {};
+    FILTER_FIELDS.forEach((field) => {
+        const constraint = (meta[field] as any)?.constraints?.[0] ?? meta[field];
+        const value = typeof constraint?.value === 'string' ? constraint.value.trim() : '';
+        if (value) filters[field] = { value, match_mode: constraint.matchMode || FilterMatchMode.STARTS_WITH };
+    });
+    return filters;
+};
 
 export default function SeoSettings() {
     const { hasPermission } = usePermissions();
@@ -43,13 +61,16 @@ export default function SeoSettings() {
     const [searchText, setSearchText] = useState<string>(appliedSearch);
     const [sortField, setSortField] = useState<string>('id');
     const [sortOrder, setSortOrder] = useState<number>(1);
+    // Column filters (BUG-124): sent to the API, reset by Clear.
+    const [columnFilters, setColumnFilters] = useState<DataTableFilterMeta>(emptyColumnFilters);
 
     const { data: seoData, isLoading, isFetching } = useSeoSettings({
         page,
         per_page: perPage,
         search: appliedSearch,
         sort_field: sortField,
-        sort_order: sortOrder === 1 ? 'asc' : 'desc'
+        sort_order: sortOrder === 1 ? 'asc' : 'desc',
+        filters: toApiFilters(columnFilters),
     });
     const deleteMutation = useDeleteSeoSettings();
 
@@ -66,6 +87,7 @@ export default function SeoSettings() {
     };
     const handleClearFilters = () => {
         setSearchText('');
+        setColumnFilters(emptyColumnFilters());
         updateListParams({ search: '', page: 1 });
     };
 
@@ -248,13 +270,18 @@ export default function SeoSettings() {
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
                                             filterDisplay="menu"
+                                            filters={columnFilters}
+                                            onFilter={(e: any) => {
+                                                setColumnFilters(e.filters);
+                                                setPage(1);
+                                            }}
                                             emptyMessage="No SEO settings found."
                                             loading={isFetching && !isLoading}
                                         >
                                             {hasPermission('delete seo settings') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
-                                            <Column field="page_name" header="PAGE NAME" body={pageNameBody} sortable filter showFilterMatchModes filterPlaceholder="Search page" style={{ minWidth: '250px' }} />
-                                            <Column field="path" header="PATH" body={pathBody} sortable filter showFilterMatchModes filterPlaceholder="Search path" style={{ minWidth: '180px' }} />
-                                            <Column field="meta_title" header="META TITLE" body={metaTitleBody} sortable filter showFilterMatchModes filterPlaceholder="Search title" style={{ minWidth: '280px' }} />
+                                            <Column field="page_name" header="PAGE NAME" body={pageNameBody} sortable filter showFilterMatchModes showAddButton={false} showFilterOperator={false} filterPlaceholder="Search page" style={{ minWidth: '250px' }} />
+                                            <Column field="path" header="PATH" body={pathBody} sortable filter showFilterMatchModes showAddButton={false} showFilterOperator={false} filterPlaceholder="Search path" style={{ minWidth: '180px' }} />
+                                            <Column field="meta_title" header="META TITLE" body={metaTitleBody} sortable filter showFilterMatchModes showAddButton={false} showFilterOperator={false} filterPlaceholder="Search title" style={{ minWidth: '280px' }} />
                                             <Column field="og_image" header="SOCIAL IMAGE" body={ogImageBody} style={{ minWidth: '120px' }} />
                                         </DataTable>
                                     </div>

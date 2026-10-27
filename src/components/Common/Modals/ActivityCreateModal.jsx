@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { REMINDER_TYPES } from '../../../config/reminders';
 import { parseDate } from '../../../utils/formatters';
+import { mergePickedDateTime, toLocalDateTimeString } from '../../../utils/dates';
 
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
@@ -33,12 +34,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
     const referenceRef = useRef(null);
     const textareaRef = useRef(null); // Local ref to capture the DOM node
 
-    const getDefaultDateTime = () => {
-        const now = new Date();
-        now.setHours(now.getHours() + 1);
-        const tzOffset = now.getTimezoneOffset() * 60000;
-        return (new Date(now - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
-    };
+    // Defaults to the current time (BUG-057), read on each open, not page load.
+    const getDefaultDateTime = () => toLocalDateTimeString(new Date());
 
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState({});
@@ -193,7 +190,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 if (backendErrors && typeof backendErrors === 'object') {
                     const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
                     setErrors(normalizedErrors);
-                    toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS));
+                    const toastMessage = getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS);
+                    if (toastMessage) toast.error(toastMessage);
                 } else {
                     toast.error(response.message || 'Validation failed.');
                 }
@@ -256,7 +254,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             if (backendErrors && typeof backendErrors === 'object') {
                 const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
                 setErrors(normalizedErrors);
-                toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS));
+                const toastMessage = getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS);
+                if (toastMessage) toast.error(toastMessage);
             } else if (err.response?.status !== 403) {
                 toast.error(responseData?.message || 'Failed to create activity');
             }
@@ -503,9 +502,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                             onChange={(e) => {
                                                 const pickedDate = e.value;
                                                 if (pickedDate) {
-                                                    const prev = formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : new Date();
-                                                    const merged = new Date(pickedDate);
-                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                                                    const prev = formData.activity_date ? new Date(formData.activity_date.replace(' ', 'T')) : null;
+                                                    const merged = mergePickedDateTime(pickedDate, prev, e.originalEvent);
                                                     const tzOffset = merged.getTimezoneOffset() * 60000;
                                                     const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
                                                     setFormData(prev2 => ({ ...prev2, activity_date: localISOTime }));
@@ -661,9 +659,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                                             onChange={(e) => {
                                                                 const pickedDate = e.value;
                                                                 if (pickedDate) {
-                                                                    const prev = formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : new Date();
-                                                                    const merged = new Date(pickedDate);
-                                                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                                                                    const prev = formData.remind_at ? new Date(formData.remind_at.replace(' ', 'T')) : null;
+                                                                    const merged = mergePickedDateTime(pickedDate, prev, e.originalEvent);
                                                                     const tzOffset = merged.getTimezoneOffset() * 60000;
                                                                     const localISOTime = (new Date(merged - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
                                                                     setFormData(prev2 => ({ ...prev2, remind_at: localISOTime }));

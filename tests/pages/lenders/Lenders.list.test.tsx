@@ -25,7 +25,8 @@ describeListPage(
     shows: ['First Capital LLC', 'Second Street Inc', 'Fay First', 'Inactive'],
     emptyText: 'No lenders found',
     search: { placeholder: 'Search lenders...' },
-    create: { label: /add lender/i, role: 'button', target: '/lenders/create' },
+    // Add Lender needs the create permission (BUG-125).
+    create: { permission: 'create lenders', label: /add lender/i, role: 'button', target: '/lenders/create' },
     // No selection check here: this table always renders its checkbox column; only the
     // "Delete Selected" action behind it is permission-gated.
     bulkDelete: {
