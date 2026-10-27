@@ -1,5 +1,6 @@
 import React from 'react';
 import '../../../assets/css/underwriting-result.css';
+import { readableLabel } from '../../utils/underwritingLabels';
 
 /**
  * Renders the parts of an agent's result that no designed section covers.
@@ -27,9 +28,12 @@ export const humanizeKey = (key: string): string =>
 
 const isFilledString = (value: unknown): value is string => typeof value === 'string' && value.trim() !== '';
 
-/** A plain scalar the agent can state as a value: shown as written. */
+/**
+ * A plain scalar the agent can state as a value: shown as written, except a
+ * field key or source code, which is put into words (BUG-061).
+ */
 const asScalarText = (value: unknown): string | null => {
-    if (isFilledString(value)) return value.trim();
+    if (isFilledString(value)) return readableLabel(value.trim());
     if (typeof value === 'number' && Number.isFinite(value)) return String(value);
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
     return null;
