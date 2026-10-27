@@ -117,7 +117,7 @@ test.describe('Fields whose format the API checks', () => {
       id: 1, bank_name: 'First Bank', account_name: 'Acme LLC', account_number: '000123456789', routing_number: '',
       instructions: '', payment_mode: 'sandbox', is_default: true, status: true,
     }
-    let sent: Record<string, any> | null = null
+    let sent = null as Record<string, any> | null
     await page.route(`${API_ORIGIN}/common/partner-payment-providers`, (route) => {
       if (route.request().method() !== 'POST') return ok(route, [bank])
       sent = route.request().postDataJSON()
