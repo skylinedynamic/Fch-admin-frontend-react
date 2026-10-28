@@ -296,9 +296,10 @@ export default function CommissionList() {
                                             emptyMessage="No commissions found"
                                             loading={isFetching}
                                         >
-                                            <Column field="date" header="Date" sortable style={{ minWidth: '110px' }} />
-                                            <Column field="borrower" header="Borrower" sortable style={{ minWidth: '150px' }} className="fw-medium" />
-                                            {!isPartner && <Column field="partner" header="Partner" sortable style={{ minWidth: '150px' }} />}
+                                            {/* sortField: the key the API sorts by - date/borrower/partner are display fields, not columns (BUG-073). */}
+                                            <Column field="date" sortField="created_at" header="Date" sortable style={{ minWidth: '110px' }} />
+                                            <Column field="borrower" sortField="borrower_name" header="Borrower" sortable style={{ minWidth: '150px' }} className="fw-medium" />
+                                            {!isPartner && <Column field="partner" sortField="partner_name" header="Partner" sortable style={{ minWidth: '150px' }} />}
                                             <Column field="commission_status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '110px' }} />
                                             <Column header="Requested Amount" field="requested_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.requested_amount ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} sortable style={{ minWidth: '140px' }} />
                                             <Column header="Funded Amount" field="funded_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.funded_amount ?? 0, rowData.currency_symbol, rowData.conversion_rate, 0)} sortable style={{ minWidth: '140px' }} />

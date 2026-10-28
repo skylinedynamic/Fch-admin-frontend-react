@@ -145,6 +145,42 @@ describe('InvoiceDetails', () => {
     expect(screen.queryByRole('button', { name: /pay now/i })).not.toBeInTheDocument()
   })
 
+  // BUG-091: the list's preview could email an unpaid invoice, its details page could not.
+  it('lets the host email an unpaid invoice from its details page', async () => {
+    const user = userEvent.setup()
+    mount()
+    const send = api('post', '/common/invoices/1001/send', { status: true, message: 'Invoice sent successfully.' })
+
+    await user.click(await screen.findByRole('button', { name: /e-mail invoice/i }))
+
+    await waitFor(() => expect(send.calls).toBe(1))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Invoice sent successfully.'))
+  })
+
+  it('reports an invoice that could not be emailed', async () => {
+    const user = userEvent.setup()
+    mount()
+    api('post', '/common/invoices/1001/send', { status: false, message: 'Mail is not configured' }, 500)
+
+    await user.click(await screen.findByRole('button', { name: /e-mail invoice/i }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Mail is not configured'))
+  })
+
+  it.each(['Paid', 'Processing'])('does not offer to email a %s invoice', async (status) => {
+    mount({ permissions: ['view invoices'] }, { ...INVOICE, status })
+
+    await screen.findByText('Total Amount')
+    expect(screen.queryByRole('button', { name: /e-mail invoice/i })).not.toBeInTheDocument()
+  })
+
+  it('does not offer a partner to email the invoice', async () => {
+    mount({ permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Partner' })
+
+    await screen.findByText('Total Amount')
+    expect(screen.queryByRole('button', { name: /e-mail invoice/i })).not.toBeInTheDocument()
+  })
+
   it('shows the not-found page when the invoice cannot be loaded', async () => {
     signIn({ permissions: ['view invoices'] })
     allowBackgroundCalls()

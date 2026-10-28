@@ -136,6 +136,21 @@ beforeEach(() => {
 afterEach(() => server.resetHandlers())
 
 describe('MailConfigurationSection', () => {
+  // A reply without the expected shape used to throw ("reading 'is_verified'")
+  // and blank the whole app; it now reads as a failed load.
+  it.each([
+    ['an empty list', []],
+    ['no fallback', { configurations: [], uses_own_configuration: false }],
+    ['no configurations', { uses_own_configuration: true, fallback: { is_configured: true, is_verified: true } }],
+    ['no data at all', null],
+  ])('an unexpected reply (%s) shows the load error instead of crashing', async (_name, data) => {
+    server.use(http.get('*/common/mail-configurations', () => HttpResponse.json({ status: true, data })))
+
+    renderWithProviders(<MailConfigurationSection />)
+
+    expect(await screen.findByText('Failed to load the mail configuration.')).toBeInTheDocument()
+  })
+
   it('warns, in danger and before anything else, that mail goes through the fallback until verified', async () => {
     renderWithProviders(<MailConfigurationSection />)
 

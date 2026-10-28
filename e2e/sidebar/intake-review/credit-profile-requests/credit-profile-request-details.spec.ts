@@ -12,7 +12,7 @@ test.describe('Credit profile request details', () => {
     credit_authorizations: null, credit_last_pulled_at: null, ...over,
   })
 
-  async function open(page: Page, body: unknown = ok(request()), user: Record<string, unknown> = { permissions: ['view clients'] }, status = 200): Promise<ApiMock> {
+  async function open(page: Page, body: unknown = ok(request()), user: Record<string, unknown> = { permissions: ['view clients', 'manage credit profile requests'] }, status = 200): Promise<ApiMock> {
     await seedSession(page, user)
     const api = await mockApi(page, [{ method: 'GET', match: DETAIL, body, status }])
     await page.goto('/intake-review/credit-profile-requests/801')
@@ -46,7 +46,7 @@ test.describe('Credit profile request details', () => {
   })
 
   test('the borrower link is hidden without view clients', async ({ page }) => {
-    await open(page, ok(request()), { permissions: [] })
+    await open(page, ok(request()), { permissions: ['manage credit profile requests'] })
     await expect(page.getByText('Cy Q Credit').first()).toBeVisible()
     await expect(page.getByRole('link', { name: /Go to Borrower Credit Profile/ })).toHaveCount(0)
   })

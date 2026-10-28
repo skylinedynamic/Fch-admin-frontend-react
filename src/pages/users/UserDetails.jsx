@@ -5,12 +5,16 @@ import { toast } from 'react-toastify';
 
 import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
-import { fetchUserById, fetchRoles, updateUser } from '../../modules/user/services';
+import { fetchUserById, fetchRoles, updateUser, getUserCount } from '../../modules/user/services';
 import { useCreateUser } from '../../modules/user';
 import { useAvailableEmployeesForUser } from '../../modules/employee';
 import { fetchInvoiceDetails } from '../../modules/invoice/services';
 import InvoicePaymentModal from '../invoices/components/InvoicePaymentModal';
 import EmployeePicker from './components/EmployeePicker';
+import UserLimitModal from './components/UserLimitModal';
+import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
+import { useAuthStore } from '../../store/auth';
+import { checkSeatLimit } from '../../utils/seatLimit';
 import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
 import FormLoader from '../../components/Loader/FormLoader';
 import { formatPhoneNumber } from '../../utils/formatters';
@@ -24,14 +28,19 @@ import { scrollToFirstError } from '../../utils/formUtils';
  * from those without a user yet; picking one fills in the account details.
  * When the partner is over its seat limit the Users list sends
  * `state.purchase` ({ months, totalPrice }) and the user is created as a paid
- * seat, followed by paying its invoice.
+ * seat, followed by paying its invoice. Opened directly, Save checks the seat
+ * limit itself and offers the same purchase window, keeping what was typed.
  */
 export default function UserDetails() {
   const { id } = useParams();
   const isCreate = !id;
   const navigate = useNavigate();
   const location = useLocation();
-  const purchase = isCreate ? location.state?.purchase : null;
+  const [purchase, setPurchase] = useState(isCreate ? location.state?.purchase ?? null : null);
+  const authUser = useAuthStore((state) => state.user);
+  const userSubscription = useAuthStore((state) => state.userSubscription);
+  // The seat check behind Save (BUG-109): the purchase window, or the free-trial notice.
+  const [seatLimit, setSeatLimit] = useState(null);
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('update users');
   const canSave = isCreate ? hasPermission('create users') : canUpdate;
@@ -168,7 +177,7 @@ export default function UserDetails() {
     return true;
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (paidSeat = purchase) => {
     setIsSaving(true);
     try {
       const res = await createUser.mutateAsync({
@@ -178,13 +187,13 @@ export default function UserDetails() {
         phone_number: values.phone_number,
         role_id: Number(values.role_id),
         password: values.password,
-        ...(purchase ? { is_paid: true, months: purchase.months } : {})
+        ...(paidSeat ? { is_paid: true, months: paidSeat.months } : {})
       });
       toast.success('User created successfully');
 
       // A paid seat stays inactive until its invoice is paid.
       const invoiceId = res?.data?.invoice_id;
-      if (purchase && invoiceId) {
+      if (paidSeat && invoiceId) {
         const invoiceRes = await fetchInvoiceDetails(invoiceId);
         if (invoiceRes?.status) {
           setInvoice(invoiceRes.data);
@@ -202,9 +211,41 @@ export default function UserDetails() {
     }
   };
 
+  /**
+   * Whether the partner can add another user, by the Users list's rule: true
+   * to go ahead, false when a window now explains the seat limit. The host
+   * has no limit, and a seat already being bought needs no check.
+   */
+  const seatAvailable = async () => {
+    if (authUser?.is_host == 1 || purchase) return true;
+    setIsSaving(true);
+    try {
+      const data = await getUserCount();
+      const seats = checkSeatLimit(data?.data, authUser, userSubscription);
+      if (seats.status === 'available') return true;
+      setSeatLimit(seats);
+      return false;
+    } catch {
+      // The server checks the limit as well; let it answer.
+      return true;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSeatPurchase = (months, totalPrice) => {
+    const paidSeat = { months, totalPrice };
+    setSeatLimit(null);
+    setPurchase(paidSeat);
+    handleCreate(paidSeat);
+  };
+
   const handleSaveAccount = async () => {
     if (!validateAccount()) return;
-    if (isCreate) return handleCreate();
+    if (isCreate) {
+      if (await seatAvailable()) handleCreate();
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -494,6 +535,28 @@ export default function UserDetails() {
             </div>
           </div>
         </div>
+
+        {isCreate && (
+          <>
+            <UserLimitModal
+              show={seatLimit?.status === 'purchase'}
+              onHide={() => setSeatLimit(null)}
+              onProceed={handleSeatPurchase}
+              userCount={seatLimit?.count ?? 0}
+              freeLimit={seatLimit?.limit ?? 0}
+              perUserPrice={seatLimit?.price ?? 0}
+            />
+            <PaidVersionOnlyModal
+              show={seatLimit?.status === 'free_trial'}
+              onHide={() => setSeatLimit(null)}
+              message={
+                <>
+                  This feature is available in Paid version. You can only add <strong>{seatLimit?.limit}</strong> users in Free trial.
+                </>
+              }
+            />
+          </>
+        )}
 
         {isCreate && (
           <InvoicePaymentModal

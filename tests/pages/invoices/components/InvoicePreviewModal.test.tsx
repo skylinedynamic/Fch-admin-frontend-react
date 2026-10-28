@@ -3,6 +3,12 @@ import { render, screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../../mocks/server'
 import InvoicePreviewModal from '../../../../src/pages/invoices/components/InvoicePreviewModal'
+import * as helper from '../../../../src/utils/helper'
+
+vi.mock('../../../../src/utils/helper', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../src/utils/helper')>()
+  return { ...actual, parseDateOnly: vi.fn(actual.parseDateOnly) }
+})
 
 // Bootstrap's show/hide transitions run after jsdom has torn the node down.
 // Showing the modal only needs to do what Bootstrap does to the markup: drop
@@ -240,3 +246,40 @@ describe('InvoicePreviewModal', () => {
     expect(to.getByText('row@example.test')).toBeInTheDocument()
   })
 })
+
+// BUG-122: a down-payment invoice showed the whole enrollment ($7,696.70) and
+// the next day; the list and the PDF said $1,000.00 and 20 Oct.
+describe('InvoicePreviewModal - a down-payment invoice', () => {
+  const downPayment = {
+    id: 9,
+    invoice_id: 'INV-20261020009',
+    type: 'Down Payment',
+    payment_amount: 1000,
+    enrollment_type: 'Installment',
+    subscription: { total_amount: 7696.7 },
+    created_at: '2026-10-20',
+    billed_from: host,
+    billed_to: reseller,
+  }
+
+  it("shows the invoice's own amount, not the plan's total", async () => {
+    respondWith(downPayment)
+    renderModal({ id: 9 })
+
+    const items = within(await screen.findByRole('table', { name: 'Invoice items' }))
+    expect(items.getAllByText('$1,000.00').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/7,696\.70/)).not.toBeInTheDocument()
+  })
+
+  // `new Date('2026-10-20')` is UTC midnight: the previous day anywhere behind
+  // UTC. The test workers share one process time zone, so the modal is held to
+  // reading the date through parseDateOnly(), which keeps the calendar day.
+  it("reads the API's date as a calendar day, so no viewer sees another day", async () => {
+    respondWith(downPayment)
+    renderModal({ id: 9 })
+
+    expect(await screen.findByText('20 Oct 2026')).toBeInTheDocument()
+    expect(helper.parseDateOnly).toHaveBeenCalledWith('2026-10-20')
+  })
+})
+

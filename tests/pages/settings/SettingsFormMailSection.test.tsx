@@ -9,6 +9,20 @@ import SettingsForm from '../../../src/pages/settings/components/SettingsForm'
 afterEach(() => server.resetHandlers())
 
 describe('Settings menu - Email Configuration', () => {
+  it('a mail reply with no data does not take the Settings page down', async () => {
+    useAuthStore.setState({
+      token: 't',
+      // A host partner login: also asks whether to offer Test Mail (SettingsForm's own read).
+      user: { id: 1, name: 'Host', entity_type: 'Partner', permissions: ['update email configuration settings', 'send test mail'], partner_id: 1, is_host: 1 },
+      userSubscription: null,
+    } as never)
+    server.use(http.get('*/common/mail-configurations', () => HttpResponse.json({ status: true, data: null })))
+
+    renderWithProviders(<SettingsForm fetching={false} activeSection="email_configuration" setActiveSection={vi.fn()} />)
+
+    expect(await screen.findByText('Failed to load the mail configuration.')).toBeInTheDocument()
+  })
+
   it('opens the mail configuration with its fallback note', async () => {
     useAuthStore.setState({
       token: 't',

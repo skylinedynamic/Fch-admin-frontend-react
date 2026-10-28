@@ -27,6 +27,7 @@ describeListPage(
     shows: ['Business Foundation', 'Vendor Credit', 'Net-30 accounts'],
     // BUG-007: the table said "No available options" (PrimeReact's dropdown default).
     emptyText: 'No tiers found',
+    sort: { initial: { field: 'order', order: 'asc' }, header: 'Name', field: 'name' },
     search: { placeholder: 'Search here...' },
     create: { permission: 'update tier', label: /add tier/i, role: 'link', target: '/tiers/create' },
   },

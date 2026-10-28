@@ -50,8 +50,39 @@ test.describe('Tier tasks - create', () => {
     await taskModal(page).getByPlaceholder('Enter task title').fill('Apply with Grainger')
     await taskModal(page).getByRole('button', { name: /save/i }).click()
 
-    await expect(taskModal(page).getByText('Vendor is required for automated tasks')).toBeVisible()
+    await expect(taskModal(page).getByText('Vendor is required')).toBeVisible()
     expect(api.find('POST', new RegExp(`${CB}/tier-tasks$`))).toHaveLength(0)
+  })
+
+  // BUG-095: the dialog learned the tier from the task list's own request; on
+  // a slow API it treated Tier 1 as another tier and saved without a vendor.
+  test("a slow tier request no longer lets a Tier 1 task skip its vendor", async ({ page }) => {
+    const api = await openTier(page)
+    // The page has its tier; every later request for it (the task list's) hangs.
+    await page.route(new RegExp(`${CB}/tiers/2$`), () => new Promise(() => {}))
+    await openTasks(page)
+    await page.getByRole('button', { name: /add task/i }).click()
+
+    await expect(taskModal(page).getByText('Related Vendor')).toBeVisible()
+    await taskModal(page).getByPlaceholder('Enter task title').fill('Apply with Uline')
+    await taskModal(page).getByRole('button', { name: /save/i }).click()
+    await expect(taskModal(page).getByText('Vendor is required')).toBeVisible()
+    expect(api.find('POST', new RegExp(`${CB}/tier-tasks$`))).toHaveLength(0)
+  })
+
+  test('while the vendors load, the dropdown says so instead of looking empty', async ({ page }) => {
+    await seedSession(page, DEVELOPER)
+    await mockApi(page, [
+      { method: 'GET', match: new RegExp(`${CB}/tiers/2$`), body: ok(T1) },
+      { method: 'POST', match: `${CB}/tier-tasks/fetch-tasks`, body: paginated(TASKS) },
+      { method: 'GET', match: `${CB}/tier-related-api/2`, body: ok([]) },
+    ])
+    await page.route(new RegExp(`${CB}/vendors/fetch-vendors$`), () => new Promise(() => {}))
+    await page.goto('/tiers/2')
+    await openTasks(page)
+    await page.getByRole('button', { name: /add task/i }).click()
+
+    await expect(taskModal(page).locator('.p-dropdown-label', { hasText: 'Loading vendors…' })).toBeVisible()
   })
 
   test('the dialog no longer offers manual verification, so a vendor-tier task always names a vendor', async ({ page }) => {

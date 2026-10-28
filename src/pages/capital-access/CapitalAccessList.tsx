@@ -30,7 +30,7 @@ export default function CapitalAccessList() {
 
     // Sorting state
     const [sortField, setSortField] = useState<string>('id');
-    const [sortOrder, setSortOrder] = useState<string>('asc');
+    const [sortOrder, setSortOrder] = useState<string>('desc');
 
     // Filter states
     const [searchText, setSearchText] = useState<string>('');

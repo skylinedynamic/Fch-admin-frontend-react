@@ -200,3 +200,32 @@ describe('BusinessFinancialsSection', () => {
     })
   })
 })
+
+/**
+ * BUG-077: with no currency stored, the section showed "USD" but saved none,
+ * so the client's own Financial tab showed an empty, required Currency.
+ */
+describe('Client business financials - Currency', () => {
+  afterEach(() => server.resetHandlers())
+
+  it('saves the USD it shows when no currency is stored yet', async () => {
+    const saved = mockApi({ currency: null })
+    const ref = renderSection()
+    await incomeField()
+
+    await save(ref)
+
+    expect(saved[0]).toHaveProperty('currency', 'USD')
+  })
+
+  it('keeps a currency that is already stored', async () => {
+    const saved = mockApi({ currency: 'CAD' })
+    const ref = renderSection()
+    await incomeField()
+
+    await save(ref)
+
+    expect(saved[0]).toHaveProperty('currency', 'CAD')
+  })
+})
+

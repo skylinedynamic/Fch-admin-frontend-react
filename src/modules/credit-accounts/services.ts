@@ -56,6 +56,12 @@ export const deleteCreditAccount = async (id: number | string) => {
     return data;
 };
 
+/** Deletes the selected cards together; refused (422, `errors.applied`) if a borrower applied for one. */
+export const deleteCreditAccounts = async (ids: Array<number | string>) => {
+    const { data } = await apiClient.post('/admin/credit-builder/credit-accounts/multiple-delete', { ids });
+    return data;
+};
+
 export const updateCreditAccountStatus = async (id: number | string, status: string) => {
     const { data } = await apiClient.patch(`/admin/credit-builder/credit-accounts/${id}/status`, { status });
     return data;
