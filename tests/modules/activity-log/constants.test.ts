@@ -75,16 +75,17 @@ describe('VISIBILITY_BADGE_STYLES', () => {
 
 // Regression coverage: now that 'visibility' is wired into the shown-fields
 // lists, a validation error on it renders inline on the form (via
-// errors.visibility in the radio group), so the toast should point at the
-// form generically rather than repeat the message a second time. If
+// errors.visibility in the radio group), so no toast is shown on top of it. If
 // 'visibility' were missing from the shown-fields list, the error would have
 // nowhere to render and must be toasted verbatim instead - that's the case
 // getActivityValidationToast exists to catch.
 describe('getActivityValidationToast with a visibility error', () => {
-  it('toasts the generic "fix the highlighted fields" message since visibility renders inline', () => {
+  // Defect: a "Please fix the highlighted fields." toast was shown on top of the
+  // inline errors, repeating what the form already shows.
+  it('toasts nothing since visibility renders inline', () => {
     const errors = normalizeActivityFieldErrors({ visibility: 'Please select who can see this activity.' })
     const message = getActivityValidationToast(errors, ACTIVITY_CREATE_ERROR_FIELDS)
-    expect(message).toBe('Please fix the highlighted fields.')
+    expect(message).toBeNull()
   })
 
   it('toasts the field-specific message when visibility has nowhere to render inline', () => {

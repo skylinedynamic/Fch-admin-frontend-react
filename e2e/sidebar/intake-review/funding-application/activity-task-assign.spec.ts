@@ -33,6 +33,6 @@ test.describe('Funding application activity log - assign a Task', () => {
 
   test("it lists the application's partner's staff, with the borrower's Assign to above", async ({ page }) => {
     const api = await openApplication(page)
-    await expectAssignSetup(page, api, { teamRequest: { partner_id: 2 }, ownerLabel: 'Borrower Assign to', ownerText: 'Blake Ops' })
+    await expectAssignSetup(page, api, { teamRequest: { partner_id: 2, active_only: true, keep_ids: [14] }, ownerLabel: 'Borrower Assign to', ownerText: 'Blake Ops' })
   })
 })

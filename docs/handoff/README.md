@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-28
+
+| File | Title |
+|---|---|
+| [2026-10-28-activity-task-any-date-no-validation-toast.md](2026-10-28-activity-task-any-date-no-validation-toast.md) | Activity log — a Task takes any date, validation is not toasted |
+
 ### 2026-10-27
 
 | File | Title |

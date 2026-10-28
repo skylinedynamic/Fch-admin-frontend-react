@@ -7,7 +7,7 @@ import {
     ACTIVITY_SUMMARY_MAX_LENGTH,
     ACTIVITY_CREATE_ERROR_FIELDS,
     normalizeActivityFieldErrors,
-    getActivityValidationToast,
+    withFormLevelError,
     getVisibilityOptions,
     ACTIVITY_TASK_REFERENCE,
     DEFAULT_TASK_ASSIGNMENT,
@@ -223,9 +223,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             if (response && response.status === false) {
                 const backendErrors = response.errors;
                 if (backendErrors && typeof backendErrors === 'object') {
-                    const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
-                    setErrors(normalizedErrors);
-                    toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS));
+                    setErrors(withFormLevelError(normalizeActivityFieldErrors(backendErrors), ACTIVITY_CREATE_ERROR_FIELDS));
                 } else {
                     toast.error(response.message || 'Validation failed.');
                 }
@@ -273,9 +271,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             const backendErrors = responseData?.errors;
 
             if (backendErrors && typeof backendErrors === 'object') {
-                const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
-                setErrors(normalizedErrors);
-                toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_CREATE_ERROR_FIELDS));
+                setErrors(withFormLevelError(normalizeActivityFieldErrors(backendErrors), ACTIVITY_CREATE_ERROR_FIELDS));
             } else if (err.response?.status !== 403) {
                 toast.error(responseData?.message || 'Failed to create activity');
             }
@@ -428,6 +424,11 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                         {errors.log_type && (
                             <div className="alert alert-danger py-2 mb-3">
                                 {errors.log_type[0]}
+                            </div>
+                        )}
+                        {errors.form && (
+                            <div className="alert alert-danger py-2 mb-3">
+                                {errors.form[0]}
                             </div>
                         )}
                         <form onSubmit={(e) => e.preventDefault()}>

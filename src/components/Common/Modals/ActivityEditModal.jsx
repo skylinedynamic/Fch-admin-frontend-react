@@ -14,7 +14,7 @@ import {
     ACTIVITY_SUMMARY_MAX_LENGTH,
     ACTIVITY_EDIT_ERROR_FIELDS,
     normalizeActivityFieldErrors,
-    getActivityValidationToast,
+    withFormLevelError,
     getVisibilityOptions,
     ACTIVITY_TASK_REFERENCE,
     DEFAULT_TASK_ASSIGNMENT,
@@ -58,6 +58,7 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
         entityType,
         partnerId,
         ownerRef: taskOwner,
+        assignedTo: activity?.task?.assigned_to,
         enabled: !!show && isTask && formData.assign_task,
     });
 
@@ -228,9 +229,7 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
             const backendErrors = responseData?.errors;
 
             if (backendErrors && typeof backendErrors === 'object') {
-                const normalizedErrors = normalizeActivityFieldErrors(backendErrors);
-                setErrors(normalizedErrors);
-                toast.error(getActivityValidationToast(normalizedErrors, ACTIVITY_EDIT_ERROR_FIELDS));
+                setErrors(withFormLevelError(normalizeActivityFieldErrors(backendErrors), ACTIVITY_EDIT_ERROR_FIELDS));
             } else if (err.response?.status !== 403) {
                 // 404, 500 — the server's own message (403 is already toasted by the API client).
                 toast.error(responseData?.message || 'Failed to update activity');
@@ -270,6 +269,11 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
                     </div>
 
                     <div className="modal-body p-4">
+                        {errors.form && (
+                            <div className="alert alert-danger py-2 mb-3">
+                                {errors.form[0]}
+                            </div>
+                        )}
                         <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }}>
                             <div className="row g-3">
                                 <div className="col-md-6">

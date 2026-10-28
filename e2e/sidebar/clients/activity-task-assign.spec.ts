@@ -57,7 +57,7 @@ test.describe('Client activity log - assign a Task (New Event)', () => {
     const api = await openClient(page)
     await openNewEvent(page)
 
-    await expectAssignSetup(page, api, { teamRequest: { partner_id: 2 }, ownerLabel: 'Client Assigned To', ownerText: 'Blake Ops' })
+    await expectAssignSetup(page, api, { teamRequest: { partner_id: 2, active_only: true, keep_ids: [14] }, ownerLabel: 'Client Assigned To', ownerText: 'Blake Ops' })
     await expect(activityModal(page).locator('#activityTaskOwner')).toContainText('blake@example.test')
   })
 
@@ -131,6 +131,27 @@ test.describe('Client activity log - assign a Task (New Event)', () => {
     await expect(modal.getByText('Please select who the task is assigned to.')).toBeVisible()
     await expect(modal.getByText('Please select when the task is due.')).toBeVisible()
     await expect(modal.locator('#activityAssignedTo')).toHaveClass(/is-invalid/)
+    // Shown on the form only - validation is never toasted.
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
+  })
+
+  test('a Task can be dated in the past', async ({ page }) => {
+    const api = await openClient(page)
+    api.add({ method: 'POST', match: /\/common\/activity-logs$/, status: 201, body: ok({ id: 9 }, 'Activity created successfully') })
+    const modal = await openNewEvent(page)
+
+    await pickReference(page, 'Task')
+    await modal.locator('#activityDate').fill('01 Jan, 2020 10:00 AM')
+    // Close the calendar by clicking away (Escape would close the whole modal).
+    await modal.locator('.modal-title').click()
+    await modal.locator('#activitySummary').fill('Follow up on the call')
+
+    await expect(modal.getByText(/must be in the future/)).toHaveCount(0)
+    await modal.getByRole('button', { name: 'Create' }).click()
+
+    const call = await expectCall(api, 'POST', /\/common\/activity-logs$/)
+    expect(String(call.json.activity_date)).toMatch(/^2020-01-01 /)
+    await expect(page.getByText('Activity created successfully').first()).toBeVisible()
   })
 })
 
@@ -153,7 +174,7 @@ test.describe('Client activity log - change a Task assignment (Edit)', () => {
     await expect(modal.locator('#activityEditTaskOwner')).toContainText('Blake Ops')
     await expect
       .poll(() => api.find('POST', '/common/get-all-users').map((c) => JSON.stringify(c.json ?? {})))
-      .toContain(JSON.stringify({ partner_id: 2 }))
+      .toContain(JSON.stringify({ partner_id: 2, active_only: true, keep_ids: [12, 14] }))
   })
 
   test('hands the task to someone else', async ({ page }) => {
@@ -200,5 +221,15 @@ test.describe('Client activity log - change a Task assignment (Edit)', () => {
 
     await expect(modal.getByText('The selected staff member cannot be assigned this task.')).toBeVisible()
     await expect(modal.locator('#activityEditAssignedTo')).toHaveClass(/is-invalid/)
+  })
+})
+
+test.describe('Client Assign to - active staff only', () => {
+  test("asks for active staff, keeping the client's saved assignee", async ({ page }) => {
+    const api = await openClient(page)
+
+    await expect
+      .poll(() => api.find('POST', '/common/get-all-users').map((c) => JSON.stringify(c.json ?? {})))
+      .toContain(JSON.stringify({ active_only: true, keep_ids: [14] }))
   })
 })

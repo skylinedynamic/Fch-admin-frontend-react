@@ -265,11 +265,17 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // plan_id now comes directly from the API — no retry/matching effect needed.
 
-    // Fetch Users for Assign to dropdown
+    // Fetch Users for Assign to dropdown: active staff only, keeping the
+    // client's saved assignee even if since made inactive.
+    const savedAssignId = (fetchedData?.data ?? fetchedData)?.assign_id ?? null;
     useEffect(() => {
+        if (clientId && isFetching) return;
         const fetchUsers = async () => {
             try {
-                const response = await allUsers();
+                const response = await allUsers({
+                    active_only: true,
+                    ...(savedAssignId ? { keep_ids: [Number(savedAssignId)] } : {}),
+                });
                 if (response.status && response.data) {
                     setUsers(response.data);
                 }
@@ -278,7 +284,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             }
         };
         fetchUsers();
-    }, []);
+    }, [clientId, isFetching, savedAssignId]);
 
     // Local Location Options Logic
     const [businessStates, setBusinessStates] = useState<{ label: string; value: string }[]>([]);

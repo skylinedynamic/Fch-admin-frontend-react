@@ -10,6 +10,8 @@ interface TaskAssignmentSetupOptions {
     partnerId?: number | string | null
     /** The record's own responsible staff member, shown above Assigned To. */
     ownerRef?: TaskOwnerRef | null
+    /** The task's saved assignee (Edit), kept in the list even if inactive. */
+    assignedTo?: number | string | null
     /** Load the staff list only while "Want to Assign" is on. */
     enabled: boolean
 }
@@ -21,9 +23,12 @@ interface TaskAssignmentSetupOptions {
  * - details from that list, else the name the page gave, else an empty state.
  * No owner card on records without such a role (e.g. Contacts / Employees).
  */
-export function useTaskAssignmentSetup({ entityType, partnerId, ownerRef, enabled }: TaskAssignmentSetupOptions) {
+export function useTaskAssignmentSetup({ entityType, partnerId, ownerRef, assignedTo, enabled }: TaskAssignmentSetupOptions) {
     const teamPartnerId = entityType !== ENTITY_TYPE_PARTNER && partnerId ? Number(partnerId) : null
-    const { data: staff = [], isLoading: isLoadingStaff } = useTaskAssignees(teamPartnerId, enabled)
+    // Inactive staff are not offered, but the saved assignee and the owner
+    // are kept so their names still show.
+    const keepIds = [ownerRef?.id, assignedTo].filter((id) => id != null && id !== '').map(Number)
+    const { data: staff = [], isLoading: isLoadingStaff } = useTaskAssignees(teamPartnerId, enabled, keepIds)
 
     const owner = ((): TaskOwnerDetails | null => {
         const label = entityType ? TASK_OWNER_LABELS[entityType] : undefined

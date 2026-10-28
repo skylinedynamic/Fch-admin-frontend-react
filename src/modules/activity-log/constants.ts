@@ -128,12 +128,23 @@ export const normalizeActivityFieldErrors = (errors: Record<string, string | str
     );
 
 // What to toast after a validation failure: the first error of a field the form
-// can't show inline, otherwise a pointer to the highlighted fields — so no
-// validation error is ever silent.
+// can't show inline, so no validation error is ever silent. Null when every
+// error is already shown inline — a toast would only repeat it.
 export const getActivityValidationToast = (
     errors: ActivityFieldErrors,
     shownFields: readonly string[]
-): string => {
+): string | null => {
     const unshown = Object.keys(errors).find((field) => !shownFields.includes(field));
-    return unshown ? errors[unshown][0] : 'Please fix the highlighted fields.';
+    return unshown ? errors[unshown][0] : null;
+};
+
+// The form's errors after a validation failure: each field's own message, plus
+// any message with no field to sit under as `form` (shown above the form) -
+// validation is never toasted.
+export const withFormLevelError = (
+    errors: ActivityFieldErrors,
+    shownFields: readonly string[]
+): ActivityFieldErrors => {
+    const unshown = getActivityValidationToast(errors, shownFields);
+    return unshown ? { ...errors, form: [unshown] } : errors;
 };

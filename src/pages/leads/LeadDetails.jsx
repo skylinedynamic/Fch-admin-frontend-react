@@ -377,7 +377,13 @@ export default function LeadDetails() {
 
         const loadTeam = async () => {
             try {
-                const usersRes = await allUsers(teamPartnerId ? { partner_id: teamPartnerId } : {});
+                // Active staff only, keeping the saved owner even if since made inactive.
+                const savedOwnerId = id && formData.salesperson_id ? Number(formData.salesperson_id) : null;
+                const usersRes = await allUsers({
+                    ...(teamPartnerId ? { partner_id: teamPartnerId } : {}),
+                    active_only: true,
+                    ...(savedOwnerId ? { keep_ids: [savedOwnerId] } : {}),
+                });
                 if (cancelled || !usersRes.status) return;
 
                 const userData = usersRes.data || [];
