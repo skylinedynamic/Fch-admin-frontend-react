@@ -10,6 +10,9 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-28
+- [2026-10-28-coverage-run-exit-1-and-funding-request-step-reload.md](2026-10-28-coverage-run-exit-1-and-funding-request-step-reload.md) — coverage run exit 1 (overlapping runs), and the Funding Request step re-fetching by the application id.
+
 ### 2026-10-27
 - [2026-10-27-login-footer-without-a-brand-name.md](2026-10-27-login-footer-without-a-brand-name.md) — BUG-118: the login footer leaves no gap when the branding has no name.
 - [2026-10-27-invoice-details-email-invoice.md](2026-10-27-invoice-details-email-invoice.md) — BUG-091: the invoice details page can e-mail an unpaid invoice.
