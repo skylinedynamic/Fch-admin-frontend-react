@@ -17,6 +17,8 @@ Several features or tasks on the same date means several files with the same dat
 - [2026-10-27-add-user-seat-limit-purchase.md](2026-10-27-add-user-seat-limit-purchase.md) — BUG-109: Add User at the seat limit opens the seat purchase window and keeps what was typed.
 - [2026-10-27-appointment-edit-attendee-and-conflict.md](2026-10-27-appointment-edit-attendee-and-conflict.md) — BUG-100: editing an appointment keeps its attendee and checks conflicts before saving.
 - [2026-10-27-business-financials-default-currency.md](2026-10-27-business-financials-default-currency.md) — BUG-077: Business Financials saves the USD it shows when no currency is stored.
+- [2026-10-27-activity-log-assign-task-to-staff.md](2026-10-27-activity-log-assign-task-to-staff.md) — Activity log: assign a Task to a staff member.
+- [2026-10-27-funding-applications-company-name-column.md](2026-10-27-funding-applications-company-name-column.md) — Funding Applications list: Company Name column.
 
 ### 2026-10-26
 - [2026-10-26-employee-alternate-mobile-error.md](2026-10-26-employee-alternate-mobile-error.md) — Employee Alternate Mobile and Zip Code show the API validation message under the field.

@@ -17,13 +17,21 @@ import {
     normalizeActivityFieldErrors,
     getActivityValidationToast,
     getVisibilityOptions,
+    ACTIVITY_TASK_REFERENCE,
+    DEFAULT_TASK_ASSIGNMENT,
+    taskAssignmentFromActivity,
+    buildTaskEditFields,
 } from '../../../modules/activity-log/constants';
 import { TimeInputs } from '../TimeInputs';
+import ToggleCard from './activity-create/ToggleCard';
+import TaskAssignmentFields from './activity-create/TaskAssignmentFields';
+import { useTaskAssignmentSetup } from './activity-create/useTaskAssignmentSetup';
+import './activity-create/activityCreateModal.css';
 
 const REFERENCE_OPTIONS = REMINDER_TYPES.map(t => t.value);
 
 
-export default function ActivityEditModal({ activity, show, onClose, onUpdated, isHost }) {
+export default function ActivityEditModal({ activity, show, onClose, onUpdated, isHost, entityType = null, partnerId = null, taskOwner = null }) {
     const textareaRef = useRef(null);
     const fileInputRef = useRef(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -42,7 +50,16 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
         remind_at: '',
         reminder_preset: '30_minutes',
         reminder_time_value: '30',
-        reminder_time_unit: 'Minutes'
+        reminder_time_unit: 'Minutes',
+        ...DEFAULT_TASK_ASSIGNMENT,
+    });
+
+    const isTask = formData.reference === ACTIVITY_TASK_REFERENCE;
+    const { staff: staffMembers, isLoadingStaff, owner: taskOwnerDetails } = useTaskAssignmentSetup({
+        entityType,
+        partnerId,
+        ownerRef: taskOwner,
+        enabled: !!show && isTask && formData.assign_task,
     });
 
     // Populate data when activity changes or modal opens
@@ -62,7 +79,8 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
                 remind_at: activity.remind_at || activity.properties?.remind_at || '',
                 reminder_preset: activity.reminder_preset || activity.properties?.reminder_preset || '30_minutes',
                 reminder_time_value: activity.reminder_time_value || activity.properties?.reminder_time_value || '30',
-                reminder_time_unit: activity.reminder_time_unit || activity.properties?.reminder_time_unit || 'Minutes'
+                reminder_time_unit: activity.reminder_time_unit || activity.properties?.reminder_time_unit || 'Minutes',
+                ...taskAssignmentFromActivity(activity.task),
             });
             setErrors({});
         }
@@ -74,6 +92,10 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
             ...prev,
             [name]: value
         }));
+    };
+
+    const setField = (name, value) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleFileChange = (e) => {
@@ -181,6 +203,9 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
             data.append('reminder_preset', formData.reminder_preset || '30_minutes');
             data.append('reminder_time_value', formData.reminder_time_value || '30');
             data.append('reminder_time_unit', formData.reminder_time_unit || 'Minutes');
+            Object.entries(buildTaskEditFields(formData)).forEach(([field, value]) => {
+                data.append(field, value);
+            });
 
             // Retained existing attachments
             data.append('existing_attachments', JSON.stringify(existingAttachments));
@@ -486,6 +511,30 @@ export default function ActivityEditModal({ activity, show, onClose, onUpdated, 
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Want to Assign: the task's assignee can be changed here */}
+                                {isTask && (
+                                    <div className="col-12 acm">
+                                        <ToggleCard
+                                            id="editAssignTaskSwitch"
+                                            title="Want to Assign"
+                                            icon="ri-user-shared-line"
+                                            checked={formData.assign_task}
+                                            onChange={(checked) => setField('assign_task', checked)}
+                                            error={errors.assign_task?.[0]}
+                                        >
+                                            <TaskAssignmentFields
+                                                idPrefix="activityEdit"
+                                                values={formData}
+                                                onChange={setField}
+                                                staff={staffMembers}
+                                                isLoadingStaff={isLoadingStaff}
+                                                errors={errors}
+                                                owner={taskOwnerDetails}
+                                            />
+                                        </ToggleCard>
+                                    </div>
+                                )}
 
                                 {/* Attachments Section */}
                                 <div className="col-12 mt-3">

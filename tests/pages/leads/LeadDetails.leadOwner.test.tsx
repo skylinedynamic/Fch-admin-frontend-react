@@ -160,3 +160,38 @@ describe('LeadDetails › lead owner and type', () => {
     expect(screen.queryByText('Lead Type')).not.toBeInTheDocument()
   })
 })
+
+describe('LeadDetails - activity log Want to Assign', () => {
+  afterEach(() => {
+    cleanup()
+    server.resetHandlers()
+    delete (window as any)._activityEntityContext
+  })
+
+  it("hands New Event the lead's partner and its Lead Owner", async () => {
+    signInAs(true)
+    serve(leadOf(2))
+    renderLead()
+
+    const newEvent = await screen.findByRole('button', { name: /new event/i })
+    await waitFor(() => expect((window as any)._activityEntityContext?.partnerId).toBe(2))
+    // The modal is mounted by GlobalModals, not here: keep Bootstrap from opening it.
+    newEvent.removeAttribute('data-bs-toggle')
+    newEvent.click()
+
+    expect((window as any)._activityEntityContext).toMatchObject({
+      entityType: 'Lead',
+      partnerId: 2,
+      taskOwner: { id: 22, name: 'Sal WLP' },
+    })
+  })
+
+  it('hands no owner when the lead has none', async () => {
+    signInAs(true)
+    serve(leadOf(2, { salesperson_id: null, salesperson_name: null }))
+    renderLead()
+
+    await waitFor(() => expect((window as any)._activityEntityContext?.partnerId).toBe(2))
+    expect((window as any)._activityEntityContext.taskOwner).toBeNull()
+  })
+})

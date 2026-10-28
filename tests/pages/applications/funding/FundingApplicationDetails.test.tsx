@@ -16,7 +16,14 @@ vi.mock('../../../../src/modules/application/queries', async (original) => ({
   useSaveFundingApplicationCommission: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
-vi.mock('../../../../src/components/Common/Activity/ActivitySidebar', () => ({ default: () => null }))
+// Records what the page hands the activity log, which is not rendered here.
+const sidebar = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }))
+vi.mock('../../../../src/components/Common/Activity/ActivitySidebar', () => ({
+  default: (props: Record<string, unknown>) => {
+    sidebar.props = props
+    return null
+  },
+}))
 
 // A submitted application on an approved request that is still at status key 9 or below.
 const editable = {
@@ -194,5 +201,36 @@ describe('FundingApplicationDetails — Funding Request tab', () => {
 
     const additional = await screen.findByText('Additional Funding Types')
     expect(additional.nextElementSibling).toHaveTextContent('-')
+  })
+})
+
+describe('FundingApplicationDetails - activity log Want to Assign', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+    sidebar.props = null
+  })
+
+  it("lists the application partner's staff and shows its borrower's Assign to", () => {
+    detail.application = { ...editable, partner_id: 4, borrower: { id: 1, assign_id: 14, email: 'b@example.test' } }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(sidebar.props).toMatchObject({
+      entityType: 'Funding Application',
+      partnerId: 4,
+      taskOwner: { id: 14 },
+    })
+  })
+
+  it('shows nobody when the borrower has no Assign to', () => {
+    detail.application = { ...editable, borrower: { id: 1, assign_id: null } }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(sidebar.props?.taskOwner).toBeNull()
+  })
+
+  it("lines the activity card up under the page's own title bar (no fixed offset)", () => {
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(sidebar.props?.stickyTopOffset).toBeUndefined()
   })
 })
