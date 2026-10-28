@@ -73,8 +73,12 @@ export default function FundingRequestStep({
     || searchParams.get('fundingRequestId')
     || null
 
-  const [fundingRequestId, setFundingRequestId] = useState<number | null>(effectiveRequestId ? Number(effectiveRequestId) : null)
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFundingRequest(fundingRequestId, { enabled: !!fundingRequestId })
+  // Load by the funding request id only. The record's own `id` is the funding
+  // application's id - sent back on save, never used to load (the API would
+  // read it as another funding request).
+  const loadRequestId = effectiveRequestId ? Number(effectiveRequestId) : null
+  const [applicationId, setApplicationId] = useState<number | null>(null)
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFundingRequest(loadRequestId, { enabled: !!loadRequestId })
   const saveMutation = useSaveFundingRequest()
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
@@ -128,7 +132,7 @@ export default function FundingRequestStep({
     setValidationErrors({})
 
     const payload = {
-      id: fundingRequestId,
+      id: applicationId,
       funding_request_id: effectiveRequestId || apiData?.funding_request_id || null,
       funding_sequence_id: fundingSequenceId || apiData?.funding_sequence_id || null,
       requested_amount: unformatCurrency(funding.requestedAmount) || null,
@@ -158,7 +162,7 @@ export default function FundingRequestStep({
       }
       return false
     }
-  }, [fundingRequestId, effectiveRequestId, apiData, fundingSequenceId, funding, hasOtherPurpose, saveMutation])
+  }, [applicationId, effectiveRequestId, apiData, fundingSequenceId, funding, hasOtherPurpose, saveMutation])
 
   // Register save function
   useEffect(() => {
@@ -173,7 +177,7 @@ export default function FundingRequestStep({
   // Pre-fill form from API
   useEffect(() => {
     if (isSuccess && apiData) {
-      setFundingRequestId(apiData.id || null)
+      setApplicationId(apiData.id || null)
 
       const rawAmount = urlRequestedAmount || apiData.requested_amount
       const parsedAmount = rawAmount ? formatCurrency(rawAmount) : ''
