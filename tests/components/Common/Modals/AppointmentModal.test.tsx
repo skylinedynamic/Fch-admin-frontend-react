@@ -192,16 +192,21 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
       })
     )
 
-  const availability = (data: Record<string, unknown>) => {
+  // `held`: every answer waits until `release()` - so the test, not the
+  // runner's speed, decides that Save is clicked before any check has answered.
+  const availability = (data: Record<string, unknown>, { held = false } = {}) => {
     const seen = { calls: 0 }
+    let release = () => {}
+    const answered = held ? new Promise<void>((resolve) => { release = resolve }) : Promise.resolve()
     const stub = () =>
       server.use(
-        http.post('*/common/appointments/check-availability', () => {
+        http.post('*/common/appointments/check-availability', async () => {
           seen.calls += 1
+          await answered
           return HttpResponse.json({ status: true, data })
         })
       )
-    return { seen, stub }
+    return { seen, stub, release: () => release() }
   }
 
   const edit = async (check: { stub: () => void }) => {
@@ -223,16 +228,24 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
     expect(screen.queryByText('Select Users')).not.toBeInTheDocument()
   })
 
+  /**
+   * Defect: flaky in CI. The test clicked Save "straight away", hoping to beat
+   * the background check that runs 500ms after Edit. On a loaded runner that
+   * check answered first, showed the conflict and disabled Save, so the click
+   * did nothing and toast.error was never called. Holding the answers until
+   * Save is clicked makes "Save before the check answered" certain.
+   */
   it('checks for a conflict before saving, and saves nothing when there is one', async () => {
     const check = availability({
       available: false,
       scheduler_conflicts: [{ id: 99, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }],
       assignee_conflicts: [],
-    })
+    }, { held: true })
     const { update, user } = await edit(check)
 
-    // Straight away - before the background check (500ms after a change) has run.
+    // Before any availability check (the 500ms background one included) has answered.
     await user.click(screen.getByRole('button', { name: /save changes/i }))
+    check.release()
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Cannot save appointment: Time slot conflicts with another appointment'))
     expect(check.seen.calls).toBeGreaterThan(0)
