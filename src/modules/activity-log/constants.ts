@@ -1,4 +1,5 @@
 import { DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from '../../config/activityTask';
+import type { ActivityTask } from './types';
 
 // The activity's summary becomes the reminder's title too. The API's
 // Store/UpdateActivityLogRequest enforce the same limit.
@@ -17,7 +18,7 @@ export const ACTIVITY_CREATE_ERROR_FIELDS = [
     'visibility',
     'assign_task',
     'assigned_to',
-    'task_due_at',
+    'task_due_date',
     'task_priority',
     'task_status',
 ] as const;
@@ -29,6 +30,11 @@ export const ACTIVITY_EDIT_ERROR_FIELDS = [
     'description',
     'remind_at',
     'visibility',
+    'assign_task',
+    'assigned_to',
+    'task_due_date',
+    'task_priority',
+    'task_status',
 ] as const;
 
 // "Want to Assign": only a Task activity can be handed to a staff member, with
@@ -39,7 +45,7 @@ export { TASK_PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from '../../config/activit
 export const DEFAULT_TASK_ASSIGNMENT = {
     assign_task: false,
     assigned_to: '',
-    task_due_at: '',
+    task_due_date: '',
     task_priority: DEFAULT_TASK_PRIORITY,
     task_status: DEFAULT_TASK_STATUS,
 };
@@ -48,10 +54,30 @@ export interface TaskAssignmentForm {
     reference?: string;
     assign_task?: boolean;
     assigned_to?: string | number;
-    task_due_at?: string;
+    task_due_date?: string;
     task_priority?: string;
     task_status?: string;
 }
+
+// The edit form's "Want to Assign" values for an activity's saved task.
+export const taskAssignmentFromActivity = (task?: ActivityTask | null) => (
+    task
+        ? {
+            assign_task: true,
+            assigned_to: task.assigned_to != null ? String(task.assigned_to) : '',
+            task_due_date: task.due_date ?? '',
+            task_priority: task.priority ?? DEFAULT_TASK_PRIORITY,
+            task_status: task.status ?? DEFAULT_TASK_STATUS,
+        }
+        : DEFAULT_TASK_ASSIGNMENT
+);
+
+// The edit request's task fields: always says whether the task is assigned,
+// so turning "Want to Assign" off (or leaving Task) un-assigns it.
+export const buildTaskEditFields = (form: TaskAssignmentForm): Record<string, string> => ({
+    assign_task: '0',
+    ...buildTaskAssignmentFields(form),
+});
 
 // The create request's task fields — none at all unless a Task is being assigned.
 export const buildTaskAssignmentFields = (form: TaskAssignmentForm): Record<string, string> => {
@@ -62,7 +88,7 @@ export const buildTaskAssignmentFields = (form: TaskAssignmentForm): Record<stri
     return {
         assign_task: '1',
         assigned_to: String(form.assigned_to ?? ''),
-        task_due_at: form.task_due_at ?? '',
+        task_due_date: form.task_due_date ?? '',
         task_priority: form.task_priority ?? '',
         task_status: form.task_status ?? '',
     };

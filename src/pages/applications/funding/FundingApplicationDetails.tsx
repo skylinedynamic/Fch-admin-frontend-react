@@ -1353,7 +1353,6 @@ export default function FundingApplicationDetails() {
                                 hostEmail={undefined}
                                 isHost={isHost}
                                 borrowerEmail={(app as FundingApplicationDetailsType & { borrower?: { email?: string | null } | null })?.borrower?.email}
-                                stickyTopOffset="133px"
                             />
                         </div>
                     </div>

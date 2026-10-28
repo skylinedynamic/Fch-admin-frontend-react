@@ -6,6 +6,11 @@ interface AttachmentPickerProps {
     onRemove: (index: number) => void
     /** Errors keyed like the API's: "attachments" and "attachments.<index>". */
     errors: Record<string, string[] | undefined>
+    label?: string
+    /** Element ids, so two modals on one page never share them. */
+    inputId?: string
+    buttonId?: string
+    listId?: string
 }
 
 const FILE_ICONS: Record<string, string> = {
@@ -27,15 +32,24 @@ const formatSize = (bytes: number) => {
 }
 
 /** "Select Attachments": an add button and the chosen files, each removable. */
-export default function AttachmentPicker({ files, onAdd, onRemove, errors }: AttachmentPickerProps) {
+export default function AttachmentPicker({
+    files,
+    onAdd,
+    onRemove,
+    errors,
+    label = 'Select Attachments',
+    inputId = 'activityAttachmentInput',
+    buttonId = 'activityAttachmentBtn',
+    listId = 'activityAttachmentList',
+}: AttachmentPickerProps) {
     const inputRef = useRef<HTMLInputElement>(null)
 
     return (
         <div className="acm-field">
-            <span className="form-label d-block">Select Attachments</span>
+            <span className="form-label d-block">{label}</span>
             <button
                 type="button"
-                id="activityAttachmentBtn"
+                id={buttonId}
                 className={`acm-attach ${errors.attachments ? 'is-invalid' : ''}`}
                 onClick={() => inputRef.current?.click()}
             >
@@ -45,14 +59,14 @@ export default function AttachmentPicker({ files, onAdd, onRemove, errors }: Att
             <input
                 ref={inputRef}
                 type="file"
-                id="activityAttachmentInput"
+                id={inputId}
                 className="d-none"
                 multiple
                 onChange={(e) => onAdd(Array.from(e.target.files ?? []))}
             />
 
             {files.length > 0 && (
-                <ul className="acm-files" id="activityAttachmentList">
+                <ul className="acm-files" id={listId}>
                     {files.map((file, index) => {
                         const fileError = errors[`attachments.${index}`]
                         return (

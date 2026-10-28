@@ -6,7 +6,7 @@ import { TASK_PRIORITY_SELECT_OPTIONS, TASK_STATUS_SELECT_OPTIONS, getInitials }
 
 export interface TaskAssignmentValues {
     assigned_to: string | number
-    task_due_at: string
+    task_due_date: string
     task_priority: string
     task_status: string
 }
@@ -24,10 +24,18 @@ interface TaskAssignmentFieldsProps {
     errors: Partial<Record<keyof TaskAssignmentValues, string[]>>
     /** The staff member already responsible for the record, shown above Assigned To. */
     owner?: TaskOwnerDetails | null
+    /** Prefix of the element ids, so New Activity and Edit never share them. */
+    idPrefix?: string
 }
 
-/** Assigned To, Due Date / Time, Priority and Status inside the Want to Assign card. */
-export default function TaskAssignmentFields({ values, onChange, staff, isLoadingStaff, errors, owner }: TaskAssignmentFieldsProps) {
+const startOfToday = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return today
+}
+
+/** Assigned To, Due Date, Priority and Status inside the Want to Assign card. */
+export default function TaskAssignmentFields({ values, onChange, staff, isLoadingStaff, errors, owner, idPrefix = 'activity' }: TaskAssignmentFieldsProps) {
     const staffOptions = useMemo(
         () => staff.map((member) => ({
             value: String(member.id),
@@ -38,18 +46,18 @@ export default function TaskAssignmentFields({ values, onChange, staff, isLoadin
     )
 
     return (
-        <div className="row g-3" id="activityTaskAssignment">
+        <div className="row g-3" id={`${idPrefix}TaskAssignment`}>
             {owner && (
                 <div className="col-12">
-                    <TaskOwnerCard owner={owner} />
+                    <TaskOwnerCard owner={owner} id={`${idPrefix}TaskOwner`} />
                 </div>
             )}
             <div className="col-md-6">
-                <label className="form-label" htmlFor="activityAssignedTo">
+                <label className="form-label" htmlFor={`${idPrefix}AssignedTo`}>
                     Assigned To <span className="text-danger">*</span>
                 </label>
                 <ActivitySelect
-                    id="activityAssignedTo"
+                    id={`${idPrefix}AssignedTo`}
                     value={String(values.assigned_to ?? '')}
                     options={staffOptions}
                     onChange={(value) => onChange('assigned_to', value)}
@@ -64,25 +72,26 @@ export default function TaskAssignmentFields({ values, onChange, staff, isLoadin
                 {errors.assigned_to && <div className="text-danger mt-1 small">{errors.assigned_to[0]}</div>}
             </div>
             <div className="col-md-6">
-                <label className="form-label" htmlFor="activityTaskDueAt">
-                    Due Date / Time <span className="text-danger">*</span>
+                <label className="form-label" htmlFor={`${idPrefix}TaskDueAt`}>
+                    Due Date <span className="text-danger">*</span>
                 </label>
                 <DateTimeField
-                    inputId="activityTaskDueAt"
-                    value={values.task_due_at}
-                    onChange={(value) => onChange('task_due_at', value)}
-                    minDate={new Date()}
-                    invalid={!!errors.task_due_at}
-                    placeholder="Select due date & time"
+                    inputId={`${idPrefix}TaskDueAt`}
+                    value={values.task_due_date}
+                    onChange={(value) => onChange('task_due_date', value)}
+                    minDate={startOfToday()}
+                    invalid={!!errors.task_due_date}
+                    placeholder="Select due date"
+                    withTime={false}
                 />
-                {errors.task_due_at && <div className="text-danger mt-1 small">{errors.task_due_at[0]}</div>}
+                {errors.task_due_date && <div className="text-danger mt-1 small">{errors.task_due_date[0]}</div>}
             </div>
             <div className="col-md-6">
-                <label className="form-label" htmlFor="activityTaskPriority">
+                <label className="form-label" htmlFor={`${idPrefix}TaskPriority`}>
                     Priority <span className="text-danger">*</span>
                 </label>
                 <ActivitySelect
-                    id="activityTaskPriority"
+                    id={`${idPrefix}TaskPriority`}
                     value={values.task_priority}
                     options={TASK_PRIORITY_SELECT_OPTIONS}
                     onChange={(value) => onChange('task_priority', value)}
@@ -91,11 +100,11 @@ export default function TaskAssignmentFields({ values, onChange, staff, isLoadin
                 {errors.task_priority && <div className="text-danger mt-1 small">{errors.task_priority[0]}</div>}
             </div>
             <div className="col-md-6">
-                <label className="form-label" htmlFor="activityTaskStatus">
+                <label className="form-label" htmlFor={`${idPrefix}TaskStatus`}>
                     Status <span className="text-danger">*</span>
                 </label>
                 <ActivitySelect
-                    id="activityTaskStatus"
+                    id={`${idPrefix}TaskStatus`}
                     value={values.task_status}
                     options={TASK_STATUS_SELECT_OPTIONS}
                     onChange={(value) => onChange('task_status', value)}

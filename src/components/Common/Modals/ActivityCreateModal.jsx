@@ -13,7 +13,6 @@ import {
     DEFAULT_TASK_ASSIGNMENT,
     buildTaskAssignmentFields,
 } from '../../../modules/activity-log/constants';
-import { useTaskAssignees } from '../../../modules/activity-log/queries';
 import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 import {
     ENTITY_TYPE_LEAD,
@@ -32,12 +31,15 @@ import ReminderFields from './activity-create/ReminderFields';
 import TaskAssignmentFields from './activity-create/TaskAssignmentFields';
 import AttachmentPicker from './activity-create/AttachmentPicker';
 import { REFERENCE_SELECT_OPTIONS } from './activity-create/options';
-import { TASK_OWNER_LABELS } from '../../../config/activityTask';
+import { useTaskAssignmentSetup } from './activity-create/useTaskAssignmentSetup';
 import './activity-create/activityCreateModal.css';
 
 
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const textareaRef = useRef(null); // Local ref to capture the DOM node
+    // This instance's own modal element. Some pages mount a second copy with the
+    // same id, so getElementById could hand back the other copy.
+    const modalRef = useRef(null);
 
     const getDefaultDateTime = () => {
         const now = new Date();
@@ -66,30 +68,20 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
     const [isHostUser, setIsHostUser] = useState(false);
     const [formData, setFormData] = useState(getEmptyForm);
 
-    const [taskTeamPartnerId, setTaskTeamPartnerId] = useState(null);
-    // The record's responsible staff member ({ id, name }) and which kind of record it is.
+    // The record the modal was opened on: its owning partner, its responsible
+    // staff member ({ id, name }) and which kind of record it is.
+    const [taskPartnerId, setTaskPartnerId] = useState(null);
     const [taskOwnerRef, setTaskOwnerRef] = useState(null);
     const [taskEntityType, setTaskEntityType] = useState(null);
 
     const isTask = formData.reference === ACTIVITY_TASK_REFERENCE;
     const isAssigningTask = isTask && formData.assign_task;
-    // Assigned To lists the staff of the partner that owns the record; the
-    // Partner page sends none, so the API gives the host's own staff.
-    const { data: staffMembers = [], isLoading: isLoadingStaff } = useTaskAssignees(taskTeamPartnerId, isAssigningTask);
-
-    // Shown above Assigned To: details from the staff list, else the name the page gave.
-    const taskOwner = (() => {
-        if (!taskOwnerRef?.id) return null;
-        const member = staffMembers.find(m => String(m.id) === String(taskOwnerRef.id));
-        const name = member?.full_name || taskOwnerRef.name;
-        if (!name) return null;
-        return {
-            label: TASK_OWNER_LABELS[taskEntityType] || TASK_OWNER_LABELS[ENTITY_TYPE_BORROWER],
-            name,
-            email: member?.email,
-            phone: member?.phone_number,
-        };
-    })();
+    const { staff: staffMembers, isLoadingStaff, owner: taskOwner } = useTaskAssignmentSetup({
+        entityType: taskEntityType,
+        partnerId: taskPartnerId,
+        ownerRef: taskOwnerRef,
+        enabled: isAssigningTask,
+    });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -258,7 +250,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 if (window.hideGlobalModal) {
                     window.hideGlobalModal('activityCreateModal');
                 } else {
-                    const modalEl = document.getElementById('activityCreateModal');
+                    const modalEl = modalRef.current;
                     if (window.bootstrap && modalEl) {
                         const modal = window.bootstrap.Modal.getInstance(modalEl);
                         if (modal) modal.hide();
@@ -330,7 +322,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
 
     // Reset validation and form on modal close/open
     useEffect(() => {
-        const modalEl = document.getElementById('activityCreateModal');
+        const modalEl = modalRef.current;
 
         const resetForm = (e) => {
             // Prevent nested elements (like Summernote dialogs if appended inside) from triggering the reset
@@ -340,7 +332,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             const hostUser = !!ctx.isHost;
             setIsHostUser(hostUser);
             const ctxEntityType = entityType ?? ctx.entityType;
-            setTaskTeamPartnerId(ctxEntityType !== ENTITY_TYPE_PARTNER && ctx.partnerId ? Number(ctx.partnerId) : null);
+            setTaskPartnerId(ctx.partnerId ?? null);
             setTaskEntityType(ctxEntityType ?? null);
             setTaskOwnerRef(ctx.taskOwner ?? null);
 
@@ -419,7 +411,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
     const summaryLength = (formData.summary || '').length;
 
     return (
-        <div className="modal fade acm" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-focus="false">
+        <div ref={modalRef} className="modal fade acm" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-focus="false">
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
                 <div className="modal-content">
                     <div className="modal-header acm-header">

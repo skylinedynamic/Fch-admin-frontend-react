@@ -7,17 +7,26 @@ export const toLocalDateTimeString = (date: Date): string => {
     return new Date(date.getTime() - tzOffset).toISOString().slice(0, 19).replace('T', ' ')
 }
 
-export const parseLocalDateTime = (value: string | null | undefined): Date | null =>
-    value ? new Date(value.replace(' ', 'T')) : null
+/** "YYYY-MM-DD" in the viewer's own calendar. */
+export const toLocalDateString = (date: Date): string => toLocalDateTimeString(date).slice(0, 10)
+
+// A bare "YYYY-MM-DD" would parse as UTC midnight (the day before, west of
+// UTC), so it is read as local midnight.
+export const parseLocalDateTime = (value: string | null | undefined): Date | null => {
+    if (!value) return null
+    return new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value.replace(' ', 'T'))
+}
 
 interface DateTimeFieldProps {
     inputId: string
-    /** "YYYY-MM-DD HH:mm:ss", or '' for none. */
+    /** "YYYY-MM-DD HH:mm:ss" ("YYYY-MM-DD" when withTime is off), or '' for none. */
     value: string
     onChange: (value: string) => void
     minDate?: Date | null
     invalid?: boolean
     placeholder?: string
+    /** Off: a day only — no time inputs, value "YYYY-MM-DD". */
+    withTime?: boolean
 }
 
 /**
@@ -32,6 +41,7 @@ export default function DateTimeField({
     minDate = null,
     invalid = false,
     placeholder = 'Select date & time',
+    withTime = true,
 }: DateTimeFieldProps) {
     const current = parseLocalDateTime(value)
 
@@ -46,13 +56,17 @@ export default function DateTimeField({
                         onChange('')
                         return
                     }
+                    if (!withTime) {
+                        onChange(toLocalDateString(picked))
+                        return
+                    }
                     const merged = new Date(picked)
                     if (current) merged.setHours(current.getHours(), current.getMinutes(), 0, 0)
                     onChange(toLocalDateTimeString(merged))
                 }}
                 minDate={minDate ?? undefined}
                 dateFormat="dd M, yy"
-                showTime
+                showTime={withTime}
                 hourFormat="12"
                 placeholder={placeholder}
                 showIcon
@@ -60,12 +74,12 @@ export default function DateTimeField({
                 className={`w-100 ${invalid ? 'p-invalid' : ''}`}
                 inputClassName={`form-control ${invalid ? 'is-invalid' : ''}`}
                 appendTo="self"
-                footerTemplate={() => (
+                footerTemplate={withTime ? () => (
                     <TimeInputs
                         value={current}
                         onChange={(next: Date) => onChange(toLocalDateTimeString(next))}
                     />
-                )}
+                ) : undefined}
             />
         </div>
     )

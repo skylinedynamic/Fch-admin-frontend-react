@@ -47,8 +47,8 @@ export interface ActivityLog {
 export interface ActivityTask {
     assigned_to: number | null;
     assigned_user: { id: number; name: string } | null;
-    /** Viewer's timezone, "YYYY-MM-DD HH:mm:ss". */
-    due_at: string | null;
+    /** A calendar day, "YYYY-MM-DD". */
+    due_date: string | null;
     priority: TaskPriority | null;
     priority_label: string | null;
     status: TaskStatus | null;

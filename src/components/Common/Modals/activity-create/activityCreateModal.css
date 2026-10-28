@@ -23,8 +23,8 @@
 /* ---- Header ------------------------------------------------------------ */
 .acm .acm-header {
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--acm-border);
-    background-color: var(--vz-secondary-bg);
+    border-bottom: 0;
+    background-color: var(--vz-primary);
 }
 
 .acm .acm-header__title {
@@ -33,6 +33,7 @@
     gap: 0.75rem;
 }
 
+/* White tile on the primary bar. */
 .acm .acm-header__icon {
     display: inline-flex;
     align-items: center;
@@ -40,17 +41,26 @@
     width: 36px;
     height: 36px;
     border-radius: var(--acm-radius);
-    background-color: var(--vz-primary);
+    background-color: rgba(255, 255, 255, 0.16);
     color: #fff;
     font-size: 1.125rem;
-    box-shadow: 0 0.375rem 0.875rem rgba(var(--vz-primary-rgb), 0.3);
 }
 
 .acm .acm-header .modal-title {
     margin: 0;
     font-size: 1rem;
     font-weight: var(--vz-font-weight-semibold, 600);
-    color: var(--vz-heading-color);
+    color: #fff;
+}
+
+/* The close "x" in white, as Bootstrap's .btn-close-white. */
+.acm .acm-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    opacity: 0.85;
+}
+
+.acm .acm-header .btn-close:hover {
+    opacity: 1;
 }
 
 /* ---- Body / sections --------------------------------------------------- */
@@ -417,6 +427,7 @@
 
 .acm .acm-visibility.has-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .acm .acm-visibility.has-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.acm .acm-visibility.has-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .acm .acm-visibility__option {
     position: relative;
@@ -667,6 +678,18 @@
     max-width: 100%;
 }
 
+.acm .acm-owner.is-empty .acm-owner__avatar {
+    background-color: var(--vz-light);
+    color: var(--acm-muted);
+    font-size: 1.125rem;
+}
+
+.acm .acm-owner__empty {
+    font-size: 0.8125rem;
+    font-style: italic;
+    color: var(--acm-muted);
+}
+
 .acm .acm-owner__contact i {
     font-size: 0.8125rem;
     line-height: 1;
@@ -815,6 +838,57 @@
 
 .acm .acm-submit {
     box-shadow: 0 0.375rem 0.875rem rgba(var(--vz-primary-rgb), 0.25);
+}
+
+/* ---- Email "To" (Choices.js tags) as a regular field -------------------- */
+.acm .acm-tags .choices {
+    margin-bottom: 0;
+}
+
+.acm .acm-tags .choices__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: var(--acm-field-height);
+    padding: 0.25rem 0.5rem;
+    border: var(--vz-border-width, 1px) solid var(--vz-input-border-custom);
+    border-radius: var(--acm-radius);
+    background-color: var(--vz-input-bg-custom);
+    font-size: var(--vz-font-base);
+}
+
+.acm .acm-tags .choices.is-focused .choices__inner,
+.acm .acm-tags .choices.is-open .choices__inner {
+    border-color: var(--vz-primary-border-subtle);
+}
+
+.acm .acm-tags.is-invalid .choices__inner {
+    border-color: var(--vz-danger);
+}
+
+.acm .acm-tags .choices__list--multiple .choices__item {
+    margin: 0;
+    padding: 0.125rem 0.5rem;
+    border: 0;
+    border-radius: var(--acm-radius);
+    background-color: var(--acm-tint-strong);
+    color: var(--vz-primary);
+    font-size: 0.75rem;
+    font-weight: var(--vz-font-weight-medium, 500);
+}
+
+.acm .acm-tags .choices__list--multiple .choices__item .choices__button {
+    border-left-color: rgba(var(--vz-primary-rgb), 0.3);
+    filter: none;
+    opacity: 0.6;
+}
+
+.acm .acm-tags .choices__input {
+    margin: 0;
+    padding: 0.25rem 0.25rem;
+    background-color: transparent;
+    font-size: var(--vz-font-base);
 }
 
 /* ---- Small screens ------------------------------------------------------ */

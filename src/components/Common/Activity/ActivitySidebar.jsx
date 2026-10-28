@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getActivityLogs, downloadActivityAttachment, updateActivityLog, deleteActivityLog } from '../../../modules/activity-log/services';
 import { VISIBILITY_BADGE_STYLES } from '../../../modules/activity-log/constants';
 import { downloadBlob } from '../../../utils/fileDownload';
+import { useStickyBelowSubheader } from '../../../hooks/useStickyBelowSubheader';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import '../StatisticsCardSkeleton.css';
 import { toast } from 'react-toastify';
@@ -24,7 +25,12 @@ import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
+// Height of the theme's fixed page footer (Velzon .footer).
+const PAGE_FOOTER_HEIGHT = '60px';
+
 export default function ActivitySidebar({ entityId, entityType, partnerId, taskOwner = /** @type {{ id: number | string, name?: string | null } | null} */ (null), borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '145px', disableSticky = false }) {
+    // Sits exactly under the page's sticky title bar, wherever that ends.
+    const stickyTop = useStickyBelowSubheader(stickyTopOffset, !disableSticky);
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -562,8 +568,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
     return (
         // Sticky: keep the same 1.5rem bottom gap as the cards beside it, so the
         // card doesn't run into the page footer, and size it to still fit the
-        // viewport with that gap while it's stuck.
-        <div className={`card activity-sidebar-card d-flex flex-column w-100 shadow-sm border-0 ${disableSticky ? 'mb-0' : 'mb-4'}`} style={disableSticky ? { border: 'none', flexGrow: 1, minHeight: 0 } : { height: `calc(100vh - ${stickyTopOffset} - 1.5rem)`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
+        // viewport with that gap while it's stuck. The theme's 60px footer sits
+        // below the column too: without it in the height, the column's end
+        // pushed the card up under the sticky page title at the bottom of the page.
+        <div className={`card activity-sidebar-card d-flex flex-column w-100 shadow-sm border-0 ${disableSticky ? 'mb-0' : 'mb-4'}`} style={disableSticky ? { border: 'none', flexGrow: 1, minHeight: 0 } : { height: `calc(100vh - ${stickyTop} - 1.5rem - ${PAGE_FOOTER_HEIGHT})`, position: 'sticky', top: stickyTop, zIndex: 10 }}>
             {/* Card Header */}
             <div className="card-header align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={disableSticky ? { backgroundColor: '#fff' } : { position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
                 <h5 className="card-title mb-0 fs-16">
@@ -895,6 +903,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
                 onClose={() => setEditingActivity(null)}
                 onUpdated={handleActivityUpdated}
                 isHost={isHost}
+                entityType={entityType}
+                partnerId={partnerId}
+                taskOwner={taskOwner}
             />
 
             {/* Delete Confirmation Modal */}

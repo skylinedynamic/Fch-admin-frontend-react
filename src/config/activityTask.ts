@@ -64,9 +64,12 @@ export const TASK_OWNER_LABELS: Record<string, string> = {
     Client: 'Client Assigned To',
     Borrower: 'Client Assigned To',
     Lead: 'Lead Owner',
-    'Funding Application': 'Borrower Assigned To',
-    'Funding Request': 'Borrower Assigned To',
+    'Funding Application': 'Borrower Assign to',
+    'Funding Request': 'Borrower Assign to',
 };
+
+/** Shown on the card when the record has nobody in that role. */
+export const TASK_OWNER_UNASSIGNED_TEXT = 'No one has been assigned yet';
 
 /** The responsible staff member a page hands the activity modal. */
 export interface TaskOwnerRef {

@@ -1,17 +1,39 @@
+import { TASK_OWNER_UNASSIGNED_TEXT } from '../../../../config/activityTask'
 import { getInitials } from './options'
 
-export interface TaskOwnerDetails {
-    /** e.g. "Lead Owner", "Partner Agent" (config/activityTask.ts). */
-    label: string
-    name: string
-    email?: string | null
-    phone?: string | null
-}
+export type TaskOwnerDetails =
+    | {
+        /** e.g. "Lead Owner", "Partner Agent" (config/activityTask.ts). */
+        label: string
+        status: 'assigned'
+        name: string
+        email?: string | null
+        phone?: string | null
+    }
+    | {
+        label: string
+        /** Nobody holds the role (or the person is not in this team's staff list). */
+        status: 'unassigned'
+    }
 
 /** Short details of the staff member already responsible for the record. */
-export default function TaskOwnerCard({ owner }: { owner: TaskOwnerDetails }) {
+export default function TaskOwnerCard({ owner, id = 'activityTaskOwner' }: { owner: TaskOwnerDetails; id?: string }) {
+    if (owner.status !== 'assigned') {
+        return (
+            <div className="acm-owner is-empty" id={id}>
+                <span className="acm-owner__avatar" aria-hidden="true">
+                    <i className="ri-user-unfollow-line" />
+                </span>
+                <div className="acm-owner__body">
+                    <span className="acm-owner__label">{owner.label}</span>
+                    <span className="acm-owner__empty">{TASK_OWNER_UNASSIGNED_TEXT}</span>
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div className="acm-owner" id="activityTaskOwner">
+        <div className="acm-owner" id={id}>
             <span className="acm-owner__avatar" aria-hidden="true">{getInitials(owner.name)}</span>
             <div className="acm-owner__body">
                 <span className="acm-owner__label">{owner.label}</span>

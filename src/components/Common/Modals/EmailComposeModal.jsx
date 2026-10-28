@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import AttachmentPicker from './activity-create/AttachmentPicker';
+import './activity-create/activityCreateModal.css';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
@@ -444,16 +446,19 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
     }, [lead?.email]);
 
     return (
-        <div className="modal fade" id="emailComposeModal" tabIndex="-1" aria-labelledby="emailComposeLabel" aria-hidden="true" data-bs-focus="false">
+        <div className="modal fade acm" id="emailComposeModal" tabIndex="-1" aria-labelledby="emailComposeLabel" aria-hidden="true" data-bs-focus="false">
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
-                <div className="modal-content border-0">
-                    <div className="modal-header bg-primary">
-                        <h5 className="modal-title text-white d-flex align-items-center gap-2">
-                            <i className="ri-mail-send-line fs-18"></i> New Email
-                        </h5>
-                        <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div className="modal-content">
+                    <div className="modal-header acm-header">
+                        <div className="acm-header__title">
+                            <span className="acm-header__icon" aria-hidden="true">
+                                <i className="ri-mail-send-line"></i>
+                            </span>
+                            <h5 className="modal-title" id="emailComposeLabel">New Email</h5>
+                        </div>
+                        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div className="modal-body p-4">
+                    <div className="modal-body acm-body">
                         {errors.log_type && (
                             <div className="alert alert-danger py-2 mb-3">
                                 {errors.log_type[0]}
@@ -466,116 +471,99 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                 const resolvedPartnerId = ctx.partnerId;
 
                                 if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
+                                    const recipients = [
+                                        { value: TARGET_RECIPIENT_HOST, id: 'emailSendToHost', icon: 'ri-building-2-line', label: ctx.isHost ? 'Email to Partner' : 'Email to FCH' },
+                                        { value: TARGET_RECIPIENT_BORROWER, id: 'emailSendToBorrower', icon: 'ri-user-3-line', label: 'Email to Borrower' },
+                                    ];
                                     return (
-                                        <div className="mb-3">
-                                            <div className="d-flex gap-4">
-                                                <div className="form-check">
-                                                    <input
-                                                        className="form-check-input"
-                                                        type="radio"
-                                                        name="email_target_recipient"
-                                                        id="emailSendToHost"
-                                                        value={TARGET_RECIPIENT_HOST}
-                                                        checked={formData.target_recipient === TARGET_RECIPIENT_HOST}
-                                                        onChange={handleTargetRecipientChange}
-                                                    />
-                                                    <label className="form-check-label" htmlFor="emailSendToHost">
-                                                        {ctx.isHost ? 'Email to Partner' : 'Email to FCH'}
-                                                    </label>
-                                                </div>
-                                                <div className="form-check">
-                                                    <input
-                                                        className="form-check-input"
-                                                        type="radio"
-                                                        name="email_target_recipient"
-                                                        id="emailSendToBorrower"
-                                                        value={TARGET_RECIPIENT_BORROWER}
-                                                        checked={formData.target_recipient === TARGET_RECIPIENT_BORROWER}
-                                                        onChange={handleTargetRecipientChange}
-                                                    />
-                                                    <label className="form-check-label" htmlFor="emailSendToBorrower">
-                                                        Email to Borrower
-                                                    </label>
-                                                </div>
+                                        <section className="acm-section">
+                                            <div className="acm-visibility has-2" role="radiogroup" aria-label="Send to">
+                                                {recipients.map(opt => {
+                                                    const checked = formData.target_recipient === opt.value;
+                                                    return (
+                                                        <label key={opt.value} className={`acm-visibility__option ${checked ? 'is-checked' : ''}`} htmlFor={opt.id}>
+                                                            <input
+                                                                className="acm-visibility__input"
+                                                                type="radio"
+                                                                name="email_target_recipient"
+                                                                id={opt.id}
+                                                                value={opt.value}
+                                                                checked={checked}
+                                                                onChange={handleTargetRecipientChange}
+                                                            />
+                                                            <span className="acm-visibility__icon" aria-hidden="true"><i className={opt.icon}></i></span>
+                                                            <span className="acm-visibility__label"><span className="acm-visibility__title">{opt.label}</span></span>
+                                                            <i className="ri-checkbox-circle-fill acm-visibility__check" aria-hidden="true"></i>
+                                                        </label>
+                                                    );
+                                                })}
                                             </div>
                                             {errors.target_recipient && <div className="text-danger mt-1 small">{errors.target_recipient[0]}</div>}
-                                        </div>
+                                        </section>
                                     );
                                 }
                                 return null;
                             })()}
-                            <div className="mb-3">
-                                <label className="form-label">To <span className="text-danger">*</span></label>
-                                <div className={errors.to_emails ? 'is-invalid' : ''}>
-                                    <input
-                                        type="text"
-                                        ref={choicesRef}
-                                        name="to_emails"
-                                        className={`form-control ${errors.to_emails ? 'is-invalid' : ''}`}
-                                        placeholder="Enter emails..."
-                                    />
-                                </div>
-                                {errors.to_emails && <div className="invalid-feedback d-block">{errors.to_emails[0]}</div>}
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">Subject <span className="text-danger">*</span></label>
-                                <input
-                                    type="text"
-                                    className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
-                                    name="subject"
-                                    placeholder="Enter subject"
-                                    value={formData.subject}
-                                    onChange={handleInputChange}
-                                />
-                                {errors.subject && <div className="invalid-feedback">{errors.subject[0]}</div>}
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">
-                                    Message <span className="text-danger">*</span>
-                                </label>
-                                <textarea
-                                    ref={setEditorRef}
-                                    className="d-none"
-                                    name="message_body"
-                                ></textarea>
-                                {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
-                            </div>
-                            <div className="row g-3">
-                                <div className="col-12">
-                                    <label className="form-label">Attachments</label>
-                                    <div className="d-flex align-items-center gap-2">
-                                        <button type="button" className="btn btn-light btn-sm" onClick={() => document.getElementById('emailFile').click()}>
-                                            <i className="ri-add-line me-1"></i> Add Attachment
-                                        </button>
-                                        <input type="file" id="emailFile" className="d-none" multiple onChange={handleFileChange} />
-                                    </div>
-                                    <div className="mt-2 d-flex flex-wrap gap-2">
-                                        {formData.attachments.map((file, idx) => {
-                                            const fileError = errors[`attachments.${idx}`];
-                                            return (
-                                                <div key={idx} className="d-flex flex-column">
-                                                    <div className={`badge text-body border d-flex align-items-center gap-2 p-2 ${fileError ? 'bg-soft-danger border-danger text-danger' : 'bg-light'}`}>
-                                                        <i className="ri-file-line"></i> {file.name}
-                                                        <i className="ri-close-line cursor-pointer text-danger" onClick={() => removeAttachment(idx)}></i>
-                                                    </div>
-                                                    {fileError && <div className="text-danger mt-1 extra-small" style={{ fontSize: '11px' }}>{fileError[0]}</div>}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    {/* Show general attachment group errors if any */}
-                                    {errors.attachments && (
-                                        <div className="text-danger mt-1 small">
-                                            {errors.attachments[0]}
+                            <section className="acm-section">
+                                <div className="row g-3">
+                                    <div className="col-12">
+                                        <label className="form-label">To <span className="text-danger">*</span></label>
+                                        <div className={`acm-tags ${errors.to_emails ? 'is-invalid' : ''}`}>
+                                            <input
+                                                type="text"
+                                                ref={choicesRef}
+                                                name="to_emails"
+                                                className={`form-control ${errors.to_emails ? 'is-invalid' : ''}`}
+                                                placeholder="Enter emails..."
+                                            />
                                         </div>
-                                    )}
+                                        {errors.to_emails && <div className="invalid-feedback d-block">{errors.to_emails[0]}</div>}
+                                    </div>
+                                    <div className="col-12">
+                                        <label className="form-label" htmlFor="emailSubject">Subject <span className="text-danger">*</span></label>
+                                        <input
+                                            type="text"
+                                            id="emailSubject"
+                                            className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
+                                            name="subject"
+                                            placeholder="Enter subject"
+                                            value={formData.subject}
+                                            onChange={handleInputChange}
+                                        />
+                                        {errors.subject && <div className="invalid-feedback">{errors.subject[0]}</div>}
+                                    </div>
+                                    <div className="col-12">
+                                        <label className="form-label">
+                                            Message <span className="text-danger">*</span>
+                                        </label>
+                                        <div className="acm-editor">
+                                            <textarea
+                                                ref={setEditorRef}
+                                                className="d-none"
+                                                name="message_body"
+                                            ></textarea>
+                                        </div>
+                                        {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
+                                    </div>
                                 </div>
-                            </div>
+                            </section>
+                            <section className="acm-section">
+                                <AttachmentPicker
+                                    label="Attachments"
+                                    inputId="emailFile"
+                                    buttonId="emailAttachmentBtn"
+                                    listId="emailAttachmentList"
+                                    files={formData.attachments}
+                                    onAdd={(files) => handleFileChange({ target: { files } })}
+                                    onRemove={removeAttachment}
+                                    errors={errors}
+                                />
+                            </section>
                         </form>
                     </div>
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-soft-secondary" data-bs-dismiss="modal">Discard</button>
-                        <button type="button" className="btn btn-primary" onClick={handleSend} disabled={isSaving}>
+                    <div className="modal-footer acm-footer">
+                        <button type="button" className="btn btn-light" data-bs-dismiss="modal">Discard</button>
+                        <button type="button" className="btn btn-primary acm-submit" onClick={handleSend} disabled={isSaving}>
                             {isSaving ? (
                                 <><span className="spinner-border spinner-border-sm me-1"></span> Sending...</>
                             ) : (
