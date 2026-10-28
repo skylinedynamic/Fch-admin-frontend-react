@@ -41,7 +41,7 @@ const providers = [
     value: 'aws_ses',
     label: 'Amazon SES',
     fields: [
-      { key: 'aws_access_key', label: 'AWS Access Key', type: 'text', required: true, secret: false, options: [] },
+      { key: 'aws_access_key', label: 'AWS Access Key', type: 'text', required: true, secret: true, options: [] },
       { key: 'aws_secret_key', label: 'AWS Secret Key', type: 'password', required: true, secret: true, options: [] },
       { key: 'aws_region', label: 'AWS Region', type: 'text', required: true, secret: false, options: [] },
     ],
@@ -58,7 +58,7 @@ const smtp = (overrides: Record<string, unknown> = {}) => ({
   smtp_port: 587,
   smtp_encryption: 'tls',
   smtp_username: 'mailer',
-  smtp_password: '••••••••',
+  has_smtp_password: true,
   is_default: false,
   is_verified: false,
   verified_at: null,
@@ -73,8 +73,8 @@ const ses = (overrides: Record<string, unknown> = {}) => ({
   provider_label: 'Amazon SES',
   from_address: 'ses@acme.test',
   bcc_emails: null,
-  aws_access_key: 'AKIAACME',
-  aws_secret_key: '••••••••',
+  has_aws_access_key: true,
+  has_aws_secret_key: true,
   aws_region: 'us-east-1',
   is_default: false,
   is_verified: true,
@@ -218,7 +218,8 @@ describe('MailConfigurationSection', () => {
 
     expect(within(form).getByText(/Currently configuring/)).toHaveTextContent('Amazon SES')
     expect(within(form).getByText('Default')).toBeInTheDocument()
-    expect(within(form).getByLabelText(/AWS Access Key/)).toHaveValue('AKIAACME')
+    // BUG-133: the stored access key is never sent - only that one is stored.
+    expect(within(form).getByLabelText(/AWS Access Key/)).toHaveValue('••••••••')
   })
 
   it('shows which verified configuration mail is sent with, and since when', async () => {
