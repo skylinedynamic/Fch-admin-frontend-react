@@ -119,12 +119,14 @@ describe('SSN fields in the partner portal', () => {
     await waitFor(() => expect((screen.getAllByLabelText(/social security number/i)[0] as HTMLInputElement).value).toBe('***-**-5555'))
   })
 
-  it('Client -> Profile SSN is masked, in full on the eye button, and sent as typed', async () => {
+  // The API sends the client's SSN masked and reveals it on its own (BUG-014).
+  it('Client -> Profile SSN is masked, and in full on the eye button', async () => {
     const user = userEvent.setup()
     server.use(
       http.get('*/common/borrowers/5', () =>
-        HttpResponse.json({ status: true, data: { id: 5, first_name: 'Ada', last_name: 'L', email: 'a@example.test', ssn: '123456789' } })
+        HttpResponse.json({ status: true, data: { id: 5, first_name: 'Ada', last_name: 'L', email: 'a@example.test', ssn: '***-**-6789' } })
       ),
+      http.post('*/common/borrowers/5/reveal', () => HttpResponse.json({ status: true, data: { field: 'ssn', value: '123456789' } })),
       http.all('*', () => HttpResponse.json({ status: true, data: [] }))
     )
     renderWithProviders(<ClientInfoSection clientId="5" countries={[]} states={[]} cities={[]} />)
@@ -133,6 +135,6 @@ describe('SSN fields in the partner portal', () => {
     await waitFor(() => expect(ssn.value).toBe('***-**-6789'))
 
     await user.click(showSsn()[0])
-    expect(ssn.value).toBe('123-45-6789')
+    await waitFor(() => expect(ssn.value).toBe('123-45-6789'))
   })
 })

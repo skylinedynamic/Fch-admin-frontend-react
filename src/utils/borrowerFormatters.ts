@@ -186,6 +186,23 @@ export const maskSSN = (ssn: string): string => {
 }
 
 /**
+ * Masks an EIN the way the API does (fch-api BusinessEin::mask): **-***XXXX
+ * @param ein The raw or formatted EIN string
+ * @returns The masked EIN string
+ */
+export const maskEIN = (ein: string): string => {
+  if (!ein) return ''
+  const last4 = ein.replace(/\D/g, '').slice(-4).padStart(4, '*')
+  return `**-***${last4}`
+}
+
+/**
+ * Whether a value is the API's mask of an SSN or EIN rather than a number -
+ * the API sends both masked (BUG-014) and ignores a mask sent back.
+ */
+export const isMaskedValue = (value: string | null | undefined): boolean => !!value && value.includes('*')
+
+/**
  * Formats a date string into a human-readable format (e.g., January 1, 2023)
  * @param d The date string to format
  * @returns The formatted date string

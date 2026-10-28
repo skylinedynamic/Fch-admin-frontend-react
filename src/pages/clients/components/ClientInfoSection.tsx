@@ -6,18 +6,19 @@ import { Calendar } from 'primereact/calendar';
 
 import { toast } from 'react-toastify';
 import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS, displayEIN } from '../../../utils/formatters';
-import { formatSSN } from '../../../utils/borrowerFormatters';
-import SsnInput from '../../../components/Common/SsnInput';
+import { formatSSN, maskSSN, maskEIN, isMaskedValue } from '../../../utils/borrowerFormatters';
+import RevealableInput from '../../../components/Common/RevealableInput';
 import {
     useClient,
     useUpdateClient,
+    useRevealClientField,
     useBorrowerPlans,
     DEFAULT_CLIENT_STATE,
     DATE_PICKER_OPTIONS,
     mapClientUpdatePayload,
     calculateEnrollmentDetails
 } from '../../../modules/client';
-import type { Client, BorrowerPlan } from '../../../modules/client/types';
+import type { Client, BorrowerPlan, RevealableClientField } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
@@ -81,6 +82,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const rawIsFreeTrail = fetchedData?.data?.is_free_trail ?? fetchedData?.is_free_trail ?? false;
     const wasFreeTrial = rawIsFreeTrail == 1 || rawIsFreeTrail === true || rawIsFreeTrail === 'true' || rawIsFreeTrail === '1';
     const updateMutation = useUpdateClient();
+    // The SSN and EIN come masked (BUG-014); the eye fetches one in full.
+    const reveal = useRevealClientField();
+    const revealField = (field: RevealableClientField) => () => reveal.mutateAsync({ id: clientId as string, field });
 
     const currentUser = useAuthStore((state) => state.user);
     const userSubscription = useAuthStore((state) => state.userSubscription);
@@ -202,13 +206,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 apiData.business_start_date = normalizeDate(apiData.business_start_date);
             }
 
-            // Format the raw digits the API returns into XXX-XX-XXXX for display/editing
-            if (apiData.ssn) {
+            // The API sends the SSN and EIN masked (BUG-014) - kept as they come.
+            // Digits (from before) are written out: XXX-XX-XXXX and XX-XXXXXXX.
+            if (apiData.ssn && !isMaskedValue(apiData.ssn)) {
                 apiData.ssn = formatSSN(apiData.ssn);
             }
-
-            // The API keeps an EIN as its nine digits; the field writes it XX-XXXXXXX.
-            apiData.business_ein = displayEIN(apiData.business_ein);
+            if (!isMaskedValue(apiData.business_ein)) {
+                apiData.business_ein = displayEIN(apiData.business_ein);
+            }
 
             // Ensure country uses full name for mapping to dropdown value
             if (apiData.country) {
@@ -905,11 +910,17 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="ssn" className="form-label">Social Security Number</label>
-                        {/* The one SSN field: masked at rest, edited on a click, in full on the eye button. */}
-                        <SsnInput
+                        {/* Masked as the API sends it; the eye fetches it in full to see or edit. */}
+                        <RevealableInput
                             id="ssn"
+                            name="SSN"
                             value={formData.ssn || ''}
                             onChange={(ssn) => handleInputChange({ target: { name: 'ssn', value: ssn } })}
+                            onReveal={revealField('ssn')}
+                            format={formatSSN}
+                            mask={maskSSN}
+                            placeholder="XXX-XX-XXXX"
+                            maxLength={11}
                             invalid={!!errors.ssn}
                         />
                         {errors.ssn && <div className="invalid-feedback d-block">{errors.ssn}</div>}
@@ -957,17 +968,19 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="business_ein" className="form-label">Business EIN</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
+                        <RevealableInput
                             id="business_ein"
-                            name="business_ein"
+                            name="EIN"
+                            value={formData.business_ein || ''}
+                            onChange={(ein) => handleInputChange({ target: { name: 'business_ein', value: ein } })}
+                            onReveal={revealField('business_ein')}
+                            format={(ein) => formatBusinessEIN(ein) ?? ''}
+                            mask={maskEIN}
                             placeholder="XX-XXXXXXX"
                             maxLength={10}
-                            value={formData.business_ein || ''}
-                            onChange={handleInputChange}
+                            invalid={!!errors.business_ein}
                         />
-                        {errors.business_ein && <div className="invalid-feedback">{errors.business_ein}</div>}
+                        {errors.business_ein && <div className="invalid-feedback d-block">{errors.business_ein}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">

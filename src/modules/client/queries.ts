@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import {
     fetchClients,
     fetchClientById,
+    revealClientField,
     fetchBorrowerBusinessFinancials,
     createClient,
     updateClient,
@@ -23,7 +24,7 @@ import {
     fetchClientCapitalAccessOverview,
     fetchClientCapitalAccessStrategies
 } from './services';
-import type { BorrowerTier, BorrowerProgress } from './types';
+import type { BorrowerTier, BorrowerProgress, RevealableClientField } from './types';
 import { fetchAllBorrowers, getAllUsers } from '../borrower/services';
 import type { Client, ClientFilterParams } from './types';
 
@@ -74,6 +75,15 @@ export const useBusinessFinancials = (id: string | number, enabled: boolean = tr
         enabled: enabled && !!id,
     });
 };
+
+/**
+ * Fetches a client's SSN or EIN in full on its eye button (BUG-014). Not
+ * cached: each reveal is a deliberate look, logged by the API.
+ */
+export const useRevealClientField = () =>
+    useMutation({
+        mutationFn: ({ id, field }: { id: string | number; field: RevealableClientField }) => revealClientField(id, field),
+    });
 
 export const useCreateClient = () => {
     const queryClient = useQueryClient();

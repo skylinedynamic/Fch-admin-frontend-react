@@ -11,7 +11,8 @@ vi.mock('../../../src/hooks/useSummernote', () => ({ useSummernote: () => ({ edi
 import { toast } from 'react-toastify'
 import { describeListPage } from '../../pages/listPageSuite'
 import { allowBackgroundCalls, api, paginated, renderPage, signIn } from '../../pages/pageHarness'
-import { screen } from '../../test-utils'
+import { screen, waitFor } from '../../test-utils'
+import userEvent from '@testing-library/user-event'
 import Billing from '../../../src/pages/billing/Billing'
 
 describeListPage(
@@ -32,20 +33,37 @@ describeListPage(
   toast
 )
 
-// BUG-012: the list goes by upcoming billing date (soonest first); the Amount
-// column does not sort.
+// BUG-012: the list loads by upcoming billing date (soonest first), and Amount
+// and Outstanding sort too - by the API, on the figures each row shows.
 describe('Upcoming billing - sorting', () => {
-  it('offers no sort on the Amount column', async () => {
+  const open = async () => {
     signIn({ permissions: ['view subscriptions'] })
     allowBackgroundCalls()
-    api('post', '/common/billing/fetch-upcoming', paginated([
+    const list = api('post', '/common/billing/fetch-upcoming', paginated([
       { id: 1, subscription_id: 1101, subscriber_name: 'Acme Funding', upcoming_billing_type: 'Platform Fee', upcoming_billing_amount: '499.00', upcoming_billing_date: '2026-04-01', outstanding_amount: '0.00', enrollment_type: 'Monthly', status: 'Active' },
     ]))
     renderPage(<Billing />, { path: '/billing' })
     await screen.findByText('Acme Funding')
+    return list
+  }
+  const header = (title: string) => screen.getAllByRole('columnheader').find((th) => th.textContent?.trim().startsWith(title))!
+  const lastSort = (list: { bodies: any[] }) => {
+    const body = list.bodies[list.bodies.length - 1] ?? {}
+    return { field: body.sort_field, order: body.sort_order }
+  }
 
-    const header = (title: string) => screen.getAllByRole('columnheader').find((th) => th.textContent?.trim().startsWith(title))!
-    expect(header('Amount')).not.toHaveClass('p-sortable-column')
-    expect(header('Upcoming Billing Date')).toHaveClass('p-sortable-column')
+  it.each([
+    ['Amount', 'upcoming_billing_amount'],
+    ['Outstanding', 'outstanding_amount'],
+  ])('%s sorts ascending, then descending', async (title, field) => {
+    const user = userEvent.setup()
+    const list = await open()
+    expect(header(title)).toHaveClass('p-sortable-column')
+
+    await user.click(header(title).querySelector('.p-column-title') ?? header(title))
+    await waitFor(() => expect(lastSort(list)).toEqual({ field, order: 'asc' }))
+
+    await user.click(header(title).querySelector('.p-column-title') ?? header(title))
+    await waitFor(() => expect(lastSort(list)).toEqual({ field, order: 'desc' }))
   })
 })

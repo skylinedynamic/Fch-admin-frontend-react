@@ -10,6 +10,10 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-29
+- [2026-10-29-client-ssn-ein-masked-with-reveal.md](2026-10-29-client-ssn-ein-masked-with-reveal.md) — BUG-014 (reopened): the client's SSN and EIN arrive masked and are revealed on the eye button, change requests too.
+- [2026-10-29-upcoming-billings-amount-outstanding-sort.md](2026-10-29-upcoming-billings-amount-outstanding-sort.md) — BUG-012 (reopened): Upcoming Billings sorts by Amount and Outstanding again.
+
 ### 2026-10-28
 
 | File | Title |

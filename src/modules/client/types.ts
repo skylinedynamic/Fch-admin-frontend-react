@@ -1,3 +1,6 @@
+/** The numbers the client's details carry masked, which revealClientField() gives in full (BUG-014). */
+export type RevealableClientField = 'ssn' | 'business_ein';
+
 export type Client = {
     id?: number | string;
     // Personal Details
@@ -6,7 +9,7 @@ export type Client = {
     middle_name?: string | null;
     last_name: string;
     date_of_birth?: string;
-    // Full SSN, decrypted — shown and editable as-is (formatted XXX-XX-XXXX).
+    // Masked by the API (***-**-6789); revealClientField() gives it in full.
     ssn?: string;
     last_4_ssn?: string;
     phone_number: string;
@@ -25,6 +28,7 @@ export type Client = {
 
     // Business Info
     business_name?: string;
+    /** Masked by the API (**-***4534); revealClientField() gives it in full. */
     business_ein?: string;
     business_state_file_number?: string;
     business_duns_number?: string;

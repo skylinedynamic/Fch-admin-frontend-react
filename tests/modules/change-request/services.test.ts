@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { fetchChangeRequests, updateChangeRequestStatus } from '../../../src/modules/change-request/services'
+import { fetchChangeRequests, revealChangeRequest, updateChangeRequestStatus } from '../../../src/modules/change-request/services'
 
 afterEach(() => server.resetHandlers())
 
@@ -91,5 +91,17 @@ describe('updateChangeRequestStatus', () => {
     const result = await updateChangeRequestStatus(5, { status: 'Approved', note: 'looks good' })
     expect(receivedBody).toEqual({ status: 'Approved', note: 'looks good' })
     expect(result.data.status).toBe('Approved')
+  })
+})
+
+// BUG-014: an SSN or EIN change is listed masked; the reviewer fetches both numbers.
+describe('revealChangeRequest', () => {
+  it('POSTs to the reveal and returns its old and new numbers', async () => {
+    server.use(
+      http.post('*/admin/change-requests/7/reveal', () =>
+        HttpResponse.json({ status: true, data: { id: 7, old_value: '123456789', new_value: '234567890' } })
+      )
+    )
+    await expect(revealChangeRequest(7)).resolves.toEqual({ old_value: '123456789', new_value: '234567890' })
   })
 })
