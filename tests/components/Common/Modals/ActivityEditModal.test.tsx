@@ -3,6 +3,13 @@ import { http, HttpResponse } from 'msw'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '../../../test-utils'
 import { server } from '../../../mocks/server'
+import { toast } from 'react-toastify'
+
+// Validation errors are shown on the form, never toasted.
+vi.mock('react-toastify', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-toastify')>()),
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}))
 
 // Summernote crashes under jsdom (no <canvas>); the editor itself is not under test.
 vi.mock('../../../../src/hooks/useSummernote', () => ({
@@ -96,7 +103,7 @@ describe('ActivityEditModal "Want to Assign"', () => {
   it("lists the record's partner staff and shows the record's own assigned staff member", async () => {
     renderEdit()
 
-    await waitFor(() => expect(usersRequest).toEqual({ partner_id: 2 }))
+    await waitFor(() => expect(usersRequest).toEqual({ partner_id: 2, active_only: true, keep_ids: [12, 14] }))
     const owner = await screen.findByText('Client Assigned To')
     expect(owner.closest('#activityEditTaskOwner')).toHaveTextContent('Blake Ops')
     expect(owner.closest('#activityEditTaskOwner')).toHaveTextContent('(222) 333-4444')
@@ -173,7 +180,7 @@ describe('ActivityEditModal "Want to Assign"', () => {
   it("on a Partner's page lists the host's own staff", async () => {
     renderEdit(TASK_ACTIVITY, { entityType: 'Partner', partnerId: 5, taskOwner: null })
 
-    await waitFor(() => expect(usersRequest).toEqual({}))
+    await waitFor(() => expect(usersRequest).toEqual({ active_only: true, keep_ids: [12] }))
     expect(screen.getByText('Partner Agent')).toBeInTheDocument()
     expect(screen.getByText('No one has been assigned yet')).toBeInTheDocument()
   })
@@ -201,5 +208,23 @@ describe('ActivityEditModal "Want to Assign"', () => {
     expect(await screen.findByText('The selected staff member cannot be assigned this task.')).toBeInTheDocument()
     expect(screen.getByText('The due date cannot be in the past.')).toBeInTheDocument()
     expect(document.getElementById('activityEditAssignedTo')).toHaveClass('is-invalid')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('shows an API error that has no field of its own above the form, not as a toast', async () => {
+    server.use(
+      http.post('*/common/activity-logs/77', () =>
+        HttpResponse.json(
+          { status: false, message: 'Validation failed', errors: { category: 'The category is not valid.' } },
+          { status: 422 }
+        )
+      )
+    )
+    renderEdit()
+
+    update()
+
+    expect(await screen.findByText('The category is not valid.')).toHaveClass('alert-danger')
+    expect(toast.error).not.toHaveBeenCalled()
   })
 })

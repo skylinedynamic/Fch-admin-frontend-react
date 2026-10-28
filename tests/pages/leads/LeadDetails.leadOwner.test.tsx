@@ -95,7 +95,8 @@ describe('LeadDetails › lead owner and type', () => {
 
     const owner = await fieldDropdown('Lead Owner')
     await waitFor(() => expect(owner).toHaveTextContent('Sal WLP'))
-    expect(teamBodies).toContainEqual({ partner_id: 2 })
+    // Active staff only, keeping the saved owner even if inactive.
+    expect(teamBodies).toContainEqual({ partner_id: 2, active_only: true, keep_ids: [22] })
     expect(await dropdownLabels(user, owner)).toEqual(['Wil Label', 'Sal WLP'])
   })
 

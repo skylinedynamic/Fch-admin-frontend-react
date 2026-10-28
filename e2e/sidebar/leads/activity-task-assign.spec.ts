@@ -31,6 +31,6 @@ test.describe('Lead activity log - assign a Task', () => {
 
   test("it lists the lead's partner's staff, with the Lead Owner above", async ({ page }) => {
     const api = await openLead(page)
-    await expectAssignSetup(page, api, { teamRequest: { partner_id: 2 }, ownerLabel: 'Lead Owner', ownerText: 'Blake Ops' })
+    await expectAssignSetup(page, api, { teamRequest: { partner_id: 2, active_only: true, keep_ids: [14] }, ownerLabel: 'Lead Owner', ownerText: 'Blake Ops' })
   })
 })

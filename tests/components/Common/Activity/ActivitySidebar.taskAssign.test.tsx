@@ -82,7 +82,7 @@ describe('ActivitySidebar - Want to Assign context', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Edit activity' }))
 
-    await waitFor(() => expect(usersRequest).toEqual({ partner_id: 2 }))
+    await waitFor(() => expect(usersRequest).toEqual({ partner_id: 2, active_only: true, keep_ids: [12, 14] }))
     expect(await screen.findByText('Client Assigned To')).toBeInTheDocument()
     expect(document.getElementById('activityEditTaskOwner')).toHaveTextContent('Blake Ops')
     await waitFor(() => expect(document.getElementById('activityEditAssignedTo')).toHaveTextContent('Avery Staff'))

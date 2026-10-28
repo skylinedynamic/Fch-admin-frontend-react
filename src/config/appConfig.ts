@@ -81,7 +81,8 @@ export const LOG_TYPE_TASK_VERIFICATION = 'task_verification';
 export const PASSWORD_GENERATE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
 export const PASSWORD_GENERATE_LENGTH = 14;
 
-export const FUTURE_ACTIVITY_REFERENCES = ['Task', 'Meeting'];
+// A Task may be dated any day (past or future); only a Meeting must be ahead.
+export const FUTURE_ACTIVITY_REFERENCES = ['Meeting'];
 
 // Units of the "Custom Time Before" reminder option (see getReminderMsToSubtract).
 export const REMINDER_TIME_UNITS = ['Minutes', 'Hours', 'Days', 'Weeks', 'Months'] as const;

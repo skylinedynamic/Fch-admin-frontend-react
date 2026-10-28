@@ -3,6 +3,13 @@ import { http, HttpResponse } from 'msw'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '../../../test-utils'
 import { server } from '../../../mocks/server'
+import { toast } from 'react-toastify'
+
+// Validation errors are shown on the form, never toasted.
+vi.mock('react-toastify', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-toastify')>()),
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}))
 
 // The real hook side-effect-imports 'summernote/dist/summernote-lite.js',
 // which does canvas-based font detection at import time and crashes under
@@ -102,6 +109,7 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
   beforeEach(() => {
     delete (window as any)._activityEntityContext
     usersRequest = null
+    vi.mocked(toast.error).mockClear()
     server.use(
       http.post('*/common/get-all-users', async ({ request }) => {
         usersRequest = (await request.json()) as Record<string, unknown>
@@ -178,7 +186,7 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
     pickReference('Task')
     fireEvent.click(assignSwitch()!)
 
-    await waitFor(() => expect(usersRequest).toEqual({ partner_id: 2 }))
+    await waitFor(() => expect(usersRequest).toEqual({ partner_id: 2, active_only: true }))
     await waitFor(() => expect(document.getElementById('activityAssignedTo')).not.toBeDisabled())
     fireEvent.click(document.getElementById('activityAssignedTo')!)
     expect(screen.getAllByRole('option', { hidden: true }).map((o) => o.textContent)).toEqual([
@@ -192,7 +200,7 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
     pickReference('Task')
     fireEvent.click(assignSwitch()!)
 
-    await waitFor(() => expect(usersRequest).toEqual({}))
+    await waitFor(() => expect(usersRequest).toEqual({ active_only: true }))
   })
 
   it("shows the record's own assigned staff member above Assigned To", async () => {
@@ -295,5 +303,38 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
     expect(await screen.findByText('Please select who the task is assigned to.')).toBeInTheDocument()
     expect(screen.getByText('Please select when the task is due.')).toBeInTheDocument()
     expect(document.getElementById('activityAssignedTo')).toHaveClass('is-invalid')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('lets a Task be dated in the past (only the API validates it)', async () => {
+    const sent = captureCreate()
+
+    renderOpen()
+    pickReference('Task')
+    fireEvent.input(document.getElementById('activityDate')!, { target: { value: '01 Jan, 2020 10:00 AM' } })
+    fireEvent.change(document.getElementById('activitySummary')!, { target: { name: 'summary', value: 'Collect bank statements' } })
+
+    expect(screen.queryByText(/must be in the future/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /create/i, hidden: true }))
+
+    await waitFor(() => expect(sent.body).not.toBeNull())
+    expect(sent.body!.get('activity_date')).toMatch(/^2020-01-01 /)
+  })
+
+  it('shows an API error that has no field of its own above the form, not as a toast', async () => {
+    server.use(
+      http.post('*/common/activity-logs', () =>
+        HttpResponse.json(
+          { status: false, message: 'Validation failed', errors: { category: 'The category is not valid.' } },
+          { status: 422 }
+        )
+      )
+    )
+
+    renderOpen()
+    fireEvent.click(screen.getByRole('button', { name: /create/i, hidden: true }))
+
+    expect(await screen.findByText('The category is not valid.')).toHaveClass('alert-danger')
+    expect(toast.error).not.toHaveBeenCalled()
   })
 })

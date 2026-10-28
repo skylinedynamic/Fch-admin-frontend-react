@@ -32,12 +32,22 @@ test.describe('Partner activity log - assign a Task', () => {
 
   test("it lists the host's own staff, with the partner's Agent above", async ({ page }) => {
     const api = await openPartner(page)
-    await expectAssignSetup(page, api, { teamRequest: {}, ownerLabel: 'Partner Agent', ownerText: 'Blake Ops' })
+    await expectAssignSetup(page, api, { teamRequest: { active_only: true, keep_ids: [14] }, ownerLabel: 'Partner Agent', ownerText: 'Blake Ops' })
   })
 
   test('says so when the partner has no Agent yet', async ({ page }) => {
     const api = await openPartner(page, { ...PARTNER, assigned_user_id: null })
-    await expectAssignSetup(page, api, { teamRequest: {}, ownerLabel: 'Partner Agent', ownerText: 'No one has been assigned yet' })
+    await expectAssignSetup(page, api, { teamRequest: { active_only: true }, ownerLabel: 'Partner Agent', ownerText: 'No one has been assigned yet' })
     await expect(activityModal(page).locator('#activityTaskOwner')).toHaveClass(/is-empty/)
+  })
+})
+
+test.describe('Partner Agent - active staff only', () => {
+  test("asks for active staff, keeping the partner's saved Agent", async ({ page }) => {
+    const api = await openPartner(page)
+
+    await expect
+      .poll(() => api.find('POST', '/common/get-all-users').map((c) => JSON.stringify(c.json ?? {})))
+      .toContain(JSON.stringify({ active_only: true, keep_ids: [14] }))
   })
 })

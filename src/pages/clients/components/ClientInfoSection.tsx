@@ -272,13 +272,20 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // Fetch Users for Assign to dropdown - the client's partner's team, so the
     // host on a partner's client picks from that partner's staff (BUG-055). A
-    // new client is filed under your own partner, so it gets your team.
+    // new client is filed under your own partner, so it gets your team. Active
+    // staff only, keeping the client's saved assignee even if since made inactive.
     const clientLoaded = !clientId || !!fetchedData;
+    const savedAssigneeId = fetchedData?.data?.assign_id ?? fetchedData?.assign_id ?? null;
+    const savedAssigneeName = fetchedData?.data?.assign_name ?? fetchedData?.assign_name ?? null;
     useEffect(() => {
         if (!clientLoaded) return;
         const fetchUsers = async () => {
             try {
-                const response = await allUsers(borrowerPartnerId ? { partner_id: Number(borrowerPartnerId) } : {});
+                const response = await allUsers({
+                    ...(borrowerPartnerId ? { partner_id: Number(borrowerPartnerId) } : {}),
+                    active_only: true,
+                    ...(savedAssigneeId ? { keep_ids: [Number(savedAssigneeId)] } : {}),
+                });
                 if (response.status && response.data) {
                     setUsers(response.data);
                 }
@@ -287,12 +294,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             }
         };
         fetchUsers();
-    }, [clientLoaded, borrowerPartnerId]);
+    }, [clientLoaded, borrowerPartnerId, savedAssigneeId]);
 
     // An assignee saved before the team rule may sit outside the team; it is
     // kept (the API accepts the current one), so show it rather than a blank field.
-    const savedAssigneeId = fetchedData?.data?.assign_id ?? fetchedData?.assign_id ?? null;
-    const savedAssigneeName = fetchedData?.data?.assign_name ?? fetchedData?.assign_name ?? null;
     const assignOptions = (users ?? []).map(user => ({ label: user.name, value: user.id }));
     if (users && savedAssigneeId && savedAssigneeName && !users.some(user => String(user.id) === String(savedAssigneeId))) {
         assignOptions.push({ label: `${savedAssigneeName} (not on this partner's team)`, value: savedAssigneeId });

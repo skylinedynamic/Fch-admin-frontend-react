@@ -29,20 +29,21 @@ function stubUsers() {
 }
 
 describe('activityLogKeys', () => {
-  it("keys each team's staff list apart, with the caller's own team as 'own'", () => {
-    expect(activityLogKeys.taskAssignees(2)).toEqual(['activity-log', 'task-assignees', 2])
-    expect(activityLogKeys.taskAssignees(null)).toEqual(['activity-log', 'task-assignees', 'own'])
+  it("keys each team's staff list apart, with the caller's own team as 'own', and by who is kept", () => {
+    expect(activityLogKeys.taskAssignees(2)).toEqual(['activity-log', 'task-assignees', 2, []])
+    expect(activityLogKeys.taskAssignees(null)).toEqual(['activity-log', 'task-assignees', 'own', []])
+    expect(activityLogKeys.taskAssignees(2, [12])).toEqual(['activity-log', 'task-assignees', 2, [12]])
   })
 })
 
 describe('useTaskAssignees', () => {
-  it("asks the existing get-all-users API for that partner's staff and maps them", async () => {
+  it("asks the existing get-all-users API for that partner's active staff and maps them", async () => {
     const requests = stubUsers()
 
     const { result } = renderHook(() => useTaskAssignees(2, true), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(requests).toEqual([{ partner_id: 2 }])
+    expect(requests).toEqual([{ partner_id: 2, active_only: true }])
     expect(result.current.data).toEqual([
       { id: 12, full_name: 'Avery Staff', email: 'avery@example.test', phone_number: '(222) 111-2222' },
       { id: 14, full_name: 'Blake Ops', email: null, phone_number: null },
@@ -55,7 +56,16 @@ describe('useTaskAssignees', () => {
     const { result } = renderHook(() => useTaskAssignees(null, true), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(requests).toEqual([{}])
+    expect(requests).toEqual([{ active_only: true }])
+  })
+
+  it('keeps the given people even if inactive (who is already assigned)', async () => {
+    const requests = stubUsers()
+
+    const { result } = renderHook(() => useTaskAssignees(2, true, [14, 12, 14]), { wrapper })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(requests).toEqual([{ partner_id: 2, active_only: true, keep_ids: [12, 14] }])
   })
 
   it('loads nothing until enabled', async () => {
@@ -87,7 +97,7 @@ describe('useTaskAssignmentSetup', () => {
     )
 
     await waitFor(() => expect(result.current.staff).toHaveLength(2))
-    expect(requests).toEqual([{ partner_id: 2 }])
+    expect(requests).toEqual([{ partner_id: 2, active_only: true, keep_ids: [12] }])
     expect(result.current.owner).toEqual({
       label: 'Lead Owner',
       status: 'assigned',
@@ -102,7 +112,7 @@ describe('useTaskAssignmentSetup', () => {
 
     renderHook(() => useTaskAssignmentSetup({ entityType: 'Partner', partnerId: 5, ownerRef: null, enabled: true }), { wrapper })
 
-    await waitFor(() => expect(requests).toEqual([{}]))
+    await waitFor(() => expect(requests).toEqual([{ active_only: true }]))
   })
 
   it('uses the name the page gave when the person is not in the list', async () => {
