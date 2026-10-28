@@ -17,6 +17,8 @@ interface FundedAmountModalProps {
     partnerCommissionRate?: number;
     showPartnerCommission?: boolean;
     isCommissionSet?: boolean;
+    /** The application's requested amount: a funded amount above it is confirmed separately (R2 BUG-046). */
+    requestedAmount?: number;
 }
 
 export default function FundedAmountModal({
@@ -33,10 +35,12 @@ export default function FundedAmountModal({
     adminCommissionRate = 0,
     partnerCommissionRate = 0,
     showPartnerCommission = false,
-    isCommissionSet = false
+    isCommissionSet = false,
+    requestedAmount = 0
 }: FundedAmountModalProps) {
     const [amount, setAmount] = useState(initialAmount);
     const [error, setError] = useState('');
+    const [aboveRequestedConfirmed, setAboveRequestedConfirmed] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<Modal | null>(null);
 
@@ -44,6 +48,7 @@ export default function FundedAmountModal({
         if (show) {
             setAmount(initialAmount);
             setError('');
+            setAboveRequestedConfirmed(false);
         }
     }, [show, initialAmount]);
 
@@ -82,6 +87,9 @@ export default function FundedAmountModal({
     };
 
     const parsedAmount = parseFloat(amount || '0');
+    // Closing locks the application for good, so a funded amount above what
+    // was requested (a typo of a zero, say) needs a second look (R2 BUG-046).
+    const isAboveRequested = requestedAmount > 0 && parsedAmount > requestedAmount;
     const successFeeAmt = parsedAmount * (successFeeRate / 100);
     const adminShareAmt = successFeeAmt * (adminCommissionRate / 100);
     const partnerShareAmt = successFeeAmt * (partnerCommissionRate / 100);
@@ -144,6 +152,7 @@ export default function FundedAmountModal({
                                     value={amount}
                                     onChange={(e) => {
                                         setAmount(e.target.value);
+                                        setAboveRequestedConfirmed(false);
                                         if (error) setError('');
                                     }}
                                     step="0.01"
@@ -152,6 +161,25 @@ export default function FundedAmountModal({
                                 />
                                 {error && <div className="invalid-feedback">{error}</div>}
                             </div>
+                            {isAboveRequested && (
+                                <div className="alert alert-warning border-0 bg-warning-subtle text-warning text-start fs-13 mt-3 mb-0">
+                                    <i className="ri-error-warning-fill align-middle me-2 fs-15"></i>
+                                    The funded amount {formatCurrency(parsedAmount)} is above the requested {formatCurrency(requestedAmount)}.
+                                    <div className="form-check mt-2">
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            id="funded-amount-confirmed"
+                                            checked={aboveRequestedConfirmed}
+                                            onChange={(e) => setAboveRequestedConfirmed(e.target.checked)}
+                                            disabled={loading}
+                                        />
+                                        <label className="form-check-label text-dark" htmlFor="funded-amount-confirmed">
+                                            I have checked this amount and it is correct.
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="hstack gap-2 justify-content-center">
@@ -167,7 +195,7 @@ export default function FundedAmountModal({
                                 type="button"
                                 className="btn btn-success"
                                 onClick={handleConfirm}
-                                disabled={loading}
+                                disabled={loading || (isAboveRequested && !aboveRequestedConfirmed)}
                             >
                                 {loading ? (
                                     <>

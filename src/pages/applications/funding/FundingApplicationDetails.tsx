@@ -18,6 +18,7 @@ import { handleFileDownload } from '../../../utils/fileDownload';
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
+import { isStaleRecordError, staleRecordMessage, withExpectedStatus } from '../../../utils/staleRecord';
 import SsnValue from '../../../components/Common/SsnValue';
 import FundedAmountModal from '../../../components/Common/Modals/FundedAmountModal';
 import DownloadPdfModal from './DownloadPdfModal';
@@ -71,7 +72,7 @@ export default function FundingApplicationDetails() {
     const [tempRequestedAmount, setTempRequestedAmount] = useState<string>('');
     const [adminCommissionRate, setAdminCommissionRate] = useState<string>('');
     const [partnerCommissionRate, setPartnerCommissionRate] = useState<string>('');
-    const [commissionErrors, setCommissionErrors] = useState<{ admin_commission?: string; partner_commission?: string }>({});
+    const [commissionErrors, setCommissionErrors] = useState<{ total_commission?: string; admin_commission?: string; partner_commission?: string }>({});
     const saveCommissionMutation = useSaveFundingApplicationCommission();
 
     const { user } = useAuthStore();
@@ -80,7 +81,7 @@ export default function FundingApplicationDetails() {
     const isHost = user?.is_host == true;
     const authPartnerId = (user as any)?.partner_id;
 
-    const { data: apiResponse, isLoading, error } = useFundingApplicationDetails(id || '');
+    const { data: apiResponse, isLoading, error, refetch } = useFundingApplicationDetails(id || '');
 
     const app = (apiResponse?.data || apiResponse || {}) as FundingApplicationDetailsType;
     const showPartnerCommission = app?.partner_id !== authPartnerId;
@@ -103,7 +104,11 @@ export default function FundingApplicationDetails() {
         if (app?.status_note) setStatusNote(app.status_note);
         if (app?.requested_amount_original != null) setRequestedAmountInput(app.requested_amount_original.toString());
 
-        // Sync commission rates from response
+        syncCommissionFromApp();
+    }, [app]);
+
+    // The commission inputs (and the cards that preview them) as stored.
+    function syncCommissionFromApp() {
         if (app) {
             let fetchedSuccessFee = '';
             let fetchedPartnerShare = '';
@@ -131,7 +136,7 @@ export default function FundingApplicationDetails() {
             setPartnerCommissionRate(fetchedPartnerShare);
             setAdminCommissionRate(fetchedAdminShare);
         }
-    }, [app]);
+    }
 
     useEffect(() => {
         if (error || (!isLoading && !apiResponse)) {
@@ -151,11 +156,13 @@ export default function FundingApplicationDetails() {
 
     const handleConfirmUpdate = () => {
         if (!app.id) return;
-        updateMutation.mutate({
+        // With the status this page shows: a double-click or a stale page is
+        // refused, not applied twice (R2 BUG-045).
+        updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
             status_note: status_note
-        }, {
+        }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowConfirmModal(false);
@@ -164,7 +171,11 @@ export default function FundingApplicationDetails() {
             },
             onError: (error: any) => {
                 setShowConfirmModal(false);
-                if (error?.response?.data?.errors) {
+                if (isStaleRecordError(error)) {
+                    toast.error(staleRecordMessage(error));
+                    refetch();
+                    window.dispatchEvent(new Event('refreshActivities'));
+                } else if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     if (backendErrors.status_note) {
                         const message = Array.isArray(backendErrors.status_note)
@@ -181,12 +192,12 @@ export default function FundingApplicationDetails() {
 
     const handleFundedConfirm = (amount: string) => {
         if (!app.id) return;
-        updateMutation.mutate({
+        updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
             status_note: status_note,
             funded_amount: amount
-        }, {
+        }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowFundedModal(false);
@@ -194,7 +205,12 @@ export default function FundingApplicationDetails() {
                 window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
-                if (error?.response?.data?.errors) {
+                if (isStaleRecordError(error)) {
+                    setShowFundedModal(false);
+                    toast.error(staleRecordMessage(error));
+                    refetch();
+                    window.dispatchEvent(new Event('refreshActivities'));
+                } else if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     if (backendErrors.status_note) {
                         const message = Array.isArray(backendErrors.status_note)
@@ -302,7 +318,13 @@ export default function FundingApplicationDetails() {
             onError: (error: any) => {
                 if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
+                    const first = (value: any) => (Array.isArray(value) ? value[0] : value);
+                    // A refusal is shown, and the cards go back to what is
+                    // stored rather than previewing a rate that was not saved (R2 BUG-044).
+                    toast.error(first(backendErrors.total_commission) || first(backendErrors.admin_commission) || first(backendErrors.partner_commission) || first(backendErrors.requested_amount) || 'Commission not saved.');
+                    syncCommissionFromApp();
                     setCommissionErrors({
+                        total_commission: first(backendErrors.total_commission),
                         admin_commission: Array.isArray(backendErrors.admin_commission)
                             ? backendErrors.admin_commission[0]
                             : backendErrors.admin_commission,
@@ -878,11 +900,12 @@ export default function FundingApplicationDetails() {
                                                             }
                                                         }}>
                                                             <div className="mb-3">
-                                                                <label className="form-label fs-12 text-muted fw-medium text-primary">Success Fee (%)</label>
+                                                                <label htmlFor="success-fee" className="form-label fs-12 text-muted fw-medium text-primary">Success Fee (%)</label>
                                                                 <div className="input-group">
                                                                     <input
+                                                                        id="success-fee"
                                                                         type="number"
-                                                                        className={`form-control ${isClosed ? 'bg-light text-muted' : ''}`}
+                                                                        className={`form-control ${commissionErrors.total_commission ? 'is-invalid border-danger' : ''} ${isClosed ? 'bg-light text-muted' : ''}`}
                                                                         placeholder="0"
                                                                         value={successFee}
                                                                         onChange={(e) => {
@@ -895,14 +918,21 @@ export default function FundingApplicationDetails() {
                                                                             if (!isNaN(numVal) && numVal >= 0 && numVal <= 100) {
                                                                                 setSuccessFee(val);
                                                                             }
+                                                                            if (commissionErrors.total_commission) {
+                                                                                setCommissionErrors({ ...commissionErrors, total_commission: undefined });
+                                                                            }
                                                                         }}
-                                                                        min="0"
+                                                                        // The API's range: 1-100% (R2 BUG-044).
+                                                                        min="1"
                                                                         max="100"
-                                                                        step="0.1"
+                                                                        step="0.01"
                                                                         disabled={isClosed}
                                                                     />
                                                                     <span className={`input-group-text ${isClosed ? 'bg-light' : 'bg-white'} text-muted`}>%</span>
                                                                 </div>
+                                                                {commissionErrors.total_commission && (
+                                                                    <div className="text-danger fs-12 mt-1">{commissionErrors.total_commission}</div>
+                                                                )}
                                                             </div>
 
                                                             {showPartnerCommission && (
@@ -1375,6 +1405,7 @@ export default function FundingApplicationDetails() {
                 title="Status Update: Closed (Completed)"
                 message="Since the status is Closed (Completed), please specify the final funded amount for this application."
                 successFeeRate={parseFloat(app.total_commission?.toString() || '0')}
+                requestedAmount={parseFloat(app.requested_amount_original?.toString() || '0')}
                 adminCommissionRate={parseFloat(app.admin_commission?.toString() || '0')}
                 partnerCommissionRate={parseFloat(app.partner_commission?.toString() || '0')}
                 showPartnerCommission={showPartnerCommission}

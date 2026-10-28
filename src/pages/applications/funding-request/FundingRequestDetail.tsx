@@ -15,6 +15,7 @@ import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { formatCurrency } from '../../../utils/helper';
+import { isStaleRecordError, staleRecordMessage, withExpectedStatus } from '../../../utils/staleRecord';
 import ReviewProgressCard from './components/ReviewProgressCard';
 import LenderMatchStats from './components/LenderMatchStats';
 import '../../../../assets/css/funding-requests.css';
@@ -41,7 +42,7 @@ export default function FundingRequestDetail() {
     const sidebarColRef = useRef<HTMLDivElement>(null);
     const lenderTableRef = useRef<HTMLDivElement>(null);
 
-    const { data: apiResponse, isLoading, isFetching, error } = useFundingRequestDetails(id || '');
+    const { data: apiResponse, isLoading, isFetching, error, refetch } = useFundingRequestDetails(id || '');
     const updateStatusMutation = useUpdateFundingRequestStatus();
     const assignLenderMutation = useAssignLenderToFundingRequest();
 
@@ -111,7 +112,12 @@ export default function FundingRequestDetail() {
     const handleStatusUpdate = () => {
         setValidationErrors({});
         updateStatusMutation.mutate(
-            { id: review.id, status: selectedStatus, ...(selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && { reject_reason: rejectReason }) },
+            // With the status this page shows: a decision made on a stale page
+            // is refused instead of flipping what someone else decided (R2 BUG-058).
+            withExpectedStatus(
+                { id: review.id, status: selectedStatus, ...(selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && { reject_reason: rejectReason }) },
+                review.status
+            ),
             {
                 onSuccess: () => {
                     toast.success(`Funding request status updated to ${selectedStatus} successfully`);
@@ -123,7 +129,13 @@ export default function FundingRequestDetail() {
                     window.dispatchEvent(new Event('refreshActivities'));
                 },
                 onError: (err: any) => {
-                    if (err?.response?.status === 422) {
+                    if (isStaleRecordError(err)) {
+                        // Already decided elsewhere: say so and show the current state.
+                        setShowStatusModal(false);
+                        toast.error(staleRecordMessage(err));
+                        refetch();
+                        window.dispatchEvent(new Event('refreshActivities'));
+                    } else if (err?.response?.status === 422) {
                         setValidationErrors(err.response.data.errors || {});
                     } else {
                         toast.error(err?.response?.data?.message || 'Failed to update status');
@@ -983,7 +995,7 @@ export default function FundingRequestDetail() {
                             </div>
                             <h5 className="fw-bold mb-1">Lender Required</h5>
                             <p className="text-muted fs-13 mb-0">
-                                Assign to Lender. You can assign Before <strong className="text-dark">Approved</strong>
+                                Assign a lender before approving this request.
                             </p>
                         </div>
                         <div className="p-4">

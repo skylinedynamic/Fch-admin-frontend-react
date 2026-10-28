@@ -75,3 +75,15 @@ export function leadOwnerOptions(
     }
     return options;
 }
+
+/** The platform's default country for a lead (Lead::DEFAULT_COUNTRY in the API). */
+export const DEFAULT_LEAD_COUNTRY = 'United States';
+
+/**
+ * The country a lead's Contact Info form starts with: its own, else the
+ * default. The default used to be shown without being put in the form, so a
+ * save answered "Country is required." (R2 BUG-065).
+ */
+export function leadCountryFor(country: string | null | undefined): string {
+    return country && country.trim() !== '' ? country : DEFAULT_LEAD_COUNTRY;
+}

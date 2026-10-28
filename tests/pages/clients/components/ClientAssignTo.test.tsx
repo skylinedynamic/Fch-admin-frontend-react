@@ -1,3 +1,4 @@
+import { createRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
@@ -6,6 +7,7 @@ import { renderWithProviders } from '../../../test-utils'
 import { server } from '../../../mocks/server'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import ClientInfoSection from '../../../../src/pages/clients/components/ClientInfoSection'
+import { toast } from 'react-toastify'
 
 vi.mock('react-toastify', () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() }) }))
 // Summernote needs a real canvas at import time.
@@ -28,15 +30,23 @@ const CLIENT = {
 }
 
 let teamRequests: Record<string, unknown>[] = []
+let saves: Record<string, unknown>[] = []
 
-const serve = (client: Record<string, unknown> = CLIENT) => {
+const serve = (client: Record<string, unknown> = CLIENT, partnerTeam: Record<string, unknown>[] = PARTNER_TEAM, saveStatus = 200) => {
   teamRequests = []
+  saves = []
   server.use(
     http.get('*/common/borrowers/5', () => HttpResponse.json({ status: true, data: client })),
+    http.post('*/common/borrowers/5', async ({ request }) => {
+      saves.push(((await request.json()) ?? {}) as Record<string, unknown>)
+      return saveStatus === 409
+        ? HttpResponse.json({ status: false, message: 'This client was changed by someone else since you opened it. Reload to see the latest before saving.' }, { status: 409 })
+        : HttpResponse.json({ status: true, data: { ...client, client_info_version: 'v2' } })
+    }),
     http.post('*/common/get-all-users', async ({ request }) => {
       const body = ((await request.json()) ?? {}) as Record<string, unknown>
       teamRequests.push(body)
-      return HttpResponse.json({ status: true, data: body.partner_id === PARTNER ? PARTNER_TEAM : HOST_TEAM })
+      return HttpResponse.json({ status: true, data: body.partner_id === PARTNER ? partnerTeam : HOST_TEAM })
     }),
     http.all('*', () => HttpResponse.json({ status: true, data: [] }))
   )
@@ -57,7 +67,7 @@ describe('Client -> Assign to', () => {
     const user = userEvent.setup()
     renderWithProviders(<ClientInfoSection clientId="5" isHost countries={[]} states={[]} cities={[]} />)
 
-    await waitFor(() => expect(teamRequests).toContainEqual({ partner_id: PARTNER }))
+    await waitFor(() => expect(teamRequests).toContainEqual({ partner_id: PARTNER, include_user_id: 70 }))
     await waitFor(() => expect(shown()).toBe('Wanda Partner'))
 
     await user.click(assignTo())
@@ -82,5 +92,46 @@ describe('Client -> Assign to', () => {
     renderWithProviders(<ClientInfoSection clientId="5" isHost countries={[]} states={[]} cities={[]} />)
 
     await waitFor(() => expect(shown()).toBe("Hal Host (not on this partner's team)"))
+  })
+
+  // R2 BUG-061: an Inactive employee was still offered. The API now leaves them
+  // out, except the client's current assignee, which it flags.
+  it('a current assignee who has since been set Inactive is shown as such', async () => {
+    serve(CLIENT, [{ id: 70, name: 'Wanda Partner', is_inactive: true }, { id: 71, name: 'Will Staff', is_inactive: false }])
+    renderWithProviders(<ClientInfoSection clientId="5" isHost countries={[]} states={[]} cities={[]} />)
+
+    await waitFor(() => expect(shown()).toBe('Wanda Partner (Inactive)'))
+  })
+})
+
+// R2 BUG-079: a save from a page opened before another user's change put that
+// change back. The form sends the version it loaded; the API refuses a stale one.
+describe('Client -> saving from an older copy', () => {
+  const VERSIONED = { ...CLIENT, client_info_version: 'v1' }
+  const renderForm = () => {
+    const ref = createRef<{ save: () => Promise<void> }>()
+    renderWithProviders(<ClientInfoSection ref={ref} clientId="5" isHost countries={[]} states={[]} cities={[]} />)
+    return ref
+  }
+
+  it('sends the version it loaded, then the one each save returns', async () => {
+    serve(VERSIONED)
+    const ref = renderForm()
+    await waitFor(() => expect(shown()).toBe('Wanda Partner'))
+
+    await ref.current!.save()
+    await ref.current!.save()
+
+    expect(saves.map((body) => body.expected_version)).toEqual(['v1', 'v2'])
+  })
+
+  it('says the client was changed elsewhere when the API refuses the save', async () => {
+    serve(VERSIONED, PARTNER_TEAM, 409)
+    const ref = renderForm()
+    await waitFor(() => expect(shown()).toBe('Wanda Partner'))
+
+    await expect(ref.current!.save()).rejects.toBeTruthy()
+
+    expect(toast.error).toHaveBeenCalledWith('This client was changed by someone else since you opened it. Reload to see the latest before saving.')
   })
 })

@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams, useLocation, Navigate } 
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead } from '../../modules/leads/services';
-import { isMissingConvertInfo, isLeadTypeLocked, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../modules/leads/logic';
+import { isMissingConvertInfo, isLeadTypeLocked, leadCountryFor, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../modules/leads/logic';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -424,8 +424,9 @@ export default function LeadDetails() {
                 if (response.status && response.data) {
                     const data = response.data;
 
-                    // Normalize Country
-                    let finalCountry = data.country;
+                    // Normalize Country - a lead without one starts with the
+                    // default, held in the form so it is what gets saved (R2 BUG-065).
+                    let finalCountry = leadCountryFor(data.country);
                     if (locationData[finalCountry]) {
                         finalCountry = locationData[finalCountry].name;
                     }

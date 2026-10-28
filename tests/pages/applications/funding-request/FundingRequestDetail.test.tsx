@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import { server } from '../../../mocks/server'
 import { renderWithProviders, screen } from '../../../test-utils'
@@ -62,6 +63,23 @@ describe('Funding Request Details: action buttons', () => {
     const confirm = await screen.findByRole('button', { name: /^confirm/i })
     expect(confirm).toHaveClass('btn-primary')
     expect(confirm).not.toHaveClass('btn-dark')
+  })
+
+  // R2 BUG-026: the modal read "Assign to Lender. You can assign Before Approved".
+  it('asks for a lender in plain words before an approval', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Approved' } })
+      )
+    )
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: /^confirm/i }))
+
+    expect(await screen.findByText('Lender Required')).toBeInTheDocument()
+    expect(screen.getByText('Assign a lender before approving this request.')).toBeInTheDocument()
+    expect(screen.queryByText(/You can assign Before/i)).not.toBeInTheDocument()
   })
 
   it('keeps Confirm primary when rejecting, below the reason', async () => {

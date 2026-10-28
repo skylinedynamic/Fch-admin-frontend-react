@@ -104,7 +104,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const isFormFreeTrailActive = rawFormIsFreeTrail == 1 || rawFormIsFreeTrail === true || rawFormIsFreeTrail === 'true' || rawFormIsFreeTrail === '1';
     const [isSynced, setIsSynced] = useState(false); // Track if data has been synced from API
     // Who the client may be assigned to: its partner's team (null until loaded).
-    const [users, setUsers] = useState<{ id: number; name: string }[] | null>(null);
+    const [users, setUsers] = useState<{ id: number; name: string; is_inactive?: boolean }[] | null>(null);
     const [showInstallmentModal, setShowInstallmentModal] = useState(false);
 
     // Fetch Plans
@@ -191,11 +191,16 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // 3. Sync Fetch to Local State - Use ref to prevent infinite loops
     const hasSyncedData = React.useRef(false);
+    // Which copy of the client this form shows: from the load, then from each
+    // save's response - not from a background refetch, which could carry
+    // another user's change the form does not show (R2 BUG-079).
+    const clientInfoVersion = React.useRef<string | null>(null);
 
     useEffect(() => {
         if (fetchedData && !hasSyncedData.current) {
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
+            clientInfoVersion.current = apiData.client_info_version ?? null;
 
             // Normalize date
             if (apiData.business_start_date) {
@@ -274,11 +279,20 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // host on a partner's client picks from that partner's staff (BUG-055). A
     // new client is filed under your own partner, so it gets your team.
     const clientLoaded = !clientId || !!fetchedData;
+    // An assignee saved before the team rule may sit outside the team; it is
+    // kept (the API accepts the current one), so show it rather than a blank field.
+    const savedAssigneeId = fetchedData?.data?.assign_id ?? fetchedData?.assign_id ?? null;
+    const savedAssigneeName = fetchedData?.data?.assign_name ?? fetchedData?.assign_name ?? null;
     useEffect(() => {
         if (!clientLoaded) return;
         const fetchUsers = async () => {
             try {
-                const response = await allUsers(borrowerPartnerId ? { partner_id: Number(borrowerPartnerId) } : {});
+                // Inactive employees are left out of the list, except the
+                // client's current assignee, which comes back flagged (R2 BUG-061).
+                const response = await allUsers({
+                    ...(borrowerPartnerId ? { partner_id: Number(borrowerPartnerId) } : {}),
+                    ...(savedAssigneeId ? { include_user_id: Number(savedAssigneeId) } : {}),
+                });
                 if (response.status && response.data) {
                     setUsers(response.data);
                 }
@@ -287,13 +301,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             }
         };
         fetchUsers();
-    }, [clientLoaded, borrowerPartnerId]);
+    }, [clientLoaded, borrowerPartnerId, savedAssigneeId]);
 
-    // An assignee saved before the team rule may sit outside the team; it is
-    // kept (the API accepts the current one), so show it rather than a blank field.
-    const savedAssigneeId = fetchedData?.data?.assign_id ?? fetchedData?.assign_id ?? null;
-    const savedAssigneeName = fetchedData?.data?.assign_name ?? fetchedData?.assign_name ?? null;
-    const assignOptions = (users ?? []).map(user => ({ label: user.name, value: user.id }));
+    const assignOptions = (users ?? []).map(user => ({ label: user.is_inactive ? `${user.name} (Inactive)` : user.name, value: user.id }));
     if (users && savedAssigneeId && savedAssigneeName && !users.some(user => String(user.id) === String(savedAssigneeId))) {
         assignOptions.push({ label: `${savedAssigneeName} (not on this partner's team)`, value: savedAssigneeId });
     }
@@ -497,7 +507,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // 5. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
-            const payload = mapClientUpdatePayload(formData, isHost, wasFreeTrial);
+            const payload = {
+                ...mapClientUpdatePayload(formData, isHost, wasFreeTrial),
+                ...(clientInfoVersion.current ? { expected_version: clientInfoVersion.current } : {}),
+            };
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
@@ -509,6 +522,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         // confirmed; show the one still in effect alongside the
                         // pending one (this form only syncs from the API once).
                         const saved = (data as any)?.data;
+                        if (saved?.client_info_version) {
+                            clientInfoVersion.current = saved.client_info_version;
+                        }
                         if (saved) {
                             setFormData(prev => ({ ...prev, email: saved.email ?? prev.email, pending_email: saved.pending_email ?? null }));
                         }

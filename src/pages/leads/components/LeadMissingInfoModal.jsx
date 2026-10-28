@@ -4,6 +4,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { locationData } from '../../../config';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../../config/appConfig';
+import { leadCountryFor } from '../../../modules/leads/logic';
 
 export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, targetType = ENTITY_TYPE_BORROWER, loading, backendErrors }) {
     const modalRef = useRef(null);
@@ -24,7 +25,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                 contact_person: lead.contact_person || lead.contact_name || '',
                 email: lead.email || '',
                 phone_number: lead.phone_number || '',
-                country: lead.country || '',
+                country: leadCountryFor(lead.country),
                 state: lead.state || '',
                 city: lead.city || '',
             });

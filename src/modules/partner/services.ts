@@ -45,7 +45,7 @@ export const deletePartner = async (id: string | number): Promise<void> => {
 };
 
 /** The caller's team - or, for the host, the team of the partner it names. */
-export const allUsers = async (payload: { partner_id?: number } = {}): Promise<any> => {
+export const allUsers = async (payload: { partner_id?: number; include_user_id?: number } = {}): Promise<any> => {
   const { data } = await apiClient.post('common/get-all-users', payload);
   return data;
 };

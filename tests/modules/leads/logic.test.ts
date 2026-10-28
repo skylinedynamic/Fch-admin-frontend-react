@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LEAD_CONVERT_REQUIRED_FIELDS, isMissingConvertInfo, isLeadTypeLocked, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../../src/modules/leads/logic'
+import { DEFAULT_LEAD_COUNTRY, LEAD_CONVERT_REQUIRED_FIELDS, isMissingConvertInfo, isLeadTypeLocked, leadCountryFor, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../../src/modules/leads/logic'
 
 const complete = {
   contact_person: 'Awlad Leo',
@@ -96,5 +96,19 @@ describe('isLeadTypeLocked', () => {
     expect(isLeadTypeLocked(HOST, { partner: { id: 1 }, convert_to: null })).toBe(false)
     expect(isLeadTypeLocked(HOST, { partner: null })).toBe(false)
     expect(isLeadTypeLocked(HOST, null)).toBe(false)
+  })
+})
+
+// R2 BUG-065: Contact Info showed Country "United States" but saving said
+// "Country is required." - the default was shown but never put into the form.
+describe('leadCountryFor', () => {
+  it("keeps the lead's own country, by name", () => {
+    expect(leadCountryFor('Canada')).toBe('Canada')
+  })
+
+  it("gives a lead without one the platform's default, so the form sends what it shows", () => {
+    expect(leadCountryFor(null)).toBe(DEFAULT_LEAD_COUNTRY)
+    expect(leadCountryFor('')).toBe(DEFAULT_LEAD_COUNTRY)
+    expect(leadCountryFor(undefined)).toBe('United States')
   })
 })
