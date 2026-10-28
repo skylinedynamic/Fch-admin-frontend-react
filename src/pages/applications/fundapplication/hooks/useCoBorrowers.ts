@@ -97,13 +97,14 @@ export const useCoBorrowers = () => {
       setCoDraft(EMPTY_CO_BORROWER)
       setEditIndex(null)
       hideCoModal()
-      toast.success(editIndex !== null ? 'Co-borrower updated' : 'Co-borrower added')
+      toast.success(editIndex !== null ? 'Co-borrower updated successfully' : 'Co-borrower added successfully')
     },
     [coDraft, editIndex, hideCoModal]
   )
 
   const deleteCoBorrower = useCallback((idx: number) => {
     setCoBorrowers((prev) => prev.filter((_, i) => i !== idx))
+    toast.success('Co-borrower removed successfully')
   }, [])
 
   return {
@@ -116,6 +117,7 @@ export const useCoBorrowers = () => {
     deleteCoBorrower,
     editCoBorrower,
     isEditing: editIndex !== null,
+    editIndex,
     emptyCoDraft: EMPTY_CO_BORROWER,
   }
 }
