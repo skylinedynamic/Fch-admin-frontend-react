@@ -5,8 +5,8 @@ const RA = '/common/request-application'
 
 test.describe('Funding applications', () => {
   const APPS = [
-    { id: 401, full_name: 'Fran Funding', application_no: 'APP-0001', industry_type: 'Retail', entity_type: 'LLC', purpose_of_funds: 'Inventory', requested_amount: '$80,000', date: '2026-03-02', status: 'Submitted' },
-    { id: 402, full_name: 'Gus Growth', application_no: 'APP-0002', industry_type: 'Tech', entity_type: 'C-Corp', purpose_of_funds: 'Hiring', requested_amount: '$300,000', date: '2026-03-05', status: 'Approved' },
+    { id: 401, full_name: 'Fran Funding', business_name: 'Fran Retail LLC', application_no: 'APP-0001', industry_type: 'Retail', entity_type: 'LLC', purpose_of_funds: 'Inventory', requested_amount: '$80,000', date: '2026-03-02', status: 'Submitted' },
+    { id: 402, full_name: 'Gus Growth', business_name: 'Growth Labs Inc', application_no: 'APP-0002', industry_type: 'Tech', entity_type: 'C-Corp', purpose_of_funds: 'Hiring', requested_amount: '$300,000', date: '2026-03-05', status: 'Approved' },
   ]
   const LIST = new RegExp(`${RA}/funding-application$`)
 
@@ -22,6 +22,19 @@ test.describe('Funding applications', () => {
     await openList(page)
     await expect(page.getByText('Gus Growth')).toBeVisible()
     await expect(page.getByText('Inventory')).toBeVisible()
+  })
+
+  // The person and the company side by side, so staff contact the right business.
+  test('shows the Company Name next to the Name, in place of Entity Type', async ({ page }) => {
+    await openList(page)
+    const headers = (await page.getByRole('columnheader').allTextContents()).map((h) => h.trim())
+    expect(headers[0]).toMatch(/^Name/)
+    expect(headers[1]).toMatch(/^Company Name/)
+    expect(headers.join('|')).not.toContain('Entity Type')
+
+    const fran = page.getByRole('row').filter({ hasText: 'Fran Funding' })
+    await expect(fran).toContainText('Fran Retail LLC')
+    await expect(page.getByRole('row').filter({ hasText: 'Gus Growth' })).toContainText('Growth Labs Inc')
   })
 
   test('search is sent to the API', async ({ page }) => {

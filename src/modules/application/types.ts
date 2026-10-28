@@ -44,7 +44,10 @@ export interface FundingApplication {
     id: number;
     application_number?: string;
     full_name: string;
+    /** The company on this application (one person can apply for several). */
+    business_name: string | null;
     industry_type: string;
+    /** Still sent by the API; no longer a list column. */
     entity_type: string;
     purpose_of_funds: string;
     requested_amount: string | null;
