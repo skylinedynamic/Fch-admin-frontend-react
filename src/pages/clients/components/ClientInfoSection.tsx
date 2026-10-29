@@ -1640,6 +1640,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                                                 if (isWLOrCP) {
                                                     const customAmount = currentPaymentAmount;
+                                                    // The partner's fee, said the same way on the Partner Invoice line and in
+                                                    // the note under it: the client's saved fee, else the partner's current one
+                                                    // (only fetched for a new or free-trial client) (BUG-140).
+                                                    const partnerFeeLabel = formData.borrower_fee_amount_formatted
+                                                        || formData.enrollment_details?.borrower_fee_amount_formatted
+                                                        || '$' + fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                                                     return (
                                                         <>
@@ -1696,7 +1702,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                     <i className="ri-shield-user-line text-warning me-1"></i> Partner Invoice:
                                                                 </span>
                                                                 <span className="amount-value text-warning" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                                    {formData.borrower_fee_amount_formatted || (formData.enrollment_details?.borrower_fee_amount_formatted) || ('$' + fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
+                                                                    {partnerFeeLabel}
                                                                 </span>
                                                             </div>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -1708,7 +1714,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                 <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                     <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
+                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, {partnerFeeLabel} is automatically charged to the Partner account immediately.
                                                                 </p>
                                                             </div>
                                                         </>
