@@ -6,7 +6,8 @@ import {
 } from '../../src/config/borrower'
 
 /**
- * SCRUM-331: stage's 19 statuses in their stage order, then the seven new ones.
+ * SCRUM-331: stage's statuses, the two new editable ones right after In Verification,
+ * the five new closing ones after Denied.
  * The same order as the API (config/funding_application.php `statuses.order`).
  */
 const EXPECTED = [
@@ -17,6 +18,8 @@ const EXPECTED = [
   'Underwriting Review',
   'Missing Documents (Action Required)',
   'In Verification',
+  'Pending Clarification',
+  'Ready for Submission',
   'Approved (Conditional)',
   'Approved (Final)',
   'Matched to Lender',
@@ -29,8 +32,6 @@ const EXPECTED = [
   'Funded',
   'Closed (Completed)',
   'Denied',
-  'Pending Clarification',
-  'Ready for Submission',
   'Withdrawn',
   'Offer Declined by Borrower',
   'Closed - No Response',
