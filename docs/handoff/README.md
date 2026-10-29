@@ -14,13 +14,13 @@ Several features or tasks on the same date means several files with the same dat
 
 | File | Title |
 |---|---|
+| [2026-10-29-client-documents-by-category.md](2026-10-29-client-documents-by-category.md) | Client › Documents tab: one table grouped by category, required first, per-category upload |
 | [2026-10-29-bug-106-view-agreement-without-signed-copy.md](2026-10-29-bug-106-view-agreement-without-signed-copy.md) | View Agreement without a signed copy — "No signed agreement", Re-sign for a missing copy (BUG-106) |
 | [2026-10-29-add-user-seat-limit-window-on-open.md](2026-10-29-add-user-seat-limit-window-on-open.md) | Add User opened at the seat limit shows the purchase window right away (BUG-109 retest) |
-
-### 2026-10-29
-- [2026-10-29-manage-tier-delete-in-use-and-vendor-logo-file-manager.md](2026-10-29-manage-tier-delete-in-use-and-vendor-logo-file-manager.md) — BUG-095 (reopened): one task deletes without a 405, a task or vendor in use is refused with the reason, the vendor logo comes from the File Manager.
-- [2026-10-29-client-ssn-ein-masked-with-reveal.md](2026-10-29-client-ssn-ein-masked-with-reveal.md) — BUG-014 (reopened): the client's SSN and EIN arrive masked and are revealed on the eye button, change requests too.
-- [2026-10-29-upcoming-billings-amount-outstanding-sort.md](2026-10-29-upcoming-billings-amount-outstanding-sort.md) — BUG-012 (reopened): Upcoming Billings sorts by Amount and Outstanding again.
+| [2026-10-29-appointment-edit-time-zone-bug-132.md](2026-10-29-appointment-edit-time-zone-bug-132.md) | Appointment edit saved 6 hours late — fixed by the browser time zone change (BUG-132) |
+| [2026-10-29-manage-tier-delete-in-use-and-vendor-logo-file-manager.md](2026-10-29-manage-tier-delete-in-use-and-vendor-logo-file-manager.md) | BUG-095 (reopened) / BUG-127: one task deletes without a 405, a task or vendor in use is refused with the reason, the vendor logo comes from the File Manager |
+| [2026-10-29-client-ssn-ein-masked-with-reveal.md](2026-10-29-client-ssn-ein-masked-with-reveal.md) | BUG-014 (reopened): the client's SSN and EIN arrive masked and are revealed on the eye button, change requests too |
+| [2026-10-29-upcoming-billings-amount-outstanding-sort.md](2026-10-29-upcoming-billings-amount-outstanding-sort.md) | BUG-012 (reopened): Upcoming Billings sorts by Amount and Outstanding again |
 
 ### 2026-10-28
 

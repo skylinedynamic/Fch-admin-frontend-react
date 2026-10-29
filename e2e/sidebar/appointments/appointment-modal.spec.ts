@@ -197,6 +197,21 @@ test.describe('Appointment dialog - the person it was booked with', () => {
     expect(call.json).not.toHaveProperty('meeting_with_host')
   })
 
+  // BUG-132: editing the time saved it 6 hours later - the local time picked
+  // was sent labelled "UTC". The edit now sends the browser's zone with it.
+  test("Edit saves the time picked, in the browser's time zone", async ({ page }) => {
+    const api = await openBooking(page, CLIENT.id)
+    await dialog(page).getByRole('button', { name: /Edit/ }).click()
+    await expect(dialog(page).getByText('Edit Appointment')).toBeVisible()
+    await expect(dialog(page).getByLabel('Time Zone')).toHaveValue('Asia/Dhaka (GMT+06:00)')
+
+    await pickPrime(page, dialog(page).locator('.time-slot-container .p-dropdown').first(), '02:00 PM')
+    await dialog(page).getByRole('button', { name: 'Save Changes' }).click()
+
+    const call = await expectCall(api, 'PUT', DETAIL)
+    expect(call.json).toMatchObject({ appointment_date: '2026-10-28 14:00:00', timezone: 'Asia/Dhaka' })
+  })
+
   test('the person who booked it still gets Edit and Delete, and no Confirm', async ({ page }) => {
     await openBooking(page, CLIENT.id)
     await expect(dialog(page).getByRole('button', { name: /Edit/ })).toBeVisible()
