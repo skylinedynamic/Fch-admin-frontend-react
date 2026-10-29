@@ -273,6 +273,18 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
     }, [fetchedData, clientId]);
 
+    // A partner on a free trial may only add Limited Free Plan clients (BUG-142).
+    // The subscription that says so is fetched after the page loads, so the
+    // one-off sync above can run before it is known: turn the plan on whenever it
+    // is, or the switch is locked off with the paid Enrollment Type open below.
+    useEffect(() => {
+        if (clientId || !isPartnerOnFreeTrial || isFormFreeTrailActive) return;
+        setFormData(prev => ({ ...prev, is_free_trail: true }));
+        if (handleLocationChange) {
+            handleLocationChange('is_free_trail', true);
+        }
+    }, [clientId, isPartnerOnFreeTrial, isFormFreeTrailActive]);
+
     // plan_id now comes directly from the API — no retry/matching effect needed.
 
     // Fetch Users for Assign to dropdown - the client's partner's team, so the
@@ -1373,6 +1385,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 Activate Limited Free Plan
                                             </label>
                                         </div>
+                                        {/* e.g. the API's "Paid Version" answer for a partner on a free trial. */}
+                                        {errors.is_free_trail && <small className="p-error d-block mt-2">{errors.is_free_trail}</small>}
                                     </div>
 
                                 </div>

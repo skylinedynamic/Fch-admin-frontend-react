@@ -14,6 +14,7 @@ Several features or tasks on the same date means several files with the same dat
 
 | File | Title |
 |---|---|
+| [2026-10-29-free-trial-partner-add-client-bug-142.md](2026-10-29-free-trial-partner-add-client-bug-142.md) | Add Client on a partner's free trial: Limited Free Plan only, even when the subscription loads late (BUG-142) |
 | [2026-10-29-enrollment-note-partner-fee-bug-140.md](2026-10-29-enrollment-note-partner-fee-bug-140.md) | Client Enrollment Details note said $0.00 charged to the partner; now the same fee as the Partner Invoice (BUG-140) |
 | [2026-10-29-client-documents-by-category.md](2026-10-29-client-documents-by-category.md) | Client › Documents tab: one table grouped by category, required first, per-category upload |
 | [2026-10-29-bug-106-view-agreement-without-signed-copy.md](2026-10-29-bug-106-view-agreement-without-signed-copy.md) | View Agreement without a signed copy — "No signed agreement", Re-sign for a missing copy (BUG-106) |
