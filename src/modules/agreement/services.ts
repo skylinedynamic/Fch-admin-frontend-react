@@ -103,7 +103,7 @@ export async function downloadAgreementSign(userId?: number | string) {
 /**
  * Fetch the signed agreement HTML snapshot for preview.
  */
-export async function fetchSignedAgreementHtml(userId?: number | string): Promise<ApiResponse<{ content_html: string }>> {
+export async function fetchSignedAgreementHtml(userId?: number | string): Promise<ApiResponse<{ content_html: string; has_sign?: boolean }>> {
   const url = userId ? `/common/agreement-sign/html/${userId}` : '/common/agreement-sign/html'
   const res = await apiClient.get(url)
   return res.data
