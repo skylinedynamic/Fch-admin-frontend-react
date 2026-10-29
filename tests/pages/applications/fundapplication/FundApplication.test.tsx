@@ -126,3 +126,38 @@ describe('FundApplication progress badge', () => {
     expect(screen.queryByText('100%')).not.toBeInTheDocument()
   }, 15000)
 })
+
+describe("FundApplication — Can't edit a locked application", () => {
+  const reason = 'This application can no longer be edited because it is "Funded". Contact your funding advisor if something needs to change.'
+
+  const lockedRequest = (overrides: Record<string, unknown> = {}) =>
+    http.get('*/common/funding-application/funding-request', () =>
+      HttpResponse.json({
+        status: true,
+        message: '',
+        data: { id: 7, status: 'Funded', is_locked: true, is_editable: false, locked_reason: reason, ...overrides },
+      })
+    )
+
+  it('shows why instead of the form when the edit URL is opened on a locked application', async () => {
+    server.use(lockedRequest(), http.get('*/common/funding-application/business-info', () => HttpResponse.json(businessInfoResponse)), ...supportingHandlers)
+
+    renderWizard(44)
+
+    expect(await screen.findByRole('heading', { name: /can't edit funding application/i }, { timeout: 10000 })).toBeInTheDocument()
+    expect(screen.getByText(reason)).toBeInTheDocument()
+    expect(screen.queryByText(/^Step \d+ of/)).not.toBeInTheDocument()
+  }, 15000)
+
+  it('names the status when the server sends no reason', async () => {
+    server.use(
+      lockedRequest({ status: 'Closed - Error', locked_reason: null }),
+      http.get('*/common/funding-application/business-info', () => HttpResponse.json(businessInfoResponse)),
+      ...supportingHandlers
+    )
+
+    renderWizard(45)
+
+    expect(await screen.findByText(/because it is "Closed - Error"/, {}, { timeout: 10000 })).toBeInTheDocument()
+  }, 15000)
+})
