@@ -15,6 +15,7 @@ Several features or tasks on the same date means several files with the same dat
 | File | Title |
 |---|---|
 | [2026-10-28-activity-task-any-date-no-validation-toast.md](2026-10-28-activity-task-any-date-no-validation-toast.md) | Activity log — a Task takes any date, validation is not toasted |
+| [2026-10-28-assign-pickers-active-staff-only.md](2026-10-28-assign-pickers-active-staff-only.md) | Assign pickers (Task, Client, Lead Owner, Agent) list active staff only |
 
 ### 2026-10-27
 
