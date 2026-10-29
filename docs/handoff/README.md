@@ -15,6 +15,7 @@ Several features or tasks on the same date means several files with the same dat
 | File | Title |
 |---|---|
 | [2026-10-29-bug-106-view-agreement-without-signed-copy.md](2026-10-29-bug-106-view-agreement-without-signed-copy.md) | View Agreement without a signed copy — "No signed agreement", Re-sign for a missing copy (BUG-106) |
+| [2026-10-29-add-user-seat-limit-window-on-open.md](2026-10-29-add-user-seat-limit-window-on-open.md) | Add User opened at the seat limit shows the purchase window right away (BUG-109 retest) |
 
 ### 2026-10-29
 - [2026-10-29-manage-tier-delete-in-use-and-vendor-logo-file-manager.md](2026-10-29-manage-tier-delete-in-use-and-vendor-logo-file-manager.md) — BUG-095 (reopened): one task deletes without a 405, a task or vendor in use is refused with the reason, the vendor logo comes from the File Manager.
