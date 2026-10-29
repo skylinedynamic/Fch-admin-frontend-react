@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-29
+
+| File | Title |
+|---|---|
+| [2026-10-29-partner-configuration-agreement-section.md](2026-10-29-partner-configuration-agreement-section.md) | Partner profile › Configuration — Agreement section |
+
 ### 2026-10-23
 
 | File | Title |

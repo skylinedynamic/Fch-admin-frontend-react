@@ -2,10 +2,16 @@ import { apiClient } from '../../lib/http/apiClient'
 import { AgreementTemplate, ApiResponse, AgreementSlug, AgreementSignCheck } from './types'
 
 /**
+ * `partner_id` for Partner profile › Configuration, where the host edits
+ * another partner's agreements; nothing for the user's own (see configPartner).
+ */
+const forPartner = (partnerId?: number): { partner_id?: number } => (partnerId ? { partner_id: partnerId } : {})
+
+/**
  * Fetch all agreements
  */
-export async function fetchAgreements(): Promise<ApiResponse<AgreementTemplate[]>> {
-  const res = await apiClient.get('/common/agreement-templates')
+export async function fetchAgreements(partnerId?: number): Promise<ApiResponse<AgreementTemplate[]>> {
+  const res = await apiClient.get('/common/agreement-templates', { params: forPartner(partnerId) })
   return res.data
 }
 
@@ -18,10 +24,10 @@ export async function saveAgreement(payload: {
   slug: AgreementSlug
   template_html?: string
   template_json?: string
-}): Promise<ApiResponse<AgreementTemplate>> {
+}, partnerId?: number): Promise<ApiResponse<AgreementTemplate>> {
   try {
     const url = payload.id ? `/common/agreement-templates/save/${payload.id}` : '/common/agreement-templates/save'
-    const res = await apiClient.post(url, payload)
+    const res = await apiClient.post(url, { ...payload, ...forPartner(partnerId) })
     return res.data
   } catch (err) {
     console.error(`Failed to save ${payload.slug} agreement:`, err);
@@ -35,12 +41,14 @@ export async function saveAgreement(payload: {
  * @param slug - 'partner' or 'borrower'
  */
 export async function fetchAgreement(
-  slug: AgreementSlug
+  slug: AgreementSlug,
+  partnerId?: number
 ): Promise<ApiResponse<AgreementTemplate>> {
   try {
     // Current backend show route updated to POST
     const res = await apiClient.post('/common/agreement-templates/show', {
-      slug
+      slug,
+      ...forPartner(partnerId)
     })
     return res.data
   } catch (err) {
@@ -58,9 +66,9 @@ export async function toggleAgreementStatus(payload: {
   id: number
   slug: AgreementSlug
   is_active: boolean
-}): Promise<ApiResponse<AgreementTemplate>> {
+}, partnerId?: number): Promise<ApiResponse<AgreementTemplate>> {
   try {
-    const res = await apiClient.post(`/common/agreement-templates/update-status/${payload.id}`, payload)
+    const res = await apiClient.post(`/common/agreement-templates/update-status/${payload.id}`, { ...payload, ...forPartner(partnerId) })
     return res.data
   } catch (err) {
     console.error(`Failed to update status for ID ${payload.id}:`, err);

@@ -217,3 +217,60 @@ describe('cancelAgreementSign', () => {
     expect(hitUrl).toContain('/common/agreement-sign/cancel')
   })
 })
+
+// Partner profile › Configuration › Agreement: the host names the partner
+// whose agreements these are; without one, the signed-in user's own.
+describe('naming another partner (partner_id)', () => {
+  it('lists, opens, saves and toggles that partner\'s templates', async () => {
+    const seen: Record<string, unknown> = {}
+    server.use(
+      http.get('*/common/agreement-templates', ({ request }) => {
+        seen.list = new URL(request.url).searchParams.get('partner_id')
+        return HttpResponse.json({ status: true, data: [] })
+      }),
+      http.post('*/common/agreement-templates/show', async ({ request }) => {
+        seen.show = await request.json()
+        return HttpResponse.json({ status: true, data: { id: 1, slug: 'borrower' } })
+      }),
+      http.post('*/common/agreement-templates/save', async ({ request }) => {
+        seen.save = await request.json()
+        return HttpResponse.json({ status: true, data: { id: 1, slug: 'borrower' } })
+      }),
+      http.post('*/common/agreement-templates/update-status/1', async ({ request }) => {
+        seen.status = await request.json()
+        return HttpResponse.json({ status: true, data: { id: 1, slug: 'borrower' } })
+      })
+    )
+
+    await fetchAgreements(42)
+    await fetchAgreement('borrower', 42)
+    await saveAgreement({ slug: 'borrower', template_html: '<p/>' }, 42)
+    await toggleAgreementStatus({ id: 1, slug: 'borrower', is_active: false }, 42)
+
+    expect(seen.list).toBe('42')
+    expect(seen.show).toEqual({ slug: 'borrower', partner_id: 42 })
+    expect(seen.save).toMatchObject({ slug: 'borrower', partner_id: 42 })
+    expect(seen.status).toMatchObject({ is_active: false, partner_id: 42 })
+  })
+
+  it('sends no partner_id for the user\'s own templates', async () => {
+    let listParam: string | null = 'unset'
+    let showBody: any = null
+    server.use(
+      http.get('*/common/agreement-templates', ({ request }) => {
+        listParam = new URL(request.url).searchParams.get('partner_id')
+        return HttpResponse.json({ status: true, data: [] })
+      }),
+      http.post('*/common/agreement-templates/show', async ({ request }) => {
+        showBody = await request.json()
+        return HttpResponse.json({ status: true, data: { id: 1, slug: 'borrower' } })
+      })
+    )
+
+    await fetchAgreements()
+    await fetchAgreement('borrower')
+
+    expect(listParam).toBeNull()
+    expect(showBody).toEqual({ slug: 'borrower' })
+  })
+})
