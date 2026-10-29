@@ -82,7 +82,7 @@ export default function FundingApplication() {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             industry_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            entity_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             purpose_of_funds: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
         };
@@ -141,7 +141,7 @@ export default function FundingApplication() {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             industry_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            entity_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             purpose_of_funds: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
         };
@@ -309,6 +309,16 @@ export default function FundingApplication() {
                                             emptyMessage="No applications found"
                                         >
                                             <Column header="Name" field="full_name" sortable filter filterPlaceholder="Search name" style={{ minWidth: '160px' }} />
+                                            {/* The company on this application: one person can apply for several. */}
+                                            <Column
+                                                field="business_name"
+                                                header="Company Name"
+                                                body={(rowData: FundingApplicationType) => rowData.business_name || <span className="text-muted">-</span>}
+                                                sortable
+                                                filter
+                                                filterPlaceholder="Search company"
+                                                style={{ minWidth: '180px' }}
+                                            />
                                             <Column
                                                 field="application_number"
                                                 header="App No"
@@ -321,7 +331,6 @@ export default function FundingApplication() {
                                                 style={{ minWidth: '150px' }}
                                             />
                                             <Column field="industry_type" header="Industry Type" sortable filter filterPlaceholder="Search industry" style={{ minWidth: '150px' }} />
-                                            <Column field="entity_type" header="Entity Type" sortable filter filterPlaceholder="Search entity" style={{ minWidth: '150px' }} />
                                             <Column field="purpose_of_funds" header="Purpose" sortable filter filterPlaceholder="Search purpose" style={{ minWidth: '160px' }} />
                                             <Column header="Requested Amount" field="requested_amount" body={(rowData: FundingApplicationType) => rowData.requested_amount || 0} sortable style={{ minWidth: '160px' }} />
                                             <Column field="date" header="Date" body={(rowData: FundingApplicationType) => rowData.date || '-'} sortable style={{ minWidth: '120px' }} />

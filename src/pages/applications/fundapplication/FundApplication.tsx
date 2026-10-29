@@ -697,6 +697,31 @@ export default function FundApplication() {
     </div>
   )
 
+  // Opened on an application whose status isn't editable any more (e.g. the
+  // URL was typed or bookmarked): say why instead of a form the API would
+  // refuse to save (423).
+  if (fundingData?.is_locked) {
+    return (
+      <div className="page-content fundapplication-page funding-wizard-page">
+        <div className="container-fluid min-vh-70 pt-4">
+          <div className="card mx-auto" style={{ maxWidth: 640 }}>
+            <div className="card-body text-center p-4">
+              <i className="ri-lock-line fs-36 text-warning"></i>
+              <h4 className="mt-2 mb-2">Can't Edit Funding Application</h4>
+              <p className="text-muted mb-4">
+                {fundingData.locked_reason
+                  || `This application can no longer be edited because it is "${fundingData.status}". Contact your funding advisor if something needs to change.`}
+              </p>
+              <button type="button" className="btn btn-outline-secondary" onClick={() => navigate(-1)}>
+                <i className="ri-arrow-left-line align-middle me-1"></i> Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="page-content fundapplication-page funding-wizard-page">
       <div className="container-fluid min-vh-70 pt-4">
