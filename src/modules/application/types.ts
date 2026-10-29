@@ -359,6 +359,8 @@ export interface FundingApplicationDetails {
     funding_request_id?: number | null;
     funding_request_status?: string | null;
     is_editable?: boolean;
+    // Why the application can't be edited; null while it can.
+    locked_reason?: string | null;
     full_name: string;
     business_name: string;
     business_email: string;
