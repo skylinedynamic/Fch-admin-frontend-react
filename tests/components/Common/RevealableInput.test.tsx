@@ -10,12 +10,12 @@ import { formatSSN, maskSSN } from '../../../src/utils/borrowerFormatters'
  * the mask, read-only; the eye button fetches the number and opens it for
  * editing; the eye again hides it. With no number on file it is a plain input.
  */
-function Harness({ initial, onReveal }: { initial: string; onReveal: () => Promise<string | null> }) {
+function Harness({ initial, onReveal, initiallyHidden }: { initial: string; onReveal: () => Promise<string | null>; initiallyHidden?: boolean }) {
   const [value, setValue] = useState(initial)
   return (
     <>
       <label htmlFor="ssn">Social Security Number</label>
-      <RevealableInput id="ssn" name="SSN" value={value} onChange={setValue} onReveal={onReveal} format={formatSSN} mask={maskSSN} placeholder="XXX-XX-XXXX" />
+      <RevealableInput id="ssn" name="SSN" value={value} onChange={setValue} onReveal={onReveal} format={formatSSN} mask={maskSSN} placeholder="XXX-XX-XXXX" initiallyHidden={initiallyHidden} />
       <output data-testid="value">{value}</output>
     </>
   )
@@ -83,6 +83,21 @@ describe('RevealableInput', () => {
     render(<Harness initial="" onReveal={onReveal} />)
 
     await user.type(input(), '123456789')
+
+    expect(input().value).toBe('123-45-6789')
+    expect(onReveal).not.toHaveBeenCalled()
+  })
+
+  /** BUG-145: an SSN read from a credit report is held in full until saved - it still starts masked. */
+  it('starts a number held in full masked when asked to, opening it without a fetch', async () => {
+    const user = userEvent.setup()
+    const onReveal = vi.fn()
+    render(<Harness initial="123-45-6789" onReveal={onReveal} initiallyHidden />)
+
+    expect(input().value).toBe('***-**-6789')
+    expect(input()).toHaveAttribute('readonly')
+
+    await user.click(screen.getByRole('button', { name: 'Show SSN' }))
 
     expect(input().value).toBe('123-45-6789')
     expect(onReveal).not.toHaveBeenCalled()

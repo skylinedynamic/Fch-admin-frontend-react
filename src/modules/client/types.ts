@@ -1,5 +1,8 @@
-/** The numbers the client's details carry masked, which revealClientField() gives in full (BUG-014). */
-export type RevealableClientField = 'ssn' | 'business_ein';
+/**
+ * The numbers the client's details carry masked, which revealClientField() gives in full (BUG-014),
+ * and the SSN printed on their credit report (BUG-145).
+ */
+export type RevealableClientField = 'ssn' | 'business_ein' | 'credit_profile_ssn';
 
 export type Client = {
     id?: number | string;
