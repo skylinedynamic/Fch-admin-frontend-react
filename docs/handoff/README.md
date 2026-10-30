@@ -16,10 +16,8 @@ Several features or tasks on the same date means several files with the same dat
 - [2026-10-29-upcoming-billings-amount-outstanding-sort.md](2026-10-29-upcoming-billings-amount-outstanding-sort.md) — BUG-012 (reopened): Upcoming Billings sorts by Amount and Outstanding again.
 
 ### 2026-10-28
-
-| File | Title |
-|---|---|
-| [2026-10-28-activity-task-any-date-no-validation-toast.md](2026-10-28-activity-task-any-date-no-validation-toast.md) | Activity log — a Task takes any date, validation is not toasted |
+- [2026-10-28-activity-task-any-date-no-validation-toast.md](2026-10-28-activity-task-any-date-no-validation-toast.md) — Activity log: a Task takes any date, validation is not toasted.
+- [2026-10-28-coverage-run-exit-1-and-funding-request-step-reload.md](2026-10-28-coverage-run-exit-1-and-funding-request-step-reload.md) — coverage run exit 1 (overlapping runs), and the Funding Request step re-fetching by the application id.
 
 ### 2026-10-27
 - [2026-10-27-login-footer-without-a-brand-name.md](2026-10-27-login-footer-without-a-brand-name.md) — BUG-118: the login footer leaves no gap when the branding has no name.

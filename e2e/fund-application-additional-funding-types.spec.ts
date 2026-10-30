@@ -67,6 +67,11 @@ async function seedSession(page: Page) {
   )
 }
 
+// The field is a ChipMultiSelect (PrimeReact MultiSelect, chips inside), found
+// by its input id; the wizard renders desktop and mobile copies, so the visible one.
+const typesField = (page: Page) =>
+  page.locator('.chip-multiselect').filter({ has: page.locator('#additional_funding_types') }).locator('visible=true').locator('.p-multiselect').first()
+
 function jsonOk(route: Route, data: unknown) {
   return route.fulfill({ json: { status: true, message: 'ok', data } })
 }
@@ -97,13 +102,13 @@ test.describe('Funding application wizard › Step 4 › Additional Funding Type
   })
 
   test('sits after Preferred Funding Type with the types saved before', async ({ page }) => {
-    const field = page.locator('.additional-funding-types >> visible=true')
+    const field = typesField(page)
     await expect(page.getByText('Additional Funding Types').locator('visible=true')).toBeVisible()
     await expect(field.locator('.p-multiselect-token-label')).toHaveText(['SBA Loan'])
   })
 
   test('offers every funding type but the preferred one', async ({ page }) => {
-    await page.locator('.additional-funding-types >> visible=true').click()
+    await typesField(page).click()
     const options = page.locator('.p-multiselect-panel li.p-multiselect-item')
     await expect(options.first()).toBeVisible()
     const offered = (await options.allTextContents()).map((t) => t.trim())
@@ -113,7 +118,7 @@ test.describe('Funding application wizard › Step 4 › Additional Funding Type
   })
 
   test('saves the chosen types with the step', async ({ page }) => {
-    await page.locator('.additional-funding-types >> visible=true').click()
+    await typesField(page).click()
     await page.locator('.p-multiselect-panel li.p-multiselect-item', { hasText: 'Line of Credit' }).click()
     await page.keyboard.press('Escape')
 
