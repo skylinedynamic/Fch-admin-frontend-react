@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Modal, ModalHeader, ModalBody, Row, Col, Card, CardBody } from 'reactstrap';
 import { Skeleton } from 'primereact/skeleton';
 import { fetchClientById } from '../../../modules/client/services';
-import type { Client } from '../../../modules/client/types';
+import { useRevealClientField } from '../../../modules/client/queries';
+import type { Client, RevealableClientField } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
-import SsnValue from '../../../components/Common/SsnValue';
-import { displayEIN } from '../../../utils/formatters';
+import RevealableValue from '../../../components/Common/RevealableValue';
+import { formatEIN, formatSSN } from '../../../utils/borrowerFormatters';
 
 interface ClientDetailsModalProps {
     isOpen: boolean;
@@ -13,9 +14,21 @@ interface ClientDetailsModalProps {
     clientId: number | string | null;
 }
 
+// Outside the modal, so a re-render (a reveal's loading state) does not remount
+// the value it shows and lose what was revealed.
+const InfoItem = ({ label, value }: { label: string, value: any }) => (
+    <div className="mb-3">
+        <span className="fw-semibold text-muted d-block mb-1">{label}</span>
+        <span className="fs-14">{value || 'N/A'}</span>
+    </div>
+);
+
 const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle, clientId }) => {
     const [client, setClient] = useState<Client | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
+    // The SSN and EIN come masked (BUG-014); the eye fetches one in full.
+    const reveal = useRevealClientField();
+    const revealField = (field: RevealableClientField) => () => reveal.mutateAsync({ id: clientId!, field });
 
     useEffect(() => {
         if (isOpen && clientId) {
@@ -43,13 +56,6 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle,
             setLoading(false);
         }
     };
-
-    const InfoItem = ({ label, value }: { label: string, value: any }) => (
-        <div className="mb-3">
-            <span className="fw-semibold text-muted d-block mb-1">{label}</span>
-            <span className="fs-14">{value || 'N/A'}</span>
-        </div>
-    );
 
     const SkeletonInfoItem = () => (
         <div className="mb-3">
@@ -154,7 +160,7 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle,
                                     </div>
                                     <InfoItem label="Phone Number" value={client.phone_number} />
                                     <InfoItem label="Date of Birth" value={client.date_of_birth} />
-                                    <InfoItem label="Social Security Number" value={client.ssn ? <SsnValue value={client.ssn} /> : undefined} />
+                                    <InfoItem label="Social Security Number" value={client.ssn ? <RevealableValue value={client.ssn} name="SSN" onReveal={revealField('ssn')} format={formatSSN} /> : undefined} />
                                     <InfoItem label="Address" value={client.home_address} />
 
                                 </CardBody>
@@ -169,7 +175,7 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({ isOpen, toggle,
                                         <Col md={6}><InfoItem label="Industry Type" value={client.business_industry_type} /></Col>
                                         <Col md={6}><InfoItem label="Business Phone" value={client.business_phone} /></Col>
                                         <Col md={6}><InfoItem label="Business Website" value={client.business_website ? <a href={client.business_website} target="_blank" rel="noreferrer">{client.business_website}</a> : 'N/A'} /></Col>
-                                        <Col md={6}><InfoItem label="Business EIN" value={client.business_ein ? displayEIN(client.business_ein) : undefined} /></Col>
+                                        <Col md={6}><InfoItem label="Business EIN" value={client.business_ein ? <RevealableValue value={client.business_ein} name="EIN" onReveal={revealField('business_ein')} format={formatEIN} /> : undefined} /></Col>
                                         <Col md={6}><InfoItem label="Years in Business" value={client.years_in_business} /></Col>
                                         <Col md={12}><InfoItem label="Business Address" value={client.business_address} /></Col>
                                         <Col md={4}><InfoItem label="Business City" value={client.business_city} /></Col>

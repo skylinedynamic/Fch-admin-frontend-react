@@ -57,7 +57,7 @@ describe('Client -> Assign to', () => {
     const user = userEvent.setup()
     renderWithProviders(<ClientInfoSection clientId="5" isHost countries={[]} states={[]} cities={[]} />)
 
-    await waitFor(() => expect(teamRequests).toContainEqual({ partner_id: PARTNER }))
+    await waitFor(() => expect(teamRequests).toContainEqual({ partner_id: PARTNER, active_only: true, keep_ids: [70] }))
     await waitFor(() => expect(shown()).toBe('Wanda Partner'))
 
     await user.click(assignTo())

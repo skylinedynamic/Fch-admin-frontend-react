@@ -16,6 +16,7 @@ import {
     CHANGE_REQUEST_STATUS_CLASS_MAP
 } from '../../../config/borrower';
 import StatisticsCard from '../../../components/Common/StatisticsCard';
+import ChangeRequestValues from './components/ChangeRequestValues';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
@@ -430,29 +431,8 @@ export default function ChangeRequests() {
                                         </div>
                                     )}
 
-                                    {/* Old vs New */}
-                                    <div className="row g-3 mb-4">
-                                        <div className="col-6">
-                                            <div className="p-3 rounded bg-danger-subtle">
-                                                <p className="text-muted fs-11 mb-1 text-uppercase fw-semibold" style={{ letterSpacing: '0.08em' }}>
-                                                    Current Value
-                                                </p>
-                                                <p className="mb-0 fw-medium text-danger text-decoration-line-through">
-                                                    {selectedRow.old_value || <span className="fst-italic text-muted fw-normal">empty</span>}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="col-6">
-                                            <div className="p-3 rounded bg-success-subtle">
-                                                <p className="text-muted fs-11 mb-1 text-uppercase fw-semibold" style={{ letterSpacing: '0.08em' }}>
-                                                    Requested Value
-                                                </p>
-                                                <p className="mb-0 fw-semibold text-success">
-                                                    {selectedRow.new_value || <span className="fst-italic text-muted fw-normal">empty</span>}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {/* Old vs New - an SSN or EIN masked, with its reveal (BUG-014) */}
+                                    <ChangeRequestValues key={selectedRow.id} row={selectedRow} />
 
                                     {/* Decision */}
                                     {selectedRow.status == CHANGE_REQUEST_STATUS.PENDING ? (

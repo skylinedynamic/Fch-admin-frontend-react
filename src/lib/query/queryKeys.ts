@@ -66,6 +66,7 @@ export const queryKeys = {
   agreement: {
     all: ['agreement'] as const,
     detail: (slug: string) => [...queryKeys.agreement.all, 'detail', slug] as const,
+    previewValues: () => [...queryKeys.agreement.all, 'preview-values'] as const,
   },
   notifications: {
     all: ['notifications'] as const,

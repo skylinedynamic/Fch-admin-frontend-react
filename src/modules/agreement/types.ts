@@ -23,5 +23,10 @@ export interface AgreementSignCheck {
     id: number
     slug: string
     template_html: string
+    version_id?: number
+    version?: number
   } | null
 }
+
+/** Merge field => the value signing fills it with, e.g. { 'owner.company_name': 'Acme Lending' }. */
+export type AgreementPreviewValues = Record<string, string>

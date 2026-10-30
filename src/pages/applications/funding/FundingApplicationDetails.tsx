@@ -8,7 +8,7 @@ import { queryKeys } from '../../../lib/query/queryKeys';
 import { FundingApplicationDetails as FundingApplicationDetailsType } from '../../../modules/application/types';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
-import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
+import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS, FUNDING_APPLICATION_STATUS_NOTE_MAX } from '../../../config/borrower';
 import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 import { PARTNER_EDITOR_TYPES } from '../../../config/partnerTypeOptions';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
@@ -86,9 +86,9 @@ export default function FundingApplicationDetails() {
     const showPartnerCommission = app?.partner_id !== authPartnerId;
     const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
-    // Editable while the request is approved and the application is at status
-    // key 9 or below. The server works that out from the lifecycle key and
-    // sends it as is_editable, so no status names are compared here.
+    // Editable while the request is approved and the application is in one of
+    // the API's editable statuses (config `statuses.editable`). The server
+    // sends that as is_editable, so no status names are compared here.
     // The host edits any partner's application; a white-label or certified
     // partner only its own borrowers'.
     const canEditApplication =
@@ -96,6 +96,12 @@ export default function FundingApplicationDetails() {
         app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
         !!app?.funding_request_id &&
         !!app?.is_editable;
+    // Out of everyone's hands (status not in the editable list): every viewer -
+    // host, white-label and certified partner - is told so instead of just
+    // losing the Edit button. The reason comes from the API.
+    const isLockedForEdit = !!app?.id && app?.is_editable === false;
+    const lockedReason = app?.locked_reason
+        || `This application can no longer be edited because it is "${app?.status}". Contact your funding advisor if something needs to change.`;
 
     // Sync status and commission with fetched data
     useEffect(() => {
@@ -141,6 +147,10 @@ export default function FundingApplicationDetails() {
     }, [error, apiResponse, isLoading, navigate]);
 
     const handleUpdateClick = () => {
+        if (status_note.length > FUNDING_APPLICATION_STATUS_NOTE_MAX) {
+            setNotesError(`The status note may not be greater than ${FUNDING_APPLICATION_STATUS_NOTE_MAX.toLocaleString('en-US')} characters.`);
+            return;
+        }
         if (status === FUNDING_APPLICATION_STATUS.CLOSED) {
             setFundedAmount(app.total_funded_amount?.toString() || app.requested_amount_original?.toString() || '');
             setShowFundedModal(true);
@@ -804,6 +814,16 @@ export default function FundingApplicationDetails() {
                                             <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application
                                         </Link>
                                     )}
+                                    {isLockedForEdit && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-light waves-effect py-2 fw-normal"
+                                            disabled
+                                            title={lockedReason}
+                                        >
+                                            <i className="ri-lock-line align-middle me-1"></i> Can't Edit Funding Application
+                                        </button>
+                                    )}
                                     <Link to="/intake-review/funding-application" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
@@ -812,6 +832,12 @@ export default function FundingApplicationDetails() {
                         </div>
                     </div>
 
+                    {isLockedForEdit && (
+                        <div className="alert alert-warning d-flex align-items-start gap-2 mb-3" role="status">
+                            <i className="ri-lock-line fs-16"></i>
+                            <div>{lockedReason}</div>
+                        </div>
+                    )}
 
                     <div className="row">
                         {/* Left Column (Commission + Content) */}
@@ -1273,6 +1299,7 @@ export default function FundingApplicationDetails() {
                                                             rows={3}
                                                             placeholder="Add notes..."
                                                             value={status_note}
+                                                            maxLength={FUNDING_APPLICATION_STATUS_NOTE_MAX}
                                                             onChange={(e) => {
                                                                 setStatusNote(e.target.value);
                                                                 if (notesError) setNotesError('');
@@ -1280,6 +1307,9 @@ export default function FundingApplicationDetails() {
                                                             disabled={!hasPermission("update funding application") || isClosed}
                                                         ></textarea>
                                                         {notesError && <div className="invalid-feedback">{notesError}</div>}
+                                                        <div className="form-text text-end">
+                                                            {status_note.length.toLocaleString('en-US')} / {FUNDING_APPLICATION_STATUS_NOTE_MAX.toLocaleString('en-US')}
+                                                        </div>
                                                     </div>
                                                     {hasPermission("update funding application") && !isClosed && (
                                                         <div className="d-grid">
@@ -1343,12 +1373,16 @@ export default function FundingApplicationDetails() {
                                 entityId={id}
                                 entityType="Funding Application"
                                 loading={isLoading}
-                                partnerId={undefined}
+                                partnerId={app?.partner_id}
+                                taskOwner={(() => {
+                                    // No owner field of its own: its borrower's "Assign to".
+                                    const assignId = (app as FundingApplicationDetailsType & { borrower?: { assign_id?: number | string | null } | null })?.borrower?.assign_id;
+                                    return assignId ? { id: assignId } : null;
+                                })()}
                                 partnerEmail={undefined}
                                 hostEmail={undefined}
                                 isHost={isHost}
                                 borrowerEmail={(app as FundingApplicationDetailsType & { borrower?: { email?: string | null } | null })?.borrower?.email}
-                                stickyTopOffset="133px"
                             />
                         </div>
                     </div>

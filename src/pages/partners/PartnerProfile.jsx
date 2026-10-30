@@ -129,11 +129,18 @@ export default function PartnerProfile() {
         subscriptions: [],
     });
 
-    // Fetch users on mount
+    // Agent options: active staff only, keeping the partner's saved Agent even
+    // if since made inactive - so an existing partner waits for its data.
+    const partnerLoaded = !id || formData.id != null;
+    const savedAgentId = formData.assigned_user_id ?? null;
     useEffect(() => {
+        if (!partnerLoaded) return;
         const fetchUsers = async () => {
             try {
-                const response = await allUsers();
+                const response = await allUsers({
+                    active_only: true,
+                    ...(savedAgentId ? { keep_ids: [Number(savedAgentId)] } : {}),
+                });
                 if (response.status && response.data) {
                     setUsers(response.data);
                 }
@@ -142,7 +149,7 @@ export default function PartnerProfile() {
             }
         };
         fetchUsers();
-    }, []);
+    }, [partnerLoaded, savedAgentId]);
 
     // Fetch next partner ID for new partners
     useEffect(() => {
@@ -893,7 +900,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} taskOwner={formData.agent ? { id: formData.agent, name: formData.assigned_user_name } : null} />
                         </div>
                     )}
                 </div>

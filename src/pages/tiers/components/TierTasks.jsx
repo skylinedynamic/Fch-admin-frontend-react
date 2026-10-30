@@ -13,6 +13,7 @@ import {
     deleteTierTasks
 } from '../../../modules/tiers/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
+import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
 import TableLoader from '../../../components/Loader/TableLoader';
 import TierTaskModal from './TierTaskModal';
 import { useAuthStore } from '../../../store/auth/authStore';
@@ -54,6 +55,8 @@ const TierTasks = forwardRef(({ tierId, tierCode }, ref) => {
     // Selection
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    // Tasks the API kept because clients already use them (BUG-095).
+    const [blocked, setBlocked] = useState({ message: '', items: [] });
     const [deleteId, setDeleteId] = useState(null);
     const [deleteRows, setDeleteRows] = useState([]);
 
@@ -242,8 +245,20 @@ const TierTasks = forwardRef(({ tierId, tierCode }, ref) => {
             setSelectedTasks([]);
             loadTasks();
         } catch (err) {
-            console.error('Delete error:', err);
-            toast.error(err.message || 'Failed to delete tasks');
+            const inUse = err.response?.status === 422 ? err.response.data?.errors?.in_use : null;
+            if (inUse?.length) {
+                // Not deleted because clients use them: say so in a dialog, not a toast.
+                setShowDeleteModal(false);
+                setBlocked({
+                    message: inUse.length === 1
+                        ? `Clients are already using "${inUse[0].name}", so it cannot be deleted. Nothing was deleted.`
+                        : err.response.data.message,
+                    items: inUse,
+                });
+            } else {
+                console.error('Delete error:', err);
+                toast.error(err.response?.data?.message || err.message || 'Failed to delete tasks');
+            }
         } finally {
             setLoading(false);
         }
@@ -396,6 +411,13 @@ const TierTasks = forwardRef(({ tierId, tierCode }, ref) => {
                     />
                 </>
             )}
+            <DeleteBlockedModal
+                show={blocked.items.length > 0}
+                title={blocked.items.length === 1 ? 'Task Cannot Be Deleted' : 'Tasks Cannot Be Deleted'}
+                message={blocked.message}
+                items={blocked.items}
+                onClose={() => setBlocked({ message: '', items: [] })}
+            />
         </React.Fragment>
     );
 });

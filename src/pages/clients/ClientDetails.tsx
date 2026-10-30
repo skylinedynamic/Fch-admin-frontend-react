@@ -616,7 +616,8 @@ export default function ClientDetails() {
                                 entityType="Client"
                                 loading={isSaving}
                                 borrowerEmail={formData.email}
-                                partnerId={undefined}
+                                partnerId={formData.partner_id ?? undefined}
+                                taskOwner={formData.assign_id ? { id: formData.assign_id, name: (formData as Client & { assign_name?: string | null }).assign_name } : null}
                                 partnerEmail={undefined}
                                 hostEmail={undefined}
                                 isHost={isHost}

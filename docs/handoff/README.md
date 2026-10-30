@@ -10,6 +10,32 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-31
+
+| File | Title |
+|---|---|
+| [2026-10-31-agreement-builder-template-test-race.md](2026-10-31-agreement-builder-template-test-race.md) | Agreement Builder — starting-template test waits for block text (flaky on CI) |
+
+### 2026-10-30
+
+| File | Title |
+|---|---|
+| [2026-10-30-partner-agreement-builder-full-screen.md](2026-10-30-partner-agreement-builder-full-screen.md) | Partner profile › Configuration — agreement builder opens full screen |
+| [2026-10-30-agreement-field-ids-signing-and-sandboxed-viewer.md](2026-10-30-agreement-field-ids-signing-and-sandboxed-viewer.md) | Agreements — field ids, signing sends version and values, signed copy shown without scripts |
+| [2026-10-30-agreement-builder-merge-fields-and-safety-nets.md](2026-10-30-agreement-builder-merge-fields-and-safety-nets.md) | Agreement Builder — merge fields, full-screen editing, undo/redo, drag-and-drop, new blocks and starter templates |
+| [2026-10-30-agreement-page-flow-letterhead-and-guided-signing.md](2026-10-30-agreement-page-flow-letterhead-and-guided-signing.md) | Agreement — text flows across pages, letterhead, signing line and guided partner signing |
+| [2026-10-30-credit-profile-no-auto-save-and-ssn-mask.md](2026-10-30-credit-profile-no-auto-save-and-ssn-mask.md) | Credit profile — no save on upload, SSN masked (BUG-144, BUG-145, BUG-147) |
+
+### 2026-10-29
+- [2026-10-29-manage-tier-delete-in-use-and-vendor-logo-file-manager.md](2026-10-29-manage-tier-delete-in-use-and-vendor-logo-file-manager.md) — BUG-095 (reopened): one task deletes without a 405, a task or vendor in use is refused with the reason, the vendor logo comes from the File Manager.
+- [2026-10-29-client-ssn-ein-masked-with-reveal.md](2026-10-29-client-ssn-ein-masked-with-reveal.md) — BUG-014 (reopened): the client's SSN and EIN arrive masked and are revealed on the eye button, change requests too.
+- [2026-10-29-upcoming-billings-amount-outstanding-sort.md](2026-10-29-upcoming-billings-amount-outstanding-sort.md) — BUG-012 (reopened): Upcoming Billings sorts by Amount and Outstanding again.
+- [2026-10-29-partner-configuration-agreement-section.md](2026-10-29-partner-configuration-agreement-section.md) — Partner profile › Configuration — Agreement section
+
+### 2026-10-28
+- [2026-10-28-activity-task-any-date-no-validation-toast.md](2026-10-28-activity-task-any-date-no-validation-toast.md) — Activity log: a Task takes any date, validation is not toasted.
+- [2026-10-28-coverage-run-exit-1-and-funding-request-step-reload.md](2026-10-28-coverage-run-exit-1-and-funding-request-step-reload.md) — coverage run exit 1 (overlapping runs), and the Funding Request step re-fetching by the application id.
+
 ### 2026-10-27
 - [2026-10-27-login-footer-without-a-brand-name.md](2026-10-27-login-footer-without-a-brand-name.md) — BUG-118: the login footer leaves no gap when the branding has no name.
 - [2026-10-27-invoice-details-email-invoice.md](2026-10-27-invoice-details-email-invoice.md) — BUG-091: the invoice details page can e-mail an unpaid invoice.
@@ -17,6 +43,8 @@ Several features or tasks on the same date means several files with the same dat
 - [2026-10-27-add-user-seat-limit-purchase.md](2026-10-27-add-user-seat-limit-purchase.md) — BUG-109: Add User at the seat limit opens the seat purchase window and keeps what was typed.
 - [2026-10-27-appointment-edit-attendee-and-conflict.md](2026-10-27-appointment-edit-attendee-and-conflict.md) — BUG-100: editing an appointment keeps its attendee and checks conflicts before saving.
 - [2026-10-27-business-financials-default-currency.md](2026-10-27-business-financials-default-currency.md) — BUG-077: Business Financials saves the USD it shows when no currency is stored.
+- [2026-10-27-activity-log-assign-task-to-staff.md](2026-10-27-activity-log-assign-task-to-staff.md) — Activity log: assign a Task to a staff member.
+- [2026-10-27-funding-applications-company-name-column.md](2026-10-27-funding-applications-company-name-column.md) — Funding Applications list: Company Name column.
 
 ### 2026-10-26
 - [2026-10-26-employee-alternate-mobile-error.md](2026-10-26-employee-alternate-mobile-error.md) — Employee Alternate Mobile and Zip Code show the API validation message under the field.

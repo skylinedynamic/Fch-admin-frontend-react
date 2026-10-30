@@ -121,6 +121,19 @@ describe('mapClientUpdatePayload — free-trial-to-paid conversion', () => {
     )
     expect(payload.bank_accounts).toEqual([{ id: 1, bank_name: 'Chase' }])
   })
+
+  // BUG-014: the SSN and EIN arrive masked; an unrevealed mask is not a new number.
+  it('leaves out an SSN and EIN that are still the masks', () => {
+    const payload = mapClientUpdatePayload(baseClient({ ssn: '***-**-6789', business_ein: '**-***4534' }), true)
+    expect(payload).not.toHaveProperty('ssn')
+    expect(payload).not.toHaveProperty('business_ein')
+  })
+
+  it('sends an SSN and EIN that were revealed or typed in', () => {
+    const payload = mapClientUpdatePayload(baseClient({ ssn: '123-45-6789', business_ein: '53-4534534' }), true)
+    expect(payload.ssn).toBe('123-45-6789')
+    expect(payload.business_ein).toBe('53-4534534')
+  })
 })
 
 describe('calculateEnrollmentDetails', () => {

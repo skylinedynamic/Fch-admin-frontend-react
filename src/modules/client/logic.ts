@@ -3,6 +3,7 @@ import { locationData } from '../location';
 import { getCountryPhoneInfo } from '../../config/locations';
 import { ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_ONE_TIME, FIXED_ENROLLMENT_FOR_BORROWER } from '../../config/subscriptionConfig';
 import { ENTITY_TYPE_BORROWER, OTHERS } from '../../config/appConfig';
+import { isMaskedValue } from '../../utils/borrowerFormatters';
 
 const normalizeDate = (dateStr: any): string | undefined => {
     if (!dateStr) return undefined;
@@ -204,11 +205,14 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean, wasFre
         payload.free_trail_end_date = normalizeDate(payload.free_trail_end_date);
     }
 
-    // SSN: the field is pre-filled with the real, formatted value and edited
-    // directly. Only omit it if it's been cleared entirely — sending '' would
-    // fail the backend's format validation.
-    if (!payload.ssn) {
+    // SSN and EIN arrive masked (BUG-014): one still masked was never revealed
+    // or retyped, so it is no change. A cleared SSN is left out too - sending ''
+    // would fail the backend's format validation.
+    if (!payload.ssn || isMaskedValue(payload.ssn)) {
         delete payload.ssn;
+    }
+    if (isMaskedValue(payload.business_ein)) {
+        delete payload.business_ein;
     }
     delete payload.last_4_ssn;
 

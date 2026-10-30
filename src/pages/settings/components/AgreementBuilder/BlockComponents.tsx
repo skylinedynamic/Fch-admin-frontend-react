@@ -1,10 +1,29 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useContext, useId } from 'react';
 import Flatpickr from 'react-flatpickr';
 import { yearDropdownPlugin } from '../../../../utils/flatpickrPlugins';
 import { toast } from 'react-toastify';
 // @ts-ignore
-import { PALETTE, makeBlock } from './utils';
+import { PALETTE, makeBlock, keepsWithNext, LAYOUT_CSS, HEADER_CONTENT } from './utils';
+import { measureLineBoxes, planPages, type PageItem } from './pagination';
 import { AgreementBlock } from './types';
+import { createMergeChip, decorateMergeFields, undecorateMergeFields } from './mergeChips';
+import { MergeChipMenu } from './MergeChipMenu';
+import { pastedToHtml } from './pastedText';
+
+/** Drag data types: a block being moved, and a palette item being added. */
+export const BLOCK_DRAG_TYPE = 'application/x-agreement-block';
+export const PALETTE_DRAG_TYPE = 'application/x-agreement-palette';
+
+/**
+ * Where a drag would drop: one marker for the whole editor, moved by dragover
+ * and cleared when the drag ends. Not cleared on dragleave - Chrome gives it no
+ * relatedTarget, so leaving a block can't be told from entering its text.
+ */
+export type DropTarget = { key: string; side?: 'before' | 'after' } | null;
+export const DropTargetContext = React.createContext<{ target: DropTarget; setTarget: (t: DropTarget) => void } | null>(null);
+
+const isAgreementDrag = (e: React.DragEvent) =>
+    Array.from(e.dataTransfer?.types || []).some((t) => t === BLOCK_DRAG_TYPE || t === PALETTE_DRAG_TYPE);
 
 // ── A4 at 96 dpi ─────────────────────────────────────────────────────────────
 const A4_H = 1122.5;  // px  (297mm)
@@ -29,13 +48,24 @@ interface TextBlockProps {
 export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isOverflowing }: TextBlockProps) {
     const ref = useRef<HTMLDivElement>(null);
     const lastValidHtml = useRef<string>(block.content || '');
+    const [menuChip, setMenuChip] = useState<HTMLElement | null>(null);
     
-    useEffect(() => { 
+    // Merge fields show as chips here and are saved bare ({{signer.name}}) - see mergeChips.
+    useEffect(() => {
         if (ref.current) {
-            ref.current.innerHTML = block.content || ''; 
-            lastValidHtml.current = block.content || '';
-        } 
+            ref.current.innerHTML = decorateMergeFields(block.content || '');
+            lastValidHtml.current = ref.current.innerHTML;
+        }
     }, []);
+
+    // Content changed from outside the editor (e.g. a field added from the Insert field menu).
+    useEffect(() => {
+        if (!ref.current || document.activeElement === ref.current) return;
+        if (undecorateMergeFields(ref.current.innerHTML) !== (block.content || '')) {
+            ref.current.innerHTML = decorateMergeFields(block.content || '');
+            lastValidHtml.current = ref.current.innerHTML;
+        }
+    }, [block.content]);
 
     useEffect(() => {
         if (!ref.current) return;
@@ -69,7 +99,7 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
             const newHtml = ref.current.innerHTML;
             if (newHtml !== originalHtml) {
                 lastValidHtml.current = newHtml;
-                onUpdate({ content: newHtml });
+                onUpdate({ content: undecorateMergeFields(newHtml) });
             }
         }
     }, [block.fontSize]);
@@ -93,68 +123,66 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
         letterSpacing: block.letterSpacing !== undefined ? `${block.letterSpacing}px` : undefined,
     } as React.CSSProperties;
 
+    // No page limit: text that does not fit its page flows on to the next (pagination.ts).
     const handleInput = () => {
         if (!ref.current) return;
         const currentHtml = ref.current.innerHTML;
-
-        const blockEl = ref.current.closest('.ab4-block') as HTMLElement;
-        const pageEl = ref.current.closest('.ab4-doc') as HTMLElement;
-        if (blockEl && pageEl) {
-            // Find the top-level block on the page
-            let topBlockEl = blockEl;
-            while (topBlockEl.parentElement) {
-                const parentBlock = topBlockEl.parentElement.closest('.ab4-block') as HTMLElement;
-                if (!parentBlock || !pageEl.contains(parentBlock)) break;
-                topBlockEl = parentBlock;
-            }
-
-            const padTop = parseFloat(window.getComputedStyle(pageEl).getPropertyValue('--doc-pad-top')) || 72;
-            const padBot = parseFloat(window.getComputedStyle(pageEl).getPropertyValue('--doc-pad-bot')) || 80;
-            const usable = A4_H - padTop - padBot;
-
-            let otherBlocksHeight = 0;
-            const pageBlocks = Array.from(pageEl.querySelectorAll('.ab4-block')) as HTMLElement[];
-            // Filter to only top-level blocks on this page
-            const topLevelBlocks = pageBlocks.filter(b => {
-                return !b.parentElement?.closest('.ab4-parties');
-            });
-
-            topLevelBlocks.forEach(otherBlock => {
-                if (otherBlock !== topBlockEl) {
-                    otherBlocksHeight += otherBlock.offsetHeight;
-                    const cs = window.getComputedStyle(otherBlock);
-                    otherBlocksHeight += (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
-                }
-            });
-
-            // Include margin of the top-level block in its height
-            const topBlockCs = window.getComputedStyle(topBlockEl);
-            const topBlockMargin = (parseFloat(topBlockCs.marginTop) || 0) + (parseFloat(topBlockCs.marginBottom) || 0);
-            
-            const maxAllowedHeight = usable - otherBlocksHeight;
-            const topBlockSpaceNeeded = topBlockEl.offsetHeight + topBlockMargin;
-
-            if (topBlockSpaceNeeded > maxAllowedHeight) {
-                // Revert natively using undo
-                document.execCommand('undo');
-                
-                // Fallback to manual HTML restore if native undo did not lower the height below the limit
-                if (topBlockEl.offsetHeight + topBlockMargin > maxAllowedHeight) {
-                    ref.current.innerHTML = lastValidHtml.current;
-                }
-
-                onUpdate({ content: ref.current.innerHTML });
-
-                toast.warn("Page limit reached! Content exceeds the page capacity.", {
-                    toastId: "page-overflow-warning",
-                    autoClose: 2000,
-                });
-                return;
-            }
-        }
-
         lastValidHtml.current = currentHtml;
-        onUpdate({ content: currentHtml });
+        onUpdate({ content: undecorateMergeFields(currentHtml) });
+    };
+
+    // Text pasted from ChatGPT, Claude, Word or a web page keeps its bold, lists,
+    // tables and paragraphs, but not the source's fonts, colours and markup (pastedText.ts).
+    const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+        const editor = ref.current;
+        const data = e.clipboardData;
+        if (!editor || !data) return;
+        e.preventDefault();
+        const html = pastedToHtml({ html: data.getData('text/html'), text: data.getData('text/plain') });
+        if (!html) return;
+
+        const selection = window.getSelection();
+        let range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+        if (!range || !editor.contains(range.commonAncestorContainer)) {
+            range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+        }
+        range.deleteContents();
+        const fragment = range.createContextualFragment(html);
+        const last = fragment.lastChild;
+        range.insertNode(fragment);
+        if (last && selection) {
+            range.setStartAfter(last);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+        handleInput();
+    };
+
+    // A click on a blue field opens MergeChipMenu, to choose what fills it.
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const chip = (e.target as Element).closest?.('.ab4-merge-chip') as HTMLElement | null;
+        if (chip && ref.current?.contains(chip)) setMenuChip(chip);
+    };
+
+    const remapChip = (key: string | null) => {
+        if (!menuChip) return;
+        if (key) menuChip.replaceWith(createMergeChip(key));
+        else menuChip.remove();
+        setMenuChip(null);
+        handleInput();
+    };
+
+    const handleBlur = () => {
+        onBlurred();
+        if (!ref.current) return;
+        const content = undecorateMergeFields(ref.current.innerHTML);
+        onUpdate({ content });
+        // A merge field typed by hand becomes a chip once the text is left.
+        const decorated = decorateMergeFields(content);
+        if (decorated !== ref.current.innerHTML) ref.current.innerHTML = decorated;
     };
 
     return (
@@ -170,8 +198,14 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
                 <div ref={ref} contentEditable suppressContentEditableWarning className="ab4-editor"
                     style={bVars} data-placeholder="Click to type…" spellCheck
                     onFocus={() => onFocused(block.id)}
-                    onBlur={() => { onBlurred(); if (ref.current) onUpdate({ content: ref.current.innerHTML }); }}
-                    onInput={handleInput} />
+                    onBlur={handleBlur}
+                    onInput={handleInput}
+                    onPaste={handlePaste}
+                    onClick={handleClick} />
+            )}
+            {menuChip && (
+                <MergeChipMenu chip={menuChip} onPick={(key) => remapChip(key)} onRemove={() => remapChip(null)}
+                    onClose={() => setMenuChip(null)} />
             )}
         </div>
     );
@@ -179,11 +213,35 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
 
 interface InsertZoneProps {
     onInsert: (type: string) => void;
+    /** Top-level list only: a block dragged onto this gap moves here (palette items are inserted). */
+    onMoveHere?: (id: string) => void;
 }
 
 // ── InsertZone ────────────────────────────────────────────────────────────────
-export function InsertZone({ onInsert }: InsertZoneProps) {
+export function InsertZone({ onInsert, onMoveHere }: InsertZoneProps) {
     const [hover, setHover] = useState(false);
+    const dropTarget = useContext(DropTargetContext);
+    const gapKey = `gap:${useId()}`;
+    const dragOver = dropTarget?.target?.key === gapKey;
+    const accepts = (e: React.DragEvent) => !!onMoveHere && isAgreementDrag(e);
+    const dropHandlers = onMoveHere ? {
+        onDragOver: (e: React.DragEvent) => {
+            if (!accepts(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (!dragOver) dropTarget?.setTarget({ key: gapKey });
+        },
+        onDrop: (e: React.DragEvent) => {
+            if (!accepts(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            dropTarget?.setTarget(null);
+            const movedId = e.dataTransfer.getData(BLOCK_DRAG_TYPE);
+            const paletteType = e.dataTransfer.getData(PALETTE_DRAG_TYPE);
+            if (movedId) onMoveHere(movedId);
+            else if (paletteType) onInsert(paletteType);
+        },
+    } : {};
     const [open, setOpen] = useState(false);
     const [openUp, setOpenUp] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -204,7 +262,8 @@ export function InsertZone({ onInsert }: InsertZoneProps) {
 
     const isActive = hover || open;
     return (
-        <div ref={ref} className={`ab4-iz ${isActive ? 'ab4-iz--active' : ''}`} onMouseEnter={() => setHover(true)} onMouseLeave={() => !open && setHover(false)}>
+        <div ref={ref} className={`ab4-iz ${isActive ? 'ab4-iz--active' : ''} ${dragOver ? 'ab4-iz--drop' : ''}`}
+            onMouseEnter={() => setHover(true)} onMouseLeave={() => !open && setHover(false)} {...dropHandlers}>
             {isActive && (
                 <div className="ab4-iz-line">
                     <button type="button" className="ab4-iz-btn" onClick={toggleOpen}><i className={open ? 'ri-close-line' : 'ri-add-line'} /></button>
@@ -244,7 +303,36 @@ interface BlockBodyProps {
 
 // ── Single block's inner content ──────────────────────────────────────────────
 export function BlockBody({ block, helpers, readOnly }: BlockBodyProps) {
-    const { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, selectedId, openFmForBlock } = helpers;
+    const { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, selectedId, openFmForBlock, onReorder, blockIdx } = helpers;
+    // Drag and drop between top-level blocks (a nested list has no onReorder).
+    const draggable = !readOnly && typeof onReorder === 'function';
+    const dropTarget = useContext(DropTargetContext);
+    const blockKey = `block:${block.id}`;
+    const dropAt = dropTarget?.target?.key === blockKey ? dropTarget.target.side ?? null : null;
+    const dropSide = (e: React.DragEvent): 'before' | 'after' => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        return e.clientY > rect.top + rect.height / 2 ? 'after' : 'before';
+    };
+    const dropHandlers = draggable ? {
+        onDragOver: (e: React.DragEvent) => {
+            if (!isAgreementDrag(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const side = dropSide(e);
+            if (dropAt !== side) dropTarget?.setTarget({ key: blockKey, side });
+        },
+        onDrop: (e: React.DragEvent) => {
+            if (!isAgreementDrag(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const index = blockIdx + (dropSide(e) === 'after' ? 1 : 0);
+            const movedId = e.dataTransfer.getData(BLOCK_DRAG_TYPE);
+            const paletteType = e.dataTransfer.getData(PALETTE_DRAG_TYPE);
+            if (movedId) onReorder(movedId, index);
+            else if (paletteType) onInsert(index, paletteType);
+            dropTarget?.setTarget(null);
+        },
+    } : {};
 
     const blockVars = {
         '--bg': block.type === 'parties' ? 'transparent' : (block.bgColor || 'transparent'),
@@ -269,14 +357,31 @@ export function BlockBody({ block, helpers, readOnly }: BlockBodyProps) {
     } as React.CSSProperties;
 
     return (
-        <div className={`ab4-block ${selectedId === block.id ? 'ab4-block--sel' : ''}`}
-            style={blockVars} onClick={(e) => { e.stopPropagation(); onSelect(block.id); }}>
+        <div className={`ab4-block ${selectedId === block.id ? 'ab4-block--sel' : ''} ${dropAt ? `ab4-block--drop-${dropAt}` : ''}`}
+            style={blockVars} onClick={(e) => { e.stopPropagation(); onSelect(block.id); }} {...dropHandlers}>
             <div className="ab4-ctrl">
                 <span className="ab4-badge"><i className="ri-stack-line me-1" />{block.type}</span>
                 <div className="ab4-acts">
-                    <button className="ab4-act" onClick={(e) => { e.stopPropagation(); onMove(block.id, -1); }}><i className="ri-arrow-up-s-line" /></button>
-                    <button className="ab4-act" onClick={(e) => { e.stopPropagation(); onMove(block.id, 1); }}><i className="ri-arrow-down-s-line" /></button>
-                    <button className="ab4-act ab4-act--del" onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}><i className="ri-delete-bin-line" /></button>
+                    {draggable && (
+                        <button
+                            type="button"
+                            className="ab4-act ab4-act--drag"
+                            draggable
+                            aria-label="Drag to move"
+                            title="Drag to move"
+                            onClick={(e) => e.stopPropagation()}
+                            onDragStart={(e) => {
+                                e.stopPropagation();
+                                e.dataTransfer.setData(BLOCK_DRAG_TYPE, block.id);
+                                e.dataTransfer.effectAllowed = 'move';
+                            }}
+                        >
+                            <i className="ri-draggable" />
+                        </button>
+                    )}
+                    <button className="ab4-act" aria-label="Move up" onClick={(e) => { e.stopPropagation(); onMove(block.id, -1); }}><i className="ri-arrow-up-s-line" /></button>
+                    <button className="ab4-act" aria-label="Move down" onClick={(e) => { e.stopPropagation(); onMove(block.id, 1); }}><i className="ri-arrow-down-s-line" /></button>
+                    <button className="ab4-act ab4-act--del" aria-label="Delete block" onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}><i className="ri-delete-bin-line" /></button>
                 </div>
             </div>
             <div className="ab4-block-body">
@@ -290,7 +395,31 @@ export function BlockBody({ block, helpers, readOnly }: BlockBodyProps) {
                         isOverflowing={helpers.isOverflowing}
                     />
                 )}
-                {block.type === 'logo' && (
+                {(block.type === 'header' || (block.type === 'logo' && block.logoLayout === 'letterhead')) && (
+                    // Header: the logo on the left, its own text on the right (edited in place).
+                    <div className="p-letterhead">
+                        <div className="p-letterhead-logo">
+                            <button type="button" className={`ab4-logo-ph ${block.logoSrc ? 'ab4-logo-ph--has-logo' : ''}`}
+                                aria-label={block.logoSrc ? 'Change logo' : 'Add your logo'}
+                                onClick={() => openFmForBlock && openFmForBlock(block.id)}>
+                                {block.logoSrc
+                                    ? <img src={block.logoSrc} alt="" className="p-letterhead-img" style={{ width: `${block.logoWidth || 140}px` }} />
+                                    : <><i className="ri-image-add-line" aria-hidden="true" /><span className="ab4-logo-ph__title">Add your logo</span><span className="ab4-logo-ph__hint">PNG or SVG, transparent works best</span></>}
+                            </button>
+                        </div>
+                        <div className="p-letterhead-info">
+                            <TextBlock
+                                block={block.type === 'header' ? block : { ...block, content: HEADER_CONTENT, fontSize: 11, textAlign: 'right', color: '#64748b', lineHeight: 1.65 }}
+                                // An older letterhead logo becomes a Header once its text is edited.
+                                onUpdate={(val) => onUpdate(block.id, block.type === 'header' ? val : { ...val, type: 'header', paletteType: 'header', fontSize: 11, textAlign: 'right', color: '#64748b', lineHeight: 1.65, logoWidth: block.logoWidth || 140 })}
+                                onFocused={onFocused}
+                                onBlurred={onBlurred}
+                                readOnly={readOnly}
+                            />
+                        </div>
+                    </div>
+                )}
+                {block.type === 'logo' && block.logoLayout !== 'letterhead' && (
                     <div className="ab4-logo-wrap" style={{
                         // @ts-ignore
                         '--align': block.logoAlign, margin: 0
@@ -387,26 +516,33 @@ export function BlockBody({ block, helpers, readOnly }: BlockBodyProps) {
                     </div>
                 )}
                 {block.type === 'signature' && (
-                    <div className="ab4-sig" style={{ margin: 0 }}>
-                        <div className="ab4-sig-col ab4-sig-col--drop" onClick={() => openFmForBlock && openFmForBlock(block.id)}>
-                            {block.logoSrc ? <img src={block.logoSrc} style={{ maxHeight: 45 }} alt="" /> : <i className="ri-quill-pen-line ab4-sig-icon" />}
-                            <div className="ab4-sig-meta" style={{
-                                fontSize: block.fontSize ? `${block.fontSize * 0.7}px` : undefined,
-                                fontFamily: block.fontFamily,
-                            }}>{block.fieldLabel || 'SIGNATURE'}</div>
+                    // Same signing line as the saved agreement (gen, LAYOUT_CSS); the signer fills it.
+                    <div className="p-sign-card" style={{
+                        margin: 0,
+                        // @ts-ignore
+                        '--ff': block.fontFamily,
+                    }}>
+                        <div className="p-sign-head"><i className="ri-quill-pen-line" aria-hidden="true" />{block.fieldLabel || 'Signature'}{block.fieldRequired ? ' *' : ''}</div>
+                        <div className="p-sign">
+                            <div className="p-field p-sign-col">
+                                <div className="p-sign-pad">
+                                    <span className="p-sign-x" aria-hidden="true">&times;</span>
+                                    {block.logoSrc ? <img src={block.logoSrc} className="p-sign-img" alt="Signature" /> : <span className="p-sign-tag"><i className="ri-quill-pen-line" aria-hidden="true" />Sign here</span>}
+                                </div>
+                                <div className="p-sign-rule" />
+                                {block.showSignerName === true && (
+                                    <div className="p-sign-name" dangerouslySetInnerHTML={{ __html: decorateMergeFields('{{signer.name}}') }} />
+                                )}
+                                <div className="p-sign-caption">Signature</div>
+                            </div>
+                            <div className="p-sign-gap" />
+                            <div className="p-field p-sign-col p-sign-col--date">
+                                <div className="p-sign-pad"><span className="ab4-sign-date-ph">Filled in when signed</span></div>
+                                <div className="p-sign-rule" />
+                                <div className="p-sign-caption">Date signed</div>
+                            </div>
                         </div>
-                        <div className="ab4-sig-col ab4-sig-col--date">
-                            <Flatpickr className="form-control ab4-sig-input"
-                                style={{
-                                    fontSize: block.fontSize ? `${block.fontSize}px` : undefined,
-                                    fontWeight: block.fontWeight as any,
-                                    color: block.color,
-                                    fontFamily: block.fontFamily,
-                                    textAlign: 'center',
-                                }}
-                                options={AGREEMENT_DATE_OPTIONS} placeholder="Click here" />
-                            <div className="ab4-sig-meta ab4-sig-meta--date">Signature Date</div>
-                        </div>
+                        <div className="p-sign-foot"><i className="ri-shield-check-line" aria-hidden="true" />Recorded in the signature certificate at the end of this agreement</div>
                     </div>
                 )}
             </div>
@@ -428,6 +564,8 @@ interface BlockListProps {
     pagePad?: number;
     docBg?: string;
     isNested?: boolean;
+    /** Top-level list only: blocks can be dragged here, and palette items dropped. */
+    onReorder?: (id: string, toIndex: number) => void;
 }
 
 // ── PageEntry — one block's slot on one page ──────────────────────────────────
@@ -438,51 +576,38 @@ interface PageEntry {
     isSplit: boolean;   // true when this block overflows and is split across pages
 }
 
-// ── Smart Split Helper ────────────────────────────────────────────────────────
-function getSmartSplitHeight(el: HTMLElement, maxHeight: number, clipTop: number): number {
-    const editor = el.querySelector('.ab4-editor');
-    if (!editor) return maxHeight;
+/** How many characters of `root`'s text come before the start of `range`. */
+function textOffsetOf(root: HTMLElement, range: Range): number {
+    const before = document.createRange();
+    before.selectNodeContents(root);
+    before.setEnd(range.startContainer, range.startOffset);
+    return before.toString().length;
+}
 
-    const children = Array.from(editor.children) as HTMLElement[];
-    if (children.length === 0) {
-        return maxHeight;
-    }
-
-    const parentRect = editor.getBoundingClientRect();
-    let bestSplit = 0;
-    let foundAny = false;
-
-    for (const child of children) {
-        const childRect = child.getBoundingClientRect();
-        const top = childRect.top - parentRect.top;
-        const bottom = childRect.bottom - parentRect.top;
-
-        const relTop = top - clipTop;
-        const relBottom = bottom - clipTop;
-
-        if (relBottom <= maxHeight) {
-            bestSplit = Math.max(bestSplit, relBottom);
-            foundAny = true;
-        } else {
-            if (relTop > 0 && relTop < maxHeight) {
-                bestSplit = Math.max(bestSplit, relTop);
-                foundAny = true;
-            }
-            break;
+/** A collapsed range `offset` characters into `root`'s text, or null if the text is shorter. */
+function rangeAtTextOffset(root: HTMLElement, offset: number): Range | null {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let left = offset;
+    let node = walker.nextNode();
+    while (node) {
+        const length = node.nodeValue?.length || 0;
+        if (left <= length) {
+            const range = document.createRange();
+            range.setStart(node, left);
+            range.collapse(true);
+            return range;
         }
+        left -= length;
+        node = walker.nextNode();
     }
-
-    if (foundAny && bestSplit >= 40) {
-        return bestSplit;
-    }
-    return maxHeight;
+    return null;
 }
 
 // ── BlockList — paginated A4 editor ───────────────────────────────────────────
 export function BlockList({
     blocks, onUpdate, onDelete, onMove, onInsert,
     selectedId, onSelect, onFocused, onBlurred,
-    openFmForBlock, pagePad, docBg, isNested = false,
+    openFmForBlock, pagePad, docBg, isNested = false, onReorder,
 }: BlockListProps) {
     const [pages, setPages] = useState<PageEntry[][]>(() => [
         blocks.map((_, i) => ({ blockIdx: i, clipTop: 0, clipHeight: A4_H, isSplit: false }))
@@ -548,101 +673,29 @@ export function BlockList({
             }
         });
 
-        const newPages: PageEntry[][] = [[]];
-        let h = 0;       // height used on the current page
-        let lastMb = 0;
-
-        blocks.forEach((block, i) => {
+        // Same page layout as the preview and the signing page (pagination.ts).
+        const items: PageItem[] = blocks.map((block) => {
+            if (block.type === 'page-break') return { height: 0, marginTop: 0, marginBottom: 0, boxes: null, pageBreak: true };
             const el = blockRefs.current[block.id];
             const blockH = heights[block.id];
-
-            if (block.type === 'page-break') {
-                newPages[newPages.length - 1].push({ blockIdx: i, clipTop: 0, clipHeight: 0, isSplit: false });
-                newPages.push([]);
-                h = 0;
-                lastMb = 0;
-                return;
-            }
-
-            if (!el || blockH === undefined) {
-                // Not yet measured — place on current page as best-effort
-                newPages[newPages.length - 1].push({ blockIdx: i, clipTop: 0, clipHeight: usable, isSplit: false });
-                return;
-            }
-
+            // Not measured yet: take no room until it is.
+            if (!el || blockH === undefined) return { height: 0, marginTop: 0, marginBottom: 0, boxes: null };
             const blockEl = (el.querySelector('.ab4-block') || el.firstElementChild || el) as HTMLElement;
             const cs = window.getComputedStyle(blockEl);
-            const mt = parseFloat(cs.marginTop) || 0;
-            const mb = parseFloat(cs.marginBottom) || 0;
-
-            // Effective top margin (simulate CSS margin-collapse)
-            const effectiveMt = newPages[newPages.length - 1].length === 0 ? mt : Math.max(lastMb, mt);
-            const totalNeeded = effectiveMt + blockH;
-
-            if (h + totalNeeded <= usable) {
-                // ── Fits entirely on the current page ────────────────────────
-                h += totalNeeded;
-                newPages[newPages.length - 1].push({ blockIdx: i, clipTop: 0, clipHeight: blockH, isSplit: false });
-                lastMb = mb;
-                return;
-            }
-
-            // ── Doesn't fit on current page ───────────────────────────────────
-            const spaceLeft = usable - h - effectiveMt;
-
-            if (blockH > usable) {
-                // Block is TALLER than one full A4 page — must slice it
-                if (spaceLeft >= 40) {
-                    // Use remaining space on current page for the first slice
-                    const firstSliceH = getSmartSplitHeight(blockEl, spaceLeft, 0);
-                    newPages[newPages.length - 1].push({
-                        blockIdx: i, clipTop: 0, clipHeight: firstSliceH, isSplit: true
-                    });
-                    let consumed = firstSliceH;
-                    let lastSliceH = firstSliceH;
-                    while (consumed < blockH) {
-                        newPages.push([]);
-                        const maxSliceH = Math.min(usable, blockH - consumed);
-                        const sliceH = (consumed + maxSliceH < blockH)
-                            ? getSmartSplitHeight(blockEl, maxSliceH, consumed)
-                            : maxSliceH;
-                        newPages[newPages.length - 1].push({
-                            blockIdx: i, clipTop: consumed, clipHeight: sliceH, isSplit: true
-                        });
-                        consumed += sliceH;
-                        lastSliceH = sliceH;
-                    }
-                    h = lastSliceH;
-                } else {
-                    // Skip remaining space on current page, start fresh
-                    newPages.push([]);
-                    let consumed = 0;
-                    let lastSliceH = 0;
-                    while (consumed < blockH) {
-                        if (consumed > 0) newPages.push([]);
-                        const maxSliceH = Math.min(usable, blockH - consumed);
-                        const sliceH = (consumed + maxSliceH < blockH)
-                            ? getSmartSplitHeight(blockEl, maxSliceH, consumed)
-                            : maxSliceH;
-                        newPages[newPages.length - 1].push({
-                            blockIdx: i, clipTop: consumed, clipHeight: sliceH, isSplit: true
-                        });
-                        consumed += sliceH;
-                        lastSliceH = sliceH;
-                    }
-                    h = lastSliceH;
-                }
-            } else {
-                // Block fits on one page — push it to the next page
-                newPages.push([]);
-                h = mt + blockH;
-                newPages[newPages.length - 1].push({
-                    blockIdx: i, clipTop: 0, clipHeight: blockH, isSplit: false
-                });
-            }
-
-            lastMb = mb;
+            // Lines are measured on screen, where the canvas may be scaled down.
+            const rectH = blockEl.getBoundingClientRect().height;
+            const unscale = rectH > 0 ? blockH / rectH : 1;
+            const boxes = measureLineBoxes(blockEl);
+            return {
+                height: blockH,
+                marginTop: parseFloat(cs.marginTop) || 0,
+                marginBottom: parseFloat(cs.marginBottom) || 0,
+                boxes: boxes && boxes.map((b) => ({ top: b.top * unscale, bottom: b.bottom * unscale })),
+                keepWithNext: keepsWithNext(block),
+            };
         });
+        const newPages: PageEntry[][] = planPages(items, usable).map((page) =>
+            page.map((slot) => ({ blockIdx: slot.index, clipTop: slot.clipTop, clipHeight: slot.clipHeight, isSplit: slot.isSplit })));
 
         setPages(prev => {
             const sig = (p: PageEntry[][]) =>
@@ -667,19 +720,53 @@ export function BlockList({
         };
     }, [blocks, distribute, isNested, pagePad]);
 
-    const helpers = { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, selectedId, openFmForBlock };
+    // Typing at the end of a page pushes the caret into the clipped-off part of
+    // its slice: move it on to the slice on the next page, at the same place in the text.
+    useEffect(() => {
+        if (isNested) return;
+        const selection = window.getSelection();
+        const editor = document.activeElement as HTMLElement | null;
+        if (!selection?.rangeCount || !editor?.classList.contains('ab4-editor')) return;
+        const slice = editor.closest('.ab4-block-clip-window') as HTMLElement | null;
+        if (!slice) return;
+        const caret = selection.getRangeAt(0).getBoundingClientRect();
+        const box = slice.getBoundingClientRect();
+        if (caret.height === 0 || (caret.top >= box.top - 1 && caret.bottom <= box.bottom + 1)) return;
+
+        const offset = textOffsetOf(editor, selection.getRangeAt(0));
+        const slices = Array.from(document.querySelectorAll(`.ab4-block-clip-window[data-slice-of="${slice.dataset.sliceOf}"]`)) as HTMLElement[];
+        for (const other of slices) {
+            const otherEditor = other.querySelector('.ab4-editor') as HTMLElement | null;
+            if (!otherEditor || other === slice) continue;
+            const range = rangeAtTextOffset(otherEditor, offset);
+            if (!range) continue;
+            const rect = range.getBoundingClientRect();
+            const otherBox = other.getBoundingClientRect();
+            if (rect.top >= otherBox.top - 1 && rect.bottom <= otherBox.bottom + 1) {
+                otherEditor.focus({ preventScroll: true });
+                selection.removeAllRanges();
+                selection.addRange(range);
+                other.scrollIntoView({ block: 'nearest' });
+                return;
+            }
+        }
+    }, [pages, isNested]);
+
+    const helpers = { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, selectedId, openFmForBlock, onReorder };
+    // A block dropped on the gap at `index` moves there (top-level list only).
+    const moveHere = (index: number) => (onReorder ? (id: string) => onReorder(id, index) : undefined);
 
     // ── Nested (inside Parties block) — no pagination ──────────────────────────
     if (isNested) {
         return (
             <div className="ab4-block-list">
-                <InsertZone onInsert={(t) => onInsert(0, t)} />
+                <InsertZone onInsert={(t) => onInsert(0, t)} onMoveHere={moveHere(0)} />
                 {blocks.map((block, i) => (
                     <React.Fragment key={block.id}>
                         <div ref={el => { if (el) blockRefs.current[block.id] = el; else delete blockRefs.current[block.id]; }}>
                             <BlockBody block={block} helpers={{ ...helpers, blockIdx: i }} />
                         </div>
-                        <InsertZone onInsert={(t) => onInsert(i + 1, t)} />
+                        <InsertZone onInsert={(t) => onInsert(i + 1, t)} onMoveHere={moveHere(i + 1)} />
                     </React.Fragment>
                 ))}
             </div>
@@ -720,6 +807,7 @@ export function BlockList({
             height: containerHeight !== undefined ? `${containerHeight}px` : 'auto',
             overflow: 'hidden',
         }}>
+            <style>{LAYOUT_CSS}</style>
             <div className="ab4-pages-wrapper" ref={wrapperRef} style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top center',
@@ -761,7 +849,7 @@ export function BlockList({
                                     '--doc-pad-bot': `${pagePad}px`,
                                 }}
                             >
-                                <InsertZone onInsert={(t) => onInsert(firstBlockIdx, t)} />
+                                <InsertZone onInsert={(t) => onInsert(firstBlockIdx, t)} onMoveHere={moveHere(firstBlockIdx)} />
 
                                 {pageEntries.map((entry, eIdx) => {
                                     const block = blocks[entry.blockIdx];
@@ -776,7 +864,7 @@ export function BlockList({
                                         return (
                                             <React.Fragment key={`${block.id}-p${pIdx}-e${eIdx}`}>
                                                 {isLastSliceOnThisPage && (
-                                                    <InsertZone onInsert={(t) => onInsert(entry.blockIdx + 1, t)} />
+                                                    <InsertZone onInsert={(t) => onInsert(entry.blockIdx + 1, t)} onMoveHere={moveHere(entry.blockIdx + 1)} />
                                                 )}
                                             </React.Fragment>
                                         );
@@ -792,6 +880,7 @@ export function BlockList({
                                         <React.Fragment key={`${block.id}-p${pIdx}-e${eIdx}`}>
                                             <div
                                                 className={entry.isSplit ? "ab4-block-clip-window" : "ab4-block-normal-window"}
+                                                data-slice-of={entry.isSplit ? block.id : undefined}
                                                 style={entry.isSplit ? {
                                                     height: `${entry.clipHeight}px`,
                                                     overflow: 'hidden',
@@ -819,13 +908,12 @@ export function BlockList({
                                                     <BlockBody
                                                         block={block}
                                                         helpers={{ ...helpers, blockIdx: entry.blockIdx }}
-                                                        readOnly={isContinuation}
                                                     />
                                                 </div>
                                             </div>
                                             {/* Insert zone only after the last slice on a page */}
                                             {isLastSliceOnThisPage && (
-                                                <InsertZone onInsert={(t) => onInsert(entry.blockIdx + 1, t)} />
+                                                <InsertZone onInsert={(t) => onInsert(entry.blockIdx + 1, t)} onMoveHere={moveHere(entry.blockIdx + 1)} />
                                             )}
                                         </React.Fragment>
                                     );
