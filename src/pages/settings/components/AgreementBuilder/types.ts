@@ -38,11 +38,15 @@ export interface AgreementBlock {
     logoAlign?: string;
     logoWidth?: number;
     logoFullWidth?: boolean;
+    /** 'letterhead': logo left, company details right. Blocks saved before it have none: a logo alone. */
+    logoLayout?: 'letterhead' | 'logo';
 
     // Field specific
     fieldLabel?: string;
     fieldRequired?: boolean;
     fieldPlaceholder?: string;
+    /** Signature: print the signer's name under the line (default yes). */
+    showSignerName?: boolean;
     spacerHeight?: number;
 
     // Background/extra

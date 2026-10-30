@@ -4,6 +4,9 @@ import { CustomSelect } from './CommonUI';
 // @ts-ignore
 import { COLOR_SWATCHES } from './utils';
 import { AgreementBlock } from './types';
+import { InsertFieldMenu } from './InsertFieldMenu';
+import { TableControls } from './TableControls';
+import { hasTable } from './utils';
 
 interface PropertyPanelProps {
     selected: AgreementBlock | null;
@@ -28,7 +31,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     <div className="ab4-props-hdr text-slate-800"><i className="ri-settings-4-line" />{(selected.type || '').toUpperCase()}</div>
 
                     {/* Typography - For relevant blocks */}
-                    {['text', 'input', 'textarea', 'date', 'checkbox', 'signature'].includes(selected.type || '') && (
+                    {['text', 'header', 'input', 'textarea', 'date', 'checkbox', 'signature'].includes(selected.type || '') && (
                         <div className="ab4-ps">
                             <CustomSelect label="Font Family" value={selected.fontFamily || ''} onChange={(v: string) => u({ fontFamily: v })}
                                 options={[
@@ -78,6 +81,14 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                                 <button className="ab4-bg-btn" onClick={() => document.execCommand('insertUnorderedList')} title="Bulleted List"><i className="ri-list-unordered" /></button>
                                 <button className="ab4-bg-btn" onClick={() => document.execCommand('insertOrderedList')} title="Numbered List"><i className="ri-list-ordered" /></button>
                             </div>
+
+                            {selected.type === 'text' && hasTable(selected.content || '') && (
+                                <TableControls content={selected.content || ''} onChange={(content) => u({ content })} />
+                            )}
+
+                            {(selected.type === 'text' || selected.type === 'header') && (
+                                <InsertFieldMenu content={selected.content || ''} onAppend={(content) => u({ content })} />
+                            )}
                         </div>
                     )}
 
@@ -188,6 +199,18 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                         </div>
                     )}
 
+                    {/* Header: the logo's size (its text is styled above and edited on the page) */}
+                    {selected.type === 'header' && (
+                        <div className="ab4-ps">
+                            <label className="ab4-pl"><i className="ri-image-2-line me-1" /> Logo</label>
+                            <p className="ab4-hint mb-2">Click the logo on the page to change it. Click the text beside it to edit it.</p>
+                            <div className="mb-3 px-1">
+                                <div className="d-flex justify-content-between mb-1"><span className="fs-10 text-muted">WIDTH</span><span className="fs-10 fw-bold">{selected.logoWidth || 140}px</span></div>
+                                <input type="range" className="form-range" aria-label="Logo width" min={40} max={360} value={selected.logoWidth || 140} onChange={e => u({ logoWidth: +e.target.value })} />
+                            </div>
+                        </div>
+                    )}
+
                     {['input', 'textarea', 'date', 'checkbox', 'signature'].includes(selected.type || '') && (
                         <div className="ab4-ps">
                             <label className="ab4-pl"><i className="ri-list-settings-line me-1" /> Field Setup</label>
@@ -205,6 +228,12 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                                 <input className="form-check-input" type="checkbox" checked={selected.fieldRequired || false} onChange={e => u({ fieldRequired: e.target.checked })} id="req-switch" />
                                 <label className="form-check-label fs-12 ms-1" htmlFor="req-switch">Required Field</label>
                             </div>
+                            {selected.type === 'signature' && (
+                                <div className="form-check form-switch mt-2">
+                                    <input className="form-check-input" type="checkbox" checked={selected.showSignerName === true} onChange={e => u({ showSignerName: e.target.checked })} id="signer-name-switch" />
+                                    <label className="form-check-label fs-12 ms-1" htmlFor="signer-name-switch">Print the signer's name under the line</label>
+                                </div>
+                            )}
                         </div>
                     )}
 

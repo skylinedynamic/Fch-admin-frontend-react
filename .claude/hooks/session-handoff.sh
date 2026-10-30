@@ -8,8 +8,11 @@ set -uo pipefail
 
 # The `claude --resume -p` below is a session too: when it ends, SessionEnd runs
 # this hook again for the same session, which resumes it again - an endless
-# chain of empty notes. That inner run carries FCH_HANDOFF_HOOK, so stop there.
+# chain of empty notes. That inner run is marked, so stop there. Both names are
+# honoured: FCH_HANDOFF_HOOK and CLAUDE_HANDOFF_RUN were each used by a branch,
+# and a run started by either version must not start another.
 [ -n "${FCH_HANDOFF_HOOK:-}" ] && exit 0
+[ -n "${CLAUDE_HANDOFF_RUN:-}" ] && exit 0
 
 input="$(cat)"
 field() {
@@ -63,7 +66,8 @@ out="$root/docs/handoff/${ts}_${short_id}.md"
 # Write to a temp file first: if the hook is killed mid-run (timeout, /clear,
 # closing the terminal) no empty file is left in docs/handoff/.
 tmp="$(mktemp)"
-FCH_HANDOFF_HOOK=1 claude --resume "$session_id" -p "Write a concise session handoff note in Markdown for whoever (or whichever session) picks this work up next in this repo. Cover, only using this conversation: 1) what was done this session, 2) key decisions and why, 3) files/areas touched, 4) open next steps or blockers. Output ONLY the markdown content itself — no preamble, no code fences around it." > "$tmp" 2>/dev/null
+trap 'rm -f "$tmp" "$lock"' EXIT
+FCH_HANDOFF_HOOK=1 CLAUDE_HANDOFF_RUN=1 claude --resume "$session_id" -p "Write a concise session handoff note in Markdown for whoever (or whichever session) picks this work up next in this repo. Cover, only using this conversation: 1) what was done this session, 2) key decisions and why, 3) files/areas touched, 4) open next steps or blockers. Output ONLY the markdown content itself — no preamble, no code fences around it." > "$tmp" 2>/dev/null
 
 # Keep it only if it's a real note: non-trivial length and not a CLI/API error.
 if [ "$(wc -c < "$tmp")" -ge 200 ] && ! head -n 3 "$tmp" | grep -qiE '^(API Error|Error:|Execution error|No conversation found)'; then

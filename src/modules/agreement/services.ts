@@ -1,11 +1,17 @@
 import { apiClient } from '../../lib/http/apiClient'
-import { AgreementTemplate, ApiResponse, AgreementSlug, AgreementSignCheck } from './types'
+import { AgreementTemplate, ApiResponse, AgreementSlug, AgreementSignCheck, AgreementPreviewValues } from './types'
+
+/**
+ * `partner_id` for Partner profile › Configuration, where the host edits
+ * another partner's agreements; nothing for the user's own (see configPartner).
+ */
+const forPartner = (partnerId?: number): { partner_id?: number } => (partnerId ? { partner_id: partnerId } : {})
 
 /**
  * Fetch all agreements
  */
-export async function fetchAgreements(): Promise<ApiResponse<AgreementTemplate[]>> {
-  const res = await apiClient.get('/common/agreement-templates')
+export async function fetchAgreements(partnerId?: number): Promise<ApiResponse<AgreementTemplate[]>> {
+  const res = await apiClient.get('/common/agreement-templates', { params: forPartner(partnerId) })
   return res.data
 }
 
@@ -18,10 +24,10 @@ export async function saveAgreement(payload: {
   slug: AgreementSlug
   template_html?: string
   template_json?: string
-}): Promise<ApiResponse<AgreementTemplate>> {
+}, partnerId?: number): Promise<ApiResponse<AgreementTemplate>> {
   try {
     const url = payload.id ? `/common/agreement-templates/save/${payload.id}` : '/common/agreement-templates/save'
-    const res = await apiClient.post(url, payload)
+    const res = await apiClient.post(url, { ...payload, ...forPartner(partnerId) })
     return res.data
   } catch (err) {
     console.error(`Failed to save ${payload.slug} agreement:`, err);
@@ -35,12 +41,14 @@ export async function saveAgreement(payload: {
  * @param slug - 'partner' or 'borrower'
  */
 export async function fetchAgreement(
-  slug: AgreementSlug
+  slug: AgreementSlug,
+  partnerId?: number
 ): Promise<ApiResponse<AgreementTemplate>> {
   try {
     // Current backend show route updated to POST
     const res = await apiClient.post('/common/agreement-templates/show', {
-      slug
+      slug,
+      ...forPartner(partnerId)
     })
     return res.data
   } catch (err) {
@@ -58,9 +66,9 @@ export async function toggleAgreementStatus(payload: {
   id: number
   slug: AgreementSlug
   is_active: boolean
-}): Promise<ApiResponse<AgreementTemplate>> {
+}, partnerId?: number): Promise<ApiResponse<AgreementTemplate>> {
   try {
-    const res = await apiClient.post(`/common/agreement-templates/update-status/${payload.id}`, payload)
+    const res = await apiClient.post(`/common/agreement-templates/update-status/${payload.id}`, { ...payload, ...forPartner(partnerId) })
     return res.data
   } catch (err) {
     console.error(`Failed to update status for ID ${payload.id}:`, err);
@@ -82,6 +90,9 @@ export async function checkAgreementSign(): Promise<ApiResponse<AgreementSignChe
  */
 export async function submitAgreementSign(payload: {
   agreement_template_id: number
+  agreement_template_version_id?: number
+  /** The values entered, by field; the server builds the signed record from them. */
+  fields?: Record<string, string | boolean>
   content_html?: string | null
   field_values?: Record<string, any> | null
 }): Promise<ApiResponse<null>> {
@@ -116,4 +127,14 @@ export async function cancelAgreementSign(userId?: number | string): Promise<Api
   const url = userId ? `/common/agreement-sign/cancel/${userId}` : '/common/agreement-sign/cancel'
   const res = await apiClient.post(url)
   return res.data
+}
+
+/**
+ * The template owner's company details and today's date, for the builder's
+ * preview of the {{owner.*}} merge fields - what signing fills them with
+ * (fch-api AgreementMergeFields::ownerValues). Keyed by merge field.
+ */
+export async function fetchAgreementPreviewValues(partnerId?: number): Promise<AgreementPreviewValues> {
+  const res = await apiClient.post('/common/agreement-templates/preview-values', forPartner(partnerId))
+  return res.data?.data ?? {}
 }
