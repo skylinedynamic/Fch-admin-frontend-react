@@ -113,10 +113,21 @@ test.describe('Partner profile - Configuration', () => {
 
     await page.getByRole('button', { name: /Edit Agreement/ }).click()
     await expect.poll(() => api.find('POST', '/common/agreement-templates/show').at(-1)?.json).toEqual({ slug: 'borrower', partner_id: 5 })
-    await page.getByRole('button', { name: 'Save Template' }).click()
+
+    // The profile column is too narrow for the builder, so it opens over the whole window.
+    const editor = page.getByRole('dialog', { name: "Acme Funding's borrower agreement" })
+    await expect(editor).toBeVisible()
+    const viewport = page.viewportSize()!
+    expect(await editor.boundingBox()).toMatchObject({ x: 0, y: 0, width: viewport.width, height: viewport.height })
+
+    await editor.getByRole('button', { name: 'Save Template' }).click()
     await expect.poll(() => api.find('POST', '/common/agreement-templates/save/7').at(-1)?.json).toMatchObject({
       slug: 'borrower', partner_id: 5,
     })
+
+    await editor.getByRole('button', { name: 'Close editor' }).click()
+    await expect(editor).toHaveCount(0)
+    await expect(page.getByText('Borrower Agreement Paper')).toBeVisible()
   })
 
   test('the partner profile\'s own Save button is not shown on this tab', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient'
-import { AgreementTemplate, ApiResponse, AgreementSlug, AgreementSignCheck } from './types'
+import { AgreementTemplate, ApiResponse, AgreementSlug, AgreementSignCheck, AgreementPreviewValues } from './types'
 
 /**
  * `partner_id` for Partner profile › Configuration, where the host edits
@@ -90,6 +90,9 @@ export async function checkAgreementSign(): Promise<ApiResponse<AgreementSignChe
  */
 export async function submitAgreementSign(payload: {
   agreement_template_id: number
+  agreement_template_version_id?: number
+  /** The values entered, by field; the server builds the signed record from them. */
+  fields?: Record<string, string | boolean>
   content_html?: string | null
   field_values?: Record<string, any> | null
 }): Promise<ApiResponse<null>> {
@@ -124,4 +127,14 @@ export async function cancelAgreementSign(userId?: number | string): Promise<Api
   const url = userId ? `/common/agreement-sign/cancel/${userId}` : '/common/agreement-sign/cancel'
   const res = await apiClient.post(url)
   return res.data
+}
+
+/**
+ * The template owner's company details and today's date, for the builder's
+ * preview of the {{owner.*}} merge fields - what signing fills them with
+ * (fch-api AgreementMergeFields::ownerValues). Keyed by merge field.
+ */
+export async function fetchAgreementPreviewValues(partnerId?: number): Promise<AgreementPreviewValues> {
+  const res = await apiClient.post('/common/agreement-templates/preview-values', forPartner(partnerId))
+  return res.data?.data ?? {}
 }

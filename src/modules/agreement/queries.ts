@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
 import { REFRESH_ACTIVITIES_EVENT } from '../../config/appConfig'
 import { useConfigPartnerId } from '../settings/configPartner'
-import { fetchAgreement, saveAgreement, fetchAgreements, toggleAgreementStatus } from './services'
+import { fetchAgreement, saveAgreement, fetchAgreements, toggleAgreementStatus, fetchAgreementPreviewValues } from './services'
 import type { AgreementSlug } from './types'
 
 /**
@@ -68,3 +68,14 @@ export const useSaveAgreement = () => useAgreementMutation(saveAgreement)
  * Hook to toggle the active status of an agreement template.
  */
 export const useToggleAgreementStatus = () => useAgreementMutation(toggleAgreementStatus)
+
+/** The template owner's real details for the builder's preview of the merge fields. */
+export const useAgreementPreviewValues = (enabled = true) => {
+  const partnerId = useConfigPartnerId()
+  return useQuery({
+    queryKey: forPartnerKey(queryKeys.agreement.previewValues(), partnerId),
+    queryFn: () => fetchAgreementPreviewValues(partnerId),
+    enabled,
+    staleTime: 1000 * 60 * 5,
+  })
+}

@@ -317,7 +317,8 @@ const DownloadAgreement = () => {
 
             <div className="da-body">
                 <div className="da-sheet">
-                    <iframe ref={iframeRef} title="Agreement" scrolling="no" className="da-iframe" />
+                    {/* No scripts: an older signed agreement is HTML the signer's browser sent. Same origin to size and print it. */}
+                    <iframe ref={iframeRef} title="Agreement" scrolling="no" className="da-iframe" sandbox="allow-same-origin allow-modals" />
                 </div>
             </div>
 

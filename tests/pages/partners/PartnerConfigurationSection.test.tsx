@@ -145,6 +145,23 @@ describe('PartnerConfigurationSection', () => {
     expect(agreementWrites[1]).toMatchObject({ url: 'save/7', body: { slug: 'borrower', partner_id: 42 } })
   })
 
+  it('opens the partner\'s borrower agreement in a full-screen editor and closes back to the list', async () => {
+    const user = userEvent.setup()
+    const { container } = renderWithProviders(<PartnerConfigurationSection partner={WHITE_LABEL} />)
+
+    await user.click(screen.getByRole('tab', { name: /^Agreement/ }))
+    await user.click(await screen.findByRole('button', { name: /Edit Agreement/ }))
+
+    const editor = await screen.findByRole('dialog', { name: "Acme Lending's borrower agreement" })
+    expect(container).not.toContainElement(editor)
+    expect(editor).toContainElement(await screen.findByRole('button', { name: 'Save Template' }))
+
+    await user.click(screen.getByRole('button', { name: 'Close editor' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(await screen.findByText('Borrower Agreement Paper')).toBeInTheDocument()
+  })
+
   it('reads and saves the partner\'s SMS configuration, not the host\'s', async () => {
     const user = userEvent.setup()
     renderWithProviders(<PartnerConfigurationSection partner={WHITE_LABEL} />)

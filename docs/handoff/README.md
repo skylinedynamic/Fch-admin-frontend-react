@@ -10,6 +10,15 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-10-30
+
+| File | Title |
+|---|---|
+| [2026-10-30-partner-agreement-builder-full-screen.md](2026-10-30-partner-agreement-builder-full-screen.md) | Partner profile › Configuration — agreement builder opens full screen |
+| [2026-10-30-agreement-field-ids-signing-and-sandboxed-viewer.md](2026-10-30-agreement-field-ids-signing-and-sandboxed-viewer.md) | Agreements — field ids, signing sends version and values, signed copy shown without scripts |
+| [2026-10-30-agreement-builder-merge-fields-and-safety-nets.md](2026-10-30-agreement-builder-merge-fields-and-safety-nets.md) | Agreement Builder — merge fields, full-screen editing, undo/redo, drag-and-drop, new blocks and starter templates |
+| [2026-10-30-agreement-page-flow-letterhead-and-guided-signing.md](2026-10-30-agreement-page-flow-letterhead-and-guided-signing.md) | Agreement — text flows across pages, letterhead, signing line and guided partner signing |
+
 ### 2026-10-29
 
 | File | Title |

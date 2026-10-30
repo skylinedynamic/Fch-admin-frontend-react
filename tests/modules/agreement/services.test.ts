@@ -11,6 +11,7 @@ import {
   downloadAgreementSign,
   fetchSignedAgreementHtml,
   cancelAgreementSign,
+  fetchAgreementPreviewValues,
 } from '../../../src/modules/agreement/services'
 
 afterEach(() => server.resetHandlers())
@@ -272,5 +273,22 @@ describe('naming another partner (partner_id)', () => {
 
     expect(listParam).toBeNull()
     expect(showBody).toEqual({ slug: 'borrower' })
+  })
+})
+
+describe('fetchAgreementPreviewValues', () => {
+  it('POSTs for the merge values of the template owner, naming the configured partner, and resolves with them', async () => {
+    let body: unknown = null
+    server.use(
+      http.post('*/common/agreement-templates/preview-values', async ({ request }) => {
+        body = await request.json().catch(() => null)
+        return HttpResponse.json({ status: true, message: 'ok', data: { 'owner.company_name': 'Acme Lending', today: '10/30/2026' } })
+      })
+    )
+
+    const result = await fetchAgreementPreviewValues(7)
+
+    expect(body).toEqual({ partner_id: 7 })
+    expect(result).toEqual({ 'owner.company_name': 'Acme Lending', today: '10/30/2026' })
   })
 })
