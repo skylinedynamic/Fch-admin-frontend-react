@@ -97,14 +97,14 @@ describe('AgreementBuilder starting templates', () => {
   it('starts a new partner agreement from the master partner agreement', async () => {
     await openBuilder()
 
-    expect(screen.getByText('MASTER PARTNER AGREEMENT')).toBeInTheDocument()
+    expect(await screen.findByText('MASTER PARTNER AGREEMENT')).toBeInTheDocument()
     expect(screen.getByText('SECTION 23 — SIGNATURE AUTHORITY')).toBeInTheDocument()
   })
 
   it('starts a new borrower agreement from the client enrollment agreement', async () => {
     await openBuilder(<AgreementBuilder />, 'borrower')
 
-    expect(screen.getByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')).toBeInTheDocument()
+    expect(await screen.findByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')).toBeInTheDocument()
     expect(screen.getByText('28. NOTICES')).toBeInTheDocument()
   })
 })
@@ -177,7 +177,7 @@ describe('AgreementBuilder safety nets', () => {
     fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Cancel' }))
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-    expect(screen.getByText('MASTER PARTNER AGREEMENT')).toBeInTheDocument()
+    expect(await screen.findByText('MASTER PARTNER AGREEMENT')).toBeInTheDocument()
   })
 
   it('undoes and redoes changes', async () => {
