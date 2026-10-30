@@ -3,8 +3,10 @@ import { checkAgreementSign, submitAgreementSign } from '../../../modules/agreem
 import { useAuthStore } from '../../../store/auth/authStore'
 import "../../../../assets/css/agreement-builder.css"
 import { AgreementSignModalLoader } from '../../Loader/AgreementLoader'
-import { FileManagerModal } from '../../FileManagerModal/FileManagerModal'
+import { useGuidedSigning } from './useGuidedSigning'
+import SignatureDialog from './SignatureDialog'
 import { withAppCalendar } from '../../../utils/agreementCalendar'
+import { collectAgreementFields, type AgreementFieldValues } from '../../../utils/agreementFields'
 
 /**
  * AgreementSignModal
@@ -17,6 +19,9 @@ interface TemplateInfo {
   id: number
   slug: string
   template_html: string
+  /** The wording's version; sent back on submit so a wording changed meanwhile is not signed unseen. */
+  version_id?: number
+  version?: number
 }
 
 declare global {
@@ -43,25 +48,26 @@ export default function AgreementSignModal() {
 
   const { user, setCredentials } = useAuthStore()
 
+  const loadTemplate = useCallback(async (isCancelled: () => boolean = () => false) => {
+    // No need to call check API if user is already signed according to their session
+    if (useAuthStore.getState().user?.is_agreement_signed) return;
+
+    try {
+      const res = await checkAgreementSign()
+      if (!isCancelled() && res?.status && res.data?.needs_sign && res.data?.template) {
+        setTemplate(res.data.template)
+        setVisible(true)
+      }
+    } catch (err) { } finally {
+      if (!isCancelled()) setLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     let cancelled = false
-    async function check() {
-      // No need to call check API if user is already signed according to their session
-      if (user?.is_agreement_signed) return;
-
-      try {
-        const res = await checkAgreementSign()
-        if (!cancelled && res?.status && res.data?.needs_sign && res.data?.template) {
-          setTemplate(res.data.template)
-          setVisible(true)
-        }
-      } catch (err) { } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    check()
+    loadTemplate(() => cancelled)
     return () => { cancelled = true }
-  }, [])
+  }, [loadTemplate])
 
   useEffect(() => {
     // Only lock scroll if modal is actually visible AND has content
@@ -89,81 +95,22 @@ export default function AgreementSignModal() {
 
   const iframeRef = React.useRef<HTMLIFrameElement>(null)
 
-  /* File Manager States & Handlers */
-  const [fmOpen, setFmOpen] = useState(false)
-  const [fmTargetBlockId, setFmTargetBlockId] = useState<string | null>(null)
-
-  const openFmForBlock = useCallback((blockId: string) => {
-    setFmTargetBlockId(blockId)
-    setFmOpen(true)
-  }, [])
-
-  const handleFmSelect = useCallback((files: any[]) => {
-    if (fmTargetBlockId && files[0]?.url && iframeRef.current && iframeRef.current.contentDocument) {
-      const doc = iframeRef.current.contentDocument;
-      const dropzone = doc.querySelector(`[data-block-id="${fmTargetBlockId}"]`);
-      if (dropzone) {
-        let input = dropzone.querySelector('input') as HTMLInputElement | null;
-        if (!input) {
-          input = doc.createElement('input');
-          input.type = 'text';
-          input.className = 'p-input';
-          input.style.position = 'absolute';
-          input.style.left = '0';
-          input.style.top = '0';
-          input.style.width = '0';
-          input.style.height = '0';
-          input.style.opacity = '0';
-          input.style.pointerEvents = 'none';
-          dropzone.appendChild(input);
-        }
-        input.value = files[0].url;
-
-        let child = dropzone.firstChild;
-        while (child) {
-          const next = child.nextSibling;
-          if (child !== input) {
-            dropzone.removeChild(child);
-          }
-          child = next;
-        }
-
-        const img = doc.createElement('img');
-        img.src = files[0].url;
-        img.style.maxHeight = '100%';
-        img.style.maxWidth = '100%';
-        img.style.borderRadius = '4px';
-        dropzone.insertBefore(img, input);
-
-        (dropzone as HTMLElement).style.border = 'none';
-        (dropzone as HTMLElement).style.background = 'transparent';
-        (dropzone as HTMLElement).style.padding = '0';
-
-        const event = doc.createEvent('HTMLEvents');
-        event.initEvent('change', true, false);
-        input.dispatchEvent(event);
-      }
-    }
-    setFmOpen(false)
-    setFmTargetBlockId(null)
-  }, [fmTargetBlockId])
-
-  useEffect(() => {
-    if (visible) {
-      (window as any).__openFmForBlock = openFmForBlock;
-    }
-    return () => {
-      delete (window as any).__openFmForBlock;
-    };
-  }, [visible, openFmForBlock]);
+  // Guided signing: fields left, "Next field", the date signed and an adopted signature.
+  const guide = useGuidedSigning(iframeRef, template ? `${template.id}:${template.version_id}:${template.template_html.length}` : null)
+  const signerName = (user as any)?.name || [(user as any)?.first_name, (user as any)?.last_name].filter(Boolean).join(' ')
 
   async function handleSubmit() {
     if (!template || !agreed) return
 
     let filledHTML: string | null = null;
     let fieldValues: Record<string, any> = {};
+    let fields: AgreementFieldValues = {};
 
     const iframe = iframeRef.current
+    // Read before getFilledHTML(), which re-lays the page out on phones.
+    if (iframe?.contentDocument) {
+      fields = collectAgreementFields(iframe.contentDocument)
+    }
     if (iframe && (iframe.contentWindow || iframe.contentDocument)) {
       const win = iframe.contentWindow as any
       if (win && typeof win.validateDoc === 'function') {
@@ -204,6 +151,9 @@ export default function AgreementSignModal() {
     try {
       const res = await submitAgreementSign({
         agreement_template_id: template.id,
+        agreement_template_version_id: template.version_id,
+        // The server builds the signed record from these. content_html/field_values are only for an API not yet updated.
+        fields,
         content_html: filledHTML,
         field_values: fieldValues,
       })
@@ -219,6 +169,11 @@ export default function AgreementSignModal() {
       }
     } catch (err: any) {
       setError(err?.response?.data?.message || 'An error occurred.')
+      if (err?.response?.status === 409) {
+        // The wording changed after it was opened: show the current wording to review.
+        setAgreed(false)
+        loadTemplate()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -536,18 +491,6 @@ export default function AgreementSignModal() {
 
   return (
     <>
-      <FileManagerModal
-        isOpen={fmOpen}
-        toggle={() => setFmOpen(!fmOpen)}
-        selectionMode
-        section="Agreements"
-        initialPath="/"
-        entityType="agreements"
-        entityId={(user?.partner_id || user?.entity_id || 1) as any}
-        getAll={false}
-        onSelectFiles={handleFmSelect}
-        zIndex={11000}
-      />
       <div className="asm-overlay" />
       <div className="asm-main-wrapper" role="dialog" aria-modal="true">
         <div className="asm-modal-card">
@@ -607,7 +550,7 @@ export default function AgreementSignModal() {
                   Your agreement has been successfully signed. You now have full access to all platform features.
                 </p>
                 <button
-                  className="asm-btn-proceed"
+                  className="btn btn-primary btn-lg asm-btn-proceed"
                   onClick={() => setVisible(false)}
                 >
                   Proceed to Dashboard
@@ -616,16 +559,48 @@ export default function AgreementSignModal() {
               </div>
             ) : (
               <>
+                {guide.total > 0 && (
+                  <div className="asm-guide" aria-live="polite">
+                    <div className="asm-guide__status">
+                      <span className="asm-guide__icon" aria-hidden="true">
+                        <i className={guide.done === guide.total ? 'ri-checkbox-circle-fill' : 'ri-edit-circle-line'} />
+                      </span>
+                      <div>
+                        <div className="asm-guide__count"><strong>{guide.done} of {guide.total}</strong> required fields completed</div>
+                        <div className="asm-guide__bar"><span style={{ width: `${Math.round((guide.done / guide.total) * 100)}%` }} /></div>
+                      </div>
+                    </div>
+                    {guide.done < guide.total ? (
+                      <button type="button" className="btn btn-primary asm-guide__next" onClick={guide.next}>
+                        {guide.started ? 'Next field' : 'Start'}
+                        <i className="ri-arrow-down-line" aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <span className="asm-guide__ready"><i className="ri-check-line" aria-hidden="true" /> Ready to sign</span>
+                    )}
+                  </div>
+                )}
+
                 <div className="asm-document-frame">
                   <iframe
                     ref={iframeRef}
                     className="asm-iframe"
                     title="Agreement Content"
                     srcDoc={iframeContent}
+                    onLoad={guide.onFrameLoad}
                   />
                 </div>
 
+                {guide.signingBlock && (
+                  <SignatureDialog name={signerName} onApply={guide.applySignature} onClose={guide.closeSignature} />
+                )}
+
                 <div className="asm-action-footer">
+                  {error && (
+                    <div className="alert alert-danger py-2 px-3 mb-2 fs-13" role="alert">
+                      {error}
+                    </div>
+                  )}
                   <div className="asm-action-flex">
                     <label className="asm-checkbox-container">
                       <input
@@ -647,7 +622,7 @@ export default function AgreementSignModal() {
                       <button
                         onClick={handleSubmit}
                         disabled={!agreed || submitting}
-                        className={`asm-btn asm-btn-submit ${(!agreed || submitting) ? 'asm-btn-disabled' : ''}`}
+                        className={`btn btn-primary asm-btn-submit ${(!agreed || submitting) ? 'asm-btn-disabled' : ''}`}
                       >
                         {submitting ? (
                           <><span className="asm-spinner" /> Processing...</>

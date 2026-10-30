@@ -10,7 +10,13 @@ import { FUNDING_APPLICATION_STATUS } from '../../../../src/config/borrower'
 import { PARTNER_TYPES } from '../../../../src/config/partnerTypeOptions'
 
 // The activity sidebar pulls in Summernote, which needs a real canvas.
-vi.mock('../../../../src/components/Common/Activity/ActivitySidebar', () => ({ default: () => null }))
+const sidebar = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }))
+vi.mock('../../../../src/components/Common/Activity/ActivitySidebar', () => ({
+  default: (props: Record<string, unknown>) => {
+    sidebar.props = props
+    return null
+  },
+}))
 
 // Funding Request Details: "Go to Client" in the header and "Confirm" in
 // Review Actions are the page's main actions, in the primary (brand) colour.
@@ -202,5 +208,34 @@ describe('Funding Request Details: Edit Funding Application', () => {
 
     await screen.findByRole('link', { name: /go to client/i })
     expect(screen.queryByRole('link', { name: /edit funding application/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('Funding Request Details: activity log Want to Assign', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [] } } as never)
+    sidebar.props = null
+  })
+
+  afterEach(() => server.resetHandlers())
+
+  it("lists the request partner's staff and shows its borrower's Assign to", async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, partner_id: 4, borrower: { ...review.borrower, assign_id: 14 } } })
+      )
+    )
+    renderPage()
+
+    await screen.findByRole('link', { name: /go to client/i })
+    expect(sidebar.props).toMatchObject({ entityType: 'Funding Request', partnerId: 4, taskOwner: { id: 14 } })
+  })
+
+  it('shows nobody when the borrower has no Assign to', async () => {
+    server.use(http.get('*/common/funding-request/:id', () => HttpResponse.json({ status: true, message: 'ok', data: review })))
+    renderPage()
+
+    await screen.findByRole('link', { name: /go to client/i })
+    expect(sidebar.props?.taskOwner).toBeNull()
   })
 })

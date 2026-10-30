@@ -1,3 +1,5 @@
+import type { TaskPriority, TaskStatus } from '../../config/activityTask';
+
 export interface ActivityLog {
     id: number;
     log_type: string;
@@ -36,8 +38,21 @@ export interface ActivityLog {
     visibility_label?: string;
     can_edit_visibility?: boolean;
     is_edited?: boolean;
+    /** Set when a Task was assigned to a staff member ("Want to Assign"). */
+    task?: ActivityTask | null;
     created_at: string;
     updated_at: string;
+}
+
+export interface ActivityTask {
+    assigned_to: number | null;
+    assigned_user: { id: number; name: string } | null;
+    /** A calendar day, "YYYY-MM-DD". */
+    due_date: string | null;
+    priority: TaskPriority | null;
+    priority_label: string | null;
+    status: TaskStatus | null;
+    status_label: string | null;
 }
 
 export interface ActivityParams {
