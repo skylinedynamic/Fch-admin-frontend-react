@@ -15,7 +15,7 @@ QA round 2 defect log **BUG-015** (R2-CP-DOC-01, High/P1): an SVG holding a `<sc
 
 ## Testing
 - The SVG case failed first, then passed (2/2).
-- Full Vitest suite and `npm run typecheck` — see the session report.
+- Full Vitest suite — 330 files, 2374 passed, 2 expected fail. `npm run typecheck` — clean.
 
 ## Open items
 - `src/pages/filemanager/config.ts` is an unused copy of the same config (only `pages/filemanager/types` is imported anywhere); it still lists `svg`. Left as is; worth deleting.
