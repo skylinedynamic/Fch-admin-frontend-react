@@ -162,3 +162,49 @@ test.describe('Reminder popup - several due reminders', () => {
     await expect(page).toHaveURL(/\/reminders$/)
   })
 })
+
+test.describe('Reminder popup - assigned task', () => {
+  const TASK = {
+  status: 'open', status_label: 'Open', priority: 'high', priority_label: 'High',
+  due_date: '2030-11-07 15:30:00', due_date_display: 'Nov 7, 2030 3:30 PM',
+  assigned_to_name: 'Partner Colleague', assigned_by_name: 'Host Admin',
+}
+
+  test("the task's creator or assignee moves it to In Progress from the popup", async ({ page }) => {
+    const api = await openWithDue(page, [{
+      ...reminder(9, 'Collect bank statements'), reference_type: 'Task', activity_log_id: 77, task: TASK, task_can_update_status: true,
+    }])
+    api.add({ method: 'PATCH', match: '/common/activity-logs/77/task-status', body: ok({ id: 77 }, 'Task status updated successfully.') })
+
+    const progress = popup(page).getByRole('group', { name: 'Task progress' })
+    await expect(progress).toContainText('Partner Colleague')
+    await expect(progress).toContainText('Nov 7, 2030 3:30 PM')
+    await progress.getByRole('button', { name: 'In Progress' }).click()
+    await page.getByRole('button', { name: 'Yes, change it' }).click()
+
+    const call = await expectCall(api, 'PATCH', '/common/activity-logs/77/task-status')
+    expect(call.json).toEqual({ task_status: 'in_progress' })
+    await expect(progress.getByRole('button', { name: 'In Progress' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByText('Task status updated successfully.')).toBeVisible()
+  })
+
+  test('anyone else only sees the status', async ({ page }) => {
+    await openWithDue(page, [{
+      ...reminder(9, 'Collect bank statements'), reference_type: 'Task', activity_log_id: 77, task: TASK, task_can_update_status: false,
+    }])
+
+    const progress = popup(page).getByRole('group', { name: 'Task progress' })
+    await expect(progress).toContainText('Open')
+    await expect(progress.getByRole('button', { name: 'Complete' })).toHaveCount(0)
+  })
+
+  test("the assignee can snooze or dismiss but not reschedule the task's reminder", async ({ page }) => {
+    await openWithDue(page, [{
+      ...reminder(9, 'Collect bank statements'), reference_type: 'Task', activity_log_id: 77, task: TASK, task_can_update_status: true, can_reschedule: false,
+    }])
+
+    await expect(popup(page).getByRole('button', { name: /Snooze\s*$/ })).toBeVisible()
+    await expect(popup(page).getByRole('button', { name: /Dismiss\s*$/ })).toBeVisible()
+    await expect(popup(page).getByRole('button', { name: /Reschedule\s*$/ })).toHaveCount(0)
+  })
+})

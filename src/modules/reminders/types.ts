@@ -20,3 +20,12 @@ export type ReminderListResult = {
   data: Reminder[]
   total: number
 }
+
+/** Snooze (`minutes`) or reschedule (`reschedule_at` + `lead_minutes`), with an optional note. */
+export type SnoozeReminderPayload = {
+  minutes?: number
+  /** Y-m-d H:i:s in the viewer's timezone */
+  reschedule_at?: string
+  lead_minutes?: number
+  note?: string | null
+}

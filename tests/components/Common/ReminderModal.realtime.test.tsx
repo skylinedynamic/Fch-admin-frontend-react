@@ -145,4 +145,57 @@ describe('ReminderModal real-time updates', () => {
     expect(fake.listenerCount(CHANNEL, '.reminder.updated')).toBe(0)
     expect(leave).not.toHaveBeenCalled()
   })
+
+  it("lets a task's creator or assignee change its progress from the popup, and follows a change pushed from elsewhere", async () => {
+    const task = {
+      status: 'open', status_label: 'Open', priority: 'high', priority_label: 'High',
+      due_date: '2030-11-07 15:30:00', due_date_display: 'Nov 7, 2030 3:30 PM',
+      assigned_to_name: 'Partner Colleague', assigned_by_name: 'Host Admin',
+    }
+    let sent: unknown = null
+    server.use(
+      http.patch('*/common/activity-logs/77/task-status', async ({ request }) => {
+        sent = await request.json()
+        return HttpResponse.json({ status: true, message: 'Task status updated successfully.', data: { id: 77 } })
+      })
+    )
+    onLoad = [reminder(1, 'Collect bank statements', inAnHour(), { reference_type: 'Task', activity_log_id: 77, task, task_can_update_status: true })]
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderWithProviders(<ReminderModal />)
+
+    const progress = await screen.findByRole('group', { name: 'Task progress' })
+    expect(progress).toHaveTextContent('Partner Colleague')
+    await user.click(screen.getByRole('button', { name: 'In Progress' }))
+    await user.click(screen.getByRole('button', { name: 'Yes, change it' }))
+    await waitFor(() => expect(sent).toEqual({ task_status: 'in_progress' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'In Progress' })).toHaveAttribute('aria-pressed', 'true'))
+
+    act(() => fake.emit(CHANNEL, '.reminder.updated', {
+      id: 1, active: true,
+      reminder: reminder(1, 'Collect bank statements', inAnHour(), { reference_type: 'Task', activity_log_id: 77, task: { ...task, status: 'complete', status_label: 'Complete' }, task_can_update_status: true }),
+    }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Complete' })).toHaveAttribute('aria-pressed', 'true'))
+  })
+
+  it("offers no Reschedule on a task's reminder its owner may not reschedule (the assignee), only Snooze and Dismiss", async () => {
+    onLoad = [reminder(1, 'Collect bank statements', inAnHour(), { reference_type: 'Task', activity_log_id: 77, can_reschedule: false })]
+    renderWithProviders(<ReminderModal />)
+
+    expect(await screen.findByText('Collect bank statements')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /reschedule/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /snooze/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /dismiss/i })).toBeInTheDocument()
+  })
+
+  it('offers no Reschedule on such a reminder in the list of several either', async () => {
+    onLoad = [
+      reminder(1, 'Collect bank statements', inAnHour(), { reference_type: 'Task', activity_log_id: 77, can_reschedule: false }),
+      reminder(2, 'Call Jane', inAnHour()),
+    ]
+    renderWithProviders(<ReminderModal />)
+
+    expect(await screen.findByText('Call Jane')).toBeInTheDocument()
+    // Exact name: each whole row is a button too, and its text includes its actions
+    expect(screen.getAllByRole('button', { name: /^reschedule$/i })).toHaveLength(1)
+  })
 })

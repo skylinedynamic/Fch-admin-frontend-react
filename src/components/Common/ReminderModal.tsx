@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from 'reactstrap';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { apiClient as api } from '../../lib/http/apiClient';
 import { useAuthStore } from '../../store/auth/authStore';
 import '../../../assets/css/reminder.css';
 import { getEcho, userChannelName } from '../../lib/realtime/echo';
 import { ReminderRescheduleForm } from './ReminderRescheduleForm';
 import ReminderClientCard from './ReminderClientCard';
-import { getReminderClientPath, getReminderClientLinkLabel } from '../../config/reminders';
+import { getReminderClientPath, getReminderClientLinkLabel, REMINDER_STATUS_CANCELLED } from '../../config/reminders';
+import { useDueReminders, useDismissReminder, useDismissAllReminders, useSnoozeReminder } from '../../modules/reminders';
+import type { SnoozeReminderPayload } from '../../modules/reminders';
 import ReminderSnoozeForm, { ReminderSnoozeErrors } from './ReminderSnoozeForm';
 import ReminderAttachments from './ReminderAttachments';
+import ReminderTaskStatus from './ReminderTaskStatus';
 import ActivityEditModal from './Modals/ActivityEditModal';
 import { getActivityLog } from '../../modules/activity-log/services';
 import { isReminderPastDue } from '../../utils/reminders';
@@ -57,7 +59,12 @@ const ReminderModal = () => {
 
     const location = useLocation();
 
-    const hasActive = (list: any[]) => list.some((r) => r && r.status !== 'cancelled');
+    const hasActive = (list: any[]) => list.some((r) => r && r.status !== REMINDER_STATUS_CANCELLED);
+
+    const { data: dueOnLoad } = useDueReminders(token);
+    const dismissMutation = useDismissReminder();
+    const dismissAllMutation = useDismissAllReminders();
+    const snoozeMutation = useSnoozeReminder();
 
     const clearReshow = () => {
         if (reshowTimerRef.current) clearTimeout(reshowTimerRef.current);
@@ -76,26 +83,14 @@ const ReminderModal = () => {
     // The only request the popup makes on its own: once, when the page loads
     // (or on sign-in), for whatever is already due. From then on every change
     // arrives over Reverb (see below), so it never polls.
-    const fetchDueReminders = async () => {
-        if (!token) return;
-
-        try {
-            const response = await api.get('/common/reminders/due');
-            const fetchedReminders = (response.data?.data?.reminders || []).filter(
-                (r: any) => r && r.status !== 'cancelled'
-            );
-
-            setReminders(fetchedReminders);
-            // Never pop up over the activity edit form.
-            setIsOpen(fetchedReminders.length > 0 && !editingRef.current);
-        } catch (error) {
-            console.error('Failed to fetch due reminders:', error);
-        }
-    };
-
     useEffect(() => {
-        fetchDueReminders();
-    }, [token]);
+        if (!dueOnLoad) return;
+        const fetchedReminders = dueOnLoad.filter((r: any) => r && r.status !== REMINDER_STATUS_CANCELLED);
+
+        setReminders(fetchedReminders);
+        // Never pop up over the activity edit form.
+        setIsOpen(fetchedReminders.length > 0 && !editingRef.current);
+    }, [dueOnLoad]);
 
     // Reverb pushes, on the user channel shared with the notification bell and
     // the trial listener (so cleanup removes only these listeners). Each push
@@ -122,7 +117,7 @@ const ReminderModal = () => {
 
         const handleDue = (e: any) => {
             const reminder = e?.reminder;
-            if (!reminder || reminder.status === 'cancelled') return;
+            if (!reminder || reminder.status === REMINDER_STATUS_CANCELLED) return;
             upsert(reminder);
             if (!editingRef.current) {
                 clearReshow();
@@ -223,12 +218,10 @@ const ReminderModal = () => {
         setLoadingAction('dismiss');
 
         try {
-            const response = await api.post(
-                `/common/reminders/${id}/dismiss`
-            );
+            const response = await dismissMutation.mutateAsync(id);
 
             toast.success(
-                response.data?.message ||
+                response?.message ||
                 'Reminder dismissed successfully'
             );
 
@@ -253,7 +246,7 @@ const ReminderModal = () => {
         setLoadingAction('dismissAll');
 
         try {
-            await api.post('/common/reminders/dismiss-all');
+            await dismissAllMutation.mutateAsync();
 
             toast.success('All reminders dismissed successfully');
 
@@ -285,7 +278,7 @@ const ReminderModal = () => {
     // after telling them it failed would force them to redo it.
     const postSnooze = async (
         id: any,
-        payload: any,
+        payload: SnoozeReminderPayload,
         successMessage: string,
         failureMessage: string,
         onFieldErrors?: (errors: ReminderSnoozeErrors) => void
@@ -293,12 +286,9 @@ const ReminderModal = () => {
         setLoadingAction('snooze');
 
         try {
-            const response = await api.post(
-                `/common/reminders/${id}/snooze`,
-                payload
-            );
+            const response = await snoozeMutation.mutateAsync({ id, payload });
 
-            toast.success(response.data?.message || successMessage);
+            toast.success(response?.message || successMessage);
 
             removeReminder(id);
 
@@ -358,7 +348,7 @@ const ReminderModal = () => {
         />
     );
 
-    const activeReminders = reminders.filter((r: any) => r && r.status !== 'cancelled');
+    const activeReminders = reminders.filter((r: any) => r && r.status !== REMINDER_STATUS_CANCELLED);
     const isBusy = loadingAction !== null;
 
     // Don't show if there are no reminders, or on the reminders page
@@ -405,6 +395,9 @@ const ReminderModal = () => {
     // Edit Reminder opens the activity behind the reminder, which only the
     // person who logged that activity may change (the API enforces it too).
     const canEdit = !!mainReminder.activity_log_id && !!mainReminder.activity_can_edit;
+    // An assigned Task's date is its creator's to move - its assignee only snoozes or dismisses.
+    const canReschedule = mainReminder.can_reschedule !== false;
+    const actionCol = canReschedule ? 'col-4' : 'col-6';
 
     // Snooze, Reschedule and Dismiss work on upcoming and missed reminders
     // alike — an upcoming call can be moved just as well as a missed one.
@@ -548,14 +541,16 @@ const ReminderModal = () => {
                                                     >
                                                         <i className="ri-timer-line me-1"></i> Snooze
                                                     </button>
-                                                    <button
-                                                        type="button"
-                                                        className="btn fw-semibold d-flex align-items-center btn-reminder-secondary reminder-list-action"
-                                                        onClick={() => openReminderPanel(r.id, 'reschedule')}
-                                                        disabled={isBusy}
-                                                    >
-                                                        <i className="ri-calendar-event-line me-1"></i> Reschedule
-                                                    </button>
+                                                    {r.can_reschedule !== false && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn fw-semibold d-flex align-items-center btn-reminder-secondary reminder-list-action"
+                                                            onClick={() => openReminderPanel(r.id, 'reschedule')}
+                                                            disabled={isBusy}
+                                                        >
+                                                            <i className="ri-calendar-event-line me-1"></i> Reschedule
+                                                        </button>
+                                                    )}
                                                     {r.activity_log_id && r.activity_can_edit && (
                                                         <button
                                                             type="button"
@@ -759,9 +754,20 @@ const ReminderModal = () => {
                                     )}
                                 </div>
 
+                                {/* An assigned Task: its creator or assignee can move it along here. */}
+                                {mainReminder.task && mainReminder.activity_log_id && (
+                                    <ReminderTaskStatus
+                                        key={mainReminder.id}
+                                        activityLogId={mainReminder.activity_log_id}
+                                        task={mainReminder.task}
+                                        canUpdate={!!mainReminder.task_can_update_status}
+                                        summary={mainReminder.summary}
+                                    />
+                                )}
+
                                 {/* Snooze | Reschedule | Dismiss on one row. */}
                                 <div className="row g-2">
-                                    <div className="col-4">
+                                    <div className={actionCol}>
                                         <button
                                             type="button"
                                             className={`btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary ${showSnooze ? 'is-active' : ''}`}
@@ -771,17 +777,19 @@ const ReminderModal = () => {
                                             <i className="ri-timer-line me-2 fs-16"></i> Snooze
                                         </button>
                                     </div>
-                                    <div className="col-4">
-                                        <button
-                                            type="button"
-                                            className={`btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary ${showCustomReschedule ? 'is-active' : ''}`}
-                                            onClick={() => { setShowSnooze(false); setShowCustomReschedule((v) => !v); }}
-                                            disabled={isBusy}
-                                        >
-                                            <i className="ri-calendar-event-line me-2 fs-16"></i> Reschedule
-                                        </button>
-                                    </div>
-                                    <div className="col-4">
+                                    {canReschedule && (
+                                        <div className="col-4">
+                                            <button
+                                                type="button"
+                                                className={`btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary ${showCustomReschedule ? 'is-active' : ''}`}
+                                                onClick={() => { setShowSnooze(false); setShowCustomReschedule((v) => !v); }}
+                                                disabled={isBusy}
+                                            >
+                                                <i className="ri-calendar-event-line me-2 fs-16"></i> Reschedule
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className={actionCol}>
                                         <button
                                             type="button"
                                             className="btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-light"
@@ -809,7 +817,7 @@ const ReminderModal = () => {
                                     </div>
                                 )}
 
-                                {showCustomReschedule && (
+                                {canReschedule && showCustomReschedule && (
                                     <div className="mt-3">
                                         <ReminderRescheduleForm
                                             key={mainReminder.id}

@@ -1,296 +1,154 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { apiClient as api } from '../../lib/http/apiClient';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { Calendar } from 'primereact/calendar';
-import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import ListSkeletonLoader from '../../components/Loader/ListSkeletonLoader';
 import PageHeader from '../common/PageHeader';
 import ConfirmationModal from '../../components/Common/Modals/ConfirmationModal';
 import ReminderViewModal from '../../components/Common/Modals/ReminderViewModal';
-import {
-    REMINDER_TYPES,
-    REMINDER_STATUS_OPTIONS,
-    REMINDER_STATUS_PENDING,
-    REMINDER_STATUS_SENT,
-    getEffectiveReminderStatusBadgeClasses,
-    getEffectiveReminderStatusLabel,
-    getReminderClientPath,
-    getReminderClientLinkLabel,
-    getReminderTypeIcon
-} from '../../config/reminders';
+import { TASK_STATUS_OPTIONS, type TaskStatus } from '../../config/activityTask';
+import { REMINDER_STATUS_PENDING, REMINDER_STATUS_SENT } from '../../config/reminders';
 import type { Reminder } from '../../config/reminders';
-import { fetchReminders as fetchReminderList, type ReminderListFilters } from '../../modules/reminders';
+import {
+    useBulkDismissReminders,
+    useDismissAllReminders,
+    useHasDismissableReminders,
+    useReminderList,
+    type ReminderListFilters,
+} from '../../modules/reminders';
 import type { DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
+import ReminderStatusTabs from './components/ReminderStatusTabs';
+import ReminderToolbar from './components/ReminderToolbar';
+import ReminderActionsMenu from './components/ReminderActionsMenu';
+import ReminderEmptyState from './components/ReminderEmptyState';
+import { ClientCell, ReferenceCell, StatusCell, SubjectCell, WhenCell } from './components/ReminderCells';
+import './reminderList.css';
+
+type DateRange = (Date | null)[] | null;
+
+/** The filters the table is showing - applied from the toolbar, not as the user types. */
+interface AppliedFilters {
+    search: string;
+    type: string | null;
+    status: string | null;
+    dateRange: DateRange;
+}
+
+const todayRange = (): DateRange => {
+    const today = new Date();
+    return [today, today];
+};
+
+const toYmd = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+/** Pending and sent reminders - including ones showing as Missed - can still be dismissed. */
+const isDismissable = (reminder: Reminder) =>
+    reminder.status === REMINDER_STATUS_PENDING || reminder.status === REMINDER_STATUS_SENT;
 
 export default function ReminderList() {
-    const [reminders, setReminders] = useState<Reminder[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [initialLoading, setInitialLoading] = useState(true);
-
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
-    const [totalRecords, setTotalRecords] = useState(0);
     const [sortField, setSortField] = useState('set_date_time');
-    const [sortOrder, setSortOrder] = useState('desc');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+    // What the toolbar holds, and what the table is filtered by
     const [searchText, setSearchText] = useState('');
     const [selectedType, setSelectedType] = useState<string | null>(null);
-    const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-    // PrimeReact's range Calendar hands back `(Date | null)[] | null | undefined`,
-    // and Clear resets the whole range to null — so the element type has to stay
-    // nullable rather than the plain `Date[]` the initial value alone infers.
-    const [dateRange, setDateRange] = useState<(Date | null)[] | null>(() => {
-        const today = new Date();
-        return [today, today];
-    });
+    const [dateRange, setDateRange] = useState<DateRange>(todayRange);
+    const [applied, setApplied] = useState<AppliedFilters>(() => ({ search: '', type: null, status: null, dateRange: todayRange() }));
 
-    // `type` decides which confirmation copy the modal shows and which endpoint
-    // handleConfirmDismiss hits; it's absent while the modal is closed.
-    const [dismissModal, setDismissModal] = useState<{ show: boolean; type?: 'all' | 'selected'; loading: boolean }>({ show: false, loading: false });
+    // `type` decides the confirmation's wording and which dismiss runs
+    const [dismissModal, setDismissModal] = useState<{ show: boolean; type?: 'all' | 'selected' }>({ show: false });
     const [viewModal, setViewModal] = useState<{ show: boolean; data: Reminder | null }>({ show: false, data: null });
     const [selectedReminders, setSelectedReminders] = useState<Reminder[]>([]);
-    // Server-side truth for "does this user have ANY dismissable (pending or
-    // sent — sent includes ones showing as Missed) reminder at all",
-    // independent of the table's current page/date/type/status filters.
-    const [hasPendingReminders, setHasPendingReminders] = useState(true);
 
-    const checkPendingReminders = async () => {
-        try {
-            const { total } = await fetchReminderList({ status: 'dismissable', per_page: 1 });
-            setHasPendingReminders(total > 0);
-        } catch (error) {
-            console.error('Failed to check pending reminders:', error);
-        }
-    };
-    // Bumped whenever a filter is applied (search submit, type/status change,
-    // a completed date-range pick, or Clear) so the fetch effect below always
-    // re-runs — even when the filter values themselves land back on their
-    // previous state (e.g. Clear when only the date range had been touched).
-    const [filtersVersion, setFiltersVersion] = useState(0);
+    const filters = useMemo<ReminderListFilters>(() => {
+        const [start, end] = applied.dateRange ?? [];
+        return {
+            page,
+            per_page: perPage,
+            sort_by: sortField,
+            sort_order: sortOrder,
+            search: applied.search,
+            reference_type: applied.type,
+            status: applied.status,
+            ...(start ? { start_date: toYmd(start), end_date: toYmd(end ?? start) } : {}),
+        };
+    }, [page, perPage, sortField, sortOrder, applied]);
 
-    // Guards against out-of-order responses: if filters/page change again
-    // before an in-flight request resolves, only the response for the most
-    // recently issued request is applied, and only that request clears the
-    // loading state. Without this, a slow earlier response could overwrite
-    // newer data or drop the loading indicator while a newer fetch is still
-    // running.
-    const fetchRequestIdRef = useRef(0);
-
-    const fetchReminders = async (pageNumber = page) => {
-        const requestId = ++fetchRequestIdRef.current;
-        setIsLoading(true);
-        try {
-            const filters: ReminderListFilters = {
-                page: pageNumber,
-                per_page: perPage,
-                sort_by: sortField,
-                sort_order: sortOrder,
-                search: searchText,
-                reference_type: selectedType,
-                status: selectedStatus,
-            };
-
-            if (dateRange && dateRange[0]) {
-                const start = dateRange[0];
-                const end = dateRange[1] || dateRange[0];
-                filters.start_date = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
-                filters.end_date = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
-            }
-            const { data: list, total } = await fetchReminderList(filters);
-            if (requestId !== fetchRequestIdRef.current) return; // a newer request superseded this one
-            setReminders(list);
-            setTotalRecords(total);
-            // Drop any selected rows that are no longer dismissable (dismissed
-            // via another action, another tab, or no longer in this filtered/
-            // paged view) so "Dismiss Selected" never targets a stale,
-            // already-dismissed row. Sent is included alongside pending since
-            // a "Missed" row is just a sent one whose date has passed —
-            // still fully actionable, not merely selectable when literally
-            // "pending".
-            setSelectedReminders(prev => prev.filter(sel =>
-                list.some((r: any) => r.id === sel.id && (r.status === REMINDER_STATUS_PENDING || r.status === REMINDER_STATUS_SENT))
-            ));
-        } catch (error) {
-            if (requestId !== fetchRequestIdRef.current) return;
-            console.error('Failed to fetch reminders:', error);
-            toast.error('Failed to load reminders');
-        } finally {
-            if (requestId === fetchRequestIdRef.current) {
-                setIsLoading(false);
-                setInitialLoading(false);
-            }
-        }
-    };
+    const list = useReminderList(filters);
+    const reminders = list.data?.data ?? [];
+    const { data: hasDismissable = false } = useHasDismissableReminders();
+    const dismissAllMutation = useDismissAllReminders();
+    const bulkDismissMutation = useBulkDismissReminders();
 
     useEffect(() => {
-        fetchReminders();
-    }, [page, perPage, sortField, sortOrder, filtersVersion]);
+        if (list.isError) toast.error('Failed to load reminders');
+    }, [list.isError]);
 
-    // Check the true pending count once on mount (not tied to table filters).
+    // Drop selected rows that are no longer on screen or no longer dismissable,
+    // so "Dismiss selected" never targets a stale row.
     useEffect(() => {
-        checkPendingReminders();
-    }, []);
+        if (!list.data) return;
+        setSelectedReminders((prev) => prev.filter((sel) => list.data.data.some((r) => r.id === sel.id && isDismissable(r))));
+    }, [list.data]);
 
-    // Apply whatever filter values are currently in state: jump back to page 1
-    // (a stale page number on a newly filtered set can look like missing/wrong
-    // data) and bump filtersVersion to force the fetch effect to re-run.
-    const applyFilters = () => {
+    const apply = (changes: Partial<AppliedFilters> = {}) => {
         setPage(1);
-        setFiltersVersion(v => v + 1);
+        setApplied({ search: searchText, type: selectedType, status: applied.status, dateRange, ...changes });
     };
 
-    // Auto-apply once a full date range is picked (skip the initial mount,
-    // and skip a half-picked range — the calendar fires onChange once the
-    // start date is clicked, before the end date is chosen).
+    // Apply a date range once both ends are picked (the calendar reports the start first)
     const isFirstDateRangeRun = useRef(true);
     useEffect(() => {
         if (isFirstDateRangeRun.current) {
             isFirstDateRangeRun.current = false;
             return;
         }
-        if (dateRange && dateRange[0] && dateRange[1]) {
-            applyFilters();
-        }
+        if (dateRange && dateRange[0] && dateRange[1]) apply({ dateRange });
     }, [dateRange]);
 
-    const handleSearchSubmit = (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        applyFilters();
-    };
-
-    const handleClear = () => {
+    const clearFilters = () => {
         setSearchText('');
         setSelectedType(null);
-        setSelectedStatus(null);
         setDateRange(null);
         setSelectedReminders([]);
-        applyFilters();
+        setPage(1);
+        setApplied({ search: '', type: null, status: null, dateRange: null });
     };
 
-    const handleConfirmDismissAll = async () => {
-        setDismissModal({ show: true, type: 'all', loading: true });
+    const confirmDismiss = async () => {
         try {
-            const res = await api.post(`/common/reminders/dismiss-all`);
-            const count = res.data?.data?.count ?? 0;
-            if (count > 0) {
-                toast.success(`${count} reminder${count > 1 ? 's' : ''} dismissed successfully`);
+            if (dismissModal.type === 'all') {
+                const res = await dismissAllMutation.mutateAsync();
+                const count = res?.data?.count ?? 0;
+                if (count > 0) {
+                    toast.success(`${count} reminder${count > 1 ? 's' : ''} dismissed successfully`);
+                } else {
+                    toast.info('There are no reminders to dismiss');
+                }
             } else {
-                toast.info('There are no reminders to dismiss');
+                if (selectedReminders.length === 0) return;
+                await bulkDismissMutation.mutateAsync(selectedReminders.map((r) => r.id));
+                toast.success('Reminders dismissed successfully');
             }
-            setDismissModal({ show: false, loading: false });
+            setDismissModal({ show: false });
             setSelectedReminders([]);
-            fetchReminders();
-            checkPendingReminders();
-        } catch (error) {
-            console.error('Failed to dismiss all reminders', error);
-            toast.error('Failed to dismiss all reminders');
-            setDismissModal({ show: true, type: 'all', loading: false });
-        }
-    };
-
-    const handleConfirmDismiss = async () => {
-        if (dismissModal.type === 'all') {
-            return handleConfirmDismissAll();
-        }
-
-        if (!selectedReminders || selectedReminders.length === 0) return;
-        setDismissModal({ show: true, type: 'selected', loading: true });
-        try {
-            const ids = selectedReminders.map(r => r.id);
-            await api.post(`/common/reminders/bulk-dismiss`, { ids });
-            toast.success('Reminders dismissed successfully');
-            setDismissModal({ show: false, loading: false });
-            setSelectedReminders([]);
-            fetchReminders(); // Refresh the list
-            checkPendingReminders();
         } catch (error) {
             console.error('Failed to dismiss reminders', error);
-            toast.error('Failed to dismiss reminders');
-            setDismissModal({ show: true, type: 'selected', loading: false });
+            toast.error(dismissModal.type === 'all' ? 'Failed to dismiss all reminders' : 'Failed to dismiss reminders');
         }
     };
 
-    const TYPE_OPTIONS = REMINDER_TYPES;
-
-    const STATUS_OPTIONS = REMINDER_STATUS_OPTIONS;
-
-    const getStatusBadge = (rowData: Reminder) => {
-        return (
-            <span className={`badge text-uppercase px-3 py-1 rounded-pill fw-medium ${getEffectiveReminderStatusBadgeClasses(rowData)}`}>
-                {getEffectiveReminderStatusLabel(rowData)}
-            </span>
-        );
-    };
-
-    const subjectBodyTemplate = (rowData: Reminder) => {
-        return (
-            <div className="d-flex align-items-center">
-                <div className="flex-shrink-0 me-3">
-                    <div className="avatar-sm">
-                        <span className="avatar-title bg-primary-subtle text-primary rounded-circle fs-16">
-                            <i className={getReminderTypeIcon(rowData.reference_type)}></i>
-                        </span>
-                    </div>
-                </div>
-                <div className="flex-grow-1">
-                    <div className="fs-14 mb-1 d-flex align-items-center gap-2">
-                        <h5 className="fs-15 mb-0 text-dark text-break">{rowData.summary}</h5>
-                    </div>
-                    <div className="text-muted mb-1 fs-12 d-flex flex-wrap gap-2">
-                        {rowData.organizer && (
-                            <span><i className="ri-user-line align-middle me-1"></i> {rowData.organizer}</span>
-                        )}
-                        {rowData.duration && (
-                            <span><i className="ri-time-line align-middle me-1"></i> {rowData.duration}</span>
-                        )}
-                        {rowData.location && (
-                            <span><i className="ri-map-pin-line align-middle me-1"></i> {rowData.location}</span>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const clientBodyTemplate = (rowData: Reminder) => {
-        const client = rowData.client;
-        if (!client) return <span className="text-muted">—</span>;
-
-        const clientPath = getReminderClientPath(client);
-        return (
-            <div className="overflow-hidden">
-                {clientPath ? (
-                    <Link to={clientPath} className="fw-semibold text-dark d-block text-truncate">{client.name || 'Unnamed'}</Link>
-                ) : (
-                    <span className="fw-semibold text-dark d-block text-truncate">{client.name || 'Unnamed'}</span>
-                )}
-                <div className="text-muted fs-12 text-truncate">
-                    {client.type_label}
-                    {client.business_name && client.business_name !== client.name ? ` · ${client.business_name}` : ''}
-                </div>
-                {/* Same button as the reminder popup and details modal: Go to Client /
-                    Lead / Partner / Employee. A link, so it never opens the row's modal. */}
-                {clientPath && (
-                    <Link
-                        to={clientPath}
-                        className="btn btn-sm btn-soft-primary fw-semibold d-inline-flex align-items-center mt-1"
-                    >
-                        <i className="ri-user-shared-line me-1"></i> {getReminderClientLinkLabel(client)}
-                    </Link>
-                )}
-            </div>
-        );
-    };
-
-    const activityDateBodyTemplate = (rowData: Reminder) => {
-        // Formatted by the API's toTimezone() in the viewer's timezone — shown as-is.
-        const dateStr = rowData.display?.activity_datetime;
-        if (!dateStr) return <span>—</span>;
-
-        return <span className="fw-medium">{dateStr}</span>;
+    // A task's status changed in Task & Reminder Details: show it there at
+    // once, and reload the list.
+    const applyTaskStatus = (reminderId: number, status: TaskStatus) => {
+        const label = TASK_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? null;
+        setViewModal((v) => (v.data?.id === reminderId && v.data.task
+            ? { ...v, data: { ...v.data, task: { ...v.data.task, status, status_label: label } } }
+            : v));
+        list.refetch();
     };
 
     const onPage = (event: DataTablePageEvent) => {
@@ -304,135 +162,64 @@ export default function ReminderList() {
     };
 
     useEffect(() => {
-        // Add class to body to prevent global scroll just like invoices
+        // Fit the table to the page instead of scrolling the whole page
         document.body.classList.add('table-page-fit-active');
-        return () => {
-            document.body.classList.remove('table-page-fit-active');
-        };
+        return () => document.body.classList.remove('table-page-fit-active');
     }, []);
 
+    const dismissing = dismissAllMutation.isPending || bulkDismissMutation.isPending;
+
     return (
-        <div className="page-content page-content-fit">
+        <div className="page-content page-content-fit reminder-list">
             <div className="container-fluid">
-                {/* Header Section */}
-                <PageHeader
-                    title="Task & Reminder Events"
-                    breadcrumbs={[{ label: 'Task & Reminder Events' }]}
-                >
-                    <div className="d-flex gap-2">
-                        <div className="btn-group">
-                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span className="visually-hidden">Toggle dropdown</span>
-                            </button>
-                            <ul className="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <button
-                                        type="button"
-                                        className="dropdown-item text-danger"
-                                        disabled={selectedReminders.length === 0}
-                                        onClick={() => setDismissModal({ show: true, type: 'selected', loading: false })}
-                                    >
-                                        <i className="ri-delete-bin-line me-1 align-bottom"></i> Dismiss Selected {selectedReminders.length > 0 ? `(${selectedReminders.length})` : ''}
-                                    </button>
-                                </li>
-                                <li>
-                                    <button
-                                        type="button"
-                                        className="dropdown-item text-warning"
-                                        disabled={!hasPendingReminders}
-                                        onClick={() => setDismissModal({ show: true, type: 'all', loading: false })}
-                                    >
-                                        <i className="ri-check-double-line me-1 align-bottom"></i> Dismiss All
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
+                <PageHeader title="Task & Reminder Events" breadcrumbs={[{ label: 'Task & Reminder Events' }]}>
+                    <div className="d-flex align-items-center gap-2">
+                        <button
+                            type="button"
+                            className="btn btn-soft-warning fw-semibold text-nowrap"
+                            disabled={!hasDismissable}
+                            onClick={() => setDismissModal({ show: true, type: 'all' })}
+                        >
+                            <i className="ri-check-double-line me-1 align-bottom"></i>Dismiss all
+                        </button>
+                        <ReminderActionsMenu
+                            count={selectedReminders.length}
+                            onDismissSelected={() => setDismissModal({ show: true, type: 'selected' })}
+                        />
                     </div>
                 </PageHeader>
 
-                {initialLoading ? (
+                {list.isLoading && !list.data ? (
                     <ListSkeletonLoader />
                 ) : (
                     <div className="row row-table-fit">
                         <div className="col-lg-12">
-                            <div className="card shadow-sm border-0">
-                                <div className="card-header align-items-center d-flex bg-white">
-                                    <h4 className="card-title mb-0 flex-grow-1">Task & Reminder Events</h4>
+                            <div className="card reminder-list__card">
+                                <div className="reminder-list__head">
+                                    <ReminderStatusTabs
+                                        value={applied.status}
+                                        onChange={(status) => apply({ status })}
+                                    />
+                                    <ReminderToolbar
+                                        search={searchText}
+                                        onSearchChange={setSearchText}
+                                        type={selectedType}
+                                        onTypeChange={(type) => { setSelectedType(type); apply({ type }); }}
+                                        dateRange={dateRange}
+                                        onDateRangeChange={setDateRange}
+                                        onApply={() => apply()}
+                                        onClear={clearFilters}
+                                    />
                                 </div>
 
-                                <div className="card-body list-fluid-card">
-                                    <form className="table-filter mb-4" onSubmit={handleSearchSubmit}>
-                                        <div className="row g-3">
-                                            <div className="col-xxl-3 col-sm-12">
-                                                <div className="search-box">
-                                                    <input
-                                                        type="text"
-                                                        className="form-control search bg-light border-light"
-                                                        placeholder="Search subject or client..."
-                                                        value={searchText}
-                                                        onChange={(e) => setSearchText(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
-                                                    />
-                                                    <i className="ri-search-line search-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div className="col-xxl-2 col-sm-6">
-                                                <Dropdown
-                                                    value={selectedType}
-                                                    options={TYPE_OPTIONS}
-                                                    placeholder="All Reference Types"
-                                                    className="w-100 employee-filter-dropdown"
-                                                    onChange={(e) => { setSelectedType(e.value); applyFilters(); }}
-                                                    showClear
-                                                />
-                                            </div>
-                                            <div className="col-xxl-2 col-sm-6">
-                                                <Dropdown
-                                                    value={selectedStatus}
-                                                    options={STATUS_OPTIONS}
-                                                    placeholder="All Status"
-                                                    className="w-100 employee-filter-dropdown"
-                                                    onChange={(e) => { setSelectedStatus(e.value); applyFilters(); }}
-                                                    showClear
-                                                />
-                                            </div>
-                                            <div className="col-xxl-3 col-sm-6">
-                                                <div className="search-box">
-                                                    <Calendar
-                                                        value={dateRange}
-                                                        onChange={(e) => setDateRange(e.value ?? null)}
-                                                        placeholder="Date Range"
-                                                        selectionMode="range"
-                                                        readOnlyInput
-                                                        hideOnRangeSelection
-                                                        dateFormat="dd M, yy"
-                                                        className="w-100"
-                                                        inputClassName="form-control search bg-light border-light"
-                                                    />
-                                                    <i className="ri-calendar-2-line search-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div className="col-xxl-2 col-sm-6">
-                                                <div className="d-flex gap-2">
-                                                    <button type="button" className="btn btn-success flex-grow-1" onClick={handleSearchSubmit}>
-                                                        <i className="ri-equalizer-fill align-bottom me-1"></i> Filters
-                                                    </button>
-                                                    <button type="button" className="btn btn-light flex-grow-1" onClick={handleClear}>
-                                                        <i className="ri-close-line align-bottom me-1"></i> Clear
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-
-                                    <div className="table-responsive table-card mt-1">
+                                <div className="card-body list-fluid-card reminder-list__body">
+                                    <div className="table-responsive table-card">
                                         <DataTable
                                             value={reminders}
-                                            loading={isLoading}
+                                            loading={list.isFetching}
                                             paginator
                                             lazy
-                                            totalRecords={totalRecords}
+                                            totalRecords={list.data?.total ?? 0}
                                             first={(page - 1) * perPage}
                                             rows={perPage}
                                             rowsPerPageOptions={[10, 25, 50, 100]}
@@ -443,30 +230,31 @@ export default function ReminderList() {
                                             dataKey="id"
                                             scrollable
                                             scrollHeight="flex"
-                                            className="p-datatable-sm fs-13"
+                                            className="p-datatable-sm fs-13 reminder-table"
                                             responsiveLayout="scroll"
-                                            emptyMessage="No reminders found"
+                                            emptyMessage={<ReminderEmptyState onClear={clearFilters} />}
+                                            // Rows are selected by their checkbox only - a row click opens its details
                                             selectionMode="checkbox"
                                             selection={selectedReminders}
                                             onSelectionChange={(e: { value: Reminder[] }) => setSelectedReminders(e.value)}
-                                            isDataSelectable={(e: { data: Reminder }) => e.data.status === REMINDER_STATUS_PENDING || e.data.status === REMINDER_STATUS_SENT}
+                                            isDataSelectable={(e: { data: Reminder }) => isDismissable(e.data)}
                                             onRowClick={(e: { originalEvent: React.MouseEvent; data: Reminder }) => {
                                                 const target = e.originalEvent.target as HTMLElement;
-                                                // Do not open modal if clicking the checkbox column or the client link
+                                                // Not from the checkbox or a link
                                                 if (target.closest('.p-checkbox') || target.closest('.p-selection-column') || target.closest('a') || target.tagName.toLowerCase() === 'input') {
                                                     return;
                                                 }
                                                 setViewModal({ show: true, data: e.data });
                                             }}
                                             rowHover
-                                            style={{ cursor: 'pointer' }}
                                         >
                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
-                                            <Column field="reference" header="Reference" body={(rowData) => <span className="badge bg-primary-subtle text-primary px-2 py-1">{rowData.reference}</span>} style={{ minWidth: '120px' }} sortable></Column>
-                                            <Column field="summary" header="Subject" body={subjectBodyTemplate} style={{ minWidth: '300px' }} sortable></Column>
-                                            <Column header="Client" body={clientBodyTemplate} style={{ minWidth: '200px', maxWidth: '260px' }}></Column>
-                                            <Column field="set_date_time" header="Activity Date & Time" body={activityDateBodyTemplate} style={{ minWidth: '180px' }} sortable></Column>
-                                            <Column field="status" header="Status" body={(rowData) => getStatusBadge(rowData)} style={{ minWidth: '120px' }} sortable></Column>
+                                            <Column field="reference" header="Reference" body={(row: Reminder) => <ReferenceCell reminder={row} />} style={{ minWidth: '130px' }} sortable></Column>
+                                            <Column field="summary" header="Subject" body={(row: Reminder) => <SubjectCell reminder={row} />} style={{ minWidth: '260px' }} sortable></Column>
+                                            <Column header="Client" body={(row: Reminder) => <ClientCell reminder={row} />} style={{ minWidth: '200px', maxWidth: '260px' }}></Column>
+                                            <Column field="set_date_time" header="When" body={(row: Reminder) => <WhenCell reminder={row} />} style={{ minWidth: '190px' }} sortable></Column>
+                                            <Column field="status" header="Status" body={(row: Reminder) => <StatusCell reminder={row} />} style={{ minWidth: '120px' }} sortable></Column>
+                                            <Column body={() => <i className="ri-arrow-right-s-line reminder-row__chevron" aria-hidden="true"></i>} style={{ width: '2.5rem' }}></Column>
                                         </DataTable>
                                     </div>
                                 </div>
@@ -478,11 +266,11 @@ export default function ReminderList() {
 
             <ConfirmationModal
                 show={dismissModal.show}
-                onHide={() => setDismissModal({ show: false, loading: false })}
-                onConfirm={handleConfirmDismiss}
-                loading={dismissModal.loading}
-                title={dismissModal.type === 'all' ? "Dismiss All Reminders" : "Dismiss Selected Reminders"}
-                message={dismissModal.type === 'all' ? "Are you sure? All pending, sent, and missed reminders will be dismissed." : "Are you sure? The selected reminders will be dismissed."}
+                onHide={() => setDismissModal({ show: false })}
+                onConfirm={confirmDismiss}
+                loading={dismissing}
+                title={dismissModal.type === 'all' ? 'Dismiss All Reminders' : 'Dismiss Selected Reminders'}
+                message={dismissModal.type === 'all' ? 'Are you sure? All pending, sent, and missed reminders will be dismissed.' : 'Are you sure? The selected reminders will be dismissed.'}
                 confirmText="Yes, Dismiss"
                 variant="danger"
             />
@@ -490,7 +278,8 @@ export default function ReminderList() {
             <ReminderViewModal
                 show={viewModal.show}
                 onHide={() => setViewModal({ show: false, data: null })}
-                onSuccess={() => { fetchReminders(); checkPendingReminders(); }}
+                onSuccess={() => list.refetch()}
+                onTaskStatusChanged={applyTaskStatus}
                 reminder={viewModal.data}
             />
         </div>

@@ -1,0 +1,281 @@
+/* Task & Reminder Events - 4px corners throughout */
+.reminder-list {
+    --rl-radius: 4px;
+    --rl-border: var(--vz-border-color);
+    --rl-muted: var(--vz-secondary-color);
+}
+
+.reminder-list .btn,
+.reminder-list .badge,
+.reminder-list .form-control,
+.reminder-list .form-select,
+.reminder-list .p-dropdown {
+    border-radius: var(--rl-radius);
+}
+
+.reminder-list__card {
+    border: 1px solid var(--rl-border);
+    border-radius: var(--rl-radius);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+}
+
+.reminder-list__head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: 1rem 1rem 0.875rem;
+    border-bottom: 1px solid var(--rl-border);
+    background-color: var(--vz-secondary-bg, #fff);
+}
+
+/* ---- Status tabs ---------------------------------------------------------- */
+.reminder-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.reminder-tabs__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--rl-border);
+    border-radius: var(--rl-radius);
+    background-color: transparent;
+    color: var(--vz-body-color);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.reminder-tabs__tab:hover {
+    background-color: var(--vz-light);
+}
+
+.reminder-tabs__tab.is-active {
+    border-color: var(--vz-primary);
+    background-color: rgba(var(--vz-primary-rgb), 0.08);
+    color: var(--vz-primary);
+    font-weight: 600;
+}
+
+.reminder-tabs__tab:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(var(--vz-primary-rgb), 0.25);
+}
+
+.reminder-tabs__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+/* ---- Toolbar -------------------------------------------------------------- */
+.reminder-toolbar {
+    display: grid;
+    grid-template-columns: minmax(200px, 2fr) minmax(170px, 1fr) minmax(200px, 1.2fr) auto;
+    gap: 0.625rem;
+    align-items: center;
+}
+
+.reminder-toolbar .form-control {
+    background-color: var(--vz-light);
+    border-color: var(--vz-light);
+}
+
+.reminder-toolbar__type {
+    width: 100%;
+}
+
+.reminder-toolbar__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ---- Table ---------------------------------------------------------------- */
+/* The theme's .table-card pulls itself up 1rem under the card padding; here the
+   filters sit right above it, so start the table flush below them instead. */
+.reminder-list__body {
+    padding-top: 0;
+}
+
+.reminder-list__body > .table-card {
+    margin-top: 0;
+}
+
+.reminder-table .p-datatable-thead > tr > th {
+    background-color: var(--vz-light);
+    color: var(--rl-muted);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.reminder-table .p-datatable-tbody > tr {
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+}
+
+.reminder-table .p-datatable-tbody > tr > td {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    vertical-align: middle;
+}
+
+.reminder-table .p-datatable-tbody > tr:hover .reminder-row__chevron {
+    color: var(--vz-primary);
+    transform: translateX(2px);
+}
+
+.reminder-row__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--rl-radius);
+    font-size: 1rem;
+}
+
+.reminder-row__type {
+    font-weight: 600;
+    color: var(--vz-body-color);
+}
+
+.reminder-row__summary {
+    color: var(--vz-heading-color, var(--vz-dark));
+    font-size: 0.875rem;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.reminder-row__meta {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.75rem;
+    margin-top: 0.125rem;
+    color: var(--rl-muted);
+    font-size: 0.75rem;
+}
+
+.reminder-row__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--rl-radius);
+    background-color: rgba(var(--vz-primary-rgb), 0.1);
+    color: var(--vz-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.reminder-row__client {
+    display: block;
+    overflow: hidden;
+    color: var(--vz-body-color);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+a.reminder-row__client:hover {
+    color: var(--vz-primary);
+    text-decoration: underline;
+}
+
+.reminder-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4em 0.65em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.reminder-status__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.reminder-row__chevron {
+    color: var(--rl-muted);
+    font-size: 1.125rem;
+    transition: color 0.12s ease, transform 0.12s ease;
+}
+
+/* ---- Empty state ---------------------------------------------------------- */
+.reminder-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1rem;
+    text-align: center;
+}
+
+.reminder-empty__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0.75rem;
+    border-radius: var(--rl-radius);
+    background-color: rgba(var(--vz-primary-rgb), 0.08);
+    color: var(--vz-primary);
+    font-size: 1.625rem;
+}
+
+.reminder-empty__title {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.reminder-empty__hint {
+    max-width: 340px;
+    margin-bottom: 0.875rem;
+    color: var(--rl-muted);
+    font-size: 0.8125rem;
+}
+
+/* ---- Small screens -------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    .reminder-toolbar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .reminder-toolbar__search,
+    .reminder-toolbar__actions {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .reminder-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    /* One scrollable row of tabs rather than wrapping */
+    .reminder-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .reminder-tabs__tab {
+        flex: 0 0 auto;
+    }
+
+    .reminder-toolbar__actions .btn {
+        flex: 1;
+    }
+}
