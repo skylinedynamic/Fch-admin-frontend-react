@@ -1,6 +1,9 @@
 import { REMINDER_TYPES, REMINDER_TYPE_TONES, getReminderTypeIcon } from '../../../../config/reminders'
 import { REMINDER_PRESETS, REMINDER_TIME_UNITS } from '../../../../config/appConfig'
 import {
+    REMINDER_RECIPIENT,
+    REMINDER_RECIPIENT_OPTIONS,
+    type ReminderRecipient,
     TASK_PRIORITY_OPTIONS,
     TASK_PRIORITY_TONES,
     TASK_STATUS_OPTIONS,
@@ -38,6 +41,19 @@ export const TASK_STATUS_SELECT_OPTIONS: ActivitySelectOption[] = TASK_STATUS_OP
     value: opt.value,
     label: opt.label,
     ...TASK_STATUS_VISUALS[opt.value],
+}))
+
+/** Icon and one-line note on each "Who gets the reminder" card. */
+const REMINDER_RECIPIENT_VISUALS: Record<ReminderRecipient, { icon: string; note: string }> = {
+    [REMINDER_RECIPIENT.CREATOR]: { icon: 'ri-user-line', note: 'Only you' },
+    [REMINDER_RECIPIENT.ASSIGNEE]: { icon: 'ri-user-shared-line', note: 'Assigned staff only' },
+    [REMINDER_RECIPIENT.BOTH]: { icon: 'ri-team-line', note: 'You and the assignee' },
+}
+
+export const REMINDER_RECIPIENT_SELECT_OPTIONS = REMINDER_RECIPIENT_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    ...REMINDER_RECIPIENT_VISUALS[opt.value],
 }))
 
 export const getVisibilityIcon = (value: string): string =>

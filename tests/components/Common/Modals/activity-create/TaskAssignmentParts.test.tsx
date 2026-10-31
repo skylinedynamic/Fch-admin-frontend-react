@@ -73,14 +73,14 @@ describe('TaskOwnerCard', () => {
 })
 
 describe('TaskAssignmentFields', () => {
-  const values = { assigned_to: '14', task_due_date: '2030-11-07', task_priority: 'high', task_status: 'in_progress' }
+  const values = { assigned_to: '14', task_due_date: '2030-11-07 15:30:00', task_priority: 'high', task_status: 'in_progress' }
   const staff = [{ id: 12, full_name: 'Avery Staff' }, { id: 14, full_name: 'Blake Ops' }]
 
   it('prefixes its element ids so two forms never share them', () => {
     render(<TaskAssignmentFields values={values} onChange={() => { }} staff={staff} isLoadingStaff={false} errors={{}} idPrefix="activityEdit" />)
 
     expect(document.getElementById('activityEditAssignedTo')).toHaveTextContent('Blake Ops')
-    expect(document.getElementById('activityEditTaskDueAt')).toHaveValue('07 Nov, 2030')
+    expect(document.getElementById('activityEditTaskDueAt')).toHaveValue('07 Nov, 2030 03:30 PM')
     expect(document.getElementById('activityEditTaskPriority')).toHaveTextContent('High')
     expect(document.getElementById('activityEditTaskStatus')).toHaveTextContent('In Progress')
     expect(document.getElementById('activityAssignedTo')).toBeNull()

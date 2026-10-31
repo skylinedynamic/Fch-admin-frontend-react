@@ -1,4 +1,4 @@
-import { DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from '../../config/activityTask';
+import { DEFAULT_REMINDER_RECIPIENT, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from '../../config/activityTask';
 import type { ActivityTask } from './types';
 
 // The activity's summary becomes the reminder's title too. The API's
@@ -21,6 +21,7 @@ export const ACTIVITY_CREATE_ERROR_FIELDS = [
     'task_due_date',
     'task_priority',
     'task_status',
+    'reminder_recipient',
 ] as const;
 
 export const ACTIVITY_EDIT_ERROR_FIELDS = [
@@ -35,6 +36,7 @@ export const ACTIVITY_EDIT_ERROR_FIELDS = [
     'task_due_date',
     'task_priority',
     'task_status',
+    'reminder_recipient',
 ] as const;
 
 // "Want to Assign": only a Task activity can be handed to a staff member, with
@@ -93,6 +95,20 @@ export const buildTaskAssignmentFields = (form: TaskAssignmentForm): Record<stri
         task_status: form.task_status ?? '',
     };
 };
+
+// "Who gets the reminder": asked only when an assigned Task sets a reminder.
+export interface ReminderRecipientForm extends TaskAssignmentForm {
+    remind_me?: boolean;
+    reminder_recipient?: string;
+}
+
+export const asksReminderRecipient = (form: ReminderRecipientForm): boolean =>
+    !!form.remind_me && !!form.assign_task && form.reference === ACTIVITY_TASK_REFERENCE;
+
+export const buildReminderRecipientField = (form: ReminderRecipientForm): Record<string, string> =>
+    asksReminderRecipient(form)
+        ? { reminder_recipient: form.reminder_recipient || DEFAULT_REMINDER_RECIPIENT }
+        : {};
 
 // The 4-level visibility model. Host users get all 4; Partner users get
 // "Private (Only Me)", "Internal" (team scoped), and "Everyone (Including Borrower)".
