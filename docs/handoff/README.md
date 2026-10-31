@@ -14,6 +14,7 @@ Several features or tasks on the same date means several files with the same dat
 
 | File | Title |
 |---|---|
+| [2026-10-31-client-profile-invalid-id.md](2026-10-31-client-profile-invalid-id.md) | Client, lead and partner profiles — an id that is not a record loads no counters or activity (BUG-001, round 2) |
 | [2026-10-31-agreement-builder-template-test-race.md](2026-10-31-agreement-builder-template-test-race.md) | Agreement Builder — starting-template test waits for block text (flaky on CI) |
 | [2026-10-31-agreement-builder-drag-test-race.md](2026-10-31-agreement-builder-drag-test-race.md) | Agreement Builder — editor waits for the loaded agreement; reopening shows the saved one (flaky drag test on CI) |
 

@@ -28,7 +28,7 @@ import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 // Height of the theme's fixed page footer (Velzon .footer).
 const PAGE_FOOTER_HEIGHT = '60px';
 
-export default function ActivitySidebar({ entityId, entityType, partnerId, taskOwner = /** @type {{ id: number | string, name?: string | null } | null} */ (null), borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '145px', disableSticky = false }) {
+export default function ActivitySidebar({ entityId, entityType, partnerId, taskOwner = /** @type {{ id: number | string, name?: string | null } | null} */ (null), borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, enabled = true, hideTopButtons = false, stickyTopOffset = '145px', disableSticky = false }) {
     // Sits exactly under the page's sticky title bar, wherever that ends.
     const stickyTop = useStickyBelowSubheader(stickyTopOffset, !disableSticky);
     const [activities, setActivities] = useState([]);
@@ -152,6 +152,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
 
     // Load initial page
     useEffect(() => {
+        // Not yet: the caller has not confirmed the record exists. Keep the
+        // skeleton up rather than ask for activity of an id that is not one (BUG-001).
+        if (!enabled) return;
         setPage(1);
         setHasMore(true);
         fetchActivities(1, false);
@@ -169,7 +172,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
         // (borrowerEmail={formData.email}), so including them re-ran this effect on
         // every keystroke in the email field - refetching the list and flashing the
         // loading state. They are still used by the context effect below.
-    }, [entityId, entityType]);
+    }, [entityId, entityType, enabled]);
 
     useEffect(() => {
         window._activityEntityContext = {

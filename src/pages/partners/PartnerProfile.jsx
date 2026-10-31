@@ -22,6 +22,7 @@ import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
 import { PARTNER_CONFIGURATION_TAB, canManagePartnerConfiguration } from '../../config/partnerConfiguration';
 import { useAuthStore } from '../../store/auth/authStore';
 import PartnerConfigurationSection from './components/PartnerConfigurationSection';
+import ErrorPage from '../Utility/ErrorPage';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -227,6 +228,11 @@ export default function PartnerProfile() {
     });
     const [profileStatsLoading, setProfileStatsLoading] = useState(true);
     const [isPartnerLoading, setIsPartnerLoading] = useState(true);
+    const [partnerNotFound, setPartnerNotFound] = useState(false);
+
+    useEffect(() => {
+        setPartnerNotFound(false);
+    }, [id]);
     const [isSaving, setIsSaving] = useState(false);
     const [partnerPlans, setPartnerPlans] = useState([]);
     const [wasFreeTrial, setWasFreeTrial] = useState(false);
@@ -281,9 +287,11 @@ export default function PartnerProfile() {
         }
     }, [id]);
 
+    // Counters and activity wait for the partner: an id that is not one
+    // (/partners/abc) must not reach them (BUG-001).
     useEffect(() => {
-        loadProfileStats();
-    }, [loadProfileStats]);
+        if (partnerLoaded) loadProfileStats();
+    }, [partnerLoaded, loadProfileStats]);
 
     const [profileImage, setProfileImage] = useState(avatarDefault);
 
@@ -394,7 +402,12 @@ export default function PartnerProfile() {
             }
 
         } catch (error) {
-            toast.error("Failed to load partner data");
+            // 404/403: shown as Partner Not Found, as clients and leads do (BUG-030).
+            if ([403, 404].includes(error?.response?.status)) {
+                setPartnerNotFound(true);
+            } else {
+                toast.error("Failed to load partner data");
+            }
         } finally {
             setIsPartnerLoading(false);
         }
@@ -690,6 +703,10 @@ export default function PartnerProfile() {
         }
     };
 
+    if (partnerNotFound) {
+        return <ErrorPage status={404} title="Partner Not Found" message="The partner you are looking for does not exist or you do not have permission to view it." />;
+    }
+
     return (
         <div className="page-content">
             <div className="container-fluid">
@@ -900,7 +917,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} taskOwner={formData.agent ? { id: formData.agent, name: formData.assigned_user_name } : null} />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} enabled={partnerLoaded} partnerEmail={formData.email} taskOwner={formData.agent ? { id: formData.agent, name: formData.assigned_user_name } : null} />
                         </div>
                     )}
                 </div>
