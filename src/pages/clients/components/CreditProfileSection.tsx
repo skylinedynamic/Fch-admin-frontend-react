@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, CardBody, Form, FormGroup, Label, Input, Button, Spinner, Table } from 'reactstrap';
 import { toast } from 'react-toastify';
-import { parseCreditProfilePDF, saveCreditProfile, useClientCreditProfile, useDeleteClientCreditProfile, clientKeys } from '../../../modules/client';
+import { parseCreditProfilePDF, saveCreditProfile, revealClientField, useClientCreditProfile, useDeleteClientCreditProfile, clientKeys } from '../../../modules/client';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
+import RevealableInput from '../../../components/Common/RevealableInput';
+import { formatSSN, maskSSN } from '../../../utils/borrowerFormatters';
 import { useQueryClient } from '@tanstack/react-query';
 import { Dropdown } from 'primereact/dropdown';
 import CreditProfileSkeleton from '../../../components/Loader/CreditProfileSkeleton';
@@ -234,27 +236,10 @@ export default function CreditProfileSection({
                     setPdfBlobUrl(URL.createObjectURL(blob));
                 }
 
-                // Auto-save the parsed data so it persists in the database immediately.
-                try {
-                    const personalInfo = parsed.personal_info || {};
-                    const payload = {
-                        metrics: parsed.metrics || {},
-                        personal_info: personalInfo,
-                        ssn: personalInfo.ssn || '',
-                        addresses: parsed.addresses || [],
-                        trade_accounts: parsed.trade_accounts || [],
-                        inquiries: parsed.inquiries || [],
-                        pdf_url: url,
-                        document_id: docId
-                    };
-                    await saveCreditProfile(clientId, payload);
-                    queryClient.invalidateQueries({ queryKey: clientKeys.creditProfile(clientId) });
-                } catch (saveErr) {
-                    // Status only: the error object carries the request payload (config.data) — client PII.
-                    console.error('Failed to auto-save parsed credit profile', (saveErr as any)?.response?.status);
-                }
-
-                toast.success('PDF uploaded and credit profile parsed successfully!');
+                // Nothing is saved yet: the host reviews what was read and Save
+                // Credit Profile writes it - and tells the client, once
+                // (BUG-144, BUG-147).
+                toast.success('PDF read. Review the details, then click Save Credit Profile.');
             } else {
                 toast.error(response?.message || 'Failed to parse credit profile PDF.');
             }
@@ -1064,12 +1049,20 @@ export default function CreditProfileSection({
                                                         </Col>
                                                         <Col md={4}>
                                                             <FormGroup className="mb-3">
-                                                                <Label className="form-label fw-medium">SSN</Label>
-                                                                <Input
-                                                                    type="text"
-                                                                    name="ssn"
+                                                                <Label htmlFor="credit-profile-ssn" className="form-label fw-medium">SSN</Label>
+                                                                {/* Masked like every SSN (BUG-145): a saved one comes masked and the eye
+                                                                    fetches it (logged); one just read from the PDF starts hidden. */}
+                                                                <RevealableInput
+                                                                    id="credit-profile-ssn"
+                                                                    name="SSN"
                                                                     value={personal.ssn ?? ''}
-                                                                    onChange={handlePersonalInfoChange}
+                                                                    onChange={(ssn) => setProfile(prev => ({ ...prev, personal_info: { ...(prev.personal_info || {}), ssn } }))}
+                                                                    onReveal={() => revealClientField(clientId, 'credit_profile_ssn')}
+                                                                    format={formatSSN}
+                                                                    mask={maskSSN}
+                                                                    placeholder="XXX-XX-XXXX"
+                                                                    maxLength={11}
+                                                                    initiallyHidden
                                                                 />
                                                             </FormGroup>
                                                         </Col>

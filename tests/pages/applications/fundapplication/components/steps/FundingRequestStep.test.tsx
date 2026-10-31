@@ -92,13 +92,9 @@ const renderStep = () => {
   return { ...utils, save: () => save!() }
 }
 
-/**
- * Once the API answers, the partner step fetches the request again by the
- * application's id (11), showing its skeleton meanwhile - so the form is only
- * settled after that second answer.
- */
+/** The step has loaded the request (by its funding_request_id, 7) and shows the form. */
 const settled = async () => {
-  await waitFor(() => expect(fetchedIds).toContain(String(apiFunding.id)))
+  await waitFor(() => expect(fetchedIds).toContain(String(apiFunding.funding_request_id)))
   return screen.findByText('Additional Funding Types')
 }
 
@@ -236,6 +232,36 @@ describe('Funding application › Step 4: Funding Request › Purpose of Funds',
     expect(await save()).toBe(true)
     expect(posted.purpose_of_funds).toBe('Working Capital, Payroll')
     expect(posted.purpose_note).toBeNull()
+  })
+
+  /**
+   * Defect: once loaded, the step fetched the request again with the
+   * application's own id (11) sent as funding_request_id. The API reads that
+   * as another funding request, so the form could be filled from the wrong
+   * one; the second load also re-rendered the form under the user, which made
+   * the purpose tests here flaky under load.
+   */
+  it('loads the request by its funding request id only, never by the application id', async () => {
+    serve(apiFunding)
+    const { container } = renderStep()
+    await settled()
+    await waitFor(() => expect(chipsOf(container, 'purpose_of_funds')).toEqual(['Working Capital']))
+    await new Promise((resolve) => setTimeout(resolve, 200))
+
+    expect(fetchedIds.length).toBeGreaterThan(0)
+    expect(fetchedIds.every((id) => id === String(apiFunding.funding_request_id))).toBe(true)
+  })
+
+  it('saves to the loaded application, under its funding request', async () => {
+    let posted: any = null
+    serve(apiFunding, (body) => (posted = body))
+    const { container, save } = renderStep()
+    await settled()
+    await waitFor(() => expect(chipsOf(container, 'purpose_of_funds')).toEqual(['Working Capital']))
+
+    expect(await save()).toBe(true)
+    expect(posted.id).toBe(apiFunding.id)
+    expect(posted.funding_request_id).toBe(apiFunding.funding_request_id)
   })
 
   it('asks for the note while Other is one of them, and sends it', async () => {

@@ -32,14 +32,25 @@ describe('canManagePartnerConfiguration', () => {
 describe('partnerConfigurationSections', () => {
   const everything = () => true
 
-  it('gives a white-label partner Email, SMS, Branding and Payment', () => {
+  it('gives a white-label partner Email, SMS, Branding, Agreement and Payment', () => {
     expect(partnerConfigurationSections({ partner_type: PARTNER_TYPES.WHITE_LABEL }, everything).map((s) => s.id)).toEqual([
-      'email_configuration', 'sms_configuration', 'branding', 'payment',
+      'email_configuration', 'sms_configuration', 'branding', 'agreement', 'payment',
     ])
   })
 
-  it('gives a certified partner only Payment - it uses the host\'s mail, SMS and branding', () => {
-    expect(partnerConfigurationSections({ partner_type: 'Certified Partner' }, everything).map((s) => s.id)).toEqual(['payment'])
+  // Every partner keeps its own borrower agreement (its borrowers sign it),
+  // whatever its type.
+  it('gives a certified partner Agreement and Payment - it uses the host\'s mail, SMS and branding', () => {
+    expect(partnerConfigurationSections({ partner_type: 'Certified Partner' }, everything).map((s) => s.id)).toEqual(['agreement', 'payment'])
+  })
+
+  it('offers Agreement only with the agreement settings permission', () => {
+    const only = (granted: string[]) => (name: string) => granted.includes(name)
+
+    expect(partnerConfigurationSections({ partner_type: 'Certified Partner' }, only(['update partner agreement settings'])).map((s) => s.id))
+      .toEqual(['agreement'])
+    expect(partnerConfigurationSections({ partner_type: PARTNER_TYPES.WHITE_LABEL }, only(['update partner agreement settings'])).map((s) => s.id))
+      .toEqual(['branding', 'agreement'])
   })
 
   // The API guards these two with the same permissions as the Settings page,

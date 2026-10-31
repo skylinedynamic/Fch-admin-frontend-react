@@ -17,6 +17,9 @@ const SOURCE_LABELS: Record<string, string> = {
 /** "borrower.full_name": lower-case segments joined by dots. */
 const FIELD_PATH = /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$/
 
+/** "full_name": a bare field key - lower-case words joined by underscores, nothing else (an email is not one). */
+const FIELD_KEY = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/
+
 /** "NOT_PROVIDED": upper-case words joined by underscores (a lone "FICO" is not one). */
 const SOURCE_CODE = /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$/
 
@@ -33,6 +36,10 @@ export const readableLabel = (text: string | null | undefined): string => {
 
   if (FIELD_PATH.test(value)) {
     return titleCase(value.slice(value.lastIndexOf('.') + 1))
+  }
+
+  if (FIELD_KEY.test(value)) {
+    return titleCase(value)
   }
 
   if (SOURCE_CODE.test(value)) {

@@ -1,4 +1,52 @@
-export const PREVIEW_CSS = `
+import { AGREEMENT_MERGE_FIELDS } from '../../../../config/agreementMergeFields';
+import { measureLineBoxes, planPages } from './pagination';
+
+/**
+ * Letterhead and signing line, shared by the builder's canvas and the saved
+ * template so both look the same. Laid out as tables (not grid or flex) so the
+ * server's PDF renderer draws them too.
+ */
+export const LAYOUT_CSS = `
+  .p-letterhead { display: table; width: 100%; table-layout: fixed; border-bottom: 2px solid #0f172a; }
+  .p-letterhead-logo, .p-letterhead-info { display: table-cell; vertical-align: middle; padding-bottom: 16px; }
+  .p-letterhead-img { display: block; max-width: 100%; height: auto; }
+  .p-letterhead-info { font-size: var(--fs, 11px); font-weight: var(--fw, 400); text-align: var(--ta, right); color: var(--color, #64748b); font-family: var(--ff, 'Inter'), sans-serif; line-height: var(--lh, 1.65); white-space: pre-wrap; }
+  .p-letterhead-name { font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: 0.01em; margin-bottom: 2px; }
+  .p-sign-card { border: 1px solid #dbe3ef; border-top: 3px solid #2a5fc1; border-radius: 4px; padding: 14px 20px 0; background: #fff; box-shadow: 0 6px 18px -10px rgba(15, 23, 42, 0.25); page-break-inside: avoid; break-inside: avoid; }
+  .p-sign-head { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid #eef2f7; font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #0f172a; }
+  .p-sign-head i { display: inline-block; width: 24px; height: 24px; line-height: 24px; margin-right: 8px; text-align: center; border-radius: 4px; background: #e8eefa; color: #2a5fc1; font-size: 13px; letter-spacing: 0; vertical-align: middle; }
+  .p-sign-col:not(.p-sign-col--date) .p-sign-pad { background: #f8fafc; border-radius: 4px 4px 0 0; }
+  .p-sign-foot { margin: 14px -20px 0; padding: 8px 20px; border-top: 1px solid #eef2f7; background: #fbfcfe; border-radius: 0 0 4px 4px; font-family: 'Inter', sans-serif; font-size: 10.5px; color: #64748b; }
+  .p-sign-foot i { margin-right: 5px; color: #16a34a; }
+  .p-sign { display: table; width: 100%; table-layout: fixed; }
+  .p-sign > .p-field { display: table-cell; vertical-align: top; width: 58%; margin: 0; }
+  .p-sign > .p-sign-gap { display: table-cell; width: 6%; }
+  .p-sign > .p-sign-col--date { width: 36%; }
+  .p-sign-pad { position: relative; height: 80px; display: flex; align-items: flex-end; padding: 0 0 8px 24px; box-sizing: border-box; }
+  .p-sign-col--date .p-sign-pad { padding-left: 2px; }
+  .p-sign-x { position: absolute; left: 2px; bottom: 7px; font-size: 18px; line-height: 1; color: #94a3b8; font-family: 'Inter', sans-serif; }
+  .p-sign-tag { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 22px 0 12px; background: #fde68a; color: #78350f; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; font-family: 'Inter', sans-serif; border-radius: 4px 0 0 4px; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%); cursor: pointer; transition: background 0.15s; }
+  .p-sign-tag:hover { background: #fcd34d; }
+  .p-sign-img { max-height: 64px; max-width: 100%; object-fit: contain; }
+  .p-sign-rule { border-top: 1px solid #334155; }
+  .p-sign-name { margin-top: 8px; font-size: 13.5px; font-weight: 600; color: #0f172a; font-family: var(--ff, 'Inter'), sans-serif; }
+  .p-sign-caption { margin-top: 2px; font-size: 11px; color: #64748b; font-family: 'Inter', sans-serif; }
+  .p-sign-col--date .p-sign-caption { margin-top: 8px; }
+  .p-sign .p-sign-date { width: 100% !important; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important; padding: 0 !important; height: auto !important; min-height: 0; font-size: 14px !important; font-weight: 600 !important; color: #0f172a !important; text-align: left !important; cursor: pointer; font-family: var(--ff, 'Inter'), sans-serif; }
+  .p-sign .p-sign-date::placeholder { color: #94a3b8; font-weight: 500; }
+  .p-sign .p-field.is-invalid { background: transparent !important; padding: 0 !important; animation: none; }
+  .p-sign .p-field.is-invalid .p-sign-tag { background: #fecaca; color: #991b1b; }
+  .p-sign .p-field.is-invalid .p-sign-rule { border-top-color: #ef4444; }
+  @media (max-width: 793px) {
+    html:not(.force-desktop) .p-sign, html:not(.force-desktop) .p-sign > .p-field { display: block; width: 100%; }
+    html:not(.force-desktop) .p-sign > .p-sign-gap { display: none; }
+    html:not(.force-desktop) .p-sign > .p-sign-col--date { margin-top: 18px; }
+    html:not(.force-desktop) .p-sign-card { padding: 12px 14px 14px; }
+    html:not(.force-desktop) .p-letterhead, html:not(.force-desktop) .p-letterhead > div { display: block; text-align: left; }
+  }
+`;
+
+export const PREVIEW_CSS = `${LAYOUT_CSS}
   @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700;800&family=Roboto:wght@400;700&display=swap');
   body{margin:0;padding:0;background:#e8edf5;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;color:#334155;gap:0}
   .page-sep{width:794px;height:15px;background: #e8edf5;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
@@ -6,6 +54,13 @@ export const PREVIEW_CSS = `
   .page-sep::after{content:'';}
   .doc{width:794px;height:1122.5px;overflow:hidden;background:var(--doc-bg);padding:var(--doc-pad-top) var(--doc-pad-sides) var(--doc-pad-bot);box-sizing:border-box;border-radius:0}
   .p-text          { white-space: pre-wrap; margin-bottom: 0px; font-size: var(--fs); font-weight: var(--fw); text-align: var(--ta); text-decoration: var(--td); font-style: var(--fst); color: var(--color); font-family: var(--ff); line-height: var(--lh); letter-spacing: var(--ls); background: var(--bg); border-radius: var(--radius); padding: var(--pad); opacity: var(--opacity); }
+  .p-text ul, .p-text ol { margin: 0 0 4px; padding-left: 1.4em; }
+  .p-text li { margin: 2px 0; }
+  .p-text table { width: 100%; border-collapse: collapse; margin: 4px 0; white-space: normal; font-size: inherit; }
+  .p-text th, .p-text td { border: 1px solid #cbd5e1; padding: 6px 9px; text-align: left; vertical-align: top; word-break: normal; overflow-wrap: break-word; }
+  .p-text tr > :first-child:nth-last-child(2) { width: 30%; }
+  .p-text tr > :first-child:nth-last-child(3) { width: 30%; }
+  .p-text th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
   .p-field         { margin-bottom: 0px; display: flex; flex-direction: column; gap: 4px; }
   .p-input-wrap    { position: relative; width: 100%; display: flex; align-items: flex-end; gap: 8px; }
   .p-label         { font-size: var(--fs, 15px); font-weight: var(--fw, 500); color: #1e293b; margin: 0; white-space: nowrap; font-family: var(--ff, inherit); }
@@ -176,6 +231,8 @@ export const PREVIEW_CSS = `
 `;
 
 export const PREVIEW_JS = `
+  var planPages = ${planPages.toString()};
+  var measureLineBoxes = ${measureLineBoxes.toString()};
   var PAGE_H = 1122.5; // Approx 297mm at 96dpi minus a tiny margin for safety
   var originalHtml = null;
 
@@ -314,49 +371,6 @@ export const PREVIEW_JS = `
     }
   }
 
-  function getSmartSplitHeight(el, maxHeight, clipTop) {
-    var editor = el;
-    if (!el.classList.contains('p-text') && !el.classList.contains('ab4-editor')) {
-      editor = el.querySelector('.p-text') || el.querySelector('.ab4-editor') || el;
-    }
-    if (!editor) return maxHeight;
-
-    var children = Array.from(editor.children);
-    if (children.length === 0) {
-      return maxHeight;
-    }
-
-    var parentRect = editor.getBoundingClientRect();
-    var bestSplit = 0;
-    var foundAny = false;
-
-    for (var i = 0; i < children.length; i++) {
-      var child = children[i];
-      var childRect = child.getBoundingClientRect();
-      var top = childRect.top - parentRect.top;
-      var bottom = childRect.bottom - parentRect.top;
-
-      var relTop = top - clipTop;
-      var relBottom = bottom - clipTop;
-
-      if (relBottom <= maxHeight) {
-        bestSplit = Math.max(bestSplit, relBottom);
-        foundAny = true;
-      } else {
-        if (relTop > 0 && relTop < maxHeight) {
-          bestSplit = Math.max(bestSplit, relTop);
-          foundAny = true;
-        }
-        break;
-      }
-    }
-
-    if (foundAny && bestSplit >= 40) {
-      return bestSplit;
-    }
-    return maxHeight;
-  }
-
   function paginate() {
     var root = document.getElementById('doc-root');
     if (!root) return;
@@ -387,79 +401,28 @@ export const PREVIEW_JS = `
     var usable = PAGE_H - padTop - padBot;
 
     var children = Array.from(root.children);
-    var pages = [[]];
-    var h = 0;       // height used on the current page
-    var lastMb = 0;
-
+    var els = [];
+    var items = [];
     children.forEach(function(child) {
       if (child.id === 'preview-upload' || child.id === 'hidden-submit') return;
-
+      els.push(child);
       if (child.classList.contains('p-page-break')) {
-        pages[pages.length - 1].push({ element: child, clipTop: 0, clipHeight: 0, isSplit: false });
-        pages.push([]);
-        h = 0;
-        lastMb = 0;
+        items.push({ height: 0, marginTop: 0, marginBottom: 0, boxes: null, pageBreak: true });
         return;
       }
-
-      var childH = child.getBoundingClientRect().height;
       var cs = window.getComputedStyle(child);
-      var mt = parseFloat(cs.marginTop) || 0;
-      var mb = parseFloat(cs.marginBottom) || 0;
-
-      var effectiveMt = pages[pages.length - 1].length === 0 ? mt : Math.max(lastMb, mt);
-      var totalNeeded = effectiveMt + childH;
-
-      if (h + totalNeeded <= usable) {
-        // Fits entirely on current page
-        h += totalNeeded;
-        pages[pages.length - 1].push({ element: child, clipTop: 0, clipHeight: childH, isSplit: false });
-        lastMb = mb;
-      } else {
-        var spaceLeft = usable - h - effectiveMt;
-        if (childH > usable) {
-          // Block is TALLER than a single page — slice it
-          if (spaceLeft >= 40) {
-            var firstSliceH = getSmartSplitHeight(child, spaceLeft, 0);
-            pages[pages.length - 1].push({ element: child, clipTop: 0, clipHeight: firstSliceH, isSplit: true });
-            var consumed = firstSliceH;
-            var lastSliceH = firstSliceH;
-            while (consumed < childH) {
-              pages.push([]);
-              var maxSliceH = Math.min(usable, childH - consumed);
-              var sliceH = (consumed + maxSliceH < childH)
-                ? getSmartSplitHeight(child, maxSliceH, consumed)
-                : maxSliceH;
-              pages[pages.length - 1].push({ element: child, clipTop: consumed, clipHeight: sliceH, isSplit: true });
-              consumed += sliceH;
-              lastSliceH = sliceH;
-            }
-            h = lastSliceH;
-          } else {
-            // Push completely to start fresh on next page
-            pages.push([]);
-            var consumed = 0;
-            var lastSliceH = 0;
-            while (consumed < childH) {
-              if (consumed > 0) pages.push([]);
-              var maxSliceH = Math.min(usable, childH - consumed);
-              var sliceH = (consumed + maxSliceH < childH)
-                ? getSmartSplitHeight(child, maxSliceH, consumed)
-                : maxSliceH;
-              pages[pages.length - 1].push({ element: child, clipTop: consumed, clipHeight: sliceH, isSplit: true });
-              consumed += sliceH;
-              lastSliceH = sliceH;
-            }
-            h = lastSliceH;
-          }
-        } else {
-          // Fits on one page — push it entirely to next page
-          pages.push([]);
-          h = mt + childH;
-          pages[pages.length - 1].push({ element: child, clipTop: 0, clipHeight: childH, isSplit: false });
-        }
-        lastMb = mb;
-      }
+      items.push({
+        height: child.getBoundingClientRect().height,
+        marginTop: parseFloat(cs.marginTop) || 0,
+        marginBottom: parseFloat(cs.marginBottom) || 0,
+        boxes: measureLineBoxes(child),
+        keepWithNext: child.getAttribute('data-keep') === '1'
+      });
+    });
+    var pages = planPages(items, usable).map(function(page) {
+      return page.map(function(slot) {
+        return { element: els[slot.index], clipTop: slot.clipTop, clipHeight: slot.clipHeight, isSplit: slot.isSplit, marginBottom: items[slot.index].marginBottom };
+      });
     });
 
     if (pages.length <= 1 && pages[0].length > 0 && !pages[0].some(function(e) { return e.isSplit; })) {
@@ -480,9 +443,11 @@ export const PREVIEW_JS = `
       page.setAttribute('style', style);
       page.id = idx === 0 ? 'doc-root' : 'doc-page-' + (idx + 1);
       
-      pageEntries.forEach(function(entry) {
+      pageEntries.forEach(function(entry, entryIdx) {
         var cloned = entry.element.cloneNode(true);
         if (!entry.isSplit) {
+          // A page's first block starts at the top: its top margin was not counted.
+          if (entryIdx === 0) cloned.style.marginTop = '0';
           page.appendChild(cloned);
         } else {
           // Wrap sliced elements in a clip window structure
@@ -492,6 +457,9 @@ export const PREVIEW_JS = `
           clipWin.style.overflow = 'hidden';
           clipWin.style.position = 'relative';
           clipWin.style.width = '100%';
+          clipWin.style.marginBottom = entry.marginBottom + 'px';
+          cloned.style.marginTop = '0';
+          cloned.style.marginBottom = '0';
 
           var innerDiv = document.createElement('div');
           innerDiv.style.position = 'absolute';
@@ -575,13 +543,41 @@ export const PREVIEW_JS = `
 `;
 
 /* ── HTML Generation Helper ──────────────────────────────────────────────── */
+/** A heading, or a short bold line (how older templates write section titles), stays with the text after it. */
+export const keepsWithNext = (b: { type?: string; paletteType?: string; content?: string; fontWeight?: string | number }): boolean => {
+  if (b.type !== 'text') return false;
+  if (b.paletteType === 'heading') return true;
+  if (b.paletteType && b.paletteType !== 'text') return false;
+  const content = b.content || '';
+  return Number(b.fontWeight) >= 700 && content.length <= 120 && !content.includes('<') && !content.includes('\n');
+};
+
+/** What a new Header block says on its right: the company's details, as merge fields. */
+export const HEADER_CONTENT = '<div class="p-letterhead-name">{{owner.company_name}}</div><div>{{owner.address}}</div><div>{{owner.email}} &nbsp;&middot;&nbsp; {{owner.phone}}</div>';
+
+/** The Header block: the logo on the left, its own text on the right, a rule under both. */
+const letterhead = (b: any, styleStr: string) => {
+  const textVars = `--fs:${b.fontSize || 11}px;--fw:${b.fontWeight || 400};--ta:${b.textAlign || 'right'};--color:${b.color || '#64748b'};--ff:${b.fontFamily || 'Inter'};--lh:${b.lineHeight || 1.65}`;
+  return `<div class="p-letterhead" style="${styleStr}">
+      <div class="p-letterhead-logo">
+        ${b.logoSrc ? `<img src="${b.logoSrc}" class="p-letterhead-img" style="width:${b.logoWidth || 140}px" alt=""/>` : `<div class="p-logo-ph"><i class="ri-image-line"></i>YOUR LOGO</div>`}
+      </div>
+      <div class="p-letterhead-info" style="${textVars}">${b.content || ''}</div>
+    </div>`;
+};
+
 export const gen = (b: any) => {
   if (b.type === 'text') {
     const vars = `--bg:${b.bgColor || 'transparent'};--radius:${b.borderRadius || 0}px;--pad:${b.padding || 0}px;--opacity:${b.bgOpacity || 1};--fs:${b.fontSize || 14}px;--fw:${b.fontWeight || 400};--ta:${b.textAlign || 'left'};--td:${b.textDecoration || 'none'};--fst:${b.fontStyle || 'normal'};--color:${b.color || '#334155'};--ff:${b.fontFamily || 'Inter'};--lh:${b.lineHeight || 1.75};--ls:${b.letterSpacing || 0}px`;
-    return `<div class="p-text" style="${vars};margin-top:${b.marginTop !== undefined ? b.marginTop : 0}px;margin-bottom:${b.marginBottom !== undefined ? b.marginBottom : 0}px">${b.content || ''}</div>`;
+    return `<div class="p-text"${keepsWithNext(b) ? ' data-keep="1"' : ''} style="${vars};margin-top:${b.marginTop !== undefined ? b.marginTop : 0}px;margin-bottom:${b.marginBottom !== undefined ? b.marginBottom : 0}px">${b.content || ''}</div>`;
+  }
+  if (b.type === 'header') {
+    return letterhead(b, `margin-top:${b.marginTop !== undefined ? b.marginTop : 0}px;margin-bottom:${b.marginBottom !== undefined ? b.marginBottom : 0}px;`);
   }
   if (b.type === 'logo') {
     const styleStr = `margin-top:${b.marginTop !== undefined ? b.marginTop : 0}px;margin-bottom:${b.marginBottom !== undefined ? b.marginBottom : 0}px;background-color:${b.bgColor || 'transparent'};padding:${b.padding || 0}px;border-radius:${b.borderRadius || 0}px;opacity:${b.bgOpacity !== undefined ? b.bgOpacity : 1};`;
+    // A logo block saved as a letterhead before the Header block existed.
+    if (b.logoLayout === 'letterhead') return letterhead({ ...b, content: HEADER_CONTENT, fontSize: 11, textAlign: 'right', color: '#64748b' }, styleStr);
     return `<div class="p-logo-wrapper" style="--align:${b.logoAlign || 'center'};${styleStr}">
       <div class="preview-dropzone" data-block-id="${b.id}" style="display:inline-block; cursor:pointer; width:${b.logoFullWidth ? '100%' : 'auto'};">
         ${b.logoSrc ? `<img src="${b.logoSrc}" class="p-logo-img" style="--w:${b.logoFullWidth ? '100%' : `${b.logoWidth || 150}px`}"/>` : `<div class="p-logo-ph"><i class="ri-image-line"></i>IMAGE LOGO</div>`}
@@ -604,30 +600,38 @@ export const gen = (b: any) => {
     const fallbackFs = isCb ? 13.5 : 15;
     const vars = `--fs:${b.fontSize || fallbackFs}px;--fw:${b.fontWeight || 400};--ta:${b.textAlign || 'left'};--color:${b.color || '#0f172a'};--ff:${b.fontFamily || 'inherit'}`;
     const req = b.fieldRequired ? 'required' : '';
+    // Names the field for signing: values are sent and matched by field id (fch-api SignedAgreementBuilder).
+    const fid = (suffix = '') => `data-field-id="${b.id}${suffix}"`;
     const styleStr = `margin-top:${b.marginTop !== undefined ? b.marginTop : 0}px;margin-bottom:${b.marginBottom !== undefined ? b.marginBottom : 0}px;background-color:${b.bgColor || 'transparent'};padding:${b.padding || 0}px;border-radius:${b.borderRadius || 0}px;opacity:${b.bgOpacity !== undefined ? b.bgOpacity : 1};`;
 
-    if (b.type === 'input') return `<div class="p-field" style="${vars};${styleStr}"><div class="p-input-wrap"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><input type="text" placeholder="${b.fieldPlaceholder || ''}" class="p-input" ${req}/></div></div>`;
-    if (b.type === 'textarea') return `<div class="p-field" style="${vars};${styleStr}"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><textarea rows="1" class="p-textarea" placeholder="${b.fieldPlaceholder || ''}" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);" ${req}></textarea></div>`;
-    if (b.type === 'date') return `<div class="p-field" style="${vars};${styleStr}"><div class="p-input-wrap"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><input type="text" class="form-control flatpickr p-input p-date-input" placeholder="Select Date" ${req}/></div></div>`;
-    if (b.type === 'checkbox') return `<div class="p-field" style="${styleStr}"><div class="p-cb-group" style="${vars};justify-content:${b.textAlign === 'center' ? 'center' : b.textAlign === 'right' ? 'flex-end' : 'flex-start'}"><input type="checkbox" class="p-checkbox" ${req}/><label class="p-cb-label" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}</label></div></div>`;
-    if (b.type === 'signature') return `<div class="row p-sig-grid" style="${vars};${styleStr}">
-      <div class="col-md-6 mb-3 mb-md-0">
-        <div class="p-field">
-          <div class="p-sig-box p-sig-drop preview-dropzone" data-block-id="${b.id}">
-            ${b.logoSrc ? `<img src="${b.logoSrc}" style="max-height:45px;">` : `<i class="ri-quill-pen-line p-sig-icon"></i>`}
-            <div class="p-sig-meta" style="font-size:calc(var(--fs) * 0.7);font-family:var(--ff);">${b.fieldLabel || 'SIGNATURE'}${b.fieldRequired ? ' *' : ''}</div>
-            <input type="text" class="p-input" ${req} value="${b.logoSrc || ''}" style="position:absolute;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none;"/>
+    if (b.type === 'input') return `<div class="p-field" style="${vars};${styleStr}"><div class="p-input-wrap"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><input type="text" placeholder="${b.fieldPlaceholder || ''}" class="p-input" ${fid()} ${req}/></div></div>`;
+    if (b.type === 'textarea') return `<div class="p-field" style="${vars};${styleStr}"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><textarea rows="1" class="p-textarea" ${fid()} placeholder="${b.fieldPlaceholder || ''}" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);" ${req}></textarea></div>`;
+    if (b.type === 'date') return `<div class="p-field" style="${vars};${styleStr}"><div class="p-input-wrap"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><input type="text" class="form-control flatpickr p-input p-date-input" placeholder="Select Date" ${fid()} ${req}/></div></div>`;
+    if (b.type === 'checkbox') return `<div class="p-field" style="${styleStr}"><div class="p-cb-group" style="${vars};justify-content:${b.textAlign === 'center' ? 'center' : b.textAlign === 'right' ? 'flex-end' : 'flex-start'}"><input type="checkbox" class="p-checkbox" ${fid()} ${req}/><label class="p-cb-label" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}</label></div></div>`;
+    // A signing line: "Sign here" (the signature once signed) over a rule, the
+    // signer's name and role under it, and the date signed beside it.
+    if (b.type === 'signature') return `<div class="p-sign-card" style="${vars};margin-top:${b.marginTop !== undefined ? b.marginTop : 0}px;margin-bottom:${b.marginBottom !== undefined ? b.marginBottom : 0}px;">
+      <div class="p-sign-head"><i class="ri-quill-pen-line"></i>${b.fieldLabel || 'Signature'}${b.fieldRequired ? ' *' : ''}</div>
+      <div class="p-sign">
+        <div class="p-field p-sign-col">
+          <div class="p-sign-pad preview-dropzone" data-block-id="${b.id}">
+            <span class="p-sign-x">&times;</span>
+            ${b.logoSrc ? `<img src="${b.logoSrc}" class="p-sign-img" alt="Signature">` : `<span class="p-sign-tag"><i class="ri-quill-pen-line"></i>Sign here</span>`}
+            <input type="text" class="p-input" ${fid()} ${req} value="${b.logoSrc || ''}" style="position:absolute;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none;"/>
           </div>
+          <div class="p-sign-rule"></div>
+          ${b.showSignerName === true ? '<div class="p-sign-name">{{signer.name}}</div>' : ''}<div class="p-sign-caption">Signature</div>
+        </div>
+        <div class="p-sign-gap"></div>
+        <div class="p-field p-sign-col p-sign-col--date">
+          <div class="p-sign-pad">
+            <input type="text" class="form-control flatpickr p-sig-input p-sign-date" ${fid(':date')} placeholder="Select date" ${req}/>
+          </div>
+          <div class="p-sign-rule"></div>
+          <div class="p-sign-caption">Date signed</div>
         </div>
       </div>
-      <div class="col-md-6">
-        <div class="p-field">
-          <div class="p-sig-box">
-             <input type="text" class="form-control flatpickr p-sig-input" placeholder="Click here" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);text-align:center;border-bottom:1px solid #64748b; background:transparent;" ${req}/>
-             <div class="p-sig-meta p-sig-meta-date">Signature Date</div>
-          </div>
-        </div>
-      </div>
+      <div class="p-sign-foot"><i class="ri-shield-check-line"></i>Recorded in the signature certificate at the end of this agreement</div>
     </div>`;
   }
   if (b.type === 'parties') {
@@ -677,6 +681,25 @@ export const getAgreementHtml = (blocks: any, { pagePad, docBg }: { pagePad?: nu
   <script>${PREVIEW_JS}</script>
 </body></html>`;
 
+/* ── Merge fields in the preview ─────────────────────────────────────────── */
+const MERGE_SAMPLE_CSS = '<style>.ab4-merge-sample{background:#eef2ff;color:#3730a3;border-bottom:1px dashed #6366f1;border-radius:3px;padding:0 3px}</style>';
+
+const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * The builder's preview shows merge fields ({{signer.name}} ...) marked as
+ * fields: with the owner's real details where the server sent them (`real`,
+ * see useAgreementPreviewValues), and example details for the rest - a signer
+ * has none while a template is built. Only the preview: the saved template
+ * keeps the fields, which the server fills for each signer.
+ */
+export const withMergeSamples = (html: string, real: Record<string, string> = {}): string => {
+  const samples = new Map(AGREEMENT_MERGE_FIELDS.map((f) => [f.key, real[f.key]?.trim() ? escapeHtml(real[f.key].trim()) : f.sample]));
+  const filled = html.replace(/\{\{\s*([a-z_.]+)\s*\}\}/g, (token, key: string) =>
+    samples.has(key) ? `<span class="ab4-merge-sample" title="{{${key}}}">${samples.get(key)}</span>` : token);
+  return filled === html ? html : filled.replace('</head>', `${MERGE_SAMPLE_CSS}</head>`);
+};
+
 /* ── ID helper ───────────────────────────────────────────────────────────── */
 let _uid = Date.now();
 export const uid = () => `b${_uid++}`;
@@ -686,6 +709,7 @@ export const PALETTE = [
   {
     group: 'Layout', icon: 'ri-layout-line', items: [
       { type: 'logo', label: 'Company Logo', icon: 'ri-image-line' },
+      { type: 'header', label: 'Header', icon: 'ri-layout-top-line' },
       { type: 'divider', label: 'Divider', icon: 'ri-separator' },
       { type: 'spacer', label: 'Spacer', icon: 'ri-space' },
       { type: 'page-break', label: 'Page Break', icon: 'ri-scissors-cut-line' },
@@ -695,6 +719,10 @@ export const PALETTE = [
   {
     group: 'Text', icon: 'ri-text', items: [
       { type: 'text', label: 'Text Block', icon: 'ri-text' },
+      { type: 'heading', label: 'Heading', icon: 'ri-heading' },
+      { type: 'bullet-list', label: 'Bulleted List', icon: 'ri-list-unordered' },
+      { type: 'numbered-list', label: 'Numbered List', icon: 'ri-list-ordered' },
+      { type: 'table', label: 'Table', icon: 'ri-table-line' },
     ]
   },
   {
@@ -721,12 +749,42 @@ export const TEXT_DEFAULTS = {
   marginTop: 0, marginBottom: 15,
 };
 
+/**
+ * Moves a block so it lands at `toIndex` of the list as it was before the move
+ * (dropping on the block below it at index 3 means "before that block").
+ */
+export const moveBlock = <T extends { id: string }>(blocks: T[], id: string, toIndex: number): T[] => {
+  const from = blocks.findIndex((b) => b.id === id);
+  if (from < 0) return blocks;
+  const target = toIndex > from ? toIndex - 1 : toIndex;
+  if (target === from) return blocks;
+  const next = [...blocks];
+  const [moved] = next.splice(from, 1);
+  next.splice(target, 0, moved);
+  return next;
+};
+
+/**
+ * Heading, lists and table are text blocks with a starting style and content,
+ * so they edit, paginate, take merge fields and sign like any text block.
+ */
+const TEXT_PRESETS: Record<string, { content: string } & Partial<typeof TEXT_DEFAULTS>> = {
+  text: { content: 'Enter text here...' },
+  heading: { content: 'Section heading', fontSize: 18, fontWeight: '800', color: '#0f172a', lineHeight: 1.35, marginTop: 6, marginBottom: 8 },
+  'bullet-list': { content: '<ul><li>First point</li><li>Second point</li><li>Third point</li></ul>' },
+  'numbered-list': { content: '<ol><li>First point</li><li>Second point</li><li>Third point</li></ol>' },
+  table: {
+    content: '<table><thead><tr><th>Item</th><th>Details</th><th>Amount</th></tr></thead>'
+      + '<tbody><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table>',
+  },
+};
+
 export const makeBlock = (paletteType: string) => ({
   id: uid(),
-  type: paletteType === 'text' ? 'text' : paletteType,
+  type: TEXT_PRESETS[paletteType] ? 'text' : paletteType,
   paletteType,
-  content: paletteType === 'text' ? 'Enter text here...' : '',
   ...TEXT_DEFAULTS,
+  ...(TEXT_PRESETS[paletteType] || { content: '' }),
   // parties
   partyALabel: 'Party A', partyBLabel: 'Party B',
   partyLabelColor: '#6366f1', partyLabelSize: 10, partyLabelWeight: '800', partyLabelFamily: 'Inter, sans-serif',
@@ -735,11 +793,18 @@ export const makeBlock = (paletteType: string) => ({
   partyB: [{ id: uid(), type: 'text', content: 'Party B Name Editor...', ...TEXT_DEFAULTS }],
   // logo
   logoSrc: null, logoAlign: 'left', logoWidth: 180, logoFullWidth: false,
+  showSignerName: false,
   // fields
   fieldLabel: (FIELD_DEF as any)[paletteType] || '', fieldRequired: false, fieldPlaceholder: '', spacerHeight: 32,
   // background/extra
   bgColor: 'transparent', bgOpacity: 1, borderRadius: 0, padding: 0,
+  ...(paletteType === 'header' ? HEADER_DEFAULTS : {}),
 });
+
+/** A new Header: a smaller logo, and the company's details right-aligned in small grey text. */
+const HEADER_DEFAULTS = {
+  content: HEADER_CONTENT, logoWidth: 140, fontSize: 11, textAlign: 'right', color: '#64748b', lineHeight: 1.65, marginBottom: 24,
+};
 
 /* ── Demo Template ────────────────────────────────────────────────────────── */
 export const getDemoTemplate = () => [
@@ -752,13 +817,14 @@ export const getDemoTemplate = () => [
     ...makeBlock('parties'),
     partyALabel: 'THE LENDER', partyBLabel: 'THE BORROWER',
     partyLabelColor: '#1e293b',
+    // Merge fields: filled with the agreement owner's and each signer's details when they sign.
     partyA: [
-      { ...makeBlock('text'), content: 'Fintech Solutions Limited', fontWeight: '700', fontSize: 13, marginBottom: 4 },
-      { ...makeBlock('text'), content: 'Corporate Headquarters\n101 Venture Way, Innovation Park\nSilicon Valley, CA 94025\nEmail: settlements@fintech.com', fontSize: 11, color: '#64748b' }
+      { ...makeBlock('text'), content: '{{owner.company_name}}', fontWeight: '700', fontSize: 13, marginBottom: 4 },
+      { ...makeBlock('text'), content: '{{owner.address}}\nEmail: {{owner.email}}\nPhone: {{owner.phone}}', fontSize: 11, color: '#64748b' }
     ],
     partyB: [
-      { ...makeBlock('text'), content: '[Customer Full Name]', fontWeight: '700', fontSize: 13, marginBottom: 4 },
-      { ...makeBlock('text'), content: '[Registered Permanent Address]\n[State, Country, Zip Code]\n[Tax Identification Number]\n[Primary Contact Number]', fontSize: 11, color: '#64748b' }
+      { ...makeBlock('text'), content: '{{signer.name}}', fontWeight: '700', fontSize: 13, marginBottom: 4 },
+      { ...makeBlock('text'), content: '{{signer.business_name}}\n{{signer.business_address}}\nEmail: {{signer.email}}\nPhone: {{signer.phone}}', fontSize: 11, color: '#64748b' }
     ]
   },
   { ...makeBlock('spacer'), spacerHeight: 40 },
@@ -773,6 +839,49 @@ export const getDemoTemplate = () => [
   { ...makeBlock('divider') },
   { ...makeBlock('signature'), fieldLabel: 'AUTHORIZED SIGNER' },
 ];
+
+/* ── Table blocks: rows and columns ────────────────────────────────────── */
+/** Runs `edit` on the first table in a text block's content; content without a table is returned as it is. */
+const editTable = (html: string, edit: (table: HTMLTableElement) => void): string => {
+  const root = document.createElement('div');
+  root.innerHTML = html;
+  const table = root.querySelector('table');
+  if (!table) return html;
+  edit(table);
+  return root.innerHTML;
+};
+
+const bodyRows = (table: HTMLTableElement) => Array.from(table.tBodies[0]?.rows || []);
+const allRows = (table: HTMLTableElement) => Array.from(table.rows);
+
+export const hasTable = (html: string): boolean => /<table[\s>]/i.test(html);
+
+export const addTableRow = (html: string) => editTable(html, (table) => {
+  const rows = bodyRows(table);
+  const columns = rows[0]?.cells.length || table.rows[0]?.cells.length || 1;
+  const row = (table.tBodies[0] || table.createTBody()).insertRow();
+  for (let i = 0; i < columns; i++) row.insertCell().innerHTML = '&nbsp;';
+});
+
+export const removeTableRow = (html: string) => editTable(html, (table) => {
+  const rows = bodyRows(table);
+  if (rows.length > 1) rows[rows.length - 1].remove();
+});
+
+export const addTableColumn = (html: string) => editTable(html, (table) => {
+  allRows(table).forEach((row) => {
+    const isHeader = row.parentElement?.tagName === 'THEAD';
+    const cell = document.createElement(isHeader ? 'th' : 'td');
+    cell.innerHTML = isHeader ? 'Column' : '&nbsp;';
+    row.appendChild(cell);
+  });
+});
+
+export const removeTableColumn = (html: string) => editTable(html, (table) => {
+  allRows(table).forEach((row) => {
+    if (row.cells.length > 1) row.cells[row.cells.length - 1].remove();
+  });
+});
 
 export const COLOR_SWATCHES = [
   '#0f172a', '#1e293b', '#334155', '#475569', '#64748b', '#94a3b8',

@@ -92,4 +92,21 @@ describe('DownloadAgreement (BUG-106)', () => {
 
     expect(await screen.findByText('Not Found Page')).toBeInTheDocument()
   })
+
+  /**
+   * The host's team opens other users' signed agreements here, signed in as
+   * themselves. One made before the server built the record is HTML the
+   * signer's browser sent and may hold a script that would act as the host
+   * user - so it is shown in a frame where no script can run.
+   */
+  it('shows a signed agreement in a frame where no script can run', async () => {
+    serveAgreement({ content_html: '<p>Terms</p><img src=x onerror="steal()">', has_sign: true })
+    renderPage()
+
+    const frame = await screen.findByTitle('Agreement')
+    const sandbox = (frame.getAttribute('sandbox') ?? 'missing').split(/\s+/)
+    expect(sandbox).not.toContain('allow-scripts')
+    // Same origin so the page can size and print it; modals for the print dialog.
+    expect(sandbox).toEqual(expect.arrayContaining(['allow-same-origin', 'allow-modals']))
+  })
 })

@@ -18,6 +18,8 @@ interface RevealableInputProps {
   maxLength?: number
   invalid?: boolean
   disabled?: boolean
+  /** Starts a number held in full masked too - one read from a report, not yet saved (BUG-145). */
+  initiallyHidden?: boolean
 }
 
 /**
@@ -27,9 +29,9 @@ interface RevealableInputProps {
  * input, written out as typed.
  */
 export default function RevealableInput({
-  id, name, value, onChange, onReveal, format, mask, placeholder, maxLength, invalid, disabled,
+  id, name, value, onChange, onReveal, format, mask, placeholder, maxLength, invalid, disabled, initiallyHidden = false,
 }: RevealableInputProps) {
-  const [hidden, setHidden] = useState(false)
+  const [hidden, setHidden] = useState(initiallyHidden)
   const [revealed, setRevealed] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const masked = isMaskedValue(value) || (hidden && value !== '')
