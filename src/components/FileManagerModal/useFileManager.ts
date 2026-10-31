@@ -11,6 +11,10 @@ import {
   fetchFolderTree
 } from '../../modules/filemanager/services'
 import type { FileSystemItem, FileManagerContext } from '../../modules/filemanager/types'
+import { apiErrorMessage } from '../../utils/formUtils'
+
+// Nginx answers a body over client_max_body_size with 413 before the API sees it.
+const HTTP_PAYLOAD_TOO_LARGE = 413
 
 export const useFileManager = (section?: string, initialPath: string = '/', config: { enabled?: boolean } = { enabled: true }, context?: FileManagerContext) => {
   const [files, setFiles] = useState<FileSystemItem[]>([])
@@ -90,7 +94,10 @@ export const useFileManager = (section?: string, initialPath: string = '/', conf
       }
     } catch (error) {
       console.error('Upload failed', error)
-      toast.error('Failed to upload file')
+      // Say why: too large, not a valid image, type not allowed (BUG-014).
+      toast.error((error as any)?.response?.status === HTTP_PAYLOAD_TOO_LARGE
+        ? 'This file is too large to upload.'
+        : apiErrorMessage(error, 'Failed to upload file'))
     }
   }
 

@@ -23,6 +23,7 @@ import { PARTNER_CONFIGURATION_TAB, canManagePartnerConfiguration } from '../../
 import { useAuthStore } from '../../store/auth/authStore';
 import PartnerConfigurationSection from './components/PartnerConfigurationSection';
 import ErrorPage from '../Utility/ErrorPage';
+import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -453,10 +454,10 @@ export default function PartnerProfile() {
                     return;
                 }
 
-                // Validate file size (e.g., 2MB)
-                const maxSize = 1 * 1024 * 1024; // 1MB
+                // The API's picture limit, 5 MB (BUG-014)
+                const maxSize = FILE_MANAGER_CONFIG.MAX_PICTURE_SIZE;
                 if (file.size > maxSize) {
-                    setErrors(prev => ({ ...prev, partner_image: 'The image size must not exceed 1 MB (1024 KB).' }));
+                    setErrors(prev => ({ ...prev, partner_image: `The image size must not exceed ${maxSize / 1024 / 1024} MB.` }));
                     return;
                 }
 

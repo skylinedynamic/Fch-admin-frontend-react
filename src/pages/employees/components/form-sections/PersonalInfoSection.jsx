@@ -5,6 +5,7 @@ import avatarDefault from "../../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../../components/FileManagerModal/FileManagerModal';
 import { toast } from 'react-toastify';
 import { buildStorageUrl } from '../../../../utils/imageHelpers';
+import { FILE_MANAGER_CONFIG } from '../../../../modules/filemanager/config';
 
 
 export default function PersonalInfoSection({
@@ -147,7 +148,7 @@ export default function PersonalInfoSection({
                     <div className="text-center mb-3">
                         <span className="badge bg-light text-muted border text-wrap lh-base px-3 py-2" style={{ whiteSpace: 'normal' }}>
                             <i className="ri-information-line me-1"></i>
-                            Allowed image types: JPG, JPEG, PNG (Maximum size: 1 MB).
+                            Allowed image types: JPG, JPEG, PNG (Maximum size: {FILE_MANAGER_CONFIG.MAX_PICTURE_SIZE / 1024 / 1024} MB).
                         </span>
                     </div>
                     {errors.image && (

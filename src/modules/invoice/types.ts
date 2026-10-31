@@ -25,7 +25,7 @@ export type Invoice = {
     country: string;
     payment_amount: string | number;
     payment_date: string;
-    status: 'Paid' | 'Pending' | 'Overdue' | 'Cancelled' | 'Unpaid' | 'Disputed' | 'Failed';
+    status: 'Paid' | 'Pending' | 'Canceled' | 'Expired' | 'Unpaid' | 'Disputed' | 'Failed' | 'Success' | 'Processing';
     cycle: string;
     created_at: string;
     // Only on the invoice detail response.
