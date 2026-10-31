@@ -5,6 +5,8 @@ interface VisibilityPickerProps {
     value: string
     onChange: (value: string) => void
     error?: string
+    /** Prefix of the element ids, so New Activity and Edit never share them. */
+    idPrefix?: string
 }
 
 /** "Everyone (Including Borrower)": the level, with its note in brackets on a second line. */
@@ -21,16 +23,16 @@ function VisibilityLabel({ label }: { label: string }) {
 }
 
 /** The visibility radios, as one selectable card per level. */
-export default function VisibilityPicker({ options, value, onChange, error }: VisibilityPickerProps) {
+export default function VisibilityPicker({ options, value, onChange, error, idPrefix = 'activity' }: VisibilityPickerProps) {
     return (
         <div className="acm-field">
-            <span className={`form-label d-block ${error ? 'text-danger' : ''}`} id="activityVisibilityLabel">
+            <span className={`form-label d-block ${error ? 'text-danger' : ''}`} id={`${idPrefix}VisibilityLabel`}>
                 Visibility <span className="text-danger">*</span>
             </span>
             <div
                 className={`acm-visibility ${options.length === 4 ? 'has-4' : 'has-3'}`}
                 role="radiogroup"
-                aria-labelledby="activityVisibilityLabel"
+                aria-labelledby={`${idPrefix}VisibilityLabel`}
             >
                 {options.map((opt) => {
                     const checked = value === opt.value
@@ -38,13 +40,13 @@ export default function VisibilityPicker({ options, value, onChange, error }: Vi
                         <label
                             key={opt.value}
                             className={`acm-visibility__option ${checked ? 'is-checked' : ''}`}
-                            htmlFor={`activityVisibility_${opt.value}`}
+                            htmlFor={`${idPrefix}Visibility_${opt.value}`}
                         >
                             <input
                                 className="acm-visibility__input"
                                 type="radio"
                                 name="visibility"
-                                id={`activityVisibility_${opt.value}`}
+                                id={`${idPrefix}Visibility_${opt.value}`}
                                 value={opt.value}
                                 checked={checked}
                                 onChange={(e) => onChange(e.target.value)}

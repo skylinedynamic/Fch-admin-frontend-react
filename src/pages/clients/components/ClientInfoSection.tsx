@@ -273,6 +273,18 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
     }, [fetchedData, clientId]);
 
+    // A partner on a free trial may only add Limited Free Plan clients (BUG-142).
+    // The subscription that says so is fetched after the page loads, so the
+    // one-off sync above can run before it is known: turn the plan on whenever it
+    // is, or the switch is locked off with the paid Enrollment Type open below.
+    useEffect(() => {
+        if (clientId || !isPartnerOnFreeTrial || isFormFreeTrailActive) return;
+        setFormData(prev => ({ ...prev, is_free_trail: true }));
+        if (handleLocationChange) {
+            handleLocationChange('is_free_trail', true);
+        }
+    }, [clientId, isPartnerOnFreeTrial, isFormFreeTrailActive]);
+
     // plan_id now comes directly from the API — no retry/matching effect needed.
 
     // Fetch Users for Assign to dropdown - the client's partner's team, so the
@@ -1373,6 +1385,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 Activate Limited Free Plan
                                             </label>
                                         </div>
+                                        {/* e.g. the API's "Paid Version" answer for a partner on a free trial. */}
+                                        {errors.is_free_trail && <small className="p-error d-block mt-2">{errors.is_free_trail}</small>}
                                     </div>
 
                                 </div>
@@ -1640,6 +1654,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                                                 if (isWLOrCP) {
                                                     const customAmount = currentPaymentAmount;
+                                                    // The partner's fee, said the same way on the Partner Invoice line and in
+                                                    // the note under it: the client's saved fee, else the partner's current one
+                                                    // (only fetched for a new or free-trial client) (BUG-140).
+                                                    const partnerFeeLabel = formData.borrower_fee_amount_formatted
+                                                        || formData.enrollment_details?.borrower_fee_amount_formatted
+                                                        || '$' + fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                                                     return (
                                                         <>
@@ -1696,7 +1716,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                     <i className="ri-shield-user-line text-warning me-1"></i> Partner Invoice:
                                                                 </span>
                                                                 <span className="amount-value text-warning" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                                    {formData.borrower_fee_amount_formatted || (formData.enrollment_details?.borrower_fee_amount_formatted) || ('$' + fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
+                                                                    {partnerFeeLabel}
                                                                 </span>
                                                             </div>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -1708,7 +1728,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                 <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                     <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
+                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, {partnerFeeLabel} is automatically charged to the Partner account immediately.
                                                                 </p>
                                                             </div>
                                                         </>

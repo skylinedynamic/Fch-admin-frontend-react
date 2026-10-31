@@ -15,6 +15,8 @@ import {
   buildTaskAssignmentFields,
   buildTaskEditFields,
   taskAssignmentFromActivity,
+  asksReminderRecipient,
+  buildReminderRecipientField,
 } from '../../../src/modules/activity-log/constants'
 
 describe('visibility field wiring', () => {
@@ -132,21 +134,21 @@ describe('task assignment ("Want to Assign")', () => {
         reference: 'Task',
         assign_task: true,
         assigned_to: 12,
-        task_due_date: '2026-11-02',
+        task_due_date: '2026-11-02 15:30:00',
         task_priority: 'high',
         task_status: 'in_progress',
       })
     ).toEqual({
       assign_task: '1',
       assigned_to: '12',
-      task_due_date: '2026-11-02',
+      task_due_date: '2026-11-02 15:30:00',
       task_priority: 'high',
       task_status: 'in_progress',
     })
   })
 
   it('sends nothing when the switch is off, or the reference is no longer Task', () => {
-    const assigned = { assign_task: true, assigned_to: 12, task_due_date: '2026-11-02', task_priority: 'high', task_status: 'open' }
+    const assigned = { assign_task: true, assigned_to: 12, task_due_date: '2026-11-02 15:30:00', task_priority: 'high', task_status: 'open' }
     expect(buildTaskAssignmentFields({ ...assigned, reference: 'Task', assign_task: false })).toEqual({})
     expect(buildTaskAssignmentFields({ ...assigned, reference: 'Call' })).toEqual({})
   })
@@ -162,7 +164,7 @@ describe('Want to Assign on Edit', () => {
   const savedTask = {
     assigned_to: 12,
     assigned_user: { id: 12, name: 'Avery Staff' },
-    due_date: '2026-11-07',
+    due_date: '2026-11-07 15:30:00',
     priority: 'high' as const,
     priority_label: 'High',
     status: 'in_progress' as const,
@@ -173,7 +175,7 @@ describe('Want to Assign on Edit', () => {
     expect(taskAssignmentFromActivity(savedTask)).toEqual({
       assign_task: true,
       assigned_to: '12',
-      task_due_date: '2026-11-07',
+      task_due_date: '2026-11-07 15:30:00',
       task_priority: 'high',
       task_status: 'in_progress',
     })
@@ -196,13 +198,13 @@ describe('Want to Assign on Edit', () => {
       reference: 'Task',
       assign_task: true,
       assigned_to: '14',
-      task_due_date: '2026-11-07',
+      task_due_date: '2026-11-07 15:30:00',
       task_priority: 'low',
       task_status: 'open',
     })).toEqual({
       assign_task: '1',
       assigned_to: '14',
-      task_due_date: '2026-11-07',
+      task_due_date: '2026-11-07 15:30:00',
       task_priority: 'low',
       task_status: 'open',
     })
@@ -217,5 +219,27 @@ describe('Want to Assign on Edit', () => {
     for (const field of ['assign_task', 'assigned_to', 'task_due_date', 'task_priority', 'task_status']) {
       expect(ACTIVITY_EDIT_ERROR_FIELDS).toContain(field)
     }
+  })
+})
+
+describe('Who gets the reminder', () => {
+  const assignedTaskWithReminder = { reference: 'Task', assign_task: true, remind_me: true }
+
+  it('is asked only when an assigned Task sets a reminder', () => {
+    expect(asksReminderRecipient(assignedTaskWithReminder)).toBe(true)
+    expect(asksReminderRecipient({ ...assignedTaskWithReminder, remind_me: false })).toBe(false)
+    expect(asksReminderRecipient({ ...assignedTaskWithReminder, assign_task: false })).toBe(false)
+    expect(asksReminderRecipient({ ...assignedTaskWithReminder, reference: 'Call' })).toBe(false)
+  })
+
+  it('sends the pick, Both when none was made, and nothing when not asked', () => {
+    expect(buildReminderRecipientField({ ...assignedTaskWithReminder, reminder_recipient: 'creator' })).toEqual({ reminder_recipient: 'creator' })
+    expect(buildReminderRecipientField(assignedTaskWithReminder)).toEqual({ reminder_recipient: 'both' })
+    expect(buildReminderRecipientField({ ...assignedTaskWithReminder, remind_me: false, reminder_recipient: 'creator' })).toEqual({})
+  })
+
+  it("shows the API's message under the picker on both forms", () => {
+    expect(ACTIVITY_CREATE_ERROR_FIELDS).toContain('reminder_recipient')
+    expect(ACTIVITY_EDIT_ERROR_FIELDS).toContain('reminder_recipient')
   })
 })

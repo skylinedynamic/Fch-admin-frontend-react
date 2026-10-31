@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
@@ -28,8 +28,10 @@ import { scrollToFirstError } from '../../utils/formUtils';
  * from those without a user yet; picking one fills in the account details.
  * When the partner is over its seat limit the Users list sends
  * `state.purchase` ({ months, totalPrice }) and the user is created as a paid
- * seat, followed by paying its invoice. Opened directly, Save checks the seat
- * limit itself and offers the same purchase window, keeping what was typed.
+ * seat, followed by paying its invoice. Opened directly at the limit, the
+ * same purchase window opens with the page (closing it goes back to the
+ * list), and Save checks again in case the last seat went meanwhile -
+ * keeping what was typed.
  */
 export default function UserDetails() {
   const { id } = useParams();
@@ -39,7 +41,8 @@ export default function UserDetails() {
   const [purchase, setPurchase] = useState(isCreate ? location.state?.purchase ?? null : null);
   const authUser = useAuthStore((state) => state.user);
   const userSubscription = useAuthStore((state) => state.userSubscription);
-  // The seat check behind Save (BUG-109): the purchase window, or the free-trial notice.
+  // The seat check (BUG-109): the purchase window, or the free-trial notice.
+  // `onOpen` when it came with the page rather than from Save.
   const [seatLimit, setSeatLimit] = useState(null);
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('update users');
@@ -233,11 +236,36 @@ export default function UserDetails() {
     }
   };
 
+  // Opened directly at the limit: the window comes with the page, as the list's + Add User.
+  // It waits for the subscription (free trial or paid decides which window), then runs once.
+  const seatCheckedOnOpen = useRef(false);
+  useEffect(() => {
+    if (!isCreate || authUser?.is_host == 1 || purchase || !userSubscription || seatCheckedOnOpen.current) return;
+    seatCheckedOnOpen.current = true;
+    // Not cancelled on a later subscription refresh: the check runs only once.
+    getUserCount()
+      .then((data) => {
+        const seats = checkSeatLimit(data?.data, authUser, userSubscription);
+        if (seats.status !== 'available') setSeatLimit({ ...seats, onOpen: true });
+      })
+      // Save checks again, and the server checks the limit as well.
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userSubscription]);
+
+  // Closing a window that came with the page goes back to the list: no user can be added.
+  const closeSeatLimit = () => {
+    if (seatLimit?.onOpen) navigate('/users');
+    else setSeatLimit(null);
+  };
+
   const handleSeatPurchase = (months, totalPrice) => {
     const paidSeat = { months, totalPrice };
+    const fromSave = !seatLimit?.onOpen;
     setSeatLimit(null);
     setPurchase(paidSeat);
-    handleCreate(paidSeat);
+    // From Save the form is filled: create now. With the page, fill it in first.
+    if (fromSave) handleCreate(paidSeat);
   };
 
   const handleSaveAccount = async () => {
@@ -540,7 +568,7 @@ export default function UserDetails() {
           <>
             <UserLimitModal
               show={seatLimit?.status === 'purchase'}
-              onHide={() => setSeatLimit(null)}
+              onHide={closeSeatLimit}
               onProceed={handleSeatPurchase}
               userCount={seatLimit?.count ?? 0}
               freeLimit={seatLimit?.limit ?? 0}
@@ -548,7 +576,7 @@ export default function UserDetails() {
             />
             <PaidVersionOnlyModal
               show={seatLimit?.status === 'free_trial'}
-              onHide={() => setSeatLimit(null)}
+              onHide={closeSeatLimit}
               message={
                 <>
                   This feature is available in Paid version. You can only add <strong>{seatLimit?.limit}</strong> users in Free trial.

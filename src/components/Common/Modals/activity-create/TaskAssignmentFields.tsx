@@ -81,8 +81,7 @@ export default function TaskAssignmentFields({ values, onChange, staff, isLoadin
                     onChange={(value) => onChange('task_due_date', value)}
                     minDate={startOfToday()}
                     invalid={!!errors.task_due_date}
-                    placeholder="Select due date"
-                    withTime={false}
+                    placeholder="Select due date & time"
                 />
                 {errors.task_due_date && <div className="text-danger mt-1 small">{errors.task_due_date[0]}</div>}
             </div>

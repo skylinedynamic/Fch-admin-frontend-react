@@ -3,12 +3,17 @@ import React, { useState, useEffect, useRef } from 'react';
 // @ts-expect-error -- untyped third-party module, used only as a constructor below
 import Modal from 'bootstrap/js/dist/modal';
 import { toast } from 'react-toastify';
-import { apiClient as api } from '../../../lib/http/apiClient';
 import { Skeleton } from 'primereact/skeleton';
 import '../../../../assets/css/reminder.css';
+import './reminderViewModal.css';
 import {
-    isReminderMissed,
+    isSilentReminder,
+    REMINDER_STATUS_PENDING,
+    REMINDER_STATUS_SENT,
+    REMINDER_TYPE_TONES,
+    getEffectiveReminderStatusBadgeClasses,
     getEffectiveReminderStatusLabel,
+    getReminderTypeIcon,
     formatSnoozeMinutes,
     ReminderClient,
     ReminderRelated,
@@ -20,35 +25,34 @@ import { ReminderRescheduleForm } from '../ReminderRescheduleForm';
 import ReminderClientCard from '../ReminderClientCard';
 import ReminderSnoozeForm, { ReminderSnoozeErrors } from '../ReminderSnoozeForm';
 import ReminderAttachments from '../ReminderAttachments';
+import ReminderTaskStatus from '../ReminderTaskStatus';
+import type { TaskStatus } from '../../../config/activityTask';
 import ActivityEditModal from './ActivityEditModal';
-import { getActivityLog } from '../../../modules/activity-log/services';
+import { useFetchActivityLog } from '../../../modules/activity-log';
+import { useDismissReminder, useSnoozeReminder } from '../../../modules/reminders';
 
 interface ReminderViewModalProps {
     show: boolean;
     onHide: () => void;
     onSuccess?: () => void;
+    /** The task's status was changed here - the list updates its row. */
+    onTaskStatusChanged?: (reminderId: number, status: TaskStatus) => void;
     reminder: Reminder | null;
 }
 
-/* ── DetailItem ──────────────────────────────────────── */
-const DetailItem = ({ icon, label, value, className }: any) => (
-    <div className={`col-6 ${className || ''}`}>
-        <div className="d-flex align-items-center">
-            <div className="flex-shrink-0 me-2">
-                <div className="reminder-detail-icon-circle">
-                    <i className={`${icon} fs-15 text-primary`}></i>
-                </div>
-            </div>
-            <div className="flex-grow-1 overflow-hidden">
-                <p className="text-muted mb-0 fw-bold reminder-detail-label">{label}</p>
-                <div className="fw-bold text-dark reminder-detail-value">{value}</div>
-            </div>
+/* ── ScheduleItem: one "when" of the Schedule card ───── */
+const ScheduleItem = ({ icon, label, date, time }: { icon: string; label: string; date: string; time: string }) => (
+    <div className="rvm-schedule__item">
+        <span className="rvm-schedule__icon" aria-hidden="true"><i className={icon}></i></span>
+        <div className="min-w-0">
+            <div className="rvm-label">{label}</div>
+            <div className="rvm-schedule__value">{`${date} · ${time}`}</div>
         </div>
     </div>
 );
 
 /* ── Modal ───────────────────────────────────────────── */
-export default function ReminderViewModal({ show, onHide, onSuccess, reminder }: ReminderViewModalProps) {
+export default function ReminderViewModal({ show, onHide, onSuccess, onTaskStatusChanged, reminder }: ReminderViewModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<any>(null);
     const [loadingDismiss, setLoadingDismiss] = useState(false);
@@ -93,11 +97,15 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
 
     /* derived values */
     const typeStr = reminder?.reference || 'Activity';
-    // Same "missed" definition as the due-reminder popup: the activity's own
-    // date/time already passed, and only an actionable (pending/sent)
-    // reminder can be missed — a dismissed one is just dismissed.
-    const missed = reminder ? isReminderMissed(reminder) : false;
-    const actionable = reminder?.status === 'pending' || reminder?.status === 'sent';
+    const typeKey = reminder?.reference_type || reminder?.reference || '';
+    const typeTone = REMINDER_TYPE_TONES[typeKey] ?? 'primary';
+    const fetchActivityLog = useFetchActivityLog();
+    const actionable = reminder?.status === REMINDER_STATUS_PENDING || reminder?.status === REMINDER_STATUS_SENT;
+    const dismissMutation = useDismissReminder();
+    const snoozeMutation = useSnoozeReminder();
+    // An assigned Task's date is its creator's to move - its assignee only snoozes or dismisses.
+    const canReschedule = reminder?.can_reschedule !== false;
+    const actionCol = canReschedule ? 'col-4' : 'col-6';
 
     // All dates/times are formatted by the API (toTimezone) in the viewer's
     // timezone and shown as-is. Activity = when the call/task is scheduled;
@@ -113,8 +121,8 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
         if (!reminder) return;
         setLoadingDismiss(true);
         try {
-            const res = await api.post(`/common/reminders/${reminder.id}/dismiss`);
-            toast.success(res.data?.message || 'Reminder dismissed successfully');
+            const res = await dismissMutation.mutateAsync(reminder.id);
+            toast.success(res?.message || 'Reminder dismissed successfully');
             if (onSuccess) onSuccess();
             onHide();
         } catch (err: any) {
@@ -131,12 +139,11 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
         if (!reminder) return;
         setLoadingReschedule(true);
         try {
-            const res = await api.post(`/common/reminders/${reminder.id}/snooze`, {
-                reschedule_at: rescheduleAt,
-                lead_minutes: leadMinutes,
-                note: note || null,
+            const res = await snoozeMutation.mutateAsync({
+                id: reminder.id,
+                payload: { reschedule_at: rescheduleAt, lead_minutes: leadMinutes, note: note || null },
             });
-            toast.success(res.data?.message || 'Reminder rescheduled successfully');
+            toast.success(res?.message || 'Reminder rescheduled successfully');
             setShowReschedule(false);
             if (onSuccess) onSuccess();
             onHide();
@@ -156,11 +163,8 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
         setLoadingSnooze(true);
         setSnoozeErrors(null);
         try {
-            const res = await api.post(`/common/reminders/${reminder.id}/snooze`, {
-                minutes,
-                note: note || null,
-            });
-            toast.success(res.data?.message || 'Reminder snoozed successfully');
+            const res = await snoozeMutation.mutateAsync({ id: reminder.id, payload: { minutes, note: note || null } });
+            toast.success(res?.message || 'Reminder snoozed successfully');
             setShowSnooze(false);
             if (onSuccess) onSuccess();
             onHide();
@@ -180,7 +184,7 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
         if (!reminder?.activity_log_id) return;
         setLoadingEdit(true);
         try {
-            const res: any = await getActivityLog(reminder.activity_log_id);
+            const res: any = await fetchActivityLog(reminder.activity_log_id);
             setEditingActivity(res?.data ?? res);
             onHide();
         } catch (err: any) {
@@ -209,14 +213,25 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                 <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable reminder-view-modal-dialog">
                     <div className="modal-content border-0 shadow-lg">
 
-                        {/* Header */}
-                        <div className="modal-header p-3 bg-info-subtle border-0">
-                            <h5 className="modal-title d-flex align-items-center gap-2">
-                                <i className="ri-calendar-todo-line text-info fs-18"></i>
-                                Task &amp; Reminder Details
-                            </h5>
+                        {/* Header: the type, the title and where the reminder stands */}
+                        <header className="modal-header rvm-header" role="banner" aria-labelledby="reminderViewTitle">
+                            <span className={`rvm-header__icon bg-${typeTone}-subtle text-${typeTone}`} aria-hidden="true">
+                                <i className={reminder ? getReminderTypeIcon(typeKey) : 'ri-calendar-todo-line'}></i>
+                            </span>
+                            <div className="flex-grow-1 min-w-0">
+                                <h5 className="modal-title rvm-header__title" id="reminderViewTitle">Task &amp; Reminder Details</h5>
+                                {reminder && (
+                                    <div className="rvm-header__meta">
+                                        <span className={`text-${typeTone} fw-semibold`}>{typeStr}</span>
+                                        <span className={`badge rvm-status ${getEffectiveReminderStatusBadgeClasses(reminder)}`}>
+                                            <span className="rvm-status__dot" aria-hidden="true"></span>
+                                            {getEffectiveReminderStatusLabel(reminder)}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                             <button type="button" className="btn-close" onClick={onHide} aria-label="Close"></button>
-                        </div>
+                        </header>
 
                         {/* Body */}
                         <div className="modal-body reminder-view-modal-body">
@@ -247,84 +262,69 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                             ) : (
                                 <div>
                                     {/* Subject */}
-                                    <div className="mb-3">
-                                        <div className="d-flex align-items-start justify-content-between gap-2 mb-1 flex-wrap">
-                                            <label className="text-muted fs-11 text-uppercase fw-bold mb-0">Subject</label>
-                                            <span className="badge rounded-pill px-2 bg-primary-subtle text-primary fw-bold fs-11">
-                                                {typeStr.toUpperCase()}
-                                            </span>
+                                    <section className="rvm-section">
+                                        <div className="rvm-label">Subject</div>
+                                        <h4 className="rvm-subject">{reminder.summary || 'Activity'}</h4>
+                                    </section>
+
+                                    {/* The creator's copy of a task only its assignee is reminded of. */}
+                                    {isSilentReminder(reminder) && (
+                                        <div className="alert alert-light border d-flex align-items-start gap-2 fs-13 py-2 mb-3">
+                                            <i className="ri-notification-off-line fs-16 text-muted" aria-hidden="true"></i>
+                                            <span>You won't get a popup for this task — only the assignee is reminded. It is listed here so you can follow it.</span>
                                         </div>
-                                        <h4 className="fw-bold mb-2 text-dark fs-16 fs-md-18 text-break">{reminder.summary || 'Activity'}</h4>
-                                        {/* Activity Date + Time inline */}
-                                        <div className="d-flex flex-wrap align-items-center gap-2 fs-13 text-muted fw-medium">
-                                            <span>
-                                                <i className="ri-calendar-event-line me-1 text-primary"></i>
-                                                {activityDateStr}
-                                            </span>
-                                            <span className="text-muted">•</span>
-                                            <span>
-                                                <i className="ri-time-line me-1 text-primary"></i>
-                                                {activityTimeStr}
-                                            </span>
+                                    )}
+
+                                    {/* When: the activity, and the reminder before it */}
+                                    <section className="rvm-section">
+                                        <div className="rvm-schedule" role="group" aria-label="Schedule">
+                                            <ScheduleItem icon="ri-calendar-event-line" label="Activity" date={activityDateStr} time={activityTimeStr} />
+                                            <ScheduleItem icon="ri-alarm-line" label="Reminder" date={reminderDateStr} time={reminderTimeStr} />
                                         </div>
-                                    </div>
+                                    </section>
 
                                     {/* Who this reminder is for */}
-                                    <div className="mt-3">
-                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block">{reminder.client?.type_label || 'Client'}</label>
+                                    <section className="rvm-section">
+                                        <div className="rvm-label mb-2">{reminder.client?.type_label || 'Client'}</div>
                                         <ReminderClientCard client={reminder.client} onNavigate={onHide} />
-                                    </div>
+                                    </section>
 
-                                    <hr className="border-dashed my-3" />
-
-                                    {/* Description */}
+                                    {/* Description: 4 lines, then See more */}
                                     {rawDescription ? (
-                                        <div className="mb-3">
-                                            <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block">Description</label>
-                                            <div className="bg-white rounded-3 border border-light-subtle reminder-description-box">
-                                                {/* Collapsed: exactly 4 lines via CSS line-clamp — clean cut, no blur */}
-                                                {!expanded ? (
-                                                    <div
-                                                        className="text-dark fs-14 reminder-description-collapsed"
-                                                        dangerouslySetInnerHTML={{ __html: rawDescription }}
-                                                    />
-                                                ) : (
-                                                    /* Expanded: full text */
-                                                    <div
-                                                        className="text-dark fs-14 reminder-description-expanded"
-                                                        dangerouslySetInnerHTML={{ __html: rawDescription }}
-                                                    />
-                                                )}
-                                                {/* See more / See less — always below text, clear gap */}
+                                        <section className="rvm-section">
+                                            <div className="rvm-label mb-2">Description</div>
+                                            <div className="rvm-description">
+                                                <div
+                                                    className={`text-dark fs-14 ${expanded ? 'reminder-description-expanded' : 'reminder-description-collapsed'}`}
+                                                    dangerouslySetInnerHTML={{ __html: rawDescription }}
+                                                />
                                                 {needsExpansion && (
-                                                    <div className="mt-2 pt-1 border-top border-light">
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-link p-0 fs-12 fw-semibold text-primary text-decoration-none shadow-none d-flex align-items-center gap-1"
-                                                            onClick={() => setExpanded(v => !v)}
-                                                        >
-                                                            {expanded
-                                                                ? <><i className="ri-arrow-up-s-line fs-14"></i> See less</>
-                                                                : <><i className="ri-arrow-down-s-line fs-14"></i> See more</>
-                                                            }
-                                                        </button>
-                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-link p-0 mt-2 fs-12 fw-semibold text-primary text-decoration-none shadow-none d-flex align-items-center gap-1"
+                                                        onClick={() => setExpanded(v => !v)}
+                                                    >
+                                                        {expanded
+                                                            ? <><i className="ri-arrow-up-s-line fs-14"></i> See less</>
+                                                            : <><i className="ri-arrow-down-s-line fs-14"></i> See more</>
+                                                        }
+                                                    </button>
                                                 )}
                                             </div>
-                                        </div>
+                                        </section>
                                     ) : null}
 
-                                    {/* Details grid: 4 items */}
-                                    <div className="row g-3 mb-3">
-                                        <DetailItem icon="ri-calendar-event-line" label="Activity Date" value={activityDateStr} />
-                                        <DetailItem icon="ri-time-line" label="Activity Time" value={activityTimeStr} />
-                                        <DetailItem icon="ri-alarm-line" label="Reminder Date" value={reminderDateStr} />
-                                        <DetailItem icon="ri-alarm-line" label="Reminder Time" value={reminderTimeStr} />
-                                        <DetailItem icon="ri-checkbox-circle-line" label="Status" value={<span className={missed ? 'text-danger' : ''}>{getEffectiveReminderStatusLabel(reminder)}</span>} />
-                                        {reminder.attachments && reminder.attachments.length > 0 && (
-                                            <DetailItem icon="ri-attachment-2" label="Attachments" value={reminder.attachments.length === 1 ? '1 file' : `${reminder.attachments.length} files`} />
-                                        )}
-                                    </div>
+                                    {/* An assigned Task: its creator or assignee can move it along here. */}
+                                    {reminder.task && reminder.activity_log_id && (
+                                        <ReminderTaskStatus
+                                            key={reminder.id}
+                                            activityLogId={reminder.activity_log_id}
+                                            task={reminder.task}
+                                            canUpdate={!!reminder.task_can_update_status}
+                                            summary={reminder.summary}
+                                            onChanged={(status) => onTaskStatusChanged?.(reminder.id, status)}
+                                        />
+                                    )}
 
                                     {/* Attachments list */}
                                     <ReminderAttachments reminderId={reminder.id} attachments={reminder.attachments} />
@@ -362,10 +362,10 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
 
                                     {/* Same layout as the due-reminder popup: Snooze | Reschedule | Dismiss as
                                     three equal buttons, the panel below them, then Edit | Close. */}
-                                    <div className="mt-3 pt-3 border-top reminder-details-divider">
+                                    <div className="rvm-actions">
                                         {actionable && (
                                             <div className="row g-2">
-                                                <div className="col-4">
+                                                <div className={actionCol}>
                                                     <button
                                                         type="button"
                                                         className={`btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary ${showSnooze ? 'is-active' : ''}`}
@@ -375,17 +375,19 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                                                         <i className="ri-timer-line me-2 fs-16"></i> Snooze
                                                     </button>
                                                 </div>
-                                                <div className="col-4">
-                                                    <button
-                                                        type="button"
-                                                        className={`btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary ${showReschedule ? 'is-active' : ''}`}
-                                                        onClick={() => { setShowSnooze(false); setShowReschedule((v) => !v); }}
-                                                        disabled={busy}
-                                                    >
-                                                        <i className="ri-calendar-event-line me-2 fs-16"></i> Reschedule
-                                                    </button>
-                                                </div>
-                                                <div className="col-4">
+                                                {canReschedule && (
+                                                    <div className="col-4">
+                                                        <button
+                                                            type="button"
+                                                            className={`btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-reminder-secondary ${showReschedule ? 'is-active' : ''}`}
+                                                            onClick={() => { setShowSnooze(false); setShowReschedule((v) => !v); }}
+                                                            disabled={busy}
+                                                        >
+                                                            <i className="ri-calendar-event-line me-2 fs-16"></i> Reschedule
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                <div className={actionCol}>
                                                     <button
                                                         type="button"
                                                         className="btn w-100 fw-semibold d-flex align-items-center justify-content-center btn-light"
@@ -411,7 +413,7 @@ export default function ReminderViewModal({ show, onHide, onSuccess, reminder }:
                                             </div>
                                         )}
 
-                                        {actionable && showReschedule && (
+                                        {actionable && canReschedule && showReschedule && (
                                             <div className="mt-3">
                                                 <ReminderRescheduleForm
                                                     loading={loadingReschedule}

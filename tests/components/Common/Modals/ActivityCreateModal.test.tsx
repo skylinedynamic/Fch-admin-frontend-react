@@ -164,7 +164,7 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
     expect(assignSwitch()).not.toBeInTheDocument()
   })
 
-  it('opens Assigned To, Due Date, Priority and Status below the reminder, with the defaults from config', async () => {
+  it('opens Assigned To, Due Date, Priority and Status above the reminder, with the defaults from config', async () => {
     renderOpen()
     pickReference('Task')
 
@@ -173,12 +173,13 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
 
     const assignedTo = document.getElementById('activityAssignedTo')!
     await waitFor(() => expect(assignedTo).toHaveTextContent('Select staff member'))
-    expect(document.getElementById('activityTaskDueAt')).toHaveAttribute('placeholder', 'Select due date')
+    expect(document.getElementById('activityTaskDueAt')).toHaveAttribute('placeholder', 'Select due date & time')
     expect(document.getElementById('activityTaskPriority')).toHaveTextContent('Medium')
     expect(document.getElementById('activityTaskStatus')).toHaveTextContent('Open')
 
+    // On a Task, Set Reminder comes after Want to Assign.
     const reminderSwitch = screen.getByRole('switch', { name: 'Set Reminder', hidden: true })
-    expect(reminderSwitch.compareDocumentPosition(assignedTo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(assignedTo.compareDocumentPosition(reminderSwitch) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('lists the staff of the partner that owns the record', async () => {
@@ -234,7 +235,7 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
     expect(document.getElementById('activityTaskOwner')).toHaveTextContent('Borrower Assign to')
   })
 
-  it('sends who, the due day, priority and status with the new Task', async () => {
+  it('sends who, the due date and time, priority and status with the new Task', async () => {
     const sent = captureCreate()
 
     renderOpen()
@@ -247,13 +248,13 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
     pick('activityAssignedTo', 'Blake Ops')
     pick('activityTaskPriority', 'High')
     pick('activityTaskStatus', 'In Progress')
-    // Typed the way the picker displays it (dd M, yy) - a day, no time.
-    fireEvent.input(document.getElementById('activityTaskDueAt')!, { target: { value: '02 Nov, 2030' } })
+    // Typed the way the picker displays it (dd M, yy hh:mm a).
+    fireEvent.input(document.getElementById('activityTaskDueAt')!, { target: { value: '02 Nov, 2030 03:30 PM' } })
 
     fireEvent.click(screen.getByRole('button', { name: /create/i, hidden: true }))
 
     await waitFor(() => expect(sent.body).not.toBeNull())
-    expect(sent.body!.get('task_due_date')).toBe('2030-11-02')
+    expect(sent.body!.get('task_due_date')).toBe('2030-11-02 15:30:00')
     expect(sent.body!.get('reference')).toBe('Task')
     expect(sent.body!.get('assign_task')).toBe('1')
     expect(sent.body!.get('assigned_to')).toBe('14')
@@ -336,5 +337,64 @@ describe('ActivityCreateModal "Want to Assign" (Task)', () => {
 
     expect(await screen.findByText('The category is not valid.')).toHaveClass('alert-danger')
     expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  describe('Who gets the reminder', () => {
+    const reminderSwitch = () => screen.getByRole('switch', { name: 'Set Reminder', hidden: true })
+    const recipientGroup = () => screen.queryByRole('radiogroup', { name: 'Who gets the reminder', hidden: true })
+
+    async function openAssignedTaskWithReminder() {
+      renderOpen()
+      pickReference('Task')
+      // The date defaults to now (BUG-057); the reminder before it must be ahead
+      typeFutureActivityDate()
+      fireEvent.change(document.getElementById('activitySummary')!, { target: { name: 'summary', value: 'Collect bank statements' } })
+      fireEvent.click(assignSwitch()!)
+      await waitFor(() => expect(document.getElementById('activityAssignedTo')).not.toBeDisabled())
+      pick('activityAssignedTo', 'Blake Ops')
+      fireEvent.input(document.getElementById('activityTaskDueAt')!, { target: { value: '02 Nov, 2030 03:30 PM' } })
+      fireEvent.click(reminderSwitch())
+    }
+
+    it('offers Me, Assignee and Both on an assigned Task, Both picked', async () => {
+      await openAssignedTaskWithReminder()
+
+      expect(recipientGroup()).toBeInTheDocument()
+      expect(screen.getByLabelText('Me')).not.toBeChecked()
+      expect(screen.getByLabelText('Assignee')).not.toBeChecked()
+      expect(screen.getByLabelText('Both')).toBeChecked()
+    })
+
+    it('is not offered until the Task is assigned', () => {
+      renderOpen()
+      pickReference('Task')
+      fireEvent.click(reminderSwitch())
+
+      expect(recipientGroup()).not.toBeInTheDocument()
+    })
+
+    it('sends the pick with the reminder', async () => {
+      const sent = captureCreate()
+      await openAssignedTaskWithReminder()
+
+      fireEvent.click(screen.getByLabelText('Assignee'))
+      fireEvent.click(screen.getByRole('button', { name: /create/i, hidden: true }))
+
+      await waitFor(() => expect(sent.body).not.toBeNull())
+      expect(sent.body!.get('remind_me')).toBe('1')
+      expect(sent.body!.get('reminder_recipient')).toBe('assignee')
+    })
+
+    it('sends no pick without a reminder or an assignment', async () => {
+      const sent = captureCreate()
+      renderOpen()
+      pickReference('Task')
+      typeFutureActivityDate()
+      fireEvent.click(reminderSwitch())
+      fireEvent.click(screen.getByRole('button', { name: /create/i, hidden: true }))
+
+      await waitFor(() => expect(sent.body).not.toBeNull())
+      expect(sent.body!.has('reminder_recipient')).toBe(false)
+    })
   })
 })

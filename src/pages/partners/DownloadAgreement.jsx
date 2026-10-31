@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchSignedAgreementHtml } from '../../modules/agreement/services';
+import { fetchSignedAgreementHtml, cancelAgreementSign } from '../../modules/agreement/services';
 import { toast } from 'react-toastify';
+import ConfirmationModal from '../../components/Common/Modals/ConfirmationModal';
+import { AGREEMENT_VIEW_TEXT } from '../../config/agreementView';
 import builderCss from "../../../assets/css/agreement-builder.css?raw";
 import "../../../assets/css/agreement-builder.css";
 
@@ -9,6 +11,11 @@ const DownloadAgreement = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
+    // 'ready' (the signed copy), 'not_signed', 'missing' (marked signed, no
+    // copy - BUG-106) or 'resigned' (Re-sign done).
+    const [view, setView] = useState('ready');
+    const [showResign, setShowResign] = useState(false);
+    const [resigning, setResigning] = useState(false);
     const iframeRef = useRef(null);
 
     useEffect(() => {
@@ -21,7 +28,10 @@ const DownloadAgreement = () => {
             .then(res => {
                 let html = res?.data?.content_html;
                 if (!html) {
-                    navigate('/not-found');
+                    // No signed copy: say so rather than a 404 page (BUG-106).
+                    const missing = !!res?.data?.has_sign;
+                    setView(missing ? 'missing' : 'not_signed');
+                    setShowResign(missing);
                     return;
                 }
 
@@ -237,6 +247,27 @@ const DownloadAgreement = () => {
         iframeRef.current?.contentWindow?.print();
     };
 
+    const handleResign = async () => {
+        setResigning(true);
+        try {
+            await cancelAgreementSign(userId);
+            setShowResign(false);
+            setView('resigned');
+        } catch (err) {
+            if (err?.response?.status !== 403) {
+                toast.error(err?.response?.data?.message || 'Failed to clear the signed status');
+            }
+        } finally {
+            setResigning(false);
+        }
+    };
+
+    const notice = {
+        not_signed: { icon: 'ri-file-forbid-line', title: AGREEMENT_VIEW_TEXT.notSignedTitle, body: AGREEMENT_VIEW_TEXT.notSignedBody },
+        missing: { icon: 'ri-file-warning-line', title: AGREEMENT_VIEW_TEXT.missingTitle, body: AGREEMENT_VIEW_TEXT.missingBody },
+        resigned: { icon: 'ri-checkbox-circle-line', title: AGREEMENT_VIEW_TEXT.resignDoneTitle, body: AGREEMENT_VIEW_TEXT.resignDoneBody },
+    }[view];
+
     return (
         <div className="da-page">
             <style>{`
@@ -304,23 +335,53 @@ const DownloadAgreement = () => {
                 </div>
             )}
 
-            <div className="da-toolbar" style={loading ? { visibility: 'hidden' } : {}}>
-                <div className="da-toolbar-brand">
-                    <i className="ri-shield-check-fill" />
-                    <span>VERIFIED AGREEMENT</span>
+            {notice ? (
+                <div className="da-body">
+                    <div className="card border shadow-none mx-auto mt-5 text-center" style={{ maxWidth: 520 }}>
+                        <div className="card-body p-4">
+                            <i className={`${notice.icon} display-5 text-muted`} />
+                            <h5 className="fw-semibold mt-3 mb-2">{notice.title}</h5>
+                            <p className="text-muted mb-0">{notice.body}</p>
+                            {view === 'missing' && (
+                                <button type="button" className="btn btn-primary mt-3" onClick={() => setShowResign(true)}>
+                                    {AGREEMENT_VIEW_TEXT.resignButton}
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
-                <button className="da-print-btn" onClick={handlePrint}>
-                    <i className="ri-download-cloud-2-fill" />
-                    Print or Download PDF
-                </button>
-            </div>
+            ) : (
+                <>
+                    <div className="da-toolbar" style={loading ? { visibility: 'hidden' } : {}}>
+                        <div className="da-toolbar-brand">
+                            <i className="ri-shield-check-fill" />
+                            <span>VERIFIED AGREEMENT</span>
+                        </div>
+                        <button className="da-print-btn" onClick={handlePrint}>
+                            <i className="ri-download-cloud-2-fill" />
+                            Print or Download PDF
+                        </button>
+                    </div>
 
-            <div className="da-body">
-                <div className="da-sheet">
-                    {/* No scripts: an older signed agreement is HTML the signer's browser sent. Same origin to size and print it. */}
-                    <iframe ref={iframeRef} title="Agreement" scrolling="no" className="da-iframe" sandbox="allow-same-origin allow-modals" />
-                </div>
-            </div>
+                    <div className="da-body">
+                        <div className="da-sheet">
+                            {/* No scripts: an older signed agreement is HTML the signer's browser sent. Same origin to size and print it. */}
+                            <iframe ref={iframeRef} title="Agreement" scrolling="no" className="da-iframe" sandbox="allow-same-origin allow-modals" />
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Always mounted: unmounting mid-hide breaks Bootstrap's transition. */}
+            <ConfirmationModal
+                show={showResign}
+                onHide={() => setShowResign(false)}
+                onConfirm={handleResign}
+                loading={resigning}
+                title={AGREEMENT_VIEW_TEXT.missingTitle}
+                message={AGREEMENT_VIEW_TEXT.missingBody}
+                confirmText={AGREEMENT_VIEW_TEXT.resignButton}
+            />
 
         </div>
     );
