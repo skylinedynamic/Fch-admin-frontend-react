@@ -185,3 +185,9 @@ export const FREE_PLAN_FILTER_OPTIONS = [
 
 /** The currency a client's business financials use until one is chosen (BUG-077). */
 export const DEFAULT_BORROWER_CURRENCY = 'USD';
+
+/**
+ * A borrower's age range on the client date-of-birth picker (BUG-005). The API
+ * refuses anything outside it (fch-api config borrower.date_of_birth).
+ */
+export const BORROWER_AGE = { MIN: 18, MAX: 120 } as const;

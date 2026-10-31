@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo } from 'react';
 import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
@@ -22,6 +22,7 @@ import type { Client, BorrowerPlan, RevealableClientField } from '../../../modul
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
+import { dateOfBirthBounds } from '../../../utils/dates';
 import { locationData } from '../../../modules/location';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers, getPartnerBorrowerFee } from '../../../modules/partner/services';
@@ -495,6 +496,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const isEditorEnabled = !isFetching && isSynced;
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange, {}, isEditorEnabled);
 
+    // Stable across renders: a new viewDate each render would reset the open picker.
+    const dobBounds = useMemo(() => dateOfBirthBounds(), []);
+
     // Date Robust Parsing
     const parseDate = (dateStr: any) => {
         if (!dateStr) return undefined;
@@ -908,7 +912,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                     handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
                                 }}
                                 dateFormat="dd M, yy"
-                                maxDate={new Date()}
+                                // 18 to 120 years old, as the API checks (BUG-005).
+                                minDate={dobBounds.minDate}
+                                maxDate={dobBounds.maxDate}
+                                viewDate={formData.date_of_birth ? undefined : dobBounds.maxDate}
                                 placeholder="Select date"
                                 showIcon
                                 className="w-100"

@@ -18,16 +18,19 @@ const defaultFinancialsState = DEFAULT_CLIENT_STATE;
 
 const formatNumber = (val: any) => {
     if (val === null || val === undefined || val === '') return '';
+    // A leading minus is kept, not stripped: -500 used to be saved as 500
+    // (BUG-006). The API refuses a negative amount and its message shows here.
+    const sign = String(val).trim().startsWith('-') ? '-' : '';
     // Remove all non-numeric characters except decimal point
     const strVal = String(val).replace(/[^0-9.]/g, '');
-    if (strVal === '') return '';
+    if (strVal === '') return sign;
 
     const parts = strVal.split('.');
     // Limit to one decimal point
     if (parts.length > 2) return val;
 
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return parts.join('.');
+    return sign + parts.join('.');
 };
 
 const unformatNumber = (val: any) => {
