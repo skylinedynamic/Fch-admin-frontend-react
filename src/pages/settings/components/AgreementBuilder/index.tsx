@@ -87,6 +87,11 @@ const AgreementBuilder: React.FC = () => {
     }, []);
     const history = useBuilderHistory(snapshot, applySnapshot);
     const [baseline, setBaseline] = useState<string | null>(null);
+    // Each open of the builder loads the agreement afresh. Until it has, the
+    // loader shows: the blocks rendered before the load are swapped for the
+    // loaded ones (new ids), so anything done to them would be lost.
+    const [openCount, setOpenCount] = useState(0);
+    const [loadedOpen, setLoadedOpen] = useState(-1);
     const [savedThisSession, setSavedThisSession] = useState(false);
     const [confirming, setConfirming] = useState<'clear' | 'close' | null>(null);
     const [pickingTemplate, setPickingTemplate] = useState(false);
@@ -104,6 +109,7 @@ const AgreementBuilder: React.FC = () => {
         applySnapshot(loaded);
         history.reset(loaded);
         setBaseline(JSON.stringify(loaded));
+        setLoadedOpen(openCount);
     };
 
     // Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y - except while typing, where the browser's own undo applies.
@@ -149,7 +155,7 @@ const AgreementBuilder: React.FC = () => {
             // Nothing saved yet: start from the master agreement for this type.
             loadSnapshot({ blocks: defaultTemplateFor(editingType), pagePad: 80, docBg: '#ffffff' });
         }
-    }, [savedAgreement, editingType]);
+    }, [savedAgreement, editingType, openCount]);
 
     const findBlock = (id: string | null, list: AgreementBlock[] = blocks): AgreementBlock | null => {
         if (!id) return null;
@@ -236,6 +242,7 @@ const AgreementBuilder: React.FC = () => {
     const handleEdit = (type: 'partner' | 'borrower') => {
         setEditingType(type);
         setBlocks(type === 'partner' ? partnerBlocks : borrowerBlocks);
+        setOpenCount((c) => c + 1);
         setScreen('builder');
     };
 
@@ -269,7 +276,7 @@ const AgreementBuilder: React.FC = () => {
         return <AgreementDashboard onEdit={handleEdit} />;
     }
 
-    const editor = loadingAgreement ? <AgreementBuilderLoader /> : (
+    const editor = loadingAgreement || loadedOpen !== openCount ? <AgreementBuilderLoader /> : (
         <div
             className={`ab4-root fade-panel ${dragging ? 'ab4-root--dragging' : ''}`}
             // While a block or palette item is dragged, the gaps between blocks get a hit area.
