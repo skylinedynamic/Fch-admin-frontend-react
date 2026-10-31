@@ -3,7 +3,8 @@ export const FILE_MANAGER_CONFIG = {
   MAX_NAME_LENGTH: 20,
   ALLOWED_EXTENSIONS: [
     // Images
-    'jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'bmp', 'heic', 'tiff', 'tif', 'ico', 'avif',
+    // No SVG: it can carry a script, and the API refuses it (BUG-015).
+    'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'tiff', 'tif', 'ico', 'avif',
 
     // Documents
     'doc', 'docx', 'pdf', 'txt', 'rtf', 'odt',
