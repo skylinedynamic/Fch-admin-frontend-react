@@ -33,7 +33,7 @@ const TASK_ROW = {
   is_manual: true,
   visibility: 'private',
   properties: { reference: 'Task', subject: 'Collect bank statements' },
-  task: { assigned_to: 12, assigned_user: { id: 12, name: 'Avery Staff' }, due_date: '2030-11-07', priority: 'high', priority_label: 'High', status: 'open', status_label: 'Open' },
+  task: { assigned_to: 12, assigned_user: { id: 12, name: 'Avery Staff' }, due_date: '2030-11-07 15:30:00', priority: 'high', priority_label: 'High', status: 'open', status_label: 'Open' },
 }
 
 const props = {

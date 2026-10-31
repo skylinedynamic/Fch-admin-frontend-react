@@ -1,11 +1,24 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { allUsers } from '../partner/services';
+import { getActivityLog, updateActivityTaskStatus } from './services';
 
 export const activityLogKeys = {
     all: ['activity-log'] as const,
     /** "Assigned To" staff of one partner's team (null = the caller's own team). */
     taskAssignees: (partnerId: number | null, keepIds: number[] = []) =>
         [...activityLogKeys.all, 'task-assignees', partnerId ?? 'own', keepIds] as const,
+    detail: (id: number | string) => [...activityLogKeys.all, 'detail', String(id)] as const,
+};
+
+/**
+ * Load one activity on demand - e.g. to edit the activity behind a reminder.
+ * Always fetched fresh, so the edit form starts from what is saved.
+ */
+export const useFetchActivityLog = () => {
+    const queryClient = useQueryClient();
+
+    return (id: number | string) =>
+        queryClient.fetchQuery({ queryKey: activityLogKeys.detail(id), queryFn: () => getActivityLog(id), staleTime: 0 });
 };
 
 export interface TaskAssignee {
@@ -52,5 +65,20 @@ export const useTaskAssignees = (partnerId: number | null, enabled: boolean, kee
         },
         enabled,
         staleTime: 5 * 60 * 1000,
+    });
+};
+
+/**
+ * Change an assigned Task's status from its reminder (the popup, Task &
+ * Reminder Details or the reminders list). The open reminders of both
+ * people also hear of it over Reverb.
+ */
+export const useUpdateTaskStatus = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ activityLogId, status }: { activityLogId: number | string; status: string }) =>
+            updateActivityTaskStatus(activityLogId, status),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: activityLogKeys.all }),
     });
 };

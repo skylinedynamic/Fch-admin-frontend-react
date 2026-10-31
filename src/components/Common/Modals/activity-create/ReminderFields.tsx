@@ -15,22 +15,24 @@ interface ReminderFieldsProps {
     error?: string
     /** Live check: the chosen lead time lands in the past. */
     warning?: string | null
+    /** Prefix of the element ids, so New Activity and Edit never share them. */
+    idPrefix?: string
 }
 
 /** "Reminder Time" inside the Set Reminder card. */
-export default function ReminderFields({ values, onChange, error, warning }: ReminderFieldsProps) {
+export default function ReminderFields({ values, onChange, error, warning, idPrefix = 'activity' }: ReminderFieldsProps) {
     const invalid = !!error
     const preset = values.reminder_preset
 
     return (
         <div className="acm-field">
-            <label className="form-label" htmlFor="activityReminderPreset">
+            <label className="form-label" htmlFor={`${idPrefix}ReminderPreset`}>
                 Reminder Time <span className="text-danger">*</span>
             </label>
             <div className="row g-2">
                 <div className={preset === 'custom_time_before' ? 'col-sm-6' : 'col-12'}>
                     <ActivitySelect
-                        id="activityReminderPreset"
+                        id={`${idPrefix}ReminderPreset`}
                         value={preset}
                         options={REMINDER_PRESET_SELECT_OPTIONS}
                         onChange={(value) => onChange('reminder_preset', value)}
@@ -53,7 +55,7 @@ export default function ReminderFields({ values, onChange, error, warning }: Rem
                         </div>
                         <div className="col-8 col-sm-4">
                             <ActivitySelect
-                                id="activityReminderUnit"
+                                id={`${idPrefix}ReminderUnit`}
                                 value={values.reminder_time_unit}
                                 options={REMINDER_UNIT_SELECT_OPTIONS}
                                 onChange={(value) => onChange('reminder_time_unit', value)}
@@ -66,7 +68,7 @@ export default function ReminderFields({ values, onChange, error, warning }: Rem
                 {preset === 'custom_date_time' && (
                     <div className="col-12">
                         <DateTimeField
-                            inputId="activityRemindAt"
+                            inputId={`${idPrefix}RemindAt`}
                             value={values.remind_at}
                             onChange={(value) => onChange('remind_at', value)}
                             invalid={invalid}

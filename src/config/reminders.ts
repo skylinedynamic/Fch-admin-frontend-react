@@ -1,4 +1,4 @@
-import type { ThemeTone } from './activityTask';
+import type { TaskPriority, TaskStatus, ThemeTone } from './activityTask';
 
 export const REMINDER_TYPES = [
     { label: 'Event', value: 'Event' },
@@ -18,6 +18,8 @@ export const REMINDER_STATUS_CANCELLED = 'cancelled';
 // virtual filter (pending/sent whose activity date has already passed),
 // matching isReminderMissed below.
 export const REMINDER_STATUS_MISSED = 'missed';
+/** List filter only: every pending or sent reminder (what "Dismiss all" acts on). */
+export const REMINDER_STATUS_DISMISSABLE = 'dismissable';
 
 export const REMINDER_STATUS_OPTIONS = [
     { label: 'Pending', value: REMINDER_STATUS_PENDING },
@@ -105,7 +107,15 @@ interface ReminderLike {
     status?: string;
     // The activity's own time has passed — decided by the API.
     is_past_due?: boolean;
+    // false: listed only, never pops up (the creator's copy of a task only its assignee is reminded of)
+    is_reminder?: boolean;
 }
+
+export const REMINDER_SILENT_LABEL = 'No Popup';
+
+/** A pending row that is listed in Task & Reminders but never pops up. */
+export const isSilentReminder = (reminder: ReminderLike): boolean =>
+    reminder.is_reminder === false && reminder.status === REMINDER_STATUS_PENDING;
 
 // "Missed" isn't a backend status — pending/sent both stay actionable
 // (dismiss/reschedule) until the user handles them. The activity's own
@@ -113,11 +123,14 @@ interface ReminderLike {
 // already fired, and only pending/sent reminders can be missed (a dismissed
 // one is just dismissed).
 export const isReminderMissed = (reminder: ReminderLike): boolean =>
-    (reminder.status === REMINDER_STATUS_PENDING || reminder.status === REMINDER_STATUS_SENT)
+    !isSilentReminder(reminder)
+    && (reminder.status === REMINDER_STATUS_PENDING || reminder.status === REMINDER_STATUS_SENT)
     && !!reminder.is_past_due;
 
-export const getEffectiveReminderStatusLabel = (reminder: ReminderLike): string =>
-    isReminderMissed(reminder) ? 'Missed' : getReminderStatusLabel(reminder.status);
+export const getEffectiveReminderStatusLabel = (reminder: ReminderLike): string => {
+    if (isSilentReminder(reminder)) return REMINDER_SILENT_LABEL;
+    return isReminderMissed(reminder) ? 'Missed' : getReminderStatusLabel(reminder.status);
+};
 
 export interface ReminderClient {
     type: 'borrower' | 'lead' | 'partner' | 'employee' | 'admin' | 'user' | null;
@@ -176,8 +189,23 @@ export const formatSnoozeMinutes = (minutes: number): string => {
     return `${minutes} min${minutes === 1 ? '' : 's'}`;
 };
 
-export const getEffectiveReminderStatusBadgeClasses = (reminder: ReminderLike): string =>
-    isReminderMissed(reminder) ? 'bg-danger-subtle text-danger' : getReminderStatusBadgeClasses(reminder.status);
+export const getEffectiveReminderStatusBadgeClasses = (reminder: ReminderLike): string => {
+    if (isSilentReminder(reminder)) return 'bg-secondary-subtle text-secondary';
+    return isReminderMissed(reminder) ? 'bg-danger-subtle text-danger' : getReminderStatusBadgeClasses(reminder.status);
+};
+
+/** The assigned Task behind a reminder, as ReminderResource renders it. */
+export interface ReminderTask {
+    status: TaskStatus | null;
+    status_label: string | null;
+    priority: TaskPriority | null;
+    priority_label: string | null;
+    /** "YYYY-MM-DD HH:mm:ss" in the viewer's timezone. */
+    due_date: string | null;
+    due_date_display: string | null;
+    assigned_to_name: string | null;
+    assigned_by_name: string | null;
+}
 
 /** A reminder row as returned by the reminders list endpoint (POST /common/reminders/fetch-reminders). */
 export interface Reminder extends ReminderLike {
@@ -197,6 +225,12 @@ export interface Reminder extends ReminderLike {
     attachments?: Array<{ name: string; path: string }>;
     activity_log_id?: number | null;
     activity_can_edit?: boolean;
+    /** Set when the activity behind it is an assigned Task. */
+    task?: ReminderTask | null;
+    /** The viewer created or was assigned that task, so may change its status. */
+    task_can_update_status?: boolean;
+    /** false on an assigned Task's reminder for its assignee - only the creator moves its date. */
+    can_reschedule?: boolean;
     client?: ReminderClient | null;
     related?: ReminderRelated | null;
     snooze_history?: ReminderSnoozeEntry[];

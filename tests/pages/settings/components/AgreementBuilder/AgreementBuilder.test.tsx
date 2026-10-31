@@ -464,3 +464,21 @@ describe('AgreementBuilder starter templates', () => {
     expect(await screen.findByText('Empty Agreement')).toBeInTheDocument()
   })
 })
+
+describe('AgreementBuilder loading the saved agreement', () => {
+  const SAVED = { id: 4, template_json: JSON.stringify({ blocks: [{ id: 'saved-1', type: 'text', content: 'Saved clause from the server' }], pagePad: 80, docBg: '#ffffff' }) }
+
+  it('shows the saved agreement each time it is opened, not the built-in starter', async () => {
+    server.use(http.post('*/common/agreement-templates/show', () => HttpResponse.json({ status: true, data: SAVED })))
+    renderWithProviders(<AgreementBuilder />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit partner agreement' }))
+    expect(await screen.findByText('Saved clause from the server')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close editor' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit partner agreement' }))
+
+    expect(await screen.findByText('Saved clause from the server')).toBeInTheDocument()
+    expect(screen.queryByText('MASTER PARTNER AGREEMENT')).not.toBeInTheDocument()
+  })
+})

@@ -33,7 +33,7 @@ const TASK_ROW = {
   activity_date: '2030-11-05 10:00:00', visibility: 'private', is_manual: true, is_owner: true, can_edit: true, can_delete: true,
   causer_name: 'Host Admin', created_at: '2026-10-28 10:00:00', updated_at: '2026-10-28 10:00:00', attachments: [], remind_me: false,
   properties: { reference: 'Task', subject: 'Collect bank statements' },
-  task: { assigned_to: 12, assigned_user: { id: 12, name: 'Avery Staff' }, due_date: '2030-11-07', priority: 'high', priority_label: 'High', status: 'open', status_label: 'Open' },
+  task: { assigned_to: 12, assigned_user: { id: 12, name: 'Avery Staff' }, due_date: '2030-11-07 15:30:00', priority: 'high', priority_label: 'High', status: 'open', status_label: 'Open' },
 }
 
 async function openClient(page: Page, activities: unknown[] = []): Promise<ApiMock> {
@@ -62,23 +62,23 @@ test.describe('Client activity log - assign a Task (New Event)', () => {
     await expect(activityModal(page).locator('#activityTaskOwner')).toContainText('blake@example.test')
   })
 
-  test('the section sits below the reminder with the config defaults', async ({ page }) => {
+  test('the section sits above the reminder with the config defaults', async ({ page }) => {
     await openClient(page)
     const modal = await openNewEvent(page)
     await pickReference(page, 'Task')
     await assignSwitch(modal).check()
 
     await expect(modal.locator('#activityAssignedTo')).toContainText('Select staff member')
-    await expect(modal.locator('#activityTaskDueAt')).toHaveAttribute('placeholder', 'Select due date')
+    await expect(modal.locator('#activityTaskDueAt')).toHaveAttribute('placeholder', 'Select due date & time')
     await expect(modal.locator('#activityTaskPriority')).toContainText('Medium')
     await expect(modal.locator('#activityTaskStatus')).toContainText('Open')
 
     const reminderBox = await modal.getByRole('switch', { name: 'Set Reminder' }).boundingBox()
     const sectionBox = await modal.locator('#activityTaskAssignment').boundingBox()
-    expect(sectionBox!.y).toBeGreaterThan(reminderBox!.y)
+    expect(reminderBox!.y).toBeGreaterThan(sectionBox!.y)
   })
 
-  test('creating the Task sends the assignee, due day, priority and status', async ({ page }) => {
+  test('creating the Task sends the assignee, due date and time, priority and status', async ({ page }) => {
     const api = await openClient(page)
     api.add({ method: 'POST', match: /\/common\/activity-logs$/, status: 201, body: ok({ id: 9 }, 'Activity created successfully') })
     const modal = await openNewEvent(page)
@@ -88,7 +88,7 @@ test.describe('Client activity log - assign a Task (New Event)', () => {
     await modal.locator('#activitySummary').fill('Collect bank statements')
     await assignSwitch(modal).check()
     await pickOption(page, modal, 'activityAssignedTo', 'Blake Ops')
-    await modal.locator('#activityTaskDueAt').fill('02 Nov, 2030')
+    await modal.locator('#activityTaskDueAt').fill('02 Nov, 2030 03:30 PM')
     // Close the calendar by clicking away (Escape would close the whole modal).
     await modal.locator('.modal-title').click()
     await pickOption(page, modal, 'activityTaskPriority', 'High')
@@ -101,11 +101,36 @@ test.describe('Client activity log - assign a Task (New Event)', () => {
       reference: 'Task',
       assign_task: '1',
       assigned_to: '14',
-      task_due_date: '2030-11-02',
+      task_due_date: '2030-11-02 15:30:00',
       task_priority: 'high',
       task_status: 'in_progress',
     })
     await expect(page.getByText('Activity created successfully').first()).toBeVisible()
+  })
+
+  test('the reminder of an assigned Task goes to whoever is picked', async ({ page }) => {
+    const api = await openClient(page)
+    api.add({ method: 'POST', match: /\/common\/activity-logs$/, status: 201, body: ok({ id: 9 }, 'Activity created successfully') })
+    const modal = await openNewEvent(page)
+
+    await pickReference(page, 'Task')
+    // The date defaults to now (BUG-057); the reminder before it must be ahead
+    await typeFutureActivityDate(modal)
+    await modal.locator('#activitySummary').fill('Collect bank statements')
+    await assignSwitch(modal).check()
+    await pickOption(page, modal, 'activityAssignedTo', 'Blake Ops')
+    await modal.locator('#activityTaskDueAt').fill('02 Nov, 2030 03:30 PM')
+    await modal.locator('.modal-title').click()
+    await modal.getByRole('switch', { name: 'Set Reminder' }).check()
+
+    const recipients = modal.getByRole('radiogroup', { name: 'Who gets the reminder' })
+    await expect(recipients.getByLabel('Both')).toBeChecked()
+    await recipients.getByLabel('Assignee').check()
+
+    await modal.getByRole('button', { name: 'Create' }).click()
+
+    const call = await expectCall(api, 'POST', /\/common\/activity-logs$/)
+    expect(call.json).toMatchObject({ remind_me: '1', reminder_recipient: 'assignee' })
   })
 
   test("the API's validation messages appear under the task fields", async ({ page }) => {
@@ -170,8 +195,14 @@ test.describe('Client activity log - change a Task assignment (Edit)', () => {
   test("opens with the saved assignment and the client's partner's staff", async ({ page }) => {
     const { api, modal } = await openEdit(page)
 
+    // The same design as New Activity: header, Reference picker, visibility cards, option cards
+    await expect(modal).toHaveClass(/\bacm\b/)
+    await expect(modal.locator('.acm-header')).toContainText('Edit Activity')
+    await expect(modal.locator('#activityEditReference')).toContainText('Task')
+    await expect(modal.locator('label[for="activityEditVisibility_private"]')).toHaveClass(/is-checked/)
+    await expect(modal.locator('.acm-option', { has: page.getByRole('switch', { name: 'Set Reminder' }) })).toBeVisible()
     await expect(modal.locator('#activityEditAssignedTo')).toContainText('Avery Staff')
-    await expect(modal.locator('#activityEditTaskDueAt')).toHaveValue('07 Nov, 2030')
+    await expect(modal.locator('#activityEditTaskDueAt')).toHaveValue('07 Nov, 2030 03:30 PM')
     await expect(modal.locator('#activityEditTaskPriority')).toContainText('High')
     await expect(modal.locator('#activityEditTaskStatus')).toContainText('Open')
     await expect(modal.locator('#activityEditTaskOwner')).toContainText('Blake Ops')
@@ -192,7 +223,7 @@ test.describe('Client activity log - change a Task assignment (Edit)', () => {
     expect(call.json).toMatchObject({
       assign_task: '1',
       assigned_to: '15',
-      task_due_date: '2030-11-07',
+      task_due_date: '2030-11-07 15:30:00',
       task_priority: 'high',
       task_status: 'in_progress',
     })
