@@ -12,7 +12,9 @@ import {
     ACTIVITY_TASK_REFERENCE,
     DEFAULT_TASK_ASSIGNMENT,
     buildTaskAssignmentFields,
+    buildReminderRecipientField,
 } from '../../../modules/activity-log/constants';
+import { DEFAULT_REMINDER_RECIPIENT } from '../../../config/activityTask';
 import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 import {
     ENTITY_TYPE_LEAD,
@@ -29,6 +31,7 @@ import VisibilityPicker from './activity-create/VisibilityPicker';
 import ToggleCard from './activity-create/ToggleCard';
 import ReminderFields from './activity-create/ReminderFields';
 import TaskAssignmentFields from './activity-create/TaskAssignmentFields';
+import ReminderRecipientPicker from './activity-create/ReminderRecipientPicker';
 import AttachmentPicker from './activity-create/AttachmentPicker';
 import { REFERENCE_SELECT_OPTIONS } from './activity-create/options';
 import { useTaskAssignmentSetup } from './activity-create/useTaskAssignmentSetup';
@@ -60,6 +63,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         reminder_preset: '30_minutes',
         reminder_time_value: '30',
         reminder_time_unit: 'Minutes',
+        reminder_recipient: DEFAULT_REMINDER_RECIPIENT,
         ...DEFAULT_TASK_ASSIGNMENT,
     });
 
@@ -189,7 +193,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 data.append('reminder_time_unit', formData.reminder_time_unit || 'Minutes');
             }
 
-            Object.entries(buildTaskAssignmentFields(formData)).forEach(([field, value]) => {
+            Object.entries({ ...buildTaskAssignmentFields(formData), ...buildReminderRecipientField(formData) }).forEach(([field, value]) => {
                 data.append(field, value);
             });
 
@@ -509,21 +513,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                             </section>
 
                             <section className="acm-section acm-section--stack">
-                                <ToggleCard
-                                    id="remindMeSwitch"
-                                    title="Set Reminder"
-                                    icon="ri-alarm-line"
-                                    checked={formData.remind_me}
-                                    onChange={(checked) => setField('remind_me', checked)}
-                                >
-                                    <ReminderFields
-                                        values={formData}
-                                        onChange={setField}
-                                        error={errors.remind_at?.[0]}
-                                        warning={realTimeReminderError}
-                                    />
-                                </ToggleCard>
-
+                                {/* On a Task, who does it and by when comes before the reminder. */}
                                 {isTask && (
                                     <ToggleCard
                                         id="assignTaskSwitch"
@@ -543,6 +533,28 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         />
                                     </ToggleCard>
                                 )}
+
+                                <ToggleCard
+                                    id="remindMeSwitch"
+                                    title="Set Reminder"
+                                    icon="ri-alarm-line"
+                                    checked={formData.remind_me}
+                                    onChange={(checked) => setField('remind_me', checked)}
+                                >
+                                    <ReminderFields
+                                        values={formData}
+                                        onChange={setField}
+                                        error={errors.remind_at?.[0]}
+                                        warning={realTimeReminderError}
+                                    />
+                                    {isAssigningTask && (
+                                        <ReminderRecipientPicker
+                                            value={formData.reminder_recipient}
+                                            onChange={(value) => setField('reminder_recipient', value)}
+                                            error={errors.reminder_recipient?.[0]}
+                                        />
+                                    )}
+                                </ToggleCard>
                             </section>
 
                             <section className="acm-section">

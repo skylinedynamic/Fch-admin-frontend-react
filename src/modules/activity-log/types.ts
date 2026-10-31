@@ -1,4 +1,4 @@
-import type { TaskPriority, TaskStatus } from '../../config/activityTask';
+import type { ReminderRecipient, TaskPriority, TaskStatus } from '../../config/activityTask';
 
 export interface ActivityLog {
     id: number;
@@ -40,6 +40,8 @@ export interface ActivityLog {
     is_edited?: boolean;
     /** Set when a Task was assigned to a staff member ("Want to Assign"). */
     task?: ActivityTask | null;
+    /** Who gets the reminder it sets: "creator" unless the Task is assigned to someone else. */
+    reminder_recipient?: ReminderRecipient;
     created_at: string;
     updated_at: string;
 }
@@ -47,7 +49,7 @@ export interface ActivityLog {
 export interface ActivityTask {
     assigned_to: number | null;
     assigned_user: { id: number; name: string } | null;
-    /** A calendar day, "YYYY-MM-DD". */
+    /** "YYYY-MM-DD HH:mm:ss" in the viewer's timezone. */
     due_date: string | null;
     priority: TaskPriority | null;
     priority_label: string | null;

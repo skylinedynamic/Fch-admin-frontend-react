@@ -534,6 +534,13 @@
     transform: scale(1);
 }
 
+/* ---- Who gets the reminder (inside Set Reminder; reuses the visibility cards) */
+.acm .acm-recipient {
+    margin-top: 0.875rem;
+    padding-top: 0.875rem;
+    border-top: 1px dashed var(--acm-border);
+}
+
 /* ---- Option blocks (Set Reminder / Want to Assign) ---------------------- */
 .acm .acm-section--stack {
     gap: 0.75rem;
@@ -896,6 +903,11 @@
     .acm .acm-visibility.has-4,
     .acm .acm-visibility.has-3 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* Three short choices read better stacked than as 2 + 1 */
+    .acm .acm-recipient .acm-visibility.has-3 {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .acm .acm-files {

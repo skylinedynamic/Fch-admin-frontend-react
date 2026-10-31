@@ -1,7 +1,15 @@
 import { useRef } from 'react'
 
+/** A file already saved on the activity (Edit). */
+export interface SavedAttachment {
+    name: string
+}
+
 interface AttachmentPickerProps {
     files: File[]
+    /** Files already saved on the activity, listed before the new ones (Edit). */
+    savedFiles?: SavedAttachment[]
+    onRemoveSaved?: (index: number) => void
     onAdd: (files: File[]) => void
     onRemove: (index: number) => void
     /** Errors keyed like the API's: "attachments" and "attachments.<index>". */
@@ -34,6 +42,8 @@ const formatSize = (bytes: number) => {
 /** "Select Attachments": an add button and the chosen files, each removable. */
 export default function AttachmentPicker({
     files,
+    savedFiles = [],
+    onRemoveSaved,
     onAdd,
     onRemove,
     errors,
@@ -65,8 +75,27 @@ export default function AttachmentPicker({
                 onChange={(e) => onAdd(Array.from(e.target.files ?? []))}
             />
 
-            {files.length > 0 && (
+            {(files.length > 0 || savedFiles.length > 0) && (
                 <ul className="acm-files" id={listId}>
+                    {savedFiles.map((file, index) => (
+                        <li key={`saved-${file.name}-${index}`} className="acm-files__item">
+                            <span className="acm-files__icon" aria-hidden="true"><i className={fileIcon(file.name)} /></span>
+                            <span className="acm-files__meta">
+                                <span className="acm-files__name" title={file.name}>{file.name}</span>
+                                <span className="acm-files__size">Saved</span>
+                            </span>
+                            {onRemoveSaved && (
+                                <button
+                                    type="button"
+                                    className="acm-files__remove"
+                                    aria-label={`Remove ${file.name}`}
+                                    onClick={() => onRemoveSaved(index)}
+                                >
+                                    <i className="ri-close-line" />
+                                </button>
+                            )}
+                        </li>
+                    ))}
                     {files.map((file, index) => {
                         const fileError = errors[`attachments.${index}`]
                         return (

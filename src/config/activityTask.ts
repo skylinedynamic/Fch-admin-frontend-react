@@ -77,3 +77,24 @@ export interface TaskOwnerRef {
     /** Shown when the person is not in the loaded staff list. */
     name?: string | null;
 }
+
+/**
+ * Who gets the reminder an assigned Task sets: its author ("Me"), its
+ * assignee, or both. Values mirror ActivityLog::REMINDER_RECIPIENT_* in
+ * fch-api - change both together.
+ */
+export const REMINDER_RECIPIENT = {
+    CREATOR: 'creator',
+    ASSIGNEE: 'assignee',
+    BOTH: 'both',
+} as const;
+
+export type ReminderRecipient = typeof REMINDER_RECIPIENT[keyof typeof REMINDER_RECIPIENT];
+
+export const REMINDER_RECIPIENT_OPTIONS = [
+    { value: REMINDER_RECIPIENT.CREATOR, label: 'Me' },
+    { value: REMINDER_RECIPIENT.ASSIGNEE, label: 'Assignee' },
+    { value: REMINDER_RECIPIENT.BOTH, label: 'Both' },
+] as const;
+
+export const DEFAULT_REMINDER_RECIPIENT: ReminderRecipient = REMINDER_RECIPIENT.BOTH;

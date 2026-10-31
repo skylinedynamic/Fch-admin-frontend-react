@@ -37,7 +37,7 @@ const TASK_ACTIVITY = {
   task: {
     assigned_to: 12,
     assigned_user: { id: 12, name: 'Avery Staff' },
-    due_date: '2030-11-07',
+    due_date: '2030-11-07 15:30:00',
     priority: 'high',
     priority_label: 'High',
     status: 'open',
@@ -95,7 +95,11 @@ describe('ActivityEditModal "Want to Assign"', () => {
 
     expect(assignSwitch()).toBeChecked()
     await waitFor(() => expect(document.getElementById('activityEditAssignedTo')).toHaveTextContent('Avery Staff'))
-    expect(document.getElementById('activityEditTaskDueAt')).toHaveValue('07 Nov, 2030')
+    expect(document.getElementById('activityEditTaskDueAt')).toHaveValue('07 Nov, 2030 03:30 PM')
+
+    // On a Task, Set Reminder comes after Want to Assign.
+    const reminderSwitch = screen.getByRole('switch', { name: 'Set Reminder' })
+    expect(assignSwitch()!.compareDocumentPosition(reminderSwitch) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(document.getElementById('activityEditTaskPriority')).toHaveTextContent('High')
     expect(document.getElementById('activityEditTaskStatus')).toHaveTextContent('Open')
   })
@@ -121,7 +125,7 @@ describe('ActivityEditModal "Want to Assign"', () => {
     await waitFor(() => expect(sent).not.toBeNull())
     expect(sent!.get('assign_task')).toBe('1')
     expect(sent!.get('assigned_to')).toBe('15')
-    expect(sent!.get('task_due_date')).toBe('2030-11-07')
+    expect(sent!.get('task_due_date')).toBe('2030-11-07 15:30:00')
     expect(sent!.get('task_priority')).toBe('low')
     expect(sent!.get('task_status')).toBe('complete')
     await waitFor(() => expect(onUpdated).toHaveBeenCalled())
@@ -143,7 +147,7 @@ describe('ActivityEditModal "Want to Assign"', () => {
   it('un-assigns the task when the Reference is no longer Task', async () => {
     renderEdit()
 
-    fireEvent.change(document.querySelector('select[name="reference"]')!, { target: { name: 'reference', value: 'Call' } })
+    pick('activityEditReference', 'Call')
     expect(assignSwitch()).not.toBeInTheDocument()
     update()
 
@@ -159,13 +163,13 @@ describe('ActivityEditModal "Want to Assign"', () => {
     fireEvent.click(assignSwitch()!)
     await waitFor(() => expect(document.getElementById('activityEditAssignedTo')).not.toBeDisabled())
     pick('activityEditAssignedTo', 'Blake Ops')
-    fireEvent.input(document.getElementById('activityEditTaskDueAt')!, { target: { value: '09 Nov, 2030' } })
+    fireEvent.input(document.getElementById('activityEditTaskDueAt')!, { target: { value: '09 Nov, 2030 10:00 AM' } })
     update()
 
     await waitFor(() => expect(sent).not.toBeNull())
     expect(sent!.get('assign_task')).toBe('1')
     expect(sent!.get('assigned_to')).toBe('14')
-    expect(sent!.get('task_due_date')).toBe('2030-11-09')
+    expect(sent!.get('task_due_date')).toBe('2030-11-09 10:00:00')
     // The config defaults for a new assignment
     expect(sent!.get('task_priority')).toBe('medium')
     expect(sent!.get('task_status')).toBe('open')
@@ -226,5 +230,116 @@ describe('ActivityEditModal "Want to Assign"', () => {
 
     expect(await screen.findByText('The category is not valid.')).toHaveClass('alert-danger')
     expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('opens with who gets the reminder as saved, and sends a new pick', async () => {
+    renderEdit({ ...TASK_ACTIVITY, remind_me: true, remind_at: '2030-11-05 09:30:00', reminder_recipient: 'assignee' })
+    await waitFor(() => expect(document.getElementById('activityEditAssignedTo')).not.toBeDisabled())
+
+    expect(screen.getByRole('radiogroup', { name: 'Who gets the reminder' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Assignee')).toBeChecked()
+
+    fireEvent.click(screen.getByLabelText('Me'))
+    update()
+
+    await waitFor(() => expect(sent).not.toBeNull())
+    expect(sent!.get('reminder_recipient')).toBe('creator')
+  })
+
+  it('offers no pick while the reminder is off', () => {
+    renderEdit()
+
+    expect(screen.queryByRole('radiogroup', { name: 'Who gets the reminder' })).not.toBeInTheDocument()
+  })
+})
+
+describe('ActivityEditModal looks like New Activity', () => {
+  let sent: FormData | null
+
+  const ACTIVITY = {
+    id: 78,
+    reference: 'Call',
+    subject: 'Call about statements',
+    description: '<p>Ask for 3 months</p>',
+    activity_date: '2030-11-05 10:00:00',
+    visibility: 'private',
+    remind_me: false,
+    attachments: [{ name: 'statement.pdf', path: 'activity-logs/statement.pdf' }],
+    properties: { reference: 'Call', subject: 'Call about statements' },
+    task: null,
+  }
+
+  beforeEach(() => {
+    sent = null
+    server.use(
+      http.post('*/common/activity-logs/78', async ({ request }) => {
+        sent = await request.formData()
+        return HttpResponse.json({ status: true, message: 'Activity updated', data: ACTIVITY })
+      })
+    )
+  })
+
+  const renderEdit = (activity: Record<string, unknown> = ACTIVITY) =>
+    renderWithProviders(<ActivityEditModal activity={activity} show onClose={vi.fn()} onUpdated={vi.fn()} isHost entityType="Client" />)
+  const update = () => fireEvent.click(screen.getByRole('button', { name: /update/i }))
+
+  it('uses the same header, pickers, cards and attachment box', () => {
+    renderEdit()
+
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveClass('acm')
+    expect(dialog.querySelector('.acm-header')).toHaveTextContent('Edit Activity')
+    expect(document.getElementById('activityEditReference')).toHaveTextContent('Call')
+    expect(document.getElementById('activityEditDate')).toHaveValue('05 Nov, 2030 10:00 AM')
+    expect(screen.getByLabelText('Summary *')).toHaveValue('Call about statements')
+    expect(screen.getByLabelText('Private (Only Me)').closest('label')).toHaveClass('acm-visibility__option', 'is-checked')
+    expect(screen.getByRole('switch', { name: 'Set Reminder' }).closest('.acm-option')).not.toBeNull()
+    expect(document.getElementById('activityEditAttachmentBtn')).toHaveClass('acm-attach')
+  })
+
+  it('titles itself Edit Reminder when the activity has one', () => {
+    renderEdit({ ...ACTIVITY, remind_me: true, remind_at: '2030-11-05 09:30:00' })
+
+    expect(screen.getByRole('dialog').querySelector('.acm-header')).toHaveTextContent('Edit Reminder')
+  })
+
+  it('sets a reminder from the Set Reminder card', async () => {
+    renderEdit()
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Set Reminder' }))
+    expect(document.getElementById('activityEditReminderPreset')).toHaveTextContent('30 Minutes Before')
+    update()
+
+    await waitFor(() => expect(sent).not.toBeNull())
+    expect(sent!.get('remind_me')).toBe('1')
+    expect(sent!.get('reminder_preset')).toBe('30_minutes')
+    expect(sent!.get('remind_at')).toBe('2030-11-05 09:30:00')
+  })
+
+  it('lists the saved attachments in the same box and can remove one', async () => {
+    renderEdit()
+
+    expect(document.getElementById('activityEditAttachmentList')).toHaveTextContent('statement.pdf')
+    fireEvent.click(screen.getByRole('button', { name: 'Remove statement.pdf' }))
+    update()
+
+    await waitFor(() => expect(sent).not.toBeNull())
+    expect(sent!.get('existing_attachments')).toBe('[]')
+  })
+
+  it('replaces the saved attachments with newly added ones', async () => {
+    renderEdit()
+
+    const file = new File(['x'], 'bank.pdf', { type: 'application/pdf' })
+    fireEvent.change(document.getElementById('activityEditAttachmentInput')!, { target: { files: [file] } })
+    const list = document.getElementById('activityEditAttachmentList')!
+    expect(list).toHaveTextContent('bank.pdf')
+    expect(list).not.toHaveTextContent('statement.pdf')
+    update()
+
+    await waitFor(() => expect(sent).not.toBeNull())
+    expect(sent!.get('existing_attachments')).toBe('[]')
+    // jsdom's multipart round-trip drops the file name, so count what was sent.
+    expect(sent!.getAll('attachments[]')).toHaveLength(1)
   })
 })
