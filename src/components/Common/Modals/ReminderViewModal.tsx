@@ -30,6 +30,7 @@ import type { TaskStatus } from '../../../config/activityTask';
 import ActivityEditModal from './ActivityEditModal';
 import { useFetchActivityLog } from '../../../modules/activity-log';
 import { useDismissReminder, useSnoozeReminder } from '../../../modules/reminders';
+import { sanitizeHtml } from '../../../utils/sanitizeHtml';
 
 interface ReminderViewModalProps {
     show: boolean;
@@ -296,7 +297,7 @@ export default function ReminderViewModal({ show, onHide, onSuccess, onTaskStatu
                                             <div className="rvm-description">
                                                 <div
                                                     className={`text-dark fs-14 ${expanded ? 'reminder-description-expanded' : 'reminder-description-collapsed'}`}
-                                                    dangerouslySetInnerHTML={{ __html: rawDescription }}
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawDescription) }}
                                                 />
                                                 {needsExpansion && (
                                                     <button

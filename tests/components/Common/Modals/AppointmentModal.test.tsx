@@ -269,3 +269,13 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
   })
 })
 
+
+// BUG-004 (QA round 2): the description is stored HTML; it must not run script.
+describe('AppointmentModal - the description cannot run script (BUG-004)', () => {
+  it('shows the description without the onerror handler', async () => {
+    await open(CLIENT_ID, appointment({ description: 'Bring <b>statements</b> <img src=x onerror="window.__xss = 1">' }))
+
+    expect(await screen.findByText('statements')).toBeInTheDocument()
+    expect(document.body.querySelector('[onerror]')).toBeNull()
+  })
+})

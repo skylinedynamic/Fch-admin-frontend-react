@@ -22,6 +22,7 @@ import { browserTimeZone, defaultStart, localDateString, startSlotsFrom, timeAft
 
 // Styles
 import "../../../../assets/css/appointment-modal.css";
+import { sanitizeHtml } from '../../../utils/sanitizeHtml';
 
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
@@ -791,7 +792,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             <div className="description-content">
                                                                 <div
                                                                     className="rich-text-content"
-                                                                    dangerouslySetInnerHTML={{ __html: description }}
+                                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}
                                                                 ></div>
                                                                 {isDescriptionExpanded && rawText.length > limit && (
                                                                     <button
