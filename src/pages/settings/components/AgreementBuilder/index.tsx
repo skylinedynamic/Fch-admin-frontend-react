@@ -131,6 +131,9 @@ const AgreementBuilder: React.FC = () => {
 
     // Update blocks when saved version is loaded via React Query
     useEffect(() => {
+        // Not before the request has answered: a starter loaded now would mark
+        // this open as loaded, show the editor, then be swapped for the answer.
+        if (loadingAgreement) return;
         const data = savedAgreement?.data as any;
         if (data) {
             setAgreementId(data.id);
@@ -155,7 +158,7 @@ const AgreementBuilder: React.FC = () => {
             // Nothing saved yet: start from the master agreement for this type.
             loadSnapshot({ blocks: defaultTemplateFor(editingType), pagePad: 80, docBg: '#ffffff' });
         }
-    }, [savedAgreement, editingType, openCount]);
+    }, [savedAgreement, editingType, openCount, loadingAgreement]);
 
     const findBlock = (id: string | null, list: AgreementBlock[] = blocks): AgreementBlock | null => {
         if (!id) return null;

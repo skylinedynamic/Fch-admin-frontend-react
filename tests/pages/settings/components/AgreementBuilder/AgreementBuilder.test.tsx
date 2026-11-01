@@ -491,4 +491,26 @@ describe('AgreementBuilder loading the saved agreement', () => {
     expect(await screen.findByText('Saved clause from the server')).toBeInTheDocument()
     expect(screen.queryByText('MASTER PARTNER AGREEMENT')).not.toBeInTheDocument()
   })
+
+  /**
+   * The editor shows only once the agreement has loaded. It used to show the
+   * starter it had set up before the request answered, then swap in the loaded
+   * one (new block ids), so a block selected in between was lost.
+   */
+  it('shows the editor only with the blocks it keeps', async () => {
+    server.use(http.post('*/common/agreement-templates/show', () => HttpResponse.json({ status: true, data: null })))
+    let firstShown: Element | null = null
+    const observer = new MutationObserver(() => {
+      if (!firstShown && document.querySelector('.ab4-save-btn')) firstShown = document.querySelector('.ab4-block')
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    renderWithProviders(<AgreementBuilder />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit partner agreement' }))
+    await screen.findByText('MASTER PARTNER AGREEMENT')
+    observer.disconnect()
+
+    expect(firstShown).not.toBeNull()
+    expect(firstShown!.isConnected).toBe(true)
+  })
 })
