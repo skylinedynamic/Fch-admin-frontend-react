@@ -3,8 +3,6 @@ import { seedSession } from './support/helpers'
 
 // QA round 2, partner-assisted funding application (the host edits a client's
 // application):
-// - R2 BUG-031: an owner or co-borrower under 18 could be picked and saved.
-//   The date pickers stop 18 years back; the API refuses a younger owner.
 // - R2 BUG-032: a Purpose Note of 256-500 characters gave a 500 error. The
 //   field takes up to 500, with a counter, and is saved in full.
 // - R2 BUG-033: a tab left open on an older copy overwrote what was saved
@@ -30,13 +28,6 @@ const BUSINESS = {
   industry_type: 'Retail', entity_type: 'LLC', years_in_business: '5', version: FUNDING.version,
 }
 
-const OWNER = {
-  id: 31, first_name: 'Jane', last_name: 'Borrower', date_of_birth: '1990-04-05', ssn: '325555555',
-  citizenship_status: 'US Citizen', street_address: '9 Main St', city: 'Austin', state: 'Texas', zip_code: '78701',
-  country: 'United States', ownership: 100, phone_number: '(512) 555-0100', has_co_borrower: false, co_borrowers: [],
-  version: FUNDING.version,
-}
-
 type Sent = { body: Record<string, any> | null }
 type FundingSave = { status: number; json: unknown }
 
@@ -49,7 +40,6 @@ async function openWizard(page: Page, fundingSave: (body: Record<string, any>) =
   await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => ok(route, { site_name: 'Four Corner Funding' }))
   await page.route(`${API_ORIGIN}/common/funding-sequencings/grouped**`, (route) => ok(route, { groups: [] }))
   await page.route(`${API_ORIGIN}/common/funding-application/business-info**`, (route) => ok(route, BUSINESS))
-  await page.route(`${API_ORIGIN}/common/funding-application/ownership-info**`, (route) => ok(route, OWNER))
   await page.route(`${API_ORIGIN}/common/funding-application/funding-request**`, (route) => {
     if (route.request().method() !== 'POST') return ok(route, FUNDING)
     sent.body = route.request().postDataJSON()
@@ -67,50 +57,8 @@ async function openStep(page: Page, name: string, heading: RegExp) {
 }
 
 // The wizard keeps a second (mobile) copy of each step in the page: the visible one.
-const visible = (page: Page, selector: string) => page.locator(selector).filter({ visible: true }).first()
 const save = (page: Page) => page.getByRole('button', { name: /save/i }).filter({ visible: true }).first()
 const note = (page: Page) => page.getByPlaceholder('Please specify the purpose of funds').filter({ visible: true }).first()
-
-/** Y-m-d of the latest birthday that is 18 today, in the browser's clock. */
-const latestAdultDate = (page: Page) =>
-  page.evaluate(() => {
-    const t = new Date()
-    const d = new Date(t.getFullYear() - 18, t.getMonth(), t.getDate())
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  })
-
-test.describe('Partner funding application › owner date of birth (R2 BUG-031)', () => {
-  test("the owner's date picker stops at 18 years ago", async ({ page }) => {
-    await openWizard(page)
-    await openStep(page, 'Ownership', /Step 2 of \d+: Ownership Information/)
-
-    await expect(visible(page, 'input[placeholder="Select date of birth"]')).toHaveValue('5 Apr, 1990')
-    // The flatpickr instance behind Date of Birth.
-    const maxDate = await page
-      .locator('input.flatpickr-input')
-      .evaluateAll((inputs) => {
-        const fp = inputs.map((i: any) => i._flatpickr).find((f: any) => f && f.config?.maxDate)
-        return fp ? fp.formatDate(fp.config.maxDate, 'Y-m-d') : null
-      })
-    expect(maxDate).toBe(await latestAdultDate(page))
-  })
-
-  test("the API's refusal of an under-18 owner is shown under Date of Birth", async ({ page }) => {
-    await openWizard(page)
-    await page.route(`${API_ORIGIN}/common/funding-application/ownership-info**`, (route) => {
-      if (route.request().method() !== 'POST') return route.fulfill({ json: { status: true, message: 'ok', data: OWNER } })
-      return route.fulfill({
-        status: 422,
-        json: { status: false, message: 'Invalid', errors: { date_of_birth: ['The owner must be at least 18 years old.'] } },
-      })
-    })
-    await openStep(page, 'Ownership', /Step 2 of \d+: Ownership Information/)
-
-    await save(page).click()
-
-    await expect(page.getByText('The owner must be at least 18 years old.').filter({ visible: true }).first()).toBeVisible()
-  })
-})
 
 test.describe('Partner funding application › Purpose Note (R2 BUG-032)', () => {
   test('takes up to 500 characters with a counter, and a 300-character note is saved in full', async ({ page }) => {

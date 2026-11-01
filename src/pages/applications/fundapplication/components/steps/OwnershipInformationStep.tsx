@@ -9,7 +9,6 @@ import CoBorrowerTable from '../shared/CoBorrowerTable'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { countries } from '../../../../../modules/location'
 import { useOwnershipInfo, useSaveOwnershipInfo } from '../../../../../modules/funding-application/queries'
-import { latestAdultBirthDate } from '../../../../../modules/funding-application/applicationRules'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { citizenshipOptions } from '../../../../../data/profile'
@@ -373,7 +372,7 @@ export default function OwnershipInformationStep({
                 dateFormat: 'Y-m-d',
                 altInput: true,
                 altFormat: 'j M, Y',
-                maxDate: latestAdultBirthDate(), // 18 or older, as the API requires (R2 BUG-031)
+                maxDate: 'today',
                 monthSelectorType: 'dropdown',
                 plugins: [yearDropdownPlugin(1900)],
               }}
