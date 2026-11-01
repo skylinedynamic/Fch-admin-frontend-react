@@ -24,15 +24,23 @@ const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partn
   )
   const view = renderWithProviders(ui)
   fireEvent.click(screen.getByRole('button', { name: `Edit ${type} agreement` }))
-  await screen.findByRole('button', { name: 'Save Template' })
+  await screen.findByText('Save Template')
   return view
 }
+
+/**
+ * The editor's toolbar. Role queries on the whole document work out the role
+ * and name of every element of the full-screen editor - about half a second
+ * each locally, several times that on a loaded CI runner, which took tests past
+ * their 20 s timeout. Queries for toolbar controls stay inside the toolbar.
+ */
+const toolbar = () => within(document.querySelector('.ab4-toolbar') as HTMLElement)
 
 describe('AgreementBuilder calendar', () => {
   it('the preview opens the app calendar in the agreement date fields', async () => {
     await openBuilder()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
 
     const frame = await screen.findByTitle('Preview')
     expect(frame.getAttribute('srcdoc')).toContain('data-app-calendar')
@@ -48,7 +56,7 @@ describe('AgreementBuilder calendar', () => {
     )
     await openBuilder()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
 
     await waitFor(() => expect(saved).not.toBeNull())
     expect(saved!.template_html).toContain('agreement-form')
@@ -65,7 +73,7 @@ describe('AgreementBuilder full-screen editor', () => {
 
     const editor = screen.getByRole('dialog', { name: 'Partner agreement' })
     expect(container).not.toContainElement(editor)
-    expect(editor).toContainElement(screen.getByRole('button', { name: 'Save Template' }))
+    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Template' }))
   })
 
   it("edits a partner's agreement full screen, naming the partner, outside the cramped profile column", async () => {
@@ -77,7 +85,7 @@ describe('AgreementBuilder full-screen editor', () => {
     expect(editor).toHaveAttribute('aria-modal', 'true')
     expect(editor).toHaveClass('ab4-fullscreen')
     expect(container).not.toContainElement(editor)
-    expect(editor).toContainElement(screen.getByRole('button', { name: 'Save Template' }))
+    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Template' }))
     expect(editor).toHaveTextContent('Acme Lending')
     expect(document.body.style.overflow).toBe('hidden')
   })
@@ -85,7 +93,7 @@ describe('AgreementBuilder full-screen editor', () => {
   it("closes the partner's editor back to the agreement list and gives the page its scroll back", async () => {
     await openBuilder(<ConfigPartnerProvider partner={PARTNER}><AgreementBuilder /></ConfigPartnerProvider>)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close editor' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Edit partner agreement' })).toBeInTheDocument()
@@ -133,7 +141,7 @@ describe('AgreementBuilder merge fields', () => {
     )
     await openBuilder(<AgreementBuilder />, 'borrower')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
 
     await waitFor(() => expect(saved).not.toBeNull())
     expect(saved!.template_html).toContain('{{signer.name}}')
@@ -148,7 +156,7 @@ describe('AgreementBuilder merge fields', () => {
     )
     await openBuilder(<AgreementBuilder />, 'borrower')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
 
     await waitFor(() => expect(screen.getByTitle('Preview').getAttribute('srcdoc')).toContain('title="{{owner.company_name}}">Four Corner Holdings, LLC</span>'))
     expect(screen.getByTitle('Preview').getAttribute('srcdoc')).toContain('title="{{signer.name}}">Jane Doe</span>')
@@ -157,7 +165,7 @@ describe('AgreementBuilder merge fields', () => {
   it('previews merge fields with example details, marked as fields', async () => {
     await openBuilder(<AgreementBuilder />, 'borrower')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
 
     const preview = (await screen.findByTitle('Preview')).getAttribute('srcdoc')!
     expect(preview).toMatch(/<span class="ab4-merge-sample" title="\{\{signer.name\}\}">Jane Doe<\/span>/)
@@ -166,7 +174,7 @@ describe('AgreementBuilder merge fields', () => {
 })
 
 describe('AgreementBuilder safety nets', () => {
-  const clearAll = () => fireEvent.click(screen.getByRole('button', { name: 'Clear All' }))
+  const clearAll = () => fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
   const confirmClear = () =>
     fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
 
@@ -182,17 +190,17 @@ describe('AgreementBuilder safety nets', () => {
 
   it('undoes and redoes changes', async () => {
     await openBuilder()
-    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+    expect(toolbar().getByRole('button', { name: 'Undo' })).toBeDisabled()
 
     clearAll()
     confirmClear()
     expect(await screen.findByText('Empty Agreement')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Undo' }))
     expect(await screen.findByText('MASTER PARTNER AGREEMENT')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Redo' })).toBeEnabled()
+    expect(toolbar().getByRole('button', { name: 'Redo' })).toBeEnabled()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Redo' }))
     expect(await screen.findByText('Empty Agreement')).toBeInTheDocument()
   })
 
@@ -205,7 +213,7 @@ describe('AgreementBuilder safety nets', () => {
     confirmClear()
     expect(await screen.findByText('Unsaved changes')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
     expect(await screen.findByText('All changes saved')).toBeInTheDocument()
   })
 
@@ -214,12 +222,12 @@ describe('AgreementBuilder safety nets', () => {
     clearAll()
     confirmClear()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close editor' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
     const ask = screen.getByRole('alertdialog', { name: 'Discard unsaved changes?' })
     fireEvent.click(within(ask).getByRole('button', { name: 'Keep editing' }))
-    expect(screen.getByRole('button', { name: 'Save Template' })).toBeInTheDocument()
+    expect(toolbar().getByRole('button', { name: 'Save Template' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close editor' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
     fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Discard unsaved changes?' })).getByRole('button', { name: 'Discard changes' }))
     expect(screen.getByRole('button', { name: 'Edit partner agreement' })).toBeInTheDocument()
   })
@@ -227,7 +235,7 @@ describe('AgreementBuilder safety nets', () => {
   it('closes straight away when nothing changed', async () => {
     await openBuilder()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close editor' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Edit partner agreement' })).toBeInTheDocument()
@@ -244,13 +252,11 @@ describe('AgreementBuilder placing blocks', () => {
         return HttpResponse.json({ status: true, message: 'Saved' })
       }),
     )
-    // getByText, not getByRole: role queries walk the whole editor and, on a
-    // loaded CI runner, took these tests past their timeout.
-    fireEvent.click(screen.getByText('Save Template'))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
     await waitFor(() => expect(saved).not.toBeNull())
     return (JSON.parse(saved!.template_json).blocks as { type: string; content?: string }[]).map((b) => b.type)
   }
-  /** Palette queries stay inside the palette, for the same reason. */
+  /** Palette queries stay inside the palette, for the same reason as toolbar(). */
   const inPalette = () => within(document.querySelector('.ab4-palette') as HTMLElement)
   const blockOf = async (text: string) => (await screen.findByText(text)).closest('.ab4-block') as HTMLElement
 
@@ -370,7 +376,7 @@ describe('AgreementBuilder placing blocks', () => {
 
   it('adds a block dropped anywhere on an empty page', async () => {
     await openBuilder()
-    fireEvent.click(screen.getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
     fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
     const page = (await screen.findByText('Empty Agreement')).closest('.ab4-doc') as HTMLElement
     const dataTransfer = { data: {} as Record<string, string>, setData(t: string, v: string) { this.data[t] = v; this.types.push(t) }, getData(t: string) { return this.data[t] }, effectAllowed: '', dropEffect: '', types: [] as string[] }
@@ -394,7 +400,7 @@ describe('AgreementBuilder starter templates', () => {
         return HttpResponse.json({ status: true, message: 'Saved' })
       }),
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
     await waitFor(() => expect(saved).not.toBeNull())
     return saved!.template_html
   }
@@ -404,7 +410,7 @@ describe('AgreementBuilder starter templates', () => {
   it('offers only partner templates in the partner agreement', async () => {
     await openBuilder()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Templates' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
 
     const picker = screen.getByRole('dialog', { name: 'Start from a template' })
     expect(names(picker)).toEqual(['Master partner agreement', 'Blank page'])
@@ -414,7 +420,7 @@ describe('AgreementBuilder starter templates', () => {
   it('offers only borrower templates in the borrower agreement', async () => {
     await openBuilder(<AgreementBuilder />, 'borrower')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Templates' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
 
     const picker = screen.getByRole('dialog', { name: 'Start from a template' })
     expect(names(picker)).toEqual(['Client enrollment agreement', 'Business funding agreement', 'Master loan agreement', 'Terms acknowledgement', 'Blank page'])
@@ -423,7 +429,7 @@ describe('AgreementBuilder starter templates', () => {
   it('offers a complete business funding agreement with a header, the client details, sections and a signature', async () => {
     await openBuilder(<AgreementBuilder />, 'borrower')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Templates' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
     fireEvent.click(within(screen.getByRole('dialog', { name: 'Start from a template' })).getByRole('button', { name: /Business funding agreement/ }))
 
     expect(await screen.findByText('BUSINESS FUNDING AGREEMENT')).toBeInTheDocument()
@@ -444,7 +450,7 @@ describe('AgreementBuilder starter templates', () => {
     await openBuilder(<AgreementBuilder />, 'borrower')
     await screen.findByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Templates' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
     fireEvent.click(within(screen.getByRole('dialog', { name: 'Start from a template' })).getByRole('button', { name: /Terms acknowledgement/ }))
 
     expect(screen.queryByRole('dialog', { name: 'Start from a template' })).not.toBeInTheDocument()
@@ -455,14 +461,14 @@ describe('AgreementBuilder starter templates', () => {
     expect(html).toContain('type="checkbox"')
     expect(html).not.toContain('BUSINESS CREDIT BUILDER')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Undo' }))
     expect(await screen.findByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')).toBeInTheDocument()
   })
 
   it('starts from a blank page', async () => {
     await openBuilder()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Templates' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
     fireEvent.click(within(screen.getByRole('dialog', { name: 'Start from a template' })).getByRole('button', { name: /Blank page/ }))
 
     expect(await screen.findByText('Empty Agreement')).toBeInTheDocument()
@@ -479,7 +485,7 @@ describe('AgreementBuilder loading the saved agreement', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit partner agreement' }))
     expect(await screen.findByText('Saved clause from the server')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close editor' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Edit partner agreement' }))
 
     expect(await screen.findByText('Saved clause from the server')).toBeInTheDocument()
