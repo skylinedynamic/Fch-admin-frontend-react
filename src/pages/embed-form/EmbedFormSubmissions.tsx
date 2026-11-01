@@ -20,6 +20,8 @@ import { REJECTED_CANNOT_CONVERT, SUBMISSION_STATUS } from '../../modules/embed-
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 import SubmissionPartner from './components/SubmissionPartner';
+import DeleteSelectedSubmissions from './components/DeleteSelectedSubmissions';
+import { usePartnerOptions, partnerOptionLabel } from '../../modules/partner';
 import { useAuthStore } from '../../store/auth/authStore';
 
 const STATUS_OPTIONS = [
@@ -89,6 +91,13 @@ export default function EmbedFormSubmissions() {
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedStatus, setAppliedStatus] = useState<string>('');
     const [appliedDateRange, setAppliedDateRange] = useState<any>(null);
+    // Host only: one partner's applications.
+    const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('');
+    const [appliedPartnerId, setAppliedPartnerId] = useState<number | ''>('');
+    const { data: partnerOptions = [], isLoading: loadingPartners } = usePartnerOptions(isHost);
+    const partners = partnerOptions.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
+    // Ticked rows for Delete Selected; a converted application cannot be ticked.
+    const [selectedSubmissions, setSelectedSubmissions] = useState<any[]>([]);
     const [filters, setFilters] = useState<DataTableFilterMeta>({
         first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
         email: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -147,9 +156,14 @@ export default function EmbedFormSubmissions() {
                 }
             }
 
+            if (isHost && appliedPartnerId) {
+                payload.partner_id = appliedPartnerId;
+            }
+
             const res = await fetchEmbedFormSubmissions(payload);
 
             if (res.status) {
+                setSelectedSubmissions([]);
                 const data = res.data?.data || res.data || [];
                 // The API answers { status, message, data: [...], meta }, so meta
                 // sits beside data, not inside it. Reading it from data left the
@@ -179,7 +193,7 @@ export default function EmbedFormSubmissions() {
         } finally {
             setLoading(false);
         }
-    }, [appliedSearchText, appliedStatus, appliedDateRange, perPage, page, sortField, sortOrder]);
+    }, [appliedSearchText, appliedStatus, appliedDateRange, appliedPartnerId, isHost, perPage, page, sortField, sortOrder]);
 
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -192,6 +206,7 @@ export default function EmbedFormSubmissions() {
         setAppliedSearchText(searchText);
         setAppliedStatus(selectedStatus);
         setAppliedDateRange(dateRange);
+        setAppliedPartnerId(selectedPartnerId);
         setPage(1);
     };
 
@@ -202,6 +217,8 @@ export default function EmbedFormSubmissions() {
         setAppliedSearchText('');
         setAppliedStatus('');
         setAppliedDateRange(null);
+        setSelectedPartnerId('');
+        setAppliedPartnerId('');
         setFilters({
             first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
             email: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -408,10 +425,13 @@ export default function EmbedFormSubmissions() {
         { title: 'Free Plan Borrowers', count: stats.converted_count, icon: 'ri-vip-crown-2-line', colorVariant: 'success' },
     ];
 
+    // With the host's Partner filter there are five controls, so they narrow.
+    const filterCol = isHost ? 'col-xxl-2 col-sm-6' : 'col-xxl-3 col-sm-6';
     const filterLoaderConfig = [
         { col: 'col-xxl-3 col-sm-6' }, // Search
-        { col: 'col-xxl-3 col-sm-6' }, // Status
-        { col: 'col-xxl-3 col-sm-6' }, // Date Range
+        ...(isHost ? [{ col: filterCol }] : []), // Partner
+        { col: filterCol }, // Status
+        { col: filterCol }, // Date Range
         { col: 'col-xxl-3 col-sm-6', isButton: true }, // Buttons
     ];
 
@@ -425,7 +445,9 @@ export default function EmbedFormSubmissions() {
                         { label: 'Embedded Form', path: '/embed-form/settings' },
                         { label: 'Loan Applications' },
                     ]}
-                />
+                >
+                    <DeleteSelectedSubmissions selected={selectedSubmissions} onDeleted={loadData} />
+                </PageHeader>
 
                 {/* Statistics Cards Row mirrored from Partners.jsx */}
                 <div className="row embed-stats-section partner-section">
@@ -474,7 +496,24 @@ export default function EmbedFormSubmissions() {
                                                 </div>
                                             </div>
 
-                                            <div className="col-xxl-3 col-sm-6">
+                                            {isHost && (
+                                                <div className={filterCol}>
+                                                    <Dropdown
+                                                        value={selectedPartnerId}
+                                                        options={[{ label: 'All Partners', value: '' }, ...partners]}
+                                                        onChange={(e) => setSelectedPartnerId(e.value ?? '')}
+                                                        optionLabel="label"
+                                                        optionValue="value"
+                                                        placeholder={loadingPartners ? 'Loading...' : 'All Partners'}
+                                                        disabled={loadingPartners}
+                                                        ariaLabel="Partner"
+                                                        filter
+                                                        className="w-100 employee-filter-dropdown"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <div className={filterCol}>
                                                 <Dropdown
                                                     value={selectedStatus}
                                                     options={[{ label: 'All Status', value: '' }, ...STATUS_OPTIONS]}
@@ -487,7 +526,7 @@ export default function EmbedFormSubmissions() {
                                                 />
                                             </div>
 
-                                            <div className="col-xxl-3 col-sm-6">
+                                            <div className={filterCol}>
                                                 <div className="search-box">
                                                     <Calendar
                                                         value={dateRange}
@@ -552,15 +591,21 @@ export default function EmbedFormSubmissions() {
                                             onPage={onPage}
                                             onSort={onSort}
                                             dataKey="id"
+                                            selection={selectedSubmissions}
+                                            onSelectionChange={(e: any) => setSelectedSubmissions(e.value)}
+                                            selectionMode="checkbox"
+                                            // Converted applications belong to a client: they cannot be deleted.
+                                            isDataSelectable={(e: any) => e.data?.status !== SUBMISSION_STATUS.CONVERTED}
                                             rowClassName={() => 'cursor-pointer'}
                                             onRowClick={(e) => {
-                                                const isButton = (e.originalEvent.target as HTMLElement)?.closest('button');
-                                                if (!isButton) navigate(`/embed-form/loan-applications/${e.data.id}`);
+                                                const target = e.originalEvent.target as HTMLElement;
+                                                if (!target?.closest('button, .p-selection-column, .p-checkbox')) navigate(`/embed-form/loan-applications/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
                                             emptyMessage="No form submissions found"
                                         >
+                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                                             <Column
                                                 field="first_name"
                                                 header="Applicant"

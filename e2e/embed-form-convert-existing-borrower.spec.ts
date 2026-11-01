@@ -143,6 +143,41 @@ test.describe('Embed Form › Loan application › convert onto an existing borr
     await expect(page.locator('.modal.show')).toHaveCount(0)
   })
 
+  // BUG-064: the client's blank profile fields are filled only with consent.
+  test('lists the blank profile fields and fills them only when the partner ticks the box', async ({ page }) => {
+    const withFields = {
+      ...EXISTING_BORROWER,
+      fields_to_fill: [
+        { field: 'date_of_birth', label: 'Date Of Birth', value: '1985-05-05' },
+        { field: 'ssn', label: 'SSN', value: '***-**-6789' },
+      ],
+    }
+    await page.route(PREVIEW, (route) => jsonOk(route, { mode: 'existing_borrower', existing_borrower: withFields }))
+    await openModal(page)
+
+    const modal = page.locator('.modal.show')
+    const list = modal.getByRole('list', { name: 'Empty profile fields this application can fill' })
+    await expect(list).toContainText('Date of birth')
+    await expect(list).toContainText('***-**-6789')
+    const consent = modal.getByRole('checkbox', { name: /Also fill these empty fields/ })
+    await expect(consent).not.toBeChecked()
+
+    await consent.check()
+    await modal.getByRole('button', { name: CONFIRM_EXISTING }).click()
+    await expect.poll(() => convertBodies.length).toBe(1)
+    expect(convertBodies[0]).toMatchObject({ confirm_existing_borrower: true, fill_profile_fields: true })
+  })
+
+  test('leaves the profile alone when the box is not ticked', async ({ page }) => {
+    const withFields = { ...EXISTING_BORROWER, fields_to_fill: [{ field: 'date_of_birth', label: 'Date Of Birth', value: '1985-05-05' }] }
+    await page.route(PREVIEW, (route) => jsonOk(route, { mode: 'existing_borrower', existing_borrower: withFields }))
+    await openModal(page)
+    await page.locator('.modal.show').getByRole('button', { name: CONFIRM_EXISTING }).click()
+
+    await expect.poll(() => convertBodies.length).toBe(1)
+    expect(convertBodies[0]).not.toHaveProperty('fill_profile_fields')
+  })
+
   test('switches to the existing client when one appears after the preview', async ({ page }) => {
     await page.route(PREVIEW, (route) => jsonOk(route, { mode: 'new_borrower', existing_borrower: null }))
     await openModal(page)

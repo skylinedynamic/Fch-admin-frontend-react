@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { ConversionPreview } from './types';
+import type { ConversionPreview, DeleteSubmissionsResponse } from './types';
 
 export const getEmbedFormConfig = async (partnerId?: number) => {
   const params = partnerId ? { partner_id: partnerId } : {};
@@ -55,3 +55,12 @@ export const convertEmbedFormSubmissionToBorrower = async (id: number | string, 
   return response.data;
 };
 
+
+/**
+ * Delete the applications ticked in the list. The API refuses the whole
+ * selection (422, errors.converted) if any of them has been converted.
+ */
+export const deleteEmbedFormSubmissions = async (ids: number[]): Promise<DeleteSubmissionsResponse> => {
+  const response = await apiClient.post('/common/embed-forms/submissions/delete', { ids });
+  return response.data;
+};

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, ok, paginated, failure, seedSession, expectCall, pickPrime, type ApiMock } from '../../../support/helpers'
+import { mockApi, ok, paginated, failure, seedSession, expectCall, pickPrime, confirmDelete, type ApiMock } from '../../../support/helpers'
 
 const EF = '/common/embed-forms'
 
@@ -79,6 +79,45 @@ test.describe('Loan applications (embed form submissions)', () => {
     await open(page)
     await page.locator('tr', { hasText: 'ada@example.test' }).getByRole('button', { name: /convert to free plan borrower/i }).click()
     await expect(page).toHaveURL(/\/embed-form\/loan-applications$/)
+  })
+
+  // Ticked applications are deleted from the Actions button, as on Partners and
+  // Clients. A converted one belongs to a client, so its box is disabled.
+  test('deletes the ticked applications from Actions; a converted one cannot be ticked', async ({ page }) => {
+    await seedSession(page, { permissions: ['view application'] })
+    const api = await mockApi(page, [
+      { method: 'POST', match: LIST, body: paginated(SUBMISSIONS) },
+      { method: 'POST', match: `${EF}/submissions/delete`, body: ok({ deleted: 1 }, 'Applications deleted successfully.') },
+    ])
+    await page.goto('/embed-form/loan-applications')
+    await expect(page.getByText('ada@example.test')).toBeVisible()
+
+    await expect(page.locator('tr', { hasText: 'ben@example.test' }).locator('input.p-checkbox-input')).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Actions' })).toHaveCount(0)
+
+    await page.locator('tr', { hasText: 'ada@example.test' }).locator('.p-checkbox').click()
+    await expect(page).toHaveURL(/\/embed-form\/loan-applications$/) // ticking does not open the row
+    await page.locator('.dropdown-toggle-split').click()
+    await page.getByRole('button', { name: /Delete Selected/ }).click()
+    await confirmDelete(page)
+
+    const call = await expectCall(api, 'POST', `${EF}/submissions/delete`)
+    expect(call.json).toEqual({ ids: [1401] })
+  })
+
+  test('the host can filter the list by partner', async ({ page }) => {
+    await seedSession(page, { permissions: ['view application'] })
+    const api = await mockApi(page, [
+      { method: 'POST', match: LIST, body: paginated(SUBMISSIONS) },
+      { method: 'POST', match: '/common/get-all-partners', body: ok([{ id: 4, company_name: 'Acme Lending', full_name: 'Pat Partner' }, { id: 9, company_name: 'Zeta Funding', full_name: 'Zed Z' }]) },
+    ])
+    await page.goto('/embed-form/loan-applications')
+    await expect(page.getByText('ada@example.test')).toBeVisible()
+
+    await pickPrime(page, page.locator('.p-dropdown', { hasText: 'All Partners' }), /Zeta Funding/)
+    await page.getByRole('button', { name: /Filters/ }).click()
+
+    await expect.poll(() => api.find('POST', LIST).some((c) => c.json?.partner_id === 9)).toBe(true)
   })
 
   test('clicking a row opens the application', async ({ page }) => {

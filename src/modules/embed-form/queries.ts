@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
-import { fetchConversionPreview } from './services'
+import { deleteEmbedFormSubmissions, fetchConversionPreview } from './services'
 
 /**
  * What converting the submission would do, read fresh each time the Convert
@@ -15,3 +15,12 @@ export const useConversionPreview = (id: number | string | null | undefined, ena
     gcTime: 0,
     retry: false,
   })
+
+/** Delete the ticked applications (only ones not yet converted). */
+export const useDeleteEmbedFormSubmissions = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: number[]) => deleteEmbedFormSubmissions(ids),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.embedForm.all }),
+  })
+}
