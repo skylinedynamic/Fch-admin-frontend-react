@@ -311,6 +311,14 @@ test.describe('Partner profile - Client List', () => {
     expect(call.json).toMatchObject({ page: 1 })
   })
 
+  test('the joining date is the day the client was created, not its business start date', async ({ page }) => {
+    const client = { ...CLIENTS[0], business_start_date: '2015-06-01', created_at: '2026-03-14' }
+    await openProfile(page, 'clientList', [{ method: 'POST', match: '/admin/partners/fetch-borrowers', body: paginated([client]) }])
+    await expect(page.getByText('Doe Bakery')).toBeVisible()
+    await expect(page.getByRole('cell', { name: '2026-03-14' })).toBeVisible()
+    await expect(page.getByText('2015-06-01')).toHaveCount(0)
+  })
+
   test('shows the empty state', async ({ page }) => {
     await openProfile(page, 'clientList', [{ method: 'POST', match: '/admin/partners/fetch-borrowers', body: paginated([]) }])
     await expect(page.getByText('No clients found')).toBeVisible()
