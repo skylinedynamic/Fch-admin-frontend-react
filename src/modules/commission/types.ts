@@ -1,3 +1,5 @@
+import type { PaymentEnvironment } from '../../config/paymentEnvironment';
+
 // Common fields shared between list and detail
 import { PaginatedApiResponse } from '../application/types';
 
@@ -130,6 +132,8 @@ export interface CommissionPayout {
     payment_method: string | null;
     /** True when Make Payment is allowed: something to pay, not paid yet, funding closed. */
     can_pay: boolean;
+    /** Unpaid payouts only: what the payout dialog's Environment starts on (Production on the production app). */
+    default_environment?: PaymentEnvironment;
 }
 
 export type Commission = CommissionListItem | CommissionDetail;
@@ -150,4 +154,6 @@ export interface CommissionFilters {
 export interface ProcessPayoutPayload {
     partner_payment_method: string;
     note?: string;
+    /** The environment the payout's payment is filed under. */
+    environment: PaymentEnvironment;
 }

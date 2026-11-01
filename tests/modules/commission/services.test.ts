@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
 import { getCommissions, getCommissionById, processPayout } from '../../../src/modules/commission/services'
+import { PAYMENT_ENVIRONMENT } from '../../../src/config/paymentEnvironment'
 
 afterEach(() => server.resetHandlers())
 
@@ -110,8 +111,8 @@ describe('processPayout', () => {
       })
     )
 
-    const result = await processPayout(9, { partner_payment_method: 'ach', note: 'paid out' })
-    expect(receivedBody).toEqual({ partner_payment_method: 'ach', note: 'paid out' })
+    const result = await processPayout(9, { partner_payment_method: 'ach', note: 'paid out', environment: PAYMENT_ENVIRONMENT.PRODUCTION })
+    expect(receivedBody).toEqual({ partner_payment_method: 'ach', note: 'paid out', environment: PAYMENT_ENVIRONMENT.PRODUCTION })
     expect(result).toEqual({ status: true, message: 'paid' })
   })
 })

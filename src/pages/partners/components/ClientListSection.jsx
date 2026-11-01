@@ -30,7 +30,7 @@ export default function ClientListSection() {
             business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_start_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+            created_at: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
         };
         setFilters(initial);
     };
@@ -130,7 +130,7 @@ export default function ClientListSection() {
                     'business_name',
                     'email',
                     'phone_number',
-                    'business_start_date'
+                    'created_at'
                 ]}
                 dataKey="id"
                 responsiveLayout="scroll"
@@ -179,14 +179,14 @@ export default function ClientListSection() {
                     body={(r) => renderBody(r, 'phone_number')}
                 />
                 <Column
-                    field="business_start_date"
+                    field="created_at"
                     header="Joining Date"
                     sortable
                     filter
                     showFilterMatchModes
                     filterPlaceholder="Search by date"
                     style={{ minWidth: '150px' }}
-                    body={(r) => renderBody(r, 'business_start_date')}
+                    body={(r) => renderBody(r, 'created_at')}
                 />
             </DataTable>
         </div>
