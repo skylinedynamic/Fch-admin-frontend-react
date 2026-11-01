@@ -1322,7 +1322,7 @@ export default function FundingApplicationDetails() {
                                                         />
                                                     </div>
                                                     <div className="mb-3">
-                                                        <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
+                                                        <label htmlFor="status-notes" className="form-label text-muted">Status Notes</label>
                                                         <textarea
                                                             className={`form-control ${notesError ? 'is-invalid' : ''}`}
                                                             id="status-notes"
