@@ -11,7 +11,7 @@ vi.mock('bootstrap/js/dist/modal', () => ({
   },
 }))
 
-// R2 BUG-045: a double-click on "Update" in "Are you sure...?" sent the status
+// R2 BUG-037: a double-click on "Update" in "Are you sure...?" sent the status
 // change twice - the button is only disabled once the parent re-renders with
 // loading, which is after the second click.
 describe('ConfirmationModal', () => {

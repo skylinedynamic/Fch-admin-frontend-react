@@ -113,7 +113,7 @@ export default function FundingRequestDetail() {
         setValidationErrors({});
         updateStatusMutation.mutate(
             // With the status this page shows: a decision made on a stale page
-            // is refused instead of flipping what someone else decided (R2 BUG-058).
+            // is refused instead of flipping what someone else decided (R2 BUG-048).
             withExpectedStatus(
                 { id: review.id, status: selectedStatus, ...(selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && { reject_reason: rejectReason }) },
                 review.status

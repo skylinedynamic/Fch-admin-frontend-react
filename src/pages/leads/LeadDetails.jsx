@@ -425,7 +425,7 @@ export default function LeadDetails() {
                     const data = response.data;
 
                     // Normalize Country - a lead without one starts with the
-                    // default, held in the form so it is what gets saved (R2 BUG-065).
+                    // default, held in the form so it is what gets saved (R2 BUG-055).
                     let finalCountry = leadCountryFor(data.country);
                     if (locationData[finalCountry]) {
                         finalCountry = locationData[finalCountry].name;

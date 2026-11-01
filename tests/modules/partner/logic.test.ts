@@ -57,7 +57,7 @@ describe('defaultInstallmentMonths', () => {
   })
 })
 
-// R2 BUG-060: emptying Address or Contact Person and saving kept the old value -
+// R2 BUG-050: emptying Address or Contact Person and saving kept the old value -
 // an emptied field was left out of the update, so the API never saw it cleared.
 describe('buildPartnerFormDataPayload - clearing optional fields', () => {
   const editForm = {

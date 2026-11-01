@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { isStaleRecordError, staleRecordMessage, withExpectedStatus } from '../../src/utils/staleRecord'
 
-// R2 BUG-041 / 045 / 058 / 079: a save or decision made from a page showing an
+// R2 BUG-033 / 045 / 058 / 079: a save or decision made from a page showing an
 // older copy of the record is refused by the API with 409.
 describe('stale record responses', () => {
   const conflict = { response: { status: 409, data: { message: 'This request is already "Approved" - it was changed by someone else since you opened it. Reload to see the latest.' } } }

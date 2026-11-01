@@ -166,7 +166,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const [apiVisibilities, setApiVisibilities] = React.useState<any[]>([]);
 
     // Inactive lenders that still have rules here are offered too, tagged, so
-    // their rules can be found (R2 BUG-038).
+    // their rules can be found (R2 BUG-030).
     const sequenceLenders = React.useMemo(() => {
         const rules = [...validVisibilities, ...apiVisibilities];
         const lenderIds = new Set(rules.map(v => String(v.lender_id)));
@@ -676,7 +676,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     lazy={!!id}
                                     value={displayVisibilities.map((v, i) => {
                                         const category = productCategories?.find(c => String(c.id) === String(v.lender_product_category_id));
-                                        // An inactive lender keeps its name, tagged (R2 BUG-038).
+                                        // An inactive lender keeps its name, tagged (R2 BUG-030).
                                         const lenderLabel = lenderLabelFor(v, lenders);
                                         const lenderName = lenderLabel.inactive ? `${lenderLabel.name} (Inactive)` : lenderLabel.name;
                                         const catName = category?.name || 'Unknown Category';

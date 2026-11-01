@@ -57,7 +57,7 @@ describe('FundingApplicationDetails - QA round 2', () => {
     })
   })
 
-  // R2 BUG-045: the change carries the status this page shows, so a repeat or a stale page is refused.
+  // R2 BUG-037: the change carries the status this page shows, so a repeat or a stale page is refused.
   it('sends the status the page shows with a status change', async () => {
     const user = userEvent.setup()
     renderWithProviders(<FundingApplicationDetails />)
@@ -83,7 +83,7 @@ describe('FundingApplicationDetails - QA round 2', () => {
     expect(mocks.refetch).toHaveBeenCalled()
   })
 
-  // R2 BUG-044: 0 was refused with nothing on screen, and the card showed the unsaved 0%.
+  // R2 BUG-036: 0 was refused with nothing on screen, and the card showed the unsaved 0%.
   it('shows a refused Success Fee and keeps the card on the saved rate', async () => {
     mocks.saveCommission.mockImplementation((_payload, options) =>
       options.onError({ response: { status: 422, data: { errors: { total_commission: ['The success fee commission must be at least 1.'] } } } })

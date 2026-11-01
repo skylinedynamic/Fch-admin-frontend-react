@@ -1,7 +1,7 @@
 /**
  * A save or decision made from a page showing an older copy of a record: the
  * API refuses it with 409 rather than silently undoing what someone else (or
- * another tab) changed in the meantime (R2 BUG-041 / 045 / 058 / 079).
+ * another tab) changed in the meantime (R2 BUG-033 / 045 / 058 / 079).
  */
 
 const FALLBACK = 'This record was changed by someone else since you opened it. Reload to see the latest.'

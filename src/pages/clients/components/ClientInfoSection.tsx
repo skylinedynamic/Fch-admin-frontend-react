@@ -193,7 +193,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const hasSyncedData = React.useRef(false);
     // Which copy of the client this form shows: from the load, then from each
     // save's response - not from a background refetch, which could carry
-    // another user's change the form does not show (R2 BUG-079).
+    // another user's change the form does not show (R2 BUG-065).
     const clientInfoVersion = React.useRef<string | null>(null);
 
     useEffect(() => {
@@ -288,7 +288,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         const fetchUsers = async () => {
             try {
                 // Inactive employees are left out of the list, except the
-                // client's current assignee, which comes back flagged (R2 BUG-061).
+                // client's current assignee, which comes back flagged (R2 BUG-051).
                 const response = await allUsers({
                     ...(borrowerPartnerId ? { partner_id: Number(borrowerPartnerId) } : {}),
                     ...(savedAssigneeId ? { include_user_id: Number(savedAssigneeId) } : {}),

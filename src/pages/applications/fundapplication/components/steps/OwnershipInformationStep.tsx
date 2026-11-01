@@ -9,7 +9,9 @@ import CoBorrowerTable from '../shared/CoBorrowerTable'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { countries } from '../../../../../modules/location'
 import { useOwnershipInfo, useSaveOwnershipInfo } from '../../../../../modules/funding-application/queries'
+import { latestAdultBirthDate } from '../../../../../modules/funding-application/applicationRules'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { citizenshipOptions } from '../../../../../data/profile'
 import { toast } from 'react-toastify'
 import { formatPhoneNumber, formatSSN, unformatSSN, formatZipCode } from '../../../../../utils/borrowerFormatters'
@@ -122,6 +124,8 @@ export default function OwnershipInformationStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       const errors = error.response?.data?.errors
       if (errors) {
         setValidationErrors(errors)
@@ -369,7 +373,7 @@ export default function OwnershipInformationStep({
                 dateFormat: 'Y-m-d',
                 altInput: true,
                 altFormat: 'j M, Y',
-                maxDate: 'today',
+                maxDate: latestAdultBirthDate(), // 18 or older, as the API requires (R2 BUG-031)
                 monthSelectorType: 'dropdown',
                 plugins: [yearDropdownPlugin(1900)],
               }}

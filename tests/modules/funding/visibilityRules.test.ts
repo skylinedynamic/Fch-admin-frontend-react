@@ -8,12 +8,12 @@ import {
 } from '../../../src/modules/funding/visibilityRules'
 
 describe('underwriting logic rules', () => {
-  // R2 BUG-011: the API takes a Min FICO of 300-850 (App\Rules\FicoScore); the input carries the same bounds.
+  // R2 BUG-009: the API takes a Min FICO of 300-850 (App\Rules\FicoScore); the input carries the same bounds.
   it('uses the FICO scale the API enforces', () => {
     expect([FICO_MIN, FICO_MAX]).toEqual([300, 850])
   })
 
-  // R2 BUG-012: a state picked as allowed is not offered as restricted, and the other way round.
+  // R2 BUG-010: a state picked as allowed is not offered as restricted, and the other way round.
   describe('optionsWithout', () => {
     const states = [
       { label: 'Texas', value: 'TX' },
@@ -35,7 +35,7 @@ describe('underwriting logic rules', () => {
     })
   })
 
-  // R2 BUG-038: a rule for a lender set to Inactive showed "Unknown Lender".
+  // R2 BUG-030: a rule for a lender set to Inactive showed "Unknown Lender".
   describe('lenderLabelFor', () => {
     const activeLenders = [{ id: 1, name: 'R2 Lender Free' }]
 

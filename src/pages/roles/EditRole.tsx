@@ -60,8 +60,11 @@ export default function EditRole() {
   const [selected, setSelected] = useState<Record<string, Record<string, boolean>>>({})
   const [errors, setErrors] = useState<{ name?: string; description?: string; permission_ids?: string }>({})
   const [detailError, setDetailError] = useState<string | null>(null)
-  const [detail, setDetail] = useState<{ id: number | string; name: string; description?: string; permission: string[]; permission_ids?: number[] } | null>(null)
+  const [detail, setDetail] = useState<{ id: number | string; name: string; description?: string; permission: string[]; permission_ids?: number[]; is_static?: boolean } | null>(null)
   const hasFetchedDetailRef = React.useRef<boolean>(false)
+  // A system role (Admin, Developer): its name and permissions are fixed, so
+  // they are shown read-only; only the description can change (R2 BUG-011).
+  const isStatic = !!detail?.is_static
 
   const { data: groupedPerms, isLoading: permsLoading, isError: permsError } = useGroupedPermissions({ fresh: true })
   const { mutateAsync: updateRole, isPending: updating } = useUpdateRole()
@@ -216,7 +219,10 @@ export default function EditRole() {
     const name = roleName.trim()
     setErrors({})
     try {
-      const res = await updateRole({ id: roleId, payload: { name, description, permission_ids: permissionIds } })
+      const payload = isStatic && detail
+        ? { name: detail.name, description, permission_ids: detail.permission_ids ?? permissionIds }
+        : { name, description, permission_ids: permissionIds }
+      const res = await updateRole({ id: roleId, payload })
       const msg = (res as any)?.message || 'Role updated successfully.'
       toast.success(msg)
       navigate('/roles-permissions')
@@ -271,9 +277,15 @@ export default function EditRole() {
             <div className="card">
               <div className="card-body" style={{ minHeight: '73vh' }}>
                 <div className="role-form">
+                  {isStatic && (
+                    <div className="alert alert-info border-0 bg-info-subtle text-info fs-13 mb-4" role="note">
+                      <i className="ri-shield-keyhole-line align-middle me-2 fs-15"></i>
+                      This is a system role. Its name and permissions are fixed so that its holders never lose access; only the description can be changed.
+                    </div>
+                  )}
                   <div className="mb-4">
                     <label className="form-label">Role name <span className="text-danger">*</span></label>
-                    <input type="text" className={`form-control${errors.name ? ' is-invalid' : ''}`} placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
+                    <input type="text" className={`form-control${errors.name ? ' is-invalid' : ''}`} placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} disabled={isStatic} />
                     {errors.name && <div className="text-danger mt-1 small">{errors.name}</div>}
                   </div>
 
@@ -291,6 +303,7 @@ export default function EditRole() {
                           className="form-check-input"
                           type="checkbox"
                           id="adminAccessToggle"
+                          disabled={isStatic}
                           checked={adminAccess}
                           onChange={(e) => {
                             const next = e.target.checked
@@ -314,6 +327,7 @@ export default function EditRole() {
                         {permsLoading && <PermissionCardsLoader />}
                         {permsError && !permsLoading && <ErrorState message="Failed to load permissions. Please try again." />}
                         {detailError && !permsLoading && <ErrorState message={detailError} />}
+                        <fieldset disabled={isStatic} className="border-0 p-0 m-0">
                         <div className="permissions-list-wrapper mt-2" style={{ display: permsLoading ? 'none' : undefined }}>
                           {!permsLoading && modules.map((mod) => {
                             const allChecked = isModuleAllChecked(mod)
@@ -365,6 +379,7 @@ export default function EditRole() {
                             )
                           })}
                         </div>
+                        </fieldset>
                       </div>
                     </div>
                   </div>

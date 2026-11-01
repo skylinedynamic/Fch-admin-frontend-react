@@ -3,7 +3,7 @@
  * visibility rules), kept out of the component so they can be tested alone.
  */
 
-/** The FICO scale the API enforces on Min FICO (App\Rules\FicoScore) - R2 BUG-011. */
+/** The FICO scale the API enforces on Min FICO (App\Rules\FicoScore) - R2 BUG-009. */
 export const FICO_MIN = 300
 export const FICO_MAX = 850
 
@@ -11,7 +11,7 @@ type Option = { label: string; value: string }
 
 /**
  * The options not already picked in the other list - a state cannot be both
- * allowed and restricted (R2 BUG-012). The API refuses the overlap too.
+ * allowed and restricted (R2 BUG-010). The API refuses the overlap too.
  */
 export const optionsWithout = <T extends Option>(options: T[], pickedElsewhere: string[] | null | undefined): T[] => {
   if (!pickedElsewhere || pickedElsewhere.length === 0) return options
@@ -23,7 +23,7 @@ type Rule = { lender_id?: number | string | null; lender?: { id: number | string
 
 /**
  * The lender's name for a rule row. The active-lender list does not hold a
- * lender set to Inactive, so its rule showed "Unknown Lender" (R2 BUG-038);
+ * lender set to Inactive, so its rule showed "Unknown Lender" (R2 BUG-030);
  * the rule carries its own lender from the API, which is used instead.
  */
 export const lenderLabelFor = (rule: Rule, activeLenders: LenderRef[]): { name: string; inactive: boolean } => {

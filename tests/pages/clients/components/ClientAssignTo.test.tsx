@@ -94,7 +94,7 @@ describe('Client -> Assign to', () => {
     await waitFor(() => expect(shown()).toBe("Hal Host (not on this partner's team)"))
   })
 
-  // R2 BUG-061: an Inactive employee was still offered. The API now leaves them
+  // R2 BUG-051: an Inactive employee was still offered. The API now leaves them
   // out, except the client's current assignee, which it flags.
   it('a current assignee who has since been set Inactive is shown as such', async () => {
     serve(CLIENT, [{ id: 70, name: 'Wanda Partner', is_inactive: true }, { id: 71, name: 'Will Staff', is_inactive: false }])
@@ -104,7 +104,7 @@ describe('Client -> Assign to', () => {
   })
 })
 
-// R2 BUG-079: a save from a page opened before another user's change put that
+// R2 BUG-065: a save from a page opened before another user's change put that
 // change back. The form sends the version it loaded; the API refuses a stale one.
 describe('Client -> saving from an older copy', () => {
   const VERSIONED = { ...CLIENT, client_info_version: 'v1' }

@@ -99,7 +99,7 @@ describe('isLeadTypeLocked', () => {
   })
 })
 
-// R2 BUG-065: Contact Info showed Country "United States" but saving said
+// R2 BUG-055: Contact Info showed Country "United States" but saving said
 // "Country is required." - the default was shown but never put into the form.
 describe('leadCountryFor', () => {
   it("keeps the lead's own country, by name", () => {

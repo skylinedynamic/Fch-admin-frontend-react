@@ -65,7 +65,7 @@ export const mapPartnerBackendErrors = (backendErrors: Record<string, any>): Rec
 /**
  * Optional fields an edit may clear (nullable in UpdatePartnerRequest). An
  * emptied one used to be left out of the payload, so the API kept the old
- * value (R2 BUG-060); on an edit they are sent empty instead.
+ * value (R2 BUG-050); on an edit they are sent empty instead.
  */
 const CLEARABLE_ON_EDIT = [
     'contact_person', 'contact_person_phone_number', 'contact_person_email', 'contact_person_relation',

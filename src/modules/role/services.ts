@@ -101,6 +101,7 @@ export const fetchRoleDetail = async (id: number | string): Promise<RoleDetail> 
     // Normalize permission names to string[] for UI
     permission: permissionArray,
     users: Array.isArray(data.users) ? data.users : [],
+    is_static: data.is_static === true || data.is_static === 1,
   }
   if (permissionIds.length) {
     normalized.permission_ids = permissionIds

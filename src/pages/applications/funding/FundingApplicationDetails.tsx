@@ -157,7 +157,7 @@ export default function FundingApplicationDetails() {
     const handleConfirmUpdate = () => {
         if (!app.id) return;
         // With the status this page shows: a double-click or a stale page is
-        // refused, not applied twice (R2 BUG-045).
+        // refused, not applied twice (R2 BUG-037).
         updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
@@ -320,7 +320,7 @@ export default function FundingApplicationDetails() {
                     const backendErrors = error.response.data.errors;
                     const first = (value: any) => (Array.isArray(value) ? value[0] : value);
                     // A refusal is shown, and the cards go back to what is
-                    // stored rather than previewing a rate that was not saved (R2 BUG-044).
+                    // stored rather than previewing a rate that was not saved (R2 BUG-036).
                     toast.error(first(backendErrors.total_commission) || first(backendErrors.admin_commission) || first(backendErrors.partner_commission) || first(backendErrors.requested_amount) || 'Commission not saved.');
                     syncCommissionFromApp();
                     setCommissionErrors({
@@ -922,7 +922,7 @@ export default function FundingApplicationDetails() {
                                                                                 setCommissionErrors({ ...commissionErrors, total_commission: undefined });
                                                                             }
                                                                         }}
-                                                                        // The API's range: 1-100% (R2 BUG-044).
+                                                                        // The API's range: 1-100% (R2 BUG-036).
                                                                         min="1"
                                                                         max="100"
                                                                         step="0.01"

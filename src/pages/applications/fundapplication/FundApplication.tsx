@@ -20,6 +20,7 @@ import { useCoBorrowers } from './hooks/useCoBorrowers'
 import { FUNDING_PURPOSE_OTHER, purposeOfFundingOptions, timeframeOptions, withoutPreferredFundingType } from '../../../data/profile'
 import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower'
 import { useFundingRequest, useFundingApplicationDocuments } from '../../../modules/funding-application/queries'
+import { resetApplicationVersion } from '../../../modules/funding-application/applicationVersion'
 import { formatCurrency } from '../../../utils/borrowerFormatters'
 
 // Types & Utils
@@ -123,6 +124,11 @@ export default function FundApplication() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const activeStepSaveRef = React.useRef<(() => Promise<boolean>) | null>(null)
+
+  // The application version belongs to this wizard: leaving it (or opening
+  // another request) forgets it, so the next one starts from its own load
+  // (R2 BUG-033).
+  useEffect(() => () => resetApplicationVersion(), [id])
 
   // Co-borrower hook
   const {

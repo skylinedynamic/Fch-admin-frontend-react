@@ -283,6 +283,54 @@ describe('EditRole', () => {
     expect(await screen.findByTestId('landing')).toHaveTextContent('navigated:/roles-permissions')
   })
 
+  /**
+   * Defect: R2 BUG-011 - the seeded Admin role opened fully editable (name,
+   * every permission, Administrator Access), so the only admin could untick
+   * their own access. A system role is shown read-only, with a notice; only
+   * its description can change. The API refuses the rest as well.
+   */
+  describe('a system role (R2 BUG-011)', () => {
+    const mountStatic = () => {
+      api('post', '/common/permissions', { status: true, data: PERMISSIONS })
+      api('get', '/common/roles/2', { status: true, data: { id: 2, name: 'Admin', description: 'Everything', is_static: true, permission: { 1: 'view users', 3: 'view clients' }, users: [] } })
+      return renderPage(<EditRole />, { path: '/roles-permissions/edit/:id', route: '/roles-permissions/edit/2' })
+    }
+
+    it('says it is a system role and locks its name and permissions', async () => {
+      const { container } = mountStatic()
+
+      expect(await screen.findByText(/system role/i)).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByPlaceholderText('Enter a role name')).toHaveValue('Admin'))
+      expect(screen.getByPlaceholderText('Enter a role name')).toBeDisabled()
+      expect(screen.getByLabelText('Administrator Access')).toBeDisabled()
+      await waitFor(() => expect(container.querySelectorAll('input[id^="perm-"]:checked').length).toBeGreaterThan(0))
+      container.querySelectorAll('input[id^="perm-"], input[id^="selectAll-"]').forEach((input) => expect(input).toBeDisabled())
+      expect(screen.getByPlaceholderText('Enter role description')).not.toBeDisabled()
+    })
+
+    it('saves a new description with the name and permissions it already has', async () => {
+      const user = userEvent.setup()
+      mountStatic()
+      const update = api('put', '/common/roles/2', { status: true, message: 'Role updated successfully.' })
+      await waitFor(() => expect(screen.getByPlaceholderText('Enter a role name')).toHaveValue('Admin'))
+
+      await user.clear(screen.getByPlaceholderText('Enter role description'))
+      await user.type(screen.getByPlaceholderText('Enter role description'), 'All access')
+      await user.click(screen.getByRole('button', { name: /update/i }))
+
+      await waitFor(() => expect(update.bodies[0]).toMatchObject({ name: 'Admin', description: 'All access' }))
+      expect([...(update.bodies[0].permission_ids as number[])].sort()).toEqual([1, 3])
+    })
+
+    it('a role that is not a system role stays editable', async () => {
+      mount()
+      await waitFor(() => expect(screen.getByPlaceholderText('Enter a role name')).toHaveValue('Agent'))
+
+      expect(screen.queryByText(/system role/i)).not.toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Enter a role name')).not.toBeDisabled()
+    })
+  })
+
   /** Defect (BUG-038): a cleared name returned before the request, so Update showed nothing. */
   it('shows the API "role name is required" when the name is cleared', async () => {
     const user = userEvent.setup()

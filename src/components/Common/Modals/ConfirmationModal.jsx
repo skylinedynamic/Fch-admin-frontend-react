@@ -68,7 +68,7 @@ export default function ConfirmationModal({ show, onHide, onConfirm, loading, ti
     // One confirmation per opening while it is being handled: the button is
     // only disabled once the parent re-renders with `loading`, so a double-click
     // used to confirm twice - e.g. the same status change applied twice
-    // (R2 BUG-045). Released when the work finishes (loading true -> false),
+    // (R2 BUG-037). Released when the work finishes (loading true -> false),
     // when the modal is shown again, or after a moment if the parent never
     // reports loading at all.
     const inFlightRef = useRef(false);

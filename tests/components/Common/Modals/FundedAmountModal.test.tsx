@@ -4,7 +4,7 @@ import FundedAmountModal from '../../../../src/components/Common/Modals/FundedAm
 
 vi.mock('bootstrap/js/dist/modal', () => ({ default: class { show() {} hide() {} dispose() {} } }))
 
-// R2 BUG-046: closing an application requested at $12,000 with a funded amount
+// R2 BUG-038: closing an application requested at $12,000 with a funded amount
 // of $60,000 gave no warning, though closing locks the application for good.
 describe('FundedAmountModal', () => {
   const renderModal = (onConfirm = vi.fn()) => {

@@ -17,7 +17,7 @@ interface FundedAmountModalProps {
     partnerCommissionRate?: number;
     showPartnerCommission?: boolean;
     isCommissionSet?: boolean;
-    /** The application's requested amount: a funded amount above it is confirmed separately (R2 BUG-046). */
+    /** The application's requested amount: a funded amount above it is confirmed separately (R2 BUG-038). */
     requestedAmount?: number;
 }
 
@@ -88,7 +88,7 @@ export default function FundedAmountModal({
 
     const parsedAmount = parseFloat(amount || '0');
     // Closing locks the application for good, so a funded amount above what
-    // was requested (a typo of a zero, say) needs a second look (R2 BUG-046).
+    // was requested (a typo of a zero, say) needs a second look (R2 BUG-038).
     const isAboveRequested = requestedAmount > 0 && parsedAmount > requestedAmount;
     const successFeeAmt = parsedAmount * (successFeeRate / 100);
     const adminShareAmt = successFeeAmt * (adminCommissionRate / 100);

@@ -65,7 +65,7 @@ describe('Funding Request Details: action buttons', () => {
     expect(confirm).not.toHaveClass('btn-dark')
   })
 
-  // R2 BUG-026: the modal read "Assign to Lender. You can assign Before Approved".
+  // R2 BUG-019: the modal read "Assign to Lender. You can assign Before Approved".
   it('asks for a lender in plain words before an approval', async () => {
     server.use(
       http.get('*/common/funding-request/:id', () =>

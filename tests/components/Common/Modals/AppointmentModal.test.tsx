@@ -241,6 +241,35 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
     expect(screen.getByText('Scheduling Conflict')).toBeInTheDocument()
   })
 
+  /**
+   * Defect: R2 BUG-073 - the availability check sent the client's record id
+   * (entity_id) as `assigned_for`, so the API refused it ("Assigned user does
+   * not exist.") and a clash was only reported after Confirm.
+   */
+  it('checks availability for the client by user id, the same attendee Save sends', async () => {
+    const bodies: Record<string, unknown>[] = []
+    const check = {
+      stub: () =>
+        server.use(
+          http.post('*/common/appointments/check-availability', async ({ request }) => {
+            bodies.push((await request.json()) as Record<string, unknown>)
+            return HttpResponse.json({ status: true, data: { available: true } })
+          })
+        ),
+    }
+    const { update, user } = await edit(check)
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => expect(update.calls).toBe(1))
+    expect(bodies.length).toBeGreaterThan(0)
+    bodies.forEach((body) => {
+      expect(body.assigned_for).toBe(CLIENT_ID)
+      expect(body).not.toHaveProperty('entity_id')
+    })
+    expect(update.bodies[0]).toMatchObject({ assigned_for: CLIENT_ID })
+  })
+
   it('without a conflict, saves once with the client and says only that it was updated', async () => {
     // The only appointment at that time is this one.
     const check = availability({ available: false, scheduler_conflicts: [{ id: 1, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }], assignee_conflicts: [] })
