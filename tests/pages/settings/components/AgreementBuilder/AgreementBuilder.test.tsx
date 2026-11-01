@@ -244,17 +244,21 @@ describe('AgreementBuilder placing blocks', () => {
         return HttpResponse.json({ status: true, message: 'Saved' })
       }),
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Save Template' }))
+    // getByText, not getByRole: role queries walk the whole editor and, on a
+    // loaded CI runner, took these tests past their timeout.
+    fireEvent.click(screen.getByText('Save Template'))
     await waitFor(() => expect(saved).not.toBeNull())
     return (JSON.parse(saved!.template_json).blocks as { type: string; content?: string }[]).map((b) => b.type)
   }
+  /** Palette queries stay inside the palette, for the same reason. */
+  const inPalette = () => within(document.querySelector('.ab4-palette') as HTMLElement)
   const blockOf = async (text: string) => (await screen.findByText(text)).closest('.ab4-block') as HTMLElement
 
   it('adds a block from the palette below the selected block', async () => {
     await openBuilder()
     fireEvent.click(await blockOf('MASTER PARTNER AGREEMENT'))
 
-    fireEvent.click(screen.getByRole('button', { name: /Divider/ }))
+    fireEvent.click(inPalette().getByRole('button', { name: /Divider/ }))
 
     expect((await savedTypes()).slice(0, 4)).toEqual(['header', 'text', 'divider', 'text'])
   })
@@ -264,8 +268,8 @@ describe('AgreementBuilder placing blocks', () => {
     await openBuilder()
     fireEvent.click(await blockOf('MASTER PARTNER AGREEMENT'))
 
-    fireEvent.click(screen.getByRole('button', { name: /Divider/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Spacer/ }))
+    fireEvent.click(inPalette().getByRole('button', { name: /Divider/ }))
+    fireEvent.click(inPalette().getByRole('button', { name: /Spacer/ }))
 
     expect((await savedTypes()).slice(0, 5)).toEqual(['header', 'text', 'divider', 'spacer', 'text'])
   })
@@ -273,7 +277,7 @@ describe('AgreementBuilder placing blocks', () => {
   it('adds a block from the palette at the end when none is selected', async () => {
     await openBuilder()
 
-    fireEvent.click(screen.getByRole('button', { name: /Divider/ }))
+    fireEvent.click(inPalette().getByRole('button', { name: /Divider/ }))
 
     expect((await savedTypes()).slice(-1)).toEqual(['divider'])
   })
@@ -301,7 +305,7 @@ describe('AgreementBuilder placing blocks', () => {
     await openBuilder()
     await blockOf('MASTER PARTNER AGREEMENT')
     const dataTransfer = { data: {} as Record<string, string>, setData(t: string, v: string) { this.data[t] = v; this.types.push(t) }, getData(t: string) { return this.data[t] }, effectAllowed: '', dropEffect: '', types: [] as string[] }
-    const palette = screen.getByRole('button', { name: /Divider/ })
+    const palette = inPalette().getByRole('button', { name: /Divider/ })
 
     fireEvent.dragStart(palette, { dataTransfer })
     const title = await blockOf('MASTER PARTNER AGREEMENT')
@@ -324,10 +328,10 @@ describe('AgreementBuilder placing blocks', () => {
     const root = document.querySelector('.ab4-root') as HTMLElement
     const dataTransfer = { data: {} as Record<string, string>, setData(t: string, v: string) { this.data[t] = v; this.types.push(t) }, getData(t: string) { return this.data[t] }, effectAllowed: '', dropEffect: '', types: [] as string[] }
 
-    fireEvent.dragStart(screen.getByRole('button', { name: /Divider/ }), { dataTransfer })
+    fireEvent.dragStart(inPalette().getByRole('button', { name: /Divider/ }), { dataTransfer })
     expect(root).toHaveClass('ab4-root--dragging')
 
-    fireEvent.dragEnd(screen.getByRole('button', { name: /Divider/ }), { dataTransfer })
+    fireEvent.dragEnd(inPalette().getByRole('button', { name: /Divider/ }), { dataTransfer })
     expect(root).not.toHaveClass('ab4-root--dragging')
   })
 
@@ -339,7 +343,7 @@ describe('AgreementBuilder placing blocks', () => {
     const gap = (n: number) => document.querySelectorAll('.ab4-doc .ab4-iz')[n] as HTMLElement
 
     const palette = dt()
-    fireEvent.dragStart(screen.getByRole('button', { name: /Divider/ }), { dataTransfer: palette })
+    fireEvent.dragStart(inPalette().getByRole('button', { name: /Divider/ }), { dataTransfer: palette })
     fireEvent.dragOver(gap(1), { dataTransfer: palette })
     fireEvent.drop(gap(1), { dataTransfer: palette })
 
@@ -357,7 +361,7 @@ describe('AgreementBuilder placing blocks', () => {
     await openBuilder()
     const dataTransfer = { data: {} as Record<string, string>, setData(t: string, v: string) { this.data[t] = v; this.types.push(t) }, getData(t: string) { return this.data[t] }, effectAllowed: '', dropEffect: '', types: [] as string[] }
 
-    fireEvent.dragStart(screen.getByRole('button', { name: /Divider/ }), { dataTransfer })
+    fireEvent.dragStart(inPalette().getByRole('button', { name: /Divider/ }), { dataTransfer })
     fireEvent.dragOver(await blockOf('MASTER PARTNER AGREEMENT'), { dataTransfer, clientY: -10 })
     fireEvent.drop(await blockOf('MASTER PARTNER AGREEMENT'), { dataTransfer, clientY: -10 })
 
@@ -371,7 +375,7 @@ describe('AgreementBuilder placing blocks', () => {
     const page = (await screen.findByText('Empty Agreement')).closest('.ab4-doc') as HTMLElement
     const dataTransfer = { data: {} as Record<string, string>, setData(t: string, v: string) { this.data[t] = v; this.types.push(t) }, getData(t: string) { return this.data[t] }, effectAllowed: '', dropEffect: '', types: [] as string[] }
 
-    fireEvent.dragStart(screen.getByRole('button', { name: /Text Block/ }), { dataTransfer })
+    fireEvent.dragStart(inPalette().getByRole('button', { name: /Text Block/ }), { dataTransfer })
     fireEvent.dragOver(page, { dataTransfer })
     expect(page).toHaveClass('ab4-doc--drop')
     fireEvent.drop(page, { dataTransfer })
