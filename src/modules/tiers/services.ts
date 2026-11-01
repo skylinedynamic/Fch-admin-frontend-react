@@ -51,8 +51,9 @@ export const getTierTask = async (id: number | string): Promise<TierTask> => {
     return data;
 }
 
+// The API deletes tier tasks only in bulk (no DELETE tier-tasks/{id}, BUG-095).
 export const deleteTierTask = async (id: number): Promise<void> => {
-    await apiClient.delete(`/admin/credit-builder/tier-tasks/${id}`);
+    await apiClient.post('/admin/credit-builder/tier-tasks-multiple-delete', { ids: [id] });
 }
 
 export const deleteTierTasks = async (ids: number[]): Promise<void> => {

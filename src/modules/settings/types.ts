@@ -304,7 +304,7 @@ export interface MailProviderOption {
 
 /**
  * One saved provider. Its provider fields sit alongside these keys (for
- * example `smtp_host`); a secret field is only ever the mask or null.
+ * example `smtp_host`); a secret field is never returned, only `has_<field>`.
  */
 export interface MailConfiguration {
     id: number;

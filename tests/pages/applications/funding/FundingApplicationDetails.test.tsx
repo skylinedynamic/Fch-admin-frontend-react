@@ -16,9 +16,16 @@ vi.mock('../../../../src/modules/application/queries', async (original) => ({
   useSaveFundingApplicationCommission: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
-vi.mock('../../../../src/components/Common/Activity/ActivitySidebar', () => ({ default: () => null }))
+// Records what the page hands the activity log, which is not rendered here.
+const sidebar = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }))
+vi.mock('../../../../src/components/Common/Activity/ActivitySidebar', () => ({
+  default: (props: Record<string, unknown>) => {
+    sidebar.props = props
+    return null
+  },
+}))
 
-// A submitted application on an approved request that is still at status key 9 or below.
+// A submitted application on an approved request, in an editable status.
 const editable = {
   id: 80,
   partner_id: 1,
@@ -47,25 +54,40 @@ describe('FundingApplicationDetails — Edit Funding Application', () => {
     expect(editLink()).toHaveAttribute('href', '/fund-application/29')
   })
 
-  it('hides it once the application has moved past the last editable status', () => {
+  it('hides it once the application is in a status that is not editable', () => {
     detail.application = { ...editable, status: FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER, is_editable: false }
     renderWithProviders(<FundingApplicationDetails />)
 
     expect(editLink()).not.toBeInTheDocument()
   })
 
-  // Status keys 1-9 are all editable; the server sends that as is_editable.
+  // The 11 editable statuses (API config `statuses.editable`); the server sends that as is_editable.
   it.each([
     FUNDING_APPLICATION_STATUS.ON_HOLD,
     FUNDING_APPLICATION_STATUS.DRAFT,
     FUNDING_APPLICATION_STATUS.PENDING,
     FUNDING_APPLICATION_STATUS.APPROVED_CONDITIONAL,
     FUNDING_APPLICATION_STATUS.APPROVED_FINAL,
-  ])('offers it at %s, because the status key is 9 or below', (status) => {
+    FUNDING_APPLICATION_STATUS.PENDING_CLARIFICATION,
+    FUNDING_APPLICATION_STATUS.READY_FOR_SUBMISSION,
+  ])('offers it at %s, an editable status', (status) => {
     detail.application = { ...editable, status }
     renderWithProviders(<FundingApplicationDetails />)
 
     expect(editLink()).toBeInTheDocument()
+  })
+
+  it.each([
+    FUNDING_APPLICATION_STATUS.WITHDRAWN,
+    FUNDING_APPLICATION_STATUS.OFFER_DECLINED_BY_BORROWER,
+    FUNDING_APPLICATION_STATUS.CLOSED_NO_RESPONSE,
+    FUNDING_APPLICATION_STATUS.CLOSED_INCOMPLETE_APPLICATION,
+    FUNDING_APPLICATION_STATUS.CLOSED_ERROR,
+  ])('hides it at %s, a new closing status', (status) => {
+    detail.application = { ...editable, status, is_editable: false }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
   })
 
   it('hides it when the funding request is not approved', () => {
@@ -194,5 +216,103 @@ describe('FundingApplicationDetails — Funding Request tab', () => {
 
     const additional = await screen.findByText('Additional Funding Types')
     expect(additional.nextElementSibling).toHaveTextContent('-')
+  })
+})
+
+describe('FundingApplicationDetails - activity log Want to Assign', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+    sidebar.props = null
+  })
+
+  it("lists the application partner's staff and shows its borrower's Assign to", () => {
+    detail.application = { ...editable, partner_id: 4, borrower: { id: 1, assign_id: 14, email: 'b@example.test' } }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(sidebar.props).toMatchObject({
+      entityType: 'Funding Application',
+      partnerId: 4,
+      taskOwner: { id: 14 },
+    })
+  })
+
+  it('shows nobody when the borrower has no Assign to', () => {
+    detail.application = { ...editable, borrower: { id: 1, assign_id: null } }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(sidebar.props?.taskOwner).toBeNull()
+  })
+
+  it("lines the activity card up under the page's own title bar (no fixed offset)", () => {
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(sidebar.props?.stickyTopOffset).toBeUndefined()
+  })
+})
+
+describe('FundingApplicationDetails — Status Notes', () => {
+  beforeEach(() => {
+    detail.application = { ...editable }
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: ['update funding application'] } as never })
+  })
+
+  it('caps Status Notes at the 10,000 characters the API accepts', () => {
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(screen.getByLabelText(/status notes/i)).toHaveAttribute('maxLength', '10000')
+  })
+
+  it('shows how many characters are used', () => {
+    detail.application = { ...editable, status_note: 'Withdrawn by borrower' }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(screen.getByText('21 / 10,000')).toBeInTheDocument()
+  })
+})
+
+describe("FundingApplicationDetails — Can't edit a locked application", () => {
+  const reason = 'This application can no longer be edited because it is "Withdrawn". Contact your funding advisor if something needs to change.'
+  const locked = { ...editable, status: FUNDING_APPLICATION_STATUS.WITHDRAWN, is_editable: false, locked_reason: reason }
+  const cantEdit = () => screen.queryByRole('button', { name: /can't edit funding application/i })
+
+  const viewers = {
+    host: { id: 1, is_host: true, partner_id: 1, permissions: [] },
+    'white-label partner': { id: 2, is_host: false, partner_id: 1, partner_type: PARTNER_TYPES.WHITE_LABEL, permissions: [] },
+    'certified partner': { id: 3, is_host: false, partner_id: 1, partner_type: PARTNER_TYPES.CERTIFIED, permissions: [] },
+  }
+
+  it.each(Object.entries(viewers))('tells the %s it can no longer be edited, and why', (_, user) => {
+    detail.application = { ...locked }
+    useAuthStore.setState({ user: user as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(editLink()).not.toBeInTheDocument()
+    expect(cantEdit()).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent(reason)
+  })
+
+  it.each([
+    FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER,
+    FUNDING_APPLICATION_STATUS.FUNDED,
+    FUNDING_APPLICATION_STATUS.OFFER_DECLINED_BY_BORROWER,
+    FUNDING_APPLICATION_STATUS.CLOSED_NO_RESPONSE,
+    FUNDING_APPLICATION_STATUS.CLOSED_INCOMPLETE_APPLICATION,
+    FUNDING_APPLICATION_STATUS.CLOSED_ERROR,
+  ])('says so at %s, naming the status when the server sends no reason', (status) => {
+    detail.application = { ...locked, status, locked_reason: undefined }
+    useAuthStore.setState({ user: viewers.host as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(cantEdit()).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent(`because it is "${status}"`)
+  })
+
+  it('says nothing of the kind while the application is editable', () => {
+    detail.application = { ...editable, status: FUNDING_APPLICATION_STATUS.READY_FOR_SUBMISSION }
+    useAuthStore.setState({ user: viewers.host as never })
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(cantEdit()).not.toBeInTheDocument()
+    expect(screen.queryByText(/can no longer be edited/i)).not.toBeInTheDocument()
   })
 })

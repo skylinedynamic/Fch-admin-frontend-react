@@ -30,7 +30,7 @@ const PROVIDERS = [
   {
     value: 'aws_ses', label: 'Amazon SES',
     fields: [
-      { key: 'aws_access_key', label: 'AWS Access Key', type: 'text', required: true, secret: false, options: [] },
+      { key: 'aws_access_key', label: 'AWS Access Key', type: 'text', required: true, secret: true, options: [] },
       { key: 'aws_secret_key', label: 'AWS Secret Key', type: 'password', required: true, secret: true, options: [] },
       { key: 'aws_region', label: 'AWS Region', type: 'text', required: true, secret: false, options: [] },
     ],
@@ -97,7 +97,7 @@ test.describe('Settings › Email Configuration', () => {
       if (route.request().method() === 'POST') {
         const body = route.request().postDataJSON() as Record<string, unknown>
         posted.push(body)
-        configurations = [{ ...body, id: 21, provider_label: 'SMTP', smtp_password: '••••••••', is_verified: false, is_default: false, verified_at: null, verified_to: null, updated_at: '2026-10-17T10:00:00+00:00' }]
+        configurations = [{ ...body, id: 21, provider_label: 'SMTP', smtp_password: undefined, has_smtp_password: true, is_verified: false, is_default: false, verified_at: null, verified_to: null, updated_at: '2026-10-17T10:00:00+00:00' }]
         return ok(route, configurations[0], 'Mail configuration saved. Verify it to start sending with it.')
       }
       return ok(route, {
@@ -160,7 +160,7 @@ test.describe('Settings › Email Configuration', () => {
     // The fallback starts on a verified SMTP; SES is added beside it.
     const fallbacks: Config[] = [{
       id: 1, provider: 'smtp', provider_label: 'SMTP', from_address: 'noreply@fch.test', bcc_emails: null,
-      smtp_host: 'smtp.fch.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'platform', smtp_password: '••••••••',
+      smtp_host: 'smtp.fch.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'platform', has_smtp_password: true,
       is_verified: true, is_default: true, verified_at: '2026-10-17 08:00:00', verified_to: 'host@example.test', updated_at: '2026-10-17T08:00:00+00:00',
     }]
     let fallbackSaves = 0
@@ -181,7 +181,7 @@ test.describe('Settings › Email Configuration', () => {
       if (route.request().method() === 'POST') {
         fallbackSaves++
         const body = route.request().postDataJSON() as Record<string, unknown>
-        const saved: Config = { ...body, id: 2, provider_label: 'Amazon SES', aws_secret_key: '••••••••', is_verified: false, is_default: false, verified_at: null, verified_to: null, updated_at: '2026-10-17T11:00:00+00:00' }
+        const saved: Config = { ...body, id: 2, provider_label: 'Amazon SES', aws_access_key: undefined, aws_secret_key: undefined, has_aws_access_key: true, has_aws_secret_key: true, is_verified: false, is_default: false, verified_at: null, verified_to: null, updated_at: '2026-10-17T11:00:00+00:00' }
         fallbacks.push(saved)
         return ok(route, saved, 'Mail configuration saved.')
       }
@@ -235,7 +235,7 @@ test.describe('Settings › Email Configuration', () => {
     await signIn(page, false)
     const verified: Config = {
       id: 11, provider: 'smtp', provider_label: 'SMTP', from_address: 'mail@acme.test', bcc_emails: null,
-      smtp_host: 'smtp.acme.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'mailer', smtp_password: '••••••••',
+      smtp_host: 'smtp.acme.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'mailer', has_smtp_password: true,
       is_verified: true, is_default: true, verified_at: '2026-10-17 08:00:00', verified_to: 'pat@example.test', updated_at: '2026-10-17T08:00:00+00:00',
     }
     let saves = 0
@@ -289,7 +289,7 @@ test.describe('Settings › Email Configuration', () => {
 
     let configurations: Config[] = [{
       id: 21, provider: 'smtp', provider_label: 'SMTP', from_address: 'mail@acme.test', bcc_emails: null,
-      smtp_host: 'smtp.acme.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'mailer', smtp_password: '••••••••',
+      smtp_host: 'smtp.acme.test', smtp_port: 587, smtp_encryption: 'tls', smtp_username: 'mailer', has_smtp_password: true,
       is_verified: false, is_default: false, verified_at: null, verified_to: null, updated_at: '2026-10-17T10:00:00+00:00',
     }]
 

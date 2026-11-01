@@ -8,6 +8,15 @@ import {
   VISIBILITY_BADGE_STYLES,
   normalizeActivityFieldErrors,
   getActivityValidationToast,
+  ACTIVITY_TASK_REFERENCE,
+  TASK_PRIORITY_OPTIONS,
+  TASK_STATUS_OPTIONS,
+  DEFAULT_TASK_ASSIGNMENT,
+  buildTaskAssignmentFields,
+  buildTaskEditFields,
+  taskAssignmentFromActivity,
+  asksReminderRecipient,
+  buildReminderRecipientField,
 } from '../../../src/modules/activity-log/constants'
 
 describe('visibility field wiring', () => {
@@ -85,5 +94,152 @@ describe('getActivityValidationToast with a visibility error', () => {
     const errors = normalizeActivityFieldErrors({ visibility: 'Please select who can see this activity.' })
     const message = getActivityValidationToast(errors, [])
     expect(message).toBe('Please select who can see this activity.')
+  })
+})
+
+describe('task assignment ("Want to Assign")', () => {
+  it('only a Task can be assigned', () => {
+    expect(ACTIVITY_TASK_REFERENCE).toBe('Task')
+  })
+
+  it('offers Low, Medium and High priorities, in that order', () => {
+    expect(TASK_PRIORITY_OPTIONS).toEqual([
+      { value: 'low', label: 'Low' },
+      { value: 'medium', label: 'Medium' },
+      { value: 'high', label: 'High' },
+    ])
+  })
+
+  it('offers Open, In Progress and Complete statuses, in that order', () => {
+    expect(TASK_STATUS_OPTIONS).toEqual([
+      { value: 'open', label: 'Open' },
+      { value: 'in_progress', label: 'In Progress' },
+      { value: 'complete', label: 'Complete' },
+    ])
+  })
+
+  it('starts a new assignment at Medium priority and Open', () => {
+    expect(DEFAULT_TASK_ASSIGNMENT).toEqual({
+      assign_task: false,
+      assigned_to: '',
+      task_due_date: '',
+      task_priority: 'medium',
+      task_status: 'open',
+    })
+  })
+
+  it('sends the four task fields when a Task is being assigned', () => {
+    expect(
+      buildTaskAssignmentFields({
+        reference: 'Task',
+        assign_task: true,
+        assigned_to: 12,
+        task_due_date: '2026-11-02 15:30:00',
+        task_priority: 'high',
+        task_status: 'in_progress',
+      })
+    ).toEqual({
+      assign_task: '1',
+      assigned_to: '12',
+      task_due_date: '2026-11-02 15:30:00',
+      task_priority: 'high',
+      task_status: 'in_progress',
+    })
+  })
+
+  it('sends nothing when the switch is off, or the reference is no longer Task', () => {
+    const assigned = { assign_task: true, assigned_to: 12, task_due_date: '2026-11-02 15:30:00', task_priority: 'high', task_status: 'open' }
+    expect(buildTaskAssignmentFields({ ...assigned, reference: 'Task', assign_task: false })).toEqual({})
+    expect(buildTaskAssignmentFields({ ...assigned, reference: 'Call' })).toEqual({})
+  })
+
+  it('shows the task fields\' errors inline on the create form', () => {
+    for (const field of ['assign_task', 'assigned_to', 'task_due_date', 'task_priority', 'task_status']) {
+      expect(ACTIVITY_CREATE_ERROR_FIELDS).toContain(field)
+    }
+  })
+})
+
+describe('Want to Assign on Edit', () => {
+  const savedTask = {
+    assigned_to: 12,
+    assigned_user: { id: 12, name: 'Avery Staff' },
+    due_date: '2026-11-07 15:30:00',
+    priority: 'high' as const,
+    priority_label: 'High',
+    status: 'in_progress' as const,
+    status_label: 'In Progress',
+  }
+
+  it('starts the form from the saved task', () => {
+    expect(taskAssignmentFromActivity(savedTask)).toEqual({
+      assign_task: true,
+      assigned_to: '12',
+      task_due_date: '2026-11-07 15:30:00',
+      task_priority: 'high',
+      task_status: 'in_progress',
+    })
+  })
+
+  it('starts an unassigned activity with the switch off and the config defaults', () => {
+    expect(taskAssignmentFromActivity(null)).toEqual(DEFAULT_TASK_ASSIGNMENT)
+    expect(taskAssignmentFromActivity(undefined)).toEqual(DEFAULT_TASK_ASSIGNMENT)
+  })
+
+  it('falls back to the defaults for a saved task missing a priority or status', () => {
+    const form = taskAssignmentFromActivity({ ...savedTask, priority: null, status: null, due_date: null })
+    expect(form.task_priority).toBe(DEFAULT_TASK_ASSIGNMENT.task_priority)
+    expect(form.task_status).toBe(DEFAULT_TASK_ASSIGNMENT.task_status)
+    expect(form.task_due_date).toBe('')
+  })
+
+  it('sends the four task fields while assigned', () => {
+    expect(buildTaskEditFields({
+      reference: 'Task',
+      assign_task: true,
+      assigned_to: '14',
+      task_due_date: '2026-11-07 15:30:00',
+      task_priority: 'low',
+      task_status: 'open',
+    })).toEqual({
+      assign_task: '1',
+      assigned_to: '14',
+      task_due_date: '2026-11-07 15:30:00',
+      task_priority: 'low',
+      task_status: 'open',
+    })
+  })
+
+  it('always says when the task is not assigned, so an edit can un-assign it', () => {
+    expect(buildTaskEditFields({ reference: 'Task', assign_task: false })).toEqual({ assign_task: '0' })
+    expect(buildTaskEditFields({ reference: 'Call', assign_task: true, assigned_to: '14' })).toEqual({ assign_task: '0' })
+  })
+
+  it("shows the task fields' errors inline on the edit form", () => {
+    for (const field of ['assign_task', 'assigned_to', 'task_due_date', 'task_priority', 'task_status']) {
+      expect(ACTIVITY_EDIT_ERROR_FIELDS).toContain(field)
+    }
+  })
+})
+
+describe('Who gets the reminder', () => {
+  const assignedTaskWithReminder = { reference: 'Task', assign_task: true, remind_me: true }
+
+  it('is asked only when an assigned Task sets a reminder', () => {
+    expect(asksReminderRecipient(assignedTaskWithReminder)).toBe(true)
+    expect(asksReminderRecipient({ ...assignedTaskWithReminder, remind_me: false })).toBe(false)
+    expect(asksReminderRecipient({ ...assignedTaskWithReminder, assign_task: false })).toBe(false)
+    expect(asksReminderRecipient({ ...assignedTaskWithReminder, reference: 'Call' })).toBe(false)
+  })
+
+  it('sends the pick, Both when none was made, and nothing when not asked', () => {
+    expect(buildReminderRecipientField({ ...assignedTaskWithReminder, reminder_recipient: 'creator' })).toEqual({ reminder_recipient: 'creator' })
+    expect(buildReminderRecipientField(assignedTaskWithReminder)).toEqual({ reminder_recipient: 'both' })
+    expect(buildReminderRecipientField({ ...assignedTaskWithReminder, remind_me: false, reminder_recipient: 'creator' })).toEqual({})
+  })
+
+  it("shows the API's message under the picker on both forms", () => {
+    expect(ACTIVITY_CREATE_ERROR_FIELDS).toContain('reminder_recipient')
+    expect(ACTIVITY_EDIT_ERROR_FIELDS).toContain('reminder_recipient')
   })
 })

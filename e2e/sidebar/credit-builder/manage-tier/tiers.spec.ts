@@ -15,7 +15,8 @@ const TASKS = [
 ]
 
 // Add/Delete on the tier list are reserved for the Developer role on top of the permission.
-const DEVELOPER = { role_name: 'Developer', permissions: ['update tier'] }
+// The tier pages need view tier (BUG-125); adding and deleting need update tier.
+const DEVELOPER = { role_name: 'Developer', permissions: ['view tier', 'update tier'] }
 
 async function openList(page: Page, user: Record<string, unknown> = DEVELOPER): Promise<ApiMock> {
   await seedSession(page, user)
@@ -76,13 +77,13 @@ test.describe('Tiers list', () => {
   })
 
   test('Add Tier and row selection are hidden for other roles', async ({ page }) => {
-    await openList(page, { role_name: 'Admin', permissions: ['update tier'] })
+    await openList(page, { role_name: 'Admin', permissions: ['view tier', 'update tier'] })
     await expect(page.getByRole('link', { name: /add tier/i })).toHaveCount(0)
     await expect(page.locator('.p-datatable-tbody .p-checkbox')).toHaveCount(0)
   })
 
   test('Add Tier is hidden for a Developer without the permission', async ({ page }) => {
-    await openList(page, { role_name: 'Developer', permissions: [] })
+    await openList(page, { role_name: 'Developer', permissions: ['view tier'] })
     await expect(page.getByRole('link', { name: /add tier/i })).toHaveCount(0)
   })
 
@@ -199,7 +200,7 @@ test.describe('Tier edit', () => {
   })
 
   test('Update is hidden without the update permission', async ({ page }) => {
-    await openEdit(page, { role_name: 'Developer', permissions: [] })
+    await openEdit(page, { role_name: 'Developer', permissions: ['view tier'] })
     await expect(page.locator('button.btn-primary.w-lg')).toHaveCount(0)
   })
 

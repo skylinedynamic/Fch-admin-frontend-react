@@ -6,6 +6,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { toast } from 'react-toastify';
 
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
+import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
 import TableLoader from '../../../components/Loader/TableLoader';
 import TierVendorModal from './TierVendorModal';
 import { usePermissions } from '../../../lib/auth/usePermissions';
@@ -37,6 +38,8 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
 
     // Selection
     const [selectedVendors, setSelectedVendors] = useState([]);
+    // Vendors the API kept because tier tasks still use them (BUG-095).
+    const [blocked, setBlocked] = useState({ message: '', items: [] });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
     const [deleteRows, setDeleteRows] = useState([]);
@@ -127,52 +130,12 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
     const handleModalSubmit = async (formData) => {
         setServerErrors({});
         try {
-            let payload = formData;
-
-            // Check if logo is a file or if we need to send multipart/form-data
-            // Since we added a file input, we should check if 'logo' is a File object
-            // or always send as FormData to be safe if logo is present
-            const isMultipart = formData.logo instanceof File;
-
-            if (isMultipart) {
-                const data = new FormData();
-                Object.keys(formData).forEach(key => {
-                    const value = formData[key];
-                    if (Array.isArray(value)) {
-                        value.forEach((item, index) => {
-                            data.append(`${key}[${index}]`, item);
-                        });
-                    } else if (value !== null && value !== undefined) {
-                        if (value instanceof File) {
-                            // Sanitize filename: replace spaces with underscores
-                            const sanitizedName = value.name.replace(/\s+/g, '_');
-                            const sanitizedFile = new File([value], sanitizedName, { type: value.type });
-                            data.append(key, sanitizedFile);
-                        } else {
-                            data.append(key, value);
-                        }
-                    }
-                });
-                // For update, we might need to handle _method field if using PUT with FormData (Laravel quirk)
-                // But react-query mutation usually handles it? No, axios needs it.
-                // Assuming POST for create, PUT for update.
-                // If update and file, typically we need POST with _method=PUT for Laravel
-                if (editVendor) {
-                    data.append('_method', 'PUT');
-                }
-                payload = data;
-            }
-
+            // Plain JSON: the logo is a File Manager path, not an upload.
             if (editVendor) {
-                // If multipart, we usually use POST with _method=PUT for Laravel file uploads on update
-                if (isMultipart) {
-                    await updateMutation.mutateAsync({ id: editVendor.id, data: payload }); // Ensure query uses POST if payload is FormData
-                } else {
-                    await updateMutation.mutateAsync({ id: editVendor.id, data: payload });
-                }
+                await updateMutation.mutateAsync({ id: editVendor.id, data: formData });
                 toast.success('Vendor updated successfully');
             } else {
-                await createMutation.mutateAsync(payload);
+                await createMutation.mutateAsync(formData);
                 toast.success('Vendor created successfully');
             }
             setShowModal(false);
@@ -231,8 +194,20 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
             setDeleteRows([]);
             setSelectedVendors([]);
         } catch (err) {
-            console.error('Delete error:', err);
-            toast.error(err.message || 'Failed to delete vendors');
+            const inUse = err.response?.status === 422 ? err.response.data?.errors?.in_use : null;
+            if (inUse?.length) {
+                // Not deleted because tasks use them: say so in a dialog, not a toast.
+                setShowDeleteModal(false);
+                setBlocked({
+                    message: inUse.length === 1
+                        ? `Tier tasks use "${inUse[0].name}", so it cannot be deleted. Move those tasks to another vendor first. Nothing was deleted.`
+                        : err.response.data.message,
+                    items: inUse,
+                });
+            } else {
+                console.error('Delete error:', err);
+                toast.error(err.response?.data?.message || err.message || 'Failed to delete vendors');
+            }
         }
     };
 
@@ -439,6 +414,13 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                     text="The selected vendors will be deleted."
                 />
             )}
+            <DeleteBlockedModal
+                show={blocked.items.length > 0}
+                title={blocked.items.length === 1 ? 'Vendor Cannot Be Deleted' : 'Vendors Cannot Be Deleted'}
+                message={blocked.message}
+                items={blocked.items}
+                onClose={() => setBlocked({ message: '', items: [] })}
+            />
         </React.Fragment>
     );
 

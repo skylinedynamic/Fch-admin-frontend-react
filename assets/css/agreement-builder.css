@@ -56,6 +56,24 @@
   background: #e8edf5;
 }
 
+/* Full-screen editor (partner profile › Configuration): above the app's topbar
+   and sidebar, below Bootstrap modals (1050+) so the File Manager still opens on top. */
+.ab4-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1045;
+  display: flex;
+  flex-direction: column;
+  background: #e8edf5;
+}
+
+.ab4-fullscreen>.ab4-root {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  border-radius: 0;
+}
+
 /* â”€â”€ Main toolbar â”€â”€ */
 .ab4-toolbar {
   display: flex;
@@ -705,7 +723,7 @@
   width: 100%;
 }
 
-.ab4-block-clip-window > div {
+.ab4-block-clip-window>div {
   position: absolute;
   left: 0;
   right: 0;
@@ -788,6 +806,7 @@
   z-index: 10;
   transition: height 0.15s ease;
 }
+
 .ab4-iz::after {
   content: '';
   position: absolute;
@@ -798,6 +817,7 @@
   background: transparent;
   z-index: 1;
 }
+
 .ab4-iz:hover,
 .ab4-iz:focus-within,
 .ab4-iz.ab4-iz--active {
@@ -1205,7 +1225,7 @@
 
 .ab4-logo-ph {
   border: 2px dashed #cbd5e1;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px;
   min-height: 80px;
   min-width: 140px;
@@ -1237,6 +1257,7 @@
   background: transparent;
   display: inline-block;
 }
+
 .ab4-logo-ph.ab4-logo-ph--has-logo:hover {
   background: transparent;
   border: none;
@@ -1293,6 +1314,7 @@
   height: 0px;
   min-height: unset;
 }
+
 .ab4-party .ab4-iz:hover,
 .ab4-party .ab4-iz:focus-within,
 .ab4-party .ab4-iz.ab4-iz--active {
@@ -2197,7 +2219,7 @@
   width: 44px;
   height: 44px;
   background: var(--primary-color);
-  border-radius: 12px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2302,7 +2324,7 @@
   color: #e53e3e;
   background: #fff5f5;
   padding: 4px 12px;
-  border-radius: 6px;
+  border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -2351,7 +2373,7 @@
   width: 24px;
   height: 24px;
   border: 2px solid #e2e8f0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: #ffffff;
   display: flex;
   align-items: center;
@@ -2366,28 +2388,13 @@
 }
 
 .asm-btn-submit {
-  padding: 10px 24px;
-  background: var(--primary-color);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.3s ease;
-  cursor: pointer;
 }
 
-.asm-btn-submit:hover:not(:disabled) {
-  background: #2d335c;
-  transform: translateY(-2px);
-  box-shadow: 0 15px 30px rgba(64, 81, 137, 0.2);
-}
 
 .asm-btn-disabled {
-  background: #cbd5e0 !important;
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -2492,16 +2499,6 @@
 }
 
 .asm-btn-proceed {
-  padding: 14px 48px;
-  background: #1e293b;
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-  box-shadow: 0 10px 20px rgba(30, 41, 59, 0.15);
   position: relative;
   z-index: 1;
   display: flex;
@@ -2509,15 +2506,7 @@
   gap: 12px;
 }
 
-.asm-btn-proceed:hover {
-  background: #0f172a;
-  transform: translateY(-4px);
-  box-shadow: 0 15px 30px rgba(30, 41, 59, 0.25);
-}
 
-.asm-btn-proceed:active {
-  transform: translateY(-1px);
-}
 
 @keyframes asm-bounce-in {
   0% {
@@ -3244,6 +3233,7 @@
   z-index: 10;
   transition: height 0.15s ease;
 }
+
 .ab4-iz::after {
   content: '';
   position: absolute;
@@ -3254,6 +3244,7 @@
   background: transparent;
   z-index: 1;
 }
+
 .ab4-iz:hover,
 .ab4-iz:focus-within,
 .ab4-iz.ab4-iz--active {
@@ -3626,6 +3617,7 @@
   margin: 10px 0;
   width: 100%;
 }
+
 .ab4-page-break-line {
   position: absolute;
   left: 0;
@@ -3634,6 +3626,7 @@
   border-top: 1.5px dashed #cbd5e1;
   pointer-events: none;
 }
+
 .ab4-page-break-label {
   position: relative;
   z-index: 2;
@@ -3751,3 +3744,1034 @@
 
 
 
+
+/* ── Insert field (merge fields) ── */
+.ab4-insert-field {
+  margin-top: 14px;
+}
+
+.ab4-insert-field__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px dashed #a5b4fc;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.ab4-insert-field__toggle:hover,
+.ab4-insert-field__toggle.is-open {
+  background: #e0e7ff;
+  border-color: #6366f1;
+}
+
+.ab4-insert-field__toggle .ri-braces-line {
+  font-size: 15px;
+}
+
+.ab4-insert-field__menu {
+  margin-top: 6px;
+  padding: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px -8px rgba(15, 23, 42, .18);
+}
+
+.ab4-insert-field__group+.ab4-insert-field__group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.ab4-insert-field__group-title {
+  padding: 6px 8px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.ab4-insert-field__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  font-size: 12.5px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.ab4-insert-field__item:hover,
+.ab4-insert-field__item:focus-visible {
+  background: #f1f5ff;
+  color: #1e293b;
+  outline: none;
+}
+
+.ab4-insert-field__token {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f8fafc;
+  font-size: 10.5px;
+  color: #6366f1;
+  font-family: 'Fira Code', ui-monospace, monospace;
+}
+
+.ab4-insert-field__item:hover .ab4-insert-field__token {
+  background: #fff;
+}
+
+.ab4-insert-field__hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 8px 8px 4px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Merge field chip in the canvas */
+.ab4-merge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 1px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-size: .88em;
+  font-weight: 600;
+  line-height: 1.55;
+  white-space: nowrap;
+  user-select: all;
+  cursor: default;
+  vertical-align: baseline;
+}
+
+.ab4-merge-chip::before {
+  content: '{ }';
+  font-size: .72em;
+  letter-spacing: -.05em;
+  opacity: .55;
+}
+
+/* ── Save state pill ── */
+.ab4-save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.ab4-save-state--dirty {
+  background: #fff7ed;
+  color: #b45309;
+  border: 1px solid #fed7aa;
+}
+
+.ab4-save-state__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, .18);
+}
+
+.ab4-save-state--saved {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+/* ── Undo / redo ── */
+.ab4-history {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 9px;
+  background: #f1f5f9;
+}
+
+.ab4-history__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #334155;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+
+.ab4-history__btn:hover:not(:disabled) {
+  background: #fff;
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+
+.ab4-history__btn:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.ab4-save-btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Confirm dialog (above the full-screen editor) ── */
+.ab4-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, .45);
+  backdrop-filter: blur(2px);
+  animation: ab4-fade .12s ease-out;
+}
+
+.ab4-confirm {
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  border-radius: 4px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, .35);
+  animation: ab4-pop .16s ease-out;
+}
+
+.ab4-confirm__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 22px;
+}
+
+.ab4-confirm__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ab4-confirm__message {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.ab4-confirm__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ab4-confirm__actions .btn {
+  flex: 1;
+  font-weight: 600;
+}
+
+@keyframes ab4-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ab4-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Drag and drop ── */
+.ab4-act--drag {
+  cursor: grab;
+}
+
+.ab4-act--drag:active {
+  cursor: grabbing;
+}
+
+.ab4-pal-btn[draggable="true"] {
+  cursor: grab;
+}
+
+.ab4-pal-btn[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.ab4-block--drop-before,
+.ab4-block--drop-after {
+  position: relative;
+}
+
+.ab4-block--drop-before::before,
+.ab4-block--drop-after::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  height: 3px;
+  z-index: 5;
+  border-radius: 3px;
+  background: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, .18);
+  pointer-events: none;
+}
+
+.ab4-block--drop-before::before {
+  top: -6px;
+}
+
+.ab4-block--drop-after::after {
+  bottom: -6px;
+}
+
+.ab4-iz--drop {
+  position: relative;
+}
+
+.ab4-iz--drop::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 3px;
+  background: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, .18);
+  pointer-events: none;
+}
+
+/* While dragging, each 0px gap between blocks gets a 20px hit area (no layout change). */
+.ab4-root--dragging .ab4-iz::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 20px;
+}
+
+/* ── Lists and tables in text blocks (canvas; the saved page has the same in PREVIEW_CSS) ── */
+.ab4-editor ul,
+.ab4-editor ol {
+  margin: 0 0 4px;
+  padding-left: 1.4em;
+}
+
+.ab4-editor li {
+  margin: 2px 0;
+}
+
+.ab4-editor table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0;
+  white-space: normal;
+  font-size: inherit;
+}
+
+.ab4-editor th,
+.ab4-editor td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 9px;
+  text-align: left;
+  vertical-align: top;
+  min-width: 40px;
+}
+
+.ab4-editor th {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ab4-editor td:focus-within,
+.ab4-editor th:focus-within {
+  outline: 2px solid #a5b4fc;
+  outline-offset: -2px;
+}
+
+/* ── Table controls (block properties) ── */
+.ab4-table-controls {
+  margin-top: 14px;
+}
+
+.ab4-table-controls__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 6px 10px;
+  margin-bottom: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ab4-table-controls__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ab4-table-controls__btns {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ab4-table-controls__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #4f46e5;
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+
+.ab4-table-controls__btn:hover {
+  border-color: #a5b4fc;
+  background: #eef2ff;
+}
+
+/* ── Starter templates ── */
+.ab4-templates-btn {
+  display: inline-flex;
+  align-items: center;
+  border-color: #cbd5e1;
+  color: #334155;
+  background: #fff;
+}
+
+.ab4-templates-btn:hover {
+  border-color: #a5b4fc;
+  color: #3730a3;
+  background: #eef2ff;
+}
+
+.ab4-templates {
+  width: 100%;
+  max-width: 720px;
+  padding: 22px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, .35);
+  animation: ab4-pop .16s ease-out;
+}
+
+.ab4-templates__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ab4-templates__title {
+  margin: 0 0 3px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ab4-templates__sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.ab4-templates__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.ab4-templates__close:hover {
+  background: #e2e8f0;
+}
+
+.ab4-templates__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .ab4-templates__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ab4-templates__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+
+.ab4-templates__card:hover,
+.ab4-templates__card:focus-visible {
+  border-color: #a5b4fc;
+  box-shadow: 0 8px 20px -10px rgba(79, 70, 229, .45);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.ab4-templates__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 19px;
+}
+
+.ab4-templates__name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ab4-templates__desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+/* ── Letterhead logo and signing line in the canvas (layout itself: LAYOUT_CSS) ── */
+.p-letterhead .ab4-logo-ph {
+  min-height: 84px;
+  min-width: 200px;
+  padding: 12px 18px;
+  border: 1.5px dashed #c7d2fe;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f8faff 0%, #eef2ff 100%);
+  color: #4f46e5;
+  align-items: flex-start;
+  text-align: left;
+  font: inherit;
+}
+
+.p-letterhead .ab4-logo-ph:hover {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.p-letterhead .ab4-logo-ph i {
+  font-size: 22px;
+}
+
+.p-letterhead .ab4-logo-ph.ab4-logo-ph--has-logo {
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.ab4-logo-ph__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.ab4-logo-ph__hint {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.p-letterhead-info .ab4-merge-chip {
+  font-size: 10.5px;
+}
+
+.p-letterhead-name .ab4-merge-chip {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ab4-sign-date-ph {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.p-sign-name .ab4-merge-chip {
+  font-size: 12px;
+}
+
+.ab4-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 3px;
+  background: #f1f5f9;
+  border-radius: 9px;
+}
+
+.ab4-seg__btn {
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  transition: background .15s, color .15s;
+}
+
+.ab4-seg__btn:hover {
+  color: #0f172a;
+}
+
+.ab4-seg__btn--on {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .12);
+}
+
+.ab4-hint {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+/* ── Guided signing: fields left, and the way to the next one ── */
+.asm-guide {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  background: rgba(var(--vz-primary-rgb, 42, 95, 193), 0.06);
+  border-bottom: 1px solid rgba(var(--vz-primary-rgb, 42, 95, 193), 0.18);
+}
+
+.asm-guide__status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.asm-guide__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(var(--vz-primary-rgb, 42, 95, 193), 0.14);
+  color: var(--vz-primary, #2a5fc1);
+  font-size: 17px;
+}
+
+.asm-guide__status>div {
+  flex: 1;
+  min-width: 0;
+  max-width: 360px;
+}
+
+.asm-guide__count {
+  font-size: 13px;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.asm-guide__count strong {
+  font-weight: 700;
+}
+
+.asm-guide__bar {
+  height: 6px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.asm-guide__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--vz-primary, #2a5fc1);
+  transition: width .35s ease;
+}
+
+.asm-guide__next {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+.asm-guide__ready {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.asm-guide:has(.asm-guide__ready) {
+  background: #f0fdf4;
+  border-bottom-color: #bbf7d0;
+}
+
+.asm-guide:has(.asm-guide__ready) .asm-guide__icon {
+  background: #bbf7d0;
+  color: #15803d;
+}
+
+@media (max-width: 576px) {
+  .asm-guide {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .asm-guide__icon {
+    display: none;
+  }
+
+  .asm-guide__next {
+  }
+}
+
+/* ── What the blue fields are (MergeFieldsHint) ── */
+.ab4-merge-hint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 794px;
+  max-width: calc(100% - 32px);
+  margin: 0 auto 14px;
+  padding: 12px 14px 12px 16px;
+  background: rgba(var(--vz-primary-rgb, 42, 95, 193), .06);
+  border: 1px solid rgba(var(--vz-primary-rgb, 42, 95, 193), .22);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.ab4-merge-hint__chip {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ab4-merge-hint__text {
+  flex: 1;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #3730a3;
+}
+
+.ab4-merge-hint__ok {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .ab4-merge-hint {
+    flex-wrap: wrap;
+  }
+
+  .ab4-merge-hint__chip {
+    display: none;
+  }
+}
+/* ── Blue field: click to choose what fills it (MergeChipMenu) ── */
+.ab4-editor .ab4-merge-chip { cursor: pointer; transition: background .12s, border-color .12s; }
+.ab4-editor .ab4-merge-chip:hover { background: #e0e7ff; border-color: #a5b4fc; }
+.ab4-chip-menu {
+  position: fixed;
+  z-index: 10050;
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  box-shadow: 0 16px 36px -10px rgba(15, 23, 42, .28);
+  font-size: 13px;
+}
+.ab4-chip-menu__title { padding: 6px 8px 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #64748b; }
+.ab4-chip-menu__group + .ab4-chip-menu__group { border-top: 1px solid #f1f5f9; margin-top: 4px; padding-top: 4px; }
+.ab4-chip-menu__group-title { padding: 4px 8px; font-size: 11px; font-weight: 600; color: #94a3b8; }
+.ab4-chip-menu__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 6px 30px 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #0f172a;
+  text-align: left;
+}
+.ab4-chip-menu__item:hover { background: #f1f5f9; }
+.ab4-chip-menu__item.is-current { background: rgba(var(--vz-primary-rgb, 42, 95, 193), .08); color: var(--vz-primary, #2a5fc1); font-weight: 600; }
+.ab4-chip-menu__sample { font-size: 11.5px; font-weight: 400; color: #94a3b8; }
+.ab4-chip-menu__check { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+.ab4-chip-menu__remove {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 7px 8px;
+  border: 0;
+  border-top: 1px solid #f1f5f9;
+  border-radius: 0 0 4px 4px;
+  background: transparent;
+  color: #dc2626;
+  text-align: left;
+}
+.ab4-chip-menu__remove:hover { background: #fef2f2; }
+
+/* ── Templates dialog: primary colour, fits a phone ── */
+.ab4-templates { max-height: calc(100vh - 32px); overflow-y: auto; }
+.ab4-templates__grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.ab4-templates__card:hover,
+.ab4-templates__card:focus-visible {
+  border-color: rgba(var(--vz-primary-rgb, 42, 95, 193), .55);
+  box-shadow: 0 8px 20px -10px rgba(var(--vz-primary-rgb, 42, 95, 193), .45);
+}
+.ab4-templates__icon { background: rgba(var(--vz-primary-rgb, 42, 95, 193), .1); color: var(--vz-primary, #2a5fc1); }
+
+@media (max-width: 576px) {
+  .ab4-templates { padding: 16px; }
+  .ab4-templates__grid { grid-template-columns: 1fr; }
+}
+
+
+/* ── Phone: one column. The toolbar's actions scroll sideways, the A4 page scrolls
+   instead of being cut off, and block properties open as a bottom sheet while a
+   block is selected (tap the page outside a block to close it). ── */
+@media (max-width: 767px) {
+  .ab4-toolbar { gap: 8px; }
+  .ab4-toolbar > div:last-child {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .ab4-toolbar > div:last-child::-webkit-scrollbar { display: none; }
+  .ab4-toolbar > div:last-child > * { flex-shrink: 0; }
+  .ab4-save-btn { margin-left: auto; }
+  .ab4-tbar-sub { display: none; }
+
+  .ab4-center { overflow: hidden; }
+  .ab4-scroll { align-items: safe center; padding: 12px; }
+  .ab4-pages-container { margin-inline: auto; }
+
+  .ab4-props {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1045;
+    max-height: 58vh;
+    overflow-y: auto;
+    border-top: 1px solid #e2e8f0;
+    border-radius: 4px 4px 0 0;
+    background: #fff;
+    box-shadow: 0 -12px 32px -8px rgba(15, 23, 42, .25);
+    transform: translateY(100%);
+    transition: transform .25s cubic-bezier(.4, 0, .2, 1);
+  }
+  .ab4-layout--selected .ab4-props { transform: translateY(0); }
+  .ab4-props::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: 4px;
+    background: #cbd5e1;
+  }
+
+  .ab4-merge-hint { padding: 10px 12px; gap: 10px; }
+  .ab4-merge-hint__chip { display: none; }
+  .ab4-merge-hint__text { font-size: 12px; }
+
+  .ab4-chip-menu { max-width: calc(100vw - 16px); }
+}
+
+/* Tables in the canvas: the label column gets room, as in the saved agreement (PREVIEW_CSS). */
+.ab4-editor th, .ab4-editor td { word-break: normal; overflow-wrap: break-word; }
+.ab4-editor tr > :first-child:nth-last-child(2),
+.ab4-editor tr > :first-child:nth-last-child(3) { width: 30%; }
+
+/* ── Palette: blocks as tiles in two columns. Layout is slate, text the primary
+   colour, and fields (what the signer fills) amber, like the Sign here tag. ── */
+.ab4-palette { width: 248px; min-width: 248px; background: #fbfcfe; }
+.ab4-pal-hdr { padding: 14px 14px 12px; align-items: flex-start; background: #fbfcfe; }
+.ab4-pal-hdr::before { display: none; }
+.ab4-pal-hdr__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ab4-pal-hdr__title { font-size: 14px; font-weight: 700; color: #0f172a; }
+.ab4-pal-hdr__sub { font-size: 11.5px; font-weight: 400; color: #64748b; letter-spacing: 0; }
+.ab4-sidebar-toggle { border-radius: 4px; }
+
+.ab4-grp { --tile: #475569; --tile-bg: #f1f5f9; padding: 14px 12px 2px; }
+.ab4-grp--text { --tile: var(--vz-primary, #2a5fc1); --tile-bg: rgba(var(--vz-primary-rgb, 42, 95, 193), .1); }
+.ab4-grp--fields { --tile: #b45309; --tile-bg: #fef3c7; }
+.ab4-grp-title { margin-bottom: 8px; padding: 0 2px; font-size: 10.5px; color: #64748b; }
+.ab4-grp-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.ab4-pal-btn {
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  min-height: 74px;
+  margin: 0;
+  padding: 10px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #334155;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+}
+.ab4-pal-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--tile);
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 6px 14px -8px rgba(15, 23, 42, .35);
+}
+.ab4-pal-btn:active { transform: none; background: var(--tile-bg); }
+.ab4-pal-btn:focus-visible { outline: 2px solid var(--tile); outline-offset: 1px; }
+.ab4-pal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: var(--tile-bg);
+  color: var(--tile);
+  font-size: 17px;
+}
+
+/* Collapsed: one column of icons. */
+.ab4-palette--collapsed { width: 64px; min-width: 64px; }
+.ab4-palette--collapsed .ab4-pal-hdr__text { display: none; }
+.ab4-palette--collapsed .ab4-grp { padding: 10px 8px 0; }
+.ab4-palette--collapsed .ab4-grp-items { grid-template-columns: 1fr; gap: 6px; }
+.ab4-palette--collapsed .ab4-pal-btn { min-height: 0; padding: 7px; }
+
+/* The empty page while a block is held over it. */
+.ab4-doc--drop { outline: 2px dashed var(--vz-primary, #2a5fc1); outline-offset: -10px; }
+.ab4-doc--drop .ab4-empty { color: var(--vz-primary, #2a5fc1); }
+.ab4-doc--drop .ab4-empty i { opacity: .6; }
+.ab4-empty * { pointer-events: none; }
+.ab4-empty .ab4-iz, .ab4-empty .ab4-iz * { pointer-events: auto; }
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .ab4-palette { width: 220px; min-width: 220px; }
+}
+@media (max-width: 767px) {
+  .ab4-palette { width: 272px; min-width: 272px; }
+}
+
+/* An insert line takes no room, even while hovered or open: its line and + button
+   float over the gap. Growing it to 24px on hover pushed the page down, and it
+   jumped back when a drag began - so a block dropped where the pointer had been
+   landed on the wrong side. */
+.ab4-iz:hover,
+.ab4-iz:focus-within,
+.ab4-iz.ab4-iz--active { height: 0; }
+.ab4-iz-line { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); }

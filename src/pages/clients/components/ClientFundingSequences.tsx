@@ -142,9 +142,21 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
                             <div className="d-flex align-items-start gap-2">
                                 <i className="ri-close-circle-fill" style={{ color: '#EF4444', fontSize: 15, marginTop: 1 }} />
                                 <div>
-                                    <div className="tooltip-item-title">{displayLabel}: {actVal ?? 'Failed'}</div>
-                                    {req !== undefined && req !== null && (
-                                        <div className="tooltip-item-req">Required: {reqVal}</div>
+                                    {f.reason ? (
+                                        <>
+                                            {/* The API says why and what to do (e.g. statements not uploaded). */}
+                                            <div className="tooltip-item-title">{displayLabel}: {f.reason}</div>
+                                            {f.requirement && (
+                                                <div className="tooltip-item-req">Required: {f.requirement}</div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="tooltip-item-title">{displayLabel}: {actVal ?? 'Failed'}</div>
+                                            {req !== undefined && req !== null && (
+                                                <div className="tooltip-item-req">Required: {reqVal}</div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>

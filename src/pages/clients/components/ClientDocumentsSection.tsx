@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchBorrowerDocuments, downloadBorrowerDocument, attachBorrowerDocuments, updateBorrowerDocumentStatus, fetchBorrowerDocumentTypes } from '../../../modules/client/services';
 import { toast } from 'react-toastify';
-import { getFileConfig, getFileTypeLabel } from '../../../config/fileTypeConfig';
+import { getFileTypeLabel } from '../../../config/fileTypeConfig';
 import { DOCUMENT_STATUS, getDocumentStatusLabel } from '../../../config/documentStatus';
 import { handleFileDownload } from '../../../utils/fileDownload';
 import { Skeleton } from 'primereact/skeleton';
@@ -14,26 +14,18 @@ import { usePermissions } from '../../../lib/auth/usePermissions';
 // @ts-ignore
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { deleteBorrowerDocument } from '../../../modules/client/services';
+import { groupDocumentsByCategory, type ClientDocument } from '../../../utils/documentCategories';
+import DocumentCategoryTable from './documents/DocumentCategoryTable';
+import CustomDropdown from '../../../components/Common/CustomDropdown';
+import './documents/ClientDocuments.css';
 
-interface Document {
-    id: number;
-    document_name: string;
-    document_namea?: string;
-    document_number?: string;
-    type: string;
-    size: string;
-    date: string;
-    created_at?: string;
-    file_path?: string;
-    document_url?: string;
-    status?: string;
-    rejection_reason?: string;
-}
+type Document = ClientDocument;
 
 interface DocumentType {
     id: number;
     name: string;
     sort_order: number;
+    is_required?: boolean;
 }
 
 interface ClientDocumentsSectionProps {
@@ -250,186 +242,209 @@ export default function ClientDocumentsSection({ isLoading: parentLoading = fals
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
+    // The tab is laid out category by category (required first).
+    const grouped = useMemo(
+        () => groupDocumentsByCategory(
+            documents.map((d) => ({ ...d, date: d.date || formatDate(d.created_at) })),
+            documentTypes
+        ),
+        [documents, documentTypes]
+    );
+
+    // A category's own Upload: straight to the file manager, into that category.
+    const uploadInto = (typeId: number) => {
+        setSelectedTypeId(typeId);
+        setShowFileManager(true);
+    };
+
+    const renderActions = (doc: Document) => {
+        const displayFileName = doc.document_namea || doc.document_name;
+        return (
+            <UncontrolledDropdown strategy="fixed">
+                <DropdownToggle tag="button" className="btn btn-light btn-icon btn-sm" aria-label="Document actions" onClick={(e) => e.preventDefault()}>
+                    <i className="ri-equalizer-fill"></i>
+                </DropdownToggle>
+                <DropdownMenu container="body" className="dropdown-menu-end" style={{ minWidth: '180px', zIndex: 1060 }}>
+                    <DropdownItem onClick={(e) => { e.preventDefault(); handleDownload(doc.id, displayFileName, doc.file_path || ''); }} className="py-2">
+                        <i className="ri-download-2-fill me-2 align-middle text-muted"></i>Download
+                    </DropdownItem>
+
+                    {canDelete && (
+                        <DropdownItem onClick={(e) => {
+                            e.preventDefault();
+                            setDeletingDocId(doc.id);
+                            setShowDeleteModal(true);
+                        }} className="py-2">
+                            <i className="ri-delete-bin-5-fill me-2 align-middle text-muted"></i>Delete
+                        </DropdownItem>
+                    )}
+
+                    {canUpdateStatus && (
+                        <>
+                            <DropdownItem divider />
+                            <DropdownItem header className="text-uppercase fs-10 fw-bold text-muted py-2">Change Status</DropdownItem>
+
+                            <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.UNDER_REVIEW); }} className="py-2">
+                                <i className="ri-time-line me-2 align-middle text-warning"></i>Mark as Under Reviewing
+                            </DropdownItem>
+                            <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.ACCEPTED); }} className="py-2">
+                                <i className="ri-checkbox-circle-line me-2 align-middle text-success"></i>Mark as Accepted
+                            </DropdownItem>
+                            <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.REJECTED); }} className="py-2">
+                                <i className="ri-close-circle-line me-2 align-middle text-danger"></i>Mark as Rejected
+                            </DropdownItem>
+                        </>
+                    )}
+                </DropdownMenu>
+            </UncontrolledDropdown>
+        );
+    };
+
     if (!canView) return null;
 
     return (
-        <div className="card shadow-none border">
-            <div className="card-header border-bottom-dashed d-flex align-items-center justify-content-between py-3">
-                <h5 className="card-title mb-0 flex-grow-1">Documents</h5>
-                <div className="flex-shrink-0">
+        <div className="card shadow-none cdoc">
+            <div className="card-header border-bottom-dashed py-3">
+                <div className="cdoc-header">
+                    <div className="cdoc-header-text">
+                        <h5 className="card-title mb-0">Documents</h5>
+                        {!(loading || parentLoading) && (
+                            <div className="cdoc-summary" aria-label="Documents summary">
+                                <span className="cdoc-summary-progress">
+                                    <span className="cdoc-summary-bar" aria-hidden="true">
+                                        <span style={{ width: `${grouped.requiredTotal ? Math.round((grouped.requiredDone / grouped.requiredTotal) * 100) : 0}%` }}></span>
+                                    </span>
+                                    {grouped.requiredDone} of {grouped.requiredTotal} required categories complete
+                                </span>
+                                {/* Only the counts there are: no "0 Rejected". */}
+                                {grouped.counts.accepted > 0 && <span className="cdoc-chip is-accepted">{grouped.counts.accepted} Accepted</span>}
+                                {grouped.counts.review > 0 && <span className="cdoc-chip is-review">{grouped.counts.review} In review</span>}
+                                {grouped.counts.rejected > 0 && <span className="cdoc-chip is-reupload">{grouped.counts.rejected} Rejected</span>}
+                            </div>
+                        )}
+                    </div>
                     {canUpload && (
                         <button
-                            className="btn btn-secondary fw-medium"
+                            type="button"
+                            className="btn btn-primary fw-medium cdoc-add-btn"
                             onClick={() => setShowTypeSelectionModal(true)}
-                            style={{ backgroundColor: '#405189', borderColor: '#405189' }}
                         >
-                            <i className="ri-add-line me-1 align-bottom"></i> Add Document
+                            <i className="ri-add-line me-1 align-bottom" aria-hidden="true"></i> Add Document
                         </button>
                     )}
                 </div>
             </div>
-            <div className="card-body">
-                <div className="table-responsive table-card">
-                    <table className="table table-nowrap align-middle mb-0" style={{ minWidth: '850px' }}>
-                        <thead className="table-light text-muted">
-                            <tr>
-                                <th scope="col" style={{ width: '25%' }}>File Name</th>
-                                <th scope="col" style={{ width: '15%' }}>Document Number</th>
-                                <th scope="col" style={{ width: '15%' }}>Document Type</th>
-                                <th scope="col" style={{ width: '10%' }}>Size</th>
-                                <th scope="col" style={{ width: '15%' }}>Upload Date</th>
-                                <th scope="col" style={{ width: '10%' }}>Status</th>
-                                <th scope="col" className="text-end" style={{ width: '10%' }}>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading || parentLoading ? (
-                                Array.from({ length: 5 }).map((_, index) => (
-                                    <tr key={index}>
-                                        <td><Skeleton width="100%" height="1.5rem" /></td>
-                                        <td><Skeleton width="60%" height="1.5rem" /></td>
-                                        <td><Skeleton width="80%" height="1.5rem" /></td>
-                                        <td><Skeleton width="60%" height="1.5rem" /></td>
-                                        <td><Skeleton width="70%" height="1.5rem" /></td>
-                                        <td><Skeleton width="80%" height="1.5rem" /></td>
-                                        <td><Skeleton width="40%" height="1.5rem" /></td>
-                                    </tr>
-                                ))
-                            ) : documents.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="text-center py-4 text-muted">
-                                        No documents found
-                                    </td>
-                                </tr>
-                            ) : (
-                                documents.map((doc) => {
-                                    const displayFileName = doc.document_namea || doc.document_name;
-                                    const config = getFileConfig(doc.document_url || doc.file_path || displayFileName || '');
-                                    return (
-                                        <tr key={doc.id}>
-                                            <td>
-                                                <div className="d-flex align-items-center">
-                                                    <div className="avatar-sm flex-shrink-0">
-                                                        <div className={`avatar-title ${config.bg} ${config.color} rounded fs-20 material-shadow`}>
-                                                            <i className={config.icon}></i>
-                                                        </div>
-                                                    </div>
-                                                    <div className="ms-3 flex-grow-1 overflow-hidden" style={{ minWidth: 0 }}>
-                                                        <h6 className="fs-14 mb-0 text-truncate" title={displayFileName}>
-                                                            <a
-                                                                href="#"
-                                                                onClick={(e) => { e.preventDefault(); handleDownload(doc.id, displayFileName, doc.file_path || ''); }}
-                                                                className="text-body fw-medium d-block text-truncate"
-                                                            >
-                                                                {displayFileName}
-                                                            </a>
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="text-muted d-block text-truncate">
-                                                    {doc.document_number || '-'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className="text-muted d-block text-truncate" title={doc.type}>
-                                                    {doc.type}
-                                                </span>
-                                            </td>
-                                            <td><span className="text-muted">{doc.size || '-'}</span></td>
-                                            <td><span className="text-muted">{doc.date || formatDate(doc.created_at)}</span></td>
-                                            <td>{getStatusBadge(doc)}</td>
-                                            <td className="text-end">
-                                                <UncontrolledDropdown strategy="fixed">
-                                                    <DropdownToggle tag="button" className="btn btn-light btn-icon btn-sm" onClick={(e) => e.preventDefault()}>
-                                                        <i className="ri-equalizer-fill"></i>
-                                                    </DropdownToggle>
-                                                    <DropdownMenu container="body" className="dropdown-menu-end" style={{ minWidth: '180px', zIndex: 1060 }}>
-                                                        <DropdownItem onClick={(e) => { e.preventDefault(); handleDownload(doc.id, displayFileName, doc.file_path || ''); }} className="py-2">
-                                                            <i className="ri-download-2-fill me-2 align-middle text-muted"></i>Download
-                                                        </DropdownItem>
-
-                                                        {canDelete && (
-                                                            <DropdownItem onClick={(e) => {
-                                                                e.preventDefault();
-                                                                setDeletingDocId(doc.id);
-                                                                setShowDeleteModal(true);
-                                                            }} className="py-2">
-                                                                <i className="ri-delete-bin-5-fill me-2 align-middle text-muted"></i>Delete
-                                                            </DropdownItem>
-                                                        )}
-
-                                                        {canUpdateStatus && (
-                                                            <>
-                                                                <DropdownItem divider />
-                                                                <DropdownItem header className="text-uppercase fs-10 fw-bold text-muted py-2">Change Status</DropdownItem>
-
-                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.UNDER_REVIEW); }} className="py-2">
-                                                                    <i className="ri-time-line me-2 align-middle text-warning"></i>Mark as Under Reviewing
-                                                                </DropdownItem>
-                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.ACCEPTED); }} className="py-2">
-                                                                    <i className="ri-checkbox-circle-line me-2 align-middle text-success"></i>Mark as Accepted
-                                                                </DropdownItem>
-                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.REJECTED); }} className="py-2">
-                                                                    <i className="ri-close-circle-line me-2 align-middle text-danger"></i>Mark as Rejected
-                                                                </DropdownItem>
-                                                            </>
-                                                        )}
-                                                    </DropdownMenu>
-                                                </UncontrolledDropdown>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="card-body p-0">
+                {loading || parentLoading ? (
+                    <div className="cdoc-loading">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className="cdoc-loading-group">
+                                <Skeleton width="35%" height="1.25rem" className="mb-2" />
+                                <Skeleton width="100%" height="2.5rem" />
+                            </div>
+                        ))}
+                    </div>
+                ) : documents.length === 0 ? (
+                    // Nothing uploaded yet: say so once, with the required documents to start on.
+                    <section className="cdoc-empty-state" aria-labelledby="cdoc-empty-title">
+                        <span className="cdoc-empty-icon" aria-hidden="true">
+                            <i className="ri-folder-open-line"></i>
+                        </span>
+                        <h6 className="cdoc-empty-title" id="cdoc-empty-title">No documents uploaded yet</h6>
+                        <p className="cdoc-empty-text">
+                            {grouped.requiredTotal > 0
+                                ? 'These are needed before the client can apply for funding.'
+                                : 'Documents the client or your team upload will show here.'}
+                        </p>
+                        {grouped.requiredTotal > 0 && (
+                            <div className="cdoc-empty-list">
+                                {grouped.categories.filter((c) => c.required && c.typeId !== null).map((c) => (
+                                    <button
+                                        key={c.typeId}
+                                        type="button"
+                                        className="cdoc-empty-item"
+                                        disabled={!canUpload}
+                                        aria-label={`Upload ${c.name}`}
+                                        onClick={() => uploadInto(c.typeId as number)}
+                                    >
+                                        <span className="cdoc-empty-item-icon" aria-hidden="true">
+                                            <i className={canUpload ? 'ri-upload-2-line' : 'ri-file-line'}></i>
+                                        </span>
+                                        <span className="cdoc-empty-item-text">
+                                            <span className="cdoc-empty-item-name">{c.name}</span>
+                                            <span className="cdoc-empty-item-meta" aria-hidden="true">Required · Not uploaded</span>
+                                        </span>
+                                        {canUpload && <i className="ri-arrow-right-line cdoc-empty-item-go" aria-hidden="true"></i>}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                ) : (
+                    <DocumentCategoryTable
+                        categories={grouped.categories}
+                        canUpload={canUpload}
+                        onUpload={uploadInto}
+                        onDownload={(doc) => handleDownload(doc.id, doc.document_namea || doc.document_name, doc.file_path || '')}
+                        renderStatus={getStatusBadge}
+                        renderActions={renderActions}
+                    />
+                )}
             </div>
 
             {/* Document Type Selection Modal */}
-            <Modal isOpen={showTypeSelectionModal} toggle={() => setShowTypeSelectionModal(false)} centered size="lg" modalClassName="flip">
-                <ModalHeader toggle={() => setShowTypeSelectionModal(false)} className="p-3 bg-light">
-                    Add Document
+            <Modal
+                isOpen={showTypeSelectionModal}
+                toggle={() => setShowTypeSelectionModal(false)}
+                centered
+                modalClassName="flip"
+                contentClassName="cdoc cdoc-modal"
+                labelledBy="cdoc-add-title"
+            >
+                <ModalHeader toggle={() => setShowTypeSelectionModal(false)} className="cdoc-modal-header">
+                    <span className="cdoc-modal-icon" aria-hidden="true"><i className="ri-file-add-line"></i></span>
+                    <span>
+                        <span className="cdoc-modal-title" id="cdoc-add-title">Add Document</span>
+                        <span className="cdoc-modal-subtitle">Choose the category, then the files from the client's file manager.</span>
+                    </span>
                 </ModalHeader>
-                <ModalBody className="p-4">
-                    <div className="mb-4">
-                        <Label className="form-label fw-bold">Select Document Type</Label>
-                        <Input
-                            type="select"
-                            className="form-select border-primary"
+                <ModalBody className="cdoc-modal-body">
+                    <Label className="form-label">Document type</Label>
+                    {documentTypes.length > 0 ? (
+                        <CustomDropdown
+                            options={documentTypes}
                             value={selectedTypeId}
-                            onChange={(e) => setSelectedTypeId(e.target.value)}
-                        >
-                            {documentTypes.length > 0 ? (
-                                documentTypes.map((type) => (
-                                    <option key={type.id} value={type.id}>{type.name}</option>
-                                ))
-                            ) : (
-                                <option value="">No Document Types Available</option>
-                            )}
-                        </Input>
-                    </div>
+                            onChange={setSelectedTypeId}
+                            optionLabel="name"
+                            optionValue="id"
+                            placeholder="Select a document type"
+                            searchable
+                        />
+                    ) : (
+                        <p className="text-muted mb-0">No document types available.</p>
+                    )}
 
-                    <div
-                        className="rounded border border-2 border-dashed p-5 text-center cursor-pointer transition-all"
+                    <button
+                        type="button"
+                        className="cdoc-modal-drop"
+                        disabled={documentTypes.length === 0}
                         onClick={() => {
-                            if (!selectedTypeId && documentTypes.length > 0) {
+                            if (!selectedTypeId) {
                                 toast.warning("Please select a document type first");
                                 return;
                             }
                             setShowTypeSelectionModal(false);
                             setShowFileManager(true);
                         }}
-                        style={{ borderStyle: 'dashed', cursor: 'pointer', backgroundColor: 'rgba(64, 81, 137, 0.03)' }}
                     >
-                        <div className="mb-3">
-                            <i className="ri-upload-cloud-2-fill display-4 text-muted"></i>
-                        </div>
-                        <h4 className="mb-0">Click here to upload documents.</h4>
-                    </div>
+                        <span className="cdoc-modal-drop-icon" aria-hidden="true"><i className="ri-upload-cloud-2-line"></i></span>
+                        <span className="cdoc-modal-drop-title">Choose files</span>
+                        <span className="cdoc-modal-drop-text">Upload new files or pick ones already in the file manager.</span>
+                    </button>
                 </ModalBody>
+                <ModalFooter className="cdoc-modal-footer">
+                    <button type="button" className="btn btn-light" onClick={() => setShowTypeSelectionModal(false)}>Cancel</button>
+                </ModalFooter>
             </Modal>
 
             <FileManagerModal

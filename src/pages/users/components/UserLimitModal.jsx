@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { USER_LIMIT_MONTH_OPTIONS } from '../../../config/limitOptions';
+import { hideAndDisposeModal } from '../../../utils/bootstrapModal';
 
 const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUserPrice }) => {
     const [months, setMonths] = useState(1);
@@ -16,6 +17,14 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
                 keyboard: false,
             });
         }
+
+        // Unmounted while open (Cancel on /users/create goes to the list): hide
+        // it so Bootstrap takes its backdrop away, then dispose.
+        const element = modalRef.current;
+        return () => {
+            hideAndDisposeModal(modalInstanceRef.current, element);
+            modalInstanceRef.current = null;
+        };
     }, []);
 
     useEffect(() => {

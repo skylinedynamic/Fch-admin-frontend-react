@@ -27,6 +27,14 @@ const STATUS_TONE: Record<string, string> = {
     'Closed (Completed)': 'secondary',
     Denied: 'danger',
     'On Hold': 'warning',
+    // SCRUM-331
+    'Pending Clarification': 'warning',
+    'Ready for Submission': 'info',
+    Withdrawn: 'secondary',
+    'Offer Declined by Borrower': 'secondary',
+    'Closed - No Response': 'secondary',
+    'Closed - Incomplete Application': 'secondary',
+    'Closed - Error': 'danger',
 };
 
 const formatMoney = (value: any) => {

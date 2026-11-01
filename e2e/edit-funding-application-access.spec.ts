@@ -13,7 +13,7 @@ const WHITE_LABEL: SessionUser = { id: 2, is_host: 0, user_type: 'Partner', part
 const OTHER_WHITE_LABEL: SessionUser = { id: 9, is_host: 0, user_type: 'Partner', partner_id: 9, partner_type: 'White-Label Partner (WL)', permissions: PERMISSIONS }
 const CERTIFIED: SessionUser = { id: 3, is_host: 0, user_type: 'Partner', partner_id: 2, partner_type: 'Certified Partner', permissions: PERMISSIONS }
 
-// A submitted application of partner 2's borrower, on an approved request, still at status key 9 or below.
+// A submitted application of partner 2's borrower, on an approved request, in an editable status.
 const APPLICATION = {
   id: 80,
   application_number: 'FUND-80',

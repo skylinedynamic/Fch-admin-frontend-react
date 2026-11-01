@@ -38,11 +38,18 @@ const signInWith = (permissions: string[]) =>
 
 let smsQueries: Array<string | null> = []
 let smsSaves: any[] = []
+let agreementLists: Array<string | null> = []
+let agreementShows: any[] = []
+let agreementWrites: Array<{ url: string; body: any }> = []
+const borrowerAgreement = { id: 7, slug: 'borrower', is_active: true, template_html: '<p>Acme terms</p>', template_json: null }
 
 beforeEach(() => {
   smsQueries = []
   smsSaves = []
-  signInWith(['update email configuration settings', 'update sms configuration settings', 'update payment settings'])
+  agreementLists = []
+  agreementShows = []
+  agreementWrites = []
+  signInWith(['update email configuration settings', 'update sms configuration settings', 'update payment settings', 'update partner agreement settings'])
   server.use(
     http.get('*/common/sms-configuration', ({ request }) => {
       smsQueries.push(new URL(request.url).searchParams.get('partner_id'))
@@ -55,7 +62,19 @@ beforeEach(() => {
     http.get('*/common/mail-configurations', () =>
       HttpResponse.json({ status: true, data: { configurations: [], uses_own_configuration: false, can_manage_fallback: false, fallback: {}, providers: [] } })
     ),
-    http.get('*/common/partner-payment-providers', () => HttpResponse.json({ status: true, data: [] }))
+    http.get('*/common/partner-payment-providers', () => HttpResponse.json({ status: true, data: [] })),
+    http.get('*/common/agreement-templates', ({ request }) => {
+      agreementLists.push(new URL(request.url).searchParams.get('partner_id'))
+      return HttpResponse.json({ status: true, data: [borrowerAgreement] })
+    }),
+    http.post('*/common/agreement-templates/show', async ({ request }) => {
+      agreementShows.push(await request.json())
+      return HttpResponse.json({ status: true, data: borrowerAgreement })
+    }),
+    http.post('*/common/agreement-templates/:action/:id', async ({ request, params }) => {
+      agreementWrites.push({ url: `${params.action}/${params.id}`, body: await request.json() })
+      return HttpResponse.json({ status: true, message: 'Saved', data: borrowerAgreement })
+    })
   )
 })
 
@@ -68,10 +87,10 @@ afterEach(() => {
 const menu = () => screen.getAllByRole('tab').map((tab) => tab.querySelector('.partner-config__menu-label')?.textContent?.trim())
 
 describe('PartnerConfigurationSection', () => {
-  it('offers a white-label partner Email, SMS, Branding and Payment', () => {
+  it('offers a white-label partner Email, SMS, Branding, Agreement and Payment', () => {
     renderWithProviders(<PartnerConfigurationSection partner={WHITE_LABEL} />)
 
-    expect(menu()).toEqual(['Email Configuration', 'SMS Configuration', 'Branding', 'Payment Integration'])
+    expect(menu()).toEqual(['Email Configuration', 'SMS Configuration', 'Branding', 'Agreement', 'Payment Integration'])
   })
 
   it('does not offer SMS to a user whose role cannot open it - it would answer "no permission"', () => {
@@ -90,11 +109,58 @@ describe('PartnerConfigurationSection', () => {
     expect(screen.getByText(/Your role cannot change any of Certified Co's settings/)).toBeInTheDocument()
   })
 
-  it('offers a certified partner only Payment, saying it uses the host\'s mail, SMS and branding', () => {
+  it('offers a certified partner Agreement and Payment, saying it uses the host\'s mail, SMS and branding', () => {
     renderWithProviders(<PartnerConfigurationSection partner={CERTIFIED} />)
 
-    expect(menu()).toEqual(['Payment Integration'])
-    expect(screen.getByText(/uses the platform's email, SMS and branding/i)).toBeInTheDocument()
+    expect(menu()).toEqual(['Agreement', 'Payment Integration'])
+    expect(screen.getByText(/uses the platform's email, SMS and branding/i)).toHaveTextContent(/Only its agreement and payment settings are its own/)
+  })
+
+  it('shows the partner\'s borrower agreement, not the host\'s partner agreement or the global signing switch', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<PartnerConfigurationSection partner={WHITE_LABEL} />)
+
+    await user.click(screen.getByRole('tab', { name: /^Agreement/ }))
+
+    expect(await screen.findByText('Borrower Agreement Paper')).toBeInTheDocument()
+    expect(screen.queryByText('Partner Agreement Paper')).not.toBeInTheDocument()
+    expect(screen.queryByText('Agreement Signing Feature')).not.toBeInTheDocument()
+    expect(agreementLists).toEqual(['42'])
+  })
+
+  it('turns the partner\'s borrower agreement off and saves its edits, not the host\'s', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<PartnerConfigurationSection partner={WHITE_LABEL} />)
+
+    await user.click(screen.getByRole('tab', { name: /^Agreement/ }))
+    await user.click(await screen.findByRole('switch'))
+
+    await waitFor(() => expect(agreementWrites).toHaveLength(1))
+    expect(agreementWrites[0]).toMatchObject({ url: 'update-status/7', body: { is_active: false, partner_id: 42 } })
+
+    await user.click(screen.getByRole('button', { name: /Edit Agreement/ }))
+    await waitFor(() => expect(agreementShows).toEqual([{ slug: 'borrower', partner_id: 42 }]))
+    await user.click(await screen.findByRole('button', { name: 'Save Template' }))
+
+    await waitFor(() => expect(agreementWrites).toHaveLength(2))
+    expect(agreementWrites[1]).toMatchObject({ url: 'save/7', body: { slug: 'borrower', partner_id: 42 } })
+  })
+
+  it('opens the partner\'s borrower agreement in a full-screen editor and closes back to the list', async () => {
+    const user = userEvent.setup()
+    const { container } = renderWithProviders(<PartnerConfigurationSection partner={WHITE_LABEL} />)
+
+    await user.click(screen.getByRole('tab', { name: /^Agreement/ }))
+    await user.click(await screen.findByRole('button', { name: /Edit Agreement/ }))
+
+    const editor = await screen.findByRole('dialog', { name: "Acme Lending's borrower agreement" })
+    expect(container).not.toContainElement(editor)
+    expect(editor).toContainElement(await screen.findByRole('button', { name: 'Save Template' }))
+
+    await user.click(screen.getByRole('button', { name: 'Close editor' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(await screen.findByText('Borrower Agreement Paper')).toBeInTheDocument()
   })
 
   it('reads and saves the partner\'s SMS configuration, not the host\'s', async () => {

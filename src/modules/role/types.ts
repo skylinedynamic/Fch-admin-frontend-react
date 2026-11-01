@@ -51,6 +51,4 @@ export type RoleDetail = {
   // Optional permission IDs when backend provides an id->name map
   permission_ids?: number[]
   users: RoleDetailUser[]
-  /** A system role (Admin, Developer): its name and permissions are fixed (R2 BUG-011). */
-  is_static?: boolean
 }

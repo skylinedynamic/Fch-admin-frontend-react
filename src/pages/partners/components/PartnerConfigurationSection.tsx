@@ -11,6 +11,7 @@ import MailConfigurationSection from '../../settings/components/MailConfiguratio
 import SmsConfigurationForm from '../../settings/components/SmsConfiguration/SmsConfigurationForm';
 import BrandingForm from '../../settings/components/BrandingForm';
 import PaymentMethodConfig from '../../settings/components/PaymentMethodConfig/PaymentMethodConfig';
+import AgreementBuilder from '../../settings/components/AgreementBuilder';
 import '../../../../assets/css/settings-redesign.css';
 
 type Props = {
@@ -64,8 +65,8 @@ function PartnerSummary({ partner }: Props): React.JSX.Element {
 }
 
 /**
- * Partner profile › Configuration: the partner's own Email, SMS, Branding and
- * Payment settings screens, as the partner sees them under Settings, editing
+ * Partner profile › Configuration: the partner's own Email, SMS, Branding,
+ * Agreement and Payment settings screens, as the partner sees them under Settings, editing
  * that partner's settings rather than the signed-in host's (ConfigPartnerProvider).
  */
 export default function PartnerConfigurationSection({ partner }: Props): React.JSX.Element {
@@ -83,7 +84,7 @@ export default function PartnerConfigurationSection({ partner }: Props): React.J
                 {partner.partner_type !== PARTNER_TYPES.WHITE_LABEL && (
                     <div className="partner-config__note" role="note">
                         {partnerName} is not a white-label partner, so it uses the platform's email, SMS and branding.
-                        Only its payment settings are its own.
+                        Only its agreement and payment settings are its own.
                     </div>
                 )}
 
@@ -133,6 +134,8 @@ export default function PartnerConfigurationSection({ partner }: Props): React.J
                                 <SmsConfigurationForm />
                             ) : current.id === 'branding' ? (
                                 <BrandingForm />
+                            ) : current.id === 'agreement' ? (
+                                <AgreementBuilder />
                             ) : (
                                 <PaymentMethodConfig />
                             )}

@@ -6,18 +6,19 @@ import { Calendar } from 'primereact/calendar';
 
 import { toast } from 'react-toastify';
 import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS, displayEIN } from '../../../utils/formatters';
-import { formatSSN } from '../../../utils/borrowerFormatters';
-import SsnInput from '../../../components/Common/SsnInput';
+import { formatSSN, maskSSN, maskEIN, isMaskedValue } from '../../../utils/borrowerFormatters';
+import RevealableInput from '../../../components/Common/RevealableInput';
 import {
     useClient,
     useUpdateClient,
+    useRevealClientField,
     useBorrowerPlans,
     DEFAULT_CLIENT_STATE,
     DATE_PICKER_OPTIONS,
     mapClientUpdatePayload,
     calculateEnrollmentDetails
 } from '../../../modules/client';
-import type { Client, BorrowerPlan } from '../../../modules/client/types';
+import type { Client, BorrowerPlan, RevealableClientField } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
@@ -81,6 +82,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const rawIsFreeTrail = fetchedData?.data?.is_free_trail ?? fetchedData?.is_free_trail ?? false;
     const wasFreeTrial = rawIsFreeTrail == 1 || rawIsFreeTrail === true || rawIsFreeTrail === 'true' || rawIsFreeTrail === '1';
     const updateMutation = useUpdateClient();
+    // The SSN and EIN come masked (BUG-014); the eye fetches one in full.
+    const reveal = useRevealClientField();
+    const revealField = (field: RevealableClientField) => () => reveal.mutateAsync({ id: clientId as string, field });
 
     const currentUser = useAuthStore((state) => state.user);
     const userSubscription = useAuthStore((state) => state.userSubscription);
@@ -207,13 +211,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 apiData.business_start_date = normalizeDate(apiData.business_start_date);
             }
 
-            // Format the raw digits the API returns into XXX-XX-XXXX for display/editing
-            if (apiData.ssn) {
+            // The API sends the SSN and EIN masked (BUG-014) - kept as they come.
+            // Digits (from before) are written out: XXX-XX-XXXX and XX-XXXXXXX.
+            if (apiData.ssn && !isMaskedValue(apiData.ssn)) {
                 apiData.ssn = formatSSN(apiData.ssn);
             }
-
-            // The API keeps an EIN as its nine digits; the field writes it XX-XXXXXXX.
-            apiData.business_ein = displayEIN(apiData.business_ein);
+            if (!isMaskedValue(apiData.business_ein)) {
+                apiData.business_ein = displayEIN(apiData.business_ein);
+            }
 
             // Ensure country uses full name for mapping to dropdown value
             if (apiData.country) {
@@ -273,25 +278,37 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
     }, [fetchedData, clientId]);
 
+    // A partner on a free trial may only add Limited Free Plan clients (BUG-142).
+    // The subscription that says so is fetched after the page loads, so the
+    // one-off sync above can run before it is known: turn the plan on whenever it
+    // is, or the switch is locked off with the paid Enrollment Type open below.
+    useEffect(() => {
+        if (clientId || !isPartnerOnFreeTrial || isFormFreeTrailActive) return;
+        setFormData(prev => ({ ...prev, is_free_trail: true }));
+        if (handleLocationChange) {
+            handleLocationChange('is_free_trail', true);
+        }
+    }, [clientId, isPartnerOnFreeTrial, isFormFreeTrailActive]);
+
     // plan_id now comes directly from the API — no retry/matching effect needed.
 
     // Fetch Users for Assign to dropdown - the client's partner's team, so the
     // host on a partner's client picks from that partner's staff (BUG-055). A
-    // new client is filed under your own partner, so it gets your team.
+    // new client is filed under your own partner, so it gets your team. Active
+    // staff only, keeping the client's saved assignee even if since made inactive.
     const clientLoaded = !clientId || !!fetchedData;
-    // An assignee saved before the team rule may sit outside the team; it is
-    // kept (the API accepts the current one), so show it rather than a blank field.
     const savedAssigneeId = fetchedData?.data?.assign_id ?? fetchedData?.assign_id ?? null;
     const savedAssigneeName = fetchedData?.data?.assign_name ?? fetchedData?.assign_name ?? null;
     useEffect(() => {
         if (!clientLoaded) return;
         const fetchUsers = async () => {
             try {
-                // Inactive employees are left out of the list, except the
-                // client's current assignee, which comes back flagged (R2 BUG-051).
+                // Inactive staff are left out of the list, except the client's
+                // current assignee, which comes back flagged (R2 BUG-051).
                 const response = await allUsers({
                     ...(borrowerPartnerId ? { partner_id: Number(borrowerPartnerId) } : {}),
-                    ...(savedAssigneeId ? { include_user_id: Number(savedAssigneeId) } : {}),
+                    active_only: true,
+                    ...(savedAssigneeId ? { keep_ids: [Number(savedAssigneeId)] } : {}),
                 });
                 if (response.status && response.data) {
                     setUsers(response.data);
@@ -303,6 +320,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         fetchUsers();
     }, [clientLoaded, borrowerPartnerId, savedAssigneeId]);
 
+    // An assignee saved before the team rule may sit outside the team; it is
+    // kept (the API accepts the current one), so show it rather than a blank field.
     const assignOptions = (users ?? []).map(user => ({ label: user.is_inactive ? `${user.name} (Inactive)` : user.name, value: user.id }));
     if (users && savedAssigneeId && savedAssigneeName && !users.some(user => String(user.id) === String(savedAssigneeId))) {
         assignOptions.push({ label: `${savedAssigneeName} (not on this partner's team)`, value: savedAssigneeId });
@@ -916,11 +935,17 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="ssn" className="form-label">Social Security Number</label>
-                        {/* The one SSN field: masked at rest, edited on a click, in full on the eye button. */}
-                        <SsnInput
+                        {/* Masked as the API sends it; the eye fetches it in full to see or edit. */}
+                        <RevealableInput
                             id="ssn"
+                            name="SSN"
                             value={formData.ssn || ''}
                             onChange={(ssn) => handleInputChange({ target: { name: 'ssn', value: ssn } })}
+                            onReveal={revealField('ssn')}
+                            format={formatSSN}
+                            mask={maskSSN}
+                            placeholder="XXX-XX-XXXX"
+                            maxLength={11}
                             invalid={!!errors.ssn}
                         />
                         {errors.ssn && <div className="invalid-feedback d-block">{errors.ssn}</div>}
@@ -968,17 +993,19 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="business_ein" className="form-label">Business EIN</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
+                        <RevealableInput
                             id="business_ein"
-                            name="business_ein"
+                            name="EIN"
+                            value={formData.business_ein || ''}
+                            onChange={(ein) => handleInputChange({ target: { name: 'business_ein', value: ein } })}
+                            onReveal={revealField('business_ein')}
+                            format={(ein) => formatBusinessEIN(ein) ?? ''}
+                            mask={maskEIN}
                             placeholder="XX-XXXXXXX"
                             maxLength={10}
-                            value={formData.business_ein || ''}
-                            onChange={handleInputChange}
+                            invalid={!!errors.business_ein}
                         />
-                        {errors.business_ein && <div className="invalid-feedback">{errors.business_ein}</div>}
+                        {errors.business_ein && <div className="invalid-feedback d-block">{errors.business_ein}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -1371,6 +1398,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 Activate Limited Free Plan
                                             </label>
                                         </div>
+                                        {/* e.g. the API's "Paid Version" answer for a partner on a free trial. */}
+                                        {errors.is_free_trail && <small className="p-error d-block mt-2">{errors.is_free_trail}</small>}
                                     </div>
 
                                 </div>
@@ -1638,6 +1667,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                                                 if (isWLOrCP) {
                                                     const customAmount = currentPaymentAmount;
+                                                    // The partner's fee, said the same way on the Partner Invoice line and in
+                                                    // the note under it: the client's saved fee, else the partner's current one
+                                                    // (only fetched for a new or free-trial client) (BUG-140).
+                                                    const partnerFeeLabel = formData.borrower_fee_amount_formatted
+                                                        || formData.enrollment_details?.borrower_fee_amount_formatted
+                                                        || '$' + fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                                                     return (
                                                         <>
@@ -1694,7 +1729,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                                     <i className="ri-shield-user-line text-warning me-1"></i> Partner Invoice:
                                                                 </span>
                                                                 <span className="amount-value text-warning" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                                    {formData.borrower_fee_amount_formatted || (formData.enrollment_details?.borrower_fee_amount_formatted) || ('$' + fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
+                                                                    {partnerFeeLabel}
                                                                 </span>
                                                             </div>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -1706,7 +1741,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                 <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                     <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
+                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, {partnerFeeLabel} is automatically charged to the Partner account immediately.
                                                                 </p>
                                                             </div>
                                                         </>

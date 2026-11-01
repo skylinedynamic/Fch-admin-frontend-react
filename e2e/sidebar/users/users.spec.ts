@@ -256,3 +256,56 @@ test.describe('User details - create', () => {
     expect(api.find('POST', /\/common\/users$/)).toHaveLength(0)
   })
 })
+
+// BUG-109: /users/create opened directly at the seat limit offers to buy a
+// seat as soon as the page opens, as the list's + Add User does.
+test.describe('User details - create, opened directly at the seat limit', () => {
+  async function openCreateAtSeatLimit(page: Page, isFreeTrial: boolean) {
+    await seedSession(page, { is_host: 0, entity_type: 'Partner', permissions: ['view users', 'create users'] } as never)
+    const api = await mockApi(page, [
+      { method: 'GET', match: '/common/user-details', body: ok({ user: { is_host: 0, is_free_trail: isFreeTrial } }) },
+      { method: 'GET', match: '/common/user-count', body: ok({ count: 3, seat_limit: 3, per_user_price: 49 }) },
+      { method: 'GET', match: '/common/employees-available-for-user', body: ok([]) },
+      { method: 'POST', match: '/common/roles/fetch-roles', body: ok(ROLES) },
+      { method: 'POST', match: '/common/users/fetch-users', body: paginated(USERS) },
+    ])
+    await page.goto('/users/create')
+    return api
+  }
+
+  test('a paid partner is offered a seat straight away, and Cancel goes back to the list', async ({ page }) => {
+    await openCreateAtSeatLimit(page, false)
+
+    const window = page.locator('.modal.show')
+    await expect(window).toContainText('User Limit Reached')
+    await window.getByRole('button', { name: 'Cancel' }).click()
+
+    await expect(page).toHaveURL(/\/users$/)
+    // The window's grey overlay goes with it.
+    await expect(page.locator('.modal-backdrop')).toHaveCount(0)
+    await expect(page.locator('body')).not.toHaveClass(/modal-open/)
+  })
+
+  test('Proceed opens the form with the seat purchase pending', async ({ page }) => {
+    await openCreateAtSeatLimit(page, false)
+
+    const window = page.locator('.modal.show')
+    await expect(window).toContainText('User Limit Reached')
+    await window.getByRole('button', { name: /proceed/i }).click()
+
+    await expect(page.getByText(/seat purchase pending activation/i)).toBeVisible()
+    await expect(page.locator('.modal.show')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/users\/create$/)
+  })
+
+  test('a free-trial partner is told it is a paid feature, and closing goes back to the list', async ({ page }) => {
+    await openCreateAtSeatLimit(page, true)
+
+    const notice = page.locator('.modal.show')
+    await expect(notice).toContainText('Paid Version Only')
+    await notice.getByRole('button', { name: 'Close' }).click()
+
+    await expect(page).toHaveURL(/\/users$/)
+    await expect(page.locator('.modal-backdrop')).toHaveCount(0)
+  })
+})

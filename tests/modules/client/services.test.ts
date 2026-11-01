@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { attachBorrowerDocuments, updateBorrowerDocumentStatus, fetchClientById } from '../../../src/modules/client/services'
+import { attachBorrowerDocuments, updateBorrowerDocumentStatus, fetchClientById, revealClientField } from '../../../src/modules/client/services'
 
 afterEach(() => server.resetHandlers())
 
@@ -35,5 +35,18 @@ describe('client services', () => {
     )
     await updateBorrowerDocumentStatus(8, 'Rejected', 'Illegible scan')
     expect(receivedBody).toEqual({ status: 'Rejected', rejection_reason: 'Illegible scan' })
+  })
+
+  // BUG-014: the client's SSN and EIN arrive masked; one field is fetched in full.
+  it('revealClientField names the field and returns the number', async () => {
+    let receivedBody: unknown = null
+    server.use(
+      http.post('*/common/borrowers/12/reveal', async ({ request }) => {
+        receivedBody = await request.json()
+        return HttpResponse.json({ status: true, data: { field: 'business_ein', value: '534534534' } })
+      })
+    )
+    await expect(revealClientField(12, 'business_ein')).resolves.toBe('534534534')
+    expect(receivedBody).toEqual({ field: 'business_ein' })
   })
 })

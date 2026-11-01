@@ -46,6 +46,9 @@ interface SwitchProps {
 
 export const Switch: React.FC<SwitchProps> = ({ checked, onChange, label, disabled }) => (
     <div
+        role="switch"
+        aria-checked={checked}
+        aria-disabled={disabled || undefined}
         className={`ab4-switch ${checked ? 'ab4-switch--on' : ''} ${disabled ? 'opacity-50' : ''}`}
         onClick={() => !disabled && onChange(!checked)}
         style={{ pointerEvents: disabled ? 'none' : 'auto' }}

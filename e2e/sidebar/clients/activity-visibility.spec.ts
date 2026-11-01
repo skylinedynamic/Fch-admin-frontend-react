@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Route } from '@playwright/test'
+import { test, expect, type Locator, type Page, type Route } from '@playwright/test'
 
 // The app calls the backend at an absolute origin (VITE_API_URL, e.g.
 // http://127.0.0.1:8000/api/v1) regardless of what host serves the built
@@ -92,27 +92,35 @@ test.describe('Activity visibility (Client detail page)', () => {
     await page.getByRole('button', { name: /new event/i }).click()
   })
 
-  test('the create-activity form requires a visibility choice and offers all 4 levels to a host', async ({ page }) => {
-    const modal = page.locator('#activityCreateModal')
+  // Client detail mounts the modal twice (E2E-015): use the one Bootstrap opened.
+  // Each level is a card whose label also carries its note, so the radios
+  // are found by value.
+  const level = (modal: Locator, value: string) => modal.locator(`input[name="visibility"][value="${value}"]`)
 
-    for (const label of ['Private (Only Me)', 'Internal', 'Partner', 'Everyone (Including Borrower)']) {
-      await expect(modal.getByLabel(label)).toBeVisible()
+  test('the create-activity form requires a visibility choice and offers all 4 levels to a host', async ({ page }) => {
+    const modal = page.locator('#activityCreateModal.show')
+
+    for (const [value, label] of [
+      ['private', 'Private'], ['internal', 'Internal'], ['partner', 'Partner'], ['everyone', 'Everyone'],
+    ]) {
+      await expect(level(modal, value)).toBeVisible()
+      await expect(modal.locator(`label[for="activityVisibility_${value}"]`)).toContainText(label)
     }
 
     // Private is the default selection on a fresh form.
-    await expect(modal.getByLabel('Private (Only Me)')).toBeChecked()
+    await expect(level(modal, 'private')).toBeChecked()
   })
 
   test('selecting a different level updates which radio is checked', async ({ page }) => {
-    const modal = page.locator('#activityCreateModal')
+    const modal = page.locator('#activityCreateModal.show')
 
-    await modal.getByLabel('Internal').check()
-    await expect(modal.getByLabel('Internal')).toBeChecked()
-    await expect(modal.getByLabel('Private (Only Me)')).not.toBeChecked()
+    await level(modal, 'internal').check()
+    await expect(level(modal, 'internal')).toBeChecked()
+    await expect(level(modal, 'private')).not.toBeChecked()
 
-    await modal.getByLabel('Everyone (Including Borrower)').check()
-    await expect(modal.getByLabel('Everyone (Including Borrower)')).toBeChecked()
-    await expect(modal.getByLabel('Internal')).not.toBeChecked()
+    await level(modal, 'everyone').check()
+    await expect(level(modal, 'everyone')).toBeChecked()
+    await expect(level(modal, 'internal')).not.toBeChecked()
   })
 
   test('submitting with Everyone selected sends visibility=everyone to the API', async ({ page }) => {
@@ -125,9 +133,9 @@ test.describe('Activity visibility (Client detail page)', () => {
       await jsonOk(route, { id: 1, visibility: sentVisibility }, 'Activity created successfully.')
     })
 
-    const modal = page.locator('#activityCreateModal')
-    await modal.getByLabel('Everyone (Including Borrower)').check()
-    await expect(modal.getByLabel('Everyone (Including Borrower)')).toBeChecked()
+    const modal = page.locator('#activityCreateModal.show')
+    await level(modal, 'everyone').check()
+    await expect(level(modal, 'everyone')).toBeChecked()
 
     await modal.getByRole('button', { name: 'Create' }).click()
 
@@ -144,8 +152,8 @@ test.describe('Activity visibility (Client detail page)', () => {
       await jsonOk(route, { id: 2, visibility: sentVisibility }, 'Activity created successfully.')
     })
 
-    const modal = page.locator('#activityCreateModal')
-    await expect(modal.getByLabel('Private (Only Me)')).toBeChecked()
+    const modal = page.locator('#activityCreateModal.show')
+    await expect(level(modal, 'private')).toBeChecked()
 
     await modal.getByRole('button', { name: 'Create' }).click()
 

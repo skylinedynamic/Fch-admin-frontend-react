@@ -44,3 +44,10 @@ export const updateActivityLogVisibility = async (id: number | string, visibilit
     const response = await apiClient.patch(`/common/activity-logs/${id}/visibility`, { visibility });
     return response.data;
 };
+
+// An assigned Task's status (Open / In Progress / Complete), changed from its
+// reminder by the task's creator or assignee - nothing else on the activity.
+export const updateActivityTaskStatus = async (id: number | string, taskStatus: string) => {
+    const response = await apiClient.patch(`/common/activity-logs/${id}/task-status`, { task_status: taskStatus });
+    return response.data;
+};

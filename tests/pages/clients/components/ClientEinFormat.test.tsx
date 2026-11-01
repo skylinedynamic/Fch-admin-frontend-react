@@ -14,31 +14,64 @@ vi.mock('../../../../src/hooks/useSummernote', () => ({ useSummernote: () => ({ 
 
 /**
  * Client -> Profile and the client details modal show the Business EIN the
- * way it is written, XX-XXXXXXX - the API keeps the nine digits (534534534),
- * which the profile used to show as they are until the field was typed in.
+ * way it is written, XX-XXXXXXX - the API keeps the nine digits (534534534).
+ *
+ * BUG-014: the client's details carry the SSN and EIN masked; each is fetched
+ * in full on its eye button (POST borrowers/{id}/reveal, naming the field).
  */
 const CLIENT = {
   id: 5, first_name: 'Ada', last_name: 'Lovelace', email: 'ada@example.test', phone_number: '(555) 234-5678',
   country: 'United States', business_country: 'United States',
-  business_ein: '534534534', duns_number: '345345345',
+  business_ein: '**-***4534', duns_number: '345345345',
 }
+const FULL: Record<string, string> = { business_ein: '534534534', ssn: '325555555' }
 
 afterEach(() => server.resetHandlers())
 
-const serve = (client: Record<string, unknown> = CLIENT) =>
+let revealed: unknown[] = []
+const serve = (client: Record<string, unknown> = CLIENT) => {
+  revealed = []
   server.use(
     http.get('*/common/borrowers/5', () => HttpResponse.json({ status: true, data: client })),
+    http.post('*/common/borrowers/5/reveal', async ({ request }) => {
+      const body = (await request.json()) as { field: string }
+      revealed.push(body)
+      return HttpResponse.json({ status: true, data: { field: body.field, value: FULL[body.field] } })
+    }),
     http.all('*', () => HttpResponse.json({ status: true, data: [] }))
   )
+}
 
 describe('Business EIN format', () => {
-  it('Client -> Profile shows the EIN on file as XX-XXXXXXX and keeps the D-U-N-S as nine digits', async () => {
+  it('Client -> Profile shows the EIN masked, XX-XXXXXXX on the eye button, and keeps the D-U-N-S as nine digits', async () => {
     serve()
+    const user = userEvent.setup()
     renderWithProviders(<ClientInfoSection clientId="5" countries={[]} states={[]} cities={[]} />)
 
     const ein = await screen.findByLabelText('Business EIN')
-    await waitFor(() => expect(ein).toHaveValue('53-4534534'))
+    await waitFor(() => expect(ein).toHaveValue('**-***4534'))
+    expect(ein).toHaveAttribute('readonly')
     expect(screen.getByLabelText('D-U-N-S Number')).toHaveValue('345345345')
+    expect(revealed).toEqual([])
+
+    await user.click(screen.getByRole('button', { name: 'Show EIN' }))
+
+    await waitFor(() => expect(ein).toHaveValue('53-4534534'))
+    expect(revealed).toEqual([{ field: 'business_ein' }])
+  })
+
+  it('Client -> Profile shows the SSN masked and reveals it on its own eye button', async () => {
+    serve({ ...CLIENT, ssn: '***-**-5555' })
+    const user = userEvent.setup()
+    renderWithProviders(<ClientInfoSection clientId="5" countries={[]} states={[]} cities={[]} />)
+
+    const ssn = await screen.findByLabelText('Social Security Number')
+    await waitFor(() => expect(ssn).toHaveValue('***-**-5555'))
+
+    await user.click(screen.getByRole('button', { name: 'Show SSN' }))
+
+    await waitFor(() => expect(ssn).toHaveValue('325-55-5555'))
+    expect(revealed).toEqual([{ field: 'ssn' }])
   })
 
   it('Client -> Profile writes an EIN as XX-XXXXXXX while it is typed', async () => {
@@ -53,20 +86,25 @@ describe('Business EIN format', () => {
     expect(ein).toHaveValue('12-3456789')
   })
 
-  it('the client details modal shows the EIN as XX-XXXXXXX', async () => {
+  it('the client details modal shows the EIN masked, XX-XXXXXXX on the eye button', async () => {
     serve()
+    const user = userEvent.setup()
     renderWithProviders(<ClientDetailsModal isOpen toggle={() => {}} clientId={5} />)
 
+    expect(await screen.findByText('**-***4534')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Show EIN', hidden: true }))
     expect(await screen.findByText('53-4534534')).toBeInTheDocument()
+    expect(revealed).toEqual([{ field: 'business_ein' }])
   })
 
   it('the client details modal shows the SSN masked, XXX-XX-XXXX on the eye button', async () => {
-    serve({ ...CLIENT, ssn: '325555555' })
+    serve({ ...CLIENT, ssn: '***-**-5555' })
     const user = userEvent.setup()
     renderWithProviders(<ClientDetailsModal isOpen toggle={() => {}} clientId={5} />)
 
     expect(await screen.findByText('***-**-5555')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Show SSN', hidden: true }))
-    expect(screen.getByText('325-55-5555')).toBeInTheDocument()
+    expect(await screen.findByText('325-55-5555')).toBeInTheDocument()
+    expect(revealed).toEqual([{ field: 'ssn' }])
   })
 })

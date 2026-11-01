@@ -44,8 +44,16 @@ export const deletePartner = async (id: string | number): Promise<void> => {
   await apiClient.delete(`/admin/partners/${id}`);
 };
 
-/** The caller's team - or, for the host, the team of the partner it names. */
-export const allUsers = async (payload: { partner_id?: number; include_user_id?: number } = {}): Promise<any> => {
+/**
+ * The caller's team - or, for the host, the team of the partner it names.
+ * The assign pickers send `active_only` (inactive staff left out) and
+ * `keep_ids` (whoever is already assigned, kept even if inactive); list
+ * filters send neither and get everyone. Each member carries `is_inactive`,
+ * so a kept assignee can be marked (R2 BUG-051).
+ */
+export const allUsers = async (
+  payload: { partner_id?: number; active_only?: boolean; keep_ids?: number[] } = {}
+): Promise<any> => {
   const { data } = await apiClient.post('common/get-all-users', payload);
   return data;
 };

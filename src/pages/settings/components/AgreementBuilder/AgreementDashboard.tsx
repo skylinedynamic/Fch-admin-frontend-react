@@ -11,6 +11,7 @@ import { useAppConfigurations, useSaveAppConfigurations } from '../../../../modu
 import { Switch } from './CommonUI';
 import { AgreementDashboardSkeleton } from '../../../../components/Loader/SpecificSkeletons';
 import { usePermissions } from '../../../../lib/auth/usePermissions';
+import { useConfigPartner } from '../../../../modules/settings/configPartner';
 
 interface AgreementDashboardProps {
     onEdit: (type: 'partner' | 'borrower') => void;
@@ -19,13 +20,16 @@ interface AgreementDashboardProps {
 export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }) => {
     const { hasPermission } = usePermissions();
     const user = getUser();
-    const isHost = user?.is_host == 1;
+    // Partner profile › Configuration: that partner's own borrower agreement
+    // only - the partner agreement and the signing switch are the host's.
+    const configPartner = useConfigPartner();
+    const isHost = user?.is_host == 1 && !configPartner;
     const { data: listRes, isLoading: loadingList } = useAgreements();
     const list = listRes?.data || [];
 
     const toggleMutation = useToggleAgreementStatus();
 
-    const { data: configRes, isLoading: loadingConfig } = useAppConfigurations(MODULE_AGREEMENT);
+    const { data: configRes, isLoading: loadingConfig } = useAppConfigurations(MODULE_AGREEMENT, isHost);
     const saveConfigMutation = useSaveAppConfigurations();
     const isSigningEnabled = configRes?.data?.agreement_signing_enabled === '1';
 
@@ -151,7 +155,7 @@ export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }
                             </div>
                         )}
 
-                        {hasPermission('update partner agreement settings') && (
+                        {!configPartner && hasPermission('update partner agreement settings') && (
                             <AgreementRow
                                 type="partner"
                                 label="Partner Agreement Paper"
@@ -159,7 +163,7 @@ export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }
                             />
                         )}
 
-                        {hasPermission('update borrower agreement settings') && (
+                        {(configPartner || hasPermission('update borrower agreement settings')) && (
                             <AgreementRow
                                 type="borrower"
                                 label="Borrower Agreement Paper"

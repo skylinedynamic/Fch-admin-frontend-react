@@ -88,7 +88,7 @@ test.describe('Client profile › Assign to', () => {
 
     const field = assignTo(page)
     await expect(field.locator('.p-dropdown-label')).toHaveText('Sal WLP')
-    expect(calls.teams).toContainEqual({ partner_id: 2 })
+    expect(calls.teams).toContainEqual({ partner_id: 2, active_only: true, keep_ids: [22] })
 
     await field.click()
     await expect(field.locator('.p-dropdown-item')).toHaveText(['Wil Label', 'Sal WLP'])

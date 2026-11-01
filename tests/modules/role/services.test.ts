@@ -137,19 +137,7 @@ describe('fetchRoleDetail normalization', () => {
       permission: ['manage-users', 'edit-roles'],
       users: [],
       permission_ids: [5, 9],
-      // Not a system role (R2 BUG-011).
-      is_static: false,
     })
-  })
-
-  /** R2 BUG-011 - a system role says so, for the edit page to show it read-only. */
-  it('carries whether the role is a system role', async () => {
-    server.use(
-      http.get('*/common/roles/:id', () =>
-        HttpResponse.json({ data: { id: 1, name: 'Admin', is_static: true, permission: { 5: 'manage-users' }, users: [] } })
-      )
-    )
-    await expect(fetchRoleDetail(1)).resolves.toMatchObject({ name: 'Admin', is_static: true })
   })
 
   it('leaves permission_ids undefined when permission is already an array', async () => {

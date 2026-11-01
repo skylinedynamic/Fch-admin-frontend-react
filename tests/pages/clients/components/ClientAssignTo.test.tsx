@@ -67,7 +67,7 @@ describe('Client -> Assign to', () => {
     const user = userEvent.setup()
     renderWithProviders(<ClientInfoSection clientId="5" isHost countries={[]} states={[]} cities={[]} />)
 
-    await waitFor(() => expect(teamRequests).toContainEqual({ partner_id: PARTNER, include_user_id: 70 }))
+    await waitFor(() => expect(teamRequests).toContainEqual({ partner_id: PARTNER, active_only: true, keep_ids: [70] }))
     await waitFor(() => expect(shown()).toBe('Wanda Partner'))
 
     await user.click(assignTo())
@@ -95,7 +95,7 @@ describe('Client -> Assign to', () => {
   })
 
   // R2 BUG-051: an Inactive employee was still offered. The API now leaves them
-  // out, except the client's current assignee, which it flags.
+  // out (active_only), except the client's current assignee (keep_ids), which it flags.
   it('a current assignee who has since been set Inactive is shown as such', async () => {
     serve(CLIENT, [{ id: 70, name: 'Wanda Partner', is_inactive: true }, { id: 71, name: 'Will Staff', is_inactive: false }])
     renderWithProviders(<ClientInfoSection clientId="5" isHost countries={[]} states={[]} cities={[]} />)

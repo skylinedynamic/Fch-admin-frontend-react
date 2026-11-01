@@ -159,7 +159,7 @@ describe('Settings menu - Save Configuration on verified settings', () => {
           data: {
             configurations: [{
               id: 11, provider: 'smtp', provider_label: 'SMTP', from_address: 'mail@acme.test', bcc_emails: null,
-              smtp_host: 'smtp.acme.test', smtp_password: '••••••••', is_default: true, is_verified: verified,
+              smtp_host: 'smtp.acme.test', has_smtp_password: true, is_default: true, is_verified: verified,
               verified_at: null, verified_to: null, updated_at: null,
             }],
             providers: [{
