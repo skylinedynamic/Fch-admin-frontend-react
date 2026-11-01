@@ -27,6 +27,7 @@ import { locationData } from '../../../modules/location';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers, getPartnerBorrowerFee } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
+import { PARTNER_FEE_PAYMENT_HINT, partnerFeePaymentNote } from '../../../config/invoiceConfig';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_ONE_TIME } from '../../../config/subscriptionConfig';
 import { PARTNER_TYPES, CLIENT_TYPE_LABELS } from '../../../config/partnerTypeOptions';
@@ -1728,14 +1729,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             </div>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
-                                                                    Charged automatically on Partner's account.
+                                                                    {PARTNER_FEE_PAYMENT_HINT}
                                                                 </span>
                                                             </div>
 
                                                             <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                 <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                     <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, {partnerFeeLabel} is automatically charged to the Partner account immediately.
+                                                                    Two separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. {partnerFeePaymentNote(partnerFeeLabel)}
                                                                 </p>
                                                             </div>
                                                         </>

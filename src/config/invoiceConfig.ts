@@ -53,3 +53,15 @@ export const INVOICE_STATUS_COLORS: { [key: string]: string } = {
     [STATUS_DISPUTED]: 'info',
     [STATUS_FAILED]: 'danger'
 };
+
+/**
+ * The partner's borrower fee is charged to the partner's card automatically
+ * when the client makes their first enrollment payment; the partner can also
+ * pay it from Invoices before then (BUG-059).
+ */
+export const PARTNER_FEE_PAYMENT_HINT =
+  "You'll be charged automatically when the client pays their enrollment, or you can pay it manually from Invoices."
+
+/** The same, with the amount, e.g. "$800.00 will be charged to you automatically when the client pays, …". */
+export const partnerFeePaymentNote = (amount: string): string =>
+  `${amount} will be charged to you automatically when the client pays, or you can pay it manually from Invoices.`
