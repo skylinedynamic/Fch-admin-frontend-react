@@ -47,6 +47,17 @@ describe('PaymentDetails - decision panel', () => {
     await screen.findAllByText(/Payment Details/)
     expect(screen.queryByRole('button', { name: /approve payment/i })).not.toBeInTheDocument()
   })
+
+  // A partner's own payment to the host - its borrower fee, say - is still
+  // Processing, but the API says the partner may not decide it: only the host,
+  // who receives the money, can.
+  it('is hidden on a processing payment the API says I may not decide', async () => {
+    mount(['view payments', 'can approve payment'], { ...PAYMENT, can_approve: false })
+
+    await screen.findAllByText(/Payment Details/)
+    expect(screen.queryByRole('button', { name: /approve payment/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /reject payment/i })).not.toBeInTheDocument()
+  })
 })
 
 describe('PaymentDetails - approve', () => {
