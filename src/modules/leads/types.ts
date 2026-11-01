@@ -29,7 +29,7 @@ export interface Lead {
   entity_type: string;
   industry_type: string;
   business_start_date: string;
-  ssn_last_4: string;
+  ssn: string | null;
   requirement_details: string;
   partner_id?: number | string;
   partner?: {

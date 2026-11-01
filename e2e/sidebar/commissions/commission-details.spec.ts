@@ -9,7 +9,7 @@ test.describe('Commission details', () => {
     payee: { id: 5, type: 'partner', name: 'Acme Funding', email: 'acme@example.test' },
     paid_by: null, service: null, payout_type: 'Commission', rate: 60,
     base_label: 'Total Commission', base_amount: 4500, amount: 2700,
-    is_paid: false, paid_at: null, payment_method: null, can_pay: true, ...over,
+    is_paid: false, paid_at: null, payment_method: null, can_pay: true, default_environment: 'sandbox', ...over,
   })
   const commission = (over: Record<string, unknown> = {}) => ({
     id: 1201, partner_id: 5, partner_name: 'Acme Funding', partner_company_name: 'Acme LLC',
@@ -110,8 +110,25 @@ test.describe('Commission details', () => {
       await modal.locator('textarea').fill('April run')
       await modal.getByRole('button', { name: /Confirm Payout/ }).click()
       const call = await expectCall(api, 'POST', PAYOUT)
-      expect(call.json).toEqual({ partner_payment_method: 'Cash', note: 'April run' })
+      expect(call.json).toEqual({ partner_payment_method: 'Cash', note: 'April run', environment: 'sandbox' })
       await expect(page.getByText('Payment made successfully')).toBeVisible()
+    })
+
+    // A payout goes through no gateway, so the host says which environment its
+    // payment is in. The dialog starts on what the API suggests (Production
+    // only on the production app).
+    test('the payout dialog starts on the suggested environment and sends the one picked', async ({ page }) => {
+      const api = await open(page, ok(commission({ payout: payout({ default_environment: 'production' }) })))
+      api.add({ method: 'POST', match: PAYOUT, body: ok() })
+      await page.getByRole('button', { name: /Make Payment/ }).click()
+      const modal = page.locator('.modal.show')
+      const environment = modal.locator('.mb-4', { hasText: 'Environment' }).locator('.p-dropdown')
+      await expect(environment).toContainText('Production')
+      await environment.click()
+      await page.locator('.p-dropdown-panel .p-dropdown-item', { hasText: 'Sandbox' }).click()
+      await modal.getByRole('button', { name: /Confirm Payout/ }).click()
+      const call = await expectCall(api, 'POST', PAYOUT)
+      expect(call.json).toMatchObject({ partner_payment_method: 'Cash', environment: 'sandbox' })
     })
 
     test('Cancel closes the payout dialog without posting', async ({ page }) => {

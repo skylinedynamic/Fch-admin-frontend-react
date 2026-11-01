@@ -7,6 +7,7 @@ import {
   createCreditAccount,
   updateCreditAccount,
   deleteCreditAccount,
+  deleteCreditAccounts,
   updateCreditAccountStatus,
   type CreditAccount,
 } from '../../../src/modules/credit-accounts/services'
@@ -100,6 +101,23 @@ describe('deleteCreditAccount', () => {
     )
 
     await expect(deleteCreditAccount(1)).resolves.toEqual({ status: true, message: 'deleted', data: null })
+  })
+})
+
+describe('deleteCreditAccounts', () => {
+  it('posts the selected ids to the multiple-delete endpoint in one call', async () => {
+    let body: unknown = null
+    server.use(
+      http.post('*/admin/credit-builder/credit-accounts/multiple-delete', async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({ status: true, data: { deleted: 2 } })
+      })
+    )
+
+    const result = await deleteCreditAccounts([71, 72])
+
+    expect(body).toEqual({ ids: [71, 72] })
+    expect(result).toEqual({ status: true, data: { deleted: 2 } })
   })
 })
 

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchChangeRequests, updateChangeRequestStatus } from './services';
+import { fetchChangeRequests, revealChangeRequest, updateChangeRequestStatus } from './services';
 import { UpdateChangeRequestPayload } from './types';
 
 const QUERY_KEY = 'change-requests';
@@ -10,6 +10,12 @@ export const useChangeRequests = (params: any) => {
         queryFn: () => fetchChangeRequests(params),
     });
 };
+
+/** Fetches an SSN or EIN change's two numbers in full (BUG-014); logged by the API. */
+export const useRevealChangeRequest = () =>
+    useMutation({
+        mutationFn: (id: number | string) => revealChangeRequest(id),
+    });
 
 export const useUpdateChangeRequestStatus = () => {
     const queryClient = useQueryClient();

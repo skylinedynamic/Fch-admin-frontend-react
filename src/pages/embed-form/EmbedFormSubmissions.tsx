@@ -16,6 +16,7 @@ import {
     fetchEmbedFormSubmissions,
     convertEmbedFormSubmissionToBorrower,
 } from '../../modules/embed-form/services';
+import { REJECTED_CANNOT_CONVERT, SUBMISSION_STATUS } from '../../modules/embed-form/types';
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 import SubmissionPartner from './components/SubmissionPartner';
@@ -368,7 +369,8 @@ export default function EmbedFormSubmissions() {
     };
 
     const actionBodyTemplate = (rowData: any) => {
-        const isConverted = rowData.status === 'converted';
+        const isConverted = rowData.status === SUBMISSION_STATUS.CONVERTED;
+        const isRejected = rowData.status === SUBMISSION_STATUS.REJECTED;
         return (
             <div className="d-flex align-items-center justify-content-center gap-1">
                 {isConverted ? (
@@ -386,7 +388,8 @@ export default function EmbedFormSubmissions() {
                             e.stopPropagation();
                             handleOpenConvertModal(rowData);
                         }}
-                        title="Convert this applicant to a Free Plan Borrower"
+                        disabled={isRejected}
+                        title={isRejected ? REJECTED_CANNOT_CONVERT : 'Convert this applicant to a Free Plan Borrower'}
                     >
                         <i className="ri-vip-crown-2-line" />
                         <span>Convert to Free Plan Borrower</span>
@@ -521,7 +524,9 @@ export default function EmbedFormSubmissions() {
                                     )}
                                 </form>
 
-                                {loading && !submissions.length ? (
+                                {/* The table skeletons on every load - sort, page, filter -
+                                    not only the first one; the cards and filters above stay. */}
+                                {loading ? (
                                     <TableLoader
                                         rows={10}
                                         columns={new Array(7).fill({ style: { minWidth: '150px' } })}

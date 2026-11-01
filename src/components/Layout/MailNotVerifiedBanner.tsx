@@ -16,9 +16,12 @@ const MailNotVerifiedBanner: React.FC = () => {
     const canManage = hasPermission(EMAIL_PERMISSION);
     const { data } = useMailConfigurations(canManage);
 
-    if (!canManage || !data || data.data.uses_own_configuration) return null;
+    // Shown on every page, so a reply without the expected shape hides the
+    // banner rather than throwing and blanking the whole app.
+    const mail = data?.data;
+    if (!canManage || !mail?.fallback || mail.uses_own_configuration !== false) return null;
 
-    const fromAddress = data.data.fallback.from_address;
+    const fromAddress = mail.fallback.from_address;
 
     return (
         <div className="alert alert-danger mail-not-verified-banner" role="alert">

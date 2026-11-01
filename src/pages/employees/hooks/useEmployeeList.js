@@ -15,7 +15,7 @@ export function useEmployeeList() {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const [sortField, setSortField] = useState('id');
-    const [sortOrder, setSortOrder] = useState('asc');
+    const [sortOrder, setSortOrder] = useState('desc');
     const [totalRecords, setTotalRecords] = useState(0);
     const [appliedFilters, setAppliedFilters] = useState({});
     const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('');

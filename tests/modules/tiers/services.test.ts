@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { fetchTiers, createTier, updateTierVendor, deleteTiers } from '../../../src/modules/tiers/services'
+import { fetchTiers, createTier, updateTierVendor, deleteTiers, deleteTierTask, deleteTierTasks } from '../../../src/modules/tiers/services'
 
 afterEach(() => server.resetHandlers())
 
@@ -40,6 +40,28 @@ describe('tiers services', () => {
     )
     await deleteTiers([1, 2])
     expect(receivedBody).toEqual({ ids: [1, 2] })
+  })
+
+  // BUG-095: the API has no single tier-task delete - DELETE tier-tasks/{id} was a 405.
+  it('deleteTierTask posts the one id to the bulk-delete route', async () => {
+    let receivedBody: unknown = null
+    server.use(
+      http.post('*/admin/credit-builder/tier-tasks-multiple-delete', async ({ request }) => {
+        receivedBody = await request.json()
+        return HttpResponse.json({ status: true })
+      })
+    )
+    await deleteTierTask(9)
+    expect(receivedBody).toEqual({ ids: [9] })
+  })
+
+  it('a refused delete carries the API’s message', async () => {
+    server.use(
+      http.post('*/admin/credit-builder/tier-tasks-multiple-delete', () =>
+        HttpResponse.json({ status: false, message: 'Clients are already using these tasks' }, { status: 422 })
+      )
+    )
+    await expect(deleteTierTasks([9])).rejects.toMatchObject({ response: { data: { message: 'Clients are already using these tasks' } } })
   })
 })
 

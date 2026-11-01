@@ -97,17 +97,20 @@ test.describe('Lead conversion - borrower', () => {
   })
 })
 
-test.describe('Lead profile - stats', () => {
-  test('the stats strip is loaded for the lead', async ({ page }) => {
+// BUG-016: the strip showed the signed-in partner's own totals (/common/stats),
+// the same on every lead. A lead has no clients, invoices or subscriptions of
+// its own, so the profile shows no counters and does not fetch them.
+test.describe('Lead profile - no partner totals', () => {
+  test('a lead\'s profile shows no counter strip and does not load the partner\'s totals', async ({ page }) => {
     await seedSession(page, { permissions: ['view leads', 'update leads'] })
     const api = await mockApi(page, [
       { method: 'GET', match: /\/common\/leads\/51$/, body: ok(LEAD) },
-      { method: 'POST', match: '/common/stats', body: ok({ total_meetings: 4, total_clients: 0, total_invoice: 1, enrollment_type: 'N/A', total_tickets: 6 }) },
+      { method: 'POST', match: '/common/stats', body: ok({ total_meetings: 2, total_clients: 43, total_invoice: 34, enrollment_type: 'N/A', total_tickets: 7 }) },
     ])
     await page.goto('/leads/51')
-    const call = await expectCall(api, 'POST', '/common/stats')
-    expect(String(call.json.id)).toBe('51')
-    await expect(page.getByText('Meetings').first()).toBeVisible()
-    await expect(page.locator('.metrics-strip')).toContainText('6')
+    await expect(page.locator('.nav-link', { hasText: 'Lead Details' })).toBeVisible()
+    await expect(page.locator('.metrics-strip')).toHaveCount(0)
+    await expect(page.getByText('Total Clients')).toHaveCount(0)
+    expect(api.find('POST', '/common/stats')).toHaveLength(0)
   })
 })

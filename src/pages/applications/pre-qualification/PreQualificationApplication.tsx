@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../../common/PageHeader';
+import { toLocalYmd } from '../../../utils/dates';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -69,8 +70,8 @@ export default function PreQualificationApplication() {
         search: appliedFilters.search,
         status: appliedFilters.status,
         funding_type: appliedFilters.funding_type,
-        start_date: appliedFilters.date_range?.[0] ? new Date(appliedFilters.date_range[0]).toISOString().split('T')[0] : null,
-        end_date: appliedFilters.date_range?.[1] ? new Date(appliedFilters.date_range[1]).toISOString().split('T')[0] : null,
+        start_date: toLocalYmd(appliedFilters.date_range?.[0]),
+        end_date: toLocalYmd(appliedFilters.date_range?.[1]),
         filters: appliedFilters.filters,
         sort_field: sortField,
         sort_order: sortOrder,

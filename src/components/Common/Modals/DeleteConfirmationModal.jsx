@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import Modal from 'bootstrap/js/dist/modal';
 import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 
-export default function DeleteConfirmationModal({ show, onConfirm, onClose, loading, text }) {
+// title and text are optional: a page that passes neither gets the neutral defaults.
+export default function DeleteConfirmationModal({ show, onConfirm, onClose, loading, text, title = "Are you sure?" }) {
   const modalRef = useRef(null);
   const modalInstanceRef = useRef(null);
 
@@ -64,9 +65,9 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
               style={{ width: '90px', height: '90px' }}
             ></lord-icon>
             <div className="mt-4 text-center">
-              <h4>Are you sure?</h4>
+              <h4>{title}</h4>
               <p className="text-muted fs-15 mb-4">
-                {text || "Deleting employees will remove all information."}
+                {text || "This will be permanently deleted."}
               </p>
               <div className="hstack gap-2 justify-content-center remove">
                 <button

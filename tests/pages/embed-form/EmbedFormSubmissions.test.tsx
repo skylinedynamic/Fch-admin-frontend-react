@@ -7,7 +7,7 @@ vi.mock('react-toastify', async (importOriginal) => {
 
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { renderWithProviders, screen, within } from '../../test-utils'
+import { renderWithProviders, screen, waitFor, within } from '../../test-utils'
 import { useAuthStore } from '../../../src/store/auth/authStore'
 import EmbedFormSubmissions from '../../../src/pages/embed-form/EmbedFormSubmissions'
 
@@ -58,6 +58,26 @@ describe('Embedded Form › Loan Applications › partner', () => {
     useAuthStore.setState({ token: undefined, user: null })
   })
 
+  // BUG-098: a Rejected application could still be converted from its row.
+  it('does not let a rejected application be converted from the list', async () => {
+    useAuthStore.setState({ token: 'tok', user: { id: 1, name: 'User', is_host: 1, permissions: ['view application', 'convert application'] } as never })
+    server.use(
+      http.post('*/common/embed-forms/submissions/fetch', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: [{ ...submissions[0], status: 'rejected' }, submissions[1]], meta: { total: 2, stats: { total: 2, new_count: 1, reviewing_count: 0, converted_count: 0 } } })
+      ),
+      http.get('*/common/user-details', () => HttpResponse.json({ status: true, data: { user: {} } }))
+    )
+    renderWithProviders(<EmbedFormSubmissions />)
+
+    const rejectedRow = (await screen.findByText('Odessa Mccall')).closest('tr') as HTMLElement
+    const convert = within(rejectedRow).getByRole('button', { name: /Convert to Free Plan Borrower/ })
+    expect(convert).toBeDisabled()
+    expect(convert).toHaveAttribute('title', 'Rejected applications cannot be converted. Change the status to convert it.')
+
+    const newRow = screen.getByText('Ava Ortiz').closest('tr') as HTMLElement
+    expect(within(newRow).getByRole('button', { name: /Convert to Free Plan Borrower/ })).toBeEnabled()
+  })
+
   it('shows the host which partner each application came through', async () => {
     signInAs(true)
     serve()
@@ -81,5 +101,50 @@ describe('Embedded Form › Loan Applications › partner', () => {
     await screen.findByText('Odessa Mccall')
     expect(screen.queryByRole('columnheader', { name: /Partner/ })).not.toBeInTheDocument()
     expect(screen.queryByText('Acme Lending')).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * The table shows its skeleton while a sort (or page / filter) reloads it. It
+ * used to show the skeleton only on the very first load, so a sort left the old
+ * rows on screen with no sign it was loading. The statistics cards and filters
+ * stay on screen - only the table reloads.
+ */
+describe('Embedded Form › Loan Applications › loading', () => {
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  it('shows the table skeleton while a sort reloads the list', async () => {
+    signInAs(true)
+    let release: () => void = () => {}
+    let calls = 0
+    server.use(
+      http.post('*/common/embed-forms/submissions/fetch', async () => {
+        calls += 1
+        if (calls > 1) await new Promise<void>((resolve) => { release = resolve })
+        return HttpResponse.json({ status: true, message: 'ok', data: submissions, meta: { total: 2, stats: { total: 2, new_count: 2, reviewing_count: 0, converted_count: 0 } } })
+      }),
+      http.get('*/common/user-details', () => HttpResponse.json({ status: true, data: { user: {} } }))
+    )
+    const user = (await import('@testing-library/user-event')).default.setup()
+    const { container } = renderWithProviders(<EmbedFormSubmissions />)
+
+    await screen.findByText('odessa@example.test')
+    expect(container.querySelector('.skeleton-table-cell')).toBeNull()
+
+    await user.click(screen.getByText('Contact Info'))
+
+    await waitFor(() => expect(calls).toBe(2))
+    await waitFor(() => expect(container.querySelector('.skeleton-table-cell')).not.toBeNull())
+    expect(screen.queryByText('odessa@example.test')).not.toBeInTheDocument()
+    // Only the table: the cards and the filter row are still there.
+    expect(screen.getByText('Total Applications')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search here...')).toBeInTheDocument()
+
+    release()
+    expect(await screen.findByText('odessa@example.test')).toBeInTheDocument()
+    expect(container.querySelector('.skeleton-table-cell')).toBeNull()
   })
 })

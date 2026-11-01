@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Client, ClientFilterParams, BorrowerTier, BorrowerProgress } from './types';
+import type { Client, ClientFilterParams, BorrowerTier, BorrowerProgress, RevealableClientField } from './types';
 
 // Base API path
 const BASE_PATH = '/common/borrowers'; // Keeping backend endpoint as /borrowers
@@ -19,6 +19,15 @@ export const fetchClientById = async (id: string | number): Promise<Client> => {
 };
 
 // Fetch only business financials fields (Business Financials tab)
+/**
+ * A client's SSN or EIN in full - the client's details carry both masked
+ * (BUG-014). Each call is logged on the client by the API.
+ */
+export const revealClientField = async (id: string | number, field: RevealableClientField): Promise<string | null> => {
+    const { data } = await apiClient.post(`${BASE_PATH}/${id}/reveal`, { field });
+    return data?.data?.value ?? null;
+};
+
 export const fetchBorrowerBusinessFinancials = async (id: string | number): Promise<any> => {
     const { data } = await apiClient.get(`/common/borrowers/business-financials/${id}`);
     return data;
@@ -54,9 +63,14 @@ export interface ClientDeletableCheck {
     name: string;
     is_deletable: boolean;
     reason: string | null;
+    /** What keeps the client: a paid invoice, or a pre-qualification / funding application. */
+    reason_code?: 'paid_invoice' | 'applications' | null;
 }
 
-/** Whether each client can be deleted - a client with a paid invoice cannot. */
+/**
+ * Whether each client can be deleted - a client with a paid invoice cannot, nor
+ * one (paid or free) with a pre-qualification or funding application.
+ */
 export const checkClientsDeletable = async (ids: (string | number)[]): Promise<ClientDeletableCheck[]> => {
     const { data } = await apiClient.post(`/common/borrowers/check-deletable`, { ids });
     return data?.data ?? [];

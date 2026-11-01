@@ -1,0 +1,581 @@
+/* Client › Documents tab: one table, category by category. Each category is a
+   block: a light band with an edge in its state's colour (the name, required or
+   not, the file count; its state under Status, Upload under Action) that folds
+   its file rows away. No lines between cells. Fits the tab's width with no
+   sideways scroll above ~640px. 4px corners. */
+
+.cdoc {
+    --cdoc-radius: 4px;
+    --cdoc-border: var(--vz-border-color, #e9ebec);
+    --cdoc-ink: #212529;
+    --cdoc-muted: #878a99;
+    --cdoc-soft: #f8f9fb;
+    --cdoc-green: #0ab39c;
+    --cdoc-green-soft: #e6f7f5;
+    --cdoc-amber: #c88a04;
+    --cdoc-amber-soft: #fef4e4;
+    --cdoc-red: #f06548;
+    --cdoc-red-soft: #fdeeeb;
+    --cdoc-grey: #adb5bd;
+    --cdoc-grey-soft: #f3f3f9;
+    --cdoc-brand: var(--vz-primary, #405189);
+    --cdoc-brand-rgb: var(--vz-primary-rgb, 64, 81, 137);
+}
+
+/* Header: the title with the summary under it, and Add Document beside them. */
+.cdoc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cdoc-header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+}
+
+.cdoc-add-btn {
+    white-space: nowrap;
+}
+
+.cdoc-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    font-size: 12.5px;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-summary-progress {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 4px;
+    font-weight: 600;
+    color: var(--cdoc-ink);
+}
+
+.cdoc-summary-bar {
+    position: relative;
+    display: inline-block;
+    width: 90px;
+    height: 6px;
+    border-radius: var(--cdoc-radius);
+    background: var(--cdoc-grey-soft);
+    overflow: hidden;
+}
+
+.cdoc-summary-bar > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: var(--cdoc-radius);
+    background: var(--cdoc-green);
+    transition: width 0.3s ease;
+}
+
+.cdoc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+    font-weight: 600;
+    color: var(--cdoc-ink);
+}
+
+/* A coloured dot, no box. */
+.cdoc-chip::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cdoc-chip-dot, var(--cdoc-grey));
+}
+
+.cdoc-chip + .cdoc-chip {
+    margin-left: 6px;
+}
+
+.cdoc-chip.is-accepted { --cdoc-chip-dot: var(--cdoc-green); }
+.cdoc-chip.is-review { --cdoc-chip-dot: var(--cdoc-amber); }
+.cdoc-chip.is-reupload { --cdoc-chip-dot: var(--cdoc-red); }
+
+/* The table: no lines between cells. Each category is its own block - a gap
+   above, a light band with an edge in its state's colour - and its files sit
+   under it, apart by a hairline. */
+.cdoc-table {
+    table-layout: fixed;
+    min-width: 640px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.cdoc .cdoc-table > :not(caption) > * > * {
+    border-bottom-width: 0;
+    box-shadow: none;
+}
+
+.cdoc .cdoc-table thead th {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--cdoc-border);
+    background: transparent;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-table thead th:nth-child(1) { width: auto; }
+.cdoc-table thead th:nth-child(2) { width: 15%; }
+.cdoc-table thead th:nth-child(3) { width: 10%; }
+.cdoc-table thead th:nth-child(4) { width: 14%; }
+.cdoc-table thead th:nth-child(5) { width: 150px; }
+.cdoc-table thead th:nth-child(6) { width: 56px; }
+
+.cdoc-table td,
+.cdoc-table th {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* The card's edges (Velzon's .table-card would pull the table up under the
+   card header, onto its dashed line). */
+.cdoc-table th:last-child,
+.cdoc-table td:last-child {
+    padding-right: 16px;
+}
+
+.cdoc .cdoc-table thead th:first-child {
+    padding-left: 16px;
+}
+
+/* A category's header row. */
+.cdoc-group {
+    --cdoc-accent: var(--cdoc-grey);
+    --cdoc-accent-soft: var(--cdoc-grey-soft);
+}
+
+.cdoc-group.is-accepted { --cdoc-accent: var(--cdoc-green); --cdoc-accent-soft: var(--cdoc-green-soft); }
+.cdoc-group.is-review { --cdoc-accent: var(--cdoc-amber); --cdoc-accent-soft: var(--cdoc-amber-soft); }
+.cdoc-group.is-reupload { --cdoc-accent: var(--cdoc-red); --cdoc-accent-soft: var(--cdoc-red-soft); }
+
+.cdoc .cdoc-table .cdoc-group-head > th,
+.cdoc .cdoc-table .cdoc-group-head > td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    /* The gap above the block: a clear border, so the band starts under it. */
+    border-top: 10px solid transparent;
+    background: var(--cdoc-soft);
+    background-clip: padding-box;
+    font-weight: normal;
+}
+
+.cdoc .cdoc-table .cdoc-group-head > th {
+    padding-left: 14px;
+    box-shadow: inset 3px 0 0 0 var(--cdoc-accent);
+}
+
+.cdoc-group-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.cdoc-group-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    color: var(--cdoc-ink);
+}
+
+.cdoc-group-chevron {
+    font-size: 18px;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-group-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cdoc-tag {
+    flex: none;
+    padding: 1px 6px;
+    border: 0;
+    border-radius: var(--cdoc-radius);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-tag.is-required {
+    background: rgba(var(--cdoc-brand-rgb), 0.08);
+    color: var(--cdoc-brand);
+}
+
+.cdoc-group-count {
+    flex: none;
+    font-size: 12px;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-group-count::before {
+    content: '·';
+    margin-right: 8px;
+}
+
+.cdoc-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--cdoc-radius);
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--cdoc-accent-soft);
+    color: var(--cdoc-accent);
+    white-space: nowrap;
+}
+
+.cdoc-group.is-missing .cdoc-state {
+    background: transparent;
+    padding-left: 0;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--cdoc-radius);
+    background: transparent;
+    font-size: 16px;
+    color: var(--cdoc-brand);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cdoc-upload-btn:hover,
+.cdoc-upload-btn:focus-visible {
+    background: var(--cdoc-brand);
+    color: #fff;
+}
+
+/* File rows. */
+.cdoc .cdoc-table .cdoc-file-row > td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background: #fff;
+    transition: background 0.15s ease;
+}
+
+.cdoc .cdoc-table .cdoc-file-row + .cdoc-file-row > td {
+    border-top: 1px solid #f1f2f5;
+}
+
+.cdoc .cdoc-table .cdoc-file-row:hover > td {
+    background: #fafbfc;
+}
+
+.cdoc-table .cdoc-file-row > td:first-child {
+    padding-left: 38px;
+}
+
+.cdoc-file-icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--cdoc-radius);
+    font-size: 16px;
+}
+
+.cdoc-file-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--cdoc-ink);
+}
+
+.cdoc-file-name:hover {
+    color: var(--cdoc-brand);
+}
+
+.cdoc-file-reason {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--cdoc-red);
+}
+
+.cdoc-file-row td {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* Loading. */
+.cdoc-loading-group + .cdoc-loading-group {
+    margin-top: 16px;
+}
+
+/* No documents at all: one empty state, with the required ones to upload. */
+.cdoc-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 24px;
+    border: 1px dashed rgba(var(--cdoc-brand-rgb), 0.28);
+    border-radius: var(--cdoc-radius);
+    background: rgba(var(--cdoc-brand-rgb), 0.03);
+    text-align: center;
+}
+
+.cdoc-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    margin-bottom: 12px;
+    border-radius: var(--cdoc-radius);
+    font-size: 24px;
+    background: rgba(var(--cdoc-brand-rgb), 0.1);
+    color: var(--cdoc-brand);
+}
+
+.cdoc-empty-title {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cdoc-ink);
+}
+
+.cdoc-empty-text {
+    margin: 0 0 20px;
+    font-size: 13px;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-empty-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 640px;
+}
+
+@media (max-width: 575.98px) {
+    .cdoc-empty-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.cdoc-empty-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--cdoc-border);
+    border-radius: var(--cdoc-radius);
+    background: #fff;
+    text-align: left;
+    color: var(--cdoc-ink);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.cdoc-empty-item-icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--cdoc-radius);
+    font-size: 16px;
+    background: rgba(var(--cdoc-brand-rgb), 0.08);
+    color: var(--cdoc-brand);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cdoc-empty-item-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.cdoc-empty-item-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.cdoc-empty-item-meta {
+    display: block;
+    white-space: nowrap;
+    font-size: 11.5px;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-empty-item-go {
+    flex: none;
+    font-size: 16px;
+    color: var(--cdoc-muted);
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.cdoc-empty-item:not(:disabled):hover,
+.cdoc-empty-item:not(:disabled):focus-visible {
+    border-color: var(--cdoc-brand);
+    box-shadow: 0 4px 12px rgba(var(--cdoc-brand-rgb), 0.12);
+    transform: translateY(-1px);
+}
+
+.cdoc-empty-item:not(:disabled):hover .cdoc-empty-item-icon,
+.cdoc-empty-item:not(:disabled):focus-visible .cdoc-empty-item-icon {
+    background: var(--cdoc-brand);
+    color: var(--brand-on-primary, #fff);
+}
+
+.cdoc-empty-item:not(:disabled):hover .cdoc-empty-item-go {
+    color: var(--cdoc-brand);
+    transform: translateX(2px);
+}
+
+.cdoc-empty-item:disabled {
+    cursor: default;
+}
+
+/* -- Add Document modal ------------------------------------------------------------ */
+
+.cdoc-modal {
+    border: 0;
+    border-radius: var(--cdoc-radius);
+    overflow: visible;
+}
+
+.cdoc-modal-header {
+    align-items: flex-start;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--cdoc-border);
+}
+
+.cdoc-modal-header .modal-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.cdoc-modal-icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--cdoc-radius);
+    font-size: 18px;
+    background: rgba(var(--cdoc-brand-rgb), 0.1);
+    color: var(--cdoc-brand);
+}
+
+.cdoc-modal-title {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--cdoc-ink);
+}
+
+.cdoc-modal-subtitle {
+    display: block;
+    margin-top: 2px;
+    font-size: 12.5px;
+    font-weight: normal;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-modal-body {
+    padding: 20px;
+}
+
+.cdoc-modal-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    margin-top: 16px;
+    padding: 26px 16px;
+    border: 1px dashed rgba(var(--cdoc-brand-rgb), 0.35);
+    border-radius: var(--cdoc-radius);
+    background: rgba(var(--cdoc-brand-rgb), 0.03);
+    text-align: center;
+    color: var(--cdoc-ink);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cdoc-modal-drop:not(:disabled):hover,
+.cdoc-modal-drop:not(:disabled):focus-visible {
+    border-color: var(--cdoc-brand);
+    background: rgba(var(--cdoc-brand-rgb), 0.07);
+}
+
+.cdoc-modal-drop-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 6px;
+    border-radius: 50%;
+    font-size: 22px;
+    background: var(--cdoc-brand);
+    color: var(--brand-on-primary, #fff);
+    box-shadow: 0 6px 14px rgba(var(--cdoc-brand-rgb), 0.25);
+}
+
+.cdoc-modal-drop-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.cdoc-modal-drop-text {
+    font-size: 12.5px;
+    color: var(--cdoc-muted);
+}
+
+.cdoc-modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--cdoc-border);
+}

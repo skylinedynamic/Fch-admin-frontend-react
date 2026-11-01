@@ -68,6 +68,25 @@ test.describe('Site settings', () => {
     await expect(page.getByText('Settings store is locked.').first()).toBeVisible()
   })
 
+  // BUG-022: the reCAPTCHA secret used to load in full into a plain-text input.
+  // The API reports it only as set (a mask); the field stays blank and saving
+  // it blank keeps the stored secret.
+  test('a saved reCAPTCHA secret is never shown and is saved blank', async ({ page }) => {
+    await seedSession(page, { permissions: ['view site settings', 'update site settings'] })
+    const api = await mockApi(page, [{ method: 'GET', match: `${CMS}/site-settings`, body: ok({ ...SETTINGS, recaptcha_site_key: 'site-key-public', recaptcha_secret_key: '••••••••' }) }])
+    await page.goto('/cms/site-settings')
+    const secret = page.locator('input[name="recaptcha_secret_key"]')
+    await expect(page.locator('input[name="recaptcha_site_key"]')).toHaveValue('site-key-public')
+    await expect(secret).toHaveAttribute('type', 'password')
+    await expect(secret).toHaveValue('')
+    await expect(secret).toHaveAttribute('placeholder', 'Saved - leave blank to keep')
+
+    api.add({ method: 'POST', match: `${CMS}/site-settings`, body: ok(SETTINGS, 'Site settings updated successfully') })
+    await page.locator('button[form="site-settings-form"]').click()
+    const call = await expectCall(api, 'POST', `${CMS}/site-settings`)
+    expect(call.json).toMatchObject({ recaptcha_secret_key: '' })
+  })
+
   test('the save button is hidden for view-only users', async ({ page }) => {
     await open(page, ['view site settings'])
     await expect(page.locator('button[form="site-settings-form"]')).toHaveCount(0)

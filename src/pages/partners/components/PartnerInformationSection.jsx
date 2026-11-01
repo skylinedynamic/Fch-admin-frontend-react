@@ -6,7 +6,7 @@ import { Calendar } from 'primereact/calendar';
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
-import { formatPhoneNumber, formatZipCode } from '../../../utils/formatters';
+import { formatPhoneNumber, formatZipCode, formatBusinessEIN, displayEIN } from '../../../utils/formatters';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import InstallmentDetailsModal from '../../../components/Common/Payment/InstallmentDetailsModal';
@@ -15,6 +15,7 @@ import { getCountryPhoneInfo } from '../../../config/locations';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
 import { ENROLLMENT_TYPE_ONE_TIME, ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_OPTIONS } from '../../../config/subscriptionConfig';
 import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
+import { defaultInstallmentMonths } from '../../../modules/partner';
 
 
 export default function PartnerInformationSection({
@@ -157,6 +158,11 @@ export default function PartnerInformationSection({
     const handleZipChange = (e) => {
         e.target.value = formatZipCode(e.target.value);
         handleInputChange(e);
+    };
+
+    // A Tax ID is an EIN: written XX-XXXXXXX, kept by the API as nine digits.
+    const handleTaxIdChange = (e) => {
+        handleInputChange({ target: { name: 'tax_id', value: formatBusinessEIN(e.target.value) || '' } });
     };
 
     return (
@@ -482,7 +488,8 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Zip Code</label>
-                    <input type="text" inputMode="numeric" maxLength={5} className="form-control" name="postal_code" placeholder="Enter zip code" value={formData.postal_code} onChange={handleZipChange} />
+                    <input type="text" inputMode="numeric" maxLength={5} className={`form-control ${errors.postal_code ? 'is-invalid' : ''}`} name="postal_code" placeholder="Enter zip code" value={formData.postal_code} onChange={handleZipChange} />
+                    {errors.postal_code && <div className="invalid-feedback">{errors.postal_code}</div>}
                 </div>
             </div>
 
@@ -503,11 +510,12 @@ export default function PartnerInformationSection({
                             dateFormat="dd M, yy"
                             placeholder="Select date"
                             showIcon
-                            className="w-100"
+                            className={`w-100 ${errors.joining_date ? 'p-invalid' : ''}`}
                             appendTo="self"
                             readOnlyInput
                         />
                     </div>
+                    {errors.joining_date && <div className="invalid-feedback d-block">{errors.joining_date}</div>}
                 </div>
             </div>
 
@@ -515,7 +523,8 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Tax ID</label>
-                    <input type="text" className="form-control" name="tax_id" placeholder="Enter tax ID" value={formData.tax_id} onChange={handleInputChange} />
+                    <input type="text" inputMode="numeric" className={`form-control ${errors.tax_id ? 'is-invalid' : ''}`} name="tax_id" placeholder="XX-XXXXXXX" value={displayEIN(formData.tax_id)} onChange={handleTaxIdChange} />
+                    {errors.tax_id && <div className="invalid-feedback">{errors.tax_id}</div>}
                 </div>
             </div>
 
@@ -523,7 +532,8 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Website</label>
-                    <input type="text" className="form-control" name="website" placeholder="Enter website" value={formData.website} onChange={handleInputChange} />
+                    <input type="text" className={`form-control ${errors.website ? 'is-invalid' : ''}`} name="website" placeholder="Enter website" value={formData.website} onChange={handleInputChange} />
+                    {errors.website && <div className="invalid-feedback">{errors.website}</div>}
                 </div>
             </div>
 
@@ -961,7 +971,8 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Name</label>
-                    <input type="text" className="form-control" name="contact_person" placeholder="Enter name" value={formData.contact_person} onChange={handleInputChange} />
+                    <input type="text" className={`form-control ${errors.contact_person ? 'is-invalid' : ''}`} name="contact_person" placeholder="Enter name" value={formData.contact_person} onChange={handleInputChange} />
+                    {errors.contact_person && <div className="invalid-feedback">{errors.contact_person}</div>}
                 </div>
             </div>
 
@@ -978,7 +989,7 @@ export default function PartnerInformationSection({
                         )}
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.contact_person_phone_number ? 'is-invalid' : ''}`}
                             name="contact_person_phone_number"
                             placeholder="(555) 555-5555"
                             value={formData.contact_person_phone_number}
@@ -987,6 +998,7 @@ export default function PartnerInformationSection({
                                 handleInputChange({ target: { name: 'contact_person_phone_number', value: formatted } });
                             }}
                         />
+                        {errors.contact_person_phone_number && <div className="invalid-feedback">{errors.contact_person_phone_number}</div>}
                     </div>
                 </div>
             </div>
@@ -994,7 +1006,8 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Email</label>
-                    <input type="email" className="form-control" name="contact_person_email" placeholder="Enter email" value={formData.contact_person_email} onChange={handleInputChange} />
+                    <input type="email" className={`form-control ${errors.contact_person_email ? 'is-invalid' : ''}`} name="contact_person_email" placeholder="Enter email" value={formData.contact_person_email} onChange={handleInputChange} />
+                    {errors.contact_person_email && <div className="invalid-feedback">{errors.contact_person_email}</div>}
                 </div>
             </div>
 
@@ -1008,8 +1021,9 @@ export default function PartnerInformationSection({
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Select relation..."
-                        className="w-100"
+                        className={`w-100 ${errors.contact_person_relation ? 'p-invalid' : ''}`}
                     />
+                    {errors.contact_person_relation && <div className="invalid-feedback d-block">{errors.contact_person_relation}</div>}
                 </div>
             </div>
 
@@ -1026,7 +1040,8 @@ export default function PartnerInformationSection({
                 show={showInstallmentModal}
                 onHide={() => setShowInstallmentModal(false)}
                 totalAmount={selectedPlan?.total_amount || formData.enrollment_amount || formData.total_subscription_amount || 0}
-                defaultMonths={selectedPlan?.total_installments_count || 12}
+                // The same months the installment card starts with (BUG-114).
+                defaultMonths={defaultInstallmentMonths(selectedPlan)}
                 planLabel={enrollmentTypeName}
                 partnerType={partnerTypeName}
                 appliedTotalAmount={formData.enrollment_amount}
@@ -1035,7 +1050,7 @@ export default function PartnerInformationSection({
                 appliedApplied={formData.installment_applied}
                 installmentMinMonths={selectedPlan?.installment_min_months}
                 installmentMaxMonths={selectedPlan?.installment_max_months}
-                installmentDefaultMonths={selectedPlan?.installment_default_months}
+                installmentDefaultMonths={defaultInstallmentMonths(selectedPlan)}
                 onApply={(data) => {
                     handleInputChange({ target: { name: 'enrollment_amount', value: data.totalAmount } });
                     handleInputChange({ target: { name: 'installment_down_payment', value: data.downPayment } });

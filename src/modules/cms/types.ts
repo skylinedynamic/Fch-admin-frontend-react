@@ -111,6 +111,8 @@ export interface SeoListParams {
     search?: string;
     sort_field?: string;
     sort_order?: string;
+    /** Column filters: field => {value, match_mode} (BUG-124). */
+    filters?: Record<string, { value: string; match_mode: string }>;
 }
 
 export type SeoListResponse = PaginatedApiResponse<SeoSetting>;

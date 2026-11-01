@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
-import { fetchInvoiceDetails, downloadInvoice } from '../../modules/invoice/services';
+import { fetchInvoiceDetails, downloadInvoice, sendInvoice } from '../../modules/invoice/services';
 import { toast } from 'react-toastify';
 import { INVOICE_STATUS_COLORS, STATUS_PAID, STATUS_PROCESSING } from '../../config/invoiceConfig';
 import { useAuthStore } from '../../store/auth';
 import { useConfigStore } from '../../store/config';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import InvoicePaymentModal from './components/InvoicePaymentModal';
+import { InvoicePartyLines } from './components/InvoicePartyDetails';
 import DetailsSkeletonLoader from '../../components/Loader/DetailsSkeletonLoader';
 import ErrorPage from '../Utility/ErrorPage';
 
@@ -27,6 +28,7 @@ export default function InvoiceDetails() {
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [sending, setSending] = useState(false);
 
     useEffect(() => {
         const getDetails = async () => {
@@ -69,6 +71,21 @@ export default function InvoiceDetails() {
         } catch (error) {
             console.error('Error downloading invoice:', error);
             toast.error('Error downloading invoice');
+        }
+    };
+
+    // The same e-mail the invoice preview sends (BUG-091).
+    const handleSend = async () => {
+        if (sending) return;
+        setSending(true);
+        try {
+            const response = await sendInvoice(id);
+            if (response.status) toast.success('Invoice sent successfully.');
+            else toast.error(response.message || 'Failed to send invoice');
+        } catch (error) {
+            toast.error(error?.response?.data?.message || 'Failed to send invoice');
+        } finally {
+            setSending(false);
         }
     };
 
@@ -145,10 +162,7 @@ export default function InvoiceDetails() {
                                                 </div>
                                                 <div className="col-lg-6 col-md-6">
                                                     <h5 className="fs-15 fw-bold mb-3"><i className="ri-user-3-line text-muted align-middle me-1"></i> Billed To</h5>
-                                                    <h6 className="fs-14 fw-semibold mb-1">{invoice.name || invoice.customer_name}</h6>
-                                                    <p className="text-muted mb-1">{invoice.email}</p>
-                                                    {invoice.phone && <p className="text-muted mb-1">{invoice.phone}</p>}
-                                                    <p className="text-muted mb-0">{invoice.address || invoice.country || 'N/A'}</p>
+                                                    <InvoicePartyLines party={invoice.billed_to || {}} />
                                                 </div>
                                             </div>
                                         </div>
@@ -216,6 +230,14 @@ export default function InvoiceDetails() {
                                                 <button className="btn btn-primary" onClick={handleDownload}>
                                                     <i className="ri-download-2-line align-middle me-1"></i> Download PDF
                                                 </button>
+                                                {user?.is_host == 1 && invoice.status !== STATUS_PAID && invoice.status !== STATUS_PROCESSING && (
+                                                    <button className="btn btn-danger" onClick={handleSend} disabled={sending}>
+                                                        {sending
+                                                            ? <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                            : <i className="ri-send-plane-fill align-middle me-1"></i>}
+                                                        E-Mail Invoice
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

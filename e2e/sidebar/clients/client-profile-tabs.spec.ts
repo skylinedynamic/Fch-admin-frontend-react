@@ -77,13 +77,14 @@ test.describe('Client profile - Documents', () => {
   test('lists the client documents and loads the document types', async ({ page }) => {
     const api = await openTab(page, 'Documents', handlers)
     await expect(page.getByText('bank-statement-jan.pdf')).toBeVisible()
-    await expect(page.locator('tr', { hasText: 'bank-statement-jan.pdf' })).toContainText('Bank Statement')
+    // Grouped by category: the file sits under its category's header row.
+    await expect(page.getByRole('rowgroup', { name: 'Bank Statement' })).toContainText('bank-statement-jan.pdf')
     await expectCall(api, 'GET', '/common/borrower-document-types')
   })
 
   test('shows the empty state', async ({ page }) => {
     await openTab(page, 'Documents', [{ method: 'POST', match: '/common/borrowers-documents/1', body: ok([]) }])
-    await expect(page.getByText('No documents found')).toBeVisible()
+    await expect(page.getByText('No documents uploaded yet')).toBeVisible()
   })
 
   test('marking a document as accepted posts the new status', async ({ page }) => {

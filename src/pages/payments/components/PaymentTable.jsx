@@ -58,6 +58,9 @@ export default function PaymentTable({
         return rowData.partner_name || rowData.borrower_name || rowData.name || '-';
     };
 
+    // The payer's company, beside (never inside) their name.
+    const companyBodyTemplate = (rowData) => rowData.company || '-';
+
     const transactionTypeBodyTemplate = (rowData) => {
         const type = rowData.transaction_type || (rowData.is_partner_paying ? TRANSACTION_TYPE_DEBIT : TRANSACTION_TYPE_CREDIT);
         const isDebit = String(type).toLowerCase() === TRANSACTION_TYPE_DEBIT.toLowerCase();
@@ -155,6 +158,7 @@ export default function PaymentTable({
                     filterPlaceholder="Search name"
                     style={{ minWidth: '150px' }}
                 ></Column>
+                <Column field="company" header="Company" body={companyBodyTemplate} style={{ minWidth: '150px' }}></Column>
                 <Column field="amount" header="Amount" body={amountBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by amount" style={{ minWidth: '100px' }}></Column>
                 <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '100px' }}></Column>
                 <Column

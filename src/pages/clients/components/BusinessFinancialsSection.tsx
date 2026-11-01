@@ -8,6 +8,7 @@ import {
     CURRENCY_OPTIONS,
 } from '../../../modules/client';
 import { scrollToFirstError } from '../../../utils/formUtils';
+import { DEFAULT_BORROWER_CURRENCY } from '../../../config/borrower';
 import type { Client } from '../../../modules/client/types';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.css';
@@ -201,7 +202,8 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
 
             // Send only the business financials fields to the dedicated endpoint
             const payload = {
-                currency: apiData.currency,
+                // Save the currency the field shows, USD until one is chosen (BUG-077).
+                currency: apiData.currency || DEFAULT_BORROWER_CURRENCY,
                 monthly_revenue: apiData.monthly_revenue,
                 avg_bank_balance: apiData.avg_bank_balance,
                 average_monthly_deposits: apiData.average_monthly_deposits,
@@ -300,7 +302,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         <label htmlFor="currency" className="form-label">Currency</label>
                         <Dropdown
                             inputId="currency"
-                            value={formData.currency || 'USD'}
+                            value={formData.currency || DEFAULT_BORROWER_CURRENCY}
                             options={CURRENCY_OPTIONS}
                             onChange={(e) => handleInputChange({ target: { name: 'currency', value: e.value } })}
                             optionLabel="label"

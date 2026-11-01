@@ -1,6 +1,7 @@
 import React from 'react';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
+import { ENROLLMENT_TYPE_INSTALLMENT } from '../../../config/subscriptionConfig';
 
 export default function SubscriptionListSection({ subscriptions = [] }) {
     const statusBodyTemplate = (rowData) => {
@@ -24,6 +25,14 @@ export default function SubscriptionListSection({ subscriptions = [] }) {
         const val = rowData[field];
         return val === null || val === undefined || val === '' ? 'Null' : val;
     };
+
+    // For an installment plan payable_amount is the whole enrollment and
+    // total_subscription_amount the balance left after the down payment; a one
+    // time payment has no balance to show (BUG-126).
+    const installmentBalanceTemplate = (rowData) =>
+        rowData.enrollment_type === ENROLLMENT_TYPE_INSTALLMENT
+            ? textBodyTemplate(rowData, 'total_subscription_amount')
+            : '—';
 
     return (
         <div className="table-responsive table-card mt-1">
@@ -53,18 +62,18 @@ export default function SubscriptionListSection({ subscriptions = [] }) {
                     body={(r) => textBodyTemplate(r, 'enrollment_type')}
                 />
                 <Column
-                    field="total_subscription_amount"
+                    field="payable_amount"
                     header="Total Amount"
                     sortable
                     style={{ minWidth: '180px' }}
-                    body={(r) => textBodyTemplate(r, 'total_subscription_amount')}
+                    body={(r) => textBodyTemplate(r, 'payable_amount')}
                 />
                 <Column
-                    field="payable_amount"
-                    header="Payable Amount"
+                    field="total_subscription_amount"
+                    header="Installment Balance"
                     sortable
                     style={{ minWidth: '180px' }}
-                    body={(r) => textBodyTemplate(r, 'payable_amount')}
+                    body={installmentBalanceTemplate}
                 />
                 <Column
                     field="monthly_platform_fee"

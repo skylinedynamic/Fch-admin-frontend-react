@@ -13,7 +13,8 @@ test.describe('Auth › Login (live)', () => {
     const response = page.waitForResponse((r) => r.url().includes('/auth/login'))
     await page.getByRole('button', { name: 'Sign In' }).click()
     expect((await response).status()).toBe(401)
-    await expect(page.getByText('The email you entered does not exist').first()).toBeVisible()
+    // The same answer as a wrong password, so it does not reveal which emails have an account (BUG-104).
+    await expect(page.getByText('Invalid email or password.').first()).toBeVisible()
     await expect(page).toHaveURL(/\/login$/)
   })
 

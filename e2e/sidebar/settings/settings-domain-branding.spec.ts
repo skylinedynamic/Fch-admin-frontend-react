@@ -49,6 +49,37 @@ test.describe('Settings - Custom Domain', () => {
     await expect(page.getByText('The borrower domain format is invalid.').first()).toBeVisible()
   })
 
+  // BUG-121: "not a domain" was saved. The API now refuses it with one message
+  // for the field, shown under the field only - no toast.
+  test('a borrower domain that is not a host name is refused with its message', async ({ page }) => {
+    const message = 'Enter a valid domain, e.g. app.example.com.'
+    const api = await openDomain(page)
+    api.add({ method: 'POST', match: MINE, status: 422, body: failure(message, { borrower_domain: message }) })
+    await expect(page.locator('input[name="borrower_domain"]')).toHaveValue('apply.acme.test')
+    await page.locator('input[name="borrower_domain"]').fill('not a domain')
+    await submit(page).click()
+
+    const call = await expectCall(api, 'POST', MINE)
+    expect(call.json).toMatchObject({ borrower_domain: 'not a domain' })
+    await expect(page.locator('#tenant-domain-config-form .invalid-feedback')).toHaveText(message)
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
+  })
+
+  // Only the API validates: an empty partner domain is sent, not stopped by the browser.
+  test('an empty partner domain is sent to the API and its message shown under the field', async ({ page }) => {
+    const message = 'Enter the partner portal domain.'
+    const api = await openDomain(page)
+    api.add({ method: 'POST', match: MINE, status: 422, body: failure(message, { partner_domain: message }) })
+    await expect(page.locator('input[name="partner_domain"]')).toHaveValue('portal.acme.test')
+    await page.locator('input[name="partner_domain"]').fill('')
+    await page.locator('input[name="borrower_domain"]').fill('')
+    await submit(page).click()
+
+    const call = await expectCall(api, 'POST', MINE)
+    expect(call.json).toMatchObject({ partner_domain: null, borrower_domain: null })
+    await expect(page.locator('#tenant-domain-config-form .invalid-feedback')).toHaveText(message)
+  })
+
   test('a failed save shows the API message', async ({ page }) => {
     const api = await openDomain(page)
     api.add({ method: 'POST', match: MINE, status: 500, body: failure('Domain service unavailable.') })

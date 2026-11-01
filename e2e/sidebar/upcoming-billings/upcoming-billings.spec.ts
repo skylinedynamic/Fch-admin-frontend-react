@@ -32,6 +32,35 @@ test.describe('Upcoming billing', () => {
     await expect.poll(() => api.find('POST', LIST).some((c) => c.json?.search === 'acme')).toBe(true)
   })
 
+  test('pressing Enter in the search box applies the search (BUG-006)', async ({ page }) => {
+    const api = await openList(page)
+    await page.getByPlaceholder('Search by name, email...').fill('zzqxnomatch')
+    await page.getByPlaceholder('Search by name, email...').press('Enter')
+    await expect.poll(() => api.find('POST', LIST).some((c) => c.json?.search === 'zzqxnomatch')).toBe(true)
+  })
+
+  test('lists the soonest billing date first (BUG-012)', async ({ page }) => {
+    const api = await openList(page)
+    expect(api.find('POST', LIST)[0].json).toMatchObject({ sort_field: 'upcoming_billing_date', sort_order: 'asc' })
+  })
+
+  for (const [title, field] of [['Amount', 'upcoming_billing_amount'], ['Outstanding', 'outstanding_amount']]) {
+    test(`${title} sorts ascending, then descending (BUG-012)`, async ({ page }) => {
+      const api = await openList(page)
+      const header = page.getByRole('columnheader', { name: new RegExp(`^${title}`) })
+      const lastSort = () => {
+        const body = api.find('POST', LIST).at(-1)?.json ?? {}
+        return { field: body.sort_field, order: body.sort_order }
+      }
+
+      await header.locator('.p-column-title').click()
+      await expect.poll(lastSort).toEqual({ field, order: 'asc' })
+
+      await header.locator('.p-column-title').click()
+      await expect.poll(lastSort).toEqual({ field, order: 'desc' })
+    })
+  }
+
   test('shows the empty state', async ({ page }) => {
     await seedSession(page, { permissions: ['view subscriptions'] })
     await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([]) }])

@@ -124,6 +124,36 @@ describe('Loan application details › View Funding Application', () => {
   })
 })
 
+// BUG-098: a Rejected application could still be converted (the API now refuses it too).
+describe('Loan application details › Convert on a rejected application', () => {
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  const rejected = { ...converted, status: 'rejected', converted_borrower_id: null, converted_borrower: null, converted_funding_application_id: null }
+
+  it('is disabled, and says the status has to change first', async () => {
+    signInWith(['view application', 'convert application'])
+    serve(rejected)
+    renderPage()
+
+    const [convert] = await screen.findAllByRole('button', { name: /Convert to Free Plan Borrower/ })
+    expect(convert).toBeDisabled()
+    expect(screen.getByText('Rejected applications cannot be converted. Change the status to convert it.')).toBeInTheDocument()
+  })
+
+  it('stays enabled on an application in review', async () => {
+    signInWith(['view application', 'convert application'])
+    serve({ ...rejected, status: 'reviewing' })
+    renderPage()
+
+    const [convert] = await screen.findAllByRole('button', { name: /Convert to Free Plan Borrower/ })
+    expect(convert).toBeEnabled()
+    expect(screen.queryByText(/Rejected applications cannot be converted/)).not.toBeInTheDocument()
+  })
+})
+
 /**
  * The business EIN, the business start date (stored as
  * business_checking_start_date), the requested amount in its currency and the
@@ -156,6 +186,16 @@ describe('Loan application details › business and funding answers', () => {
 
     expect(await screen.findByText('Business EIN')).toBeInTheDocument()
     expect(screen.getByText('12-3456789')).toBeInTheDocument()
+  })
+
+  it('shows the SSN as every SSN is shown: ***-**-1234 (the API sends only the last four)', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, last_4_ssn: '6789', co_borrowers: [{ id: 1, first_name: 'Cora', last_name: 'Co', last_4_ssn: '4321' }] })
+    renderPage()
+
+    expect(await screen.findByText('***-**-6789')).toBeInTheDocument()
+    expect(screen.getByText('***-**-4321')).toBeInTheDocument()
+    expect(screen.queryByText(/•••-••-/)).not.toBeInTheDocument()
   })
 
   it('calls the checking date the business start date', async () => {

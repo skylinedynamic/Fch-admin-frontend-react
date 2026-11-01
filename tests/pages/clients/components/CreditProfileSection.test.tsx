@@ -137,3 +137,120 @@ describe('Client credit profile section - who may change it', () => {
     expect(screen.getByText('Extracted Credit Metrics')).toBeInTheDocument()
   })
 })
+
+/**
+ * BUG-144 / BUG-147: picking a PDF saved the profile straight away - before the
+ * host had looked at it - so a non-report became the client's profile and the
+ * client was told "updated" twice (on upload and again on Save). Reading the
+ * PDF only fills the form; Save Credit Profile is what writes it.
+ *
+ * BUG-145: the report's SSN showed in full. It shows masked with an eye
+ * button, as every other SSN does.
+ */
+describe('Client credit profile section - reading a report', () => {
+  const extracted = {
+    personal_info: { name: 'Report Name', dob: '01/02/1980', ssn: '123-45-6789', email: null, phone: null },
+    metrics: { fico_score: 734 },
+    addresses: [],
+    trade_accounts: [],
+    inquiries: [],
+  }
+
+  const reportFile = () => new File(['%PDF-1.4'], 'isoftpull-report.pdf', { type: 'application/pdf' })
+
+  const serve = ({ profile = null, onSave = () => {} }: { profile?: unknown; onSave?: (body: unknown) => void } = {}) =>
+    server.use(
+      http.get('*/common/borrowers/get-credit-profile/3', () => HttpResponse.json({ status: true, data: profile })),
+      http.post('*/common/borrowers/parse-credit-profile', () =>
+        HttpResponse.json({ status: true, data: { extracted_data: extracted, pdf_url: 'http://localhost/storage/borrowers/3/r.pdf', document_id: 9, pdf: null, mime: 'application/pdf' } })
+      ),
+      http.post('*/common/borrowers/save-credit-profile', async ({ request }) => {
+        onSave(await request.json())
+        return HttpResponse.json({ status: true, data: null })
+      })
+    )
+
+  const uploadReport = async (user: ReturnType<typeof userEvent.setup>) => {
+    await screen.findByText(/choose pdf report/i)
+    await user.upload(document.querySelector('#credit-report-upload') as HTMLInputElement, reportFile())
+    await screen.findByText('Extracted Credit Metrics')
+  }
+
+  afterEach(() => {
+    server.resetHandlers()
+    vi.mocked(toast.success).mockClear()
+    vi.mocked(toast.error).mockClear()
+  })
+
+  it('fills the form from the PDF but saves nothing until the host clicks Save', async () => {
+    const saves: unknown[] = []
+    serve({ onSave: (body) => saves.push(body) })
+    const user = userEvent.setup()
+
+    renderWithProviders(<CreditProfileSection clientId={3} isHost />)
+    await uploadReport(user)
+
+    expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/review.*save credit profile/i))
+    expect(saves).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: /save credit profile/i }))
+    await waitFor(() => expect(saves).toHaveLength(1))
+    expect((saves[0] as { personal_info: { ssn: string } }).personal_info.ssn).toBe('123-45-6789')
+  })
+
+  it("shows the API's message when the file is not a credit report", async () => {
+    serve()
+    server.use(
+      http.post('*/common/borrowers/parse-credit-profile', () =>
+        HttpResponse.json({ status: false, message: 'This file is not a credit report. Please upload the iSoftPull credit report PDF.' }, { status: 422 })
+      )
+    )
+    const user = userEvent.setup()
+
+    renderWithProviders(<CreditProfileSection clientId={3} isHost />)
+    await screen.findByText(/choose pdf report/i)
+    await user.upload(document.querySelector('#credit-report-upload') as HTMLInputElement, reportFile())
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('This file is not a credit report. Please upload the iSoftPull credit report PDF.'))
+    expect(screen.queryByText('Extracted Credit Metrics')).not.toBeInTheDocument()
+  })
+
+  it("shows a just-read report's SSN masked until the eye button is pressed", async () => {
+    serve()
+    const user = userEvent.setup()
+
+    renderWithProviders(<CreditProfileSection clientId={3} isHost />)
+    await uploadReport(user)
+    await user.click(screen.getByRole('button', { name: 'Personal & Address Info' }))
+
+    const ssn = screen.getByLabelText('SSN')
+    expect(ssn).toHaveValue('***-**-6789')
+    expect(document.body).not.toHaveTextContent('123-45-6789')
+
+    await user.click(screen.getByRole('button', { name: 'Show SSN' }))
+    expect(ssn).toHaveValue('123-45-6789')
+  })
+
+  it("fetches a saved profile's SSN from the logged reveal", async () => {
+    let revealed: unknown = null
+    serve({ profile: { id: 1, pdf_url: null, document_id: null, ...extracted, personal_info: { ...extracted.personal_info, ssn: '***-**-6789' } } })
+    server.use(
+      http.post('*/common/borrowers/3/reveal', async ({ request }) => {
+        revealed = await request.json()
+        return HttpResponse.json({ status: true, data: { field: 'credit_profile_ssn', value: '123456789' } })
+      })
+    )
+    const user = userEvent.setup()
+
+    renderWithProviders(<CreditProfileSection clientId={3} isHost />)
+    await screen.findByText('Extracted Credit Metrics')
+    await user.click(screen.getByRole('button', { name: 'Personal & Address Info' }))
+
+    const ssn = screen.getByLabelText('SSN')
+    expect(ssn).toHaveValue('***-**-6789')
+
+    await user.click(screen.getByRole('button', { name: 'Show SSN' }))
+    await waitFor(() => expect(ssn).toHaveValue('123-45-6789'))
+    expect(revealed).toEqual({ field: 'credit_profile_ssn' })
+  })
+})

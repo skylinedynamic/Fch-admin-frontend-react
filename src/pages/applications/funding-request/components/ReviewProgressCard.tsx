@@ -11,6 +11,8 @@ interface ReviewProgressCardProps {
     createdAt?: string;
     updatedAt?: string;
     rejectReason?: string;
+    /** Status => when the request reached it (API status_dates). */
+    statusDates?: Record<string, string>;
 }
 
 export default function ReviewProgressCard({
@@ -18,6 +20,7 @@ export default function ReviewProgressCard({
     createdAt,
     updatedAt,
     rejectReason,
+    statusDates = {},
 }: ReviewProgressCardProps) {
 
     const progressPercentage = getFundingReviewProgress(status);
@@ -168,9 +171,11 @@ export default function ReviewProgressCard({
                                                 {formatDateTime(createdAt)}
                                             </div>
                                         )}
-                                        {current && updatedAt && (
+                                        {/* Each step reached keeps the date it was reached (BUG-070);
+                                            the current one falls back to the last update. */}
+                                        {idx > 0 && (completed || current) && (statusDates[step.key] || (current && updatedAt)) && (
                                             <div className="text-center mt-1 fw-medium fr-progress-style-1a4a5286">
-                                                {formatDateTime(updatedAt)}
+                                                {formatDateTime(statusDates[step.key] || updatedAt)}
                                             </div>
                                         )}
                                     </div>

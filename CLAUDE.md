@@ -24,6 +24,15 @@ Same foundation as `client-fch` (shared conventions, separate codebase) — `src
 - `docs/PARTNER_TECHNICAL_DOCUMENTATION.md` and `docs/FCH_SaaS_Electronic_Signature_Audit_Trail_Developer_Handoff.docx` are a second documentation source in this repo's `docs/` folder, alongside this file.
 
 ## Coding standards
+**Always follow these standards, in every change — new code and any existing code you touch.** Don't wait to be reminded.
+- **Every API call goes through a feature module** in `src/modules/<feature>/`:
+  - `services.ts`: the axios calls, through the shared `apiClient` and nothing else.
+  - `queries.ts`: TanStack Query hooks (`useQuery` for reads, `useMutation` for writes) that wrap the services, plus the module's query-key registry.
+  - `types.ts`: request and response types.
+  - `index.ts`: the barrel export.
+  
+  Pages and components use the module's query hooks. They never import `apiClient` or call an endpoint directly. When you touch a component that still calls `apiClient`, move those calls into its module in the same change. If the module is missing `queries.ts` or `types.ts`, add them.
+- **No hard-coded statuses, roles, permissions, types or option values.** Declare them once as constants (`src/config/*.ts`, or the module's `types.ts`) and import them (e.g. `REMINDER_STATUS_PENDING`, not `'pending'`). The same rule applies in `fch-api`: model constants, not string literals.
 - No ESLint/Prettier is configured yet — set one up (ESLint + `typescript-eslint` + Prettier) before relying on style review alone.
 - Follow the fixed module shape (`services.ts` → `queries.ts` → `types.ts` → `index.ts`) for any new feature.
 - This app renders sensitive PII/financial data across many admin screens — every new page/action touching it must sit behind a route guard and/or `PermissionGuard`, not just a UI hide.

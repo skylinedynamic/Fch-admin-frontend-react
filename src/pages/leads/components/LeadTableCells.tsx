@@ -7,9 +7,11 @@ import type { Lead } from '../../../modules/leads/types';
  * over its owner's name.
  */
 
-const isBlank = (value?: string | null) => !value || value.trim() === '';
+// A cleared field can arrive as the string "null"/"undefined" - empty too.
+const isBlank = (value?: string | null) => !value || ['', 'null', 'undefined'].includes(value.trim().toLowerCase());
 
-const Missing = () => <span className="text-muted">Null</span>;
+// A missing value is a muted dash, never the word "Null" (BUG-003).
+const Missing = () => <span className="text-muted">—</span>;
 
 export function LeadNameCell({ lead }: { lead: Pick<Lead, 'contact_person' | 'company_name'> }) {
     return (

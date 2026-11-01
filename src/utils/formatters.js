@@ -108,6 +108,16 @@ export const formatBusinessEIN = (value) => {
 };
 
 /**
+ * A stored EIN as the screens show it, XX-XXXXXXX - the API keeps nine digits,
+ * older rows a hyphenated writing. Anything that is not a writing of an EIN is
+ * shown as it is, so opening and saving a record never quietly blanks it.
+ */
+export const displayEIN = (value) => {
+    if (!value) return '';
+    return /^[\d\s-]+$/.test(value) ? formatBusinessEIN(value) : value;
+};
+
+/**
  * Masks or reveals an SSN string in ###-##-#### format.
  * @param value Raw SSN digits
  * @param reveal Whether to reveal the full SSN
@@ -151,4 +161,17 @@ export const parseDateTime = (dateStr) => {
     } catch {
         return dateStr;
     }
+};
+
+/**
+ * Formats a funding option's "speed to funds" (free text such as "1-5 Days" or
+ * "24-72 Hours"). Adds "Days" only to a bare number or range, and drops a
+ * "Days" an earlier save appended after a unit (BUG-025: "1-5 Days Days").
+ * @param value The stored speed to funds
+ * @param fallback What to show when there is no value
+ */
+export const formatSpeedToFunds = (value, fallback = '—') => {
+    const speed = (value ?? '').toString().trim().replace(/\b(days?|hours?|weeks?|months?)(\s+days)+$/i, '$1');
+    if (!speed) return fallback;
+    return /[a-z]/i.test(speed) ? speed : `${speed} Days`;
 };

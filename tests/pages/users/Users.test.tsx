@@ -58,4 +58,39 @@ describe('Users - Add User', () => {
     expect(await screen.findByText(/add user page null/i)).toBeInTheDocument()
     expect(countCheck).toHaveBeenCalledOnce()
   })
+
+  // BUG-112: every partner, free trial included, may add users up to its seat
+  // limit; past it a free-trial partner gets "Paid Version Only" (no seat to buy).
+  const signInTrialPartner = (count: number) => {
+    useAuthStore.setState({
+      user: { id: 1, is_host: 0, entity_type: 'Partner', permissions: ['view users', 'create users'] },
+      userSubscription: { is_free_trail: true, user_seats: 3 },
+    } as never)
+    server.use(
+      http.get('*/common/user-count', () => HttpResponse.json({ status: true, data: { count, seat_limit: 3, per_user_price: '49.00' } }))
+    )
+  }
+
+  it('lets a free-trial partner add users while it is under its seat limit', async () => {
+    signInTrialPartner(1)
+    const user = userEvent.setup()
+    renderUsers()
+
+    await user.click(await screen.findByRole('button', { name: /add user/i }))
+
+    expect(await screen.findByText(/add user page null/i)).toBeInTheDocument()
+    expect(screen.queryByText('Paid Version Only')).not.toBeInTheDocument()
+  })
+
+  it('shows "Paid Version Only" to a free-trial partner at its seat limit and stays on the list', async () => {
+    signInTrialPartner(3)
+    const user = userEvent.setup()
+    renderUsers()
+
+    await user.click(await screen.findByRole('button', { name: /add user/i }))
+
+    expect(await screen.findByText('Paid Version Only')).toBeInTheDocument()
+    expect(screen.getByText(/You can only add/)).toHaveTextContent('You can only add 3 users in Free trial.')
+    expect(screen.queryByText(/add user page/i)).not.toBeInTheDocument()
+  })
 })

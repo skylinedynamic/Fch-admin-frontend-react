@@ -25,10 +25,11 @@ describeListPage(
     shows: ['SBA 7(a)', 'Working Capital Line', 'Credit Lines', 'Revolving'],
     emptyText: 'No funding found',
     search: { placeholder: 'Search here...' },
-    create: { label: /add funding sequence/i, role: 'link', target: '/funding/create' },
+    // Add/Delete follow the Funding Sequence permissions (BUG-125).
+    create: { permission: 'create funding', label: /add funding sequence/i, role: 'link', target: '/funding/create' },
     bulkDelete: {
       // The selection goes in one call, all or none (was one DELETE per sequence).
-      permission: '', method: 'post', path: '/admin/funding-sequencings/multiple-delete', body: (ids) => ({ ids }),
+      permission: 'delete funding', method: 'post', path: '/admin/funding-sequencings/multiple-delete', body: (ids) => ({ ids }),
       successToast: 'Funding options deleted successfully', errorToast: 'Failed to delete funding options',
     },
   },

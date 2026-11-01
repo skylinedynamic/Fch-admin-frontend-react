@@ -34,7 +34,7 @@ export { COUNTRY_PHONE_CONFIG, getCountryPhoneInfo } from './locations';
 export { BILLING_OPTIONS } from './billingOptions';
 
 // Appointment related configurations
-export { APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from './appointmentTypeOptions';
+export { APPOINTMENT_STATUS, APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from './appointmentTypeOptions';
 export { TIMEZONE_OPTIONS } from './timezoneOptions';
 
 // Credit Builder related configurations

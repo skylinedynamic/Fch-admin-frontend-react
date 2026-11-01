@@ -60,3 +60,28 @@ describe('DeleteBlockedModal › note', () => {
     expect(screen.queryByTestId('blocked-others')).not.toBeInTheDocument()
   })
 })
+
+/**
+ * A danger tone - used by Credit Accounts - puts the reason in a red alert
+ * with a danger icon; without it the dialog stays as the other lists show it.
+ */
+describe('DeleteBlockedModal › tone', () => {
+  const message = 'Borrowers have applied for Ink Cash, so it cannot be deleted and was not selected.'
+
+  it('danger: the reason is a danger alert, under a danger icon', () => {
+    render(<DeleteBlockedModal show tone="danger" title="Card Cannot Be Deleted" message={message} onClose={vi.fn()} />)
+
+    const alert = screen.getByTestId('blocked-message')
+    expect(alert).toHaveClass('alert', 'alert-danger')
+    expect(alert).toHaveAttribute('role', 'alert')
+    expect(alert).toHaveTextContent(message)
+    expect(screen.getByTestId('blocked-icon')).toHaveClass('bg-danger-subtle', 'text-danger')
+  })
+
+  it('default: unchanged - a warning icon and the reason as plain text', () => {
+    render(<DeleteBlockedModal show title="Lead Cannot Be Deleted" message="Cara has already been converted." onClose={vi.fn()} />)
+
+    expect(screen.getByTestId('blocked-message')).not.toHaveClass('alert-danger')
+    expect(screen.getByTestId('blocked-icon')).toHaveClass('bg-warning-subtle', 'text-warning')
+  })
+})

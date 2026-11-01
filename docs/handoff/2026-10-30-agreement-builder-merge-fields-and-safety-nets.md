@@ -56,7 +56,7 @@
 - `utils.ts` also: palette items for the new blocks, `TEXT_PRESETS`, table row/column helpers, list/table CSS in `PREVIEW_CSS`.
 - `e2e/sidebar/settings/agreement-builder.spec.ts`: new real-browser spec.
 - `assets/css/agreement-builder.css`: styles above.
-- `docs/e2e/ISSUES.md`: E2E-014 (pre-existing settings spec failures; see Testing).
+- `docs/e2e/ISSUES.md`: E2E-019 (pre-existing settings spec failures; see Testing). Logged as E2E-014 on its branch, renumbered at the merge into `bugfix/all-bugfix`, where E2E-014 was already taken.
 
 ## Testing
 - Unit: `tests/pages/settings/components/AgreementBuilder/mergeChips.test.tsx` (5: chips, unknown fields, round trip, editor shows chips and saves bare fields, outside changes shown).

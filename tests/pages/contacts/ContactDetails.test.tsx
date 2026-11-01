@@ -68,16 +68,21 @@ describe('ContactDetails - create validation', () => {
     expect(await screen.findByText('Please enter a valid email address')).toBeInTheDocument()
   })
 
-  it('rejects an incomplete mobile number', async () => {
+  it('leaves an incomplete mobile number to the server and shows its answer', async () => {
+    // Phone format is checked server-side only (App\Rules\UsPhoneNumber); the
+    // field only writes the number as (XXX) XXX-XXXX.
     const user = userEvent.setup()
     const { container } = mountCreate()
+    const create = api('post', '/common/contacts', invalid({ mobile_number: 'Enter a valid 10-digit US phone number.' }), 422)
 
     await user.type(field(container, 'full_name'), 'Nora')
     await user.type(field(container, 'email'), 'nora@example.test')
     await user.type(field(container, 'mobile_number'), '55512')
     await user.click(screen.getByRole('button', { name: /save/i }))
 
-    expect(await screen.findByText(/Please enter a valid mobile number/)).toBeInTheDocument()
+    expect(await screen.findByText('Enter a valid 10-digit US phone number.')).toBeInTheDocument()
+    expect(create.bodies[0]).toMatchObject({ mobile_number: '(555) 12' })
+    expect(screen.queryByText(/Please enter a valid mobile number/)).not.toBeInTheDocument()
   })
 
   it('formats the mobile number as it is typed', async () => {

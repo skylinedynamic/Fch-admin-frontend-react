@@ -90,4 +90,50 @@ test.describe('Client › Credit Profile', () => {
     await expect(page.getByText(/choose pdf report/i)).toBeVisible()
     expect(deleted).toBe(1)
   })
+
+  // BUG-144 / BUG-147 / BUG-145: reading a PDF saves nothing until the host
+  // clicks Save (one save, so one "updated" notification), and the report's
+  // SSN shows masked until the eye button is pressed.
+  test('the host reads a report, reviews it with the SSN masked, and only Save writes it', async ({ page }) => {
+    const saves: unknown[] = []
+    await openCreditProfile(page, true, { profile: null })
+    await page.route(`${API_ORIGIN}/common/borrowers/parse-credit-profile`, (route) =>
+      ok(route, {
+        extracted_data: { ...PROFILE, personal_info: { ...PROFILE.personal_info, ssn: '123-45-6789' } },
+        pdf_url: 'http://127.0.0.1:8000/storage/borrowers/3/r.pdf',
+        document_id: 9,
+        pdf: null,
+        mime: 'application/pdf',
+      })
+    )
+    await page.route(`${API_ORIGIN}/common/borrowers/save-credit-profile`, (route) => {
+      saves.push(route.request().postDataJSON())
+      return ok(route, null, 'Credit profile saved successfully.')
+    })
+
+    await page.locator('#credit-report-upload').setInputFiles({ name: 'isoftpull-report.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
+    await expect(page.getByText('Extracted Credit Metrics')).toBeVisible()
+    expect(saves).toHaveLength(0)
+
+    await page.getByRole('button', { name: 'Personal & Address Info' }).click()
+    const ssn = page.getByLabel('SSN', { exact: true })
+    await expect(ssn).toHaveValue('***-**-6789')
+    await page.getByRole('button', { name: 'Show SSN' }).click()
+    await expect(ssn).toHaveValue('123-45-6789')
+
+    await page.getByRole('button', { name: /save credit profile/i }).click()
+    await expect.poll(() => saves.length).toBe(1)
+  })
+
+  test('a file that is not a credit report is refused with the reason', async ({ page }) => {
+    await openCreditProfile(page, true, { profile: null })
+    await page.route(`${API_ORIGIN}/common/borrowers/parse-credit-profile`, (route) =>
+      route.fulfill({ status: 422, json: { status: false, message: 'This file is not a credit report. Please upload the iSoftPull credit report PDF.' } })
+    )
+
+    await page.locator('#credit-report-upload').setInputFiles({ name: 'sample.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
+
+    await expect(page.getByText('This file is not a credit report. Please upload the iSoftPull credit report PDF.')).toBeVisible()
+    await expect(page.getByText('Extracted Credit Metrics')).toHaveCount(0)
+  })
 })

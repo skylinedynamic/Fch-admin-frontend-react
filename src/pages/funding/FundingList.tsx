@@ -305,7 +305,7 @@ export default function FundingList() {
                     breadcrumbs={[{ label: 'Funding' }]}
                 >
                     <div className="btn-group">
-                        {Array.isArray(selectedFundings) && selectedFundings.length > 0 ? (
+                        {hasPermission('delete funding') && Array.isArray(selectedFundings) && selectedFundings.length > 0 ? (
                             <>
                                 <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
                                 <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
@@ -319,11 +319,11 @@ export default function FundingList() {
                                     </li>
                                 </ul>
                             </>
-                        ) : (
+                        ) : hasPermission('create funding') ? (
                             <Link to="/funding/create" className="btn btn-primary fw-medium waves-effect waves-light">
                                 <i className="ri-add-fill me-1 align-bottom"></i> Add Funding Sequence
                             </Link>
-                        )}
+                        ) : null}
                     </div>
                 </PageHeader>
 

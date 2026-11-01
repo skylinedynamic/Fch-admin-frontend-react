@@ -64,6 +64,35 @@ describe('MailNotVerifiedBanner', () => {
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
   })
 
+  // The banner sits in the layout on every page: a reply without the expected
+  // shape used to throw ("reading 'from_address'") and blank the whole app.
+  it.each([
+    ['an empty list', []],
+    ['no fallback', { configurations: [], uses_own_configuration: false }],
+    ['no data at all', null],
+  ])('an unexpected reply (%s) hides the banner and leaves the page working', async (_name, data) => {
+    signIn(['update email configuration settings'])
+    let answered = false
+    server.use(
+      http.get('*/common/mail-configurations', () => {
+        answered = true
+        return HttpResponse.json({ status: true, data })
+      })
+    )
+
+    renderWithProviders(
+      <>
+        <MailNotVerifiedBanner />
+        <p>Page content</p>
+      </>
+    )
+
+    await waitFor(() => expect(answered).toBe(true))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.getByText('Page content')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('is hidden from users who cannot manage email configuration', async () => {
     signIn([])
     serve(false, { is_verified: true, from_address: 'noreply@fch.test' })

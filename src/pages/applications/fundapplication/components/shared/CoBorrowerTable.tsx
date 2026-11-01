@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { CoBorrower } from '../../types'
+import DeleteConfirmationModal from '../../../../../components/Common/Modals/DeleteConfirmationModal'
 
 type CoBorrowerTableProps = {
   coBorrowers: CoBorrower[]
@@ -9,6 +10,10 @@ type CoBorrowerTableProps = {
 }
 
 export default function CoBorrowerTable({ coBorrowers, onDelete, onAdd, onEdit }: CoBorrowerTableProps) {
+  // Remove asks first (BUG-108): it used to delete the co-borrower at once.
+  const [pendingRemove, setPendingRemove] = useState<number | null>(null)
+  const pending = pendingRemove !== null ? coBorrowers[pendingRemove] : null
+
   return (
     <div className="card coborrower-card">
       <div className="card-header d-flex align-items-center">
@@ -58,7 +63,7 @@ export default function CoBorrowerTable({ coBorrowers, onDelete, onAdd, onEdit }
                       <button
                         type="button"
                         className="btn btn-sm btn-soft-danger"
-                        onClick={() => onDelete(idx)}
+                        onClick={() => setPendingRemove(idx)}
                         aria-label="Delete"
                       >
                         <i className="ri-delete-bin-line me-1"></i>
@@ -79,6 +84,18 @@ export default function CoBorrowerTable({ coBorrowers, onDelete, onAdd, onEdit }
           </table>
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        show={pending !== null}
+        onClose={() => setPendingRemove(null)}
+        onConfirm={() => {
+          if (pendingRemove !== null) onDelete(pendingRemove)
+          setPendingRemove(null)
+        }}
+        loading={false}
+        title="Remove Co-Borrower?"
+        text={pending ? `Remove ${[pending.firstName, pending.lastName].filter(Boolean).join(' ')} as a co-borrower? This cannot be undone.` : undefined}
+      />
     </div>
   )
 }

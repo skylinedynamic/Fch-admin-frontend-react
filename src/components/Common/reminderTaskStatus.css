@@ -1,0 +1,209 @@
+/* ---- Task box (reminder popup, Task & Reminder Details) ------------------ */
+.reminder-task {
+    overflow: hidden;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 4px;
+    background-color: var(--vz-secondary-bg, #fff);
+}
+
+.reminder-task .btn,
+.reminder-task .badge {
+    border-radius: 4px;
+}
+
+.reminder-task__head {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--vz-border-color);
+    background-color: var(--vz-light);
+}
+
+.reminder-task__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background-color: rgba(var(--vz-primary-rgb), 0.1);
+    color: var(--vz-primary);
+    font-size: 0.9375rem;
+}
+
+.reminder-task__title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.reminder-task__meta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0.875rem 1rem;
+}
+
+.reminder-task__meta dt,
+.reminder-task__label {
+    margin-bottom: 0.2rem;
+    color: var(--vz-secondary-color);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.reminder-task__meta dd {
+    margin: 0;
+    color: var(--vz-heading-color, var(--vz-dark));
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.reminder-task__label {
+    padding: 0 1rem;
+}
+
+.reminder-task > .badge {
+    margin: 0 1rem 1rem;
+}
+
+/* Progress: one segmented control */
+.reminder-task__progress {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin: 0 1rem 1rem;
+    padding: 4px;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 4px;
+    background-color: var(--vz-light);
+}
+
+.reminder-task__progress .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    border: 0;
+    transition: background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.reminder-task__step {
+    background-color: transparent;
+}
+
+.reminder-task__step:hover {
+    background-color: var(--vz-secondary-bg, #fff);
+}
+
+.reminder-task__progress .btn[aria-pressed='true'] {
+    box-shadow: 0 2px 6px rgba(var(--vz-dark-rgb), 0.15);
+}
+
+@media (max-width: 575.98px) {
+    .reminder-task__meta {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ---- "Change task status?" ---------------------------------------------- */
+.task-status-confirm {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: rgba(15, 23, 42, 0.45);
+    animation: task-status-confirm-fade 0.15s ease;
+}
+
+/* The theme's flip, as on the Bootstrap .modal.flip confirmations */
+.task-status-confirm.flip {
+    perspective: 1300px;
+}
+
+.task-status-confirm.flip .task-status-confirm__dialog {
+    transform-style: preserve-3d;
+    animation: task-status-confirm-flip 0.3s ease-out;
+}
+
+.task-status-confirm__dialog {
+    width: 100%;
+    max-width: 380px;
+    padding: 1.5rem;
+    border-radius: 4px;
+    background-color: var(--vz-secondary-bg, #fff);
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.2);
+    text-align: center;
+}
+
+.task-status-confirm__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+    font-size: 1.375rem;
+}
+
+.task-status-confirm__title {
+    margin-bottom: 0.25rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+}
+
+.task-status-confirm__summary {
+    margin-bottom: 0.875rem;
+    color: var(--vz-secondary-color);
+    font-size: 0.8125rem;
+    word-break: break-word;
+}
+
+.task-status-confirm__change {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    margin-bottom: 0.75rem;
+}
+
+.task-status-confirm__change .badge {
+    border-radius: 4px;
+    padding: 0.45em 0.75em;
+    font-size: 0.75rem;
+}
+
+.task-status-confirm__note {
+    margin-bottom: 1.25rem;
+    color: var(--vz-secondary-color);
+    font-size: 0.75rem;
+}
+
+.task-status-confirm__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.task-status-confirm__actions .btn {
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+@keyframes task-status-confirm-flip {
+    from { opacity: 0; transform: rotateY(-70deg); }
+    to { opacity: 1; transform: rotateY(0deg); }
+}
+
+@keyframes task-status-confirm-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

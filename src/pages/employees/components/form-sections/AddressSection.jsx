@@ -140,12 +140,13 @@ export default function AddressSection({
                                 type="text"
                                 inputMode="numeric"
                                 maxLength={5}
-                                className="form-control"
+                                className={`form-control ${errors.postal_code ? 'is-invalid' : ''}`}
                                 name="postal_code"
                                 value={employee.postal_code}
                                 onChange={handleZipChange}
                                 placeholder="Enter zip code"
                             />
+                            {errors.postal_code && <div className="invalid-feedback">{errors.postal_code}</div>}
                         </div>
                     </div>
                 </>
@@ -160,12 +161,13 @@ export default function AddressSection({
                             type="text"
                             inputMode="numeric"
                             maxLength={5}
-                            className="form-control"
+                            className={`form-control ${errors.postal_code ? 'is-invalid' : ''}`}
                             name="postal_code"
                             value={employee.postal_code}
                             onChange={handleZipChange}
                             placeholder="Enter zip code"
                         />
+                        {errors.postal_code && <div className="invalid-feedback">{errors.postal_code}</div>}
                     </div>
                 </div>
             )}
@@ -184,7 +186,7 @@ export default function AddressSection({
                         )}
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.phone_number_2 ? 'is-invalid' : ''}`}
                             name="phone_number_2"
                             value={employee.phone_number_2}
                             onChange={(e) => {
@@ -193,6 +195,7 @@ export default function AddressSection({
                             }}
                             placeholder="(555) 555-5555"
                         />
+                        {errors.phone_number_2 && <div className="invalid-feedback">{errors.phone_number_2}</div>}
                     </div>
                 </div>
             </div>

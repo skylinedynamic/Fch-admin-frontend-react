@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { TimeInputs } from './TimeInputs';
+import { mergePickedDateTime } from '../../utils/dates';
 import { REMINDER_PRESETS, getReminderMsToSubtract } from '../../config/appConfig';
 import { SNOOZE_NOTE_MAX_LENGTH } from './ReminderSnoozeForm';
 
@@ -98,10 +99,7 @@ export const ReminderRescheduleForm = ({ loading, onConfirm, onCancel }: Reminde
                             onChange={(e) => {
                                 const pickedDate = e.value as Date | null;
                                 if (pickedDate) {
-                                    const prev = customRescheduleDate || new Date();
-                                    const merged = new Date(pickedDate);
-                                    merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
-                                    setCustomRescheduleDate(merged);
+                                    setCustomRescheduleDate(mergePickedDateTime(pickedDate, customRescheduleDate, e.originalEvent));
                                 } else {
                                     setCustomRescheduleDate(null);
                                 }

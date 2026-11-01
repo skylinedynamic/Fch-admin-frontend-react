@@ -37,6 +37,8 @@ export const SUBSCRIPTION_STATUS_COLORS: { [key: string]: string } = {
 
 export const ENROLLMENT_TYPE_ONE_TIME = 'One Time Payment';
 export const ENROLLMENT_TYPE_INSTALLMENT = 'Installment';
+// Installment months offered first, unless the plan's "Installment Upto" is lower.
+export const DEFAULT_INSTALLMENT_MONTHS = 12;
 export const FIXED_ENROLLMENT_FOR_BORROWER = 'Fixed Enrollment';
 
 export const ENROLLMENT_TYPE_OPTIONS = [

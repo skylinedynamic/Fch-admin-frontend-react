@@ -6,11 +6,12 @@ import { COMMISSION_PAYMENT } from '../../config/statusOptions';
 import { formatCurrency } from '../../utils/helper';
 import { CommissionPayout } from '../../modules/commission/types';
 import { PAYOUT_TYPE_COMMISSION } from '../../config/compensationOptions';
+import { PAYMENT_ENVIRONMENT, PAYMENT_ENVIRONMENT_OPTIONS, PaymentEnvironment } from '../../config/paymentEnvironment';
 
 interface PayoutModalProps {
     show: boolean;
     onHide: () => void;
-    onConfirm: (paymentMethod: string, note: string) => void;
+    onConfirm: (paymentMethod: string, note: string, environment: PaymentEnvironment) => void;
     loading?: boolean;
     /** The payout being paid — to a partner, or to the user assigned to a host-partner client. */
     payout: CommissionPayout;
@@ -25,6 +26,9 @@ export default function PayoutModal({ show, onHide, onConfirm, loading = false, 
     
     const defaultMethod = COMMISSION_PAYMENT.find(opt => opt.value === 'Cash')?.value || '';
     const [partnerMethod, setPartnerMethod] = useState<string>(defaultMethod);
+    // Starts on what the API suggests: Production on the production app, Sandbox elsewhere.
+    const defaultEnvironment = payout.default_environment ?? PAYMENT_ENVIRONMENT.SANDBOX;
+    const [environment, setEnvironment] = useState<PaymentEnvironment>(defaultEnvironment);
     const [error, setError] = useState<string>('');
     const [note, setNote] = useState<string>('');
 
@@ -45,6 +49,7 @@ export default function PayoutModal({ show, onHide, onConfirm, loading = false, 
         if (!modal) return;
         if (show) {
             setPartnerMethod(defaultMethod);
+            setEnvironment(defaultEnvironment);
             setError('');
             setNote('');
             modal.show();
@@ -60,7 +65,7 @@ export default function PayoutModal({ show, onHide, onConfirm, loading = false, 
         }
         
         setError('');
-        onConfirm(partnerMethod, note);
+        onConfirm(partnerMethod, note, environment);
     };
 
     const handleClose = () => {
@@ -117,6 +122,19 @@ export default function PayoutModal({ show, onHide, onConfirm, loading = false, 
                                 onChange={(e) => setPartnerMethod(e.value)}
                                 optionLabel="label"
                                 placeholder="Select a payment method"
+                                className="w-100"
+                                disabled={loading}
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="form-label fw-semibold">Environment <span className="text-danger">*</span></label>
+                            <Dropdown
+                                value={environment}
+                                options={PAYMENT_ENVIRONMENT_OPTIONS}
+                                onChange={(e) => setEnvironment(e.value)}
+                                optionLabel="label"
+                                optionValue="value"
                                 className="w-100"
                                 disabled={loading}
                             />

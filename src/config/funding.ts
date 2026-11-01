@@ -353,7 +353,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
     },
     {
         label: FUNDING_REVIEW_STATUS.IN_PROGRESS,
-        desc: 'Admin can reviewing the request.',
+        desc: 'Admin is reviewing the request.',
         bg: '#eff6ff',
         border: '#bfdbfe',
         iconBg: '#3b82f6',
@@ -369,7 +369,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
     },
     {
         label: FUNDING_REVIEW_STATUS.REJECTED,
-        desc: 'Request declined missing information.',
+        desc: 'Request declined due to missing information.',
         bg: '#fef2f2',
         border: '#fecaca',
         iconBg: '#ef4444',

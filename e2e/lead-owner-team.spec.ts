@@ -110,7 +110,8 @@ test.describe('Lead details › owner and type', () => {
 
     const owner = fieldDropdown(page, 'Lead Owner')
     await expect(owner.locator('.p-dropdown-label')).toHaveText('Sal WLP')
-    expect(calls.teams).toContainEqual({ partner_id: 2 })
+    // Active staff only, keeping the saved owner even if since made inactive.
+    expect(calls.teams).toContainEqual({ partner_id: 2, active_only: true, keep_ids: [22] })
 
     await owner.click()
     await expect(page.locator('.p-dropdown-panel .p-dropdown-item')).toHaveText(['Wil Label', 'Sal WLP'])

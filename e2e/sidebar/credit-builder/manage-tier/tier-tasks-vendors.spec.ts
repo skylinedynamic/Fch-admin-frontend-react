@@ -7,7 +7,8 @@ import { mockApi, ok, paginated, failure, seedSession, expectCall, confirmDelete
  */
 
 const CB = '/admin/credit-builder'
-const DEVELOPER = { role_name: 'Developer', permissions: ['update tier'] }
+// The tier pages need view tier (BUG-125); the task and vendor actions need update tier.
+const DEVELOPER = { role_name: 'Developer', permissions: ['view tier', 'update tier'] }
 
 const T0 = { id: 1, name: 'Tier 0', title: 'Business Foundation', subtitle: 'Get set up', code: 'T0', status: 'active', has_vendor: 0 }
 const T1 = { id: 2, name: 'Tier 1', title: 'Vendor Credit', subtitle: 'Net-30 accounts', code: 'T1', status: 'active', has_vendor: 1 }
@@ -50,8 +51,39 @@ test.describe('Tier tasks - create', () => {
     await taskModal(page).getByPlaceholder('Enter task title').fill('Apply with Grainger')
     await taskModal(page).getByRole('button', { name: /save/i }).click()
 
-    await expect(taskModal(page).getByText('Vendor is required for automated tasks')).toBeVisible()
+    await expect(taskModal(page).getByText('Vendor is required')).toBeVisible()
     expect(api.find('POST', new RegExp(`${CB}/tier-tasks$`))).toHaveLength(0)
+  })
+
+  // BUG-095: the dialog learned the tier from the task list's own request; on
+  // a slow API it treated Tier 1 as another tier and saved without a vendor.
+  test("a slow tier request no longer lets a Tier 1 task skip its vendor", async ({ page }) => {
+    const api = await openTier(page)
+    // The page has its tier; every later request for it (the task list's) hangs.
+    await page.route(new RegExp(`${CB}/tiers/2$`), () => new Promise(() => {}))
+    await openTasks(page)
+    await page.getByRole('button', { name: /add task/i }).click()
+
+    await expect(taskModal(page).getByText('Related Vendor')).toBeVisible()
+    await taskModal(page).getByPlaceholder('Enter task title').fill('Apply with Uline')
+    await taskModal(page).getByRole('button', { name: /save/i }).click()
+    await expect(taskModal(page).getByText('Vendor is required')).toBeVisible()
+    expect(api.find('POST', new RegExp(`${CB}/tier-tasks$`))).toHaveLength(0)
+  })
+
+  test('while the vendors load, the dropdown says so instead of looking empty', async ({ page }) => {
+    await seedSession(page, DEVELOPER)
+    await mockApi(page, [
+      { method: 'GET', match: new RegExp(`${CB}/tiers/2$`), body: ok(T1) },
+      { method: 'POST', match: `${CB}/tier-tasks/fetch-tasks`, body: paginated(TASKS) },
+      { method: 'GET', match: `${CB}/tier-related-api/2`, body: ok([]) },
+    ])
+    await page.route(new RegExp(`${CB}/vendors/fetch-vendors$`), () => new Promise(() => {}))
+    await page.goto('/tiers/2')
+    await openTasks(page)
+    await page.getByRole('button', { name: /add task/i }).click()
+
+    await expect(taskModal(page).locator('.p-dropdown-label', { hasText: 'Loading vendors…' })).toBeVisible()
   })
 
   test('the dialog no longer offers manual verification, so a vendor-tier task always names a vendor', async ({ page }) => {
@@ -135,16 +167,38 @@ test.describe('Tier tasks - edit and delete', () => {
     await expect(page.getByText('Task updated successfully')).toBeVisible()
   })
 
-  test('deleting one task from its row uses the single-delete endpoint', async ({ page }) => {
+  // BUG-095: the API has no DELETE tier-tasks/{id} (it was a 405); one task goes through the bulk delete.
+  test('deleting one task from its row uses the bulk-delete endpoint with its id', async ({ page }) => {
     const api = await openTier(page)
-    api.add({ method: 'DELETE', match: `${CB}/tier-tasks/11`, body: ok(null) })
+    api.add({ method: 'POST', match: `${CB}/tier-tasks-multiple-delete`, body: ok(null) })
     await openTasks(page)
 
     await page.locator('tr', { hasText: 'Open a vendor account' }).locator('.btn-soft-danger').click()
     await confirmDelete(page)
 
-    await expectCall(api, 'DELETE', `${CB}/tier-tasks/11`)
+    const call = await expectCall(api, 'POST', `${CB}/tier-tasks-multiple-delete`)
+    expect(call.json).toEqual({ ids: [11] })
+    expect(api.find('DELETE', `${CB}/tier-tasks/11`)).toHaveLength(0)
     await expect(page.getByText('Task(s) deleted successfully')).toBeVisible()
+  })
+
+  test('a task clients already use is refused: the confirmation closes and a dialog says why', async ({ page }) => {
+    const api = await openTier(page)
+    api.add({
+      method: 'POST', match: `${CB}/tier-tasks-multiple-delete`, status: 422,
+      body: { status: false, message: 'Clients are already using these tasks, so they cannot be deleted. Nothing was deleted.', errors: { in_use: [{ id: 11, name: 'Open a vendor account' }] } },
+    })
+    await openTasks(page)
+
+    await page.locator('tr', { hasText: 'Open a vendor account' }).locator('.btn-soft-danger').click()
+    await confirmDelete(page)
+
+    const blocked = page.locator('.modal.show', { hasText: 'Task Cannot Be Deleted' })
+    await expect(blocked).toContainText('Clients are already using "Open a vendor account", so it cannot be deleted.')
+    await expect(page.locator('.modal.show', { hasText: 'Yes, Delete It' })).toHaveCount(0)
+    await expect(page.locator('.Toastify__toast--error')).toHaveCount(0)
+    await blocked.getByRole('button', { name: 'Close' }).last().click()
+    await expect(page.locator('tr', { hasText: 'Open a vendor account' })).toBeVisible()
   })
 
   test('selected tasks are deleted in one bulk request', async ({ page }) => {
@@ -256,5 +310,42 @@ test.describe('Tier vendors', () => {
     const call = await expectCall(api, 'POST', `${CB}/vendors-multiple-delete`)
     expect(call.json).toEqual({ ids: [32] })
     await expect(page.getByText('Vendor(s) deleted successfully')).toBeVisible()
+  })
+
+  test('vendors tasks still use are refused: the confirmation closes and a dialog lists them', async ({ page }) => {
+    const api = await openTier(page)
+    const message = 'Tier tasks use these vendors, so they cannot be deleted. Move those tasks to another vendor first. Nothing was deleted.'
+    api.add({
+      method: 'POST', match: `${CB}/vendors-multiple-delete`, status: 422,
+      body: { status: false, message, errors: { in_use: [{ id: 31, name: 'Uline' }, { id: 32, name: 'Quill' }] } },
+    })
+    await openVendors(page)
+
+    await selectRow(page, 0)
+    await selectRow(page, 1)
+    await openActionsMenu(page)
+    await page.getByRole('button', { name: /delete selected/i }).click()
+    await confirmDelete(page)
+
+    const blocked = page.locator('.modal.show', { hasText: 'Vendors Cannot Be Deleted' })
+    await expect(blocked).toContainText(message)
+    await expect(blocked.locator('li')).toHaveText(['Uline', 'Quill'])
+    await expect(page.locator('.modal.show', { hasText: 'Yes, Delete It' })).toHaveCount(0)
+    await expect(page.locator('.Toastify__toast--error')).toHaveCount(0)
+  })
+
+  test('the logo File Manager opens over the vendor dialog, not behind it', async ({ page }) => {
+    await openTier(page)
+    await openVendors(page)
+    await page.getByText('Uline').first().click()
+    await expect(vendorModal(page).getByText('Edit Vendor')).toBeVisible()
+
+    await vendorModal(page).getByRole('button', { name: /choose logo|change logo/i }).click()
+
+    const fileManager = page.locator('.modal.show', { hasText: 'Select Files' })
+    await expect(fileManager).toBeVisible()
+    const box = (await fileManager.locator('.modal-content').boundingBox())!
+    const onTop = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('.modal-content')?.textContent?.includes('Select Files') ?? false, { x: box.x + 40, y: box.y + 20 })
+    expect(onTop).toBe(true)
   })
 })

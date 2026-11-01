@@ -6,6 +6,16 @@ import { MultiSelect } from 'primereact/multiselect';
 
 import { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS, VENDOR_STATUS_OPTIONS } from '../../../config';
 import { SUMMERNOTE_CONFIG } from '../../../config/summernote';
+import { toast } from 'react-toastify';
+import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
+import { buildStorageUrl } from '../../../utils/imageHelpers';
+
+// The logo is picked in the File Manager and saved as its path in the vendors
+// folder; the API takes these image types.
+const LOGO_FOLDER = 'vendors';
+const LOGO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
+// The File Manager opens over this dialog (a Bootstrap modal, z-index 1055).
+const FILE_MANAGER_Z_INDEX = 1065;
 
 const TierVendorModal = ({
     show,
@@ -20,6 +30,16 @@ const TierVendorModal = ({
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const editorRef = useRef(null);
+    const [showFileManager, setShowFileManager] = useState(false);
+
+    // While the File Manager is open over it, this dialog's focus trap would
+    // pull focus back out of the File Manager's search and folder inputs.
+    useEffect(() => {
+        const trap = modalInstanceRef.current?._focustrap;
+        if (!trap) return;
+        if (showFileManager) trap.deactivate();
+        else if (show) trap.activate();
+    }, [showFileManager, show]);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -78,7 +98,6 @@ const TierVendorModal = ({
                     description: vendor.description || '',
                     affiliate_url: vendor.affiliate_url || '',
                     general_url: vendor.general_url || '',
-                    logo: null, // Don't preload file object, maybe show preview if needed
                     requirements: vendor.requirements || [],
                     benefits: vendor.benefits || [],
                     report_to: vendor.report_to || [],
@@ -91,7 +110,6 @@ const TierVendorModal = ({
                     description: '',
                     affiliate_url: '',
                     general_url: '',
-                    logo: null,
                     requirements: [],
                     benefits: [],
                     report_to: [],
@@ -169,6 +187,26 @@ const TierVendorModal = ({
             setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
+
+    // A file picked in the File Manager: its path in the vendors folder, an image only.
+    const handleLogoSelection = (selectedFiles) => {
+        const file = selectedFiles?.[0];
+        if (!file) return;
+        const extension = file.path.split('.').pop()?.toLowerCase();
+        if (!extension || !LOGO_EXTENSIONS.includes(extension)) {
+            toast.error(`File type ".${extension}" not allowed. Choose a ${LOGO_EXTENSIONS.join(', ')} image.`);
+            return;
+        }
+        const path = `${LOGO_FOLDER}/${file.path.trim().replace(/^\/+/, '')}`;
+        setFormData(prev => ({ ...prev, logo: path }));
+        if (errors.logo) {
+            setErrors(prev => ({ ...prev, logo: null }));
+        }
+        setShowFileManager(false);
+    };
+
+    // The chosen file, else the logo on file (the API sends it as a full URL).
+    const logoSrc = formData.logo ? buildStorageUrl(formData.logo) : vendor?.logo;
 
     const handleChipsChange = (name, value) => {
         setFormData(prev => ({
@@ -338,55 +376,39 @@ const TierVendorModal = ({
 
                                 <div className="col-md-12">
                                     <label className="form-label">Logo <small className="text-muted">(recommended size: 300 x 100)</small></label>
-                                    <div 
-                                        className={`border rounded-3 d-flex align-items-center justify-content-center position-relative ${errors.logo ? 'border-danger' : 'border-secondary-subtle'}`}
-                                        style={{ 
-                                            height: '100px', 
-                                            backgroundColor: '#f8f9fa',
-                                            borderStyle: 'dashed',
-                                            overflow: 'hidden'
-                                        }}
+                                    <button
+                                        type="button"
+                                        className={`border rounded-3 d-flex align-items-center justify-content-center position-relative w-100 p-0 ${errors.logo ? 'border-danger' : 'border-secondary-subtle'}`}
+                                        style={{ height: '100px', backgroundColor: '#f8f9fa', borderStyle: 'dashed', overflow: 'hidden' }}
+                                        onClick={() => setShowFileManager(true)}
+                                        aria-label={logoSrc ? 'Change logo' : 'Choose logo'}
                                     >
-                                        <input
-                                            type="file"
-                                            name="logo"
-                                            id="logo-upload"
-                                            className="d-none"
-                                            onChange={handleChange}
-                                            accept="image/*"
-                                        />
-                                        
-                                        {(formData.logo instanceof File || (vendor?.logo && !formData.logo)) ? (
-                                            <div className="w-100 h-100 d-flex align-items-center justify-content-center p-2 position-relative">
-                                                <img 
-                                                    src={formData.logo instanceof File ? URL.createObjectURL(formData.logo) : (typeof vendor.logo === 'string' ? vendor.logo.replace(/ /g, '%20') : vendor.logo)} 
-                                                    alt="Logo" 
-                                                    className="img-fluid" 
+                                        {logoSrc ? (
+                                            <span className="w-100 h-100 d-flex align-items-center justify-content-center p-2 position-relative">
+                                                <img
+                                                    src={typeof logoSrc === 'string' ? logoSrc.replace(/ /g, '%20') : logoSrc}
+                                                    alt="Logo"
+                                                    className="img-fluid"
                                                     style={{ maxHeight: '100%', objectFit: 'contain' }}
                                                 />
-                                                <div 
+                                                <span
                                                     className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                                                    style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: 0, transition: 'opacity 0.2s', cursor: 'pointer' }}
+                                                    style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: 0, transition: 'opacity 0.2s' }}
                                                     onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
                                                     onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
-                                                    onClick={() => document.getElementById('logo-upload').click()}
                                                 >
                                                     <span className="btn btn-sm btn-light rounded-pill">
-                                                        <i className="ri-upload-2-fill me-1"></i> Change
+                                                        <i className="ri-folder-image-line me-1"></i> Change
                                                     </span>
-                                                </div>
-                                            </div>
+                                                </span>
+                                            </span>
                                         ) : (
-                                            <label 
-                                                htmlFor="logo-upload" 
-                                                className="w-100 h-100 d-flex flex-column align-items-center justify-content-center cursor-pointer text-muted"
-                                                style={{ cursor: 'pointer' }}
-                                            >
+                                            <span className="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-muted">
                                                 <i className="ri-image-add-line fs-3 mb-1 opacity-50"></i>
-                                                <small className="fw-medium" style={{ fontSize: '0.75rem' }}>Click to upload</small>
-                                            </label>
+                                                <small className="fw-medium" style={{ fontSize: '0.75rem' }}>Choose from File Manager</small>
+                                            </span>
                                         )}
-                                    </div>
+                                    </button>
                                     {errors.logo && <div className="invalid-feedback d-block">{errors.logo}</div>}
                                 </div>
 
@@ -424,6 +446,16 @@ const TierVendorModal = ({
                                 </button>
                             </div>
                         </form>
+                        <FileManagerModal
+                            isOpen={showFileManager}
+                            toggle={() => setShowFileManager(!showFileManager)}
+                            selectionMode={true}
+                            onSelectFiles={handleLogoSelection}
+                            entityType={LOGO_FOLDER}
+                            zIndex={FILE_MANAGER_Z_INDEX}
+                            entityId={vendor?.id || 0}
+                            getAll={true}
+                        />
                     </div>
                 </div>
             </div>

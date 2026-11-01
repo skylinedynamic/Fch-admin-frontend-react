@@ -38,6 +38,13 @@ export type ListPageSpec = {
   }
   /** Set to false for pages with no Clear button. */
   clear?: boolean
+  sort?: {
+    /** The first request, before any header is clicked. */
+    initial: { field: string; order: 'asc' | 'desc' }
+    /** A sortable column: its first click must ask for ascending (A-Z). */
+    header: string
+    field: string
+  }
   create?: { permission?: string; label: RegExp; role: 'button' | 'link'; target: string }
   selection?: { permission: string }
   bulkDelete?: {
@@ -83,6 +90,33 @@ export function describeListPage(spec: ListPageSpec, toast: { success: unknown; 
         mount([], [])
 
         expect(await screen.findByText(spec.emptyText!)).toBeInTheDocument()
+      })
+    }
+
+    if (spec.sort) {
+      const sort = spec.sort
+      const sortOf = (list: { bodies: any[]; urls: string[] }, index: number) => {
+        const body = list.bodies[index] ?? {}
+        const params = new URL(list.urls[index] ?? '', 'http://x').searchParams
+        return { field: body.sort_field ?? params.get('sort_field'), order: body.sort_order ?? params.get('sort_order') }
+      }
+
+      it(`loads sorted by ${sort.initial.field} ${sort.initial.order}`, async () => {
+        const { list } = mount([])
+        await loaded()
+
+        expect(sortOf(list, 0)).toEqual(sort.initial)
+      })
+
+      it(`the first click on "${sort.header}" asks for ascending`, async () => {
+        const user = userEvent.setup()
+        const { list } = mount([])
+        await loaded()
+
+        const header = screen.getAllByRole('columnheader').find((th) => th.textContent?.trim().startsWith(sort.header))!
+        await user.click(header.querySelector('.p-column-title') ?? header)
+
+        await waitFor(() => expect(sortOf(list, list.bodies.length - 1)).toEqual({ field: sort.field, order: 'asc' }))
       })
     }
 

@@ -4,7 +4,8 @@ import type { MailConfiguration, MailProviderOption, SaveMailConfigurationPayloa
 export type MailFormState = Record<string, string>;
 
 /**
- * What the API returns, and takes back, in place of a stored secret. Sending
+ * What the form shows, and sends back, in place of a stored secret (the API only
+ * says one is stored, as `has_<field>`). Sending
  * it back unchanged keeps the stored password.
  */
 export const SECRET_MASK = '••••••••';
@@ -24,7 +25,8 @@ export const toMailFormState = (
     };
 
     for (const field of provider?.fields ?? []) {
-        const saved = configuration?.provider === provider?.value ? configuration?.[field.key] : null;
+        const sameProvider = configuration?.provider === provider?.value;
+        const saved = sameProvider ? configuration?.[field.secret ? `has_${field.key}` : field.key] : null;
         if (field.secret) {
             state[field.key] = saved ? SECRET_MASK : '';
         } else {

@@ -20,6 +20,14 @@ async function openList(page: Page, permissions: string[] = ALL): Promise<ApiMoc
 }
 
 test.describe('Capital access list', () => {
+  test('loads id desc, and the first header click asks for ascending (BUG-010)', async ({ page }) => {
+    const api = await openList(page)
+    expect(api.find('POST', `${BASE}/fetch-all`)[0].json).toMatchObject({ sort_field: 'id', sort_order: 'desc' })
+
+    await page.getByRole('columnheader', { name: /^Program Name/ }).locator('.p-column-title').click()
+    await expect.poll(() => api.find('POST', `${BASE}/fetch-all`).at(-1)?.json).toMatchObject({ sort_field: 'name', sort_order: 'asc' })
+  })
+
   test('renders programs with their status', async ({ page }) => {
     await openList(page)
     await expect(page.getByText('Growth 250 Play')).toBeVisible()

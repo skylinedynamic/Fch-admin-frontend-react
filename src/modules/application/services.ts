@@ -80,8 +80,8 @@ export const assignLenderToFundingRequest = async (payload: { id: number | strin
 };
 
 export const downloadFundingApplication = async (id: string | number, password?: string): Promise<void> => {
-  const urlPath = `/common/request-application/funding-application/${id}/download-application` + (password ? `?password=${encodeURIComponent(password)}` : '');
-  const response = await apiClient.get(urlPath, {
+  // The password goes in the body, never the URL (BUG-094).
+  const response = await apiClient.post(`/common/request-application/funding-application/${id}/download-application`, password ? { password } : {}, {
     responseType: 'blob'
   });
   const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -103,8 +103,8 @@ export const downloadFundingApplication = async (id: string | number, password?:
 };
 
 export const downloadFundingSignature = async (id: string | number, password?: string): Promise<void> => {
-  const urlPath = `/common/request-application/funding-application/${id}/download-signature` + (password ? `?password=${encodeURIComponent(password)}` : '');
-  const response = await apiClient.get(urlPath, {
+  // The password goes in the body, never the URL (BUG-094).
+  const response = await apiClient.post(`/common/request-application/funding-application/${id}/download-signature`, password ? { password } : {}, {
     responseType: 'blob'
   });
   const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -133,8 +133,8 @@ export const downloadFundingApplicationDocument = async (documentId: string | nu
 };
 
 export const downloadFundingZip = async (id: string | number, password?: string): Promise<void> => {
-  const urlPath = `/common/request-application/funding-application/${id}/download-zip` + (password ? `?password=${encodeURIComponent(password)}` : '');
-  const response = await apiClient.get(urlPath, {
+  // The password goes in the body, never the URL (BUG-094).
+  const response = await apiClient.post(`/common/request-application/funding-application/${id}/download-zip`, password ? { password } : {}, {
     responseType: 'blob'
   });
   const url = window.URL.createObjectURL(new Blob([response.data]));

@@ -678,6 +678,8 @@ export default function BorrowerVerificationRequests() {
                                     />
                                 ) : (
                                     <DataTable
+                                        // BUG-007: without it PrimeReact shows its dropdown default, "No available options".
+                                        emptyMessage="No verification requests found"
                                         scrollable
                                         scrollHeight="flex"
                                         value={requests || []}

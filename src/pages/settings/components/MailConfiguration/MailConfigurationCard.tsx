@@ -95,7 +95,7 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
     };
 
     const savedSecrets: Record<string, boolean> = Object.fromEntries(
-        provider.fields.filter((f) => f.secret).map((f) => [f.key, Boolean(configuration?.[f.key])])
+        provider.fields.filter((f) => f.secret).map((f) => [f.key, Boolean(configuration?.[`has_${f.key}`])])
     );
 
     // Saving changed settings throws away their verification (the API checks

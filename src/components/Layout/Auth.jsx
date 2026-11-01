@@ -102,7 +102,8 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
           <div className="row">
             <div className="col-lg-12">
               <div className="text-center">
-                <p className="mb-0 text-muted">&copy; {new Date().getFullYear()} {siteName}. All rights reserved.</p>
+                {/* No name (branding not loaded): no gap before the full stop (BUG-118). */}
+                <p className="mb-0 text-muted">&copy; {new Date().getFullYear()}{siteName ? ` ${siteName}` : ''}. All rights reserved.</p>
               </div>
             </div>
           </div>

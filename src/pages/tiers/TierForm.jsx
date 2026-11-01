@@ -454,7 +454,7 @@ export default function TierForm() {
                                     </form>
                                 )}
                                 {activeTab === 'taskInfo' && (
-                                    <TierTasks ref={tasksRef} tierId={Number(id)} />
+                                    <TierTasks ref={tasksRef} tierId={Number(id)} tierCode={tierCode} />
                                 )}
                                 {activeTab === 'vendorInfo' && (
                                     <TierVendors ref={vendorsRef} tierId={Number(id)} />

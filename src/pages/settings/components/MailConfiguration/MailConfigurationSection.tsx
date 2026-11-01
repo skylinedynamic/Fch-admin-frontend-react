@@ -29,7 +29,10 @@ const MailConfigurationSection: React.FC<MailConfigurationSectionProps> = ({ onT
     const sendCode = useSendMailConfigurationCode();
     const verify = useVerifyMailConfiguration();
 
-    if (isError) {
+    // A reply without the expected shape reads as a failed load, rather than
+    // throwing and blanking the whole app.
+    const unusable = !!data && (!data.data?.fallback || !Array.isArray(data.data.configurations));
+    if (isError || unusable) {
         return <div className="alert alert-danger mb-0">Failed to load the mail configuration.</div>;
     }
 

@@ -76,7 +76,7 @@ export default function Clients() {
         try {
             const blocked = (await checkClientsDeletable(ids))
                 .filter(row => !row.is_deletable)
-                .map(row => ({ id: row.id, name: row.name }));
+                .map(row => ({ id: row.id, name: row.name, reason_code: row.reason_code ?? null }));
             if (blocked.length > 0) {
                 showBlocked(blocked, ids.length);
                 return;

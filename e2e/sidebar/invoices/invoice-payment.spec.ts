@@ -69,10 +69,11 @@ test.describe('Invoice payment - providers', () => {
     await expect(modal(page).locator('.pps-card-name', { hasText: 'Cash Payment' })).toBeVisible()
   })
 
-  test('says so when no provider is active', async ({ page }) => {
+  test('says online payment is not available when no method can take one', async ({ page }) => {
+    // The API only lists methods that are set up, so an empty list means none is.
     await open(page, [])
     await payNow(page).click()
-    await expect(modal(page).getByText('No active payment providers are available.')).toBeVisible()
+    await expect(modal(page).getByText("Online payment isn't available for this invoice right now. Please contact support to arrange payment.")).toBeVisible()
   })
 
   test('a failed provider load shows the message', async ({ page }) => {

@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { mockApi, ok, paginated, failure, seedSession, expectCall, type ApiMock } from '../../../support/helpers'
 
 const RA = '/common/request-application'
+const CAN_VIEW = { permissions: ['manage credit profile requests'] }
 
 test.describe('Credit profile requests', () => {
   const ROWS = [
@@ -10,7 +11,7 @@ test.describe('Credit profile requests', () => {
   const LIST = /\/admin\/credit-profile-requests$/
 
   async function open(page: Page): Promise<ApiMock> {
-    await seedSession(page)
+    await seedSession(page, CAN_VIEW)
     // This endpoint returns a raw Laravel paginator inside data: { data: { data: [...], total } }.
     const api = await mockApi(page, [{ method: 'POST', match: LIST, body: ok({ data: ROWS, total: ROWS.length }) }])
     await page.goto('/intake-review/credit-profile-requests')
@@ -39,7 +40,7 @@ test.describe('Credit profile requests', () => {
   })
 
   test('shows the empty state', async ({ page }) => {
-    await seedSession(page)
+    await seedSession(page, CAN_VIEW)
     await mockApi(page, [{ method: 'POST', match: LIST, body: ok({ data: [], total: 0 }) }])
     await page.goto('/intake-review/credit-profile-requests')
     await expect(page.getByText('No credit profile requests found.')).toBeVisible()
@@ -49,6 +50,15 @@ test.describe('Credit profile requests', () => {
     await open(page)
     await page.getByText('cy@example.test').click()
     await expect(page).toHaveURL(/\/intake-review\/credit-profile-requests\/801$/)
+  })
+
+  // BUG-097: a host user whose role does not include the permission.
+  test('a host user without manage credit profile requests gets Access Denied', async ({ page }) => {
+    await seedSession(page, { permissions: ['view leads'] })
+    const api = await mockApi(page)
+    await page.goto('/intake-review/credit-profile-requests')
+    await expect(page.getByText(/Access Denied/i)).toBeVisible()
+    expect(api.find('POST', LIST)).toHaveLength(0)
   })
 
   test('non-host users cannot reach credit profile requests', async ({ page }) => {

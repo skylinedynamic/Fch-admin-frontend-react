@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 import TableLoader from "../../components/Loader/TableLoader";
 import { Category } from '../../modules/cms/types';
 import { Link } from 'react-router-dom';
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import TaxonomyDeleteBlockedModal, { BlockedTaxonomy, blockedFromError } from './components/TaxonomyDeleteBlockedModal';
 
 interface CategoryFormData {
     name: string;
@@ -22,6 +24,14 @@ export default function BlogCategories() {
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [formData, setFormData] = useState<CategoryFormData>({ name: '', slug: '' });
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [toDelete, setToDelete] = useState<Category | null>(null);
+    const [blocked, setBlocked] = useState<BlockedTaxonomy | null>(null);
+
+    // One used by a blog post is kept: say why instead of asking to confirm (BUG-059).
+    const askDelete = (row: Category & { blogs_count?: number }) => {
+        if ((row.blogs_count ?? 0) > 0) setBlocked({ name: row.name, count: row.blogs_count });
+        else setToDelete(row);
+    };
 
     const handleOpenModal = (cat: Category | null = null) => {
         if (cat) {
@@ -60,14 +70,18 @@ export default function BlogCategories() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (window.confirm("Are you sure you want to delete this category?")) {
-            try {
-                await deleteMutation.mutateAsync([id]);
-                toast.success("Category deleted successfully");
-            } catch (error) {
-                toast.error("Failed to delete category");
-            }
+    // Delete is confirmed in the app's dialog, not the browser's pop-up (BUG-059).
+    const confirmDelete = async () => {
+        if (!toDelete) return;
+        try {
+            await deleteMutation.mutateAsync([toDelete.id]);
+            toast.success("Category deleted successfully");
+        } catch (error) {
+            const refused = blockedFromError(error);
+            if (refused) setBlocked({ name: refused.name });
+            else toast.error("Failed to delete category");
+        } finally {
+            setToDelete(null);
         }
     };
 
@@ -119,7 +133,7 @@ export default function BlogCategories() {
                                                     <button type="button" className="btn btn-sm btn-soft-info" onClick={() => handleOpenModal(cat)}>
                                                         <i className="ri-edit-line"></i>
                                                     </button>
-                                                    <button type="button" className="btn btn-sm btn-soft-danger" onClick={() => handleDelete(cat.id)}>
+                                                    <button type="button" className="btn btn-sm btn-soft-danger" onClick={() => askDelete(cat)}>
                                                         <i className="ri-delete-bin-line"></i>
                                                     </button>
                                                 </div>
@@ -183,6 +197,17 @@ export default function BlogCategories() {
                     </div>
                 </form>
             </Dialog>
+
+            <DeleteConfirmationModal
+                show={toDelete !== null}
+                onClose={() => setToDelete(null)}
+                onConfirm={confirmDelete}
+                loading={deleteMutation.isPending}
+                title="Delete Category?"
+                text={toDelete ? `This will permanently remove the category "${toDelete.name}".` : undefined}
+            />
+
+            <TaxonomyDeleteBlockedModal kind="Category" blocked={blocked} onClose={() => setBlocked(null)} />
         </div>
     );
 }

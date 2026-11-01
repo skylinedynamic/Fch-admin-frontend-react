@@ -11,7 +11,40 @@ interface ClientStatsProps {
     isLoading?: boolean;
 }
 
-const ClientStats: React.FC<ClientStatsProps> = ({ stats, isLoading }) => {
+interface ClientCard {
+    title: string;
+    count: number;
+    icon: string;
+    colorVariant: string;
+}
+
+/**
+ * The Clients list cards. The host (and its staff) sees its whole book and how
+ * it splits between its own clients and its partners'; a partner sees its own
+ * clients by status.
+ */
+function clientCards(isHost: boolean, stats: ClientListStatistics): ClientCard[] {
+    const total: ClientCard = { title: 'Total Clients', count: stats.total_borrowers || 0, icon: 'ri-group-line', colorVariant: 'info' };
+    const active: ClientCard = { title: 'Active Clients', count: stats.active_borrowers || 0, icon: 'ri-user-line', colorVariant: 'success' };
+
+    if (isHost) {
+        return [
+            total,
+            { title: 'Host Clients', count: stats.host_borrowers || 0, icon: 'ri-building-line', colorVariant: 'primary' },
+            { title: 'Partner Clients', count: stats.partner_borrowers || 0, icon: 'ri-team-line', colorVariant: 'warning' },
+            active,
+        ];
+    }
+
+    return [
+        total,
+        active,
+        { title: 'Inactive Clients', count: stats.inactive_borrowers || 0, icon: 'ri-user-unfollow-line', colorVariant: 'secondary' },
+        { title: 'Suspended Clients', count: stats.suspended_borrowers || 0, icon: 'ri-user-forbid-line', colorVariant: 'danger' },
+    ];
+}
+
+const ClientStats: React.FC<ClientStatsProps> = ({ isHost, stats, isLoading }) => {
     if (isLoading || !stats) {
         return (
             <div className="row client-section">
@@ -25,45 +58,11 @@ const ClientStats: React.FC<ClientStatsProps> = ({ stats, isLoading }) => {
     // These always come straight from the (partner-scoped) API totals — they must NOT be
     // overridden by the table's current search/filter/pagination state, or the cards would
     // show misleading counts (e.g. "Active Clients" dropping to match a search filter).
-    const derivedStats = {
-        active_count: stats?.active_borrowers || 0,
-        new_this_month: stats?.new_this_month || 0,
-        total_clients: stats?.total_borrowers || 0,
-        inactive_count: stats?.inactive_borrowers || 0
-    };
-
-    const statisticsConfig = [
-        {
-            title: "Active Clients",
-            count: derivedStats.active_count,
-            icon: "ri-user-line",
-            colorVariant: "primary"
-        },
-        {
-            title: "New This Month",
-            count: derivedStats.new_this_month,
-            icon: "ri-user-add-line",
-            colorVariant: "warning"
-        },
-        {
-            title: "Total Clients",
-            count: derivedStats.total_clients,
-            icon: "ri-group-line",
-            colorVariant: "info"
-        },
-        {
-            title: "Inactive Clients",
-            count: derivedStats.inactive_count,
-            icon: "ri-user-unfollow-line",
-            colorVariant: "danger"
-        }
-    ];
-
     return (
         <div className="row client-section">
-            {statisticsConfig.map((config, index) => (
+            {clientCards(isHost, stats).map((config) => (
                 <StatisticsCard
-                    key={`stat-${index}`}
+                    key={config.title}
                     title={config.title}
                     count={config.count}
                     icon={config.icon}
@@ -76,4 +75,3 @@ const ClientStats: React.FC<ClientStatsProps> = ({ stats, isLoading }) => {
 };
 
 export default ClientStats;
-

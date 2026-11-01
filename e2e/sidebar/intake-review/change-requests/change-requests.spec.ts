@@ -124,4 +124,26 @@ test.describe('Change requests', () => {
     await page.getByText('Smithfield Bakery LLC').click()
     await expect(modal(page).getByText('You do not have permission to approve or reject this request.')).toBeVisible()
   })
+
+  // BUG-014: an EIN change is listed masked; the review reveals both numbers on one button.
+  test('an EIN change is listed masked and its numbers revealed in the review', async ({ page }) => {
+    const ein = { id: 703, borrower_business_name: 'Chen Co', borrower_first_name: 'Michael', borrower_last_name: 'Chen', field_name: 'business_ein', old_value: '**-***6789', new_value: '**-***5345', is_masked: true, status: 'Pending', note: null, created_at: '2026-10-19' }
+    await seedSession(page, { permissions: PERMS })
+    const api = await mockApi(page, [
+      { method: 'POST', match: LIST, body: paginated([ein]) },
+      { method: 'POST', match: '/admin/change-requests/703/reveal', body: ok({ id: 703, old_value: '123456789', new_value: '345345345' }) },
+    ])
+    await page.goto('/intake-review/change-requests')
+
+    const row = page.locator('tr', { hasText: 'Chen Co' })
+    await expect(row.getByText('**-***5345')).toBeVisible()
+    await row.click()
+    await expect(modal(page).getByText('**-***6789')).toBeVisible()
+
+    await modal(page).getByRole('button', { name: 'Show numbers' }).click()
+
+    await expect(modal(page).getByText('12-3456789')).toBeVisible()
+    await expect(modal(page).getByText('34-5345345')).toBeVisible()
+    await expectCall(api, 'POST', '/admin/change-requests/703/reveal')
+  })
 })

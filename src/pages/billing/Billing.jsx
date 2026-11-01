@@ -31,9 +31,9 @@ export default function Billing() {
     const [appliedView, setAppliedView] = useState(BILLING_VIEW_ALL);
     const [appliedEntityType, setAppliedEntityType] = useState(BILLING_ENTITY_TYPE_ALL);
 
-    // Sorting state
+    // Sorting state - soonest upcoming billing first (BUG-012)
     const [sortField, setSortField] = useState('upcoming_billing_date');
-    const [sortOrder, setSortOrder] = useState('desc');
+    const [sortOrder, setSortOrder] = useState('asc');
 
     // Filter states
     const [filters, setFilters] = useState({});

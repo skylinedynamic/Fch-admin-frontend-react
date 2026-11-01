@@ -18,3 +18,27 @@ export function isReminderPastDue(reminder: ReminderTimes, nowMs: number = Date.
 
   return Number.isNaN(at) ? !!reminder.is_past_due : at <= nowMs
 }
+
+const RELATIVE_UNITS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+  ['week', 7 * 86_400_000],
+  ['day', 86_400_000],
+  ['hour', 3_600_000],
+  ['minute', 60_000],
+]
+
+/**
+ * "in 2 days", "yesterday", "3 hours ago" - an ISO date-time against now, in
+ * the largest whole unit (weeks down to minutes). '' when there is none.
+ */
+export function formatRelativeToNow(iso: string | null | undefined, nowMs: number = Date.now()): string {
+  const at = iso ? Date.parse(iso) : NaN
+  if (Number.isNaN(at)) return ''
+
+  const diff = at - nowMs
+  const format = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+  for (const [unit, ms] of RELATIVE_UNITS) {
+    if (Math.abs(diff) >= ms) return format.format(Math.round(diff / ms), unit)
+  }
+
+  return 'now'
+}

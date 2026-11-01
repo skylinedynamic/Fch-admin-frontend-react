@@ -74,10 +74,8 @@ export default function TenantDomainConfig() {
             toast.success('Domain configuration updated successfully');
         } catch (error) {
             if (error.response?.status === 422) {
+                // Each message shows under its field - no toast besides (BUG-121).
                 setErrors(error.response.data.errors || {});
-                const apiErrors = error.response.data.errors || {};
-                const firstError = Object.values(apiErrors)[0];
-                toast.error(Array.isArray(firstError) ? firstError[0] : 'Validation failed.');
             } else {
                 toast.error(error.response?.data?.message || 'Failed to update configuration');
             }
@@ -137,7 +135,7 @@ export default function TenantDomainConfig() {
                                         <div className="mb-0">
                                             <label className="form-label fw-semibold fs-13 text-uppercase text-muted mb-2">Partner Portal Domain</label>
                                             <div className="input-group">
-                                                <span className="input-group-text bg-white border-end-0">
+                                                <span className={`input-group-text bg-white border-end-0 ${errors.partner_domain ? 'border-danger' : ''}`}>
                                                     <i className="ri-shield-user-line text-primary fs-16"></i>
                                                 </span>
                                                 <input
@@ -147,7 +145,6 @@ export default function TenantDomainConfig() {
                                                     placeholder="e.g. partner.yourname.com"
                                                     value={config.partner_domain}
                                                     onChange={handleInputChange}
-                                                    required={config.active_custom_url}
                                                 />
                                             </div>
                                             {errors.partner_domain && <div className="invalid-feedback d-block mt-1">{errors.partner_domain}</div>}
@@ -159,7 +156,7 @@ export default function TenantDomainConfig() {
                                         <div className="mb-0">
                                             <label className="form-label fw-semibold fs-13 text-uppercase text-muted mb-2">Borrower Application Domain</label>
                                             <div className="input-group">
-                                                <span className="input-group-text bg-white border-end-0">
+                                                <span className={`input-group-text bg-white border-end-0 ${errors.borrower_domain ? 'border-danger' : ''}`}>
                                                     <i className="ri-user-follow-line text-success fs-16"></i>
                                                 </span>
                                                 <input
@@ -169,7 +166,6 @@ export default function TenantDomainConfig() {
                                                     placeholder="e.g. apply.yourname.com"
                                                     value={config.borrower_domain}
                                                     onChange={handleInputChange}
-                                                    required={config.active_custom_url}
                                                 />
                                             </div>
                                             {errors.borrower_domain && <div className="invalid-feedback d-block mt-1">{errors.borrower_domain}</div>}

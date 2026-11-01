@@ -108,11 +108,8 @@ export default function TenantConfigSection({
             toast.success('Tenant configuration updated successfully');
         } catch (error) {
             if (error.response?.status === 422) {
-                const apiErrors = error.response.data.errors || {};
-                setErrors(apiErrors);
-
-                // Show specific validation error message if available
-                const firstError = Object.values(apiErrors)[0];
+                // Each message shows under its field - no toast besides (BUG-121).
+                setErrors(error.response.data.errors || {});
             } else {
                 toast.error(error.response?.data?.message || 'Failed to update configuration');
             }
@@ -239,7 +236,7 @@ export default function TenantConfigSection({
                             <div className="mb-3">
                                 <label className="form-label fw-medium">Custom Partner Portal URL <span className="text-danger">*</span></label>
                                 <div className="input-group">
-                                    <span className="input-group-text bg-light border-end-0">
+                                    <span className={`input-group-text bg-light border-end-0 ${errors.partner_domain ? 'border-danger' : ''}`}>
                                         <i className="ri-global-line text-primary"></i>
                                     </span>
                                     <input
@@ -249,7 +246,6 @@ export default function TenantConfigSection({
                                         placeholder="e.g. partner.yourcompany.com"
                                         value={config.partner_domain}
                                         onChange={handleInputChange}
-                                        required={config.active_custom_url}
                                     />
                                 </div>
                                 {errors.partner_domain && <div className="invalid-feedback d-block">{errors.partner_domain}</div>}
@@ -261,9 +257,10 @@ export default function TenantConfigSection({
 
                         <div className="col-lg-6">
                             <div className="mb-3">
-                                <label className="form-label fw-medium">Custom Borrower Portal URL <span className="text-danger">*</span></label>
+                                {/* Optional, even with the custom domain on (BUG-121). */}
+                                <label className="form-label fw-medium">Custom Borrower Portal URL</label>
                                 <div className="input-group">
-                                    <span className="input-group-text bg-light border-end-0">
+                                    <span className={`input-group-text bg-light border-end-0 ${errors.borrower_domain ? 'border-danger' : ''}`}>
                                         <i className="ri-user-settings-line text-success"></i>
                                     </span>
                                     <input
@@ -273,7 +270,6 @@ export default function TenantConfigSection({
                                         placeholder="e.g. apply.yourcompany.com"
                                         value={config.borrower_domain}
                                         onChange={handleInputChange}
-                                        required={config.active_custom_url}
                                     />
                                 </div>
                                 {errors.borrower_domain && <div className="invalid-feedback d-block">{errors.borrower_domain}</div>}

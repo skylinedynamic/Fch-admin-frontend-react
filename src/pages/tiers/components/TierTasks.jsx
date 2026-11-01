@@ -13,18 +13,23 @@ import {
     deleteTierTasks
 } from '../../../modules/tiers/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
+import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
 import TableLoader from '../../../components/Loader/TableLoader';
 import TierTaskModal from './TierTaskModal';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { useTierRelatedApis, useTierVendors, useTier } from '../../../modules/tiers/queries';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 
-const TierTasks = forwardRef(({ tierId }, ref) => {
+const TierTasks = forwardRef(({ tierId, tierCode }, ref) => {
     const { user } = useAuthStore();
     const { hasPermission } = usePermissions();
 
     // Fetch Tier Details to get code
     const { data: tier } = useTier(tierId);
+    // The page has already loaded the tier and passes its code; this list's own
+    // request is the fallback. Waiting on it let a Tier 1 task be added as if
+    // it were another tier - without its vendor (BUG-095).
+    const code = tierCode || tier?.data?.code;
 
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -50,6 +55,8 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
     // Selection
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    // Tasks the API kept because clients already use them (BUG-095).
+    const [blocked, setBlocked] = useState({ message: '', items: [] });
     const [deleteId, setDeleteId] = useState(null);
     const [deleteRows, setDeleteRows] = useState([]);
 
@@ -71,7 +78,7 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
 
     // Fetch vendors for this tier (for Related Vendor dropdown)
     // We fetch a large number to ensure we get all for the dropdown
-    const { data: vendorData } = useTierVendors({
+    const { data: vendorData, isLoading: vendorsLoading } = useTierVendors({
         tier_id: tierId,
         per_page: 9999,
         status: 'Active'
@@ -238,8 +245,20 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
             setSelectedTasks([]);
             loadTasks();
         } catch (err) {
-            console.error('Delete error:', err);
-            toast.error(err.message || 'Failed to delete tasks');
+            const inUse = err.response?.status === 422 ? err.response.data?.errors?.in_use : null;
+            if (inUse?.length) {
+                // Not deleted because clients use them: say so in a dialog, not a toast.
+                setShowDeleteModal(false);
+                setBlocked({
+                    message: inUse.length === 1
+                        ? `Clients are already using "${inUse[0].name}", so it cannot be deleted. Nothing was deleted.`
+                        : err.response.data.message,
+                    items: inUse,
+                });
+            } else {
+                console.error('Delete error:', err);
+                toast.error(err.response?.data?.message || err.message || 'Failed to delete tasks');
+            }
         } finally {
             setLoading(false);
         }
@@ -262,7 +281,7 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                 <button className="btn btn-sm btn-soft-primary" onClick={() => openEditModal(rowData)}>
                     <i className="ri-pencil-fill align-bottom" />
                 </button>
-                {tier?.data?.code === 'T1' && (
+                {code === 'T1' && (
                     <button className="btn btn-sm btn-soft-danger" onClick={() => handleDeleteClick(rowData)}>
                         <i className="ri-delete-bin-fill align-bottom" />
                     </button>
@@ -322,6 +341,8 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                 ]} />
             ) : (
                 <DataTable
+                    // BUG-007: without it PrimeReact shows its dropdown default, "No available options".
+                    emptyMessage="No tasks found"
                     value={tasks || []}
                     paginator
                     rows={perPage}
@@ -347,19 +368,19 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                     onRowClick={(e) => {
                         const target = e.originalEvent.target;
                         if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT' && !target.closest('button')) {
-                            if (hasPermission('update tier') && (tier?.data?.code === 'T0' || tier?.data?.code === 'T1')) {
+                            if (hasPermission('update tier') && (code === 'T0' || code === 'T1')) {
                                 openEditModal(e.data);
                             }
                         }
                     }}
-                    rowClassName={() => (hasPermission('update tier') && (tier?.data?.code === 'T0' || tier?.data?.code === 'T1')) ? 'cursor-pointer' : ''}
+                    rowClassName={() => (hasPermission('update tier') && (code === 'T0' || code === 'T1')) ? 'cursor-pointer' : ''}
                 >
-                    {tier?.data?.code === 'T1' && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
+                    {code === 'T1' && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                     <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '25%' }} />
                     <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" style={{ width: '35%' }} />
                     <Column field="estimated_completion_days" header="Estimated Days" sortable filter filterPlaceholder="Search Days" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
                     <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
-                    {(tier?.data?.code === 'T0' || tier?.data?.code === 'T1') && <Column header="Actions" body={actionBodyTemplate} style={{ width: '100px' }} />}
+                    {(code === 'T0' || code === 'T1') && <Column header="Actions" body={actionBodyTemplate} style={{ width: '100px' }} />}
                 </DataTable>
             )}
 
@@ -372,6 +393,8 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                         task={editTask}
                         tierId={tierId}
                         tier={tier?.data}
+                        tierCode={code}
+                        vendorsLoading={vendorsLoading}
                         relatedApis={relatedApis}
                         vendors={vendors}
                         loadingApis={loadingApis}
@@ -388,6 +411,13 @@ const TierTasks = forwardRef(({ tierId }, ref) => {
                     />
                 </>
             )}
+            <DeleteBlockedModal
+                show={blocked.items.length > 0}
+                title={blocked.items.length === 1 ? 'Task Cannot Be Deleted' : 'Tasks Cannot Be Deleted'}
+                message={blocked.message}
+                items={blocked.items}
+                onClose={() => setBlocked({ message: '', items: [] })}
+            />
         </React.Fragment>
     );
 });

@@ -2,9 +2,21 @@ export interface DashboardCounts {
     total_partners: number;
     total_clients: number;
     total_leads: number;
-    total_commission: number;
+    /** What this viewer has been paid; not sent to partner staff. Superseded by DashboardData.commission. */
+    total_commission?: number;
     funding_application: number;
 }
+
+/**
+ * The dashboard's commission card, in the viewer's terms (see modules/commission/viewer).
+ * earned_amount is commission on funded deals, paid out or not (paid + unpaid;
+ * for host staff, paid + expected).
+ */
+export type DashboardCommission =
+    | { viewer: 'host_owner'; earned_amount: number; paid_amount: number; pending_amount: number; unpaid_amount: number; paid_to_staff: number }
+    | { viewer: 'partner_owner'; earned_amount: number; paid_amount: number; pending_amount: number; unpaid_amount: number }
+    | { viewer: 'host_staff'; earned_amount: number; paid_amount: number; expected_amount: number; expected_deals: number }
+    | { viewer: 'partner_staff'; deals: number; completed_deals: number };
 
 export interface LatestFundingApplication {
     id: number;
@@ -59,6 +71,7 @@ export interface LatestLead {
 
 export interface DashboardData {
     counts: DashboardCounts;
+    commission?: DashboardCommission;
     upcoming_meetings: UpcomingMeeting[];
     latest_funding_applications: LatestFundingApplication[];
     latest_pre_qualifications: LatestPreQualification[];

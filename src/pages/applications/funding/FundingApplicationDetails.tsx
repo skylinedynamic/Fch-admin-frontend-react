@@ -10,7 +10,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS, FUNDING_APPLICATION_STATUS_NOTE_MAX } from '../../../config/borrower';
 import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
-import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
+import { PARTNER_EDITOR_TYPES } from '../../../config/partnerTypeOptions';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
 import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip, downloadFundingApplicationDocument } from '../../../modules/application/services';
 import { handleFileDownload } from '../../../utils/fileDownload';
@@ -18,6 +18,7 @@ import { handleFileDownload } from '../../../utils/fileDownload';
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
+import SsnValue from '../../../components/Common/SsnValue';
 import FundedAmountModal from '../../../components/Common/Modals/FundedAmountModal';
 import DownloadPdfModal from './DownloadPdfModal';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
@@ -88,9 +89,10 @@ export default function FundingApplicationDetails() {
     // Editable while the request is approved and the application is in one of
     // the API's editable statuses (config `statuses.editable`). The server
     // sends that as is_editable, so no status names are compared here.
-    // The host edits any partner's application; a white-label partner only its own borrowers'.
+    // The host edits any partner's application; a white-label or certified
+    // partner only its own borrowers'.
     const canEditApplication =
-        (isHost || (user?.partner_type === PARTNER_TYPES.WHITE_LABEL && app?.partner_id == authPartnerId)) &&
+        (isHost || (PARTNER_EDITOR_TYPES.includes(user?.partner_type as string) && app?.partner_id == authPartnerId)) &&
         app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
         !!app?.funding_request_id &&
         !!app?.is_editable;
@@ -364,7 +366,7 @@ export default function FundingApplicationDetails() {
             <DetailRow label="First Name" value={app.first_name} />
             <DetailRow label="Last Name" value={app.last_name} />
             <DetailRow label="Date of Birth" value={app.date_of_birth} />
-            <DetailRow label="Social Security Number (SSN)" value={formatSSN(app.ssn)} />
+            <DetailRow label="Social Security Number (SSN)" value={<SsnValue value={app.ssn} />} />
             <DetailRow label="Citizenship Status" value={app.citizenship_status} />
             <DetailRow label="Street Address" value={app.street_address} />
             <DetailRow label="State" value={app.state} />
@@ -394,9 +396,7 @@ export default function FundingApplicationDetails() {
                                     <DetailRow label="Mobile Phone" value={borrower.mobile_phone} />
                                     <DetailRow label="Home Phone" value={borrower.home_phone} />
                                     <DetailRow label="Date of Birth" value={borrower.date_of_birth ? formatApiDate(borrower.date_of_birth) : '-'} />
-                                    <DetailRow label="Home Phone" value={borrower.home_phone} />
-                                    <DetailRow label="Date of Birth" value={borrower.date_of_birth ? formatApiDate(borrower.date_of_birth) : '-'} />
-                                    <DetailRow label="SSN" value={formatSSN(borrower.ssn)} />
+                                    <DetailRow label="SSN" value={<SsnValue value={borrower.ssn} />} />
 
                                     <div className="col-12"><hr className="my-2" /></div>
                                     <h6 className="mb-3 fs-13 text-muted text-uppercase fw-semibold">Address</h6>
@@ -734,7 +734,7 @@ export default function FundingApplicationDetails() {
                                         <td className="text-capitalize">{history.user_type || 'System'}</td>
                                         <td>
                                             <span className={`badge ${history.action === 'generated' ? 'bg-success' :
-                                                    history.action.includes('with_password') ? 'bg-warning' : 'bg-primary'
+                                                history.action.includes('with_password') ? 'bg-warning' : 'bg-primary'
                                                 }`}>
                                                 {history.action.replace(/_/g, ' ')}
                                             </span>
@@ -1373,12 +1373,16 @@ export default function FundingApplicationDetails() {
                                 entityId={id}
                                 entityType="Funding Application"
                                 loading={isLoading}
-                                partnerId={undefined}
+                                partnerId={app?.partner_id}
+                                taskOwner={(() => {
+                                    // No owner field of its own: its borrower's "Assign to".
+                                    const assignId = (app as FundingApplicationDetailsType & { borrower?: { assign_id?: number | string | null } | null })?.borrower?.assign_id;
+                                    return assignId ? { id: assignId } : null;
+                                })()}
                                 partnerEmail={undefined}
                                 hostEmail={undefined}
                                 isHost={isHost}
                                 borrowerEmail={(app as FundingApplicationDetailsType & { borrower?: { email?: string | null } | null })?.borrower?.email}
-                                stickyTopOffset="133px"
                             />
                         </div>
                     </div>

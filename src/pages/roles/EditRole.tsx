@@ -215,7 +215,6 @@ export default function EditRole() {
   const handleSave = async () => {
     const name = roleName.trim()
     setErrors({})
-    if (!name) return
     try {
       const res = await updateRole({ id: roleId, payload: { name, description, permission_ids: permissionIds } })
       const msg = (res as any)?.message || 'Role updated successfully.'
@@ -241,12 +240,12 @@ export default function EditRole() {
   return (
     <div className="page-content">
       <div className="container-fluid">
-        <PageHeader 
-          title="Edit Roles & Permissions" 
+        <PageHeader
+          title="Edit Roles & Permissions"
           breadcrumbs={[
             { label: 'Roles & Permissions', path: '/roles-permissions' },
             { label: 'Edit' }
-          ]} 
+          ]}
         >
           <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
             <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
@@ -274,7 +273,7 @@ export default function EditRole() {
                 <div className="role-form">
                   <div className="mb-4">
                     <label className="form-label">Role name <span className="text-danger">*</span></label>
-                    <input type="text" className="form-control" placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
+                    <input type="text" className={`form-control${errors.name ? ' is-invalid' : ''}`} placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
                     {errors.name && <div className="text-danger mt-1 small">{errors.name}</div>}
                   </div>
 
@@ -285,7 +284,7 @@ export default function EditRole() {
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label">Role Permissions</label>
+                    <label className="form-label">Role Permissions <span className="text-danger">*</span></label>
                     <div className="d-flex align-items-center gap-3">
                       <div className="form-check form-switch">
                         <input
@@ -304,13 +303,13 @@ export default function EditRole() {
                     </div>
                   </div>
 
+                  {errors.permission_ids && <div className="text-danger small mb-2">{errors.permission_ids}</div>}
                   <div className="row g-4">
                     <div className="col-lg-12">
-                      <div className="perm-card">
+                      <div className={`perm-card${errors.permission_ids ? ' border-danger' : ''}`}>
                         <div className="d-flex align-items-center justify-content-between mb-4">
                           <h6 className="section-title">Module Permissions</h6>
                         </div>
-                        {errors.permission_ids && <div className="text-danger small mb-2">{errors.permission_ids}</div>}
                         {/* Loading and error states */}
                         {permsLoading && <PermissionCardsLoader />}
                         {permsError && !permsLoading && <ErrorState message="Failed to load permissions. Please try again." />}

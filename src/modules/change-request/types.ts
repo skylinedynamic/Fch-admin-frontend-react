@@ -14,8 +14,10 @@ export interface ChangeRequest {
     partner_id: number | null;
     borrower_id: number;
     field_name: string;
+    /** Masked for an SSN or EIN change (is_masked); revealChangeRequest() gives both in full. */
     old_value: string | null;
     new_value: string | null;
+    is_masked?: boolean;
     status: ChangeRequestStatus | null;
     updated_by: number | null;
     note: string | null;
@@ -25,6 +27,15 @@ export interface ChangeRequest {
     borrower_first_name: string | null;
     borrower_last_name: string | null;
     updater_name: string | null;
+}
+
+/** The SSN change fields, as fch-api's BorrowerChangeRequest::MASKED_SSN_FIELDS; the other masked one is the EIN. */
+export const CHANGE_REQUEST_SSN_FIELDS: readonly string[] = ['ssn', 'last_4_ssn'];
+
+/** An SSN or EIN change's two numbers in full (BUG-014). */
+export interface ChangeRequestRevealed {
+    old_value: string | null;
+    new_value: string | null;
 }
 
 export interface ChangeRequestMeta {

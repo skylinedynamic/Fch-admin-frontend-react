@@ -358,7 +358,8 @@ export default function RolesPermissions() {
         onConfirm={confirmDelete}
         onClose={closeDeleteModal}
         loading={deletingRole}
-        text="Deleting employees will remove all information."
+        title="Delete Role?"
+        text="This will permanently remove the role and all its associated permissions."
       />
     </div>
   )

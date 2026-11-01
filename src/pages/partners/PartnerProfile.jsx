@@ -4,11 +4,11 @@ import "../../../assets/css/dropdown-validation.css";
 import PageHeader from '../common/PageHeader';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors } from '../../modules/partner';
+import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
-import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
+import { validateRequired, validateEmail } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
@@ -129,11 +129,18 @@ export default function PartnerProfile() {
         subscriptions: [],
     });
 
-    // Fetch users on mount
+    // Agent options: active staff only, keeping the partner's saved Agent even
+    // if since made inactive - so an existing partner waits for its data.
+    const partnerLoaded = !id || formData.id != null;
+    const savedAgentId = formData.assigned_user_id ?? null;
     useEffect(() => {
+        if (!partnerLoaded) return;
         const fetchUsers = async () => {
             try {
-                const response = await allUsers();
+                const response = await allUsers({
+                    active_only: true,
+                    ...(savedAgentId ? { keep_ids: [Number(savedAgentId)] } : {}),
+                });
                 if (response.status && response.data) {
                     setUsers(response.data);
                 }
@@ -142,7 +149,7 @@ export default function PartnerProfile() {
             }
         };
         fetchUsers();
-    }, []);
+    }, [partnerLoaded, savedAgentId]);
 
     // Fetch next partner ID for new partners
     useEffect(() => {
@@ -526,8 +533,10 @@ export default function PartnerProfile() {
                     fees.installment_applied = true;
                     fees.enrollment_amount = selectedPlan.total_amount || 0;
                     fees.installment_down_payment = 0;
-                    fees.installment_months = 12;
-                    fees.installment_monthly_amount = (selectedPlan.total_amount || 0) / 12;
+                    // 12, or the plan's Installment Upto when lower (BUG-114).
+                    const months = defaultInstallmentMonths(selectedPlan);
+                    fees.installment_months = months;
+                    fees.installment_monthly_amount = (selectedPlan.total_amount || 0) / months;
                     fees.installment_remaining_balance = selectedPlan.total_amount || 0;
                 } else {
                     fees.installment_applied = false;
@@ -625,16 +634,7 @@ export default function PartnerProfile() {
                 } catch (e) {
                     toast.error(e.response?.data?.message || 'Failed to attach documents');
                 }
-                const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription', 'tenantConfig'];
-                const currentIndex = tabOrder.indexOf(activeTab);
-                const nextTab = tabOrder[currentIndex + 1];
-
-                if (nextTab) {
-                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: nextTab } }), 800);
-                } else {
-                    // If on last tab, stay on current tab
-                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: activeTab } }), 800);
-                }
+                // Stay on the tab that was saved.
             } else {
                 const response = await createPartner(formDataToSend);
                 toast.success('Partner created successfully');
@@ -663,8 +663,8 @@ export default function PartnerProfile() {
                     } catch (e) {
                         toast.error(e.response?.data?.message || 'Failed to attach documents');
                     }
-                    // Redirect to the partner profile page with Status & Agent tab active
-                    setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab: 'statusAgent' } }), 800);
+                    // Open the new partner on the tab it was created from.
+                    setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab } }), 800);
                 } else {
                     // Fallback to partners list if no ID returned
                     setTimeout(() => navigate('/partners'), 800);
@@ -900,7 +900,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} taskOwner={formData.agent ? { id: formData.agent, name: formData.assigned_user_name } : null} />
                         </div>
                     )}
                 </div>

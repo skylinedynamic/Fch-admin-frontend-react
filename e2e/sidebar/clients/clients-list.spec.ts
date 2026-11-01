@@ -16,7 +16,7 @@ const client = (id: number, over: Record<string, unknown> = {}) => ({
 })
 
 const page1 = Array.from({ length: 10 }, (_, i) => client(i + 1))
-const STATS = { active_borrowers: 18, new_this_month: 4, total_borrowers: 25, inactive_borrowers: 7 }
+const STATS = { active_borrowers: 18, new_this_month: 4, total_borrowers: 25, inactive_borrowers: 7, suspended_borrowers: 3, host_borrowers: 15, partner_borrowers: 10 }
 
 const listBody = (rows: unknown[], total = rows.length) => ({
   status: true, message: 'ok', data: rows,
@@ -95,12 +95,21 @@ test.describe('Borrower list - columns', () => {
 })
 
 test.describe('Borrower list - statistics cards', () => {
-  test('show the totals from the API', async ({ page }) => {
+  test('show the host its own and its partners’ clients', async ({ page }) => {
     await open(page)
-    for (const [title, value] of [['Active Clients', '18'], ['New This Month', '4'], ['Total Clients', '25'], ['Inactive Clients', '7']]) {
+    for (const [title, value] of [['Total Clients', '25'], ['Host Clients', '15'], ['Partner Clients', '10'], ['Active Clients', '18']]) {
       const card = page.locator('.card', { hasText: title }).first()
       await expect(card).toContainText(value)
     }
+  })
+
+  test('show a partner its own clients by status', async ({ page }) => {
+    await open(page, PARTNER)
+    for (const [title, value] of [['Total Clients', '25'], ['Active Clients', '18'], ['Inactive Clients', '7'], ['Suspended Clients', '3']]) {
+      const card = page.locator('.card', { hasText: title }).first()
+      await expect(card).toContainText(value)
+    }
+    await expect(page.locator('.card', { hasText: 'Host Clients' })).toHaveCount(0)
   })
 
   test('do not change when the list is filtered', async ({ page }) => {

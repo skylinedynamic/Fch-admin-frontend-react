@@ -18,7 +18,7 @@ const HOST_USER = {
   user_type: 'Admin',
   is_host: 1,
   partner_id: null,
-  permissions: [],
+  permissions: ['manage credit profile requests'],
 }
 
 const THEME = {
