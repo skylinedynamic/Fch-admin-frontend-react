@@ -52,18 +52,27 @@ const minFico = (page: Page) => page.getByPlaceholder('640').first()
 const saves = (api: ApiMock) => api.calls.filter((c) => c.method === 'POST' && /\/visibility$/.test(c.path))
 
 test.describe('Underwriting Logic › Min FICO (R2 BUG-009)', () => {
-  test('the field takes 300 to 850, so 851 is held back and nothing is saved', async ({ page }) => {
+  /**
+   * Defect: the browser held 851 back with its own "Value must be less than or
+   * equal to 850." popup, so the API never checked it. The API is what
+   * validates: 851 is sent, and the API's refusal is shown under the field.
+   */
+  test('851 is sent to the API and its refusal is shown under the field, not a browser popup', async ({ page }) => {
     const api = await open(page, CATEGORY_URL)
+    api.add({
+      method: 'POST', match: `${ADMIN}/${SEQ_ID}/lender/61/category/general/visibility`, status: 422,
+      body: failure('Invalid', { 'lender_visibilities.0.min_fico': 'Enter a FICO score as a whole number between 300 and 850.' }),
+    })
     await expect(minFico(page)).toHaveValue('640')
-    await expect(minFico(page)).toHaveAttribute('min', '300')
-    await expect(minFico(page)).toHaveAttribute('max', '850')
 
     await minFico(page).fill('851')
     await update(page).click()
 
-    expect(await minFico(page).evaluate((input: HTMLInputElement) => input.validity.rangeOverflow)).toBe(true)
-    await page.waitForTimeout(500)
-    expect(saves(api)).toHaveLength(0)
+    const call = await expectCall(api, 'POST', `${ADMIN}/${SEQ_ID}/lender/61/category/general/visibility`)
+    expect(call.json.lender_visibilities[0]).toMatchObject({ min_fico: '851' })
+    await expect(page.getByText('Enter a FICO score as a whole number between 300 and 850.')).toBeVisible()
+    await expect(minFico(page)).toHaveClass(/is-invalid/)
+    expect(saves(api)).toHaveLength(1)
   })
 
   test('850 is accepted and saved', async ({ page }) => {
@@ -90,6 +99,27 @@ test.describe('Underwriting Logic › Min FICO (R2 BUG-009)', () => {
     await update(page).click()
 
     await expect(page.getByText('The minimum FICO must be between 300 and 850.')).toBeVisible()
+  })
+})
+
+test.describe('Underwriting Logic › money fields', () => {
+  /**
+   * Defect: Min Monthly Revenue, Min Monthly Deposits and Min Avg Daily Bal
+   * showed "$" run into the value ("$   4000.00"); the line between the "$"
+   * box and the value only appeared once the field had an error. The line is
+   * always there now.
+   */
+  test('the "$" box is set off from the value by a line, with or without an error', async ({ page }) => {
+    await open(page, CATEGORY_URL)
+    await expect(minFico(page)).toHaveValue('640')
+
+    for (const placeholder of ['12000.00', '4000.00']) {
+      for (const input of await page.getByPlaceholder(placeholder, { exact: true }).all()) {
+        await expect(input).not.toHaveClass(/border-start-0/)
+        await expect(input.locator('xpath=preceding-sibling::span[1]')).not.toHaveClass(/border-end-0/)
+      }
+    }
+    await expect(page.getByPlaceholder('12000.00', { exact: true })).toHaveCount(2)
   })
 })
 

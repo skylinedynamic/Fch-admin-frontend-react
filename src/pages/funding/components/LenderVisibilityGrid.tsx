@@ -6,7 +6,7 @@ import { DataTable } from 'primereact/datatable';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { Column } from 'primereact/column';
 import { TIB_OPTIONS, INDUSTRIES_OPTIONS } from '../../../config/funding';
-import { FICO_MAX, FICO_MIN, lenderFilterOptions, lenderLabelFor, optionsWithout } from '../../../modules/funding/visibilityRules';
+import { lenderFilterOptions, lenderLabelFor, optionsWithout } from '../../../modules/funding/visibilityRules';
 import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities, deleteFundingSequencingVisibilities } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
@@ -900,9 +900,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     type="number"
                                                                     className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_fico`] ? 'is-invalid' : ''}`}
                                                                     placeholder="640"
-                                                                    min={FICO_MIN}
-                                                                    max={FICO_MAX}
-                                                                    title={`A FICO score from ${FICO_MIN} to ${FICO_MAX}`}
                                                                     value={v.min_fico ?? ''}
                                                                     onChange={(e) => onChange(i, 'min_fico', e.target.value)}
                                                                 />
@@ -911,7 +908,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <input
                                                                     type="number"
-                                                                    min="0"
                                                                     className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_business_credit_score`] ? 'is-invalid' : ''}`}
                                                                     placeholder="80"
                                                                     value={v.min_business_credit_score ?? ''}
@@ -934,12 +930,12 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <div className="input-group">
                                                                     <span
-                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'text-danger' : 'text-muted'}`}
+                                                                        className={`input-group-text bg-white ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'text-danger' : 'text-muted'}`}
                                                                         style={(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? { borderColor: '#f06548' } : undefined}
                                                                     >$</span>
                                                                     <input
                                                                         type="number"
-                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : ''}`}
                                                                         placeholder="12000.00"
                                                                         value={v.min_monthly_revenue ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
@@ -950,12 +946,12 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <div className="input-group">
                                                                     <span
-                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'text-danger' : 'text-muted'}`}
+                                                                        className={`input-group-text bg-white ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'text-danger' : 'text-muted'}`}
                                                                         style={(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? { borderColor: '#f06548' } : undefined}
                                                                     >$</span>
                                                                     <input
                                                                         type="number"
-                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : ''}`}
                                                                         placeholder="12000.00"
                                                                         value={v.min_monthly_deposits ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
@@ -976,12 +972,12 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <div className="input-group">
                                                                     <span
-                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'text-danger' : 'text-muted'}`}
+                                                                        className={`input-group-text bg-white ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'text-danger' : 'text-muted'}`}
                                                                         style={(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? { borderColor: '#f06548' } : undefined}
                                                                     >$</span>
                                                                     <input
                                                                         type="number"
-                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : ''}`}
                                                                         placeholder="4000.00"
                                                                         value={v.min_average_daily_balance ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}

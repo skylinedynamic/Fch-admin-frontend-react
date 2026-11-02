@@ -1,18 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  FICO_MAX,
-  FICO_MIN,
   lenderFilterOptions,
   lenderLabelFor,
   optionsWithout,
 } from '../../../src/modules/funding/visibilityRules'
 
 describe('underwriting logic rules', () => {
-  // R2 BUG-009: the API takes a Min FICO of 300-850 (App\Rules\FicoScore); the input carries the same bounds.
-  it('uses the FICO scale the API enforces', () => {
-    expect([FICO_MIN, FICO_MAX]).toEqual([300, 850])
-  })
-
   // R2 BUG-010: a state picked as allowed is not offered as restricted, and the other way round.
   describe('optionsWithout', () => {
     const states = [

@@ -3,10 +3,6 @@
  * visibility rules), kept out of the component so they can be tested alone.
  */
 
-/** The FICO scale the API enforces on Min FICO (App\Rules\FicoScore) - R2 BUG-009. */
-export const FICO_MIN = 300
-export const FICO_MAX = 850
-
 type Option = { label: string; value: string }
 
 /**
