@@ -82,11 +82,33 @@ test.describe('Lead conversion - borrower', () => {
 
   test('a general failure is toasted and the dialog stays open', async ({ page }) => {
     const api = await openConvert(page, {})
-    api.add({ method: 'POST', match: '/common/leads/51/convert', status: 500, body: { status: false, message: 'Lead already converted.' } })
+    api.add({ method: 'POST', match: '/common/leads/51/convert', status: 500, body: { status: false, message: 'Conversion service is down.' } })
     await expect(dialog(page)).toContainText('Select Enrollment Type')
     await convert(page).click()
-    await expect(page.getByText('Lead already converted.').first()).toBeVisible()
+    await expect(page.getByText('Conversion service is down.').first()).toBeVisible()
     await expect(dialog(page)).toBeVisible()
+  })
+
+  // BUG-057: converted already in another tab - the API refuses with 422.
+  test('a lead already converted elsewhere: the dialog closes, a dialog gives the reason and its button reloads the list', async ({ page }) => {
+    const ALREADY = 'This lead has already been converted.'
+    const api = await openConvert(page, {})
+    let converted = false
+    api.add({ method: 'POST', match: '/common/leads/fetch-leads', body: () => paginated([{ ...LEAD, convert_to: converted ? 'Borrower' : null }]) })
+    api.add({ method: 'POST', match: '/common/leads/51/convert', status: 422, body: () => { converted = true; return failure(ALREADY) } })
+    await expect(dialog(page)).toContainText('Select Enrollment Type')
+    await convert(page).click()
+
+    const refused = page.getByRole('dialog', { name: 'Lead Not Converted' })
+    await expect(refused).toBeVisible()
+    await expect(refused).toContainText(ALREADY)
+    await expect(dialog(page)).toBeHidden()
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
+
+    const before = api.find('POST', '/common/leads/fetch-leads').length
+    await refused.getByRole('button', { name: 'Reload list' }).click()
+    await expect(refused).toBeHidden()
+    await expect.poll(() => api.find('POST', '/common/leads/fetch-leads').length).toBeGreaterThan(before)
   })
 
   test('Cancel closes the dialog without converting', async ({ page }) => {
