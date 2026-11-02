@@ -40,6 +40,32 @@ describe('MySubscription', () => {
     expect(screen.getByText('2026-01-01')).toBeInTheDocument()
   })
 
+  // BUG-049: the monthly installment is rounded to the cent and the last one
+  // takes up the difference (6696.70 over 12: 558.06 a month, the last 558.04).
+  it('shows the monthly installment and the adjusted last one on an installment plan', async () => {
+    mount({
+      subscription: subscription({ enrollment_type: 'Installment', installment_count: 12, subscription_amount_per_month: '$558.06', final_installment_amount: '$558.04' }),
+      recent_payments: [],
+      partner: { id: 5 },
+    })
+
+    expect(await screen.findByText('Monthly Installment')).toBeInTheDocument()
+    expect(screen.getByText('$558.06')).toBeInTheDocument()
+    expect(screen.getByText('Last Installment')).toBeInTheDocument()
+    expect(screen.getByText('$558.04')).toBeInTheDocument()
+  })
+
+  it('shows no last installment when the plan splits evenly', async () => {
+    mount({
+      subscription: subscription({ enrollment_type: 'Installment', installment_count: 3, subscription_amount_per_month: '$300.00', final_installment_amount: null }),
+      recent_payments: [],
+      partner: { id: 5 },
+    })
+
+    expect(await screen.findByText('Monthly Installment')).toBeInTheDocument()
+    expect(screen.queryByText('Last Installment')).not.toBeInTheDocument()
+  })
+
   it('shows an empty payment history', async () => {
     mount()
 
