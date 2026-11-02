@@ -107,7 +107,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         setLocalActiveLenderId(activeLenderId);
         setLocalActiveCategoryId(activeCategoryId);
     }, [activeLenderId, activeCategoryId]);
-    const [detailsLoading, setDetailsLoading] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [lenderToDelete, setLenderToDelete] = React.useState<number | null>(null);
     const [selectedMasterLenders, setSelectedMasterLenders] = React.useState<any[]>([]);
@@ -180,15 +179,15 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
     const visibilityUrl = `/funding/visibility-rules/${id}`;
 
+    // The rules are already on the page, so switching shows them at once - no
+    // loading skeleton in between (it made the table flash on every switch).
     const setActiveLenderIdAndCategory = (lenderId: number | null, categoryId: string | number | null = null) => {
-        setDetailsLoading(true);
         if (lenderId === null) {
             navigate(visibilityUrl);
         } else {
             const catPath = categoryId !== null ? `/category/${categoryId}` : '';
             navigate(`${visibilityUrl}/lender/${lenderId}${catPath}`);
         }
-        setTimeout(() => setDetailsLoading(false), 500);
     };
 
 
@@ -210,7 +209,11 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
     const onAddLenderBlock = (newLenderId: number | string) => {
         if (!newLenderId) return;
+        setVisibilities([...visibilities, ...emptyRulesFor(newLenderId)]);
+    };
 
+    /** A lender's empty rules: one per product category, or one general rule. */
+    const emptyRulesFor = (newLenderId: number | string): any[] => {
         const lender = lenders.find(l => String(l.id) === String(newLenderId));
         let categories = [];
         if (typeof lender?.product_categories === 'string') {
@@ -266,7 +269,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
             });
         }
 
-        setVisibilities([...visibilities, ...newRows]);
+        return newRows;
     };
 
     const visibilitiesRef = React.useRef(visibilities);
@@ -561,20 +564,16 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                             cleanedVisibilities = visibilities.filter(v => String(v.lender_id) !== String(localActiveLenderId));
                                         }
                                     }
-                                    setVisibilities(cleanedVisibilities);
-                                    setActiveLenderIdAndCategory(nextLenderId, null);
-
-                                    // Clear all visibility errors when switching lender
-                                    if (setErrors) {
-                                        setErrors((prev: any) => {
-                                            if (!prev) return prev;
-                                            const newErrors = { ...prev };
-                                            Object.keys(newErrors).forEach(key => {
-                                                if (key.startsWith('lender_visibilities.')) delete newErrors[key];
-                                            });
-                                            return newErrors;
-                                        });
-                                    }
+                                    // A lender with no rules yet gets its empty rows in
+                                    // the same update, so "Rules Not Initialized" never
+                                    // flashes before a timer adds them.
+                                    const hasRules = cleanedVisibilities.some(v => String(v.lender_id) === String(nextLenderId));
+                                    setVisibilities(hasRules || !nextLenderId
+                                        ? cleanedVisibilities
+                                        : [...cleanedVisibilities, ...emptyRulesFor(nextLenderId)]);
+                                    // Once: navigating twice re-drew the page twice and
+                                    // left two history entries. The visibility errors
+                                    // are cleared by the effect on activeLenderId.
                                     setActiveLenderIdAndCategory(nextLenderId, null);
                                 }}
                                 optionLabel="name"
@@ -783,8 +782,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         <p className="text-muted fs-14 mb-0">Please select a lender from the dropdown above to configure its underwriting rules.</p>
                                     </div>
                                 </div>
-                            ) : detailsLoading ? (
-                                <TableLoader rows={6} />
                             ) : (() => {
                                 const activeRows = visibilities.filter(v => {
                                     if (v.lender_id == null) return false;

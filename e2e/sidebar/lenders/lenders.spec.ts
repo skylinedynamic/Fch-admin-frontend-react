@@ -209,7 +209,8 @@ test.describe('Lender product categories', () => {
   const CATS = '/admin/lenders/product-categories'
 
   async function openModal(page: Page) {
-    await seedSession(page)
+    // Add Lender is behind these permissions; without them the page never opened.
+    await seedSession(page, { permissions: ['view lenders', 'create lenders'] })
     const api = await mockApi(page, handlers())
     await page.goto('/lenders/create')
     await page.getByRole('button', { name: 'Add New' }).click()
@@ -246,16 +247,137 @@ test.describe('Lender product categories', () => {
   test('deletes a category after confirmation', async ({ page }) => {
     const { api, dialog } = await openModal(page)
     api.add({ method: 'DELETE', match: /product-categories\/\d+$/, body: ok(null) })
-    await dialog.getByTitle('Delete').first().click()
+    // The newest is listed first, so pick the row by name.
+    await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
     await confirmDelete(page)
     await expectCall(api, 'DELETE', '/admin/lenders/product-categories/1')
     await expect(page.getByText('Product category deleted successfully')).toBeVisible()
   })
 
+  /**
+   * A category the list says is in use (funding_sequences_count) is refused at
+   * once - "Cannot Be Deleted", no "Are you sure?" and no delete sent. One not
+   * in use still asks "Are you sure?".
+   */
+  test('a category in use says it cannot be deleted at once; one not in use asks "Are you sure?"', async ({ page }) => {
+    await seedSession(page, { permissions: ['view lenders', 'create lenders'] })
+    const api = await mockApi(page, [
+      { method: 'GET', match: /\/admin\/lenders(\?|$)/, body: paginated(LENDERS) },
+      {
+        method: 'GET', match: '/admin/lenders/product-categories',
+        body: ok([{ id: 1, name: 'Term Loans', funding_sequences_count: 12 }, { id: 2, name: 'Lines of Credit', funding_sequences_count: 0 }]),
+      },
+    ])
+    await page.goto('/lenders/create')
+    await page.getByRole('button', { name: 'Add New' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Manage Product Categories' })
+    await expect(dialog).toBeVisible()
+
+    await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
+    const blocked = page.locator('.modal.show').filter({ hasText: 'Product Category Cannot Be Deleted' })
+    await expect(blocked).toBeVisible()
+    await expect(blocked).toContainText('"Term Loans" is used by 12 funding sequences and cannot be deleted.')
+    await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toHaveCount(0)
+    await blocked.getByRole('button', { name: 'Close' }).last().click()
+    await expect(page.locator('.modal.show')).toHaveCount(0)
+    expect(api.find('DELETE', '/admin/lenders/product-categories')).toHaveLength(0)
+
+    await dialog.locator('.border.bg-light', { hasText: 'Lines of Credit' }).getByTitle('Delete').click()
+    await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toBeVisible()
+    await expect(page.locator('.modal.show').filter({ hasText: 'Cannot Be Deleted' })).toHaveCount(0)
+  })
+
+  /**
+   * Defect: a category used in a funding sequence's underwriting logic was
+   * deleted. If it came into use after the list was loaded, the API still
+   * refuses (422 + errors.blocked) and the reason is shown, not a toast.
+   */
+  test('a category used by a funding sequence is kept, and the reason is shown', async ({ page }) => {
+    const { api, dialog } = await openModal(page)
+    api.add({
+      method: 'DELETE', match: /product-categories\/\d+$/, status: 422,
+      // As the API sends it: errors.blocked is a list (failure() would flatten it).
+      body: {
+        status: false,
+        message: 'This product category is used by a funding sequence and cannot be deleted.',
+        errors: { blocked: [{ id: 1, name: 'Term Loans', count: 2 }] },
+      },
+    })
+    await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
+    await confirmDelete(page)
+
+    await expectCall(api, 'DELETE', '/admin/lenders/product-categories/1')
+    const blocked = page.locator('.modal.show').filter({ hasText: 'Product Category Cannot Be Deleted' })
+    await expect(blocked).toBeVisible()
+    await expect(blocked).toContainText('"Term Loans" is used by 2 funding sequences and cannot be deleted.')
+    await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toHaveCount(0)
+    await expect(page.getByText('Product category deleted successfully')).toHaveCount(0)
+    await expect(dialog.getByText('Term Loans')).toBeVisible()
+    // Above the categories dialog, however high PrimeReact has taken it.
+    const z = await page.evaluate(() => ({
+      dialog: Number(getComputedStyle(document.querySelector('.p-dialog-mask')!).zIndex),
+      blocked: Number(getComputedStyle(document.querySelector('.modal.show')!).zIndex),
+    }))
+    expect(z.blocked).toBeGreaterThan(z.dialog)
+
+    await blocked.getByRole('button', { name: 'Close' }).last().click()
+    await expect(page.locator('.modal.show')).toHaveCount(0)
+    await expect(dialog).toBeVisible()
+  })
+
+  /**
+   * Defect: the delete confirmation (a Bootstrap modal, z-index 1055) opened
+   * behind the Manage Product Categories dialog (PrimeReact, z-index 1100+),
+   * so it could not be seen or clicked. It opens on top.
+   */
+  test('the delete confirmation opens on top of the categories dialog', async ({ page }) => {
+    const { dialog } = await openModal(page)
+    await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
+    const confirm = page.locator('.modal.show').filter({ hasText: 'Are you sure?' })
+    await expect(confirm).toBeVisible()
+
+    const onTop = await confirm.getByRole('button', { name: 'Yes, Delete It' }).evaluate((button) => {
+      const r = button.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return !!hit && button.contains(hit)
+    })
+    expect(onTop).toBe(true)
+  })
+
+  /**
+   * Defect: PrimeReact raises a dialog's z-index with every overlay opened on
+   * the page, so after a while the categories dialog sat above the Bootstrap
+   * confirmation (1055): "Are you sure?" opened hidden behind it. The
+   * confirmation now always goes above any open dialog, dimming it.
+   */
+  test('the delete confirmation goes above the categories dialog, however high its z-index', async ({ page }) => {
+    const { dialog } = await openModal(page)
+    // As after many dropdowns: the dialog above Bootstrap's modal layer.
+    await page.evaluate(() => { (document.querySelector('.p-dialog-mask') as HTMLElement).style.zIndex = '1200' })
+    // The dark layer of the confirmation must sit above the categories dialog.
+    const layers = () => page.evaluate(() => {
+      const z = (el: Element | null) => (el ? Number(getComputedStyle(el).zIndex) || 0 : null)
+      const backdrops = document.querySelectorAll('.modal-backdrop')
+      return { dialog: z(document.querySelector('.p-dialog-mask')), backdrop: z(backdrops[backdrops.length - 1] ?? null), confirm: z(document.querySelector('.modal.show')) }
+    })
+
+    await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
+    await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toBeVisible()
+    const open = await layers()
+    expect(open.backdrop!).toBeGreaterThan(open.dialog!)
+    expect(open.confirm!).toBeGreaterThan(open.backdrop!)
+
+    await cancelDelete(page)
+    await expect(page.locator('.modal.show')).toHaveCount(0)
+    await expect.poll(async () => (await layers()).backdrop).toBeNull()
+    await expect(dialog).toBeVisible()
+  })
+
   test('renames a category', async ({ page }) => {
     const { api, dialog } = await openModal(page)
     api.add({ method: 'PUT', match: /product-categories\/\d+$/, body: ok({ id: 1, name: 'Term Loans Plus' }) })
-    await dialog.getByTitle('Edit').first().click()
+    // The newest is listed first, so pick the row by name.
+    await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Edit').click()
     const editor = dialog.locator('.bg-light input').first()
     await editor.fill('Term Loans Plus')
     await editor.press('Enter')

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 // bootstrap ships no type declarations for this subpath export
 // @ts-expect-error -- untyped third-party module
 import Modal from 'bootstrap/js/dist/modal';
-import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
+import { clearStrayModalBackdrops, raiseAboveOpenDialogs } from '../../../utils/modalBackdrop';
 
 export interface BlockedItem {
     id: number | string;
@@ -54,8 +54,11 @@ export default function DeleteBlockedModal({ show, title, message, items = [], o
     useEffect(() => {
         const modal = modalInstanceRef.current;
         if (!modal) return;
-        if (show) modal.show();
-        else modal.hide();
+        if (show) {
+            modal.show();
+            // Not hidden behind a PrimeReact dialog it was opened from.
+            raiseAboveOpenDialogs(modalRef.current);
+        } else modal.hide();
     }, [show]);
 
     useEffect(() => () => {

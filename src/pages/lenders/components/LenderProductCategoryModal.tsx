@@ -4,6 +4,7 @@ import { InputText } from 'primereact/inputtext';
 import { toast } from 'react-toastify';
 import { createLenderProductCategory, updateLenderProductCategory, deleteLenderProductCategory } from '../../../modules/lender/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
+import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
 
 export default function LenderProductCategoryModal({ visible, onHide, onSuccess, categories = [] }: any) {
     const [name, setName] = useState<string>('');
@@ -16,6 +17,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
     const [editingLoading, setEditingLoading] = useState<boolean>(false);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
     const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [blocked, setBlocked] = useState<BlockedCategory | null>(null);
 
     const handleSave = async () => {
         setNameError('');
@@ -36,8 +38,15 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
         }
     };
 
-    const handleDeleteClick = (id: any) => {
-        setItemToDelete(id);
+    // In use by a funding sequence (the list says so): say it cannot be deleted
+    // at once - no "Are you sure?" for a delete that would be refused.
+    const handleDeleteClick = (item: any) => {
+        const inUse = Number(item.funding_sequences_count) || 0;
+        if (inUse > 0) {
+            setBlocked({ name: item.name, count: inUse });
+            return;
+        }
+        setItemToDelete(item.id);
         setShowDeleteModal(true);
     };
 
@@ -50,7 +59,14 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
             setShowDeleteModal(false);
             onSuccess();
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to delete product category');
+            // Used by a funding sequence: kept, and said why - like a blog tag in use.
+            const refused = blockedCategoryFromError(error);
+            if (refused) {
+                setShowDeleteModal(false);
+                setBlocked(refused);
+            } else {
+                toast.error(error?.response?.data?.message || 'Failed to delete product category');
+            }
         } finally {
             setDeletingId(null);
             setItemToDelete(null);
@@ -145,7 +161,10 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                             <hr className="my-3" />
                             <label className="form-label fw-semibold mb-2">Existing Categories</label>
                             <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                                {categories.map((item: any) => (
+                                {/* Newest first, so one just added is at the top, not out of
+                                    sight at the bottom. A copy: the given list (sort order,
+                                    also used by the dropdowns) is left as it is. */}
+                                {[...categories].sort((a: any, b: any) => Number(b.id) - Number(a.id)).map((item: any) => (
                                     <div
                                         key={item.id}
                                         className="d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-light"
@@ -198,7 +217,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                                                 <button
                                                     type="button"
                                                     className="btn btn-sm btn-soft-danger"
-                                                    onClick={() => handleDeleteClick(item.id)}
+                                                    onClick={() => handleDeleteClick(item)}
                                                     disabled={deletingId === item.id}
                                                     title="Delete"
                                                 >
@@ -233,6 +252,33 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                 loading={deletingId !== null}
                 text="Are you sure you want to delete this product category?"
             />
+
+            <DeleteBlockedModal
+                show={blocked !== null}
+                title="Product Category Cannot Be Deleted"
+                message={blocked ? categoryInUseMessage(blocked) : ''}
+                onClose={() => setBlocked(null)}
+            />
         </>
     );
 }
+
+/** A category the API kept because a funding sequence still uses it. */
+export interface BlockedCategory {
+    name: string;
+    /** Funding sequences using it. */
+    count?: number;
+}
+
+/** The category the API names in a 422 refusal (errors.blocked), if any. */
+export const blockedCategoryFromError = (error: any): BlockedCategory | null => {
+    const blocked = error?.response?.data?.errors?.blocked;
+    return error?.response?.status === 422 && Array.isArray(blocked) && blocked.length > 0
+        ? { name: blocked[0].name, count: blocked[0].count }
+        : null;
+};
+
+export const categoryInUseMessage = ({ name, count }: BlockedCategory): string => {
+    const sequences = count ? `${count} funding sequence${count === 1 ? '' : 's'}` : 'a funding sequence';
+    return `"${name}" is used by ${sequences} and cannot be deleted. Remove it from their Underwriting Logic first.`;
+};

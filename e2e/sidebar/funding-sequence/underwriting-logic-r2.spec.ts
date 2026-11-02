@@ -123,6 +123,135 @@ test.describe('Underwriting Logic › money fields', () => {
   })
 })
 
+test.describe('Underwriting Logic › switching lender', () => {
+  /**
+   * Defect: picking another lender in the "Lender:" dropdown navigated twice
+   * and showed a half-second loading skeleton for rules already on the page,
+   * so the table flashed and the page seemed to refresh several times; Back
+   * then needed two presses.
+   */
+  test('the other lender\'s rules show at once, with no loading flash, and one Back returns', async ({ page }) => {
+    const LENDER_B = { id: 62, name: 'Second Bank' }
+    const ruleB = { ...RULE, id: 503, lender_id: 62, min_fico: 700 }
+    await seedSession(page, { permissions: ['view funding', 'create funding', 'update funding'] })
+    await mockApi(page, [
+      { method: 'GET', match: new RegExp(`${ADMIN}/${SEQ_ID}$`), body: ok({ ...SEQUENCE, lender_visibilities: [RULE, ruleB] }) },
+      { method: 'GET', match: '/admin/lenders/get/all', body: ok([...LENDERS, LENDER_B]) },
+      { method: 'GET', match: '/common/locations', body: ok(LOCATIONS) },
+      { method: 'GET', match: '/admin/lenders/product-categories', body: ok([{ id: 1, name: 'Term Loans' }]) },
+      { method: 'POST', match: `${ADMIN}/${SEQ_ID}/visibilities/fetch`, body: { status: true, message: 'ok', data: [RULE, ruleB], meta: { total: 2 } } },
+    ])
+    await page.goto(`/funding/visibility-rules/${SEQ_ID}/lender/61`)
+    await expect(minFico(page)).toHaveValue('640')
+
+    // Count every loading skeleton that appears from here on, and any change to the sidebar.
+    await page.evaluate(() => {
+      const w = window as any
+      w.__skeletons = 0
+      w.__sidebarChanges = 0
+      new MutationObserver(() => {
+        if (document.querySelector('.skeleton-table-cell')) w.__skeletons++
+      }).observe(document.body, { childList: true, subtree: true })
+      const sidebar = document.querySelector('.app-menu')
+      if (sidebar) {
+        new MutationObserver((m) => { w.__sidebarChanges += m.length })
+          .observe(sidebar, { childList: true, subtree: true, attributes: true, characterData: true })
+      }
+    })
+    const historyBefore = await page.evaluate(() => history.length)
+
+    await page.locator('.p-dropdown', { hasText: 'First Capital' }).first().click()
+    await page.locator('.p-dropdown-item', { hasText: 'Second Bank' }).click()
+
+    await expect(page).toHaveURL(new RegExp(`/funding/visibility-rules/${SEQ_ID}/lender/62$`))
+    await expect(page.getByPlaceholder('640').first()).toHaveValue('700')
+    expect(await page.evaluate(() => (window as any).__skeletons)).toBe(0)
+    expect(await page.evaluate(() => (window as any).__sidebarChanges)).toBe(0)
+    expect(await page.evaluate(() => history.length)).toBe(historyBefore + 1)
+
+    await page.goBack()
+    await expect(page).toHaveURL(new RegExp(`/funding/visibility-rules/${SEQ_ID}/lender/61$`))
+  })
+
+  /**
+   * Defect: on "add underwriting logic" (/configuration), picking a lender with
+   * no rules yet showed "Rules Not Initialized" until a timer added its rows a
+   * moment later - another flash. The rows now come with the pick. Nothing
+   * outside the grid changes: the sidebar is not touched.
+   */
+  test('picking a lender with no rules yet on Configuration shows its empty rows at once, sidebar untouched', async ({ page }) => {
+    const LENDER_B = { id: 62, name: 'Second Bank' }
+    await seedSession(page, { permissions: ['view funding', 'create funding', 'update funding'] })
+    await mockApi(page, [
+      { method: 'GET', match: new RegExp(`${ADMIN}/${SEQ_ID}$`), body: ok({ ...SEQUENCE, lender_visibilities: [RULE] }) },
+      { method: 'GET', match: '/admin/lenders/get/all', body: ok([...LENDERS, LENDER_B]) },
+      { method: 'GET', match: '/common/locations', body: ok(LOCATIONS) },
+      { method: 'GET', match: '/admin/lenders/product-categories', body: ok([{ id: 1, name: 'Term Loans' }]) },
+      { method: 'POST', match: `${ADMIN}/${SEQ_ID}/visibilities/fetch`, body: { status: true, message: 'ok', data: [RULE], meta: { total: 1 } } },
+    ])
+    await page.goto(`/funding/visibility-rules/${SEQ_ID}/configuration`)
+    const picker = page.locator('.p-dropdown', { hasText: 'Please select a lender' }).first()
+    await expect(picker).toBeVisible()
+
+    await page.evaluate(() => {
+      const w = window as any
+      w.__notInitialized = 0
+      w.__sidebarChanges = 0
+      new MutationObserver(() => {
+        if (document.body.innerText.includes('Rules Not Initialized')) w.__notInitialized++
+      }).observe(document.body, { childList: true, subtree: true, characterData: true })
+      const sidebar = document.querySelector('.app-menu')
+      if (sidebar) {
+        new MutationObserver((m) => { w.__sidebarChanges += m.length })
+          .observe(sidebar, { childList: true, subtree: true, attributes: true, characterData: true })
+      }
+    })
+
+    await picker.click()
+    await page.locator('.p-dropdown-item', { hasText: 'Second Bank' }).click()
+
+    await expect(page).toHaveURL(new RegExp(`/funding/visibility-rules/${SEQ_ID}/lender/62$`))
+    await expect(minFico(page)).toHaveValue('')
+    await page.waitForTimeout(300)
+    expect(await page.evaluate(() => (window as any).__notInitialized)).toBe(0)
+    expect(await page.evaluate(() => (window as any).__sidebarChanges)).toBe(0)
+  })
+
+  /**
+   * Defect: every lender switch changed the URL, which re-ran the page's load
+   * effect (it depended on `navigate`, renewed on each URL change): the whole
+   * sequence and five lists were fetched again and the form was reset - the
+   * page flashed, and an edit not yet saved on the other lender was lost.
+   */
+  test('switching lender loads nothing again and keeps an edit not yet saved', async ({ page }) => {
+    const LENDER_B = { id: 62, name: 'Second Bank' }
+    const ruleB = { ...RULE, id: 503, lender_id: 62, min_fico: 700 }
+    await seedSession(page, { permissions: ['view funding', 'create funding', 'update funding'] })
+    const api = await mockApi(page, [
+      { method: 'GET', match: new RegExp(`${ADMIN}/${SEQ_ID}$`), body: ok({ ...SEQUENCE, lender_visibilities: [RULE, ruleB] }) },
+      { method: 'GET', match: '/admin/lenders/get/all', body: ok([...LENDERS, LENDER_B]) },
+      { method: 'GET', match: '/common/locations', body: ok(LOCATIONS) },
+      { method: 'GET', match: '/admin/lenders/product-categories', body: ok([{ id: 1, name: 'Term Loans' }]) },
+      { method: 'POST', match: `${ADMIN}/${SEQ_ID}/visibilities/fetch`, body: { status: true, message: 'ok', data: [RULE, ruleB], meta: { total: 2 } } },
+    ])
+    await page.goto(`/funding/visibility-rules/${SEQ_ID}/lender/61`)
+    await expect(minFico(page)).toHaveValue('640')
+    const sequenceLoads = () => api.calls.filter((c) => c.method === 'GET' && new RegExp(`${ADMIN}/${SEQ_ID}$`).test(c.path)).length
+    const loadsBefore = sequenceLoads()
+
+    await minFico(page).fill('655')
+    await page.locator('.p-dropdown', { hasText: 'First Capital' }).first().click()
+    await page.locator('.p-dropdown-item', { hasText: 'Second Bank' }).click()
+    await expect(page.getByPlaceholder('640').first()).toHaveValue('700')
+    await page.locator('.p-dropdown', { hasText: 'Second Bank' }).first().click()
+    await page.locator('.p-dropdown-item', { hasText: 'First Capital' }).click()
+
+    await expect(minFico(page)).toHaveValue('655')
+    await page.waitForTimeout(500)
+    expect(sequenceLoads()).toBe(loadsBefore)
+  })
+})
+
 test.describe('Underwriting Logic › a state in both lists (R2 BUG-010)', () => {
   test('a state already allowed is not offered as restricted', async ({ page }) => {
     await open(page, CATEGORY_URL)
