@@ -22,6 +22,7 @@ The dialog reuses `DeleteBlockedModal`, which shows a title, a reason and one bu
 
 ## Testing
 - Vitest: change-request + modal tests 19 files / 135 tests passed. The new page test failed before the fix (red), then passed.
+- Full Vitest suite: 342 files, 2437 passed, 2 expected-fail, 0 failed.
 - `npm run typecheck`: clean.
 - Playwright `change-requests.spec.ts`: 14/14 passed with `--workers=2`. With 8 workers, 8 unrelated specs timed out at `page.goto` on a cold dev server; they all passed on re-run.
 
