@@ -19,7 +19,7 @@ test.describe('Embed form settings', () => {
     return api
   }
   const save = (page: Page) => page.getByRole('button', { name: /save configuration/i })
-  const domainBox = (page: Page) => page.getByPlaceholder('https://yourwebsite.com')
+  const domainBox = (page: Page) => page.getByPlaceholder('yourwebsite.com')
 
   test('loads the title, status, domains, key and link', async ({ page }) => {
     await open(page)
@@ -68,12 +68,39 @@ test.describe('Embed form settings', () => {
     expect(api.find('PUT', `${EF}/config`)).toHaveLength(0)
   })
 
-  test('a duplicate domain is refused with a warning', async ({ page }) => {
+  // R2 BUG-035: the repeat is named under the field, not in a toast.
+  test('a duplicate domain is refused under the field', async ({ page }) => {
     await open(page)
-    await domainBox(page).fill('https://acme.test')
+    await domainBox(page).fill('https://ACME.test')
     await page.getByRole('button', { name: /add domain/i }).click()
-    await expect(page.getByText('Domain is already in the allowed list.')).toBeVisible()
+    await expect(page.locator('.invalid-feedback', { hasText: '"https://ACME.test" is already in the list.' })).toBeVisible()
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
     await expect(page.locator('.badge', { hasText: 'https://acme.test' })).toHaveCount(1)
+  })
+
+  // R2 BUG-035: a bare host goes in (the box was a URL field, so the browser
+  // blocked Save with "Please enter a URL."), and an entry the API refuses is
+  // named under the field with its chip marked.
+  test('a bare host name can be added and saved', async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'PUT', match: `${EF}/config`, body: ok({}, 'Saved.') })
+    await domainBox(page).fill('x.com')
+    await page.getByRole('button', { name: /add domain/i }).click()
+    await save(page).click()
+    const call = await expectCall(api, 'PUT', `${EF}/config`)
+    expect(call.json.allowed_domains).toEqual(['https://acme.test', 'x.com'])
+  })
+
+  test('an entry the API refuses is named under the field, not in a toast', async ({ page }) => {
+    const api = await open(page)
+    const message = '"*.x.com": wildcards are not supported. Add each site, such as shop.example.com, on its own.'
+    api.add({ method: 'PUT', match: `${EF}/config`, status: 422, body: failure(message, { 'allowed_domains.1': message }) })
+    await domainBox(page).fill('*.x.com')
+    await page.getByRole('button', { name: /add domain/i }).click()
+    await save(page).click()
+    await expect(page.locator('.invalid-feedback', { hasText: message })).toBeVisible()
+    await expect(page.locator('.allowed-domain-chip--refused')).toHaveText('*.x.com')
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
   })
 
   test('a blank domain is ignored', async ({ page }) => {

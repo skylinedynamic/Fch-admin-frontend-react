@@ -10,7 +10,6 @@ export const getEmbedFormConfig = async (partnerId?: number) => {
 export const updateEmbedFormConfig = async (payload: {
   form_title?: string;
   allowed_domains?: string[];
-  notification_email?: string;
   is_active?: boolean;
 }) => {
   const response = await apiClient.put('/common/embed-forms/config', payload);
