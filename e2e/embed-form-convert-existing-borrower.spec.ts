@@ -58,6 +58,26 @@ const EXISTING_BORROWER = {
   created_at: '2026-09-01T10:00:00Z',
 }
 
+// What the API answers for the application once it was converted onto that
+// client (BUG-058): the client's own details and real plan.
+const CONVERTED_SUBMISSION = {
+  ...SUBMISSION,
+  status: 'converted',
+  converted_borrower_id: 42,
+  converted_funding_application_id: 77,
+  converted_borrower: {
+    id: 42,
+    full_name: 'Odessa Q. Mccall',
+    status: 'active',
+    is_free_trail: false,
+    free_trail_end_date: null,
+    enrollment_type: 'One Time Payment',
+    email: 'odessa.client@example.test',
+    phone: '(512) 555-0100',
+    business_name: 'Mccall Holdings LLC',
+  },
+}
+
 async function seedHostSession(page: Page) {
   await page.addInitScript(
     ([user]) => {
@@ -84,7 +104,9 @@ test.describe('Embed Form › Loan application › convert onto an existing borr
 
     await page.route(`${API_ORIGIN}/**`, (route) => jsonOk(route, []))
     await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => jsonOk(route, { ...THEME, branding: THEME }))
-    await page.route(`${API_ORIGIN}/common/embed-forms/submissions/3`, (route) => jsonOk(route, SUBMISSION))
+    // Once a convert is confirmed the application reads as converted, as the API answers.
+    await page.route(`${API_ORIGIN}/common/embed-forms/submissions/3`, (route) =>
+      jsonOk(route, convertBodies.some((b) => b.confirm_existing_borrower) ? CONVERTED_SUBMISSION : SUBMISSION))
     await page.route(`${API_ORIGIN}/common/embed-forms/submissions/3/convert-to-borrower`, (route) => {
       const body = route.request().postDataJSON() ?? {}
       convertBodies.push(body)
@@ -205,5 +227,26 @@ test.describe('Embed Form › Loan application › convert onto an existing borr
     await view.click()
 
     await expect(page).toHaveURL(/\/intake-review\/funding-application\/77$/)
+  })
+
+  // BUG-058: converted onto an existing client, the header and the Linked
+  // Borrower card show that client and their real plan - not the applicant's
+  // submitted name or a "Free Plan" badge.
+  test('shows the existing client and their real plan once converted', async ({ page }) => {
+    await page.route(PREVIEW, (route) => jsonOk(route, { mode: 'existing_borrower', existing_borrower: EXISTING_BORROWER }))
+    await openModal(page)
+    await page.locator('.modal.show').getByRole('button', { name: CONFIRM_EXISTING }).click()
+
+    const hero = page.locator('.ef-hero')
+    await expect(hero.getByRole('heading', { name: 'Odessa Q. Mccall' })).toBeVisible()
+    await expect(hero).toContainText('odessa.client@example.test')
+    await expect(hero).toContainText('Mccall Holdings LLC')
+    await expect(hero).toContainText('One Time Payment')
+    await expect(hero).not.toContainText('Free Plan')
+
+    const linked = page.locator('.card', { hasText: 'Linked Borrower' })
+    await expect(linked).toContainText('Odessa Q. Mccall')
+    await expect(linked).toContainText('One Time Payment')
+    await expect(linked).not.toContainText('Free Plan')
   })
 })

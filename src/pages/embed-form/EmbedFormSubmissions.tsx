@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getBorrowerPlanBadgeConfig } from '../../utils/badgeHelper';
 import { DataTable, DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -291,17 +292,10 @@ export default function EmbedFormSubmissions() {
         return (
             <div className="d-flex align-items-center gap-2">
                 <div className="ef-avatar ef-avatar--sm flex-shrink-0">{initials}</div>
-                <div className="min-w-0">
-                    <span className="fw-semibold text-dark fs-13 d-block text-truncate">
-                        {rowData.first_name} {rowData.last_name}
-                    </span>
-                    <span className="text-muted fs-11 d-block text-truncate">
-                        {rowData.business_name || rowData.occupation || 'Applicant'}
-                        {rowData.submission_uid && (
-                            <span className="ef-uid ms-1">#{String(rowData.submission_uid).slice(0, 8)}</span>
-                        )}
-                    </span>
-                </div>
+                {/* The name only - no business, occupation or uid line under it. */}
+                <span className="fw-semibold text-dark fs-13 text-truncate min-w-0">
+                    {rowData.first_name} {rowData.last_name}
+                </span>
             </div>
         );
     };
@@ -388,14 +382,27 @@ export default function EmbedFormSubmissions() {
     const actionBodyTemplate = (rowData: any) => {
         const isConverted = rowData.status === SUBMISSION_STATUS.CONVERTED;
         const isRejected = rowData.status === SUBMISSION_STATUS.REJECTED;
+        // Without the client in the response the plan is unknown: say only that
+        // it was converted, never guess "Free Plan" for a client who may be paid.
+        const plan = rowData.converted_borrower
+            ? getBorrowerPlanBadgeConfig(rowData.converted_borrower)
+            : { label: 'Converted', badgeClass: 'bg-success-subtle text-success' };
         return (
             <div className="d-flex align-items-center justify-content-center gap-1">
                 {isConverted ? (
+                    // BUG-058: the client's real plan, not a hard-coded "Free Plan".
+                    // The row itself keeps the name the applicant submitted.
                     <span
-                        className="badge bg-success-subtle text-success ef-status-pill"
-                        title="Already converted to a free plan borrower"
+                        className={`badge ${plan.badgeClass} ef-status-pill`}
+                        title={rowData.converted_borrower?.full_name ? `Converted to ${rowData.converted_borrower.full_name}` : 'Already converted to a client'}
                     >
-                        <i className="ri-vip-crown-2-fill" /> Free Plan
+                        <i className="ri-vip-crown-2-fill" /> {plan.label}
+                    </span>
+                ) : isRejected ? (
+                    // A rejected application cannot be converted: say so instead
+                    // of offering a disabled convert button.
+                    <span className="badge bg-danger-subtle text-danger ef-status-pill" title={REJECTED_CANNOT_CONVERT}>
+                        <i className="ri-close-circle-line" /> Rejected
                     </span>
                 ) : hasPermission('convert application') ? (
                     <button
@@ -405,8 +412,7 @@ export default function EmbedFormSubmissions() {
                             e.stopPropagation();
                             handleOpenConvertModal(rowData);
                         }}
-                        disabled={isRejected}
-                        title={isRejected ? REJECTED_CANNOT_CONVERT : 'Convert this applicant to a Free Plan Borrower'}
+                        title="Convert this applicant to a Free Plan Borrower"
                     >
                         <i className="ri-vip-crown-2-line" />
                         <span>Convert to Free Plan Borrower</span>

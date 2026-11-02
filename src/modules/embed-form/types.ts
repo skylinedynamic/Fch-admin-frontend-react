@@ -46,6 +46,23 @@ export type ConversionPreview = {
   existing_borrower: ExistingBorrowerSummary | null
 }
 
+/**
+ * The client a converted application belongs to - a new one, or the existing
+ * client it was converted onto (BUG-058: the page shows them, not the applicant).
+ */
+export type ConvertedBorrower = {
+  id: number
+  full_name: string
+  status?: string | null
+  is_free_trail: boolean
+  free_trail_end_date?: string | null
+  /** A paid client's enrollment, e.g. "One Time Payment". */
+  enrollment_type?: string | null
+  email?: string | null
+  phone?: string | null
+  business_name?: string | null
+}
+
 /** An application the API would not delete because it has been converted. */
 export type ConvertedSubmission = { id: number; name: string }
 
