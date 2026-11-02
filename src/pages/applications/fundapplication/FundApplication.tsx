@@ -18,7 +18,6 @@ import { setEditRequiresConfirmation, setEditConfirmationResolving, resetEditCon
 // Hooks
 import { useCoBorrowers } from './hooks/useCoBorrowers'
 import { FUNDING_PURPOSE_OTHER, purposeOfFundingOptions, timeframeOptions, withoutPreferredFundingType } from '../../../data/profile'
-import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower'
 import { useFundingRequest, useFundingApplicationDocuments } from '../../../modules/funding-application/queries'
 import { resetApplicationVersion } from '../../../modules/funding-application/applicationVersion'
 import { formatCurrency } from '../../../utils/borrowerFormatters'
@@ -339,6 +338,21 @@ export default function FundApplication() {
     activeStepSaveRef.current = fn
   }, [])
 
+  // Each step is rendered twice - the desktop pane (lg and up) and the mobile
+  // accordion - and only the copy on screen may register its save. Both did,
+  // the hidden mobile copy last, so a save refused from the sidebar put its
+  // messages ("You must authorize the credit pull.") on the hidden copy and a
+  // desktop showed only "Please resolve validation errors".
+  const [isDesktop, setIsDesktop] = useState<boolean>(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 992px)').matches
+  )
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 992px)')
+    const onChange = () => setIsDesktop(query.matches)
+    query.addEventListener?.('change', onChange)
+    return () => query.removeEventListener?.('change', onChange)
+  }, [])
+
   // Validation: Check if business info step can proceed
   const canProceedFromBusinessInfo = useMemo((): boolean => {
     return Boolean(
@@ -483,31 +497,25 @@ export default function FundApplication() {
     [activeStep, highestVisitedStep, documentsData, isStepValid, fundingApplicationId, fundingData]
   )
 
-  // Progress calculations
-  const isApplicationSubmitted = Boolean(
-      fundingData?.status &&
-      fundingData.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
-      fundingData.status !== FUNDING_APPLICATION_STATUS.DRAFT
-    )
-
-  // const isApplicationSubmitted = fundingData?.status && !['Draft', 'On Hold', 'Pending'].includes(fundingData.status) ? true : false;
-
+  // Progress follows the steps actually saved, whatever the status. A status
+  // past Draft used to count as "submitted" - 7 of 7, 100%, every step open -
+  // so an application moved to e.g. Closed (Completed) without Disclosures
+  // ever being saved showed as complete and let Federal Compliance be opened
+  // first. A submitted application has every step saved, so it still shows 100%.
   const stepsTotal = tabs.length
-  const completedCount = isApplicationSubmitted ? stepsTotal : tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
-  const progressPct = isApplicationSubmitted ? 100 : Math.round((completedCount / stepsTotal) * 100)
+  const completedCount = tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
+  const progressPct = Math.round((completedCount / stepsTotal) * 100)
   // How far down the list a step may be opened: up to the first one that is not
   // complete (saved - the one without a tick), and never past it. This used to
   // ask only whether a step's fields looked valid, so a step whose form was
   // prefilled but never saved unlocked the one after it, which then showed dark
   // and clickable beside steps that were correctly greyed out.
-  const firstIncompleteIdx = isApplicationSubmitted ? -1 : tabs.findIndex((_, index) => !isStepComplete(index))
+  const firstIncompleteIdx = tabs.findIndex((_, index) => !isStepComplete(index))
   // Open steps are the complete ones (ticked) and the one being worked on.
   // Every other step is greyed out - including the very next one - until the
   // step before it has been saved. The way forward is Save & Next.
   const lastCompleteIdx = firstIncompleteIdx === -1 ? stepsTotal - 1 : firstIncompleteIdx - 1
-  const maxAllowedIdx = isApplicationSubmitted
-    ? stepsTotal - 1
-    : Math.max(activeStep, lastCompleteIdx)
+  const maxAllowedIdx = Math.max(activeStep, lastCompleteIdx)
 
   // Handle tab switching with auto-save
   const handleTabSwitch = useCallback(
@@ -795,7 +803,7 @@ export default function FundApplication() {
               <div className="card-body">
                 {tabs.map((_, idx) => (
                   <div key={idx} style={{ display: activeStep === idx ? 'block' : 'none' }}>
-                    {renderStep(idx, activeStep === idx)}
+                    {renderStep(idx, activeStep === idx && isDesktop)}
                   </div>
                 ))}
               </div>
@@ -831,7 +839,7 @@ export default function FundApplication() {
                           <i className={`ri-arrow-${isOpen ? 'up' : 'down'}-s-line ms-auto`}></i>
                         </button>
                         <div className="p-3" style={{ display: isOpen ? 'block' : 'none' }}>
-                          {renderStep(idx, isOpen)}
+                          {renderStep(idx, isOpen && !isDesktop)}
                         </div>
                       </li>
                     )

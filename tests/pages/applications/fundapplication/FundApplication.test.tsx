@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { server } from '../../../mocks/server'
-import { createTestQueryClient, render, screen } from '../../../test-utils'
+import { createTestQueryClient, fireEvent, render, screen, waitFor, within } from '../../../test-utils'
 import FundApplication from '../../../../src/pages/applications/fundapplication/FundApplication'
 
 // flatpickrPlugins.yearDropdownPlugin schedules setTimeout(build, 0); if the
@@ -28,6 +28,9 @@ const renderWizard = (fundingRequestId: number) => {
     </QueryClientProvider>
   )
 }
+
+/** Business Information as a submitted application has it - every required field filled. */
+const validBusinessInfoResponse = () => ({ ...businessInfoResponse, data: { ...businessInfoResponse.data, id: 21, full_name: 'Ada Lovelace', business_name: 'Acme', business_email: 'ada@acme.test', business_phone_no: '(555) 010-0001', business_country: 'United States', business_address: '1 Main St', business_city: 'Austin', business_state: 'Texas', industry_type: 'Retail', entity_type: 'LLC', years_in_business: '2020-01-01' } })
 
 const emptyOk = () => HttpResponse.json({ status: true, message: '', data: null })
 
@@ -63,40 +66,73 @@ const businessInfoResponse = {
   },
 }
 
-describe('FundApplication progress badge', () => {
-  it(
-    'REGRESSION: isApplicationSubmitted was accidentally dropped in a refactor (restored in commit ' +
-      '48e8e7c) — for an already-submitted funding request the wizard must show 100% progress ' +
-      'regardless of per-step completeness, proven here through the real rendered page',
-    async () => {
-      server.use(
-        http.get('*/common/funding-application/funding-request', () =>
-          HttpResponse.json({
-            status: true,
-            message: '',
-            data: {
-              id: null,
-              status: 'Submitted (Received)',
-              requested_amount: null,
-              purpose_of_funds: null,
-              preferred_funding_type: null,
-              timeframe_needed: null,
-              collateral_available: null,
-              purpose_note: null,
-            },
-          })
-        ),
-        http.get('*/common/funding-application/business-info', () => HttpResponse.json(businessInfoResponse)),
-        ...supportingHandlers
-      )
-
-      renderWizard(42)
-
-      const badges = await screen.findAllByText('100%', {}, { timeout: 10000 })
-      expect(badges.length).toBeGreaterThan(0)
-    },
-    15000
+/** A submitted application whose step flags say which steps were saved. */
+const submittedRequest = (status: string, saved: Partial<Record<string, boolean>>) =>
+  http.get('*/common/funding-application/funding-request', () =>
+    HttpResponse.json({
+      status: true,
+      message: '',
+      data: {
+        id: 21,
+        status,
+        requested_amount: null,
+        purpose_of_funds: null,
+        preferred_funding_type: null,
+        timeframe_needed: null,
+        collateral_available: null,
+        purpose_note: null,
+        is_business_info_saved: true,
+        is_ownership_info_saved: true,
+        is_financial_info_saved: true,
+        is_funding_request_saved: true,
+        is_disclosures_saved: true,
+        is_federal_compliance_saved: true,
+        ...saved,
+      },
+    })
   )
+
+describe('FundApplication progress badge', () => {
+  it('a submitted application with every step saved shows 100%', async () => {
+    server.use(
+      submittedRequest('Submitted (Received)', {}),
+      http.get('*/common/funding-application/business-info', () => HttpResponse.json(validBusinessInfoResponse())),
+      http.get('*/common/funding-application/documents/*', () =>
+        HttpResponse.json({ status: true, message: '', data: [{ id: 1, document_name: 'Bank statement', file_name: 'bank.pdf' }] })
+      ),
+      ...supportingHandlers
+    )
+
+    renderWizard(42)
+
+    const badges = await screen.findAllByText('100%', {}, { timeout: 10000 })
+    expect(badges.length).toBeGreaterThan(0)
+  }, 15000)
+
+  /**
+   * Defect: application 18 was set to Closed (Completed) from Update Status
+   * without Disclosures and Federal Compliance ever being saved. The wizard
+   * took any status past Draft as "submitted": it showed "7 of 7 / 100%" and
+   * opened every step, so Federal Compliance could be opened (and its save
+   * attempted) before Disclosures and consent. Progress and the open steps
+   * now follow the steps actually saved, whatever the status.
+   */
+  it('a closed application with Disclosures not saved shows its real progress and keeps Federal Compliance locked', async () => {
+    server.use(
+      submittedRequest('Closed (Completed)', { is_disclosures_saved: false, is_federal_compliance_saved: false }),
+      http.get('*/common/funding-application/business-info', () => HttpResponse.json(businessInfoResponse)),
+      ...supportingHandlers
+    )
+
+    renderWizard(18)
+
+    await screen.findAllByText(/%$/, {}, { timeout: 10000 })
+    expect(screen.queryAllByText('100%')).toHaveLength(0)
+    expect(screen.queryAllByText(/Completed 7 of 7 steps/)).toHaveLength(0)
+    for (const step of screen.getAllByRole('button', { name: /Federal Compliance Disclosures/ })) {
+      expect(step).toBeDisabled()
+    }
+  }, 15000)
 
   it('shows a progress percentage under 100% for a Draft application with nothing completed', async () => {
     server.use(
@@ -160,4 +196,51 @@ describe("FundApplication — Can't edit a locked application", () => {
 
     expect(await screen.findByText(/because it is "Closed - Error"/, {}, { timeout: 10000 })).toBeInTheDocument()
   }, 15000)
+})
+
+/**
+ * Defect: every step is rendered twice - the desktop pane and the mobile
+ * accordion - and both registered their save, the hidden mobile copy last.
+ * Moving on from the sidebar ran the hidden copy's save, so a refused save
+ * ("You must authorize the credit pull.", "The business name is required.")
+ * put its message on the hidden copy: on a desktop only the toast "Please
+ * resolve validation errors" showed. Only the copy on screen registers now.
+ */
+describe('FundApplication - a refused save from the sidebar', () => {
+  const desktop = (matches: boolean) => (query: string) => ({
+    matches: query.includes('min-width: 992px') ? matches : false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }) as unknown as MediaQueryList
+
+  afterEach(() => vi.restoreAllMocks())
+
+  it('shows the field message on the desktop pane, not on the hidden mobile copy', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(desktop(true))
+    server.use(
+      submittedRequest('Draft', { is_financial_info_saved: false, is_funding_request_saved: false, is_disclosures_saved: false, is_federal_compliance_saved: false }),
+      http.get('*/common/funding-application/business-info', () =>
+        HttpResponse.json(validBusinessInfoResponse())
+      ),
+      http.post('*/common/funding-application/business-info', () =>
+        HttpResponse.json({ status: false, message: 'Invalid', errors: { business_name: 'The business name is required.' } }, { status: 422 })
+      ),
+      ...supportingHandlers
+    )
+
+    const { container } = renderWizard(44)
+    const desktopPane = container.querySelector('.col-xl-9.col-lg-8.d-none.d-lg-block') as HTMLElement
+    const sidebar = container.querySelector('.col-xl-3.col-lg-4.d-none.d-lg-block') as HTMLElement
+    const ownership = await within(sidebar).findByRole('button', { name: /Ownership Information/ }, { timeout: 10000 })
+    await waitFor(() => expect(ownership).toBeEnabled(), { timeout: 10000 })
+
+    fireEvent.click(ownership)
+
+    expect(await within(desktopPane).findByText('The business name is required.', {}, { timeout: 10000 })).toBeInTheDocument()
+  }, 20000)
 })
