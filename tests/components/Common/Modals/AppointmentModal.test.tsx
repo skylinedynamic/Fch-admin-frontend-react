@@ -2,7 +2,7 @@ import { createRef, type ComponentType, type Ref } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { act, renderWithProviders, screen, waitFor, within } from '../../../test-utils'
-import { allowBackgroundCalls, api, signIn } from '../../../pages/pageHarness'
+import { allowBackgroundCalls, api, invalid, signIn } from '../../../pages/pageHarness'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../../mocks/server'
 import { toast } from 'react-toastify'
@@ -277,5 +277,51 @@ describe('AppointmentModal - the description cannot run script (BUG-004)', () =>
 
     expect(await screen.findByText('statements')).toBeInTheDocument()
     expect(document.body.querySelector('[onerror]')).toBeNull()
+  })
+})
+
+/**
+ * Round 2 BUG-024: an appointment at 11:30 PM had an empty end list, saved as
+ * 0 minutes, and the API's 422 ("Duration must be at least 1 minute.") was
+ * shown nowhere - the modal just stayed open.
+ */
+describe('AppointmentModal - an appointment that ends after midnight (R2 BUG-024)', () => {
+  const lateNight = appointment({ appointment_date: '2999-10-28 23:30:00', duration_minutes: 30 })
+  const endLabel = () => document.querySelectorAll('.time-slot-container .p-dropdown-label')[1]?.textContent
+
+  const editLateNight = async () => {
+    const opened = await open(CLIENT_ID, lateNight)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /edit/i }))
+    await screen.findByRole('button', { name: /save changes/i })
+    return { ...opened, user }
+  }
+
+  it('ends at 12:00 AM the next day, and saves as 30 minutes', async () => {
+    const { update, user } = await editLateNight()
+
+    expect(endLabel()).toBe('12:00 AM (next day)')
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => expect(update.calls).toBe(1))
+    expect(update.bodies[0]).toMatchObject({ appointment_date: '2999-10-28 23:30:00', duration_minutes: 30 })
+  })
+
+  it('shows the API refusing the duration beside the time slot', async () => {
+    const { user } = await editLateNight()
+    api('put', '/common/appointments/1', invalid({ duration_minutes: 'Duration must be at least 1 minute.' }), 422)
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    expect(await screen.findByText('Duration must be at least 1 minute.')).toBeInTheDocument()
+  })
+
+  it('says why, as a toast, when the API refuses a field the form has no place for', async () => {
+    const { user } = await editLateNight()
+    api('put', '/common/appointments/1', invalid({ status: 'The status is not valid.' }), 422)
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('The status is not valid.'))
   })
 })

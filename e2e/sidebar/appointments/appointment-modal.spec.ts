@@ -131,6 +131,37 @@ test.describe('Appointment dialog - time and time zone', () => {
   })
 })
 
+// Round 2 BUG-024: an appointment at 11:30 PM had an empty end list and saved
+// as 0 minutes; the API's 422 was shown nowhere.
+test.describe('Appointment dialog - ending after midnight (R2 BUG-024)', () => {
+  const timeSlots = (page: Page) => dialog(page).locator('.time-slot-container .p-dropdown')
+
+  test('an 11:30 PM start ends at 12:00 AM the next day and books 30 minutes', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({ method: 'POST', match: /\/common\/appointments$/, body: ok({ id: 1 }, 'Appointment created successfully') })
+    await dialog(page).getByPlaceholder(/Enter ap/).fill('Late call')
+    await pickPrime(page, users(page), 'Jane Borrower')
+    await pickPrime(page, timeSlots(page).first(), '11:30 PM')
+    await expect(timeSlots(page).nth(1).locator('.p-dropdown-label')).toHaveText('12:00 AM (next day)')
+
+    await timeSlots(page).nth(1).click()
+    await expect(page.locator('.p-dropdown-panel .p-dropdown-item').first()).toHaveText('12:00 AM (next day)')
+    await page.keyboard.press('Escape')
+
+    await dialog(page).getByRole('button', { name: 'Confirm Appointment' }).click()
+    const call = await expectCall(api, 'POST', /\/common\/appointments$/)
+    expect(call.json).toMatchObject({ appointment_date: '2026-10-26 23:30:00', duration_minutes: 30 })
+    await expect(page.getByText('Appointment created successfully')).toBeVisible()
+  })
+
+  test('the API refusing the duration shows its message under the time slot', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({ method: 'POST', match: /\/common\/appointments$/, status: 422, body: failure('Invalid', { duration_minutes: 'Duration must be at least 1 minute.' }) })
+    await dialog(page).getByRole('button', { name: 'Confirm Appointment' }).click()
+    await expect(dialog(page).getByText('Duration must be at least 1 minute.')).toBeVisible()
+  })
+})
+
 // BUG-102: a meeting a white-label client booked with its partner. The partner
 // (whoever it was booked with) can reschedule, confirm or cancel it; only the
 // person who booked it edits or deletes it.

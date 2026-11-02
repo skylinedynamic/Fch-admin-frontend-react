@@ -18,11 +18,14 @@ import ConfirmationModal from './ConfirmationModal';
 
 // Config
 import { APPOINTMENT_STATUS, APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from '../../../config';
-import { browserTimeZone, defaultStart, localDateString, startSlotsFrom, timeAfter, timeZoneLabel } from '../../../utils/appointmentTime';
+import { browserTimeZone, defaultStart, endSlotsAfter, endWithinDay, localDateString, minutesBetween, startSlotsFrom, timeAfter, timeZoneLabel } from '../../../utils/appointmentTime';
 
 // Styles
 import "../../../../assets/css/appointment-modal.css";
 import { sanitizeHtml } from '../../../utils/sanitizeHtml';
+
+// The API fields the form shows a refusal beside; any other is toasted (R2 BUG-024).
+const FORM_ERROR_FIELDS = ['subject', 'meeting_type', 'assigned_for', 'appointment_date', 'duration_minutes', 'timezone'];
 
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
@@ -168,7 +171,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         // Standard overlap check: (StartA < EndB) && (EndA > StartB)
                         // AND exclude the CURRENT appointment itself by ID
                         const isSelf = !isNewEvent && String(c.id) === String(selectedEventId);
-                        return (formData.timeStart < cEnd && formData.timeEnd > cStart) && !isSelf;
+                        return (formData.timeStart < cEnd && endWithinDay(formData.timeStart, formData.timeEnd) > cStart) && !isSelf;
                     });
 
                     // Logic: If we are EDITING and the user has NOT changed the time/date, ignore conflicts (it's likely the current appointment)
@@ -473,7 +476,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         const descVal = formData.description;
 
         const startDateTime = new Date(`${formData.date}T${formData.timeStart}`);
-        const durationMinutes = (new Date(`${formData.date}T${formData.timeEnd}`) - startDateTime) / 60000;
+        // An end at or before the start is on the next day (R2 BUG-024).
+        const durationMinutes = minutesBetween(formData.timeStart, formData.timeEnd);
 
         if (!formData.date) {
             setFormErrors({ appointment_date: "Event date is required" });
@@ -506,7 +510,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             const matchingConflict = allConflicts.find(c => {
                 const cStart = c.start_time || "";
                 const cEnd = c.end_time || "";
-                const isOverlap = (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                const isOverlap = (formData.timeStart < cEnd && endWithinDay(formData.timeStart, formData.timeEnd) > cStart);
                 const isSelf = !isNewEvent && String(c.id) === String(selectedEventId);
                 return isOverlap && !isSelf;
             });
@@ -562,8 +566,12 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 toast.error(response?.message || `Failed to ${isNewEvent ? 'create' : 'update'} appointment`);
             }
         } catch (error) {
-            if (error.response?.data?.errors) {
-                setFormErrors(error.response.data.errors);
+            const errors = error.response?.data?.errors;
+            if (errors) {
+                setFormErrors(errors);
+                // A refused field the form has no place for still says why (R2 BUG-024).
+                const unshown = Object.keys(errors).find(field => !FORM_ERROR_FIELDS.includes(field));
+                if (unshown) toast.error([].concat(errors[unshown])[0]);
             } else if (error.response?.status !== 403) {
                 toast.error(error.response?.data?.message || 'Failed to save appointment');
             }
@@ -980,34 +988,19 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         <Dropdown value={formData.timeStart} options={startOptions}
                                                             onChange={(e) => {
                                                                 const startVal = e.value;
-                                                                setFormData(p => {
-                                                                    const newData = { ...p, timeStart: startVal };
-                                                                    // Automatically select the next 30-minute slot for timeEnd
-                                                                    const [h, m] = startVal.split(':').map(Number);
-                                                                    let endM = m + 30;
-                                                                    let endH = h;
-                                                                    if (endM >= 60) {
-                                                                        endH += 1;
-                                                                        endM = 0;
-                                                                    }
-                                                                    if (endH < 24) {
-                                                                        newData.timeEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                    } else {
-                                                                        // Fallback if it's the last slot of the day
-                                                                        newData.timeEnd = startVal;
-                                                                    }
-                                                                    return newData;
-                                                                });
+                                                                // Half an hour later, past midnight too (R2 BUG-024).
+                                                                setFormData(p => ({ ...p, timeStart: startVal, timeEnd: timeAfter(startVal) }));
                                                             }}
                                                             className="flex-grow-1" placeholder="Start" appendTo="self" />
                                                         <span className="text-muted fw-bold">to</span>
                                                         <Dropdown value={formData.timeEnd}
-                                                            options={TIME_SLOTS.filter(slot => slot.value > formData.timeStart)}
+                                                            options={endSlotsAfter(TIME_SLOTS, formData.timeStart)}
                                                             onChange={(e) => {
                                                                 setFormData(p => ({ ...p, timeEnd: e.value }));
                                                             }}
-                                                            className="flex-grow-1" placeholder="End" appendTo="self" />
+                                                            className={`flex-grow-1 ${formErrors.duration_minutes ? 'p-invalid' : ''}`} placeholder="End" appendTo="self" />
                                                     </div>
+                                                    {formErrors.duration_minutes && <div className="text-danger fs-11 mt-1">{formErrors.duration_minutes}</div>}
                                                 </div>
                                             </div>
                                         </div>

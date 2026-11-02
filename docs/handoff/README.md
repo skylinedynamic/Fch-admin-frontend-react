@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-11-02
+
+| File | Title |
+|---|---|
+| [2026-11-02-appointments-ending-after-midnight.md](2026-11-02-appointments-ending-after-midnight.md) | Appointments can end after midnight, and a refused save says why (BUG-024, round 2) |
+
 ### 2026-10-31
 
 | File | Title |
