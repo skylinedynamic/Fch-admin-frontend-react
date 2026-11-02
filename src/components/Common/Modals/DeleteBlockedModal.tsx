@@ -28,6 +28,8 @@ interface DeleteBlockedModalProps {
     tone?: 'warning' | 'danger';
     /** An optional second button next to Close. */
     primaryAction?: { label: string; icon?: string; onClick: () => void };
+    /** The close button's text when "Close" does not say what it does (e.g. "Reload list"). */
+    closeLabel?: string;
     onClose: () => void;
 }
 
@@ -39,7 +41,7 @@ interface DeleteBlockedModalProps {
  * <body> - so it opens the same way and is not clipped by the page layout.
  * Buttons stack full width on phones.
  */
-export default function DeleteBlockedModal({ show, title, message, items = [], onItemClick, note, tone = 'warning', primaryAction, onClose }: DeleteBlockedModalProps) {
+export default function DeleteBlockedModal({ show, title, message, items = [], onItemClick, note, tone = 'warning', primaryAction, closeLabel = 'Close', onClose }: DeleteBlockedModalProps) {
     const danger = tone === 'danger';
     const titleId = useId();
     const modalRef = useRef<HTMLDivElement>(null);
@@ -82,7 +84,7 @@ export default function DeleteBlockedModal({ show, title, message, items = [], o
         // Alone, Close is the main button; next to an action it steps back
         // (outlined on the danger dialog's grey footer, where btn-light vanishes).
         <button type="button" className={`btn fw-medium ${primaryAction ? (danger ? 'btn-outline-secondary' : 'btn-light') : 'btn-primary'}`} style={{ minWidth: '140px' }} onClick={onClose}>
-            Close
+            {closeLabel}
         </button>
     );
 
