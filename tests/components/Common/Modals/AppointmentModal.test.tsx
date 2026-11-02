@@ -316,12 +316,14 @@ describe('AppointmentModal - an appointment that ends after midnight (R2 BUG-024
     expect(await screen.findByText('Duration must be at least 1 minute.')).toBeInTheDocument()
   })
 
-  it('says why, as a toast, when the API refuses a field the form has no place for', async () => {
+  it('shows the reason under the time slot, not as a toast, when the API refuses a field the form has no place for', async () => {
     const { user } = await editLateNight()
     api('put', '/common/appointments/1', invalid({ status: 'The status is not valid.' }), 422)
 
     await user.click(screen.getByRole('button', { name: /save changes/i }))
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('The status is not valid.'))
+    const reason = await screen.findByText('The status is not valid.')
+    expect(reason.previousElementSibling).toHaveClass('time-slot-container')
+    expect(toast.error).not.toHaveBeenCalled()
   })
 })

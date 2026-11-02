@@ -160,6 +160,14 @@ test.describe('Appointment dialog - ending after midnight (R2 BUG-024)', () => {
     await dialog(page).getByRole('button', { name: 'Confirm Appointment' }).click()
     await expect(dialog(page).getByText('Duration must be at least 1 minute.')).toBeVisible()
   })
+
+  test('a refusal the form has no field for shows under the time slot, not as a toast', async ({ page }) => {
+    const api = await openCreate(page)
+    api.add({ method: 'POST', match: /\/common\/appointments$/, status: 422, body: failure('Invalid', { status: 'The status is not valid.' }) })
+    await dialog(page).getByRole('button', { name: 'Confirm Appointment' }).click()
+    await expect(dialog(page).locator('.time-slot-container + .text-danger')).toHaveText('The status is not valid.')
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
+  })
 })
 
 // BUG-102: a meeting a white-label client booked with its partner. The partner
