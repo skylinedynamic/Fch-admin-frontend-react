@@ -10,6 +10,9 @@ const LENDERS = [
   { id: 62, name: 'Second Street', legal_name: 'Second Street Inc', product_categories: [2], contact_name: 'Sam Second', contact_phone: '(555) 600-0002', iso_status: 'Pending', status: 'Inactive' },
 ]
 
+// The Lenders pages are behind these; without them they never opened.
+const LENDER_PERMISSIONS = ['view lenders', 'create lenders', 'update lenders', 'delete lenders']
+
 function handlers() {
   return [
     { method: 'GET', match: /\/admin\/lenders(\?|$)/, body: paginated(LENDERS) },
@@ -18,7 +21,7 @@ function handlers() {
 }
 
 async function openList(page: Page, permissions: string[] = ['delete lenders']): Promise<ApiMock> {
-  await seedSession(page, { permissions })
+  await seedSession(page, { permissions: ['view lenders', ...permissions] })
   const api = await mockApi(page, handlers())
   await page.goto('/lenders')
   await expect(page.getByText('First Capital', { exact: true })).toBeVisible()
@@ -48,14 +51,14 @@ test.describe('Lenders list', () => {
   })
 
   test('shows the empty state', async ({ page }) => {
-    await seedSession(page)
+    await seedSession(page, { permissions: LENDER_PERMISSIONS })
     await mockApi(page, [{ method: 'GET', match: /\/admin\/lenders(\?|$)/, body: paginated([]) }])
     await page.goto('/lenders')
     await expect(page.getByText('No lenders found')).toBeVisible()
   })
 
   test('a failed load is reported', async ({ page }) => {
-    await seedSession(page)
+    await seedSession(page, { permissions: LENDER_PERMISSIONS })
     await mockApi(page, [{ method: 'GET', match: /\/admin\/lenders(\?|$)/, status: 500, body: failure('boom') }])
     await page.goto('/lenders')
     await expect(page.getByText('Failed to load lenders').first()).toBeVisible()
@@ -74,7 +77,7 @@ test.describe('Lenders list', () => {
   })
 
   test('non-host users are redirected away from lenders', async ({ page }) => {
-    await seedSession(page, { is_host: 0, partner_id: 3 })
+    await seedSession(page, { is_host: 0, partner_id: 3, permissions: LENDER_PERMISSIONS })
     await mockApi(page, handlers())
     await page.goto('/lenders')
     await expect(page).not.toHaveURL(/\/lenders/)
@@ -118,7 +121,7 @@ test.describe('Lender create', () => {
   const CREATE = /\/admin\/lenders$/
 
   async function openCreate(page: Page) {
-    await seedSession(page)
+    await seedSession(page, { permissions: LENDER_PERMISSIONS })
     const api = await mockApi(page, handlers())
     await page.goto('/lenders/create')
     await expect(page.getByPlaceholder('Enter lender name')).toBeVisible()
@@ -172,7 +175,7 @@ test.describe('Lender create', () => {
 
 test.describe('Lender edit', () => {
   async function openEdit(page: Page) {
-    await seedSession(page)
+    await seedSession(page, { permissions: LENDER_PERMISSIONS })
     const api = await mockApi(page, [...handlers(), { method: 'GET', match: /\/admin\/lenders\/61$/, body: ok(LENDERS[0]) }])
     await page.goto('/lenders/61')
     await expect(page.getByPlaceholder('Enter lender name')).toHaveValue('First Capital')
@@ -197,7 +200,7 @@ test.describe('Lender edit', () => {
   })
 
   test('a lender that fails to load sends the user back to the list', async ({ page }) => {
-    await seedSession(page)
+    await seedSession(page, { permissions: LENDER_PERMISSIONS })
     await mockApi(page, [...handlers(), { method: 'GET', match: /\/admin\/lenders\/999$/, status: 404, body: failure('Not found') }])
     await page.goto('/lenders/999')
     await expect(page.getByText('Failed to load lender details').first()).toBeVisible()

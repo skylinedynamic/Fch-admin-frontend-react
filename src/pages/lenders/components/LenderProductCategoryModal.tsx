@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { createLenderProductCategory, updateLenderProductCategory, deleteLenderProductCategory } from '../../../modules/lender/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
+import { InUseEntry, inUseFromError, inUseFromList, inUseMessage } from '../../../utils/inUseDelete';
 
 export default function LenderProductCategoryModal({ visible, onHide, onSuccess, categories = [] }: any) {
     const [name, setName] = useState<string>('');
@@ -17,7 +18,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
     const [editingLoading, setEditingLoading] = useState<boolean>(false);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
     const [itemToDelete, setItemToDelete] = useState<any>(null);
-    const [blocked, setBlocked] = useState<BlockedCategory | null>(null);
+    const [blocked, setBlocked] = useState<InUseEntry | null>(null);
 
     const handleSave = async () => {
         setNameError('');
@@ -41,9 +42,9 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
     // In use by a funding sequence (the list says so): say it cannot be deleted
     // at once - no "Are you sure?" for a delete that would be refused.
     const handleDeleteClick = (item: any) => {
-        const inUse = Number(item.funding_sequences_count) || 0;
-        if (inUse > 0) {
-            setBlocked({ name: item.name, count: inUse });
+        const inUse = inUseFromList(item);
+        if (inUse) {
+            setBlocked(inUse);
             return;
         }
         setItemToDelete(item.id);
@@ -60,7 +61,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
             onSuccess();
         } catch (error: any) {
             // Used by a funding sequence: kept, and said why - like a blog tag in use.
-            const refused = blockedCategoryFromError(error);
+            const refused = inUseFromError(error);
             if (refused) {
                 setShowDeleteModal(false);
                 setBlocked(refused);
@@ -256,29 +257,9 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
             <DeleteBlockedModal
                 show={blocked !== null}
                 title="Product Category Cannot Be Deleted"
-                message={blocked ? categoryInUseMessage(blocked) : ''}
+                message={blocked ? inUseMessage(blocked, 'Remove it from their Underwriting Logic first.') : ''}
                 onClose={() => setBlocked(null)}
             />
         </>
     );
 }
-
-/** A category the API kept because a funding sequence still uses it. */
-export interface BlockedCategory {
-    name: string;
-    /** Funding sequences using it. */
-    count?: number;
-}
-
-/** The category the API names in a 422 refusal (errors.blocked), if any. */
-export const blockedCategoryFromError = (error: any): BlockedCategory | null => {
-    const blocked = error?.response?.data?.errors?.blocked;
-    return error?.response?.status === 422 && Array.isArray(blocked) && blocked.length > 0
-        ? { name: blocked[0].name, count: blocked[0].count }
-        : null;
-};
-
-export const categoryInUseMessage = ({ name, count }: BlockedCategory): string => {
-    const sequences = count ? `${count} funding sequence${count === 1 ? '' : 's'}` : 'a funding sequence';
-    return `"${name}" is used by ${sequences} and cannot be deleted. Remove it from their Underwriting Logic first.`;
-};
