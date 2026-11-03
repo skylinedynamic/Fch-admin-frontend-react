@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { formatApiDate } from '../../../utils/dates';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,17 +9,19 @@ import { FundingApplicationDetails as FundingApplicationDetailsType } from '../.
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS, FUNDING_APPLICATION_STATUS_NOTE_MAX } from '../../../config/borrower';
-import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 import { PARTNER_EDITOR_TYPES } from '../../../config/partnerTypeOptions';
-import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
+import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission, useAssignLenderToFundingApplication } from '../../../modules/application/queries';
+import LenderInformationCard, { type MatchedLender } from '../../../components/Common/Lender/LenderInformationCard';
 import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip, downloadFundingApplicationDocument } from '../../../modules/application/services';
 import { handleFileDownload } from '../../../utils/fileDownload';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
+import { Modal, ModalBody } from 'reactstrap';
 import SsnValue from '../../../components/Common/SsnValue';
-import FundedAmountModal from '../../../components/Common/Modals/FundedAmountModal';
+import FundedAmountModal, { type CommissionRates } from '../../../components/Common/Modals/FundedAmountModal';
+import ClosedApplicationSummary from './components/ClosedApplicationSummary';
 import DownloadPdfModal from './DownloadPdfModal';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { useAuthStore } from '../../../store/auth/authStore';
@@ -60,18 +62,17 @@ export default function FundingApplicationDetails() {
     const [fundedAmount, setFundedAmount] = useState<string>('');
     const updateMutation = useUpdateFundingApplicationStatus();
 
+    // Lender Information (host only)
+    const assignLenderMutation = useAssignLenderToFundingApplication();
+    const lenderCardRef = useRef<HTMLDivElement>(null);
+    const [highlightLenders, setHighlightLenders] = useState(false);
+    const [showMissingLenderModal, setShowMissingLenderModal] = useState(false);
+
     // PDF Download state
     const [showDownloadModal, setShowDownloadModal] = useState(false);
     const [downloadType, setDownloadType] = useState<'application' | 'signature'>('application');
 
-    // Commission state
-    const [successFee, setSuccessFee] = useState<string>('');
-    const [requestedAmountInput, setRequestedAmountInput] = useState<string>('');
-    const [isEditingRequestedAmount, setIsEditingRequestedAmount] = useState<boolean>(false);
-    const [tempRequestedAmount, setTempRequestedAmount] = useState<string>('');
-    const [adminCommissionRate, setAdminCommissionRate] = useState<string>('');
-    const [partnerCommissionRate, setPartnerCommissionRate] = useState<string>('');
-    const [commissionErrors, setCommissionErrors] = useState<{ admin_commission?: string; partner_commission?: string }>({});
+    // Commission - set in the Closed (Completed) modal
     const saveCommissionMutation = useSaveFundingApplicationCommission();
 
     const { user } = useAuthStore();
@@ -86,57 +87,31 @@ export default function FundingApplicationDetails() {
     const showPartnerCommission = app?.partner_id !== authPartnerId;
     const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
-    // Editable while the request is approved and the application is in one of
-    // the API's editable statuses (config `statuses.editable`). The server
-    // sends that as is_editable, so no status names are compared here.
-    // The host edits any partner's application; a white-label or certified
-    // partner only its own borrowers'.
+    // Editable whenever the application is in one of the API's editable
+    // statuses (config `statuses.editable`) - however it was created: from a
+    // funding request, or converted from the embed form with no funding request
+    // at all. The server sends that as is_editable, so no status names are
+    // compared here. The host edits any partner's application; a white-label or
+    // certified partner only its own borrowers'.
     const canEditApplication =
         (isHost || (PARTNER_EDITOR_TYPES.includes(user?.partner_type as string) && app?.partner_id == authPartnerId)) &&
-        app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
-        !!app?.funding_request_id &&
+        !!app?.id &&
         !!app?.is_editable;
     // Out of everyone's hands (status not in the editable list): every viewer -
     // host, white-label and certified partner - is told so instead of just
-    // losing the Edit button. The reason comes from the API.
+    // losing the Edit button: a "Cannot Edit Funding Application" banner. The
+    // reason comes from the API.
     const isLockedForEdit = !!app?.id && app?.is_editable === false;
     const lockedReason = app?.locked_reason
-        || `This application can no longer be edited because it is "${app?.status}". Contact your funding advisor if something needs to change.`;
+        || `This funding application is "${app?.status}", so it can no longer be edited. Funding applications can only be edited while their status is one of the editable statuses.`;
+    // The banner shows the first sentence in bold and the rest beneath it.
+    const [, lockedHeadline = lockedReason, lockedDetail = ''] = lockedReason.match(/^(.*?\.)\s+(.*)$/) ?? [];
 
-    // Sync status and commission with fetched data
+    // Sync the status with fetched data. (The commission is read straight from
+    // the application by the Closed (Completed) modal and summary.)
     useEffect(() => {
         if (app?.status) setStatus(app.status);
         if (app?.status_note) setStatusNote(app.status_note);
-        if (app?.requested_amount_original != null) setRequestedAmountInput(app.requested_amount_original.toString());
-
-        // Sync commission rates from response
-        if (app) {
-            let fetchedSuccessFee = '';
-            let fetchedPartnerShare = '';
-            let fetchedAdminShare = '';
-
-            // Determine Success Fee / Total Rate
-            if ('total_commission' in app && app.total_commission !== null && app.total_commission !== undefined) {
-                fetchedSuccessFee = app.total_commission.toString();
-            }
-
-            // Determine Partner Share
-            if ('partner_commission' in app && app.partner_commission !== null && app.partner_commission !== undefined) {
-                fetchedPartnerShare = app.partner_commission.toString();
-            }
-
-            // Determine Admin Share
-            if ('admin_commission' in app && app.admin_commission !== null && app.admin_commission !== undefined) {
-                fetchedAdminShare = app.admin_commission.toString();
-            } else if (fetchedSuccessFee !== '') {
-                const pShare = parseFloat(fetchedPartnerShare || '0');
-                fetchedAdminShare = (100 - pShare).toString();
-            }
-
-            setSuccessFee(fetchedSuccessFee);
-            setPartnerCommissionRate(fetchedPartnerShare);
-            setAdminCommissionRate(fetchedAdminShare);
-        }
     }, [app]);
 
     useEffect(() => {
@@ -146,13 +121,78 @@ export default function FundingApplicationDetails() {
         }
     }, [error, apiResponse, isLoading, navigate]);
 
+    const assignLender = (lender: MatchedLender) =>
+        assignLenderMutation.mutateAsync({ id: app.id, lender_ids: [lender.id] }).then(
+            () => {
+                toast.success('Lender assigned successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
+            },
+            (err: any) => {
+                toast.error(err?.response?.data?.message || 'Failed to assign lender');
+                throw err;
+            }
+        );
+
+    // Every status outside the editable ones needs a lender first (the API refuses too).
+    const leavesEditableStatuses = status !== app?.status && !!app?.lender_required_statuses?.includes(status);
+    // Only the host changes the status here (partners see it read-only), and the
+    // host has Lender Information - so the Lender Required modal always offers it.
+    const needsLenderFirst = leavesEditableStatuses && !app?.has_assigned_lender;
+
+    // In Lender Information while the lender can still change.
+    const lenderNotice = app?.is_editable
+        ? `This application is currently "${app?.status}", so you can still assign or change its lender.`
+        : undefined;
+
+    // Host: take them to Lender Information and point at it.
+    // "Got it, take me there!": close the modal first, and scroll once it has
+    // closed (handleMissingLenderClosed) - scrolling while it closes made the
+    // page jump down and back up.
+    const takeMeToLenders = useRef(false);
+    const requestGoToLenderInformation = () => {
+        takeMeToLenders.current = true;
+        setShowMissingLenderModal(false);
+    };
+    const handleMissingLenderClosed = () => {
+        if (takeMeToLenders.current) {
+            takeMeToLenders.current = false;
+            goToLenderInformation();
+        }
+    };
+
+    const goToLenderInformation = () => {
+        setShowMissingLenderModal(false);
+        if (!lenderCardRef.current) return;
+        lenderCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // As the funding request page: the first row pulses, the card is outlined.
+        lenderCardRef.current.classList.add('border-danger');
+        setHighlightLenders(true);
+        setTimeout(() => {
+            lenderCardRef.current?.classList.remove('border-danger');
+            setHighlightLenders(false);
+        }, 30000);
+    };
+
+
     const handleUpdateClick = () => {
         if (status_note.length > FUNDING_APPLICATION_STATUS_NOTE_MAX) {
             setNotesError(`The status note may not be greater than ${FUNDING_APPLICATION_STATUS_NOTE_MAX.toLocaleString('en-US')} characters.`);
             return;
         }
+        // Nothing to update - as the funding request page says. (Also what is
+        // left after a status that needs a lender was picked and set back.)
+        if (status === app?.status && status_note.trim() === (app?.status_note || '').trim()) {
+            toast.info('Status is unchanged.');
+            return;
+        }
+        if (needsLenderFirst) {
+            // As the funding request page: the Lender Required modal; the host
+            // goes on from there to Lender Information. Nothing is saved.
+            setShowMissingLenderModal(true);
+            return;
+        }
         if (status === FUNDING_APPLICATION_STATUS.CLOSED) {
-            setFundedAmount(app.total_funded_amount?.toString() || app.requested_amount_original?.toString() || '');
+            setFundedAmount(app.total_funded_amount?.toString() || (requestedAmountValue ? requestedAmountValue.toString() : ''));
             setShowFundedModal(true);
         } else {
             setShowConfirmModal(true);
@@ -189,8 +229,35 @@ export default function FundingApplicationDetails() {
         });
     };
 
-    const handleFundedConfirm = (amount: string) => {
+    const [closingCommissionErrors, setClosingCommissionErrors] = useState<{ total_commission?: string; admin_commission?: string; partner_commission?: string }>({});
+
+    const handleFundedConfirm = async (amount: string, commission: CommissionRates | null) => {
         if (!app.id) return;
+        setClosingCommissionErrors({});
+
+        // Commission first, through the same API as the Commission Details card:
+        // closing locks it, and the API works the amounts out from it on close.
+        const commissionChanged = commission && (
+            commission.successFee !== (app.total_commission?.toString() || '')
+            || (showPartnerCommission && commission.adminRate !== (app.admin_commission?.toString() || ''))
+            || (showPartnerCommission && commission.partnerRate !== (app.partner_commission?.toString() || ''))
+        );
+        if (commission && commissionChanged) {
+            try {
+                await saveCommissionMutation.mutateAsync(buildCommissionPayload(commission));
+                // As the Commission Details card did on save.
+                toast.success('Commission saved successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
+            } catch (error: any) {
+                if (error?.response?.data?.errors) {
+                    setClosingCommissionErrors(commissionErrorsFrom(error));
+                } else {
+                    toast.error('Failed to save commission. The status was not changed.');
+                }
+                return;
+            }
+        }
+
         updateMutation.mutate({
             funding_application_id: app.id,
             status: status,
@@ -229,44 +296,12 @@ export default function FundingApplicationDetails() {
         return parseFloat(value.replace(/[^0-9.-]+/g, ''));
     };
 
-    const requestedAmount = parseFloat(requestedAmountInput || '0');
+    // The amount the page shows as requested: the application's own, or - for one
+    // from a funding request, whose own is empty - the request's (requested_amount).
+    const requestedAmountValue = app.requested_amount_original != null
+        ? Number(app.requested_amount_original)
+        : parseCurrency(app.requested_amount) || 0;
 
-    // Hierarchical Calculation Logic
-
-    const baseCommissionAmount = (app.total_funded_amount && parseFloat(app.total_funded_amount.toString()) > 0)
-        ? parseFloat(app.total_funded_amount.toString())
-        : requestedAmount;
-
-    // 1. Total Commission Amount
-    const totalCommissionAmount = (successFee === (app.total_commission?.toString() || '') && requestedAmountInput === (app.requested_amount_original?.toString() || '') && app.total_commission_amount && (!app.total_funded_amount || parseFloat(app.total_funded_amount.toString()) === 0))
-        ? parseCurrency(app.total_commission_amount)
-        : baseCommissionAmount * (parseFloat(successFee || '0') / 100);
-
-    // Shares (Input as 0-100)
-    // If no partner is shown, Admin takes 100% of the Success Fee
-    const adminShareVal = showPartnerCommission ? parseFloat(adminCommissionRate || '0') : 100;
-    const partnerShareVal = showPartnerCommission ? parseFloat(partnerCommissionRate || '0') : 0;
-
-    // 2. Admin Commission Amount
-    const adminCommissionAmount = (adminCommissionRate === (app.admin_commission?.toString() || '') && requestedAmountInput === (app.requested_amount_original?.toString() || '') && app.admin_commission_amount)
-        ? parseCurrency(app.admin_commission_amount)
-        : totalCommissionAmount * (adminShareVal / 100);
-
-    // 3. Partner Commission Amount
-    const partnerCommissionAmount = (partnerCommissionRate === (app.partner_commission?.toString() || '') && requestedAmountInput === (app.requested_amount_original?.toString() || '') && app.partner_commission_amount)
-        ? parseCurrency(app.partner_commission_amount)
-        : totalCommissionAmount * (partnerShareVal / 100);
-
-    // 4. Shares for Display
-    const adminShareRate = adminShareVal;
-    const partnerShareRate = partnerShareVal;
-
-    // Helper for negative-safe currency display
-    const formatCurrencyValue = (amount: number) => {
-        const isNegative = amount < 0;
-        const absAmount = Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        return isNegative ? `-$${absAmount}` : `$${absAmount}`;
-    };
 
     const formatSSN = (ssn: string | null | undefined) => {
         if (!ssn) return '-';
@@ -277,14 +312,12 @@ export default function FundingApplicationDetails() {
         return ssn;
     };
 
-    const handleSaveCommission = () => {
-        if (!app.id) return;
-
-        setCommissionErrors({});
-
-        const totalRate = successFee && successFee !== '' ? parseFloat(successFee) : 0;
-        const aShare = adminCommissionRate && adminCommissionRate !== '' ? parseFloat(adminCommissionRate) : 0;
-        const pShare = partnerCommissionRate && partnerCommissionRate !== '' ? parseFloat(partnerCommissionRate) : 0;
+    // The save-commission payload, from the rates as typed in the Closed
+    // (Completed) modal - the shape the Commission Details card used to send.
+    const buildCommissionPayload = (rates: CommissionRates) => {
+        const totalRate = rates.successFee && rates.successFee !== '' ? parseFloat(rates.successFee) : 0;
+        const aShare = rates.adminRate && rates.adminRate !== '' ? parseFloat(rates.adminRate) : 0;
+        const pShare = rates.partnerRate && rates.partnerRate !== '' ? parseFloat(rates.partnerRate) : 0;
 
         const payload: any = {
             funding_application_id: Number(app.id),
@@ -299,32 +332,21 @@ export default function FundingApplicationDetails() {
             payload.admin_commission = totalRate;
         }
 
-        // Only pass requested_amount if it has changed from the original app data
-        if (requestedAmountInput !== app.requested_amount_original?.toString()) {
-            payload.requested_amount = parseFloat(requestedAmountInput || '0');
-        }
+        // Never requested_amount: nothing on this page edits it any more, and for an
+        // application from a funding request its own value is empty - sending
+        // it overwrote the requested amount with 0.
 
-        saveCommissionMutation.mutate(payload, {
-            onSuccess: () => {
-                toast.success('Commission saved successfully');
-                window.dispatchEvent(new Event('refreshActivities'));
-            },
-            onError: (error: any) => {
-                if (error?.response?.data?.errors) {
-                    const backendErrors = error.response.data.errors;
-                    setCommissionErrors({
-                        admin_commission: Array.isArray(backendErrors.admin_commission)
-                            ? backendErrors.admin_commission[0]
-                            : backendErrors.admin_commission,
-                        partner_commission: Array.isArray(backendErrors.partner_commission)
-                            ? backendErrors.partner_commission[0]
-                            : backendErrors.partner_commission
-                    });
-                } else {
-                    toast.error('Failed to save commission. Please try again.');
-                }
-            }
-        });
+        return payload;
+    };
+
+    const commissionErrorsFrom = (error: any) => {
+        const backendErrors = error?.response?.data?.errors || {};
+        const first = (v: any) => (Array.isArray(v) ? v[0] : v);
+        return {
+            total_commission: first(backendErrors.total_commission),
+            admin_commission: first(backendErrors.admin_commission),
+            partner_commission: first(backendErrors.partner_commission),
+        };
     };
 
     if (isLoading) {
@@ -346,7 +368,7 @@ export default function FundingApplicationDetails() {
 
     const renderBusinessInformation = () => (
         <div className="row">
-            <DetailRow label="Full Name" value={app.full_name} />
+            <DetailRow label="Business Contact Name" value={app.full_name} />
             <DetailRow label="Business Name" value={app.business_name} />
             <DetailRow label="Email" value={app.business_email} />
             <DetailRow label="Mobile Phone" value={app.business_phone_no} />
@@ -776,6 +798,28 @@ export default function FundingApplicationDetails() {
         <>
             <div className="page-content" style={{ overflow: 'visible' }}>
                 <div className="container-fluid">
+                    {/* Locked: above the page title, the first thing on the page. */}
+                    {isLockedForEdit && !isClosed && (
+                        <div
+                            className="d-flex align-items-center mb-3 rounded-3"
+                            role="status"
+                            style={{ background: '#fff4de', border: '1px solid #f7b84b', padding: '14px 18px' }}
+                        >
+                            <span
+                                className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                style={{ width: 36, height: 36, background: '#f7931e', color: '#fff' }}
+                                aria-hidden="true"
+                            >
+                                <i className="ri-lock-2-fill fs-17"></i>
+                            </span>
+                            <span className="flex-shrink-0 mx-3 align-self-stretch" style={{ width: 3, background: '#f7931e', borderRadius: 2 }} />
+                            <div style={{ color: '#3b2a12' }}>
+                                <div className="fw-semibold fs-15">{lockedHeadline}</div>
+                                {lockedDetail && <div className="fs-13">{lockedDetail}</div>}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Header */}
                     <div className="row pb-1 page-subheader-sticky bg-body">
                         <div className="col-12">
@@ -807,22 +851,12 @@ export default function FundingApplicationDetails() {
                                     </button>
                                     {canEditApplication && (
                                         <Link
-                                            to={`/fund-application/${app.funding_request_id}`}
+                                            to={`/intake-review/funding-application/${app.id}/edit`}
                                             className="btn btn-warning waves-effect py-2 fw-normal"
                                             title="Editing will require the borrower to re-sign the application"
                                         >
                                             <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application
                                         </Link>
-                                    )}
-                                    {isLockedForEdit && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-light waves-effect py-2 fw-normal"
-                                            disabled
-                                            title={lockedReason}
-                                        >
-                                            <i className="ri-lock-line align-middle me-1"></i> Can't Edit Funding Application
-                                        </button>
                                     )}
                                     <Link to="/intake-review/funding-application" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
@@ -832,400 +866,27 @@ export default function FundingApplicationDetails() {
                         </div>
                     </div>
 
-                    {isLockedForEdit && (
-                        <div className="alert alert-warning d-flex align-items-start gap-2 mb-3" role="status">
-                            <i className="ri-lock-line fs-16"></i>
-                            <div>{lockedReason}</div>
-                        </div>
-                    )}
-
                     <div className="row">
                         {/* Left Column (Commission + Content) */}
                         <div className="col-lg-8">
-                            {/* Commission Section */}
-                            {isPartner ? (
-                                /* Partner View - Read Only */
-                                <div className="card shadow-sm border-0 mb-4 overflow-hidden">
-                                    <div className="card-header bg-white border-bottom py-3">
-                                        <div className="d-flex align-items-center">
-                                            <div className="avatar-xs me-3">
-                                                <div className="avatar-title bg-success bg-opacity-10 text-success rounded-circle">
-                                                    <i className="ri-shake-hands-line fs-18"></i>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h5 className="card-title mb-0 fs-16">Partner Commission Details</h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="card-body p-4">
-                                        {/* Commission Breakdown */}
-                                        <div className="card border border-success border-opacity-25 shadow-sm mb-0">
-                                            <div className="card-body p-4">
-                                                <div className="row align-items-center">
-                                                    <div className="col-lg-12">
-                                                        <div className="d-flex align-items-start">
-                                                            <div className="flex-shrink-0">
-                                                                <div className="avatar-md rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center">
-                                                                    <i className="ri-trophy-line text-success fs-2"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex-grow-1 ms-4">
-                                                                <h5 className="mb-2 fw-semibold">Your Commission Breakdown</h5>
-                                                                <p className="text-muted mb-0 fs-13">
-                                                                    You will earn <strong className="text-success">{formatCurrencyValue(partnerCommissionAmount)}</strong> which is
-                                                                    <strong className="text-success"> {partnerCommissionRate || '0'}%</strong> of the total commission amount.
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                /* Admin View - Calculator */
-
-                                hasPermission('view commission') && (
-                                    <div className="card shadow-sm border-0 mb-4 overflow-hidden">
-                                        <div className="card-header bg-white border-bottom">
-                                            <h5 className="card-title mb-0 fs-16">Commission Details</h5>
-                                        </div>
-                                        <div className="card-body p-0">
-                                            <div className="row g-0">
-                                                {/* Left Side: Inputs */}
-                                                <div className="col-md-5 border-end border-light">
-                                                    <div className="p-4 h-100 bg-light bg-opacity-50">
-                                                        <form onSubmit={(e) => {
-                                                            e.preventDefault();
-                                                            if (hasPermission('update commission')) {
-                                                                handleSaveCommission();
-                                                            }
-                                                        }}>
-                                                            <div className="mb-3">
-                                                                <label className="form-label fs-12 text-muted fw-medium text-primary">Success Fee (%)</label>
-                                                                <div className="input-group">
-                                                                    <input
-                                                                        type="number"
-                                                                        className={`form-control ${isClosed ? 'bg-light text-muted' : ''}`}
-                                                                        placeholder="0"
-                                                                        value={successFee}
-                                                                        onChange={(e) => {
-                                                                            const val = e.target.value;
-                                                                            if (val === '') {
-                                                                                setSuccessFee(val);
-                                                                                return;
-                                                                            }
-                                                                            const numVal = parseFloat(val);
-                                                                            if (!isNaN(numVal) && numVal >= 0 && numVal <= 100) {
-                                                                                setSuccessFee(val);
-                                                                            }
-                                                                        }}
-                                                                        min="0"
-                                                                        max="100"
-                                                                        step="0.1"
-                                                                        disabled={isClosed}
-                                                                    />
-                                                                    <span className={`input-group-text ${isClosed ? 'bg-light' : 'bg-white'} text-muted`}>%</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {showPartnerCommission && (
-                                                                <div className="row">
-                                                                    <div className="col-md-6 mb-0">
-                                                                        <label className="form-label fs-12 text-muted fw-medium text-primary">Admin Commission Rate</label>
-                                                                        <div className="input-group">
-                                                                            <input
-                                                                                type="number"
-                                                                                className={`form-control ${commissionErrors.admin_commission ? 'is-invalid border-danger' : ''} ${isClosed ? 'bg-light text-muted' : ''}`}
-                                                                                placeholder="0"
-                                                                                value={adminCommissionRate}
-                                                                                onChange={(e) => {
-                                                                                    const val = e.target.value;
-                                                                                    if (val === '') {
-                                                                                        setAdminCommissionRate(val);
-                                                                                        return;
-                                                                                    }
-                                                                                    const newAdminShare = parseFloat(val);
-                                                                                    if (!isNaN(newAdminShare) && newAdminShare >= 0 && newAdminShare <= 100) {
-                                                                                        setAdminCommissionRate(val);
-                                                                                        const newPartnerShare = 100 - newAdminShare;
-                                                                                        setPartnerCommissionRate(newPartnerShare >= 0 ? newPartnerShare.toFixed(2).replace(/\.00$/, '') : '0');
-                                                                                    }
-
-                                                                                    if (commissionErrors.admin_commission) {
-                                                                                        setCommissionErrors({ ...commissionErrors, admin_commission: undefined });
-                                                                                    }
-                                                                                }}
-                                                                                min="0"
-                                                                                max="100"
-                                                                                step="0.1"
-                                                                                disabled={isClosed}
-                                                                            />
-                                                                            <span className={`input-group-text ${isClosed ? 'bg-light' : 'bg-white'} text-muted`}>%</span>
-                                                                        </div>
-                                                                        {commissionErrors.admin_commission && (
-                                                                            <div className="text-danger fs-12 mt-1">{commissionErrors.admin_commission}</div>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="col-md-6 mb-0">
-                                                                        <label className="form-label fs-12 text-muted fw-medium text-success">Partner Commission Rate</label>
-                                                                        <div className="input-group">
-                                                                            <input
-                                                                                type="number"
-                                                                                className={`form-control ${commissionErrors.partner_commission ? 'is-invalid border-danger' : ''} ${isClosed ? 'bg-light text-muted' : 'bg-white'}`}
-                                                                                placeholder="0"
-                                                                                value={partnerCommissionRate}
-                                                                                onChange={(e) => {
-                                                                                    const val = e.target.value;
-                                                                                    if (val === '') {
-                                                                                        setPartnerCommissionRate(val);
-                                                                                        return;
-                                                                                    }
-                                                                                    const newPartnerShare = parseFloat(val);
-
-                                                                                    if (!isNaN(newPartnerShare) && newPartnerShare >= 0 && newPartnerShare <= 100) {
-                                                                                        setPartnerCommissionRate(val);
-                                                                                        const newAdminShare = 100 - newPartnerShare;
-                                                                                        setAdminCommissionRate(newAdminShare >= 0 ? newAdminShare.toFixed(2).replace(/\.00$/, '') : '0');
-                                                                                    }
-                                                                                    if (commissionErrors.partner_commission) {
-                                                                                        setCommissionErrors({ ...commissionErrors, partner_commission: undefined });
-                                                                                    }
-                                                                                }}
-                                                                                min="0"
-                                                                                max="100"
-                                                                                step="0.1"
-                                                                                disabled={isClosed}
-                                                                            />
-                                                                            <span className={`input-group-text ${isClosed ? 'bg-light' : 'bg-white'} text-muted`}>%</span>
-                                                                        </div>
-                                                                        {commissionErrors.partner_commission && (
-                                                                            <div className="text-danger fs-12 mt-1">{commissionErrors.partner_commission}</div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            {hasPermission('update commission') && !isClosed && (
-                                                                <>
-                                                                    <div className="mt-4 text-end">
-                                                                        <button
-                                                                            type="button"
-                                                                            className="btn btn-primary"
-                                                                            onClick={handleSaveCommission}
-                                                                            disabled={saveCommissionMutation.isPending}
-                                                                        >
-                                                                            {saveCommissionMutation.isPending ? (
-                                                                                <>
-                                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                                                    Saving Commission...
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <i className="ri-save-line me-2"></i>
-                                                                                    Save Commission
-                                                                                </>
-                                                                            )}
-                                                                        </button>
-                                                                    </div>
-                                                                    {/* Hidden submit button to enable Enter key submission */}
-                                                                    <button type="submit" style={{ display: 'none' }} aria-hidden="true"></button>
-                                                                </>
-                                                            )}
-                                                        </form>
-                                                    </div>
-                                                </div>
-
-                                                {/* Right Side: Results */}
-                                                <div className="col-md-7">
-                                                    <div className="p-3 h-100 d-flex flex-column">
-                                                        <div className="flex-grow-1">
-                                                            {/* Requested Amount - Top */}
-                                                            <div className="alert alert-primary border mb-3 py-2">
-                                                                <div className="d-flex justify-content-between align-items-center">
-                                                                    <div>
-                                                                        <i className="bx bx-credit-card text-primary me-2"></i>
-                                                                        <span className="fw-medium">Total Requested Amount:</span>
-                                                                    </div>
-                                                                    {!isEditingRequestedAmount ? (
-                                                                        <div
-                                                                            className={`px-2 py-1 rounded transition-all d-flex align-items-center ${hasPermission('update commission') && !isClosed ? 'cursor-pointer bg-hover-light' : ''}`}
-                                                                            style={{
-                                                                                transition: 'all 0.2s ease',
-                                                                                border: '1px solid transparent'
-                                                                            }}
-                                                                            onClick={() => {
-                                                                                if (hasPermission('update commission') && !isClosed) {
-                                                                                    setTempRequestedAmount(requestedAmountInput);
-                                                                                    setIsEditingRequestedAmount(true);
-                                                                                }
-                                                                            }}
-                                                                            onMouseEnter={(e) => {
-                                                                                if (hasPermission('update commission') && !isClosed) {
-                                                                                    e.currentTarget.style.backgroundColor = 'rgba(10, 179, 156, 0.05)';
-                                                                                    e.currentTarget.style.borderColor = 'rgba(10, 179, 156, 0.1)';
-                                                                                    e.currentTarget.style.transform = 'translateY(-1px)';
-                                                                                }
-                                                                            }}
-                                                                            onMouseLeave={(e) => {
-                                                                                if (hasPermission('update commission') && !isClosed) {
-                                                                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                                                                    e.currentTarget.style.borderColor = 'transparent';
-                                                                                    e.currentTarget.style.transform = 'translateY(0)';
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <h5 className={`mb-0 fw-bold ${isClosed ? 'text-muted' : 'text-primary'}`}>
-                                                                                {formatCurrencyValue(requestedAmount)}
-                                                                            </h5>
-                                                                            {hasPermission('update commission') && !isClosed && (
-                                                                                <i className="ri-edit-2-line ms-2 fs-14"></i>
-                                                                            )}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="d-flex align-items-center gap-1 bg-white p-1 rounded border shadow-sm" style={{ width: '200px' }}>
-                                                                            <div className="input-group input-group-sm">
-                                                                                <span className="input-group-text bg-transparent border-0 text-muted ps-1 pe-0">$</span>
-                                                                                <input
-                                                                                    type="number"
-                                                                                    className="form-control border-0 shadow-none ps-1"
-                                                                                    value={tempRequestedAmount}
-                                                                                    onChange={(e) => setTempRequestedAmount(e.target.value)}
-                                                                                    autoFocus
-                                                                                    placeholder="0.00"
-                                                                                    onKeyDown={(e) => {
-                                                                                        if (e.key === 'Enter') {
-                                                                                            setRequestedAmountInput(tempRequestedAmount);
-                                                                                            setIsEditingRequestedAmount(false);
-                                                                                        } else if (e.key === 'Escape') {
-                                                                                            setIsEditingRequestedAmount(false);
-                                                                                        }
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                            <div className="d-flex gap-1">
-                                                                                <button
-                                                                                    className="btn btn-sm btn-soft-primary px-2"
-                                                                                    type="button"
-                                                                                    title="Save"
-                                                                                    onClick={() => {
-                                                                                        setRequestedAmountInput(tempRequestedAmount);
-                                                                                        setIsEditingRequestedAmount(false);
-                                                                                    }}
-                                                                                >
-                                                                                    <i className="ri-check-line"></i>
-                                                                                </button>
-                                                                                <button
-                                                                                    className="btn btn-sm btn-soft-danger px-2"
-                                                                                    type="button"
-                                                                                    title="Cancel"
-                                                                                    onClick={() => setIsEditingRequestedAmount(false)}
-                                                                                >
-                                                                                    <i className="ri-close-line"></i>
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                {app.total_funded_amount && parseFloat(app.total_funded_amount.toString()) > 0 && (
-                                                                    <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-primary border-opacity-10">
-                                                                        <div>
-                                                                            <i className="ri-money-dollar-box-line text-success me-2"></i>
-                                                                            <span className="fw-medium">Total Funded Amount:</span>
-                                                                        </div>
-                                                                        <h5 className="mb-0 fw-bold text-success">
-                                                                            {formatCurrencyValue(parseFloat(app.total_funded_amount.toString()))}
-                                                                        </h5>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="row g-2">
-                                                                {!showPartnerCommission ? (
-                                                                    <div className="col-md-12">
-                                                                        <div className="commission-card commission-card--admin commission-card--wide">
-                                                                            <span className="commission-card__icon">
-                                                                                <i className="ri-admin-line"></i>
-                                                                            </span>
-                                                                            <div className="commission-card__body">
-                                                                                <span className="commission-card__label">Admin Commission</span>
-                                                                                <span className="commission-card__amount">
-                                                                                    {formatCurrencyValue(totalCommissionAmount)}
-                                                                                </span>
-                                                                            </div>
-                                                                            <span className="commission-card__share">
-                                                                                {successFee || '0'}% of success fee
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <>
-                                                                        <div className="col-md-12">
-                                                                            <div className="commission-total">
-                                                                                <span className="commission-total__label">
-                                                                                    <i className="ri-pie-chart-line"></i>
-                                                                                    Success Commission Amount
-                                                                                </span>
-                                                                                <span className="commission-total__value">
-                                                                                    {formatCurrencyValue(totalCommissionAmount)}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="col-md-6">
-                                                                            <div className="commission-card commission-card--admin">
-                                                                                <div className="commission-card__head">
-                                                                                    <span className="commission-card__icon">
-                                                                                        <i className="ri-admin-line"></i>
-                                                                                    </span>
-                                                                                    <span className="commission-card__label">Admin Commission</span>
-                                                                                </div>
-                                                                                <span className="commission-card__amount">
-                                                                                    {formatCurrencyValue(adminCommissionAmount)}
-                                                                                </span>
-                                                                                <div className="commission-card__foot">
-                                                                                    <span className="commission-card__share">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                    <span>Share of Success Fee</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="col-md-6">
-                                                                            <div className="commission-card commission-card--partner">
-                                                                                <div className="commission-card__head">
-                                                                                    <span className="commission-card__icon">
-                                                                                        <i className="ri-shake-hands-line"></i>
-                                                                                    </span>
-                                                                                    <span className="commission-card__label">Partner Commission</span>
-                                                                                </div>
-                                                                                <span className="commission-card__amount">
-                                                                                    {formatCurrencyValue(partnerCommissionAmount)}
-                                                                                </span>
-                                                                                <div className="commission-card__foot">
-                                                                                    <span className="commission-card__share">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                    <span>Share of Success Fee</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
+                            {/* Closed (Completed): the summary at the top of the left column -
+                                the host the whole picture, a partner only their commission. */}
+                            {isClosed && (
+                                <ClosedApplicationSummary
+                                    app={app}
+                                    viewer={isPartner ? 'partner' : 'host'}
+                                    partnerApplication={showPartnerCommission}
+                                    requestedAmount={requestedAmountValue}
+                                />
                             )}
+
+                            {/* Commission: shown only once the application is Closed (Completed), in the
+                                summary above - to the host and to a partner. Nothing before that. */}
 
                             {/* Steps & Main Content Row */}
                             <div className="row">
                                 {/* Sidebar */}
-                                <div className="col-lg-4">
+                                <div className="col-lg-4 mb-4">
                                     {/* Steps List */}
                                     <div className="card">
                                         <div className="card-header bg-white py-3">
@@ -1253,7 +914,7 @@ export default function FundingApplicationDetails() {
                                     </div>
 
                                     {/* Status Update Card */}
-                                    <div className="card">
+                                    <div className="card mb-0">
                                         <div className="card-body">
                                             <h5 className="fs-15 fw-bold mb-3">Application Status</h5>
 
@@ -1292,7 +953,7 @@ export default function FundingApplicationDetails() {
                                                         />
                                                     </div>
                                                     <div className="mb-3">
-                                                        <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
+                                                        <label htmlFor="status-notes" className="form-label text-muted">Status Notes</label>
                                                         <textarea
                                                             className={`form-control ${notesError ? 'is-invalid' : ''}`}
                                                             id="status-notes"
@@ -1330,20 +991,22 @@ export default function FundingApplicationDetails() {
                                 </div>
 
                                 {/* Main Content */}
-                                <div className="col-lg-8">
-                                    <div className="card">
-                                        <div className="card-header">
-                                            <div className="d-flex align-items-center justify-content-between">
-                                                <h5 className="card-title mb-0">
-                                                    <i className={`${currentStepData?.icon} me-2`}></i>
-                                                    Step {currentStep} of {STEPS.length}: {currentStepData?.title}
-                                                </h5>
+                                <div className="col-lg-8 mb-4 fa-step-col">
+                                    <div className="fa-step-wrap">
+                                        <div className="card mb-0 fa-step-card">
+                                            <div className="card-header">
+                                                <div className="d-flex align-items-center justify-content-between">
+                                                    <h5 className="card-title mb-0">
+                                                        <i className={`${currentStepData?.icon} me-2`}></i>
+                                                        Step {currentStep} of {STEPS.length}: {currentStepData?.title}
+                                                    </h5>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="card-body p-4">
-                                            {renderStepContent()}
-
-                                            <div className="d-flex justify-content-between mt-4 pt-3 border-top">
+                                            {/* Scrolls inside the card on desktop (fa-step-card) */}
+                                            <div className="card-body p-4">
+                                                {renderStepContent()}
+                                            </div>
+                                            <div className="card-footer bg-white d-flex justify-content-between py-3">
                                                 <button
                                                     type="button"
                                                     className="btn btn-light"
@@ -1365,6 +1028,29 @@ export default function FundingApplicationDetails() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Lender Information - host only (the API sends it only to the host),
+                                below Application Status. */}
+                            {isHost && Array.isArray(app.matched_lenders) && (
+                                <LenderInformationCard
+                                    cardRef={lenderCardRef}
+                                    lenders={app.matched_lenders}
+                                    assignedLenderIds={app.assigned_lender_ids || []}
+                                    subjectLabel="funding application"
+                                    onAssign={assignLender}
+                                    isBusy={assignLenderMutation.isPending || updateMutation.isPending}
+                                    // Optional and changeable in the editable statuses; past them, fixed once assigned.
+                                    canAssign={app.can_assign_lender !== false}
+                                    assignDisabledReason={`The lender can't be changed now that this application is "${app.status}".`}
+                                    // Past the editable statuses with a lender: just that lender.
+                                    onlyAssigned={app.can_assign_lender === false && (app.assigned_lender_ids || []).length > 0}
+                                    notice={lenderNotice}
+                                    highlightFirstRow={highlightLenders}
+                                    emptyText={app.funding_request_id
+                                        ? 'No matched lenders found for this funding type.'
+                                        : 'No matched lenders found for the Preferred or Additional Funding Types.'}
+                                />
+                            )}
                         </div>
 
                         {/* Right Column (Activity Sidebar) */}
@@ -1400,11 +1086,46 @@ export default function FundingApplicationDetails() {
                 variant="primary"
             />
 
+            {/* Lender Required - the funding request page's modal */}
+            <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} onClosed={handleMissingLenderClosed} returnFocusAfterClose={false} centered size="md" contentClassName="border-0 shadow-lg" modalClassName="flip">
+                <ModalBody className="p-0">
+                    <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
+                        <div className="avatar-md mx-auto mb-3">
+                            <span className="avatar-title rounded-circle fs-22 text-white bg-dark">
+                                <i className="ri-bank-line"></i>
+                            </span>
+                        </div>
+                        <h5 className="fw-bold mb-1">Lender Required</h5>
+                        <p className="text-muted fs-13 mb-0">
+                            Assign to Lender. You can assign before <strong className="text-dark">{status}</strong>
+                        </p>
+                    </div>
+                    <div className="p-4">
+                        <div className="d-flex justify-content-center gap-3 mt-2">
+                            <button
+                                type="button"
+                                className="btn btn-light fw-medium px-4"
+                                onClick={() => setShowMissingLenderModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-dark fw-medium px-4"
+                                onClick={requestGoToLenderInformation}
+                            >
+                                Got it, take me there! <i className="ri-arrow-right-line ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
+
             <FundedAmountModal
                 show={showFundedModal}
                 onHide={() => setShowFundedModal(false)}
                 onConfirm={handleFundedConfirm}
-                loading={updateMutation.isPending}
+                loading={updateMutation.isPending || saveCommissionMutation.isPending}
                 initialAmount={fundedAmount}
                 title="Status Update: Closed (Completed)"
                 message="Since the status is Closed (Completed), please specify the final funded amount for this application."
@@ -1413,6 +1134,10 @@ export default function FundingApplicationDetails() {
                 partnerCommissionRate={parseFloat(app.partner_commission?.toString() || '0')}
                 showPartnerCommission={showPartnerCommission}
                 isCommissionSet={isCommissionSet}
+                requestedAmount={requestedAmountValue}
+                // As the Commission Details card: admin view with "update commission".
+                canEditCommission={!isPartner && hasPermission('view commission') && hasPermission('update commission')}
+                commissionErrors={closingCommissionErrors}
             />
 
             <DownloadPdfModal

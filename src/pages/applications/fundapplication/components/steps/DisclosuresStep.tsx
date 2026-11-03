@@ -16,6 +16,7 @@ interface DisclosuresStepProps {
   onBack: () => void
   loading: boolean
   fundingRequestId?: number | string | null
+  fundingApplicationId?: number | string | null
   onRegisterSave?: (fn: (() => Promise<boolean>) | null) => void
 }
 
@@ -27,9 +28,10 @@ export default function DisclosuresStep({
   onBack,
   loading,
   fundingRequestId,
+  fundingApplicationId,
   onRegisterSave,
 }: DisclosuresStepProps) {
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useDisclosuresConsent(fundingRequestId, { enabled: !!fundingRequestId })
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useDisclosuresConsent(fundingRequestId, { enabled: !!fundingRequestId, fundingApplicationId })
   const { mutateAsync: saveDisclosures, isPending: isSaving } = useSaveDisclosuresConsent()
   const [disclosureId, setDisclosureId] = useState<number | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})

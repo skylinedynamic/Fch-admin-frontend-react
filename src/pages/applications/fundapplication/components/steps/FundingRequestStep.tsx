@@ -21,6 +21,7 @@ interface FundingRequestStepProps {
   loading: boolean
   onRegisterSave?: (fn: (() => Promise<boolean>) | null) => void
   fundingRequestId?: number | string | null
+  fundingApplicationId?: number | string | null
   fundingSequenceId?: number | string | null
 }
 
@@ -57,6 +58,7 @@ export default function FundingRequestStep({
   loading,
   onRegisterSave,
   fundingRequestId: initialFundingRequestId,
+  fundingApplicationId,
   fundingSequenceId,
 }: FundingRequestStepProps) {
   const location = useLocation()
@@ -73,12 +75,12 @@ export default function FundingRequestStep({
     || searchParams.get('fundingRequestId')
     || null
 
-  // Load by the funding request id only. The record's own `id` is the funding
-  // application's id - sent back on save, never used to load (the API would
-  // read it as another funding request).
+  // Load by the funding request id, or by the application's own id when the
+  // wizard was opened on one (fundingApplicationId - sent as
+  // funding_application_id, never as a funding request id).
   const loadRequestId = effectiveRequestId ? Number(effectiveRequestId) : null
   const [applicationId, setApplicationId] = useState<number | null>(null)
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFundingRequest(loadRequestId, { enabled: !!loadRequestId })
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFundingRequest(loadRequestId, { enabled: !!loadRequestId, fundingApplicationId })
   const saveMutation = useSaveFundingRequest()
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
