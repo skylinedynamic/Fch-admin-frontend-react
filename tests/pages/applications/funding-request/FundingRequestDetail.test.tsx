@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import { server } from '../../../mocks/server'
-import { renderWithProviders, screen } from '../../../test-utils'
+import { renderWithProviders, screen, waitFor, within } from '../../../test-utils'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import FundingRequestDetail from '../../../../src/pages/applications/funding-request/FundingRequestDetail'
 import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
@@ -255,5 +255,69 @@ describe('Funding Request Details: activity log Want to Assign', () => {
 
     await screen.findByRole('link', { name: /go to client/i })
     expect(sidebar.props?.taskOwner).toBeNull()
+  })
+})
+
+/**
+ * Defect: R2 BUG-008 - two lenders named "Kabbage" looked identical in Lender
+ * Information, its Lender filter and the assign dialog. Each now reads
+ * "Lender Name - Legal Name", and the filter picks just the one chosen.
+ */
+describe('Funding Request Details: lenders shown with their legal name', () => {
+  const lender = (id: number, legal: string) => ({
+    id,
+    name: 'Kabbage',
+    legal_name: legal,
+    display_name: `Kabbage - ${legal}`,
+    phone: null,
+    email: null,
+    product_category: 'Term Loan',
+    requirements: { min_fico: 450, min_business_credit_score: null, min_revenue: 4500, min_tib: 6, min_deposit: 2700 },
+    checks: { fico: true, business_credit: true, revenue: true, tib: true, deposit: false },
+    score: 75,
+    score_text: 'Good Match',
+    score_hex: '#d97706',
+    matches_fraction: '3/4',
+  })
+
+  beforeEach(() => {
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [] } } as never)
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, matched_lenders: [lender(5, 'Kabbage Inc.'), lender(6, 'Kabbage Funding LLC')] } })
+      )
+    )
+  })
+
+  afterEach(() => server.resetHandlers())
+
+  it('names each lender with its legal name, and the assign dialog too', async () => {
+    renderPage()
+
+    expect(await screen.findByText('Kabbage - Kabbage Inc.')).toBeInTheDocument()
+    expect(screen.getByText('Kabbage - Kabbage Funding LLC')).toBeInTheDocument()
+
+    const row = screen.getByText('Kabbage - Kabbage Funding LLC').closest('tr') as HTMLElement
+    await userEvent.click(within(row).getByRole('button', { name: /assign/i }))
+    await waitFor(() => expect(screen.getAllByText('Kabbage - Kabbage Funding LLC').length).toBeGreaterThan(1))
+  })
+
+  it('offers each lender once in the Lender filter, by that name, and filters to just it', async () => {
+    renderPage()
+    await screen.findByText('Kabbage - Kabbage Inc.')
+
+    const lenderFilter = Array.from(document.querySelectorAll('.p-dropdown')).find((el) => el.textContent?.includes('All Lenders')) as HTMLElement
+    await userEvent.click(lenderFilter)
+    const option = await waitFor(() => {
+      const found = Array.from(document.querySelectorAll('.p-dropdown-panel .p-dropdown-item'))
+        .find((el) => el.textContent?.trim() === 'Kabbage - Kabbage Inc.')
+      if (!found) throw new Error('no option')
+      return found as HTMLElement
+    })
+    await userEvent.click(option)
+    await userEvent.click(screen.getByRole('button', { name: /filters/i }))
+
+    await waitFor(() => expect(screen.queryByText('Kabbage - Kabbage Funding LLC')).not.toBeInTheDocument())
+    expect(screen.getAllByText('Kabbage - Kabbage Inc.').length).toBeGreaterThan(0)
   })
 })

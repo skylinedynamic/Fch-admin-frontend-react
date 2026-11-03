@@ -63,4 +63,27 @@ describe('underwriting logic rules', () => {
       ])
     })
   })
+
+  // R2 BUG-008: two lenders may share a name; each is shown with its legal name.
+  describe('lenders named with their legal name', () => {
+    const kabbage = { id: 1, name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }
+
+    it('labels an active lender "Lender Name - Legal Name"', () => {
+      expect(lenderLabelFor({ lender_id: 1 }, [kabbage])).toEqual({ name: 'Kabbage - Kabbage Inc.', inactive: false })
+    })
+
+    it("labels an inactive lender from the rule's own lender the same way", () => {
+      const rule = { lender_id: 7, lender: { id: 7, name: 'Kabbage', legal_name: 'Kabbage Funding LLC', display_name: 'Kabbage - Kabbage Funding LLC', status: 'Inactive' } }
+      expect(lenderLabelFor(rule, [kabbage])).toEqual({ name: 'Kabbage - Kabbage Funding LLC', inactive: true })
+    })
+
+    it('lists both in Filter by Lender, told apart', () => {
+      const options = lenderFilterOptions(
+        [kabbage],
+        [{ lender_id: 7, lender: { id: 7, name: 'Kabbage', legal_name: 'Kabbage Funding LLC', status: 'Inactive' } }]
+      )
+
+      expect(options.map(o => o.name)).toEqual(['Kabbage - Kabbage Inc.', 'Kabbage - Kabbage Funding LLC (Inactive)'])
+    })
+  })
 })

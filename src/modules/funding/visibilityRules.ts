@@ -3,6 +3,8 @@
  * visibility rules), kept out of the component so they can be tested alone.
  */
 
+import { lenderDisplayName } from '../lender/displayName'
+
 type Option = { label: string; value: string }
 
 /**
@@ -14,8 +16,8 @@ export const optionsWithout = <T extends Option>(options: T[], pickedElsewhere: 
   return options.filter(option => !pickedElsewhere.includes(option.value))
 }
 
-type LenderRef = { id: number | string; name: string }
-type Rule = { lender_id?: number | string | null; lender?: { id: number | string; name?: string; status?: string } | null }
+type LenderRef = { id: number | string; name: string; legal_name?: string | null; display_name?: string | null }
+type Rule = { lender_id?: number | string | null; lender?: { id: number | string; name?: string; legal_name?: string | null; display_name?: string | null; status?: string } | null }
 
 /**
  * The lender's name for a rule row. The active-lender list does not hold a
@@ -24,10 +26,11 @@ type Rule = { lender_id?: number | string | null; lender?: { id: number | string
  */
 export const lenderLabelFor = (rule: Rule, activeLenders: LenderRef[]): { name: string; inactive: boolean } => {
   const active = activeLenders.find(l => String(l.id) === String(rule.lender_id))
-  if (active) return { name: active.name, inactive: false }
+  // "Lender Name - Legal Name" (R2 BUG-008): two lenders may share a name.
+  if (active) return { name: lenderDisplayName(active), inactive: false }
 
   if (rule.lender?.name) {
-    return { name: rule.lender.name, inactive: rule.lender.status !== undefined && rule.lender.status !== 'Active' }
+    return { name: lenderDisplayName(rule.lender), inactive: rule.lender.status !== undefined && rule.lender.status !== 'Active' }
   }
 
   return { name: 'Unknown Lender', inactive: false }
@@ -38,14 +41,14 @@ export const lenderLabelFor = (rule: Rule, activeLenders: LenderRef[]): { name: 
  * has a rule here, tagged - so its rules can be found and fixed.
  */
 export const lenderFilterOptions = (activeLenders: LenderRef[], rules: Rule[]): LenderRef[] => {
-  const options = [...activeLenders]
+  const options: LenderRef[] = activeLenders.map(l => ({ id: l.id, name: lenderDisplayName(l) }))
   const known = new Set(activeLenders.map(l => String(l.id)))
 
   rules.forEach(rule => {
     const lender = rule.lender
     if (!lender?.name || known.has(String(lender.id))) return
     known.add(String(lender.id))
-    options.push({ id: lender.id, name: `${lender.name} (Inactive)` })
+    options.push({ id: lender.id, name: `${lenderDisplayName(lender)} (Inactive)` })
   })
 
   return options

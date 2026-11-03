@@ -2,6 +2,8 @@ export interface Lender {
     id?: number;
     name: string;
     legal_name?: string;
+    /** "Lender Name - Legal Name", from the API (R2 BUG-008). */
+    display_name?: string;
     product_categories?: string[];
     contact_name?: string;
     contact_title?: string;

@@ -7,6 +7,7 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import { Column } from 'primereact/column';
 import { TIB_OPTIONS, INDUSTRIES_OPTIONS } from '../../../config/funding';
 import { lenderFilterOptions, lenderLabelFor, optionsWithout } from '../../../modules/funding/visibilityRules';
+import { lenderDisplayName } from '../../../modules/lender/displayName';
 import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities, deleteFundingSequencingVisibilities } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
@@ -439,6 +440,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     };
 
 
+    // The Lender picker names each lender "Lender Name - Legal Name" (R2 BUG-008).
+    const lenderChoices = React.useMemo(() => lenders.map(l => ({ ...l, name: lenderDisplayName(l) })), [lenders]);
+
     const availableLenders = lenders.filter(l => !selectedLenderIds.some(id => String(id) === String(l.id)));
 
     const lenderOptionTemplate = (option: any) => {
@@ -554,7 +558,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             </label>
                             <Dropdown
                                 value={localActiveLenderId}
-                                options={lenders}
+                                options={lenderChoices}
                                 onChange={(e) => {
                                     const nextLenderId = e.value;
                                     let cleanedVisibilities = visibilities;

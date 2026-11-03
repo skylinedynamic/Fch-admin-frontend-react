@@ -20,6 +20,7 @@ import ReviewProgressCard from './components/ReviewProgressCard';
 import LenderMatchStats from './components/LenderMatchStats';
 import '../../../../assets/css/funding-requests.css';
 import { toast } from 'react-toastify';
+import { lenderDisplayName } from '../../../modules/lender/displayName';
 
 import { useAuthStore } from '../../../store/auth/authStore';
 import { getDocStatusBadgeConfig } from '../../../utils/badgeHelper';
@@ -88,18 +89,19 @@ export default function FundingRequestDetail() {
     const matchedLenders = review?.matched_lenders || [];
 
     const uniqueCategories = Array.from(new Set(matchedLenders.map((l: any) => l.product_category))).map(cat => ({ label: cat, value: cat }));
-    const uniqueLenderNames = Array.from(new Set(matchedLenders.map((l: any) => l.name))).map(name => ({ label: name, value: name }));
+    // Each lender as "Lender Name - Legal Name" (R2 BUG-008): two lenders may share a name.
+    const uniqueLenderNames = Array.from(new Set(matchedLenders.map((l: any) => lenderDisplayName(l)))).map(name => ({ label: name, value: name }));
 
     const filteredLenders = matchedLenders.filter((lender: any) => {
         const matchesSearch = !appliedLenderSearch ||
-            lender.name?.toLowerCase().includes(appliedLenderSearch.toLowerCase()) ||
+            lenderDisplayName(lender).toLowerCase().includes(appliedLenderSearch.toLowerCase()) ||
             lender.product_category?.toLowerCase().includes(appliedLenderSearch.toLowerCase()) ||
             lender.requirements?.min_fico?.toString().includes(appliedLenderSearch) ||
             lender.requirements?.min_revenue?.toString().includes(appliedLenderSearch) ||
             lender.requirements?.min_tib?.toString().includes(appliedLenderSearch) ||
             lender.requirements?.min_deposit?.toString().includes(appliedLenderSearch);
         const matchesCategory = !appliedLenderCategoryFilter || lender.product_category === appliedLenderCategoryFilter;
-        const matchesName = !appliedLenderNameFilter || lender.name === appliedLenderNameFilter;
+        const matchesName = !appliedLenderNameFilter || lenderDisplayName(lender) === appliedLenderNameFilter;
         return matchesSearch && matchesCategory && matchesName;
     });
 
@@ -333,7 +335,7 @@ export default function FundingRequestDetail() {
 
                                                                         {/* Lender Name */}
                                                                         <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="fw-bold text-dark fr-style-747e3e7d">{lender.name || 'Lender Name'}</div>
+                                                                            <div className="fw-bold text-dark fr-style-747e3e7d">{lenderDisplayName(lender) || 'Lender Name'}</div>
                                                                             <div className="text-muted fr-style-3f58a42e">{lender.phone || lender.email || 'N/A'}</div>
                                                                         </td>
                                                                         {/* Category */}
@@ -896,7 +898,7 @@ export default function FundingRequestDetail() {
                             </div>
                             <h5 className="fw-bold mb-1">Confirm Assign Lender</h5>
                             <p className="text-muted fs-13 mb-0">
-                                Are you sure you want to assign <strong>{lenderToAssign?.name}</strong> to this funding request?
+                                Are you sure you want to assign <strong>{lenderDisplayName(lenderToAssign)}</strong> to this funding request?
                             </p>
                         </div>
 
@@ -911,7 +913,7 @@ export default function FundingRequestDetail() {
                                         {/* Lender Name */}
                                         <div className="d-flex justify-content-between align-items-center mb-2">
                                             <span className="fs-13 text-muted fw-medium">Lender Name</span>
-                                            <span className="fs-13 fw-semibold text-dark">{lenderToAssign.name}</span>
+                                            <span className="fs-13 fw-semibold text-dark">{lenderDisplayName(lenderToAssign)}</span>
                                         </div>
 
                                         {/* Funding Type */}
