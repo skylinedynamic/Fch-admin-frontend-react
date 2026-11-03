@@ -4,7 +4,7 @@ import { fetchPartnerPaymentMethods, processUnifiedPayment } from '../../../modu
 import { toast } from 'react-toastify';
 import PaymentProviderSelector from './PaymentProviderSelector';
 import ReactivationNotice, { withReactivationRefresh } from './ReactivationNotice';
-import { StripeForm } from './PaymentMethodForms';
+import { StripeForm } from './StripeForm';
 import {
   PROVIDER_STRIPE,
   PROVIDER_SQUARE,
