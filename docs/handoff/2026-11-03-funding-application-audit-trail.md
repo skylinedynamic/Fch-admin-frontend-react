@@ -53,6 +53,12 @@ Intake & Review › Funding Application › Audit History showed only downloads.
 - The new tests failed first (missing modules and page).
 - `npm run typecheck`: clean. Vitest full run (final): 353 files, 2507 passed, 2 expected fail, 0 failed.
 
+## Merge with `bugfix/embed-form-application-edit`
+- `src/App.jsx`: the audit route keeps `FundingApplicationAuditTrail`; the branch's new `funding-application/:applicationId/edit` route is kept.
+- `src/modules/application/queries.ts`: the branch's `assignLenderToFundingApplication` import kept; its `getFundingApplicationAuditHistory` import dropped (that endpoint is gone).
+- `tests/modules/application/services.test.ts`: the branch's assign-lender test kept; its audit-history test dropped.
+- `tests/pages/applications/funding/FundingApplicationDetails.test.tsx`: both sides kept (Audit Trail block, and the branch's Lender Information and closed-summary blocks).
+
 ## Open items
 - Rebuild before the mock e2e (`npm run build`): it serves `dist/`.
 - The page has no column sorting by field; the API offers newest or oldest first only.
