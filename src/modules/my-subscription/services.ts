@@ -1,4 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
+import type { ResumeSubscriptionResult } from './types';
 
 export const fetchMySubscriptionDetails = async () => {
   const { data } = await apiClient.get('/common/my-subscription');
@@ -24,4 +25,10 @@ export const removeMySubscriptionDefaultPaymentMethod = async () => {
 export const cancelMySubscription = async () => {
   const { data } = await apiClient.post('/common/my-subscription/cancel-subscription');
   return data;
+};
+
+/** Resumes the partner's cancelled subscription on its current plan (BUG-069). */
+export const resumeMySubscription = async (): Promise<ResumeSubscriptionResult> => {
+  const { data } = await apiClient.post<{ message: string; data: Omit<ResumeSubscriptionResult, 'message'> }>('/common/my-subscription/resume-subscription');
+  return { ...data.data, message: data.message };
 };

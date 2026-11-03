@@ -9,6 +9,7 @@ import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
 import ConfirmationModal from '../../components/Common/Modals/ConfirmationModal';
 import MySubscriptionLoader from '../../components/Loader/MySubscriptionLoader';
+import ResumeSubscription from './components/ResumeSubscription';
 import {
   fetchMySubscriptionDetails,
   fetchMySubscriptionPaymentProviders,
@@ -899,6 +900,7 @@ export default function MySubscription(): JSX.Element {
                             <i className="ri-close-circle-line"></i> Cancel Subscription
                           </button>
                         )}
+                        {isSubscriptionCancelled && <ResumeSubscription onResumed={() => loadSubscriptionDetails(false)} />}
                         <span
                           className={`badge billing-card-badge-pill ${isSubscriptionCompleted
                               ? 'bg-success-subtle text-success border border-success-subtle'

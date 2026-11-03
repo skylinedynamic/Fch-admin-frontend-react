@@ -30,6 +30,16 @@ describe('NonHostPartnerRoute', () => {
     expect(screen.getByText('My Subscription')).toBeInTheDocument()
   })
 
+  // BUG-069: once a cancelled plan has ended, My Subscription is where the partner resumes it.
+  it('still renders once the subscription has ended (restricted)', () => {
+    useAuthStore.setState({
+      user: partnerWithPayment,
+      userSubscription: { subscription_status: 'Cancelled', subscription_end_date: '2020-01-01' },
+    })
+    renderAt()
+    expect(screen.getByText('My Subscription')).toBeInTheDocument()
+  })
+
   it('redirects a host (even if a partner)', () => {
     useAuthStore.setState({ user: { ...partnerWithPayment, is_host: 1 } })
     renderAt()
