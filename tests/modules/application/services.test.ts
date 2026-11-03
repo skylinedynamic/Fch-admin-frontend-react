@@ -16,7 +16,6 @@ import {
   updateFundingRequestStatus,
   assignLenderToFundingRequest,
   downloadFundingApplication,
-  getFundingApplicationAuditHistory,
 } from '../../../src/modules/application/services'
 
 afterEach(() => server.resetHandlers())
@@ -208,20 +207,6 @@ describe('assignLenderToFundingRequest', () => {
     )
     await assignLenderToFundingRequest({ id: 3, lender_ids: [1, 2] })
     expect(receivedBody).toEqual({ id: 3, lender_ids: [1, 2] })
-  })
-})
-
-describe('getFundingApplicationAuditHistory', () => {
-  it('POSTs params to the audit-history endpoint for the given id', async () => {
-    let receivedBody: any = null
-    server.use(
-      http.post('*/common/request-application/funding-application/9/audit-history', async ({ request }) => {
-        receivedBody = await request.json()
-        return HttpResponse.json({ status: true, message: 'ok', data: [], meta: {} })
-      })
-    )
-    await getFundingApplicationAuditHistory('9', { page: 1 })
-    expect(receivedBody).toEqual({ page: 1 })
   })
 })
 

@@ -316,3 +316,34 @@ describe("FundingApplicationDetails — Can't edit a locked application", () => 
     expect(screen.queryByText(/can no longer be edited/i)).not.toBeInTheDocument()
   })
 })
+
+/**
+ * The audit trail replaced the download-only "Document Audit History": a
+ * partner reads its own application's trail too (the API scopes it), and the
+ * details page no longer lists the old download history.
+ */
+describe('FundingApplicationDetails — Audit Trail', () => {
+  beforeEach(() => {
+    detail.application = { ...editable, download_histories: [{ id: 1, user_name: 'Old Row', action: 'generated' }] }
+  })
+
+  it.each([
+    ['the host', true],
+    ['a partner', false],
+  ])('links %s to the application audit trail', (_who, isHost) => {
+    useAuthStore.setState({ user: { id: 1, is_host: isHost, partner_id: 1, permissions: [] } as never })
+
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(screen.getByRole('link', { name: /audit trail/i }).getAttribute('href')).toMatch(/\/intake-review\/funding-application\/[^/]+\/audit-history$/)
+  })
+
+  it('no longer shows the old download history table', () => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(screen.queryByText('Document Audit History')).not.toBeInTheDocument()
+    expect(screen.queryByText('Old Row')).not.toBeInTheDocument()
+  })
+})

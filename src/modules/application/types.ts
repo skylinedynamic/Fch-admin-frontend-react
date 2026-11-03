@@ -442,7 +442,6 @@ export interface FundingApplicationDetails {
     conversion_rate?: string | number | null;
     
     certificates?: Certificate[];
-    download_histories?: DownloadHistory[];
 }
 
 export interface Certificate {
@@ -454,13 +453,3 @@ export interface Certificate {
     pdf_generation_timestamp: string;
 }
 
-export interface DownloadHistory {
-    id: number;
-    user_name: string;
-    user_type: string;
-    file_type: string;
-    action: string;
-    sha256_hash: string;
-    ip_address: string;
-    downloaded_at: string;
-}

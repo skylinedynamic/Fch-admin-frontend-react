@@ -12,13 +12,13 @@ test.describe('Sidebar › Intake & Review › Funding Application (live)', () =
     detail: { url: /\/intake-review\/funding-application\/\d+$/, heading: 'Funding Application Details' },
   })
 
-  test('the host opens the document audit history from an application', async ({ page }) => {
+  test('the host opens the audit trail from an application', async ({ page }) => {
     await expect(tableSettled(page)).toBeVisible()
     test.skip(await emptyTableMessage(page).isVisible(), 'No funding applications in the local database')
     await dataRows(page).first().locator('td').nth(1).click()
-    await page.getByRole('link', { name: /Audit History/ }).click()
+    await page.getByRole('link', { name: /Audit Trail/ }).click()
     await expect(page).toHaveURL(/\/intake-review\/funding-application\/\d+\/audit-history$/)
-    await expect(pageHeading(page, 'Document Audit History')).toBeVisible()
-    await expect(page.getByPlaceholder('Search history...')).toBeVisible()
+    await expect(pageHeading(page, 'Audit Trail')).toBeVisible()
+    await expect(page.getByLabel('Search the audit trail')).toBeVisible()
   })
 })
