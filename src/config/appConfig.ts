@@ -77,6 +77,9 @@ export const LOG_TYPE_BUSINESS_UPDATE = 'business_update';
 export const LOG_TYPE_DOCUMENT_UPLOAD = 'document_upload';
 export const LOG_TYPE_CHECKLIST_UPDATE = 'checklist_update';
 export const LOG_TYPE_TASK_VERIFICATION = 'task_verification';
+// A client's credit profile saved or removed on Client › Credit Profile (BUG-075).
+export const LOG_TYPE_CREDIT_PROFILE_SAVE = 'credit_profile_save';
+export const LOG_TYPE_CREDIT_PROFILE_DELETE = 'credit_profile_delete';
 
 export const PASSWORD_GENERATE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
 export const PASSWORD_GENERATE_LENGTH = 14;

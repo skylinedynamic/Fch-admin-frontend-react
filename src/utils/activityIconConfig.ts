@@ -38,7 +38,9 @@ import {
     LOG_TYPE_TASK_VERIFICATION,
     LOG_TYPE_FUNDING_REQUEST_CREATE,
     LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE,
-    LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE
+    LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE,
+    LOG_TYPE_CREDIT_PROFILE_SAVE,
+    LOG_TYPE_CREDIT_PROFILE_DELETE
 } from '../config/appConfig';
 
 export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): AvatarConfig | null => {
@@ -81,6 +83,11 @@ export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): Ava
 
     if (logTypeRaw === LOG_TYPE_TASK_VERIFICATION) {
         return { icon: 'ri-survey-line', bgClass: 'bg-primary-subtle text-primary' };
+    }
+
+    // A client's credit profile saved or removed (BUG-075).
+    if (logTypeRaw === LOG_TYPE_CREDIT_PROFILE_SAVE || logTypeRaw === LOG_TYPE_CREDIT_PROFILE_DELETE) {
+        return { icon: 'ri-bank-card-line', bgClass: 'bg-success-subtle text-success' };
     }
 
     // The host changed one of the partner's settings.

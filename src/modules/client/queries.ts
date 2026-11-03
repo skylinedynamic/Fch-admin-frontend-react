@@ -21,6 +21,7 @@ import {
     updateTaskVerificationStatus,
     fetchCreditProfile,
     deleteCreditProfile,
+    saveCreditProfile,
     fetchClientCapitalAccessOverview,
     fetchClientCapitalAccessStrategies
 } from './services';
@@ -194,6 +195,21 @@ export const useClientCreditProfile = (id: string | number, enabled: boolean = t
         queryKey: clientKeys.creditProfile(id),
         queryFn: () => fetchCreditProfile(id),
         enabled: enabled && !!id,
+    });
+};
+
+/**
+ * Saves the reviewed credit profile; the profile is re-read. A refused save
+ * (422, e.g. no FICO Score - BUG-074) rejects with the field errors and
+ * leaves the cache alone.
+ */
+export const useSaveClientCreditProfile = (id: string | number) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (profile: Record<string, unknown>) => saveCreditProfile(id, profile),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: clientKeys.creditProfile(id) });
+        },
     });
 };
 
