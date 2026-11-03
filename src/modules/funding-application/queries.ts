@@ -111,7 +111,7 @@ export const useSaveAttestation = () => {
 
 export const useAttestation = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery<AttestationData>({
-    queryKey: ['attestation', fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryKey: ['attestation', fundingRequestId ?? 'current', ...(options?.fundingApplicationId ? [String(options.fundingApplicationId)] : [])],
     queryFn: () => fetchAttestation(fundingRequestId, options?.fundingApplicationId),
     enabled: wizardEnabled(options),
   })
@@ -119,7 +119,7 @@ export const useAttestation = (fundingRequestId?: number | string | null, option
 
 export const useBusinessInfo = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.businessInfo(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryKey: [...queryKeys.fundingApplication.businessInfo(), fundingRequestId ?? 'current', ...(options?.fundingApplicationId ? [String(options.fundingApplicationId)] : [])],
     queryFn: () => fetchBusinessInfo(fundingRequestId, options?.fundingApplicationId),
     enabled: wizardEnabled(options),
   })
@@ -127,7 +127,7 @@ export const useBusinessInfo = (fundingRequestId?: number | string | null, optio
 
 export const useOwnershipInfo = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.ownershipInfo(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryKey: [...queryKeys.fundingApplication.ownershipInfo(), fundingRequestId ?? 'current', ...(options?.fundingApplicationId ? [String(options.fundingApplicationId)] : [])],
     queryFn: () => fetchOwnershipInfo(fundingRequestId, options?.fundingApplicationId),
     enabled: wizardEnabled(options),
   })
@@ -135,7 +135,7 @@ export const useOwnershipInfo = (fundingRequestId?: number | string | null, opti
 
 export const useFinancialInfo = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.financialInfo(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryKey: [...queryKeys.fundingApplication.financialInfo(), fundingRequestId ?? 'current', ...(options?.fundingApplicationId ? [String(options.fundingApplicationId)] : [])],
     queryFn: () => fetchFinancialInfo(fundingRequestId, options?.fundingApplicationId),
     enabled: wizardEnabled(options),
   })
@@ -143,7 +143,7 @@ export const useFinancialInfo = (fundingRequestId?: number | string | null, opti
 
 export const useDisclosuresConsent = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.disclosuresConsent(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryKey: [...queryKeys.fundingApplication.disclosuresConsent(), fundingRequestId ?? 'current', ...(options?.fundingApplicationId ? [String(options.fundingApplicationId)] : [])],
     queryFn: () => fetchDisclosuresConsent(fundingRequestId, options?.fundingApplicationId),
     enabled: wizardEnabled(options),
   })
@@ -151,7 +151,7 @@ export const useDisclosuresConsent = (fundingRequestId?: number | string | null,
 
 export const useFundingRequest = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery<FundingRequestData>({
-    queryKey: [...queryKeys.fundingApplication.fundingRequest(), fundingRequestId ? String(fundingRequestId) : 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryKey: [...queryKeys.fundingApplication.fundingRequest(), fundingRequestId ? String(fundingRequestId) : 'current', ...(options?.fundingApplicationId ? [String(options.fundingApplicationId)] : [])],
     queryFn: () => fetchFundingRequest(fundingRequestId, options?.fundingApplicationId),
     enabled: wizardEnabled(options),
   })
@@ -159,7 +159,7 @@ export const useFundingRequest = (fundingRequestId?: number | string | null, opt
 
 export const useFederalCompliance = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.federalCompliance(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryKey: [...queryKeys.fundingApplication.federalCompliance(), fundingRequestId ?? 'current', ...(options?.fundingApplicationId ? [String(options.fundingApplicationId)] : [])],
     queryFn: () => fetchFederalCompliance(fundingRequestId, options?.fundingApplicationId),
     enabled: wizardEnabled(options),
   })

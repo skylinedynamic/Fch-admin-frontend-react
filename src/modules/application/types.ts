@@ -1,3 +1,24 @@
+/** One row of the API's `matched_lenders` (LenderMatchService). */
+export interface MatchedLender {
+    id: number;
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    product_category: string;
+    requirements: {
+        min_fico: number | null;
+        min_business_credit_score: number | null;
+        min_revenue: number | null;
+        min_tib: number | null;
+        min_deposit: number | null;
+    };
+    checks: { fico: boolean; business_credit: boolean; revenue: boolean; tib: boolean; deposit: boolean };
+    score: number;
+    score_text: string;
+    score_hex: string;
+    matches_fraction: string;
+}
+
 export interface PaginationLink {
     url: string | null;
     label: string;
@@ -361,6 +382,16 @@ export interface FundingApplicationDetails {
     is_editable?: boolean;
     // Why the application can't be edited; null while it can.
     locked_reason?: string | null;
+    // Lender Information - the host's team only (null for anyone else). From a
+    // funding request: the request's matches and lender; from a loan
+    // application: matched on the Preferred and Additional Funding Types.
+    matched_lenders?: MatchedLender[] | null;
+    assigned_lender_ids?: number[] | null;
+    // Assign opens from Approved (Final) on.
+    can_assign_lender?: boolean;
+    // Statuses that can only be set once a lender is assigned (every viewer).
+    lender_required_statuses?: string[];
+    has_assigned_lender?: boolean;
     full_name: string;
     business_name: string;
     business_email: string;
