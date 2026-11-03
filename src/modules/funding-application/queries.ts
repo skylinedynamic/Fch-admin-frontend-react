@@ -5,6 +5,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { withEditConfirmation } from './editConfirmation'
 import type { FundingRequestData, FundingApplicationDocument, AttestationData } from './types'
 
+// A wizard step reads its application by funding request, or by the
+// application's own id when the wizard was opened on one - an application
+// converted from the embed form has no funding request to read it by.
+type WizardLookupOptions = { enabled?: boolean; fundingApplicationId?: number | string | null }
+
+const wizardEnabled = (options?: WizardLookupOptions): boolean | undefined =>
+  options?.fundingApplicationId ? true : options?.enabled
+
 // The six step saves below are gated: once the borrower has signed and
 // submitted, a partner's change withdraws that signature, so the partner is
 // asked before the request goes out. Gating here rather than at each button is
@@ -101,59 +109,59 @@ export const useSaveAttestation = () => {
   })
 }
 
-export const useAttestation = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
+export const useAttestation = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery<AttestationData>({
-    queryKey: ['attestation', fundingRequestId ?? 'current'],
-    queryFn: () => fetchAttestation(fundingRequestId),
-    enabled: options?.enabled,
+    queryKey: ['attestation', fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryFn: () => fetchAttestation(fundingRequestId, options?.fundingApplicationId),
+    enabled: wizardEnabled(options),
   })
 }
 
-export const useBusinessInfo = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
+export const useBusinessInfo = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.businessInfo(), fundingRequestId ?? 'current'],
-    queryFn: () => fetchBusinessInfo(fundingRequestId),
-    enabled: options?.enabled,
+    queryKey: [...queryKeys.fundingApplication.businessInfo(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryFn: () => fetchBusinessInfo(fundingRequestId, options?.fundingApplicationId),
+    enabled: wizardEnabled(options),
   })
 }
 
-export const useOwnershipInfo = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
+export const useOwnershipInfo = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.ownershipInfo(), fundingRequestId ?? 'current'],
-    queryFn: () => fetchOwnershipInfo(fundingRequestId),
-    enabled: options?.enabled,
+    queryKey: [...queryKeys.fundingApplication.ownershipInfo(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryFn: () => fetchOwnershipInfo(fundingRequestId, options?.fundingApplicationId),
+    enabled: wizardEnabled(options),
   })
 }
 
-export const useFinancialInfo = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
+export const useFinancialInfo = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.financialInfo(), fundingRequestId ?? 'current'],
-    queryFn: () => fetchFinancialInfo(fundingRequestId),
-    enabled: options?.enabled,
+    queryKey: [...queryKeys.fundingApplication.financialInfo(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryFn: () => fetchFinancialInfo(fundingRequestId, options?.fundingApplicationId),
+    enabled: wizardEnabled(options),
   })
 }
 
-export const useDisclosuresConsent = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
+export const useDisclosuresConsent = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.disclosuresConsent(), fundingRequestId ?? 'current'],
-    queryFn: () => fetchDisclosuresConsent(fundingRequestId),
-    enabled: options?.enabled,
+    queryKey: [...queryKeys.fundingApplication.disclosuresConsent(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryFn: () => fetchDisclosuresConsent(fundingRequestId, options?.fundingApplicationId),
+    enabled: wizardEnabled(options),
   })
 }
 
-export const useFundingRequest = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
+export const useFundingRequest = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery<FundingRequestData>({
-    queryKey: [...queryKeys.fundingApplication.fundingRequest(), fundingRequestId ? String(fundingRequestId) : 'current'],
-    queryFn: () => fetchFundingRequest(fundingRequestId),
-    enabled: options?.enabled,
+    queryKey: [...queryKeys.fundingApplication.fundingRequest(), fundingRequestId ? String(fundingRequestId) : 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryFn: () => fetchFundingRequest(fundingRequestId, options?.fundingApplicationId),
+    enabled: wizardEnabled(options),
   })
 }
 
-export const useFederalCompliance = (fundingRequestId?: number | string | null, options?: { enabled?: boolean }) => {
+export const useFederalCompliance = (fundingRequestId?: number | string | null, options?: WizardLookupOptions) => {
   return useQuery({
-    queryKey: [...queryKeys.fundingApplication.federalCompliance(), fundingRequestId ?? 'current'],
-    queryFn: () => fetchFederalCompliance(fundingRequestId),
-    enabled: options?.enabled,
+    queryKey: [...queryKeys.fundingApplication.federalCompliance(), fundingRequestId ?? 'current', options?.fundingApplicationId ? String(options.fundingApplicationId) : null],
+    queryFn: () => fetchFederalCompliance(fundingRequestId, options?.fundingApplicationId),
+    enabled: wizardEnabled(options),
   })
 }
 

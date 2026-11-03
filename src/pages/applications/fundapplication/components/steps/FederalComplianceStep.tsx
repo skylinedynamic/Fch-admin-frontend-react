@@ -15,6 +15,7 @@ interface FederalComplianceStepProps {
   loading: boolean
   isValid: boolean
   fundingRequestId?: number | string | null
+  fundingApplicationId?: number | string | null
   onRegisterSave?: (fn: (() => Promise<boolean>) | null) => void
   nextLabel?: string
 }
@@ -39,10 +40,11 @@ export default function FederalComplianceStep({
   loading,
   isValid,
   fundingRequestId,
+  fundingApplicationId,
   onRegisterSave,
   nextLabel,
 }: FederalComplianceStepProps) {
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFederalCompliance(fundingRequestId, { enabled: !!fundingRequestId })
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFederalCompliance(fundingRequestId, { enabled: !!fundingRequestId, fundingApplicationId })
   const { mutateAsync: saveCompliance, isPending: isSaving } = useSaveFederalCompliance()
   const [complianceId, setComplianceId] = useState<number | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})

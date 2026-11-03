@@ -112,9 +112,18 @@ export type CoBorrowerValidationPayload = {
 }
 
 
-export const fetchBusinessInfo = async (fundingRequestId?: number | string | null): Promise<BusinessInfoData> => {
-  const params: Record<string, any> = {}
-  if (fundingRequestId) params.funding_request_id = fundingRequestId
+// Which application a wizard step reads. By its own id when the wizard has it:
+// an application converted from the embed form has no funding request.
+const lookupParams = (
+  fundingRequestId?: number | string | null,
+  fundingApplicationId?: number | string | null
+): Record<string, number | string> => {
+  if (fundingApplicationId) return { funding_application_id: fundingApplicationId }
+  return fundingRequestId ? { funding_request_id: fundingRequestId } : {}
+}
+
+export const fetchBusinessInfo = async (fundingRequestId?: number | string | null, fundingApplicationId?: number | string | null): Promise<BusinessInfoData> => {
+  const params = lookupParams(fundingRequestId, fundingApplicationId)
   const { data } = await apiClient.get<BusinessInfoResponse>('/common/funding-application/business-info', { params })
   return data.data
 }
@@ -134,30 +143,26 @@ export const saveFinancialInfo = async (payload: FinancialInfoPayload): Promise<
   return data.data
 }
 
-export const fetchOwnershipInfo = async (fundingRequestId?: number | string | null): Promise<OwnershipInfoData> => {
-  const params: Record<string, any> = {}
-  if (fundingRequestId) params.funding_request_id = fundingRequestId
+export const fetchOwnershipInfo = async (fundingRequestId?: number | string | null, fundingApplicationId?: number | string | null): Promise<OwnershipInfoData> => {
+  const params = lookupParams(fundingRequestId, fundingApplicationId)
   const { data } = await apiClient.get<OwnershipInfoResponse>('/common/funding-application/ownership-info', { params })
   return data.data
 }
 
-export const fetchFinancialInfo = async (fundingRequestId?: number | string | null): Promise<FinancialInfoData> => {
-  const params: Record<string, any> = {}
-  if (fundingRequestId) params.funding_request_id = fundingRequestId
+export const fetchFinancialInfo = async (fundingRequestId?: number | string | null, fundingApplicationId?: number | string | null): Promise<FinancialInfoData> => {
+  const params = lookupParams(fundingRequestId, fundingApplicationId)
   const { data } = await apiClient.get<FinancialInfoResponse>('/common/funding-application/financial-info', { params })
   return data.data
 }
 
-export const fetchDisclosuresConsent = async (fundingRequestId?: number | string | null): Promise<DisclosuresConsentData> => {
-  const params: Record<string, any> = {}
-  if (fundingRequestId) params.funding_request_id = fundingRequestId
+export const fetchDisclosuresConsent = async (fundingRequestId?: number | string | null, fundingApplicationId?: number | string | null): Promise<DisclosuresConsentData> => {
+  const params = lookupParams(fundingRequestId, fundingApplicationId)
   const { data } = await apiClient.get<DisclosuresConsentResponse>('/common/funding-application/disclosures-and-consent', { params })
   return data.data
 }
 
-export const fetchFundingRequest = async (fundingRequestId?: number | string | null): Promise<FundingRequestData> => {
-  const params: Record<string, any> = {}
-  if (fundingRequestId) params.funding_request_id = fundingRequestId
+export const fetchFundingRequest = async (fundingRequestId?: number | string | null, fundingApplicationId?: number | string | null): Promise<FundingRequestData> => {
+  const params = lookupParams(fundingRequestId, fundingApplicationId)
   const { data } = await apiClient.get<FundingRequestResponse>('/common/funding-application/funding-request', { params })
   return data.data
 }
@@ -172,9 +177,8 @@ export const saveDisclosuresConsent = async (payload: DisclosuresConsentPayload)
   return data.data
 }
 
-export const fetchFederalCompliance = async (fundingRequestId?: number | string | null): Promise<FederalComplianceData> => {
-  const params: Record<string, any> = {}
-  if (fundingRequestId) params.funding_request_id = fundingRequestId
+export const fetchFederalCompliance = async (fundingRequestId?: number | string | null, fundingApplicationId?: number | string | null): Promise<FederalComplianceData> => {
+  const params = lookupParams(fundingRequestId, fundingApplicationId)
   const { data } = await apiClient.get<FederalComplianceResponse>('/common/funding-application/federal-compliance-disclosures', { params })
   return data.data
 }
@@ -184,9 +188,8 @@ export const saveFederalCompliance = async (payload: FederalCompliancePayload): 
   return data.data
 }
 
-export const fetchAttestation = async (fundingRequestId?: number | string | null): Promise<AttestationData> => {
-  const params: Record<string, any> = {}
-  if (fundingRequestId) params.funding_request_id = fundingRequestId
+export const fetchAttestation = async (fundingRequestId?: number | string | null, fundingApplicationId?: number | string | null): Promise<AttestationData> => {
+  const params = lookupParams(fundingRequestId, fundingApplicationId)
   const { data } = await apiClient.get<AttestationResponse>('/common/funding-application/attestation-authorization', { params })
   return data.data
 }

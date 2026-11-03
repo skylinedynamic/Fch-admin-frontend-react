@@ -9,7 +9,6 @@ import { FundingApplicationDetails as FundingApplicationDetailsType } from '../.
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS, FUNDING_APPLICATION_STATUS_NOTE_MAX } from '../../../config/borrower';
-import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 import { PARTNER_EDITOR_TYPES } from '../../../config/partnerTypeOptions';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
 import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip, downloadFundingApplicationDocument } from '../../../modules/application/services';
@@ -86,22 +85,25 @@ export default function FundingApplicationDetails() {
     const showPartnerCommission = app?.partner_id !== authPartnerId;
     const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
-    // Editable while the request is approved and the application is in one of
-    // the API's editable statuses (config `statuses.editable`). The server
-    // sends that as is_editable, so no status names are compared here.
-    // The host edits any partner's application; a white-label or certified
-    // partner only its own borrowers'.
+    // Editable whenever the application is in one of the API's editable
+    // statuses (config `statuses.editable`) - however it was created: from a
+    // funding request, or converted from the embed form with no funding request
+    // at all. The server sends that as is_editable, so no status names are
+    // compared here. The host edits any partner's application; a white-label or
+    // certified partner only its own borrowers'.
     const canEditApplication =
         (isHost || (PARTNER_EDITOR_TYPES.includes(user?.partner_type as string) && app?.partner_id == authPartnerId)) &&
-        app?.funding_request_status === FUNDING_REVIEW_STATUS.APPROVED &&
-        !!app?.funding_request_id &&
+        !!app?.id &&
         !!app?.is_editable;
     // Out of everyone's hands (status not in the editable list): every viewer -
     // host, white-label and certified partner - is told so instead of just
-    // losing the Edit button. The reason comes from the API.
+    // losing the Edit button: a "Cannot Edit Funding Application" banner. The
+    // reason comes from the API.
     const isLockedForEdit = !!app?.id && app?.is_editable === false;
     const lockedReason = app?.locked_reason
-        || `This application can no longer be edited because it is "${app?.status}". Contact your funding advisor if something needs to change.`;
+        || `This funding application is "${app?.status}", so it can no longer be edited. Funding applications can only be edited while their status is one of the editable statuses.`;
+    // The banner shows the first sentence in bold and the rest beneath it.
+    const [, lockedHeadline = lockedReason, lockedDetail = ''] = lockedReason.match(/^(.*?\.)\s+(.*)$/) ?? [];
 
     // Sync status and commission with fetched data
     useEffect(() => {
@@ -776,6 +778,28 @@ export default function FundingApplicationDetails() {
         <>
             <div className="page-content" style={{ overflow: 'visible' }}>
                 <div className="container-fluid">
+                    {/* Locked: above the page title, the first thing on the page. */}
+                    {isLockedForEdit && (
+                        <div
+                            className="d-flex align-items-center mb-3 rounded-3"
+                            role="status"
+                            style={{ background: '#fff4de', border: '1px solid #f7b84b', padding: '14px 18px' }}
+                        >
+                            <span
+                                className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                style={{ width: 36, height: 36, background: '#f7931e', color: '#fff' }}
+                                aria-hidden="true"
+                            >
+                                <i className="ri-lock-2-fill fs-17"></i>
+                            </span>
+                            <span className="flex-shrink-0 mx-3 align-self-stretch" style={{ width: 3, background: '#f7931e', borderRadius: 2 }} />
+                            <div style={{ color: '#3b2a12' }}>
+                                <div className="fw-semibold fs-15">{lockedHeadline}</div>
+                                {lockedDetail && <div className="fs-13">{lockedDetail}</div>}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Header */}
                     <div className="row pb-1 page-subheader-sticky bg-body">
                         <div className="col-12">
@@ -807,22 +831,12 @@ export default function FundingApplicationDetails() {
                                     </button>
                                     {canEditApplication && (
                                         <Link
-                                            to={`/fund-application/${app.funding_request_id}`}
+                                            to={`/intake-review/funding-application/${app.id}/edit`}
                                             className="btn btn-warning waves-effect py-2 fw-normal"
                                             title="Editing will require the borrower to re-sign the application"
                                         >
                                             <i className="ri-edit-line align-middle me-1"></i> Edit Funding Application
                                         </Link>
-                                    )}
-                                    {isLockedForEdit && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-light waves-effect py-2 fw-normal"
-                                            disabled
-                                            title={lockedReason}
-                                        >
-                                            <i className="ri-lock-line align-middle me-1"></i> Can't Edit Funding Application
-                                        </button>
                                     )}
                                     <Link to="/intake-review/funding-application" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
@@ -831,13 +845,6 @@ export default function FundingApplicationDetails() {
                             </div>
                         </div>
                     </div>
-
-                    {isLockedForEdit && (
-                        <div className="alert alert-warning d-flex align-items-start gap-2 mb-3" role="status">
-                            <i className="ri-lock-line fs-16"></i>
-                            <div>{lockedReason}</div>
-                        </div>
-                    )}
 
                     <div className="row">
                         {/* Left Column (Commission + Content) */}
