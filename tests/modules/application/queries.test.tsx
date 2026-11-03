@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { server } from '../../mocks/server'
 import { queryKeys } from '../../../src/lib/query/queryKeys'
 import {
+  useAssignLenderToFundingApplication,
   useAssignLenderToFundingRequest,
   useFundingApplicationDetails,
   useFundingApplications,
@@ -174,6 +175,16 @@ describe('application mutations', () => {
 
     expect(seen.bodies[0]).toEqual(payload)
     expect(invalidated).toEqual([queryKeys.application.detail(7), queryKeys.application.all])
+  })
+
+  it('useAssignLenderToFundingApplication refreshes the details under both id shapes', async () => {
+    const seen = stub('post', `${RA}/funding-application/56/assign-lender`, { status: true })
+
+    const { invalidated } = await runMutation(() => useAssignLenderToFundingApplication(), { id: '56', lender_ids: [4] } as never)
+
+    // The lender list goes in the body; the id is in the URL.
+    expect(seen.bodies[0]).toEqual({ lender_ids: [4] })
+    expect(invalidated).toEqual([queryKeys.application.detail('56'), queryKeys.application.detail(56)])
   })
 
   it('useAssignLenderToFundingRequest refreshes only that request', async () => {

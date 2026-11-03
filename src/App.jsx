@@ -367,6 +367,8 @@ export default function App() {
                 <Route path="funding-application" element={<FundingApplication />} />
                 <Route path="funding-application/:id" element={<FundingApplicationDetails />} />
                 <Route path="funding-application/:id/audit-history" element={<FundingApplicationAuditTrail />} />
+                {/* Edit by the application's own id - works with or without a funding request. */}
+                <Route path="funding-application/:applicationId/edit" element={<FundApplication />} />
               </Route>
 
               <Route element={<PermissionRoute permission="view funding request" />}>

@@ -110,7 +110,11 @@ const FEDERAL_COMPLIANCE_KEYS: (keyof FederalCompliance)[] = [
 
 export default function FundApplication() {
   const navigate = useNavigate()
-  const { id } = useParams()
+  // `id` is a funding request id (/fund-application/:id); `applicationId` is a
+  // funding application's own id (/intake-review/funding-application/:applicationId/edit) -
+  // how an application without a funding request (converted from the embed
+  // form) is opened, and how the details page always opens one for editing.
+  const { id, applicationId } = useParams()
   const location = useLocation()
   const [fundingSequenceId, setFundingSequenceId] = useState<string | number | null>(null)
   const [fundingRequestId, setFundingRequestId] = useState<string | number | null>(null)
@@ -259,7 +263,7 @@ export default function FundApplication() {
 
   // Fetch funding request and documents (tab-wise lazy loading)
   const currentReqId = fundingRequestId || id || null
-  const { data: fundingData, isLoading: isFundingDataLoading } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
+  const { data: fundingData, isLoading: isFundingDataLoading } = useFundingRequest(currentReqId, { enabled: !!currentReqId, fundingApplicationId: applicationId })
   const fundingApplicationId = fundingData?.id ?? null
   const { data: documentsData } = useFundingApplicationDocuments(fundingApplicationId, {
     enabled: !!fundingApplicationId,
@@ -583,6 +587,7 @@ export default function FundApplication() {
             onRegisterSave={isActive ? registerSave : undefined}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
           />
         )
 
@@ -602,6 +607,7 @@ export default function FundApplication() {
             isValid={isStepValid(STEP_INDICES.OWNERSHIP_INFO)}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -614,6 +620,7 @@ export default function FundApplication() {
             setFinancial={setFinancial}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -626,6 +633,7 @@ export default function FundApplication() {
             setFunding={setFunding}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -649,6 +657,7 @@ export default function FundApplication() {
             setDisclosure={setDisclosure}
             disclosureItems={disclosureItems}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -661,6 +670,7 @@ export default function FundApplication() {
             setFederal={setFederal}
             isValid={isStepValid(STEP_INDICES.FEDERAL_COMPLIANCE)}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />

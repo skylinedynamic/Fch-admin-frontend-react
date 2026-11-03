@@ -15,6 +15,7 @@ import {
   getFundingRequestDetails,
   updateFundingRequestStatus,
   assignLenderToFundingRequest,
+  assignLenderToFundingApplication,
   downloadFundingApplication,
 } from '../../../src/modules/application/services'
 
@@ -207,6 +208,21 @@ describe('assignLenderToFundingRequest', () => {
     )
     await assignLenderToFundingRequest({ id: 3, lender_ids: [1, 2] })
     expect(receivedBody).toEqual({ id: 3, lender_ids: [1, 2] })
+  })
+})
+
+describe('assignLenderToFundingApplication', () => {
+  it("POSTs only lender_ids to the application's assign-lender endpoint", async () => {
+    let receivedBody: any = null
+    server.use(
+      http.post('*/common/request-application/funding-application/56/assign-lender', async ({ request }) => {
+        receivedBody = await request.json()
+        return HttpResponse.json({ status: true, message: 'Lender assigned', data: { id: 56 } })
+      })
+    )
+    const res = await assignLenderToFundingApplication({ id: 56, lender_ids: [4] })
+    expect(receivedBody).toEqual({ lender_ids: [4] })
+    expect(res.message).toBe('Lender assigned')
   })
 })
 

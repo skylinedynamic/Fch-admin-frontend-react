@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { Route, Routes } from 'react-router-dom'
 import { server } from '../../../mocks/server'
-import { renderWithProviders, screen } from '../../../test-utils'
+import { renderWithProviders, screen, waitFor, within } from '../../../test-utils'
+import userEvent from '@testing-library/user-event'
+import { toast } from 'react-toastify'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import FundingRequestDetail from '../../../../src/pages/applications/funding-request/FundingRequestDetail'
 import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
@@ -237,5 +239,87 @@ describe('Funding Request Details: activity log Want to Assign', () => {
 
     await screen.findByRole('link', { name: /go to client/i })
     expect(sidebar.props?.taskOwner).toBeNull()
+  })
+})
+
+// Lender Information (host): assign from the shared card, then show the row as assigned.
+describe('Funding Request Details: assigning a lender', () => {
+  const lender = {
+    id: 5,
+    name: 'Fundbox Financing',
+    phone: null,
+    email: null,
+    product_category: 'Term Loan',
+    requirements: { min_fico: 450, min_business_credit_score: null, min_revenue: 4500, min_tib: 6, min_deposit: 2700 },
+    checks: { fico: true, business_credit: true, revenue: true, tib: true, deposit: false },
+    score: 75,
+    score_text: 'Good Match',
+    score_hex: '#d97706',
+    matches_fraction: '3/4',
+  }
+
+  beforeEach(() => {
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [] } } as never)
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, matched_lenders: [lender] } })
+      )
+    )
+  })
+
+  afterEach(() => {
+    server.resetHandlers()
+    vi.restoreAllMocks()
+  })
+
+  async function assignFundbox() {
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /^assign$/i }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: /assign lender/i }))
+  }
+
+  it('assigns the lender to this request and shows it as assigned', async () => {
+    let body: unknown = null
+    server.use(
+      http.post('*/common/funding-request/assign-lender', async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({ status: true, message: 'ok', data: {} })
+      })
+    )
+    const success = vi.spyOn(toast, 'success')
+    const refreshed = vi.fn()
+    window.addEventListener('refreshActivities', refreshed)
+
+    await assignFundbox()
+
+    await waitFor(() => expect(success).toHaveBeenCalledWith('Lender assigned successfully'))
+    expect(body).toEqual({ id: review.id, lender_ids: [5] })
+    expect(await screen.findByText('Assigned')).toBeInTheDocument()
+    expect(refreshed).toHaveBeenCalled()
+    window.removeEventListener('refreshActivities', refreshed)
+  })
+
+  it('says why an assignment was refused and keeps the lender unassigned', async () => {
+    server.use(
+      http.post('*/common/funding-request/assign-lender', () =>
+        HttpResponse.json({ status: false, message: 'The lender is fixed.' }, { status: 422 })
+      )
+    )
+    const failure = vi.spyOn(toast, 'error')
+
+    await assignFundbox()
+
+    await waitFor(() => expect(failure).toHaveBeenCalledWith('The lender is fixed.'))
+    expect(screen.queryByText('Assigned')).not.toBeInTheDocument()
+  })
+
+  it('falls back to a general message when the refusal says nothing', async () => {
+    server.use(http.post('*/common/funding-request/assign-lender', () => HttpResponse.error()))
+    const failure = vi.spyOn(toast, 'error')
+
+    await assignFundbox()
+
+    await waitFor(() => expect(failure).toHaveBeenCalledWith('Failed to assign lender'))
   })
 })

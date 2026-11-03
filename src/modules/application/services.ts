@@ -79,6 +79,12 @@ export const assignLenderToFundingRequest = async (payload: { id: number | strin
   return response.data;
 };
 
+// Host only. An application with a funding request shares the request's lender.
+export const assignLenderToFundingApplication = async (payload: { id: number | string; lender_ids: number[] }): Promise<SingleApiResponse<any>> => {
+  const response = await apiClient.post(`/common/request-application/funding-application/${payload.id}/assign-lender`, { lender_ids: payload.lender_ids });
+  return response.data;
+};
+
 export const downloadFundingApplication = async (id: string | number, password?: string): Promise<void> => {
   // The password goes in the body, never the URL (BUG-094).
   const response = await apiClient.post(`/common/request-application/funding-application/${id}/download-application`, password ? { password } : {}, {
