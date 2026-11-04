@@ -1034,7 +1034,11 @@ export default function FundingApplicationDetails() {
                             {isHost && Array.isArray(app.matched_lenders) && (
                                 <LenderInformationCard
                                     cardRef={lenderCardRef}
-                                    lenders={app.matched_lenders}
+                                    // Each lender as "Lender Name - Legal Name" (R2 BUG-008): the
+                                    // table, the lender filter and the assigned card all show it.
+                                    lenders={app.matched_lenders.map((lender: any) => (
+                                        lender.legal_name ? { ...lender, name: `${lender.name} - ${lender.legal_name}` } : lender
+                                    ))}
                                     assignedLenderIds={app.assigned_lender_ids || []}
                                     subjectLabel="funding application"
                                     onAssign={assignLender}

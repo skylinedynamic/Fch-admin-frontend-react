@@ -386,6 +386,73 @@ describe('FundingApplicationDetails — Lender Information', () => {
     expect(screen.getByText('Assigned Lender')).toBeInTheDocument()
   })
 
+  /**
+   * Defect: Lender Information named the lender "LendingClub" alone; it is
+   * shown as "Lender Name - Legal Name" (R2 BUG-008) - in the table, the
+   * "All Lenders" filter and the assigned lender card.
+   */
+  describe('names each lender "Lender Name - Legal Name"', () => {
+    const named = [
+      { ...lender, legal_name: 'Fundbox, Inc.' },
+      { ...lender, id: 6, name: 'LendingClub', legal_name: 'LendingClub Bank, N.A.' },
+      { ...lender, id: 7, name: 'OnDeck', legal_name: null },
+    ]
+
+    it('in the table, and the lender filter picks that lender', async () => {
+      detail.application = { ...withLenders, matched_lenders: named }
+      useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+      renderWithProviders(<FundingApplicationDetails />)
+
+      const table = () => within(screen.getByRole('table'))
+      expect(table().getByText('Fundbox Financing - Fundbox, Inc.')).toBeInTheDocument()
+      expect(table().getByText('LendingClub - LendingClub Bank, N.A.')).toBeInTheDocument()
+      // No legal name: the name alone.
+      expect(table().getByText('OnDeck')).toBeInTheDocument()
+
+      const dropdown = screen.getAllByText('All Lenders').map((el) => el.closest('.p-dropdown')).find(Boolean) as HTMLElement
+      await userEvent.click(dropdown)
+      const option = await waitFor(() => {
+        const found = Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item'))
+          .find((el) => el.textContent?.trim() === 'LendingClub - LendingClub Bank, N.A.')
+        if (!found) throw new Error('no "Lender Name - Legal Name" option')
+        return found as HTMLElement
+      })
+      await userEvent.click(option)
+
+      expect(table().getByText('LendingClub - LendingClub Bank, N.A.')).toBeInTheDocument()
+      expect(table().queryByText('Fundbox Financing - Fundbox, Inc.')).not.toBeInTheDocument()
+      expect(table().queryByText('OnDeck')).not.toBeInTheDocument()
+    })
+
+    it('finds a lender by its legal name in the search', async () => {
+      detail.application = { ...withLenders, matched_lenders: named }
+      useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+      renderWithProviders(<FundingApplicationDetails />)
+
+      await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'fundbox, inc')
+
+      const table = within(screen.getByRole('table'))
+      expect(table.getByText('Fundbox Financing - Fundbox, Inc.')).toBeInTheDocument()
+      expect(table.queryByText('LendingClub - LendingClub Bank, N.A.')).not.toBeInTheDocument()
+      expect(table.queryByText('OnDeck')).not.toBeInTheDocument()
+    })
+
+    it('on the assigned lender card', () => {
+      detail.application = {
+        ...withLenders,
+        status: FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER,
+        is_editable: false,
+        matched_lenders: named,
+        assigned_lender_ids: [6],
+        can_assign_lender: false,
+      }
+      useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+      renderWithProviders(<FundingApplicationDetails />)
+
+      expect(screen.getByText('LendingClub - LendingClub Bank, N.A.')).toBeInTheDocument()
+    })
+  })
+
   async function assignFundbox() {
     await userEvent.click(screen.getByRole('button', { name: /^assign$/i }))
     const dialog = await screen.findByRole('dialog')
