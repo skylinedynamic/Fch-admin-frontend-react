@@ -85,6 +85,23 @@ describe('Funding Request Details: action buttons', () => {
     expect(confirm).toHaveClass('btn-primary')
     expect(confirm).not.toHaveClass('btn-dark')
   })
+
+  /**
+   * Defect (BUG-159): after a rejection was saved, Review Actions showed an
+   * empty required "Reason / Note" box, as if nothing had been entered. It
+   * opens with the saved reason.
+   */
+  it('opens a rejected request with its saved reason in Reason / Note', async () => {
+    const reason = 'Please add 3 months of bank statements'
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected', reject_reason: reason } })
+      )
+    )
+    renderPage()
+
+    await waitFor(() => expect(screen.getByPlaceholderText(/reason/i)).toHaveValue(reason))
+  })
 })
 
 // An approved request whose submitted application is still at status key 9 or below.
