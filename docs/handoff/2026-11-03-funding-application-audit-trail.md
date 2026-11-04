@@ -51,7 +51,7 @@ Intake & Review › Funding Application › Audit History showed only downloads.
   - `funding-application.live.spec.ts` updated to "Audit Trail" and passes against the local API.
   - `funding-application.spec.ts` and `activity-task-assign.spec.ts` failed once under heavy parallel load, then passed 9/9 with 2 workers. They were untouched.
 - The new tests failed first (missing modules and page).
-- `npm run typecheck`: clean. Vitest full run (final): 353 files, 2507 passed, 2 expected fail, 0 failed.
+- `npm run typecheck`: clean. Vitest full run (final, after the merge and dropping commission): 359 files, 2598 passed, 2 expected fail, 0 failed. Funding Application e2e folder (mock + live): 22/22.
 
 ## Merge with `bugfix/embed-form-application-edit`
 - `src/App.jsx`: the audit route keeps `FundingApplicationAuditTrail`; the branch's new `funding-application/:applicationId/edit` route is kept.
