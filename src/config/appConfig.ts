@@ -33,6 +33,9 @@ export const TYPE_ACTIVITY = 'activity';
 export const TARGET_RECIPIENT_HOST = 'host';
 export const TARGET_RECIPIENT_BORROWER = 'borrower';
 
+// Where a partner's New Email goes when no host email is known.
+export const FCH_SUPPORT_EMAIL = 'support@fourcornerholding.com';
+
 export const OTHERS = 'Others';
 
 // New Log Types

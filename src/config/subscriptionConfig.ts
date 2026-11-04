@@ -57,6 +57,10 @@ export const PLAN_GROUP_BORROWER_FEE = 'borrower_fee';
 export const PLAN_GROUP_USER_SEAT = 'user_seat';
 export const PLAN_GROUP_UNASSIGNED = 'unassigned';
 
+// A plan's price is kept to the cent: decimal(10, 2) in fch-api (BUG-076).
+export const PLAN_AMOUNT_DECIMAL_PLACES = 2;
+export const PLAN_AMOUNT_FIELDS = ['total_amount', 'platform_fee'] as const;
+
 // Helper for identifying installment plans
 export const checkIsInstallmentPlan = (plan: {
     is_installment?: boolean | number;

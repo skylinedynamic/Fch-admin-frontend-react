@@ -10,8 +10,11 @@ import {
     PLAN_GROUP_BORROWER_FEE,
     PLAN_GROUP_USER_SEAT,
     PLAN_GROUP_UNASSIGNED,
+    PLAN_AMOUNT_DECIMAL_PLACES,
+    PLAN_AMOUNT_FIELDS,
     checkIsInstallmentPlan
 } from '../../config/subscriptionConfig';
+import { hasMoreDecimalsThan } from '../../utils/amountInput';
 
 interface Plan {
     id: number;
@@ -167,6 +170,11 @@ export default function PlanFee() {
 
     // Handle input changes
     const handleInputChange = (id: number, field: keyof EditState, value: string) => {
+        // A price is kept to the cent: a 3rd digit after the point is not
+        // typed in (BUG-076). The API refuses one too.
+        if ((PLAN_AMOUNT_FIELDS as readonly string[]).includes(field) && hasMoreDecimalsThan(value, PLAN_AMOUNT_DECIMAL_PLACES)) {
+            return;
+        }
         // Editing a field clears the API's message for it.
         setFieldErrors(prev => (prev[id]?.[field] ? { ...prev, [id]: { ...prev[id], [field]: undefined } } : prev));
         setEditedValues(prev => ({
