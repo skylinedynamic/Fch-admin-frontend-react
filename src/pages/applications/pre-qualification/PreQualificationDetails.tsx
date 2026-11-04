@@ -959,7 +959,7 @@ export default function PreQualificationDetails() {
                                 onClick={() => setAueViewMode('client')}
                             >
                                 <i className="ri-eye-line fs-14"></i>
-                                <span>Client Readiness View (Borrower &amp; WLP View)</span>
+                                <span>Client Readiness View (Borrower &amp; Partner View)</span>
                             </button>
                         </div>
                         <span className="badge bg-light text-muted border px-2 py-1 fs-11">

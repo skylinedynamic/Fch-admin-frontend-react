@@ -7,7 +7,9 @@ import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../../../../data/profile'
 import ChipMultiSelect from '../../../../../components/Common/ChipMultiSelect'
 import { useFundingRequest, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
+import { PURPOSE_NOTE_MAX_LENGTH } from '../../../../../modules/funding-application/applicationRules'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { toast } from 'react-toastify'
 import { formatCurrency, unformatCurrency } from '../../../../../utils/borrowerFormatters'
 import { useQuery } from '@tanstack/react-query'
@@ -155,6 +157,8 @@ export default function FundingRequestStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       console.error('Error saving funding request:', error)
       const errors = error.response?.data?.errors
       if (errors) {
@@ -294,8 +298,11 @@ export default function FundingRequestStep({
             className={`form-control ${hasError('purpose_note') ? 'is-invalid' : ''}`}
             placeholder="Please specify the purpose of funds"
             value={funding.purposeNote || ''}
+            maxLength={PURPOSE_NOTE_MAX_LENGTH}
             onChange={(e) => setFunding({ ...funding, purposeNote: e.target.value })}
           />
+          {/* The API takes up to 500 characters (R2 BUG-032). */}
+          <div className="form-text text-end">{(funding.purposeNote || '').length}/{PURPOSE_NOTE_MAX_LENGTH}</div>
           {hasError('purpose_note') && <div className="invalid-feedback">{getFieldError('purpose_note')}</div>}
         </div>
       )}

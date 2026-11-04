@@ -270,6 +270,29 @@ describe('FundingApplicationDetails — Status Notes', () => {
     expect(screen.getByLabelText(/status notes/i)).toHaveAttribute('maxLength', '10000')
   })
 
+  /**
+   * Defect: Status Notes carried a required star, yet neither the form nor the
+   * API (status_note nullable) asks for a note - a status is changed with none.
+   * Decision 2026-11-01: notes are optional, so the field is not marked
+   * required.
+   */
+  it('is optional: not marked required, and a status is changed with no note', async () => {
+    mutations.updateStatus.mockClear()
+    const user = userEvent.setup()
+    renderWithProviders(<FundingApplicationDetails />)
+
+    const label = document.querySelector('label[for="status-notes"]')!
+    expect(label).toHaveTextContent(/^Status Notes$/)
+    expect(label.querySelector('.text-danger')).toBeNull()
+    expect(screen.getByLabelText(/status notes/i)).not.toBeRequired()
+
+    await user.click(screen.getByRole('button', { name: 'Update Status' }))
+    await user.click(screen.getByRole('button', { name: 'Update', hidden: true }))
+
+    expect(mutations.updateStatus).toHaveBeenCalledTimes(1)
+    expect(mutations.updateStatus.mock.calls[0][0]).toMatchObject({ funding_application_id: 80, status_note: '' })
+  })
+
   it('shows how many characters are used', () => {
     detail.application = { ...editable, status_note: 'Withdrawn by borrower' }
     renderWithProviders(<FundingApplicationDetails />)

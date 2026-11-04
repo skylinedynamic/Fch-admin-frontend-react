@@ -35,6 +35,7 @@ import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { scrollToFirstError } from '../../utils/formUtils';
 import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
+import { formDataValue } from '../../modules/employee/logic';
 
 const TAB_PERSONAL = 'personalDetails';
 const TAB_COMMISSIONS = 'commissions';
@@ -657,7 +658,11 @@ export default function EmployeeDetails() {
               formData.append('country_code', value);
             }
           } else if (value !== '') {
-            formData.append(key, value);
+            // Never an object's string form, e.g. job status "[object Object]" (R2 BUG-029).
+            const sent = formDataValue(value);
+            if (sent !== null) {
+              formData.append(key, sent);
+            }
           }
         }
       });

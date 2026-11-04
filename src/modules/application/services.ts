@@ -69,7 +69,7 @@ export const getFundingRequestDetails = async (id: string | number): Promise<Sin
   return response.data;
 };
 
-export const updateFundingRequestStatus = async (payload: { id: number | string; status: string; reject_reason?: string }): Promise<SingleApiResponse<any>> => {
+export const updateFundingRequestStatus = async (payload: { id: number | string; status: string; reject_reason?: string; expected_status?: string }): Promise<SingleApiResponse<any>> => {
   const response = await apiClient.post('/common/funding-request/status-update', payload);
   return response.data;
 };

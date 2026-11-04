@@ -60,6 +60,12 @@ export const FUNDING_STATUS_OPTIONS: SelectOption[] = [
     { label: 'Inactive', value: 'Inactive' }
 ];
 
+/** The longest rejection note the API takes (FundingRequest::REJECT_REASON_MAX_LENGTH). */
+export const REJECT_REASON_MAX_LENGTH = 10000;
+
+/** A rejection note longer than this is folded in the confirmation, behind See more. */
+export const REJECT_NOTE_PREVIEW_LENGTH = 300;
+
 export const FUNDING_REVIEW_STATUS = {
     PENDING: 'Pending',
     IN_PROGRESS: 'In Progress',

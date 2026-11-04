@@ -2,6 +2,9 @@
 export interface MatchedLender {
     id: number;
     name: string;
+    legal_name?: string | null;
+    /** "Lender Name - Legal Name", how the screens show it (R2 BUG-008). */
+    display_name?: string | null;
     phone?: string | null;
     email?: string | null;
     product_category: string;

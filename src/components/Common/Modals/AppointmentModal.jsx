@@ -10,6 +10,7 @@ import { Skeleton } from 'primereact/skeleton';
 
 // API Services
 import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
+import { availabilityCheckPayload } from '../../../modules/appointment/availability';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useSummernote } from '../../../hooks/useSummernote';
@@ -137,7 +138,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     // Check Availability
     useEffect(() => {
         const check = async () => {
-            if (!formData.date || !formData.entity_id || viewMode) {
+            if (!formData.date || !(formData.assigned_for || formData.entity_id) || viewMode) {
                 setAvailabilityConflicts(null);
                 setConflictError(null);
                 return;
@@ -154,12 +155,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 }
 
                 setAvailabilityConflicts(null);
-                const response = await checkAvailability({
-                    assigned_for: formData.entity_id,
-                    entity_type: formData.entity_type,
-                    appointment_date: `${formData.date} ${formData.timeStart}:00`,
-                    id: isNewEvent ? undefined : selectedEventId
-                });
+                // The attendee by user id, as Save sends it - not the record id (R2 BUG-073).
+                const response = await checkAvailability(availabilityCheckPayload({
+                    date: formData.date,
+                    timeStart: formData.timeStart,
+                    assignedFor: formData.assigned_for,
+                    entityType: formData.entity_type,
+                    entityId: formData.entity_id,
+                    appointmentId: isNewEvent ? undefined : selectedEventId
+                }));
 
                 if (response.data && response.data.available === false) {
                     setAvailabilityConflicts(response.data);
@@ -217,7 +221,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [formData.date, formData.timeStart, formData.timeEnd, formData.entity_id, formData.entity_type, viewMode, originalData]);
+    }, [formData.date, formData.timeStart, formData.timeEnd, formData.assigned_for, formData.entity_id, formData.entity_type, viewMode, originalData]);
 
     // Helper functions (tConvert, formatDate, etc.) should be here or imported
     const tConvert = (timeStr) => {
@@ -492,14 +496,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         // check runs 500ms after a change, so a quick Save went out before it
         // answered and the conflict showed beside "updated successfully" (BUG-100).
         let conflicts = availabilityConflicts;
-        if (formData.entity_id) {
+        if (formData.assigned_for || formData.entity_id) {
             try {
-                const response = await checkAvailability({
-                    assigned_for: formData.entity_id,
-                    entity_type: formData.entity_type,
-                    appointment_date: `${formData.date} ${formData.timeStart}:00`,
-                    id: isNewEvent ? undefined : selectedEventId
-                });
+                const response = await checkAvailability(availabilityCheckPayload({
+                    date: formData.date,
+                    timeStart: formData.timeStart,
+                    assignedFor: formData.assigned_for,
+                    entityType: formData.entity_type,
+                    entityId: formData.entity_id,
+                    appointmentId: isNewEvent ? undefined : selectedEventId
+                }));
                 conflicts = response.data && response.data.available === false ? response.data : null;
                 setAvailabilityConflicts(conflicts);
             } catch (error) {

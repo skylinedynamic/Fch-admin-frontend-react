@@ -189,6 +189,49 @@ describe('Lenders - deleting a lender assigned to a funding request', () => {
     expect(within(dialog).getAllByRole('button', { name: 'Close' })[1]).toHaveClass('btn-primary')
   })
 
+  // R2 BUG-008: a lender is named "Lender Name - Legal Name" - two may share a name.
+  it('names a blocked lender with its legal name', async () => {
+    server.use(
+      http.post('*/admin/lenders/check-deletable', () =>
+        HttpResponse.json({ status: true, data: [
+          { id: 5, name: 'Reagan Capital', display_name: 'Reagan Capital - Hardin Capital LLC', is_deletable: false, reason: BLOCKED_ONE },
+          { id: 6, name: 'Jessamine Funding', display_name: 'Jessamine Funding - Oconnor Funding LLC', is_deletable: true, reason: null },
+        ] })
+      )
+    )
+    const user = userEvent.setup()
+    renderLenders()
+
+    await deleteSelection(user, ['Reagan Capital', 'Jessamine Funding'])
+
+    const dialog = await screen.findByRole('dialog', { name: 'Lender Cannot Be Deleted' })
+    expect(dialog).toHaveTextContent('Reagan Capital - Hardin Capital LLC has related records and cannot be deleted.')
+  })
+
+  it('names lenders the delete refused with their legal names too', async () => {
+    checkReturns([{ id: 5, name: 'Reagan Capital', is_deletable: true }, { id: 6, name: 'Jessamine Funding', is_deletable: true }])
+    server.use(
+      http.post('*/admin/lenders/multiple-delete', () =>
+        HttpResponse.json(
+          { status: false, message: BLOCKED_ONE, errors: { blocked: [
+            { id: 5, name: 'Reagan Capital', display_name: 'Reagan Capital - Hardin Capital LLC' },
+            { id: 6, name: 'Jessamine Funding', display_name: 'Jessamine Funding - Oconnor Funding LLC' },
+          ] } },
+          { status: 422 }
+        )
+      )
+    )
+    const user = userEvent.setup()
+    renderLenders()
+
+    await deleteSelection(user, ['Reagan Capital', 'Jessamine Funding'])
+    await user.click(within(await screen.findByRole('dialog', { name: 'Are you sure?' })).getByRole('button', { name: 'Yes, Delete It' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Lenders Cannot Be Deleted' })
+    expect(within(dialog).getByRole('button', { name: 'Reagan Capital - Hardin Capital LLC' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Jessamine Funding - Oconnor Funding LLC' })).toBeInTheDocument()
+  })
+
   it('shows the same modal, not an error toast, when the delete itself is refused', async () => {
     checkReturns([{ id: 5, name: 'Reagan Capital', is_deletable: true }])
     server.use(

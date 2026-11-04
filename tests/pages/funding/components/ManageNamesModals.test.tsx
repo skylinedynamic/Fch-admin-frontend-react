@@ -89,3 +89,31 @@ describe.each(cases)('$title', (c) => {
     expect(toast.success).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * Defect: a product category just added went to the bottom of "Existing
+ * Categories" (the list is in sort order), out of sight below the scroll.
+ * The newest is shown first.
+ */
+describe('Manage Product Categories - Existing Categories order', () => {
+  it('lists the newest category first', async () => {
+    const inSortOrder = [
+      { id: 1, name: 'Business Line of Credit' },
+      { id: 9, name: 'Just Added' },
+      { id: 4, name: 'Working Capital' },
+    ]
+    renderWithProviders(<LenderProductCategoryModal visible onHide={vi.fn()} onSuccess={vi.fn()} categories={inSortOrder} />)
+
+    const shown = ['Just Added', 'Working Capital', 'Business Line of Credit'].map((name) => screen.getByText(name))
+    for (let i = 0; i + 1 < shown.length; i++) {
+      expect(shown[i].compareDocumentPosition(shown[i + 1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+  })
+
+  it('does not reorder the list it was given', () => {
+    const inSortOrder = [{ id: 1, name: 'A' }, { id: 2, name: 'B' }]
+    renderWithProviders(<LenderProductCategoryModal visible onHide={vi.fn()} onSuccess={vi.fn()} categories={inSortOrder} />)
+
+    expect(inSortOrder.map((c) => c.id)).toEqual([1, 2])
+  })
+})

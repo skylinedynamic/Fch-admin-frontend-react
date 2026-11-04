@@ -19,6 +19,7 @@ import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDeta
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
 import { Modal, ModalBody } from 'reactstrap';
+import { isStaleRecordError, staleRecordMessage, withExpectedStatus } from '../../../utils/staleRecord';
 import SsnValue from '../../../components/Common/SsnValue';
 import FundedAmountModal, { type CommissionRates } from '../../../components/Common/Modals/FundedAmountModal';
 import ClosedApplicationSummary from './components/ClosedApplicationSummary';
@@ -81,7 +82,7 @@ export default function FundingApplicationDetails() {
     const isHost = user?.is_host == true;
     const authPartnerId = (user as any)?.partner_id;
 
-    const { data: apiResponse, isLoading, error } = useFundingApplicationDetails(id || '');
+    const { data: apiResponse, isLoading, error, refetch } = useFundingApplicationDetails(id || '');
 
     const app = (apiResponse?.data || apiResponse || {}) as FundingApplicationDetailsType;
     const showPartnerCommission = app?.partner_id !== authPartnerId;
@@ -201,11 +202,13 @@ export default function FundingApplicationDetails() {
 
     const handleConfirmUpdate = () => {
         if (!app.id) return;
-        updateMutation.mutate({
+        // With the status this page shows: a double-click or a stale page is
+        // refused, not applied twice (R2 BUG-037).
+        updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
             status_note: status_note
-        }, {
+        }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowConfirmModal(false);
@@ -214,7 +217,11 @@ export default function FundingApplicationDetails() {
             },
             onError: (error: any) => {
                 setShowConfirmModal(false);
-                if (error?.response?.data?.errors) {
+                if (isStaleRecordError(error)) {
+                    toast.error(staleRecordMessage(error));
+                    refetch();
+                    window.dispatchEvent(new Event('refreshActivities'));
+                } else if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     if (backendErrors.status_note) {
                         const message = Array.isArray(backendErrors.status_note)
@@ -258,12 +265,12 @@ export default function FundingApplicationDetails() {
             }
         }
 
-        updateMutation.mutate({
+        updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
             status_note: status_note,
             funded_amount: amount
-        }, {
+        }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowFundedModal(false);
@@ -271,7 +278,12 @@ export default function FundingApplicationDetails() {
                 window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
-                if (error?.response?.data?.errors) {
+                if (isStaleRecordError(error)) {
+                    setShowFundedModal(false);
+                    toast.error(staleRecordMessage(error));
+                    refetch();
+                    window.dispatchEvent(new Event('refreshActivities'));
+                } else if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     if (backendErrors.status_note) {
                         const message = Array.isArray(backendErrors.status_note)
