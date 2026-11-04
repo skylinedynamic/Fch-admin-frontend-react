@@ -30,3 +30,11 @@ export const maxUploadSizeFor = (fileName: string): number => {
     ? FILE_MANAGER_CONFIG.MAX_PICTURE_SIZE
     : FILE_MANAGER_CONFIG.MAX_FILE_SIZE
 }
+
+/**
+ * The folder a file manager opens on (its entity_type). The API keeps each one
+ * on its own disk: a partner's documents are private, its branding public.
+ */
+export const FILE_MANAGER_FOLDERS = {
+  PARTNER_DOCUMENTS: 'partner-documents',
+} as const
