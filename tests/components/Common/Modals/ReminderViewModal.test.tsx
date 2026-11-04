@@ -70,3 +70,20 @@ describe('ReminderViewModal (Task & Reminder Details)', () => {
     await waitFor(() => expect(onHide).toHaveBeenCalled())
   })
 })
+
+// BUG-004 (QA round 2): stored HTML is rendered, so it must not run script.
+describe('ReminderViewModal - the description cannot run script (BUG-004)', () => {
+  beforeEach(() => {
+    setAuthState({ token: 't', user: { id: 9 } as any, permissions: ['view reminders'] } as any)
+    return () => clearAuthState()
+  })
+
+  it('shows the text and keeps formatting, without the onerror handler', () => {
+    const reminder = { ...REMINDER, message: '<b>Call back</b> <img src=x onerror="window.__xss = 1">' } as unknown as Reminder
+    const view = renderWithProviders(<ReminderViewModal show onHide={() => {}} reminder={reminder} />)
+
+    expect(screen.getByText('Call back').tagName).toBe('B')
+    expect(document.body.querySelector('[onerror]')).toBeNull()
+    view.unmount()
+  })
+})

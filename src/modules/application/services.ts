@@ -69,7 +69,7 @@ export const getFundingRequestDetails = async (id: string | number): Promise<Sin
   return response.data;
 };
 
-export const updateFundingRequestStatus = async (payload: { id: number | string; status: string; reject_reason?: string }): Promise<SingleApiResponse<any>> => {
+export const updateFundingRequestStatus = async (payload: { id: number | string; status: string; reject_reason?: string; expected_status?: string }): Promise<SingleApiResponse<any>> => {
   const response = await apiClient.post('/common/funding-request/status-update', payload);
   return response.data;
 };
@@ -159,32 +159,4 @@ export const downloadFundingZip = async (id: string | number, password?: string)
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
-};
-
-export const downloadHistoryFile = async (historyId: string | number, defaultFileName?: string): Promise<void> => {
-  const urlPath = `/common/request-application/download-history/${historyId}/download`;
-  const response = await apiClient.get(urlPath, {
-    responseType: 'blob'
-  });
-  const url = window.URL.createObjectURL(new Blob([response.data]));
-  const link = document.createElement('a');
-  link.href = url;
-  const contentDisposition = response.headers['content-disposition'];
-  let fileName = defaultFileName || `Download_${historyId}.pdf`;
-  if (contentDisposition) {
-    const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-    if (fileNameMatch && fileNameMatch.length === 2) {
-      fileName = fileNameMatch[1];
-    }
-  }
-  link.setAttribute('download', fileName);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-};
-
-export const getFundingApplicationAuditHistory = async (id: string, params?: any): Promise<any> => {
-  const { data } = await apiClient.post(`/common/request-application/funding-application/${id}/audit-history`, params);
-  return data;
 };

@@ -270,6 +270,29 @@ describe('FundingApplicationDetails — Status Notes', () => {
     expect(screen.getByLabelText(/status notes/i)).toHaveAttribute('maxLength', '10000')
   })
 
+  /**
+   * Defect: Status Notes carried a required star, yet neither the form nor the
+   * API (status_note nullable) asks for a note - a status is changed with none.
+   * Decision 2026-11-01: notes are optional, so the field is not marked
+   * required.
+   */
+  it('is optional: not marked required, and a status is changed with no note', async () => {
+    mutations.updateStatus.mockClear()
+    const user = userEvent.setup()
+    renderWithProviders(<FundingApplicationDetails />)
+
+    const label = document.querySelector('label[for="status-notes"]')!
+    expect(label).toHaveTextContent(/^Status Notes$/)
+    expect(label.querySelector('.text-danger')).toBeNull()
+    expect(screen.getByLabelText(/status notes/i)).not.toBeRequired()
+
+    await user.click(screen.getByRole('button', { name: 'Update Status' }))
+    await user.click(screen.getByRole('button', { name: 'Update', hidden: true }))
+
+    expect(mutations.updateStatus).toHaveBeenCalledTimes(1)
+    expect(mutations.updateStatus.mock.calls[0][0]).toMatchObject({ funding_application_id: 80, status_note: '' })
+  })
+
   it('shows how many characters are used', () => {
     detail.application = { ...editable, status_note: 'Withdrawn by borrower' }
     renderWithProviders(<FundingApplicationDetails />)
@@ -325,6 +348,37 @@ describe("FundingApplicationDetails — Can't edit a locked application", () => 
 
     expect(cantEdit()).not.toBeInTheDocument()
     expect(screen.queryByText(/can no longer be edited/i)).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * The audit trail replaced the download-only "Document Audit History": a
+ * partner reads its own application's trail too (the API scopes it), and the
+ * details page no longer lists the old download history.
+ */
+describe('FundingApplicationDetails — Audit Trail', () => {
+  beforeEach(() => {
+    detail.application = { ...editable, download_histories: [{ id: 1, user_name: 'Old Row', action: 'generated' }] }
+  })
+
+  it.each([
+    ['the host', true],
+    ['a partner', false],
+  ])('links %s to the application audit trail', (_who, isHost) => {
+    useAuthStore.setState({ user: { id: 1, is_host: isHost, partner_id: 1, permissions: [] } as never })
+
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(screen.getByRole('link', { name: /audit trail/i }).getAttribute('href')).toMatch(/\/intake-review\/funding-application\/[^/]+\/audit-history$/)
+  })
+
+  it('no longer shows the old download history table', () => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(screen.queryByText('Document Audit History')).not.toBeInTheDocument()
+    expect(screen.queryByText('Old Row')).not.toBeInTheDocument()
   })
 })
 

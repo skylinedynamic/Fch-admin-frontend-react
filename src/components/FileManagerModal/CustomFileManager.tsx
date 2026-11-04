@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import type { FileSystemItem } from '../../modules/filemanager/types'
-import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config'
+import { FILE_MANAGER_CONFIG, maxUploadSizeFor } from '../../modules/filemanager/config'
 import { FolderTree } from './FolderTree'
 import { Breadcrumb } from './Breadcrumb'
 import { FileGrid } from './FileGrid'
@@ -227,8 +227,10 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
 
     newFiles.forEach(file => {
       // Validate Size
-      if (file.size > FILE_MANAGER_CONFIG.MAX_FILE_SIZE) {
-        toast.error(`File "${file.name}" exceeds ${(FILE_MANAGER_CONFIG.MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB limit.`)
+      // 5 MB for a picture, 20 MB for anything else - the API's limits (BUG-014).
+      const maxSize = maxUploadSizeFor(file.name)
+      if (file.size > maxSize) {
+        toast.error(`File "${file.name}" exceeds ${(maxSize / 1024 / 1024).toFixed(0)}MB limit.`)
         return
       }
 

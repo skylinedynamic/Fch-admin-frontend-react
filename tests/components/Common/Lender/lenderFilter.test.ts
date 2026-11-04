@@ -64,3 +64,20 @@ describe('filterLenders', () => {
     expect(ids(filterLenders(lenders, { search: 'fundbox', category: 'Equipment Financing', lenderName: '' }))).toEqual([])
   })
 })
+
+// R2 BUG-008: two lenders may share a name; each is shown, filtered and
+// searched as "Lender Name - Legal Name".
+describe('filterLenders - lenders that share a name', () => {
+  const kabbage = [
+    lender({ id: 5, name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }),
+    lender({ id: 6, name: 'Kabbage', legal_name: 'Kabbage Funding LLC', display_name: 'Kabbage - Kabbage Funding LLC' }),
+  ]
+
+  it('filters to the one lender chosen by its display name', () => {
+    expect(ids(filterLenders(kabbage, { ...none, lenderName: 'Kabbage - Kabbage Funding LLC' }))).toEqual([6])
+  })
+
+  it('finds a lender by its legal name', () => {
+    expect(ids(filterLenders(kabbage, { ...none, search: 'funding llc' }))).toEqual([6])
+  })
+})

@@ -252,3 +252,44 @@ describe('LenderInformationCard', () => {
     })
   })
 })
+
+// R2 BUG-008: two lenders named "Kabbage" looked identical; each reads
+// "Lender Name - Legal Name" in the table, the Lender filter, the dialog and
+// the assigned-lender card.
+describe('LenderInformationCard - lenders that share a name', () => {
+  const kabbage = [
+    lender({ id: 5, name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }),
+    lender({ id: 6, name: 'Kabbage', legal_name: 'Kabbage Funding LLC', display_name: 'Kabbage - Kabbage Funding LLC' }),
+  ]
+
+  it('names each row and the assign dialog with the legal name', async () => {
+    renderWithProviders(<LenderInformationCard lenders={kabbage} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    expect(screen.getByText('Kabbage - Kabbage Inc.')).toBeInTheDocument()
+    await userEvent.click(within(rowFor('Kabbage - Kabbage Funding LLC')).getByRole('button', { name: /assign/i }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getAllByText('Kabbage - Kabbage Funding LLC').length).toBeGreaterThan(0)
+  })
+
+  it('offers each lender once in the Lender filter, by its display name', async () => {
+    renderWithProviders(<LenderInformationCard lenders={kabbage} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    const lenderFilter = Array.from(document.querySelectorAll('.p-dropdown')).find((el) => el.textContent?.includes('All Lenders')) as HTMLElement
+    await userEvent.click(lenderFilter)
+    const option = await waitFor(() => {
+      const found = Array.from(document.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent?.trim() === 'Kabbage - Kabbage Inc.')
+      if (!found) throw new Error('no option')
+      return found as HTMLElement
+    })
+    await userEvent.click(option)
+
+    await waitFor(() => expect(screen.queryByText('Kabbage - Kabbage Funding LLC')).not.toBeInTheDocument())
+  })
+
+  it('names the assigned lender with its legal name once it is fixed', () => {
+    renderWithProviders(<LenderInformationCard lenders={kabbage} assignedLenderIds={[6]} subjectLabel="funding request" onAssign={vi.fn()} canAssign={false} onlyAssigned />)
+
+    expect(screen.getByText('Kabbage - Kabbage Funding LLC')).toBeInTheDocument()
+  })
+})

@@ -5,6 +5,7 @@ import {
   fetchInvoices,
   fetchInvoiceDetails,
   processUnifiedPayment,
+  confirmAuthenticatedPayment,
   downloadInvoice,
   sendInvoice,
 } from '../../../src/modules/invoice/services'
@@ -52,5 +53,20 @@ describe('invoice services', () => {
     )
     await expect(downloadInvoice(5)).resolves.toEqual({ status: true })
     await expect(sendInvoice(5)).resolves.toEqual({ status: true, message: 'Sent' })
+  })
+
+  it('confirmAuthenticatedPayment posts only the payment id after the 3-D Secure challenge', async () => {
+    let receivedBody: unknown = null
+    server.use(
+      http.post('*/payment/confirm', async ({ request }) => {
+        receivedBody = await request.json()
+        return HttpResponse.json({ status: true, message: 'Payment processed successfully.', data: { success: true, payment_id: 7, status: 'succeeded' } })
+      })
+    )
+
+    const result = await confirmAuthenticatedPayment(7)
+
+    expect(receivedBody).toEqual({ payment_id: 7 })
+    expect(result.data?.status).toBe('succeeded')
   })
 })

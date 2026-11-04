@@ -6,6 +6,7 @@ import { useUpdatePassword, useUpdateProfile, useUpdateProfilePicture } from '..
 import { useAuthStore } from '../../store/auth';
 import { refreshUser } from '../../lib/auth/authApi';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
+import { apiErrorMessage } from '../../utils/formUtils';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_EMPLOYEE } from '../../config/appConfig';
 
@@ -540,7 +541,8 @@ const Profile = () => {
                                 toast.error(response.message || 'Failed to update profile picture');
                             }
                         } catch (error) {
-                            toast.error('Something went wrong while updating profile picture.');
+                            // The API says why a picture is refused: too large, not a JPG/PNG, not a real image (BUG-014).
+                            toast.error(apiErrorMessage(error, 'Something went wrong while updating profile picture.'));
                         }
                         setShowFileManager(false);
                     }

@@ -17,7 +17,6 @@ import {
   assignLenderToFundingRequest,
   assignLenderToFundingApplication,
   downloadFundingApplication,
-  getFundingApplicationAuditHistory,
 } from '../../../src/modules/application/services'
 
 afterEach(() => server.resetHandlers())
@@ -224,20 +223,6 @@ describe('assignLenderToFundingApplication', () => {
     const res = await assignLenderToFundingApplication({ id: 56, lender_ids: [4] })
     expect(receivedBody).toEqual({ lender_ids: [4] })
     expect(res.message).toBe('Lender assigned')
-  })
-})
-
-describe('getFundingApplicationAuditHistory', () => {
-  it('POSTs params to the audit-history endpoint for the given id', async () => {
-    let receivedBody: any = null
-    server.use(
-      http.post('*/common/request-application/funding-application/9/audit-history', async ({ request }) => {
-        receivedBody = await request.json()
-        return HttpResponse.json({ status: true, message: 'ok', data: [], meta: {} })
-      })
-    )
-    await getFundingApplicationAuditHistory('9', { page: 1 })
-    expect(receivedBody).toEqual({ page: 1 })
   })
 })
 

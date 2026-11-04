@@ -40,6 +40,8 @@ export const deleteLenders = async (ids: Array<number | string>) => {
 export interface LenderDeletableCheck {
     id: number;
     name: string;
+    /** "Lender Name - Legal Name" (R2 BUG-008). */
+    display_name?: string;
     is_deletable: boolean;
     reason: string | null;
 }

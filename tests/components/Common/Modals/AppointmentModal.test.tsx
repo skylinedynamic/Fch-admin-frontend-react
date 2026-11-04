@@ -2,7 +2,7 @@ import { createRef, type ComponentType, type Ref } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { act, renderWithProviders, screen, waitFor, within } from '../../../test-utils'
-import { allowBackgroundCalls, api, signIn } from '../../../pages/pageHarness'
+import { allowBackgroundCalls, api, invalid, signIn } from '../../../pages/pageHarness'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../../mocks/server'
 import { toast } from 'react-toastify'
@@ -254,6 +254,35 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
     expect(screen.getByText('Scheduling Conflict')).toBeInTheDocument()
   })
 
+  /**
+   * Defect: R2 BUG-073 - the availability check sent the client's record id
+   * (entity_id) as `assigned_for`, so the API refused it ("Assigned user does
+   * not exist.") and a clash was only reported after Confirm.
+   */
+  it('checks availability for the client by user id, the same attendee Save sends', async () => {
+    const bodies: Record<string, unknown>[] = []
+    const check = {
+      stub: () =>
+        server.use(
+          http.post('*/common/appointments/check-availability', async ({ request }) => {
+            bodies.push((await request.json()) as Record<string, unknown>)
+            return HttpResponse.json({ status: true, data: { available: true } })
+          })
+        ),
+    }
+    const { update, user } = await edit(check)
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => expect(update.calls).toBe(1))
+    expect(bodies.length).toBeGreaterThan(0)
+    bodies.forEach((body) => {
+      expect(body.assigned_for).toBe(CLIENT_ID)
+      expect(body).not.toHaveProperty('entity_id')
+    })
+    expect(update.bodies[0]).toMatchObject({ assigned_for: CLIENT_ID })
+  })
+
   it('without a conflict, saves once with the client and says only that it was updated', async () => {
     // The only appointment at that time is this one.
     const check = availability({ available: false, scheduler_conflicts: [{ id: 1, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }], assignee_conflicts: [] })
@@ -269,3 +298,61 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
   })
 })
 
+
+// BUG-004 (QA round 2): the description is stored HTML; it must not run script.
+describe('AppointmentModal - the description cannot run script (BUG-004)', () => {
+  it('shows the description without the onerror handler', async () => {
+    await open(CLIENT_ID, appointment({ description: 'Bring <b>statements</b> <img src=x onerror="window.__xss = 1">' }))
+
+    expect(await screen.findByText('statements')).toBeInTheDocument()
+    expect(document.body.querySelector('[onerror]')).toBeNull()
+  })
+})
+
+/**
+ * Round 2 BUG-024: an appointment at 11:30 PM had an empty end list, saved as
+ * 0 minutes, and the API's 422 ("Duration must be at least 1 minute.") was
+ * shown nowhere - the modal just stayed open.
+ */
+describe('AppointmentModal - an appointment that ends after midnight (R2 BUG-024)', () => {
+  const lateNight = appointment({ appointment_date: '2999-10-28 23:30:00', duration_minutes: 30 })
+  const endLabel = () => document.querySelectorAll('.time-slot-container .p-dropdown-label')[1]?.textContent
+
+  const editLateNight = async () => {
+    const opened = await open(CLIENT_ID, lateNight)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /edit/i }))
+    await screen.findByRole('button', { name: /save changes/i })
+    return { ...opened, user }
+  }
+
+  it('ends at 12:00 AM the next day, and saves as 30 minutes', async () => {
+    const { update, user } = await editLateNight()
+
+    expect(endLabel()).toBe('12:00 AM (next day)')
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => expect(update.calls).toBe(1))
+    expect(update.bodies[0]).toMatchObject({ appointment_date: '2999-10-28 23:30:00', duration_minutes: 30 })
+  })
+
+  it('shows the API refusing the duration beside the time slot', async () => {
+    const { user } = await editLateNight()
+    api('put', '/common/appointments/1', invalid({ duration_minutes: 'Duration must be at least 1 minute.' }), 422)
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    expect(await screen.findByText('Duration must be at least 1 minute.')).toBeInTheDocument()
+  })
+
+  it('shows the reason under the time slot, not as a toast, when the API refuses a field the form has no place for', async () => {
+    const { user } = await editLateNight()
+    api('put', '/common/appointments/1', invalid({ status: 'The status is not valid.' }), 422)
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    const reason = await screen.findByText('The status is not valid.')
+    expect(reason.previousElementSibling).toHaveClass('time-slot-container')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+})

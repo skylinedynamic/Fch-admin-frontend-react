@@ -153,3 +153,64 @@ describe('FundedAmountModal', () => {
     expect(within(warning.parentElement as HTMLElement).getByText('Important:')).toBeInTheDocument()
   })
 })
+
+// R2 BUG-038: closing an application requested at $12,000 with a funded amount
+// of $60,000 gave no warning, though closing locks the application for good.
+describe('FundedAmountModal - a funded amount above the requested one', () => {
+  const renderModal = (onConfirm = vi.fn()) => {
+    renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} initialAmount="12000" requestedAmount={12000} />)
+    return onConfirm
+  }
+  const confirmed = () => screen.getByLabelText(/I have checked this amount/i)
+
+  it('closes at or below the requested amount without an extra step', async () => {
+    const onConfirm = renderModal()
+
+    expect(screen.queryByText(/above the requested/i)).not.toBeInTheDocument()
+    await userEvent.click(confirm())
+
+    expect(onConfirm).toHaveBeenCalledWith('12000', null)
+  })
+
+  it('warns above the requested amount and asks for a confirmation first', async () => {
+    const onConfirm = renderModal()
+
+    await userEvent.clear(fundedInput())
+    await userEvent.type(fundedInput(), '60000')
+
+    expect(screen.getByText(/\$60,000\.00 is above the requested \$12,000\.00/)).toBeInTheDocument()
+    expect(confirm()).toBeDisabled()
+
+    await userEvent.click(confirmed())
+    expect(confirm()).toBeEnabled()
+    await userEvent.click(confirm())
+
+    expect(onConfirm).toHaveBeenCalledWith('60000', null)
+  })
+
+  it('asks again when the amount is changed after confirming it', async () => {
+    renderModal()
+    await userEvent.clear(fundedInput())
+    await userEvent.type(fundedInput(), '60000')
+    await userEvent.click(confirmed())
+
+    await userEvent.type(fundedInput(), '0')
+
+    expect(confirm()).toBeDisabled()
+  })
+})
+
+// R2 BUG-036: the Success Fee takes what the API accepts, 1-100%; the admin /
+// partner split may still be 0-100.
+describe('FundedAmountModal - commission ranges', () => {
+  it('limits the Success Fee to 1-100% and the split rates to 0-100%', () => {
+    renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission />)
+
+    const fee = screen.getByLabelText('Success Fee (%)')
+    expect(fee).toHaveAttribute('min', '1')
+    expect(fee).toHaveAttribute('max', '100')
+    expect(fee).toHaveAttribute('step', '0.01')
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveAttribute('min', '0')
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveAttribute('min', '0')
+  })
+})

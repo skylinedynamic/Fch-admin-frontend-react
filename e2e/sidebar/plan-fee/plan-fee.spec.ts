@@ -215,6 +215,31 @@ test.describe('Plan & Fee - saving', () => {
     await expect(page.locator('.invalid-feedback')).toHaveCount(0)
   })
 
+  // BUG-076: 10.555 went through and the confirmation showed $10.55. A box
+  // takes at most 2 digits after the point: the 3rd is not typed in, so 10.55
+  // is what is checked and confirmed.
+  test('Total Amount does not take a 3rd decimal digit; 10.55 is checked and confirmed', async ({ page }) => {
+    const api = await open(page)
+    const amount = await withValue(page, '499.00')
+    await amount.fill('')
+    await amount.pressSequentially('10.555')
+    await expect(amount).toHaveValue('10.55')
+    await save(page).click()
+
+    const call = await expectCall(api, 'PUT', CHECK(11))
+    expect(String(call.json.total_amount)).toBe('10.55')
+    await expect(confirm(page)).toBeVisible()
+    await expect(page.locator('.plan-fee-confirm-modal-body')).toContainText('$10.55')
+  })
+
+  test('the platform fee does not take a 3rd decimal digit either', async ({ page }) => {
+    await open(page)
+    const fee = await withValue(page, '99.00')
+    await fee.fill('')
+    await fee.pressSequentially('1.005')
+    await expect(fee).toHaveValue('1.00')
+  })
+
   test('an empty amount is sent as empty for the API to refuse, not as 0', async ({ page }) => {
     const api = await open(page)
     api.add({ method: 'PUT', match: CHECK(11), status: 422, body: failure('Enter the total amount.', { total_amount: 'Enter the total amount.' }) })

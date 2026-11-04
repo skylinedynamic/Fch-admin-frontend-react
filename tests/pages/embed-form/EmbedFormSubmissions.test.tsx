@@ -69,10 +69,11 @@ describe('Embedded Form › Loan Applications › partner', () => {
     )
     renderWithProviders(<EmbedFormSubmissions />)
 
+    // The Action column says Rejected (with how to convert it) instead of a
+    // disabled convert button.
     const rejectedRow = (await screen.findByText('Odessa Mccall')).closest('tr') as HTMLElement
-    const convert = within(rejectedRow).getByRole('button', { name: /Convert to Free Plan Borrower/ })
-    expect(convert).toBeDisabled()
-    expect(convert).toHaveAttribute('title', 'Rejected applications cannot be converted. Change the status to convert it.')
+    expect(within(rejectedRow).queryByRole('button', { name: /Convert to Free Plan Borrower/ })).not.toBeInTheDocument()
+    expect(within(rejectedRow).getByTitle('Rejected applications cannot be converted. Change the status to convert it.')).toHaveTextContent('Rejected')
 
     const newRow = screen.getByText('Ava Ortiz').closest('tr') as HTMLElement
     expect(within(newRow).getByRole('button', { name: /Convert to Free Plan Borrower/ })).toBeEnabled()

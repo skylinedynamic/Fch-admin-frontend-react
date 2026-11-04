@@ -125,6 +125,38 @@ test.describe('Client › Credit Profile', () => {
     await expect.poll(() => saves.length).toBe(1)
   })
 
+  // BUG-074: a cleared FICO Score is refused (422) and the reason shows under
+  // the field; with a score typed in, the same Save goes through.
+  test('the host cannot save a credit profile without a FICO Score', async ({ page }) => {
+    const saves: Array<{ metrics?: { fico_score?: unknown } }> = []
+    await openCreditProfile(page, true, { profile: PROFILE })
+    await page.route(`${API_ORIGIN}/common/borrowers/save-credit-profile`, (route) => {
+      const body = route.request().postDataJSON()
+      saves.push(body)
+      if (body?.metrics?.fico_score === '' || body?.metrics?.fico_score == null) {
+        return route.fulfill({
+          status: 422,
+          json: { message: 'Enter the FICO score.', errors: { 'metrics.fico_score': ['Enter the FICO score.'] } },
+        })
+      }
+      return ok(route, null, 'Credit profile saved successfully.')
+    })
+
+    const fico = page.getByLabel(/^FICO Score/)
+    await fico.fill('')
+    await page.getByRole('button', { name: /save credit profile/i }).click()
+
+    await expect(page.locator('.invalid-feedback', { hasText: 'Enter the FICO score.' })).toBeVisible()
+    await expect(fico).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByText('Credit profile saved successfully!')).toHaveCount(0)
+
+    await fico.fill('712')
+    await expect(page.getByText('Enter the FICO score.')).toHaveCount(0)
+    await page.getByRole('button', { name: /save credit profile/i }).click()
+    await expect(page.getByText('Credit profile saved successfully!')).toBeVisible()
+    expect(saves).toHaveLength(2)
+  })
+
   test('a file that is not a credit report is refused with the reason', async ({ page }) => {
     await openCreditProfile(page, true, { profile: null })
     await page.route(`${API_ORIGIN}/common/borrowers/parse-credit-profile`, (route) =>

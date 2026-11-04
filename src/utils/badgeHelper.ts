@@ -1,5 +1,6 @@
 import { DOCUMENT_STATUS } from '../config/documentStatus';
 import { FUNDING_REVIEW_STATUS } from '../config/funding';
+import { REGULAR_PLAN_LABEL } from '../config/borrower';
 
 /**
  * Badge for a partner's free trial state (used on the Partners list).
@@ -37,6 +38,22 @@ export const getBorrowerFreeEditionBadgeConfig = (freeTrialEndDate?: string | nu
         }
     }
     return { label: 'Free Plan', badgeClass: 'bg-success-subtle text-success' };
+};
+
+/**
+ * Badge for a client's real plan (BUG-058): a free client's Free Plan (or
+ * Free Plan Expired), a paid client's enrollment type - e.g. "One Time
+ * Payment" - or the Regular Plan when no enrollment is on record.
+ */
+export const getBorrowerPlanBadgeConfig = (borrower: {
+    is_free_trail?: boolean | number | null;
+    free_trail_end_date?: string | null;
+    enrollment_type?: string | null;
+}) => {
+    if (borrower.is_free_trail) {
+        return getBorrowerFreeEditionBadgeConfig(borrower.free_trail_end_date);
+    }
+    return { label: borrower.enrollment_type || REGULAR_PLAN_LABEL, badgeClass: 'bg-primary-subtle text-primary' };
 };
 
 export const getDocStatusBadgeConfig = (status: string) => {

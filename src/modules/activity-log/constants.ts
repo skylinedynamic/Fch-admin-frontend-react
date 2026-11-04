@@ -164,3 +164,8 @@ export const withFormLevelError = (
     const unshown = getActivityValidationToast(errors, shownFields);
     return unshown ? { ...errors, form: [unshown] } : errors;
 };
+
+// A host's New Email goes out with the client's partner's mail settings, or the
+// host's own (fch-api ActivityLog::EMAIL_SENDER_*). Sent as `send_from`.
+export const ACTIVITY_EMAIL_SENDER_PARTNER = 'partner';
+export const ACTIVITY_EMAIL_SENDER_HOST = 'host';

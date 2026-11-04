@@ -10,6 +10,7 @@ import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { countries } from '../../../../../modules/location'
 import { useOwnershipInfo, useSaveOwnershipInfo } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { citizenshipOptions } from '../../../../../data/profile'
 import { toast } from 'react-toastify'
 import { formatPhoneNumber, formatSSN, unformatSSN, formatZipCode } from '../../../../../utils/borrowerFormatters'
@@ -124,6 +125,8 @@ export default function OwnershipInformationStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       const errors = error.response?.data?.errors
       if (errors) {
         setValidationErrors(errors)

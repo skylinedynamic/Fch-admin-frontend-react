@@ -74,6 +74,18 @@ describe('RolesPermissions', () => {
     expect(await screen.findByTestId('landing')).toHaveTextContent('navigated:/roles-permissions/edit/2')
   })
 
+  // R2 BUG-011: a static (system) role is read-only, so its card offers View Role, not Edit Role.
+  it('a static role offers View Role instead of Edit Role, opening the same page', async () => {
+    const user = userEvent.setup()
+    const { container } = mount()
+    await screen.findByRole('heading', { name: 'Agent' })
+
+    expect(within(card(container, 'Super Admin')).queryByRole('button', { name: /edit role/i })).toBeNull()
+    await user.click(within(card(container, 'Super Admin')).getByRole('button', { name: /view role/i }))
+
+    expect(await screen.findByTestId('landing')).toHaveTextContent('navigated:/roles-permissions/edit/1')
+  })
+
   it('links to the create page', async () => {
     mount()
     await screen.findByRole('heading', { name: 'Agent' })
@@ -305,6 +317,61 @@ describe('EditRole', () => {
 
     expect(formLabels(container)).toEqual(expect.arrayContaining(['Role name *', 'Role Permissions *']))
     expect(screen.getByRole('heading', { name: 'Module Permissions' })).toBeInTheDocument()
+  })
+
+  /**
+   * R2 BUG-011: the seeded Admin role opened with every control enabled - a
+   * save could strip the only admin's access. A static role is read-only.
+   */
+  describe('a static (system) role', () => {
+    const mountStatic = () => {
+      api('post', '/common/permissions', { status: true, data: PERMISSIONS })
+      api('get', '/common/roles/1', { status: true, data: { id: 1, name: 'Admin', description: 'Everything', is_static: true, permission: { 1: 'view users', 2: 'create users', 3: 'view clients', 4: 'delete clients' }, users: [] } })
+      const update = api('put', '/common/roles/1', { status: true, message: 'Role updated successfully.' })
+      return { ...renderPage(<EditRole />, { path: '/roles-permissions/edit/:id', route: '/roles-permissions/edit/1' }), update }
+    }
+
+    it('says it is a system role that cannot be changed', async () => {
+      mountStatic()
+
+      expect(await screen.findByText('This is a system role. Its name and permissions cannot be changed.')).toBeInTheDocument()
+    })
+
+    it('the notice is a "System role" banner with a Read-only badge', async () => {
+      mountStatic()
+
+      const notice = await screen.findByRole('status')
+      expect(notice).toHaveClass('role-system-notice')
+      expect(within(notice).getByText('System role')).toBeInTheDocument()
+      expect(within(notice).getByText('Read-only')).toHaveClass('role-system-notice__badge')
+    })
+
+    it('shows its name and permissions with every control disabled, and no Update', async () => {
+      const { container } = mountStatic()
+      await waitFor(() => expect(screen.getByPlaceholderText('Enter a role name')).toHaveValue('Admin'))
+      await waitFor(() => expect(container.querySelectorAll('input[id^="perm-"]:checked')).toHaveLength(4))
+
+      expect(screen.getByPlaceholderText('Enter a role name')).toBeDisabled()
+      expect(screen.getByPlaceholderText('Enter role description')).toBeDisabled()
+      expect(screen.getByLabelText('Administrator Access')).toBeDisabled()
+      container.querySelectorAll('input[id^="perm-"], input[id^="selectAll-"]').forEach((input) => expect(input).toBeDisabled())
+      expect(screen.queryByRole('button', { name: /update/i })).toBeNull()
+    })
+
+    it('says View Role rather than Edit', async () => {
+      mountStatic()
+
+      expect(await screen.findByRole('heading', { name: 'View Role' })).toBeInTheDocument()
+    })
+  })
+
+  it('an editable role keeps its controls and Update', async () => {
+    mount()
+    await waitFor(() => expect(screen.getByPlaceholderText('Enter a role name')).toHaveValue('Agent'))
+
+    expect(screen.getByPlaceholderText('Enter a role name')).toBeEnabled()
+    expect(screen.getByRole('button', { name: /update/i })).toBeEnabled()
+    expect(screen.queryByText(/This is a system role/)).toBeNull()
   })
 
   it('marks the permissions box when the API says permissions are required', async () => {

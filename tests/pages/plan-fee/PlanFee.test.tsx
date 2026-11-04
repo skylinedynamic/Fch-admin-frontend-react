@@ -169,6 +169,49 @@ describe('PlanFee', () => {
       expect(toast.error).not.toHaveBeenCalledWith('Failed to update plan')
     })
 
+    // BUG-076: 10.555 was let through and shown as $10.55. A box takes at most
+    // 2 digits after the decimal point: the 3rd one is not typed in, so 10.55
+    // is what is checked and confirmed. (The API refuses 3 decimals too.)
+    it('does not take a 3rd decimal digit in Total Amount', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      const check = api('put', CHECK(11), { status: true, message: 'The values are valid.', data: null })
+
+      const amount = await saveAmount(user, container, '10.555')
+
+      expect(amount).toHaveValue(10.55)
+      await waitFor(() => expect(check.calls).toBe(1))
+      expect(String(check.bodies[0]?.total_amount)).toBe('10.55')
+      expect(await screen.findByText('$10.55')).toBeInTheDocument()
+    })
+
+    it('does not take a 3rd decimal digit in the platform fee', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      await waitFor(() => expect(amountInputs(container).length).toBeGreaterThanOrEqual(2))
+      const fee = amountInputs(container).find((input) => input.value === '99.00')!
+
+      await user.clear(fee)
+      await user.type(fee, '1.005')
+
+      // 1.00 in the box: the 5 was not taken.
+      expect(fee).toHaveValue(1)
+      expect(fee.value).not.toContain('5')
+    })
+
+    it('shows the API refusal for an amount the box did not stop (pasted)', async () => {
+      const user = userEvent.setup()
+      const { container } = mount()
+      const message = 'The total amount can have at most 2 decimal places.'
+      api('put', CHECK(11), invalid({ total_amount: message }), 422)
+
+      const amount = await saveAmount(user, container, '10.5')
+
+      expect(await screen.findByText(message)).toBeInTheDocument()
+      expect(amount).toHaveClass('is-invalid')
+      expect(confirmDialog()).not.toBeInTheDocument()
+    })
+
     it('keeps the refused value in the box, beside its message', async () => {
       const user = userEvent.setup()
       const { container } = mount()

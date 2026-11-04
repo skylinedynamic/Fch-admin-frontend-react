@@ -48,7 +48,8 @@ export const deletePartner = async (id: string | number): Promise<void> => {
  * The caller's team - or, for the host, the team of the partner it names.
  * The assign pickers send `active_only` (inactive staff left out) and
  * `keep_ids` (whoever is already assigned, kept even if inactive); list
- * filters send neither and get everyone.
+ * filters send neither and get everyone. Each member carries `is_inactive`,
+ * so a kept assignee can be marked (R2 BUG-051).
  */
 export const allUsers = async (
   payload: { partner_id?: number; active_only?: boolean; keep_ids?: number[] } = {}
