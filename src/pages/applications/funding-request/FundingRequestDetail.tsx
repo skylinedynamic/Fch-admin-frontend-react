@@ -9,7 +9,7 @@ import { handleFileDownload, downloadFromUrl } from '../../../utils/fileDownload
 import { downloadBorrowerDocument } from '../../../modules/client/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
-import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS } from '../../../config/funding';
+import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS, REJECT_REASON_MAX_LENGTH, REJECT_NOTE_PREVIEW_LENGTH } from '../../../config/funding';
 import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 import { Dropdown } from 'primereact/dropdown';
@@ -34,8 +34,11 @@ export default function FundingRequestDetail() {
     const isHost = currentUser?.is_host == 1;
 
     const [rejectReason, setRejectReason] = useState('');
+    // A long note is folded in the confirmation; it opens folded each time.
+    const [rejectNoteExpanded, setRejectNoteExpanded] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
+    useEffect(() => { if (showStatusModal) setRejectNoteExpanded(false); }, [showStatusModal]);
     const [showMissingLenderModal, setShowMissingLenderModal] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState('');
     const [validationErrors, setValidationErrors] = useState<any>({});
@@ -83,6 +86,13 @@ export default function FundingRequestDetail() {
             setSelectedStatus(review.status);
         }
     }, [review?.status]);
+
+    // A rejected request opens with the reason it was saved with.
+    useEffect(() => {
+        if (review?.status === FUNDING_REVIEW_STATUS.REJECTED && review.reject_reason) {
+            setRejectReason(review.reject_reason);
+        }
+    }, [review?.status, review?.reject_reason]);
 
     // Use standard CSS sticky instead of JS listener to avoid jumping/cut-off issues
 
@@ -725,7 +735,11 @@ export default function FundingRequestDetail() {
                                                             }
                                                         }}
                                                         placeholder="Please provide a reason for rejection..."
+                                                        maxLength={REJECT_REASON_MAX_LENGTH}
                                                     ></textarea>
+                                                    <div className="form-text text-end">
+                                                        {rejectReason.length.toLocaleString('en-US')} / {REJECT_REASON_MAX_LENGTH.toLocaleString('en-US')}
+                                                    </div>
                                                     {validationErrors.reject_reason && (
                                                         <div className="invalid-feedback d-block mt-2">
                                                             {validationErrors.reject_reason[0]}
@@ -855,7 +869,22 @@ export default function FundingRequestDetail() {
                                         <i className="ri-chat-3-line me-1"></i> Rejection Note
                                     </p>
                                     <div className="border rounded-3 p-3 text-dark fs-13 fr-style-44b06d7f">
-                                        {rejectReason}
+                                        {/* A long note folds, so the dialog stays on one screen. */}
+                                        <div data-testid="reject-note-preview" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                                            {rejectNoteExpanded || rejectReason.length <= REJECT_NOTE_PREVIEW_LENGTH
+                                                ? rejectReason
+                                                : `${rejectReason.slice(0, REJECT_NOTE_PREVIEW_LENGTH).trimEnd()}…`}
+                                        </div>
+                                        {rejectReason.length > REJECT_NOTE_PREVIEW_LENGTH && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-link btn-sm p-0 mt-2 fw-semibold"
+                                                onClick={() => setRejectNoteExpanded(v => !v)}
+                                                aria-expanded={rejectNoteExpanded}
+                                            >
+                                                {rejectNoteExpanded ? 'See less' : 'See more'}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}

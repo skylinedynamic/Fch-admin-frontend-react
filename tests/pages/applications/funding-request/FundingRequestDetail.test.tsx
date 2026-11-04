@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import { server } from '../../../mocks/server'
-import { renderWithProviders, screen, waitFor, within } from '../../../test-utils'
+import { fireEvent, renderWithProviders, screen, waitFor, within } from '../../../test-utils'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import FundingRequestDetail from '../../../../src/pages/applications/funding-request/FundingRequestDetail'
 import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
@@ -100,6 +100,83 @@ describe('Funding Request Details: action buttons', () => {
     expect(screen.getByPlaceholderText(/reason/i)).toBeInTheDocument()
     expect(confirm).toHaveClass('btn-primary')
     expect(confirm).not.toHaveClass('btn-dark')
+  })
+
+  /**
+   * Defect: a rejected request opened with an empty Reason / Note - the saved
+   * reject_reason came back from the API but the box always started blank, so
+   * after a save or a reload the reason seemed lost.
+   */
+  it('opens a rejected request with its saved reason in Reason / Note', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected', reject_reason: 'Missing bank statements' } })
+      )
+    )
+    renderPage()
+
+    const note = await screen.findByPlaceholderText(/reason/i)
+    await waitFor(() => expect(note).toHaveValue('Missing bank statements'))
+    expect(screen.getByText('23 / 10,000')).toBeInTheDocument()
+  })
+
+  /**
+   * Defect: Reason / Note had no limit and no counter; the API now takes up to
+   * 10,000 characters, and the box stops there and shows how many are used.
+   */
+  it('counts the rejection note against its 10,000 characters', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected' } })
+      )
+    )
+    renderPage()
+
+    const note = await screen.findByPlaceholderText(/reason/i)
+    expect(note).toHaveAttribute('maxLength', '10000')
+    expect(screen.getByText('0 / 10,000')).toBeInTheDocument()
+    fireEvent.change(note, { target: { value: 'Missing bank statements' } })
+    expect(screen.getByText('23 / 10,000')).toBeInTheDocument()
+  })
+
+  /**
+   * Defect: a long rejection note made "Confirm Status Update" taller than the
+   * screen. The note shows its start with See more, and See less folds it again.
+   */
+  it('shows a long rejection note folded in the confirmation, with See more and See less', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected' } })
+      )
+    )
+    renderPage()
+    const longNote = 'The borrower did not send the bank statements we asked for. '.repeat(20).trim()
+
+    fireEvent.change(await screen.findByPlaceholderText(/reason/i), { target: { value: longNote } })
+    fireEvent.click(screen.getByRole('button', { name: /^confirm/i }))
+
+    const preview = await screen.findByTestId('reject-note-preview')
+    expect(preview.textContent).not.toContain(longNote)
+    const more = within(preview.parentElement as HTMLElement).getByRole('button', { name: 'See more' })
+    fireEvent.click(more)
+    expect(preview.textContent).toContain(longNote)
+    fireEvent.click(within(preview.parentElement as HTMLElement).getByRole('button', { name: 'See less' }))
+    expect(preview.textContent).not.toContain(longNote)
+  })
+
+  it('shows a short rejection note in full, without See more', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected' } })
+      )
+    )
+    renderPage()
+
+    fireEvent.change(await screen.findByPlaceholderText(/reason/i), { target: { value: 'Missing bank statements' } })
+    fireEvent.click(screen.getByRole('button', { name: /^confirm/i }))
+
+    expect((await screen.findByTestId('reject-note-preview')).textContent).toContain('Missing bank statements')
+    expect(screen.queryByRole('button', { name: 'See more' })).not.toBeInTheDocument()
   })
 })
 
