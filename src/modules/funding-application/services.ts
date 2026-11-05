@@ -161,12 +161,6 @@ export const fetchDisclosuresConsent = async (fundingRequestId?: number | string
   return data.data
 }
 
-/** Purpose of Funds: the backend's one list (config purposes_of_funds), in its order. */
-export const fetchFundingPurposes = async (): Promise<string[]> => {
-  const { data } = await apiClient.get<{ data: string[] }>('/common/funding-purposes')
-  return data.data ?? []
-}
-
 /** Preferred / Additional Funding Types: the Active lender product categories, in their order. */
 export const fetchFundingTypes = async (): Promise<string[]> => {
   const { data } = await apiClient.get<{ data: string[] }>('/common/funding-types')

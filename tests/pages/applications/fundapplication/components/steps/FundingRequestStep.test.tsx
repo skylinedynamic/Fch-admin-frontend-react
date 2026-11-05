@@ -62,13 +62,10 @@ let fetchedIds: string[] = []
 
 // Lenders > Product Categories, the funding types offered (GET /common/funding-types).
 const categories = ['Term Loan', 'Business Line of Credit', 'SBA Financing', 'Equipment Financing']
-// Purpose of Funds, from the API (GET /common/funding-purposes).
-const purposes = ['Working Capital', 'Payroll', 'Furniture, Fixtures & Equipment (FF&E)', 'Equipment Purchase', 'Inventory', 'Other']
 
 const serve = (data: Record<string, unknown>, onPost?: (body: any) => void) =>
   server.use(
     http.get('*/common/funding-types', () => HttpResponse.json({ status: true, data: categories })),
-    http.get('*/common/funding-purposes', () => HttpResponse.json({ status: true, data: purposes })),
     http.get('*/common/funding-application/funding-request', ({ request }) => {
       fetchedIds.push(new URL(request.url).searchParams.get('funding_request_id') ?? '')
       return HttpResponse.json({ status: true, data })
@@ -236,51 +233,6 @@ describe('Funding application › Step 4: Funding Request › Additional Funding
 })
 
 describe('Funding application › Step 4: Funding Request › Purpose of Funds', () => {
-  it('offers the purposes from the API, nothing else', async () => {
-    serve({ ...apiFunding, purpose_of_funds: null })
-    const user = userEvent.setup()
-    const { container } = renderStep()
-
-    await screen.findByText('Additional Funding Types')
-    await user.click(picker(container, 'purpose_of_funds').querySelector('.p-multiselect-trigger') as HTMLElement)
-
-    await waitFor(() => {
-      const panel = picker(container, 'purpose_of_funds').querySelector('.p-multiselect-panel') as HTMLElement
-      expect(Array.from(panel.querySelectorAll('li.p-multiselect-item')).map((o) => o.textContent?.trim())).toEqual(purposes)
-    })
-  })
-
-  /**
-   * Request 2026-11-05: Purpose of Funds offers only the configured purposes
-   * (GET /common/funding-purposes). A saved purpose that is not on that list
-   * (e.g. a funding type such as "Sajib Product") is cleared, to be chosen again.
-   */
-  it('offers only the configured purposes and clears a saved one that is not on the list', async () => {
-    let posted: any = null
-    serve({ ...apiFunding, purpose_of_funds: 'Working Capital, Sajib Product' }, (body) => (posted = body))
-    const user = userEvent.setup()
-    const { container, save } = renderStep()
-
-    await waitFor(() => expect(chipsOf(container, 'purpose_of_funds')).toEqual(['Working Capital']))
-
-    await user.click(picker(container, 'purpose_of_funds').querySelector('.p-multiselect-trigger') as HTMLElement)
-    await waitFor(() => {
-      const panel = picker(container, 'purpose_of_funds').querySelector('.p-multiselect-panel') as HTMLElement
-      expect(Array.from(panel.querySelectorAll('li.p-multiselect-item')).map((o) => o.textContent?.trim())).toEqual(purposes)
-    })
-
-    await waitFor(async () => {
-      expect(await save()).toBe(true)
-      expect(posted.purpose_of_funds).toBe('Working Capital')
-    })
-  })
-  it('keeps the comma inside "Furniture, Fixtures & Equipment (FF&E)" when it reads a saved purpose', async () => {
-    serve({ ...apiFunding, purpose_of_funds: 'Working Capital, Furniture, Fixtures & Equipment (FF&E)' })
-    const { container } = renderStep()
-
-    await waitFor(() => expect(chipsOf(container, 'purpose_of_funds')).toEqual(['Working Capital', 'Furniture, Fixtures & Equipment (FF&E)']))
-  })
-
   afterEach(() => {
     server.resetHandlers()
     fetchedIds = []

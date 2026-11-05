@@ -17,9 +17,9 @@ import { setEditRequiresConfirmation, setEditConfirmationResolving, resetEditCon
 
 // Hooks
 import { useCoBorrowers } from './hooks/useCoBorrowers'
-import { FUNDING_PURPOSE_OTHER, joinPurposes, splitPurposes, timeframeOptions, withoutPreferredFundingType } from '../../../data/profile'
+import { FUNDING_PURPOSE_OTHER, purposeOfFundingOptions, timeframeOptions, withoutPreferredFundingType } from '../../../data/profile'
 import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower'
-import { useFundingPurposes, useFundingRequest, useFundingApplicationDocuments } from '../../../modules/funding-application/queries'
+import { useFundingRequest, useFundingApplicationDocuments } from '../../../modules/funding-application/queries'
 import { formatCurrency } from '../../../utils/borrowerFormatters'
 
 // Types & Utils
@@ -35,6 +35,30 @@ import {
   type FederalCompliance,
 } from './types'
 
+
+const matchPurpose = (raw: string | null | undefined): string => {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+
+  if (trimmed.includes(',')) {
+    return trimmed
+  }
+
+  const exact = purposeOfFundingOptions.find(o => o.value.toLowerCase() === trimmed.toLowerCase())
+  if (exact) return exact.value
+
+  const lowerAll = trimmed.toLowerCase()
+  if (lowerAll === 'working capital') return 'Working Capital'
+  if (lowerAll.includes('equipment')) return 'Equipment Purchase'
+  if (lowerAll.includes('inventory')) return 'Inventory'
+  if (lowerAll.includes('payroll')) return 'Payroll'
+  if (lowerAll.includes('real estate') || lowerAll.includes('property')) return 'Commercial Real Estate Purchase'
+  if (lowerAll.includes('line of credit')) return 'Business Line of Credit'
+  if (lowerAll.includes('expansion')) return 'Business Expansion'
+  if (lowerAll.includes('acquisition')) return 'Business Acquisition'
+
+  return trimmed
+}
 
 const matchTimeframe = (raw: string | null | undefined): string => {
   if (!raw) return ''
@@ -86,12 +110,6 @@ const FEDERAL_COMPLIANCE_KEYS: (keyof FederalCompliance)[] = [
 ]
 
 export default function FundApplication() {
-  const { data: fundingPurposes } = useFundingPurposes()
-  // A saved purpose, normalised against the purposes from the API (GET
-  // /common/funding-purposes). Before they load it is kept as written; the
-  // Funding Request step reads it again with the list.
-  const matchPurpose = (raw: string | null | undefined): string =>
-    joinPurposes(splitPurposes(raw, fundingPurposes ?? []))
   const navigate = useNavigate()
   // `id` is a funding request id (/fund-application/:id); `applicationId` is a
   // funding application's own id (/intake-review/funding-application/:applicationId/edit) -

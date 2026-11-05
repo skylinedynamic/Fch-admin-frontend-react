@@ -55,12 +55,33 @@ export const fundingUrgencyOptions: OptionType[] = [
 
 export const FUNDING_PURPOSE_OTHER = 'Other'
 
-/**
- * Purpose of Funds choices: the purposes from the API (GET /common/funding-purposes -
- * the backend's one list, the same the embed form shows), in their order.
- */
-export const purposeOptionsFrom = (purposes: string[] | null | undefined): OptionType[] =>
-  (purposes ?? []).map((name) => ({ label: name, value: name }))
+export const purposeOfFundingOptions: OptionType[] = [
+  { label: 'Accounts Receivable', value: 'Accounts Receivable' },
+  { label: 'Business Acquisition', value: 'Business Acquisition' },
+  { label: 'Business Expansion', value: 'Business Expansion' },
+  { label: 'Business Line of Credit', value: 'Business Line of Credit' },
+  { label: 'Commercial Real Estate Purchase', value: 'Commercial Real Estate Purchase' },
+  { label: 'Commercial Real Estate Refinance', value: 'Commercial Real Estate Refinance' },
+  { label: 'Debt Refinance / Consolidation', value: 'Debt Refinance / Consolidation' },
+  { label: 'Equipment Lease', value: 'Equipment Lease' },
+  { label: 'Equipment Purchase', value: 'Equipment Purchase' },
+  { label: 'Franchise Purchase', value: 'Franchise Purchase' },
+  { label: 'Furniture, Fixtures & Equipment (FF&E)', value: 'Furniture, Fixtures & Equipment (FF&E)' },
+  { label: 'Ground-Up Construction', value: 'Ground-Up Construction' },
+  { label: 'Inventory', value: 'Inventory' },
+  { label: 'Land Purchase / Development', value: 'Land Purchase / Development' },
+  { label: 'Marketing / Advertising', value: 'Marketing / Advertising' },
+  { label: 'Owner Occupied Commercial Property', value: 'Owner Occupied Commercial Property' },
+  { label: 'Partner Buyout', value: 'Partner Buyout' },
+  { label: 'Payroll', value: 'Payroll' },
+  { label: 'Professional Services', value: 'Professional Services' },
+  { label: 'Renovation / Tenant Improvements', value: 'Renovation / Tenant Improvements' },
+  { label: 'Startup Costs', value: 'Startup Costs' },
+  { label: 'Technology / Software', value: 'Technology / Software' },
+  { label: 'Transportation / Fleet', value: 'Transportation / Fleet' },
+  { label: 'Working Capital', value: 'Working Capital' },
+  { label: 'Other', value: 'Other' }
+]
 
 export const personalCreditScoreOptions: OptionType[] = [
   { label: 'Poor (<580)', value: 'Poor (<580)' },
@@ -145,25 +166,20 @@ export const withoutPreferredFundingType = (
 /** Purpose of Funds is sent and stored as one string, the purposes joined by this. */
 export const PURPOSE_SEPARATOR = ', '
 
-const knownPurpose = (text: string, known: string[]): string | undefined =>
-  known.find((purpose) => purpose.toLowerCase() === text.trim().toLowerCase())
+const knownPurpose = (text: string): string | undefined =>
+  purposeOfFundingOptions.find((o) => o.value.toLowerCase() === text.trim().toLowerCase())?.value
 
-/**
- * An older single free-text purpose (pre-qualification, embed form), read as
- * the list item it means - only when the list from the API has that item.
- */
-const legacyPurpose = (text: string, known: string[]): string => {
+/** An older single free-text purpose (pre-qualification, embed form), read as the list item it means. */
+const legacyPurpose = (text: string): string => {
   const lower = text.toLowerCase()
-  const meant =
-    lower.includes('equipment') ? 'Equipment Purchase'
-    : lower.includes('inventory') ? 'Inventory'
-    : lower.includes('payroll') ? 'Payroll'
-    : lower.includes('real estate') || lower.includes('property') ? 'Commercial Real Estate Purchase'
-    : lower.includes('line of credit') ? 'Business Line of Credit'
-    : lower.includes('expansion') ? 'Business Expansion'
-    : lower.includes('acquisition') ? 'Business Acquisition'
-    : null
-  return (meant && knownPurpose(meant, known)) || text
+  if (lower.includes('equipment')) return 'Equipment Purchase'
+  if (lower.includes('inventory')) return 'Inventory'
+  if (lower.includes('payroll')) return 'Payroll'
+  if (lower.includes('real estate') || lower.includes('property')) return 'Commercial Real Estate Purchase'
+  if (lower.includes('line of credit')) return 'Business Line of Credit'
+  if (lower.includes('expansion')) return 'Business Expansion'
+  if (lower.includes('acquisition')) return 'Business Acquisition'
+  return text
 }
 
 /**
@@ -171,12 +187,12 @@ const legacyPurpose = (text: string, known: string[]): string => {
  * ("Furniture, Fixtures & Equipment (FF&E)") is kept by matching the known
  * purposes first, longest run of pieces first; anything else stays as written.
  */
-export const splitPurposes = (raw: string | null | undefined, known: string[] = []): string[] => {
+export const splitPurposes = (raw: string | null | undefined): string[] => {
   const text = (raw ?? '').trim()
   if (!text) return []
 
   if (!text.includes(',')) {
-    return [knownPurpose(text, known) ?? legacyPurpose(text, known)]
+    return [knownPurpose(text) ?? legacyPurpose(text)]
   }
 
   const pieces = text.split(',')
@@ -185,14 +201,14 @@ export const splitPurposes = (raw: string | null | undefined, known: string[] = 
     let taken = 1
     let purpose = pieces[i].trim()
     for (let j = pieces.length; j > i + 1; j--) {
-      const match = knownPurpose(pieces.slice(i, j).join(','), known)
-      if (match) {
-        purpose = match
+      const known = knownPurpose(pieces.slice(i, j).join(','))
+      if (known) {
+        purpose = known
         taken = j - i
         break
       }
     }
-    purpose = knownPurpose(purpose, known) ?? purpose
+    purpose = knownPurpose(purpose) ?? purpose
     if (purpose && !purposes.some((p) => p.toLowerCase() === purpose.toLowerCase())) {
       purposes.push(purpose)
     }
