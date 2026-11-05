@@ -76,6 +76,10 @@ jobs:
             echo "Nginx restarted successfully."
 
       - name: Post-Deployment Smoke Test
+        env:
+          # Lets the smoke test reach the new build while the maintenance page is
+          # switched on by hand on the server (sudo fch-maintenance on).
+          MAINTENANCE_BYPASS: ${{ secrets.STAGE_MAINTENANCE_BYPASS }}
         run: |
           echo "Ensuring the service is up..."
           sleep 5
@@ -84,7 +88,7 @@ jobs:
           if [ "$STAGE_URL" == "https://your-stage-domain.com" ]; then
             echo "Disclaimer: Smoke test domain is not defined. Please add STAGE_WEB_URL to GitHub Secrets."
           else
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$STAGE_URL" || echo "000")
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 -H "X-Maintenance-Bypass: $MAINTENANCE_BYPASS" "$STAGE_URL" || echo "000")
             if [ "$HTTP_STATUS" -eq 200 ]; then
                echo "✅ Smoke test passed! Staging server responded with HTTP $HTTP_STATUS."
             else
