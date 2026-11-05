@@ -21,6 +21,9 @@ export type Client = {
     /** The client's login, and a new sign-in email awaiting confirmation on it. */
     user_id?: number | null;
     pending_email?: string | null;
+    /** Signed their borrower agreement; and whether the host still asks them to (false: excused). */
+    has_sign?: boolean;
+    agreement_required?: boolean;
     signup_id?: string;
     business_website?: string;
     is_free_trail?: boolean;

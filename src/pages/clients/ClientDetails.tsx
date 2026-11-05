@@ -124,6 +124,11 @@ export default function ClientDetails() {
     const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useClientProfileStats(id as string, !!id);
     const { data: clientFullData, error: clientError, refetch: refetchClient } = useClient(id as string, !!id);
 
+    // The Agreement tab saved the switch itself: keep the new value, nothing to reload.
+    const handleAgreementRequiredChange = (required: boolean) => {
+        setFormData(prev => ({ ...prev, agreement_required: required }));
+    };
+
     const handleRefresh = () => {
         refetchStats();
         refetchClient();
@@ -572,7 +577,8 @@ export default function ClientDetails() {
                                         </button>
                                     </li>
 
-                                    {formData.has_sign && (
+                                    {/* The host also uses it before signing, to excuse this client. */}
+                                    {(formData.has_sign || (isHost && id)) && (
                                         <li className="nav-item">
                                             <button
                                                 className={`nav-link ${activeTab === ENROLLMENT_TABS.AGREEMENT ? 'active' : ''}`}
@@ -603,6 +609,7 @@ export default function ClientDetails() {
                                     isHost={isHost}
                                     nonHostPlan={nonHostPlan}
                                     onRefresh={handleRefresh}
+                                    onAgreementRequiredChange={handleAgreementRequiredChange}
                                 />
                             </div>
                         </div>
