@@ -250,6 +250,30 @@ describe('Funding application › Step 4: Funding Request › Purpose of Funds',
     })
   })
 
+  /**
+   * Request 2026-11-05: Purpose of Funds offers only the configured purposes
+   * (GET /common/funding-purposes). A saved purpose that is not on that list
+   * (e.g. a funding type such as "Sajib Product") is cleared, to be chosen again.
+   */
+  it('offers only the configured purposes and clears a saved one that is not on the list', async () => {
+    let posted: any = null
+    serve({ ...apiFunding, purpose_of_funds: 'Working Capital, Sajib Product' }, (body) => (posted = body))
+    const user = userEvent.setup()
+    const { container, save } = renderStep()
+
+    await waitFor(() => expect(chipsOf(container, 'purpose_of_funds')).toEqual(['Working Capital']))
+
+    await user.click(picker(container, 'purpose_of_funds').querySelector('.p-multiselect-trigger') as HTMLElement)
+    await waitFor(() => {
+      const panel = picker(container, 'purpose_of_funds').querySelector('.p-multiselect-panel') as HTMLElement
+      expect(Array.from(panel.querySelectorAll('li.p-multiselect-item')).map((o) => o.textContent?.trim())).toEqual(purposes)
+    })
+
+    await waitFor(async () => {
+      expect(await save()).toBe(true)
+      expect(posted.purpose_of_funds).toBe('Working Capital')
+    })
+  })
   it('keeps the comma inside "Furniture, Fixtures & Equipment (FF&E)" when it reads a saved purpose', async () => {
     serve({ ...apiFunding, purpose_of_funds: 'Working Capital, Furniture, Fixtures & Equipment (FF&E)' })
     const { container } = renderStep()

@@ -120,14 +120,22 @@ export default function FundingRequestStep({
   const selectedPurposes = React.useMemo(() => splitPurposes(funding.purpose, purposes ?? []), [funding.purpose, purposes])
   const hasOtherPurpose = selectedPurposes.includes(FUNDING_PURPOSE_OTHER)
 
-  // The listed purposes, plus any saved one not on the list, so it shows and is kept.
-  const dynamicPurposeOptions = React.useMemo(() => {
-    const listed = purposeOptionsFrom(purposes)
-    const extra = selectedPurposes
-      .filter(p => !listed.some(o => o.value === p))
-      .map(p => ({ label: p, value: p }))
-    return [...extra, ...listed]
-  }, [selectedPurposes, purposes])
+  // Exactly the configured purposes (GET /common/funding-purposes) - nothing else.
+  const dynamicPurposeOptions = React.useMemo(() => purposeOptionsFrom(purposes), [purposes])
+
+  // A saved purpose that is not on the list (e.g. a funding type) is cleared,
+  // to be chosen again from it - as a funding type that is not a category is.
+  useEffect(() => {
+    if (!purposes || !funding.purpose) return
+    const kept = selectedPurposes.filter(p => purposes.includes(p))
+    if (kept.length !== selectedPurposes.length) {
+      setFunding({
+        ...funding,
+        purpose: joinPurposes(kept),
+        purposeNote: kept.includes(FUNDING_PURPOSE_OTHER) ? funding.purposeNote : '',
+      })
+    }
+  }, [purposes, selectedPurposes, funding])
 
   const dynamicTimeframeOptions = React.useMemo(() => {
     const opts = [...timeframeOptions]
