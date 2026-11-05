@@ -2,6 +2,8 @@
 export interface MatchedLender {
     id: number;
     name: string;
+    /** Shown as "Lender Name - Legal Name" (R2 BUG-008); null for a lender added before it was required. */
+    legal_name?: string | null;
     phone?: string | null;
     email?: string | null;
     product_category: string;

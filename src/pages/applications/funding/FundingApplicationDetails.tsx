@@ -1050,9 +1050,8 @@ export default function FundingApplicationDetails() {
                                     onlyAssigned={app.can_assign_lender === false && (app.assigned_lender_ids || []).length > 0}
                                     notice={lenderNotice}
                                     highlightFirstRow={highlightLenders}
-                                    emptyText={app.funding_request_id
-                                        ? 'No matched lenders found for this funding type.'
-                                        : 'No matched lenders found for the Preferred or Additional Funding Types.'}
+                                    // Matched on the Preferred and Additional Funding Types, with a funding request or without.
+                                    emptyText="No matched lenders found for the Preferred or Additional Funding Types."
                                 />
                             )}
                         </div>

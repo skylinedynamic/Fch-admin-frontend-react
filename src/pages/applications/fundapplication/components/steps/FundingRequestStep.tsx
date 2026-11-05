@@ -4,9 +4,9 @@ import type { FundingRequest } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
 import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
-import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../../../../data/profile'
+import { purposeOptionsFrom, fundingTypeOptionsFrom, onlyFundingTypesIn, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../../../../data/profile'
 import ChipMultiSelect from '../../../../../components/Common/ChipMultiSelect'
-import { useFundingRequest, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
+import { useFundingPurposes, useFundingRequest, useFundingTypes, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { toast } from 'react-toastify'
 import { formatCurrency, unformatCurrency } from '../../../../../utils/borrowerFormatters'
@@ -25,8 +25,6 @@ interface FundingRequestStepProps {
   fundingSequenceId?: number | string | null
 }
 
-/** A saved purpose_of_funds string, normalised: the known purposes as listed, joined again. */
-const matchPurpose = (raw: string | null | undefined): string => joinPurposes(splitPurposes(raw))
 
 const matchTimeframe = (raw: string | null | undefined): string => {
   if (!raw) return ''
@@ -100,25 +98,36 @@ export default function FundingRequestStep({
     )
   }, [fundingOptionsData])
 
-  const dynamicFundingTypeOptions = React.useMemo(() => {
-    const opts = [...fundingTypeOptions]
-    const currentType = funding.fundingType || urlFundingType || apiData?.preferred_funding_type
-    if (currentType && !opts.find(o => o.value.toLowerCase() === currentType.toLowerCase())) {
-      opts.unshift({ label: currentType, value: currentType })
-    }
-    return opts
-  }, [funding.fundingType, urlFundingType, apiData?.preferred_funding_type])
+  // Exactly the Active lender product categories - nothing else is offered.
+  const { data: fundingTypes } = useFundingTypes()
+  // Purpose of Funds: the backend's one list (GET /common/funding-purposes).
+  const { data: purposes, isLoading: isPurposesLoading } = useFundingPurposes()
+  /** A saved purpose_of_funds string, normalised against the purposes from the API, joined again. */
+  const matchPurpose = (raw: string | null | undefined): string => joinPurposes(splitPurposes(raw, purposes ?? []))
+  const dynamicFundingTypeOptions = React.useMemo(() => fundingTypeOptionsFrom(fundingTypes), [fundingTypes])
 
-  const selectedPurposes = React.useMemo(() => splitPurposes(funding.purpose), [funding.purpose])
+  // A saved type that is not an Active category (an old name, an inactive
+  // category, a funding sequence name) is cleared, to be chosen again.
+  useEffect(() => {
+    if (!fundingTypes) return
+    const preferred = onlyFundingTypesIn(fundingTypes, funding.fundingType ? [funding.fundingType] : [])[0] ?? ''
+    const additional = onlyFundingTypesIn(fundingTypes, funding.additionalFundingTypes ?? [])
+    if (preferred !== (funding.fundingType || '') || additional.length !== (funding.additionalFundingTypes ?? []).length) {
+      setFunding({ ...funding, fundingType: preferred, additionalFundingTypes: additional })
+    }
+  }, [fundingTypes, funding])
+
+  const selectedPurposes = React.useMemo(() => splitPurposes(funding.purpose, purposes ?? []), [funding.purpose, purposes])
   const hasOtherPurpose = selectedPurposes.includes(FUNDING_PURPOSE_OTHER)
 
   // The listed purposes, plus any saved one not on the list, so it shows and is kept.
   const dynamicPurposeOptions = React.useMemo(() => {
+    const listed = purposeOptionsFrom(purposes)
     const extra = selectedPurposes
-      .filter(p => !purposeOfFundingOptions.some(o => o.value === p))
+      .filter(p => !listed.some(o => o.value === p))
       .map(p => ({ label: p, value: p }))
-    return [...extra, ...purposeOfFundingOptions]
-  }, [selectedPurposes])
+    return [...extra, ...listed]
+  }, [selectedPurposes, purposes])
 
   const dynamicTimeframeOptions = React.useMemo(() => {
     const opts = [...timeframeOptions]
@@ -176,8 +185,9 @@ export default function FundingRequestStep({
     }
   }, [onRegisterSave, handleSave])
 
-  // Pre-fill form from API
+  // Pre-fill form from API - once the purposes are in, so a saved one is read right.
   useEffect(() => {
+    if (!purposes) return
     if (isSuccess && apiData) {
       setApplicationId(apiData.id || null)
 
@@ -212,7 +222,7 @@ export default function FundingRequestStep({
         purpose: matchPurpose(urlPurpose) || funding.purpose,
       })
     }
-  }, [isSuccess, apiData, effectiveRequestId])
+  }, [isSuccess, apiData, effectiveRequestId, purposes])
 
   // Helper to get field error
   const getFieldError = (fieldName: string): string | undefined => {
@@ -240,7 +250,7 @@ export default function FundingRequestStep({
     (!hasOtherPurpose || funding.purposeNote)
   )
 
-  if (loading || isApiLoading) {
+  if (loading || isApiLoading || isPurposesLoading) {
     return <FormSkeleton fieldCount={5} />
   }
 
@@ -354,7 +364,7 @@ export default function FundingRequestStep({
           inputId="additional_funding_types"
           value={funding.additionalFundingTypes ?? []}
           onChange={(types) => setFunding({ ...funding, additionalFundingTypes: types })}
-          options={additionalFundingTypeOptions(funding.fundingType)}
+          options={additionalFundingTypeOptions(dynamicFundingTypeOptions, funding.fundingType)}
           placeholder="Select any other funding types"
           filter
           filterPlaceholder="Search funding types"

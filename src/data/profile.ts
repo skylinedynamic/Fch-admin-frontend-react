@@ -55,33 +55,12 @@ export const fundingUrgencyOptions: OptionType[] = [
 
 export const FUNDING_PURPOSE_OTHER = 'Other'
 
-export const purposeOfFundingOptions: OptionType[] = [
-  { label: 'Accounts Receivable', value: 'Accounts Receivable' },
-  { label: 'Business Acquisition', value: 'Business Acquisition' },
-  { label: 'Business Expansion', value: 'Business Expansion' },
-  { label: 'Business Line of Credit', value: 'Business Line of Credit' },
-  { label: 'Commercial Real Estate Purchase', value: 'Commercial Real Estate Purchase' },
-  { label: 'Commercial Real Estate Refinance', value: 'Commercial Real Estate Refinance' },
-  { label: 'Debt Refinance / Consolidation', value: 'Debt Refinance / Consolidation' },
-  { label: 'Equipment Lease', value: 'Equipment Lease' },
-  { label: 'Equipment Purchase', value: 'Equipment Purchase' },
-  { label: 'Franchise Purchase', value: 'Franchise Purchase' },
-  { label: 'Furniture, Fixtures & Equipment (FF&E)', value: 'Furniture, Fixtures & Equipment (FF&E)' },
-  { label: 'Ground-Up Construction', value: 'Ground-Up Construction' },
-  { label: 'Inventory', value: 'Inventory' },
-  { label: 'Land Purchase / Development', value: 'Land Purchase / Development' },
-  { label: 'Marketing / Advertising', value: 'Marketing / Advertising' },
-  { label: 'Owner Occupied Commercial Property', value: 'Owner Occupied Commercial Property' },
-  { label: 'Partner Buyout', value: 'Partner Buyout' },
-  { label: 'Payroll', value: 'Payroll' },
-  { label: 'Professional Services', value: 'Professional Services' },
-  { label: 'Renovation / Tenant Improvements', value: 'Renovation / Tenant Improvements' },
-  { label: 'Startup Costs', value: 'Startup Costs' },
-  { label: 'Technology / Software', value: 'Technology / Software' },
-  { label: 'Transportation / Fleet', value: 'Transportation / Fleet' },
-  { label: 'Working Capital', value: 'Working Capital' },
-  { label: 'Other', value: 'Other' }
-]
+/**
+ * Purpose of Funds choices: the purposes from the API (GET /common/funding-purposes -
+ * the backend's one list, the same the embed form shows), in their order.
+ */
+export const purposeOptionsFrom = (purposes: string[] | null | undefined): OptionType[] =>
+  (purposes ?? []).map((name) => ({ label: name, value: name }))
 
 export const personalCreditScoreOptions: OptionType[] = [
   { label: 'Poor (<580)', value: 'Poor (<580)' },
@@ -122,30 +101,40 @@ export const selfReportedBusinessCreditScoreOptions: OptionType[] = [
   { label: '80-100', value: '80-100' },
 ]
 
-export const fundingTypeOptions: OptionType[] = [
-  { label: 'Term Loan', value: 'Term Loan' },
-  { label: 'Line of Credit', value: 'Line of Credit' },
-  { label: 'Equipment Financing', value: 'Equipment Financing' },
-  { label: 'SBA Loan', value: 'SBA Loan' },
-  { label: 'Merchant Cash Advance', value: 'Merchant Cash Advance' },
-  { label: 'Hard Money / Bridge Loan', value: 'Hard Money / Bridge Loan' },
-  { label: 'Commercial Real Estate Loan', value: 'Commercial Real Estate Loan' },
-  { label: 'Construction Loan', value: 'Construction Loan' },
-  { label: 'Asset-Based Lending (AR / Inventory)', value: 'Asset-Based Lending (AR / Inventory)' },
-  { label: 'Invoice Factoring', value: 'Invoice Factoring' },
-  { label: 'Revenue-Based Financing', value: 'Revenue-Based Financing' },
-  { label: 'Unsecured Business Credit', value: 'Unsecured Business Credit' },
-  { label: 'Business Acquisition Financing', value: 'Business Acquisition Financing' },
-  { label: 'Refinance / Debt Consolidation', value: 'Refinance / Debt Consolidation' },
-]
+/**
+ * Preferred / Additional Funding Types: exactly the Active lender product
+ * categories (Lenders > Product Categories, from GET /common/funding-types),
+ * nothing else - the categories an application's lenders are matched on.
+ */
+export const fundingTypeOptionsFrom = (categories: string[] | null | undefined): OptionType[] =>
+  (categories ?? []).map((name) => ({ label: name, value: name }))
+
+/**
+ * The saved types that are Active categories. Any other (an old name such as
+ * "Line of Credit", an inactive category) is dropped, to be chosen again from
+ * the list. Kept as they are while the categories are still loading.
+ */
+export const onlyFundingTypesIn = (categories: string[] | null | undefined, types: string[]): string[] =>
+  categories ? types.filter((type) => categories.includes(type)) : types
+
+/** The badge beside the preferred type in the Additional Funding Types list. */
+export const ALREADY_PREFERRED_BADGE = 'Selected as Preferred'
 
 /**
  * The Additional Funding Types choices on the funding application's Funding
- * Request step: every funding type except the preferred one, which cannot be
- * picked twice (the API refuses it too).
+ * Request step: the same list as Preferred Funding Type. The preferred one is
+ * listed with an "Selected as Preferred" badge, but cannot be picked again (the
+ * API refuses it too).
  */
-export const additionalFundingTypeOptions = (preferred: string | null | undefined): OptionType[] =>
-  fundingTypeOptions.filter((o) => o.value !== preferred)
+export const additionalFundingTypeOptions = (
+  options: OptionType[],
+  preferred: string | null | undefined
+): (OptionType & { disabled: boolean; badge?: string; badgeTitle?: string })[] =>
+  options.map((o) =>
+    preferred && o.value === preferred
+      ? { ...o, disabled: true, badge: ALREADY_PREFERRED_BADGE, badgeTitle: 'Already selected as the Preferred Funding Type' }
+      : { ...o, disabled: false }
+  )
 
 /** The chosen additional types, without one that has just become the preferred type. */
 export const withoutPreferredFundingType = (
@@ -156,20 +145,25 @@ export const withoutPreferredFundingType = (
 /** Purpose of Funds is sent and stored as one string, the purposes joined by this. */
 export const PURPOSE_SEPARATOR = ', '
 
-const knownPurpose = (text: string): string | undefined =>
-  purposeOfFundingOptions.find((o) => o.value.toLowerCase() === text.trim().toLowerCase())?.value
+const knownPurpose = (text: string, known: string[]): string | undefined =>
+  known.find((purpose) => purpose.toLowerCase() === text.trim().toLowerCase())
 
-/** An older single free-text purpose (pre-qualification, embed form), read as the list item it means. */
-const legacyPurpose = (text: string): string => {
+/**
+ * An older single free-text purpose (pre-qualification, embed form), read as
+ * the list item it means - only when the list from the API has that item.
+ */
+const legacyPurpose = (text: string, known: string[]): string => {
   const lower = text.toLowerCase()
-  if (lower.includes('equipment')) return 'Equipment Purchase'
-  if (lower.includes('inventory')) return 'Inventory'
-  if (lower.includes('payroll')) return 'Payroll'
-  if (lower.includes('real estate') || lower.includes('property')) return 'Commercial Real Estate Purchase'
-  if (lower.includes('line of credit')) return 'Business Line of Credit'
-  if (lower.includes('expansion')) return 'Business Expansion'
-  if (lower.includes('acquisition')) return 'Business Acquisition'
-  return text
+  const meant =
+    lower.includes('equipment') ? 'Equipment Purchase'
+    : lower.includes('inventory') ? 'Inventory'
+    : lower.includes('payroll') ? 'Payroll'
+    : lower.includes('real estate') || lower.includes('property') ? 'Commercial Real Estate Purchase'
+    : lower.includes('line of credit') ? 'Business Line of Credit'
+    : lower.includes('expansion') ? 'Business Expansion'
+    : lower.includes('acquisition') ? 'Business Acquisition'
+    : null
+  return (meant && knownPurpose(meant, known)) || text
 }
 
 /**
@@ -177,12 +171,12 @@ const legacyPurpose = (text: string): string => {
  * ("Furniture, Fixtures & Equipment (FF&E)") is kept by matching the known
  * purposes first, longest run of pieces first; anything else stays as written.
  */
-export const splitPurposes = (raw: string | null | undefined): string[] => {
+export const splitPurposes = (raw: string | null | undefined, known: string[] = []): string[] => {
   const text = (raw ?? '').trim()
   if (!text) return []
 
   if (!text.includes(',')) {
-    return [knownPurpose(text) ?? legacyPurpose(text)]
+    return [knownPurpose(text, known) ?? legacyPurpose(text, known)]
   }
 
   const pieces = text.split(',')
@@ -191,14 +185,14 @@ export const splitPurposes = (raw: string | null | undefined): string[] => {
     let taken = 1
     let purpose = pieces[i].trim()
     for (let j = pieces.length; j > i + 1; j--) {
-      const known = knownPurpose(pieces.slice(i, j).join(','))
-      if (known) {
-        purpose = known
+      const match = knownPurpose(pieces.slice(i, j).join(','), known)
+      if (match) {
+        purpose = match
         taken = j - i
         break
       }
     }
-    purpose = knownPurpose(purpose) ?? purpose
+    purpose = knownPurpose(purpose, known) ?? purpose
     if (purpose && !purposes.some((p) => p.toLowerCase() === purpose.toLowerCase())) {
       purposes.push(purpose)
     }

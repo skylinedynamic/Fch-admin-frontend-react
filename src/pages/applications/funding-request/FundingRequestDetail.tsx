@@ -221,12 +221,20 @@ export default function FundingRequestDetail() {
                             {isHost && review.matched_lenders && review.matched_lenders.length > 0 && (
                                 <LenderInformationCard
                                     cardRef={lenderTableRef}
-                                    lenders={review.matched_lenders}
+                                    // "Lender Name - Legal Name", as on the funding application details page (R2 BUG-008).
+                                    lenders={review.matched_lenders.map((lender: MatchedLender) => (
+                                        lender.legal_name ? { ...lender, name: `${lender.name} - ${lender.legal_name}` } : lender
+                                    ))}
                                     assignedLenderIds={assignedLenderIds}
                                     subjectLabel="funding request"
                                     onAssign={assignLender}
                                     isBusy={assignLenderMutation.isPending || updateStatusMutation.isPending}
                                     highlightFirstRow={showAssignIndicator}
+                                    // As on the application page: past its editable statuses the
+                                    // lender is fixed (SCRUM-434 S434-BUG-03) - just that lender.
+                                    canAssign={review.can_assign_lender !== false}
+                                    assignDisabledReason={`The lender can't be changed now that the funding application is "${review.funding_application?.status ?? ''}".`}
+                                    onlyAssigned={review.can_assign_lender === false && assignedLenderIds.length > 0}
                                 />
                             )}
 

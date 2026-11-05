@@ -25,7 +25,7 @@ const apiFunding = {
   purpose_of_funds: 'Working Capital',
   approved_funding: 'Term Loans',
   preferred_funding_type: 'Term Loan',
-  additional_funding_types: ['SBA Loan', 'Line of Credit'],
+  additional_funding_types: ['SBA Financing', 'Business Line of Credit'],
   timeframe_needed: null,
   collateral_available: null,
   purpose_note: null,
@@ -60,8 +60,15 @@ function Harness({ onSaveReady }: { onSaveReady: (fn: () => Promise<boolean>) =>
 // The ids the step has fetched the funding request by.
 let fetchedIds: string[] = []
 
+// Lenders > Product Categories, the funding types offered (GET /common/funding-types).
+const categories = ['Term Loan', 'Business Line of Credit', 'SBA Financing', 'Equipment Financing']
+// Purpose of Funds, from the API (GET /common/funding-purposes).
+const purposes = ['Working Capital', 'Payroll', 'Furniture, Fixtures & Equipment (FF&E)', 'Equipment Purchase', 'Inventory', 'Other']
+
 const serve = (data: Record<string, unknown>, onPost?: (body: any) => void) =>
   server.use(
+    http.get('*/common/funding-types', () => HttpResponse.json({ status: true, data: categories })),
+    http.get('*/common/funding-purposes', () => HttpResponse.json({ status: true, data: purposes })),
     http.get('*/common/funding-application/funding-request', ({ request }) => {
       fetchedIds.push(new URL(request.url).searchParams.get('funding_request_id') ?? '')
       return HttpResponse.json({ status: true, data })
@@ -119,11 +126,34 @@ describe('Funding application › Step 4: Funding Request › Additional Funding
 
     await waitFor(() => {
       const chips = chipsOf(container, 'additional_funding_types')
-      expect(chips).toEqual(['SBA Loan', 'Line of Credit'])
+      expect(chips).toEqual(['SBA Financing', 'Business Line of Credit'])
     })
   })
 
-  it('offers every type but the preferred one', async () => {
+  it('shows only Active categories: a saved type that is not one is cleared, to be chosen again', async () => {
+    let posted: any = null
+    serve({ ...apiFunding, preferred_funding_type: 'Line of Credit', additional_funding_types: ['SBA Loan', 'Equipment Financing'] }, (body) => (posted = body))
+    const user = userEvent.setup()
+    const { container, save } = renderStep()
+
+    await waitFor(() => expect(chipsOf(container, 'additional_funding_types')).toEqual(['Equipment Financing']))
+
+    // Nothing but the categories is offered - not the saved "Line of Credit".
+    await user.click(picker(container, 'additional_funding_types').querySelector('.p-multiselect-trigger') as HTMLElement)
+    const panel = await waitFor(() => {
+      const el = picker(container, 'additional_funding_types').querySelector('.p-multiselect-panel') as HTMLElement
+      expect(el).toBeTruthy()
+      return el
+    })
+    expect(Array.from(panel.querySelectorAll('li.p-multiselect-item')).map((o) => o.textContent?.trim())).toEqual(categories)
+
+    expect(await save()).toBe(true)
+    // Cleared: the user picks a category (the API asks for one).
+    expect(posted.preferred_funding_type).toBeNull()
+    expect(posted.additional_funding_types).toEqual(['Equipment Financing'])
+  })
+
+  it('offers the same list as Preferred, the preferred one not selectable', async () => {
     serve({ ...apiFunding, additional_funding_types: [] })
     const user = userEvent.setup()
     const { container } = renderStep()
@@ -137,9 +167,31 @@ describe('Funding application › Step 4: Funding Request › Additional Funding
       return el
     })
     // Read the items directly: the panel is still in its opening transition.
+    const items = Array.from(panel.querySelectorAll('li.p-multiselect-item'))
+    const name = (o: Element) => o.querySelector('.chip-multiselect-option__label')?.textContent ?? o.textContent?.trim()
+    expect(items.map(name)).toEqual(categories)
+    // The preferred type (Term Loan) is listed with an "Selected as Preferred" badge, but cannot be picked again.
+    const preferredItem = items.find((o) => name(o) === 'Term Loan') as Element
+    expect(preferredItem.classList.contains('p-disabled')).toBe(true)
+    expect(preferredItem.querySelector('.chip-multiselect-option__badge')?.textContent).toBe('Selected as Preferred')
+    expect(items.filter((o) => o.querySelector('.chip-multiselect-option__badge'))).toHaveLength(1)
+  })
+
+  it('offers the lender product categories, the ones lenders are matched on', async () => {
+    serve({ ...apiFunding, preferred_funding_type: null, additional_funding_types: [] })
+    const user = userEvent.setup()
+    const { container } = renderStep()
+
+    await settled()
+    await user.click(picker(container, 'additional_funding_types').querySelector('.p-multiselect-trigger') as HTMLElement)
+
+    const panel = await waitFor(() => {
+      const el = picker(container, 'additional_funding_types').querySelector('.p-multiselect-panel') as HTMLElement
+      expect(el).toBeTruthy()
+      return el
+    })
     const offered = Array.from(panel.querySelectorAll('li.p-multiselect-item')).map((o) => o.textContent?.trim())
-    expect(offered).toContain('SBA Loan')
-    expect(offered).not.toContain('Term Loan')
+    expect(offered).toEqual(categories)
   })
 
   it('has a search box, like Purpose of Funds', async () => {
@@ -153,7 +205,7 @@ describe('Funding application › Step 4: Funding Request › Additional Funding
 
     const panel = picker(container, 'additional_funding_types').querySelector('.p-multiselect-panel') as HTMLElement
     await waitFor(() =>
-      expect(Array.from(panel.querySelectorAll('li.p-multiselect-item')).map((o) => o.textContent?.trim())).toEqual(['SBA Loan'])
+      expect(Array.from(panel.querySelectorAll('li.p-multiselect-item')).map((o) => o.textContent?.trim())).toEqual(['SBA Financing'])
     )
   })
 
@@ -165,7 +217,7 @@ describe('Funding application › Step 4: Funding Request › Additional Funding
     await waitFor(() => expect(chipsOf(container, 'additional_funding_types')).toHaveLength(2))
     expect(await save()).toBe(true)
 
-    expect(posted.additional_funding_types).toEqual(['SBA Loan', 'Line of Credit'])
+    expect(posted.additional_funding_types).toEqual(['SBA Financing', 'Business Line of Credit'])
     expect(posted.preferred_funding_type).toBe('Term Loan')
   })
 
@@ -184,6 +236,27 @@ describe('Funding application › Step 4: Funding Request › Additional Funding
 })
 
 describe('Funding application › Step 4: Funding Request › Purpose of Funds', () => {
+  it('offers the purposes from the API, nothing else', async () => {
+    serve({ ...apiFunding, purpose_of_funds: null })
+    const user = userEvent.setup()
+    const { container } = renderStep()
+
+    await screen.findByText('Additional Funding Types')
+    await user.click(picker(container, 'purpose_of_funds').querySelector('.p-multiselect-trigger') as HTMLElement)
+
+    await waitFor(() => {
+      const panel = picker(container, 'purpose_of_funds').querySelector('.p-multiselect-panel') as HTMLElement
+      expect(Array.from(panel.querySelectorAll('li.p-multiselect-item')).map((o) => o.textContent?.trim())).toEqual(purposes)
+    })
+  })
+
+  it('keeps the comma inside "Furniture, Fixtures & Equipment (FF&E)" when it reads a saved purpose', async () => {
+    serve({ ...apiFunding, purpose_of_funds: 'Working Capital, Furniture, Fixtures & Equipment (FF&E)' })
+    const { container } = renderStep()
+
+    await waitFor(() => expect(chipsOf(container, 'purpose_of_funds')).toEqual(['Working Capital', 'Furniture, Fixtures & Equipment (FF&E)']))
+  })
+
   afterEach(() => {
     server.resetHandlers()
     fetchedIds = []

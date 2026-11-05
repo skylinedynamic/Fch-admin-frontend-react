@@ -57,6 +57,8 @@ export const queryKeys = {
     documents: (id?: number | string | null) => [...queryKeys.fundingApplication.all, 'documents', ...(id ? [id] : [])] as const,
     fundingRequest: () => [...queryKeys.fundingApplication.all, 'fundingRequest'] as const,
     documentTypes: () => [...queryKeys.fundingApplication.all, 'documentTypes'] as const,
+    fundingTypes: () => [...queryKeys.fundingApplication.all, 'fundingTypes'] as const,
+    fundingPurposes: () => [...queryKeys.fundingApplication.all, 'fundingPurposes'] as const,
   },
   documents: {
     all: ['documents'] as const,
