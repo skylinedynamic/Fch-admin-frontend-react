@@ -340,7 +340,11 @@ export default function FundingSequencingForm() {
             };
             loadAccount();
         }
-    }, [id, isEditMode, navigate]);
+        // Not `navigate`: React Router renews it on every URL change, so a lender
+        // switch (a URL change) re-fetched everything and reset the form - the
+        // page flashed and edits not yet saved were lost. Load once per sequence.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, isEditMode]);
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;

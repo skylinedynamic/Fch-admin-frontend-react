@@ -169,11 +169,20 @@ export const CURRENCY_OPTIONS = [
  * Clients list has no Expired option yet, so there is nothing for a status to
  * disambiguate. Worth the same treatment as TRIAL_STATUS if one is added.
  */
+/** A paid client with no enrollment on record (BUG-058). */
+export const REGULAR_PLAN_LABEL = 'Regular Plan';
+
 export const FREE_PLAN_FILTER_OPTIONS = [
   { label: 'All Plans', value: '' },
   { label: 'Free Plan', value: '1' },
-  { label: 'Regular Plan', value: '0' }
+  { label: REGULAR_PLAN_LABEL, value: '0' }
 ];
 
 /** The currency a client's business financials use until one is chosen (BUG-077). */
 export const DEFAULT_BORROWER_CURRENCY = 'USD';
+
+/**
+ * A borrower's age range on the client date-of-birth picker (BUG-005). The API
+ * refuses anything outside it (fch-api config borrower.date_of_birth).
+ */
+export const BORROWER_AGE = { MIN: 18, MAX: 120 } as const;

@@ -38,6 +38,10 @@ interface FundedAmountModalProps {
 
 const toRate = (value?: number) => (value ? String(value) : '');
 
+// The Success Fee the API accepts: 1-100%, to the hundredth (R2 BUG-036).
+const SUCCESS_FEE_MIN = 1;
+const SUCCESS_FEE_STEP = 0.01;
+
 /**
  * Closed (Completed): the final funded amount, and - optional but recommended -
  * the commission, saved through the same API as the Commission Details card
@@ -67,6 +71,9 @@ export default function FundedAmountModal({
     const [adminRate, setAdminRate] = useState(toRate(adminCommissionRate));
     const [partnerRate, setPartnerRate] = useState(toRate(partnerCommissionRate));
     const [rateError, setRateError] = useState('');
+    // Closing locks the application for good, so a funded amount above what
+    // was requested (a typo of a zero, say) needs a second look (R2 BUG-038).
+    const [aboveRequestedConfirmed, setAboveRequestedConfirmed] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<Modal | null>(null);
 
@@ -88,6 +95,7 @@ export default function FundedAmountModal({
             setSuccessFee(fee);
             setAdminRate(hasFee(fee) ? splitAdminRate : noSplitRate);
             setPartnerRate(hasFee(fee) ? splitPartnerRate : noSplitRate);
+            setAboveRequestedConfirmed(false);
         }
     }, [show, initialAmount, successFeeRate, splitAdminRate, splitPartnerRate, noSplitRate]);
 
@@ -168,9 +176,11 @@ export default function FundedAmountModal({
     };
 
     const formatCurrency = (val: number) => val.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    const isAboveRequested = requestedAmount > 0 && parsedAmount > requestedAmount;
 
-    // 0-100, as the Commission Details card accepts.
-    const percentInput = (value: string, onChange: (v: string) => void, id: string, invalid?: boolean, locked = false) => (
+    // Up to 100%. The admin / partner split may be 0; the Success Fee is 1-100%,
+    // the API's range (R2 BUG-036). A locked rate waits for the success fee.
+    const percentInput = (value: string, onChange: (v: string) => void, id: string, invalid?: boolean, locked = false, min = 0, step = 0.1) => (
         <div className="input-group">
             <input
                 id={id}
@@ -178,9 +188,9 @@ export default function FundedAmountModal({
                 className={`form-control ${invalid ? 'is-invalid' : ''}`}
                 placeholder="0"
                 value={value}
-                min="0"
+                min={min}
                 max="100"
-                step="0.1"
+                step={step}
                 disabled={loading || locked}
                 title={locked ? 'Set the success fee first.' : undefined}
                 onChange={(e) => {
@@ -239,6 +249,7 @@ export default function FundedAmountModal({
                                         value={amount}
                                         onChange={(e) => {
                                             setAmount(e.target.value);
+                                            setAboveRequestedConfirmed(false);
                                             if (error) setError('');
                                         }}
                                         step="0.01"
@@ -248,6 +259,25 @@ export default function FundedAmountModal({
                                     {error && <div className="invalid-feedback">{error}</div>}
                                 </div>
                             </div>
+                            {isAboveRequested && (
+                                <div className="alert alert-warning border-0 bg-warning-subtle text-warning text-start fs-13 mt-3 mb-0">
+                                    <i className="ri-error-warning-fill align-middle me-2 fs-15"></i>
+                                    The funded amount {formatCurrency(parsedAmount)} is above the requested {formatCurrency(requestedAmount)}.
+                                    <div className="form-check mt-2">
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            id="funded-amount-confirmed"
+                                            checked={aboveRequestedConfirmed}
+                                            onChange={(e) => setAboveRequestedConfirmed(e.target.checked)}
+                                            disabled={loading}
+                                        />
+                                        <label className="form-check-label text-dark" htmlFor="funded-amount-confirmed">
+                                            I have checked this amount and it is correct.
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <hr className="fam-divider" />
@@ -263,7 +293,7 @@ export default function FundedAmountModal({
                                 <>
                                     <div className="fam-inline">
                                         <label htmlFor="closing-success-fee" className="fam-label">Success Fee (%)</label>
-                                        <div className="fam-input">{percentInput(successFee, changeSuccessFee, 'closing-success-fee', !!commissionErrors.total_commission)}</div>
+                                        <div className="fam-input">{percentInput(successFee, changeSuccessFee, 'closing-success-fee', !!commissionErrors.total_commission, false, SUCCESS_FEE_MIN, SUCCESS_FEE_STEP)}</div>
                                     </div>
                                     {showPartnerCommission && (
                                         <div className="row g-2 mt-1">
@@ -324,7 +354,7 @@ export default function FundedAmountModal({
                         <button type="button" className="btn fam-btn-cancel" onClick={handleClose} disabled={loading}>
                             {cancelText}
                         </button>
-                        <button type="button" className="btn fam-btn-confirm" onClick={handleConfirm} disabled={loading}>
+                        <button type="button" className="btn fam-btn-confirm" onClick={handleConfirm} disabled={loading || (isAboveRequested && !aboveRequestedConfirmed)}>
                             {loading ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>

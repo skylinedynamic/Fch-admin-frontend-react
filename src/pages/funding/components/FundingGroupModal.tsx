@@ -4,6 +4,8 @@ import { InputText } from 'primereact/inputtext';
 import { toast } from 'react-toastify';
 import { createFundingGroup, updateFundingGroup, deleteFundingGroup } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
+import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
+import { InUseEntry, inUseFromError, inUseFromList, inUseMessage } from '../../../utils/inUseDelete';
 
 export default function FundingGroupModal({ visible, onHide, onSuccess, groups = [] }: any) {
     const [name, setName] = useState<string>('');
@@ -16,6 +18,7 @@ export default function FundingGroupModal({ visible, onHide, onSuccess, groups =
     const [editingLoading, setEditingLoading] = useState<boolean>(false);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
     const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [blocked, setBlocked] = useState<InUseEntry | null>(null);
 
     const handleSave = async () => {
         setNameError('');
@@ -36,8 +39,15 @@ export default function FundingGroupModal({ visible, onHide, onSuccess, groups =
         }
     };
 
-    const handleDeleteClick = (id: any) => {
-        setItemToDelete(id);
+    // Funding sequences are filed under it (the list says so): say it cannot
+    // be deleted at once - no "Are you sure?" for a delete that would be refused.
+    const handleDeleteClick = (item: any) => {
+        const inUse = inUseFromList(item);
+        if (inUse) {
+            setBlocked(inUse);
+            return;
+        }
+        setItemToDelete(item.id);
         setShowDeleteModal(true);
     };
 
@@ -50,7 +60,14 @@ export default function FundingGroupModal({ visible, onHide, onSuccess, groups =
             setShowDeleteModal(false);
             onSuccess();
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to delete funding group');
+            // Came into use after the list loaded: kept, and said why.
+            const refused = inUseFromError(error);
+            if (refused) {
+                setShowDeleteModal(false);
+                setBlocked(refused);
+            } else {
+                toast.error(error?.response?.data?.message || 'Failed to delete funding group');
+            }
         } finally {
             setDeletingId(null);
             setItemToDelete(null);
@@ -198,7 +215,7 @@ export default function FundingGroupModal({ visible, onHide, onSuccess, groups =
                                             <button
                                                 type="button"
                                                 className="btn btn-sm btn-soft-danger"
-                                                onClick={() => handleDeleteClick(item.id)}
+                                                onClick={() => handleDeleteClick(item)}
                                                 disabled={deletingId === item.id}
                                                 title="Delete"
                                             >
@@ -232,6 +249,13 @@ export default function FundingGroupModal({ visible, onHide, onSuccess, groups =
             onConfirm={confirmDelete}
             loading={deletingId !== null}
             text="Are you sure you want to delete this group?"
+        />
+
+        <DeleteBlockedModal
+            show={blocked !== null}
+            title="Funding Group Cannot Be Deleted"
+            message={blocked ? inUseMessage(blocked, 'Move those funding sequences to another group first.') : ''}
+            onClose={() => setBlocked(null)}
         />
         </>
     );

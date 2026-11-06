@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Row, Col, Card, CardBody, Form, FormGroup, Label, Input, Button, Spinner, Table } from 'reactstrap';
+import { Row, Col, Card, CardBody, Form, FormGroup, FormFeedback, Label, Input, Button, Spinner, Table } from 'reactstrap';
 import { toast } from 'react-toastify';
-import { parseCreditProfilePDF, saveCreditProfile, revealClientField, useClientCreditProfile, useDeleteClientCreditProfile, clientKeys } from '../../../modules/client';
+import { parseCreditProfilePDF, revealClientField, useClientCreditProfile, useDeleteClientCreditProfile, useSaveClientCreditProfile } from '../../../modules/client';
+import { apiErrorMessage, apiFieldErrors } from '../../settings/components/SmsConfiguration/apiErrors';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
 import RevealableInput from '../../../components/Common/RevealableInput';
 import { formatSSN, maskSSN } from '../../../utils/borrowerFormatters';
-import { useQueryClient } from '@tanstack/react-query';
 import { Dropdown } from 'primereact/dropdown';
 import CreditProfileSkeleton from '../../../components/Loader/CreditProfileSkeleton';
 
@@ -125,7 +125,10 @@ export default function CreditProfileSection({
     const [pdfUrl, setPdfUrl] = useState<string>('');
     const [documentId, setDocumentId] = useState<number | string | null>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
-    const [isSaving, setIsSaving] = useState<boolean>(false);
+    const saveProfile = useSaveClientCreditProfile(clientId);
+    const isSaving = saveProfile.isPending;
+    // A refused save's field errors (422), keyed as the API names them, e.g. metrics.fico_score.
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [dragActive, setDragActive] = useState<boolean>(false);
     const [activeSubTab, setActiveSubTab] = useState<string>('metrics');
     const [expandedTrades, setExpandedTrades] = useState<Record<number, boolean>>({});
@@ -135,7 +138,6 @@ export default function CreditProfileSection({
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const queryClient = useQueryClient();
     const { data: fetchedProfile, isLoading } = useClientCreditProfile(clientId, !!clientId);
 
     useEffect(() => {
@@ -254,6 +256,7 @@ export default function CreditProfileSection({
 
     const handleMetricChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        clearFieldError(`metrics.${name}`);
         setProfile(prev => ({
             ...prev,
             metrics: {
@@ -477,9 +480,17 @@ export default function CreditProfileSection({
         }));
     };
 
+    const clearFieldError = (field: string) => {
+        setFieldErrors(prev => {
+            if (!(field in prev)) return prev;
+            const { [field]: _cleared, ...rest } = prev;
+            return rest;
+        });
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
+        setFieldErrors({});
         try {
             const personalInfo = profile.personal_info || {};
             const payload = {
@@ -492,19 +503,23 @@ export default function CreditProfileSection({
                 pdf_url: pdfUrl,
                 document_id: documentId
             };
-            const response = await saveCreditProfile(clientId, payload);
+            const response = await saveProfile.mutateAsync(payload);
             if (response && response.status) {
                 toast.success('Credit profile saved successfully!');
-                queryClient.invalidateQueries({ queryKey: clientKeys.creditProfile(clientId) });
             } else {
                 toast.error(response?.message || 'Failed to save credit profile.');
             }
         } catch (error: any) {
+            // A refused field (e.g. FICO Score, BUG-074) shows under that field, not as a toast.
+            const refused = apiFieldErrors(error);
+            if (refused && Object.keys(refused).length > 0) {
+                setFieldErrors(refused);
+                if (refused['metrics.fico_score']) setActiveSubTab('metrics');
+                return;
+            }
             // Status only: the error object carries the request payload (config.data) — client PII.
             console.error('Failed to save credit profile', error?.response?.status);
-            toast.error(error?.response?.data?.message || 'An error occurred while saving.');
-        } finally {
-            setIsSaving(false);
+            toast.error(apiErrorMessage(error, 'An error occurred while saving.'));
         }
     };
 
@@ -738,15 +753,23 @@ export default function CreditProfileSection({
                                             <Row>
                                                 <Col md={12}>
                                                     <FormGroup className="mb-3">
-                                                        <Label className="form-label fw-medium">FICO Score</Label>
+                                                        <Label className="form-label fw-medium" for="credit-profile-fico-score">
+                                                            FICO Score {!readOnly && <span className="text-danger">*</span>}
+                                                        </Label>
                                                         <Input
+                                                            id="credit-profile-fico-score"
                                                             type="number"
                                                             name="fico_score"
                                                             placeholder="e.g. 720"
                                                             value={metrics.fico_score ?? ''}
                                                             onChange={handleMetricChange}
                                                             disabled={readOnly}
+                                                            invalid={!!fieldErrors['metrics.fico_score']}
+                                                            aria-invalid={fieldErrors['metrics.fico_score'] ? true : undefined}
                                                         />
+                                                        {fieldErrors['metrics.fico_score'] && (
+                                                            <FormFeedback>{fieldErrors['metrics.fico_score']}</FormFeedback>
+                                                        )}
                                                     </FormGroup>
                                                 </Col>
                                             </Row>

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // bootstrap ships no type declarations for this subpath export
 // @ts-expect-error -- untyped third-party module
 import Modal from 'bootstrap/js/dist/modal';
 import { useConversionPreview, type ExistingBorrowerSummary } from '../../../modules/embed-form';
 import ConvertClientNotice from './ConvertClientNotice';
+import ProfileFillConsent from './ProfileFillConsent';
 
 type Submission = {
     id?: number | string;
@@ -16,6 +17,8 @@ type ConvertPayload = {
     is_free_trail: true;
     free_trail_end_date: null;
     confirm_existing_borrower?: true;
+    /** Also fill the existing client's blank profile fields (BUG-064). */
+    fill_profile_fields?: true;
 };
 
 type Props = {
@@ -49,6 +52,14 @@ export default function EmbedFormConvertModal({
     const existingBorrower = reportedBorrower ?? preview.data?.existing_borrower ?? null;
     const isExisting = !!existingBorrower;
     const isReady = !!reportedBorrower || preview.isSuccess;
+    const fieldsToFill = existingBorrower?.fields_to_fill ?? [];
+    // The field list needs room: the dialog widens while it is shown.
+    const isWide = isReady && isExisting && fieldsToFill.length > 0;
+    // Off until the partner ticks it, and again each time the modal opens.
+    const [fillProfile, setFillProfile] = useState(false);
+    useEffect(() => {
+        if (show) setFillProfile(false);
+    }, [show, submission?.id]);
     const previewError: string | null = preview.isError
         ? (preview.error as any)?.response?.data?.message || 'Could not check whether this client already exists.'
         : null;
@@ -93,6 +104,7 @@ export default function EmbedFormConvertModal({
             is_free_trail: true,
             free_trail_end_date: null,
             ...(isExisting ? { confirm_existing_borrower: true as const } : {}),
+            ...(isExisting && fillProfile && fieldsToFill.length > 0 ? { fill_profile_fields: true as const } : {}),
         });
     };
 
@@ -116,7 +128,7 @@ export default function EmbedFormConvertModal({
 
     return (
         <div className="modal fade flip ef-convert-modal" ref={modalRef} tabIndex={-1} aria-hidden="true">
-            <div className="modal-dialog modal-dialog-centered">
+            <div className={`modal-dialog modal-dialog-centered ${isWide ? 'modal-lg' : ''}`}>
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-header">
                         <div className="d-flex align-items-center gap-3">
@@ -170,6 +182,7 @@ export default function EmbedFormConvertModal({
                                 <ConvertClientNotice email={submission?.email} existingBorrower={existingBorrower} />
 
                                 {existingBorrower ? (
+                                    <>
                                     <div className="ef-convert-modal__details mt-3">
                                         <div className="ef-convert-modal__details-label">Existing client details</div>
                                         <dl className="row fs-13 mb-0">
@@ -189,6 +202,13 @@ export default function EmbedFormConvertModal({
                                             <dd className="col-7 mb-0">{formatDate(existingBorrower.created_at)}</dd>
                                         </dl>
                                     </div>
+                                    <ProfileFillConsent
+                                        fields={fieldsToFill}
+                                        checked={fillProfile}
+                                        onChange={setFillProfile}
+                                        disabled={loading}
+                                    />
+                                    </>
                                 ) : (
                                     <ul className="ef-convert-modal__list list-unstyled mt-3 mb-0">
                                         <li>

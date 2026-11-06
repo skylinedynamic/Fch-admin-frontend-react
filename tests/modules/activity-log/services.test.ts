@@ -7,6 +7,7 @@ import {
   createActivityLog,
   downloadActivityAttachment,
   updateActivityLogVisibility,
+  getActivityEmailSender,
 } from '../../../src/modules/activity-log/services'
 
 afterEach(() => server.resetHandlers())
@@ -141,5 +142,41 @@ describe('downloadActivityAttachment', () => {
     expect(receivedBody).toEqual({ activity_log_id: 5, path: 'attachments/file.pdf' })
     expect(result).toBeInstanceOf(Blob)
     expect(await (result as Blob).text()).toBe(blobContent)
+  })
+})
+
+describe('getActivityEmailSender', () => {
+  const senders = {
+    default: 'partner',
+    options: {
+      partner: { partner_id: 7, name: 'Acme Capital', address: 'mail@acme.test', uses_fallback: false },
+      host: { partner_id: 1, name: 'Four Corner Funding', address: 'noreply@fcf.test', uses_fallback: true },
+    },
+  }
+
+  it("GETs the host's two sending choices for the record's partner and resolves with them", async () => {
+    let url: URL | null = null
+    server.use(
+      http.get('*/common/activity-logs/email-sender', ({ request }) => {
+        url = new URL(request.url)
+        return HttpResponse.json({ status: true, message: 'ok', data: senders })
+      })
+    )
+
+    expect(await getActivityEmailSender(7)).toEqual(senders)
+    expect(url!.searchParams.get('partner_id')).toBe('7')
+  })
+
+  it('sends no partner_id for a host record', async () => {
+    let url: URL | null = null
+    server.use(
+      http.get('*/common/activity-logs/email-sender', ({ request }) => {
+        url = new URL(request.url)
+        return HttpResponse.json({ status: true, message: 'ok', data: { default: 'host', options: { partner: null, host: senders.options.host } } })
+      })
+    )
+
+    expect((await getActivityEmailSender(null)).options.partner).toBeNull()
+    expect(url!.searchParams.has('partner_id')).toBe(false)
   })
 })

@@ -86,6 +86,8 @@ export default function Leads() {
     const [conversionLoading, setConversionLoading] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [convertErrors, setConvertErrors] = useState({});
+    // BUG-057: why a conversion was refused (e.g. already converted in another tab).
+    const [convertRefused, setConvertRefused] = useState({ show: false, message: '' });
     const [missingInfoErrors, setMissingInfoErrors] = useState({});
     const { ownerModalProps, confirmOwnerThen } = useLeadConvertOwner();
 
@@ -415,6 +417,12 @@ export default function Leads() {
                     flatErrors[key] = Array.isArray(val) ? val[0] : val;
                 });
                 setConvertErrors(flatErrors);
+            } else if (err.response?.status === 422) {
+                // Refused with a reason, e.g. already converted in another tab
+                // (BUG-057): close the convert dialog and say why; the dialog's
+                // button reloads the list.
+                setShowConvertModal(false);
+                setConvertRefused({ show: true, message: err.response?.data?.message || `Failed to convert lead to ${targetType}` });
             } else {
                 toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
             }
@@ -751,6 +759,17 @@ export default function Leads() {
                             : undefined
                     }
                     onClose={() => setConvertedLeads([])}
+                />
+
+                <DeleteBlockedModal
+                    show={convertRefused.show}
+                    title="Lead Not Converted"
+                    message={convertRefused.message}
+                    closeLabel="Reload list"
+                    onClose={() => {
+                        setConvertRefused((r) => ({ ...r, show: false }));
+                        setAppliedFilters({ ...appliedFilters });
+                    }}
                 />
 
                 <PaidVersionOnlyModal

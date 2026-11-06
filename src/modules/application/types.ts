@@ -2,8 +2,10 @@
 export interface MatchedLender {
     id: number;
     name: string;
-    /** Shown as "Lender Name - Legal Name" (R2 BUG-008); null for a lender added before it was required. */
+    /** Null for a lender added before the legal name was required. */
     legal_name?: string | null;
+    /** "Lender Name - Legal Name", how the screens show it (R2 BUG-008). */
+    display_name?: string | null;
     phone?: string | null;
     email?: string | null;
     product_category: string;
@@ -475,7 +477,6 @@ export interface FundingApplicationDetails {
     conversion_rate?: string | number | null;
     
     certificates?: Certificate[];
-    download_histories?: DownloadHistory[];
 }
 
 export interface Certificate {
@@ -487,13 +488,3 @@ export interface Certificate {
     pdf_generation_timestamp: string;
 }
 
-export interface DownloadHistory {
-    id: number;
-    user_name: string;
-    user_type: string;
-    file_type: string;
-    action: string;
-    sha256_hash: string;
-    ip_address: string;
-    downloaded_at: string;
-}

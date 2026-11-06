@@ -344,3 +344,22 @@ describe('Funding application › Step 4: Funding Request › Purpose of Funds',
     expect(posted.purpose_note).toBeNull()
   })
 })
+
+/**
+ * Defect: R2 BUG-032 (partner wizard) - a Purpose Note of 256-500 characters
+ * failed the save with a server error, and the field gave no hint of a limit.
+ * It now takes up to the API's 500 and counts what is typed.
+ */
+describe('Funding application (partner) › Funding Request › Purpose Note (R2 BUG-032)', () => {
+  afterEach(() => server.resetHandlers())
+
+  it('takes up to 500 characters and counts them', async () => {
+    serve({ ...apiFunding, purpose_of_funds: 'Other', purpose_note: 'x'.repeat(300) })
+    renderStep()
+
+    const note = await screen.findByPlaceholderText('Please specify the purpose of funds')
+    await waitFor(() => expect(note).toHaveValue('x'.repeat(300)))
+    expect(note).toHaveAttribute('maxlength', '500')
+    expect(screen.getByText('300/500')).toBeInTheDocument()
+  })
+})

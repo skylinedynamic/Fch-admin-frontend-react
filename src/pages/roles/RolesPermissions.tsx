@@ -220,8 +220,9 @@ export default function RolesPermissions() {
                             onClick={() => r.id && navigate(`/roles-permissions/edit/${r.id}`)}
                             disabled={!r.id}
                           >
-                            <i className="ri-edit-2-line"></i>
-                            <span className="btn-text ms-1">Edit Role</span>
+                            {/* A static (system) role is read-only: it is viewed, not edited (R2 BUG-011). */}
+                            <i className={r.is_static ? 'ri-eye-line' : 'ri-edit-2-line'}></i>
+                            <span className="btn-text ms-1">{r.is_static ? 'View Role' : 'Edit Role'}</span>
                           </button>
                           {!r.is_static && (
                             <button

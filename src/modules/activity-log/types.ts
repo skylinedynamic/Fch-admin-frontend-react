@@ -1,3 +1,5 @@
+import type { ACTIVITY_EMAIL_SENDER_HOST, ACTIVITY_EMAIL_SENDER_PARTNER } from './constants';
+
 import type { ReminderRecipient, TaskPriority, TaskStatus } from '../../config/activityTask';
 
 export interface ActivityLog {
@@ -64,4 +66,24 @@ export interface ActivityParams {
     limit?: number;
     page?: number;
     search?: string;
+}
+
+export type ActivityEmailSenderKey = typeof ACTIVITY_EMAIL_SENDER_PARTNER | typeof ACTIVITY_EMAIL_SENDER_HOST;
+
+/** One address a host's New Email can go out from. No address: nothing can send. */
+export interface ActivityEmailSenderOption {
+    partner_id: number | null;
+    name: string;
+    address: string | null;
+    /** No mail settings of its own that can send: the fallback's address. */
+    uses_fallback: boolean;
+}
+
+/** GET common/activity-logs/email-sender (host only). */
+export interface ActivityEmailSenders {
+    default: ActivityEmailSenderKey;
+    options: {
+        partner: ActivityEmailSenderOption | null;
+        host: ActivityEmailSenderOption;
+    };
 }

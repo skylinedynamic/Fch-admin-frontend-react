@@ -3,6 +3,7 @@ import { Modal, ModalBody } from 'reactstrap';
 import { Dropdown } from 'primereact/dropdown';
 import { formatCurrency } from '../../../utils/helper';
 import { filterLenders } from './lenderFilter';
+import { lenderDisplayName } from '../../../modules/lender/displayName';
 import '../../../../assets/css/funding-requests.css';
 
 import type { MatchedLender } from '../../../modules/application/types';
@@ -69,7 +70,7 @@ export default function LenderInformationCard({
     const uniqueCategories = Array.from(new Set(lenders.map((l) => l.product_category).filter(Boolean))).map(cat => ({ label: cat, value: cat })).sort(byLabel);
     // The lender list follows the chosen category.
     const uniqueLenderNames = Array.from(new Set(
-        lenders.filter((l) => !lenderCategoryFilter || l.product_category === lenderCategoryFilter).map((l) => l.name).filter(Boolean)
+        lenders.filter((l) => !lenderCategoryFilter || l.product_category === lenderCategoryFilter).map((l) => lenderDisplayName(l)).filter(Boolean)
     )).map(name => ({ label: name, value: name })).sort(byLabel);
 
     const filteredLenders = filterLenders(lenders, {
@@ -130,7 +131,7 @@ export default function LenderInformationCard({
                             </span>
                         </span>
                         <div className="flex-grow-1 min-w-0">
-                            <h5 className="fs-17 fw-bold mb-1 text-dark">{assigned.name}</h5>
+                            <h5 className="fs-17 fw-bold mb-1 text-dark">{lenderDisplayName(assigned)}</h5>
                             <div className="d-flex flex-wrap align-items-center gap-3 text-muted fs-13">
                                 <span className="badge bg-primary-subtle text-primary fs-12 fw-medium">{assigned.product_category}</span>
                                 {assigned.phone && <span><i className="ri-phone-line me-1"></i>{assigned.phone}</span>}
@@ -213,7 +214,7 @@ export default function LenderInformationCard({
                                 <Dropdown value={lenderCategoryFilter} options={[{ label: 'All Categories', value: '' }, ...uniqueCategories]} optionLabel="label" optionValue="value" onChange={(e) => {
                                     setLenderCategoryFilter(e.value);
                                     // A lender not in the new category would show nothing.
-                                    if (e.value && lenderNameFilter && !lenders.some((l) => l.name === lenderNameFilter && l.product_category === e.value)) {
+                                    if (e.value && lenderNameFilter && !lenders.some((l) => lenderDisplayName(l) === lenderNameFilter && l.product_category === e.value)) {
                                         setLenderNameFilter('');
                                     }
                                 }} placeholder="All Categories" className="w-100" />
@@ -277,7 +278,7 @@ export default function LenderInformationCard({
 
                                                 {/* Lender Name */}
                                                 <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                    <div className="fw-bold text-dark fr-style-747e3e7d">{lender.name || 'Lender Name'}</div>
+                                                    <div className="fw-bold text-dark fr-style-747e3e7d">{lenderDisplayName(lender) || 'Lender Name'}</div>
                                                     <div className="text-muted fr-style-3f58a42e">{lender.phone || lender.email || 'N/A'}</div>
                                                 </td>
                                                 {/* Category */}
@@ -401,7 +402,7 @@ export default function LenderInformationCard({
                         </div>
                         <h5 className="fw-bold mb-1">Confirm Assign Lender</h5>
                         <p className="text-muted fs-13 mb-0">
-                            Are you sure you want to assign <strong>{lenderToAssign?.name}</strong> to this {subjectLabel}?
+                            Are you sure you want to assign <strong>{lenderDisplayName(lenderToAssign)}</strong> to this {subjectLabel}?
                         </p>
                     </div>
                     <div className="p-4">
@@ -413,7 +414,7 @@ export default function LenderInformationCard({
                                 <div className="border rounded-3 p-3">
                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                         <span className="fs-13 text-muted fw-medium">Lender Name</span>
-                                        <span className="fs-13 fw-semibold text-dark">{lenderToAssign.name}</span>
+                                        <span className="fs-13 fw-semibold text-dark">{lenderDisplayName(lenderToAssign)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                         <span className="fs-13 text-muted fw-medium">Funding Type</span>

@@ -9,6 +9,19 @@ import {
 } from '../../modules/embed-form/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 
+// A refusal of one Allowed Domains entry: "allowed_domains.<index>" (R2 BUG-035).
+const ALLOWED_DOMAIN_ERROR_KEY = /^allowed_domains\.(\d+)$/;
+
+/** The API's refusals of single Allowed Domains entries, by entry index. */
+const domainRefusals = (errors: Record<string, string | string[]> | undefined): Record<number, string> => {
+    const refused: Record<number, string> = {};
+    Object.entries(errors ?? {}).forEach(([key, message]) => {
+        const match = ALLOWED_DOMAIN_ERROR_KEY.exec(key);
+        if (match) refused[Number(match[1])] = Array.isArray(message) ? message[0] : message;
+    });
+    return refused;
+};
+
 const CardHeader = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
     <div className="card-header ef-card__header">
         <h5 className="ef-card__title">
@@ -37,6 +50,10 @@ export default function EmbedFormSettings() {
     const [isActive, setIsActive] = useState(true);
     const [domainInput, setDomainInput] = useState('');
     const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
+    // Shown under Allowed Domains, never as a toast (R2 BUG-035): a repeat
+    // refused when added, and each entry the API refused on save, by index.
+    const [domainAddError, setDomainAddError] = useState<string | null>(null);
+    const [domainErrors, setDomainErrors] = useState<Record<number, string>>({});
     const [copied, setCopied] = useState<'snippet' | 'url' | 'key' | null>(null);
 
     // A form is published on the partner's own domain, so a White-Label partner
@@ -73,6 +90,7 @@ export default function EmbedFormSettings() {
     const handleSave = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         setSaving(true);
+        setDomainErrors({});
         try {
             const res = await updateEmbedFormConfig({
                 form_title: formTitle,
@@ -86,7 +104,12 @@ export default function EmbedFormSettings() {
                 toast.error(res?.message || 'Failed to save configuration.');
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || err?.message || 'Failed to save configuration.');
+            const refused = domainRefusals(err?.response?.data?.errors);
+            if (Object.keys(refused).length) {
+                setDomainErrors(refused);
+            } else {
+                toast.error(err?.response?.data?.message || err?.message || 'Failed to save configuration.');
+            }
         } finally {
             setSaving(false);
         }
@@ -112,19 +135,25 @@ export default function EmbedFormSettings() {
         }
     };
 
+    // The API stores each entry as its host and refuses a repeat however it
+    // was typed; this only stops the same text going in twice.
     const handleAddDomain = () => {
         const d = domainInput.trim();
         if (!d) return;
-        if (allowedDomains.includes(d)) {
-            toast.warning('Domain is already in the allowed list.');
+        if (allowedDomains.some(existing => existing.toLowerCase() === d.toLowerCase())) {
+            setDomainAddError(`"${d}" is already in the list.`);
             return;
         }
         setAllowedDomains(prev => [...prev, d]);
         setDomainInput('');
+        setDomainAddError(null);
+        setDomainErrors({});
     };
 
     const handleRemoveDomain = (domain: string) => {
         setAllowedDomains(prev => prev.filter(d => d !== domain));
+        // The indexes the refusals point at no longer hold.
+        setDomainErrors({});
     };
 
     const copyToClipboard = (text: string, type: 'snippet' | 'url' | 'key') => {
@@ -264,11 +293,14 @@ export default function EmbedFormSettings() {
                                                     <i className="ri-global-line" />
                                                 </span>
                                                 <input
-                                                    type="url"
-                                                    className="form-control"
+                                                    type="text"
+                                                    className={`form-control${domainAddError ? ' is-invalid' : ''}`}
                                                     value={domainInput}
-                                                    onChange={(e) => setDomainInput(e.target.value)}
-                                                    placeholder="https://yourwebsite.com"
+                                                    onChange={(e) => {
+                                                        setDomainInput(e.target.value);
+                                                        setDomainAddError(null);
+                                                    }}
+                                                    placeholder="yourwebsite.com"
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter') {
                                                             e.preventDefault();
@@ -285,14 +317,16 @@ export default function EmbedFormSettings() {
                                                 </button>
                                             </div>
 
+                                            {domainAddError && <div className="invalid-feedback d-block mb-2">{domainAddError}</div>}
+
                                             {allowedDomains.length > 0 ? (
                                                 <div className="d-flex flex-wrap gap-2 mt-2">
-                                                    {allowedDomains.map((domain) => (
+                                                    {allowedDomains.map((domain, index) => (
                                                         <span
                                                             key={domain}
-                                                            className="badge bg-primary-subtle text-primary border border-primary-subtle fs-12 px-3 py-2 d-inline-flex align-items-center gap-2 rounded-pill"
+                                                            className={`allowed-domain-chip badge fs-12 px-3 py-2 d-inline-flex align-items-center gap-2 rounded-pill border ${domainErrors[index] ? 'allowed-domain-chip--refused bg-danger-subtle text-danger border-danger-subtle' : 'bg-primary-subtle text-primary border-primary-subtle'}`}
                                                         >
-                                                            <i className="ri-shield-check-line" />
+                                                            <i className={domainErrors[index] ? 'ri-error-warning-line' : 'ri-shield-check-line'} />
                                                             {domain}
                                                             <button
                                                                 type="button"
@@ -309,6 +343,9 @@ export default function EmbedFormSettings() {
                                                     No restrictions specified. Form can be embedded on any authorized website.
                                                 </div>
                                             )}
+                                            {Object.entries(domainErrors).map(([index, message]) => (
+                                                <div key={index} className="invalid-feedback d-block">{message}</div>
+                                            ))}
                                         </div>
 
                                         {/* Submit Button */}

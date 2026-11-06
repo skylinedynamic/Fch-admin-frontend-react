@@ -16,6 +16,8 @@
  * is correct for it.
  */
 
+import { BORROWER_AGE } from '../config/borrower';
+
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -128,4 +130,24 @@ export const mergePickedDateTime = (
     merged.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
   }
   return merged;
+};
+
+/** The same day `years` earlier, held inside the month (29 Feb -> 28 Feb). */
+const yearsBefore = (date: Date, years: number): Date => {
+    const shifted = new Date(date.getFullYear() - years, date.getMonth(), 1);
+    const lastDay = new Date(shifted.getFullYear(), shifted.getMonth() + 1, 0).getDate();
+    shifted.setDate(Math.min(date.getDate(), lastDay));
+    return shifted;
+};
+
+/**
+ * The dates of birth a borrower may have: 18 today at the latest, and still 120
+ * (the day after the 121st birthday) at the earliest - the API's range (BUG-005).
+ */
+export const dateOfBirthBounds = (today: Date = new Date()): { minDate: Date; maxDate: Date } => {
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const minDate = yearsBefore(start, BORROWER_AGE.MAX + 1);
+    minDate.setDate(minDate.getDate() + 1);
+
+    return { minDate, maxDate: yearsBefore(start, BORROWER_AGE.MIN) };
 };

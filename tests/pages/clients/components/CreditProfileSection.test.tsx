@@ -198,6 +198,45 @@ describe('Client credit profile section - reading a report', () => {
     expect((saves[0] as { personal_info: { ssn: string } }).personal_info.ssn).toBe('123-45-6789')
   })
 
+  /**
+   * BUG-074: a cleared FICO Score saved with "Credit profile saved". The API
+   * now refuses it with a 422 field error, which shows under FICO Score - not
+   * as a toast - and goes once a score is typed in.
+   */
+  it('shows a refused FICO Score under the field, not as a toast, and nothing is reported saved', async () => {
+    const saves: unknown[] = []
+    serve()
+    server.use(
+      http.post('*/common/borrowers/save-credit-profile', async ({ request }) => {
+        saves.push(await request.json())
+        return HttpResponse.json(
+          { message: 'Enter the FICO score.', errors: { 'metrics.fico_score': ['Enter the FICO score.'] } },
+          { status: 422 }
+        )
+      })
+    )
+    const user = userEvent.setup()
+
+    renderWithProviders(<CreditProfileSection clientId={3} isHost />)
+    await uploadReport(user)
+    vi.mocked(toast.success).mockClear()
+
+    const fico = screen.getByLabelText(/^FICO Score/)
+    await user.clear(fico)
+    await user.click(screen.getByRole('button', { name: /save credit profile/i }))
+
+    await waitFor(() => expect(saves).toHaveLength(1))
+    expect((saves[0] as { metrics: { fico_score: string } }).metrics.fico_score).toBe('')
+    expect(await screen.findByText('Enter the FICO score.')).toBeInTheDocument()
+    expect(fico).toHaveAttribute('aria-invalid', 'true')
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(toast.success).not.toHaveBeenCalled()
+
+    await user.type(fico, '712')
+    expect(screen.queryByText('Enter the FICO score.')).not.toBeInTheDocument()
+    expect(fico).not.toHaveAttribute('aria-invalid', 'true')
+  })
+
   it("shows the API's message when the file is not a credit report", async () => {
     serve()
     server.use(

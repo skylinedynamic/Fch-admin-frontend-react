@@ -15,7 +15,7 @@ const HOST_USER = {
   entity_type: 'Partner',
   is_host: 1,
   partner_id: 1,
-  permissions: ['view partners', 'view leads', 'view clients', 'view commission', 'view change requests'],
+  permissions: ['view partners', 'view leads', 'view clients', 'view commission', 'view change requests', 'view verification request'],
 }
 
 const THEME = {

@@ -5,6 +5,7 @@ import PageHeader from '../common/PageHeader';
 import { getLenders, deleteLenders, checkLendersDeletable, getLenderProductCategories } from '../../modules/lender/services';
 import LenderDeleteBlockedModal, { BlockedLender } from './components/LenderDeleteBlockedModal';
 import { Lender } from '../../modules/lender/types';
+import { lenderDisplayName } from '../../modules/lender/displayName';
 import { DataTable, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
@@ -100,7 +101,8 @@ export default function LendersList() {
         try {
             const blocked = (await checkLendersDeletable(ids))
                 .filter(row => !row.is_deletable)
-                .map(row => ({ id: row.id, name: row.name }));
+                // Named "Lender Name - Legal Name" (R2 BUG-008).
+                .map(row => ({ id: row.id, name: lenderDisplayName(row) }));
             if (blocked.length > 0) {
                 showBlocked(blocked, ids.length);
                 return;
@@ -131,7 +133,7 @@ export default function LendersList() {
             const blocked: BlockedLender[] | undefined = error?.response?.data?.errors?.blocked;
             if (error?.response?.status === 422 && Array.isArray(blocked) && blocked.length > 0) {
                 setShowDeleteModal(false);
-                showBlocked(blocked, ids.length);
+                showBlocked(blocked.map(row => ({ id: row.id, name: lenderDisplayName(row) })), ids.length);
                 return;
             }
             toast.error(error?.response?.data?.message || 'Failed to delete lender(s)');

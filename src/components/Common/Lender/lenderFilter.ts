@@ -1,5 +1,6 @@
 import type { MatchedLender } from '../../../modules/application/types';
 import { formatCurrency } from '../../../utils/helper';
+import { lenderDisplayName } from '../../../modules/lender/displayName';
 
 export type LenderFilters = {
     search: string;
@@ -15,7 +16,7 @@ export type LenderFilters = {
 export const lenderSearchText = (lender: MatchedLender): string => {
     const r = lender.requirements || ({} as MatchedLender['requirements']);
     return [
-        lender.name,
+        lenderDisplayName(lender),
         lender.phone,
         lender.email,
         lender.product_category,
@@ -39,7 +40,7 @@ export const filterLenders = (lenders: MatchedLender[], filters: LenderFilters):
 
     return lenders.filter((lender) => {
         if (filters.category && lender.product_category !== filters.category) return false;
-        if (filters.lenderName && lender.name !== filters.lenderName) return false;
+        if (filters.lenderName && lenderDisplayName(lender) !== filters.lenderName) return false;
         if (words.length === 0) return true;
 
         const text = lenderSearchText(lender);

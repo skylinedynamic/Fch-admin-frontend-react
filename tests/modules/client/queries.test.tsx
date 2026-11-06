@@ -20,6 +20,7 @@ import {
   useDeleteClient,
   useDeleteClients,
   useSaveClientChecklist,
+  useSaveClientCreditProfile,
   useUnarchiveClients,
   useUpdateBusinessFinancials,
   useUpdateClient,
@@ -155,6 +156,25 @@ describe('client mutations', () => {
 
     expect(seen.bodies[0]).toEqual({ checked_doc_type_ids: [1, 3] })
     expect(invalidated).toEqual([clientKeys.checklist(7)])
+  })
+
+  it('useSaveClientCreditProfile posts the profile for the client and refreshes it', async () => {
+    const seen = stub('post', `${B}/save-credit-profile`, { status: true, data: null })
+
+    const { invalidated } = await runMutation(() => useSaveClientCreditProfile(7), { metrics: { fico_score: 712 } } as never)
+
+    expect(seen.bodies[0]).toEqual({ borrower_id: 7, metrics: { fico_score: 712 } })
+    expect(invalidated).toEqual([clientKeys.creditProfile(7)])
+  })
+
+  // BUG-074: a refused FICO Score is a 422 - nothing was saved, so nothing is re-read.
+  it('a refused credit profile save leaves the cache alone', async () => {
+    stub('post', `${B}/save-credit-profile`, { message: 'Enter the FICO score.', errors: { 'metrics.fico_score': ['Enter the FICO score.'] } }, 422)
+
+    const { invalidated, error } = await runMutation(() => useSaveClientCreditProfile(7), { metrics: { fico_score: '' } } as never)
+
+    expect(error).toBeTruthy()
+    expect(invalidated).toEqual([])
   })
 
   it('a refused delete leaves the cache alone', async () => {

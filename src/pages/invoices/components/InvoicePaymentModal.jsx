@@ -3,7 +3,8 @@ import Modal from 'bootstrap/js/dist/modal';
 import { fetchPartnerPaymentMethods, processUnifiedPayment } from '../../../modules/invoice/services';
 import { toast } from 'react-toastify';
 import PaymentProviderSelector from './PaymentProviderSelector';
-import { StripeForm } from './PaymentMethodForms';
+import ReactivationNotice, { withReactivationRefresh } from './ReactivationNotice';
+import { StripeForm } from './StripeForm';
 import {
   PROVIDER_STRIPE,
   PROVIDER_SQUARE,
@@ -689,7 +690,9 @@ const ManualProcessingNoticeView = ({ selectedProvider, invoice, onSuccess, onHi
   );
 };
 
-export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }) {
+export default function InvoicePaymentModal({ show, onHide, onSuccess: onPaid, invoice }) {
+  // Paying an invoice of a cancelled subscription reactivates it (BUG-069).
+  const onSuccess = withReactivationRefresh(invoice, onPaid);
   const modalRef = useRef(null);
   const modalInstanceRef = useRef(null);
   const [selectedProvider, setSelectedProvider] = useState(null);
@@ -754,6 +757,7 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
               so mounting the provider selector while hidden fetched the payment
               methods - and, with Stripe as the only one, loaded Stripe.js - on
               every preview. */}
+          {show && <ReactivationNotice invoice={invoice} />}
           {!show ? null : !selectedProvider ? (
             <>
               <div className="ppm-card-header">

@@ -85,3 +85,23 @@ describe('DeleteBlockedModal › tone', () => {
     expect(screen.getByTestId('blocked-icon')).toHaveClass('bg-warning-subtle', 'text-warning')
   })
 })
+
+/**
+ * BUG-041: the change-request review reuses this dialog to say why a decision
+ * was refused; its one button reads "Reload list" instead of "Close".
+ */
+describe('DeleteBlockedModal › closeLabel', () => {
+  it('names the close button and still calls onClose', async () => {
+    const onClose = vi.fn()
+    render(<DeleteBlockedModal show title="Request Not Updated" message="Already processed." closeLabel="Reload list" onClose={onClose} />)
+
+    screen.getByRole('button', { name: 'Reload list' }).click()
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText('Close', { selector: 'button' })).not.toBeInTheDocument()
+  })
+
+  it('defaults to Close', () => {
+    render(<DeleteBlockedModal show title="Lead Cannot Be Deleted" message="Converted." onClose={vi.fn()} />)
+    expect(screen.getByText('Close', { selector: 'button' })).toBeInTheDocument()
+  })
+})

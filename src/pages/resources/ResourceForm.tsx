@@ -7,7 +7,7 @@ import { ResourceItem, ResourceFormData } from '../../modules/resource/types';
 import { toast } from 'react-toastify';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { RESOURCE_TYPE_OPTIONS, TYPES_REQUIRING_FILE, TYPES_REQUIRING_LINK, RESOURCE_ICONS } from '../../utils/resourceConfig';
-import { buildStorageUrl } from '../../utils/imageHelpers';
+import { providerLogoSrc } from '../../utils/imageHelpers';
 import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
@@ -578,7 +578,7 @@ const ResourceForm: React.FC = () => {
                                                                         <div className={`d-flex align-items-center justify-content-between p-2 border rounded cursor-pointer bg-light`} onClick={() => { setActiveProviderLogoIdx(idx); setShowFileManager(true); }}>
                                                                             <div className="d-flex align-items-center gap-2 overflow-hidden">
                                                                                 {p.logo ? (
-                                                                                    <img src={buildStorageUrl(p.logo)} alt="" style={{ width: '28px', height: '28px', objectFit: 'contain' }} className="rounded border bg-white flex-shrink-0" />
+                                                                                    <img src={providerLogoSrc(p)} alt="" style={{ width: '28px', height: '28px', objectFit: 'contain' }} className="rounded border bg-white flex-shrink-0" />
                                                                                 ) : (
                                                                                     <div className="avatar-xs bg-white rounded border d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '28px', height: '28px' }}>
                                                                                         <i className="ri-image-line text-muted"></i>
@@ -684,6 +684,7 @@ const ResourceForm: React.FC = () => {
 
                         if (activeProviderLogoIdx !== null) {
                             handleProviderChange(activeProviderLogoIdx, 'logo', fullPath);
+                            handleProviderChange(activeProviderLogoIdx, 'logo_preview', files[0].url || '');
                             setActiveProviderLogoIdx(null);
                         } else {
                             setFormData(prev => ({ ...prev, file: fullPath }));

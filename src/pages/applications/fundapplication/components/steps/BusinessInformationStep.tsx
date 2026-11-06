@@ -7,6 +7,7 @@ import { entityTypes, industryTypes, yearsInBusinessOptions } from '../../../../
 import { countries as countriesData } from '../../../../../modules/location'
 import { useBusinessInfo, useSaveBusinessInfo } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { formatPhoneNumber, formatNumber, formatZipCode } from '../../../../../utils/borrowerFormatters'
 import { getCountryCodeByName, getPhoneCodeByName, formatCountryDisplay, getCountryCodeFromDisplay } from '../../../../../utils/countryHelpers'
 import { toast } from 'react-toastify'
@@ -83,6 +84,8 @@ export default function BusinessInformationStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       const errors = error.response?.data?.errors
       if (errors) {
         setValidationErrors(errors)

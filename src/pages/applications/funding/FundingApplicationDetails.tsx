@@ -19,6 +19,7 @@ import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDeta
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
 import { Modal, ModalBody } from 'reactstrap';
+import { isStaleRecordError, staleRecordMessage, withExpectedStatus } from '../../../utils/staleRecord';
 import SsnValue from '../../../components/Common/SsnValue';
 import FundedAmountModal, { type CommissionRates } from '../../../components/Common/Modals/FundedAmountModal';
 import ClosedApplicationSummary from './components/ClosedApplicationSummary';
@@ -81,7 +82,7 @@ export default function FundingApplicationDetails() {
     const isHost = user?.is_host == true;
     const authPartnerId = (user as any)?.partner_id;
 
-    const { data: apiResponse, isLoading, error } = useFundingApplicationDetails(id || '');
+    const { data: apiResponse, isLoading, error, refetch } = useFundingApplicationDetails(id || '');
 
     const app = (apiResponse?.data || apiResponse || {}) as FundingApplicationDetailsType;
     const showPartnerCommission = app?.partner_id !== authPartnerId;
@@ -201,11 +202,13 @@ export default function FundingApplicationDetails() {
 
     const handleConfirmUpdate = () => {
         if (!app.id) return;
-        updateMutation.mutate({
+        // With the status this page shows: a double-click or a stale page is
+        // refused, not applied twice (R2 BUG-037).
+        updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
             status_note: status_note
-        }, {
+        }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowConfirmModal(false);
@@ -214,7 +217,11 @@ export default function FundingApplicationDetails() {
             },
             onError: (error: any) => {
                 setShowConfirmModal(false);
-                if (error?.response?.data?.errors) {
+                if (isStaleRecordError(error)) {
+                    toast.error(staleRecordMessage(error));
+                    refetch();
+                    window.dispatchEvent(new Event('refreshActivities'));
+                } else if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     if (backendErrors.status_note) {
                         const message = Array.isArray(backendErrors.status_note)
@@ -258,12 +265,12 @@ export default function FundingApplicationDetails() {
             }
         }
 
-        updateMutation.mutate({
+        updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
             status_note: status_note,
             funded_amount: amount
-        }, {
+        }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowFundedModal(false);
@@ -271,7 +278,12 @@ export default function FundingApplicationDetails() {
                 window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
-                if (error?.response?.data?.errors) {
+                if (isStaleRecordError(error)) {
+                    setShowFundedModal(false);
+                    toast.error(staleRecordMessage(error));
+                    refetch();
+                    window.dispatchEvent(new Event('refreshActivities'));
+                } else if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     if (backendErrors.status_note) {
                         const message = Array.isArray(backendErrors.status_note)
@@ -732,47 +744,6 @@ export default function FundingApplicationDetails() {
                 )}
             </div>
 
-            <div className="col-12">
-                <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Document Audit History</h5>
-                {app.download_histories && app.download_histories.length > 0 ? (
-                    <div className="table-responsive">
-                        <table className="table table-bordered table-striped fs-13">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>User</th>
-                                    <th>Role</th>
-                                    <th>Action</th>
-                                    <th>Document Type</th>
-                                    <th>SHA-256 Hash</th>
-                                    <th>IP Address</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {app.download_histories.map(history => (
-                                    <tr key={history.id}>
-                                        <td>{new Date(history.downloaded_at).toLocaleString()}</td>
-                                        <td className="fw-medium">{history.user_name || 'System'}</td>
-                                        <td className="text-capitalize">{history.user_type || 'System'}</td>
-                                        <td>
-                                            <span className={`badge ${history.action === 'generated' ? 'bg-success' :
-                                                history.action.includes('with_password') ? 'bg-warning' : 'bg-primary'
-                                                }`}>
-                                                {history.action.replace(/_/g, ' ')}
-                                            </span>
-                                        </td>
-                                        <td>{history.file_type}</td>
-                                        <td style={{ wordBreak: 'break-all', maxWidth: '200px' }}>{history.sha256_hash}</td>
-                                        <td>{history.ip_address}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <div className="text-muted fs-13">No document history recorded yet.</div>
-                )}
-            </div>
         </div>
     );
 
@@ -835,11 +806,10 @@ export default function FundingApplicationDetails() {
                                     </nav>
                                 </div>
                                 <div className="page-actions page-actions-wrap d-flex align-items-center flex-wrap gap-2 mt-2 mt-lg-0">
-                                    {isHost && (
-                                        <Link to={`/intake-review/funding-application/${id}/audit-history`} className="btn btn-primary w-lg waves-effect">
-                                            <i className="ri-history-line align-middle me-1"></i> Audit History
-                                        </Link>
-                                    )}
+                                    {/* The host reads every application's trail, a partner its own (the API decides). */}
+                                    <Link to={`/intake-review/funding-application/${id}/audit-history`} className="btn btn-primary w-lg waves-effect">
+                                        <i className="ri-history-line align-middle me-1"></i> Audit Trail
+                                    </Link>
                                     <button
                                         type="button"
                                         className="btn btn-primary w-lg waves-effect"

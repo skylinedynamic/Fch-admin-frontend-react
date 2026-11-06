@@ -9,6 +9,7 @@ import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
 import ConfirmationModal from '../../components/Common/Modals/ConfirmationModal';
 import MySubscriptionLoader from '../../components/Loader/MySubscriptionLoader';
+import ResumeSubscription from './components/ResumeSubscription';
 import {
   fetchMySubscriptionDetails,
   fetchMySubscriptionPaymentProviders,
@@ -23,6 +24,7 @@ import {
   STATUS_CANCELLED as SUBSCRIPTION_STATUS_CANCELLED,
   STATUS_PENDING as SUBSCRIPTION_STATUS_PENDING,
   ENROLLMENT_TYPE_ONE_TIME,
+  FINAL_INSTALLMENT_NOTE,
 } from '../../config/subscriptionConfig';
 import {
   PAYMENT_STATUS_PAID,
@@ -89,6 +91,8 @@ export interface MySubscriptionData {
     enrollment_completed_at?: string;
     payable_amount?: string;
     subscription_amount_per_month?: string;
+    /** The last installment when it takes up the monthly rounding; null on an even split (BUG-049). */
+    final_installment_amount?: string | null;
     /** The recurring platform fee - distinct from subscription_amount_per_month,
      *  which is the installment/enrollment amount and is null once enrollment
      *  is complete. */
@@ -896,6 +900,7 @@ export default function MySubscription(): JSX.Element {
                             <i className="ri-close-circle-line"></i> Cancel Subscription
                           </button>
                         )}
+                        {isSubscriptionCancelled && <ResumeSubscription onResumed={() => loadSubscriptionDetails(false)} />}
                         <span
                           className={`badge billing-card-badge-pill ${isSubscriptionCompleted
                               ? 'bg-success-subtle text-success border border-success-subtle'
@@ -918,6 +923,19 @@ export default function MySubscription(): JSX.Element {
                         <span className="text-muted d-block fs-12">Monthly Platform Fee</span>
                         <strong className="text-dark fs-14">{subscription?.monthly_platform_fee || 'N/A'}</strong>
                       </div>
+                      {!subIsOneTime && subscription?.subscription_amount_per_month && (
+                        <div className="col-xl-3 col-md-6 col-12">
+                          <span className="text-muted d-block fs-12">Monthly Installment</span>
+                          <strong className="text-dark fs-14">{subscription.subscription_amount_per_month}</strong>
+                        </div>
+                      )}
+                      {!subIsOneTime && subscription?.final_installment_amount && (
+                        <div className="col-xl-3 col-md-6 col-12">
+                          <span className="text-muted d-block fs-12">Last Installment</span>
+                          <strong className="text-dark fs-14">{subscription.final_installment_amount}</strong>
+                          <span className="text-muted d-block fs-11">{FINAL_INSTALLMENT_NOTE}</span>
+                        </div>
+                      )}
                       <div className="col-xl-3 col-md-6 col-12">
                         <span className="text-muted d-block fs-12">Start Date</span>
                         <strong className="text-dark fs-14">{subscription?.subscription_start_date || 'N/A'}</strong>
