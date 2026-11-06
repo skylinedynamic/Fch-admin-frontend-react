@@ -244,10 +244,8 @@ export default function FundingRequestDetail() {
                             {isHost && review.matched_lenders && review.matched_lenders.length > 0 && (
                                 <LenderInformationCard
                                     cardRef={lenderTableRef}
-                                    // "Lender Name - Legal Name", as on the funding application details page (R2 BUG-008).
-                                    lenders={review.matched_lenders.map((lender: MatchedLender) => (
-                                        lender.legal_name ? { ...lender, name: `${lender.name} - ${lender.legal_name}` } : lender
-                                    ))}
+                                    // The card shows each lender "Lender Name - Legal Name" (R2 BUG-008).
+                                    lenders={review.matched_lenders}
                                     assignedLenderIds={assignedLenderIds}
                                     subjectLabel="funding request"
                                     onAssign={assignLender}
