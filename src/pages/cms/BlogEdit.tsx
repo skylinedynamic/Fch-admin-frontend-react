@@ -62,7 +62,9 @@ export default function BlogEdit() {
         category_id: '',
         summary: '',
         content: '',
-        is_published: true,
+        // A new post starts as a draft, so nothing half-written goes live
+        // by accident (BUG-192, decision D7).
+        is_published: false,
         is_featured: false,
         meta_title: '',
         meta_description: '',
@@ -299,7 +301,7 @@ export default function BlogEdit() {
                                     Saving...
                                 </>
                             ) : (
-                                <>{id ? 'Update' : 'Publish'}</>
+                                <>{id ? 'Update' : formData.is_published ? 'Publish' : 'Save Draft'}</>
                             )}
                         </button>
                     </div>
@@ -505,7 +507,7 @@ export default function BlogEdit() {
                                 <div className="card-body p-4">
                                     <div className="row g-3">
                                         <div className="col-12">
-                                            <label className="form-label">Publish Status</label>
+                                            <label className="form-label" htmlFor="isPublishedSwitch">Publish Status</label>
                                             <div className="form-check form-switch form-switch-md d-flex align-items-center justify-content-between p-3 bg-light rounded">
                                                 <label className="form-check-label mb-0">
                                                     {formData.is_published ? <span className="text-success fw-medium">Published</span> : <span className="text-muted fw-medium">Draft</span>}

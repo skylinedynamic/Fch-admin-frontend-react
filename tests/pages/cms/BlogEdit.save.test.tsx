@@ -31,10 +31,10 @@ beforeEach(() => {
   allowBackgroundCalls()
 })
 
-const fillAndPublish = async (user: ReturnType<typeof userEvent.setup>) => {
+const fillAndSave = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.type(await screen.findByPlaceholderText('Enter post title'), 'QA Draft Post')
   await user.type(screen.getByLabelText('Content'), 'Body')
-  await user.click(screen.getByRole('button', { name: /publish/i }))
+  await user.click(screen.getByRole('button', { name: /save draft/i }))
 }
 
 /** A 422 as BlogRequest (Laravel's FormRequest) sends it: a list of messages per field. */
@@ -52,7 +52,7 @@ describe('BlogEdit - saving a new post', () => {
     const user = userEvent.setup()
     renderPage(<BlogEdit />, { path: '/cms/blogs/create', route: '/cms/blogs/create' })
 
-    await fillAndPublish(user)
+    await fillAndSave(user)
 
     await waitFor(() => expect(save.calls).toBe(1))
     expect(field(save.bodies[0], 'title')).toBe('QA Draft Post')
@@ -64,7 +64,7 @@ describe('BlogEdit - saving a new post', () => {
     const user = userEvent.setup()
     renderPage(<BlogEdit />, { path: '/cms/blogs/create', route: '/cms/blogs/create' })
 
-    await fillAndPublish(user)
+    await fillAndSave(user)
 
     expect(await screen.findByText(/another post already uses this title's web address/i)).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Enter post title')).toHaveClass('is-invalid')
@@ -75,8 +75,63 @@ describe('BlogEdit - saving a new post', () => {
     const user = userEvent.setup()
     renderPage(<BlogEdit />, { path: '/cms/blogs/create', route: '/cms/blogs/create' })
 
-    await fillAndPublish(user)
+    await fillAndSave(user)
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('The og title may not be greater than 255 characters.'))
+  })
+})
+
+/**
+ * BUG-192 (decision D7): a new post opened as Published, and the button said
+ * "Publish" even with Draft chosen - a half-written post went live if the
+ * author forgot the switch.
+ */
+describe('BlogEdit - a new post starts as a draft', () => {
+  it('opens with Draft chosen and the button reads Save Draft', async () => {
+    renderPage(<BlogEdit />, { path: '/cms/blogs/create', route: '/cms/blogs/create' })
+
+    const status = await screen.findByRole('checkbox', { name: /publish status/i })
+    expect(status).not.toBeChecked()
+    expect(screen.getByText('Draft')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^publish$/i })).not.toBeInTheDocument()
+  })
+
+  it('the button follows the switch: Publish when Published, Save Draft when back to Draft', async () => {
+    const user = userEvent.setup()
+    renderPage(<BlogEdit />, { path: '/cms/blogs/create', route: '/cms/blogs/create' })
+
+    const status = await screen.findByRole('checkbox', { name: /publish status/i })
+    await user.click(status)
+    expect(screen.getByRole('button', { name: /^publish$/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /save draft/i })).not.toBeInTheDocument()
+
+    await user.click(status)
+    expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument()
+  })
+
+  it('saving without touching the switch sends the post as a draft', async () => {
+    const save = api('post', '/admin/cms/blogs', { status: true, data: { id: 9 } }, 201)
+    const user = userEvent.setup()
+    renderPage(<BlogEdit />, { path: '/cms/blogs/create', route: '/cms/blogs/create' })
+
+    await fillAndSave(user)
+
+    await waitFor(() => expect(save.calls).toBe(1))
+    expect(String(field(save.bodies[0], 'is_published'))).toMatch(/^(0|false)$/)
+  })
+
+  it('publishing sends the post as published', async () => {
+    const save = api('post', '/admin/cms/blogs', { status: true, data: { id: 9 } }, 201)
+    const user = userEvent.setup()
+    renderPage(<BlogEdit />, { path: '/cms/blogs/create', route: '/cms/blogs/create' })
+
+    await user.type(await screen.findByPlaceholderText('Enter post title'), 'QA Live Post')
+    await user.type(screen.getByLabelText('Content'), 'Body')
+    await user.click(screen.getByRole('checkbox', { name: /publish status/i }))
+    await user.click(screen.getByRole('button', { name: /^publish$/i }))
+
+    await waitFor(() => expect(save.calls).toBe(1))
+    expect(String(field(save.bodies[0], 'is_published'))).toMatch(/^(1|true)$/)
   })
 })
