@@ -206,3 +206,34 @@ describe('MySubscription', () => {
     })
   })
 })
+
+describe('MySubscription - layout and payment history', () => {
+  // The plan section comes first, then the bill / upcoming / payment method cards.
+  it('shows the plan section above the summary cards', async () => {
+    mount()
+
+    const plan = await screen.findByText('Active Subscription Plan: Monthly')
+    const cards = screen.getByText('Current / Recent Bill')
+    expect(plan.compareDocumentPosition(cards) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  // Recent Payments History holds the partner's plan, seat and borrower fee
+  // payments, each with its invoice type.
+  it('names the invoice type of each payment', async () => {
+    mount({
+      subscription: subscription(),
+      partner: { id: 5 },
+      recent_payments: [
+        { id: 1, invoice_no: 'INV-1', invoice_type: 'enrollment', amount: '$499.00', status: 'SUCCEEDED', created_at: '2026-01-01' },
+        { id: 2, invoice_no: 'INV-2', invoice_type: 'user_seat', amount: '$49.00', status: 'SUCCEEDED', created_at: '2026-02-01' },
+        { id: 3, invoice_no: 'INV-3', invoice_type: 'borrower_fee', amount: '$800.00', status: 'SUCCEEDED', created_at: '2026-03-01' },
+      ],
+    })
+
+    expect(await screen.findByRole('columnheader', { name: 'INVOICE TYPE' })).toBeInTheDocument()
+    const row = (invoice: string) => screen.getByText(invoice).closest('tr') as HTMLElement
+    expect(row('INV-1')).toHaveTextContent('Enrollment')
+    expect(row('INV-2')).toHaveTextContent('User Seat')
+    expect(row('INV-3')).toHaveTextContent('Borrower Fee')
+  })
+})

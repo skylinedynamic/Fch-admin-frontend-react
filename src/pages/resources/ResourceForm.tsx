@@ -41,7 +41,7 @@ const ResourceForm: React.FC = () => {
         is_partner: false,
         is_borrower: false,
         link: '',
-        status: true,
+        status: false, // A new resource starts Unpublished (BUG-181).
         overview: [],
         impact: [],
         overview_text: '',
@@ -249,7 +249,7 @@ const ResourceForm: React.FC = () => {
                                                         is_partner: false,
                                                         is_borrower: false,
                                                         link: '',
-                                                        status: true,
+                                                        status: false, // A new resource starts Unpublished (BUG-181).
                                                         overview: [],
                                                         impact: [],
                                                         overview_text: '',

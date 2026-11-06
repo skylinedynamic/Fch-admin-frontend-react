@@ -61,3 +61,16 @@ describe('Subscription details - the last installment', () => {
     expect(screen.queryByText('Last Installment')).not.toBeInTheDocument()
   })
 })
+
+// The subscriber icon sits on the same light tile for every subscriber type,
+// as on Payment and Invoice details.
+describe('Subscription details - subscriber icon tile', () => {
+  it.each(['Partner', 'Borrower', 'User'])('is the neutral tile for a %s', async (entityType) => {
+    open({ entity_type: entityType })
+
+    await screen.findByText('Bo Rower')
+    const tile = document.querySelector('.card-header .avatar-title') as HTMLElement
+    expect(tile).toHaveClass('bg-gray-subtle', 'text-primary')
+    expect(tile.className).not.toMatch(/\b(bg|text)-(success|info)(-subtle)?\b/)
+  })
+})

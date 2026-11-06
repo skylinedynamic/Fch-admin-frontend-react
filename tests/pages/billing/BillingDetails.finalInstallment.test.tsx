@@ -56,3 +56,30 @@ describe('Billing details - the last installment', () => {
     expect(screen.queryByText('Last Installment')).not.toBeInTheDocument()
   })
 })
+
+// The header icon sits on the same light tile for every subscriber type, as on
+// Payment and Invoice details - a partner's tile was solid dark with the icon
+// lost in it, a client's green.
+describe('Billing details - header icon tile', () => {
+  it.each(['Partner', 'Borrower'])('is the neutral tile for a %s', async (entityType) => {
+    signIn({ permissions: ['view subscriptions'] })
+    allowBackgroundCalls()
+    api('get', '/common/billing/1101', {
+      status: true,
+      data: {
+        entity_type: entityType,
+        entity_id: 7,
+        subscriber: { id: 7, full_name: 'Awlad Hossain', first_name: 'Awlad', last_name: 'Hossain', email: 'a@example.test' },
+        subscription: { id: 1101, status: 'Active', enrollment_type: 'Installment', installment_type: 1, installment_count: 12, installments_paid: 4 },
+        upcoming_billing: { upcoming_billing_amount: 558.06, upcoming_billing_date: '2026-12-01' },
+      },
+    })
+    api('post', '/common/invoices/fetch-invoices', paginated([]))
+    const { container } = renderPage(<BillingDetails />, { path: '/billing/:id', route: '/billing/1101' })
+
+    await screen.findAllByText('a@example.test')
+    const tile = container.querySelector('.card-header .avatar-title') as HTMLElement
+    expect(tile).toHaveClass('bg-gray-subtle', 'text-primary')
+    expect(tile.className).not.toMatch(/\bbg-(primary|success)\b/)
+  })
+})
