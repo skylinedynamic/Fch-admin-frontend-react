@@ -165,7 +165,7 @@ export default function BlogEdit() {
         setErrors(prev => ({ ...prev, new_tag: '' }));
         try {
             const res = await createTagMutation.mutateAsync({ name: newTagName });
-            setFormData(prev => ({ ...prev, blog_tag_id: [...(prev.blog_tag_id || []), res.data.id] }));
+            setFormData(prev => ({ ...prev, blog_tag_id: [...(prev.blog_tag_id || []), String(res.data.id)] })); // options use string ids (BUG-186)
             setShowTagModal(false);
             setNewTagName('');
             refetchTags();

@@ -18,6 +18,25 @@ vi.mock('../../../../src/hooks/useSummernote', () => ({
 
 const { default: ActivityEditModal } = await import('../../../../src/components/Common/Modals/ActivityEditModal')
 
+/**
+ * The sent multipart body as FormData. Node's `request.formData()` (undici)
+ * throws an AssertionError on a body carrying a jsdom File, so the handler
+ * answered 500 and nothing was recorded. The raw body is split by hand
+ * instead; a file part comes back as its contents, enough to count it.
+ */
+async function readMultipart(request: Request): Promise<FormData> {
+  const boundary = /boundary=(?:"([^"]+)"|([^;]+))/.exec(request.headers.get('content-type') || '')
+  const text = await request.text()
+  const form = new FormData()
+  if (!boundary) return form
+  for (const part of text.split(`--${boundary[1] || boundary[2]}`)) {
+    const match = /^\r\n([\s\S]*?)\r\n\r\n([\s\S]*)\r\n$/.exec(part)
+    const name = match && /name="([^"]*)"/.exec(match[1])
+    if (match && name) form.append(name[1], match[2])
+  }
+  return form
+}
+
 const STAFF = [
   { id: 12, name: 'Avery Staff', email: 'avery@example.test', phone_number: null },
   { id: 14, name: 'Blake Ops', email: 'blake@example.test', phone_number: '(222) 333-4444' },
@@ -58,7 +77,7 @@ describe('ActivityEditModal "Want to Assign"', () => {
         return HttpResponse.json({ status: true, data: STAFF })
       }),
       http.post('*/common/activity-logs/77', async ({ request }) => {
-        sent = await request.formData()
+        sent = await readMultipart(request)
         return HttpResponse.json({ status: true, message: 'Activity updated', data: TASK_ACTIVITY })
       })
     )
@@ -273,7 +292,7 @@ describe('ActivityEditModal looks like New Activity', () => {
     sent = null
     server.use(
       http.post('*/common/activity-logs/78', async ({ request }) => {
-        sent = await request.formData()
+        sent = await readMultipart(request)
         return HttpResponse.json({ status: true, message: 'Activity updated', data: ACTIVITY })
       })
     )
