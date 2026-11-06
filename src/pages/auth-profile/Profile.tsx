@@ -6,6 +6,7 @@ import { useUpdatePassword, useUpdateProfile, useUpdateProfilePicture } from '..
 import { useAuthStore } from '../../store/auth';
 import { refreshUser } from '../../lib/auth/authApi';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
+import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
 import { apiErrorMessage } from '../../utils/formUtils';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_EMPLOYEE } from '../../config/appConfig';
@@ -47,6 +48,8 @@ const Profile = () => {
         image: ''
     });
     const [profileErrors, setProfileErrors] = useState<ProfileFormErrors>({});
+    // A new sign-in email waits for confirmation from the link sent to it (BUG-204).
+    const [pendingEmail, setPendingEmail] = useState<string | null>(null);
     const [showFileManager, setShowFileManager] = useState(false);
 
     // Password Form State
@@ -71,6 +74,7 @@ const Profile = () => {
                 email: user.email || '',
                 image: user.image || ''
             });
+            setPendingEmail(user.pending_email || null);
         }
     }, [user]);
 
@@ -82,6 +86,17 @@ const Profile = () => {
         if (/\d/.test(password)) strength++;
         if (/[^a-zA-Z\d]/.test(password)) strength++;
         return strength;
+    };
+
+    // After Resend link / Cancel change: the notice is drawn from the signed-in
+    // user kept in the browser, so it is updated there too - otherwise a
+    // cancelled change came back on the next reload (BUG-204).
+    const handlePendingEmailChange = (email: string | null) => {
+        setPendingEmail(email);
+        const current = useAuthStore.getState();
+        if (current.user) {
+            setCredentials({ token: current.token, rememberMe: current.rememberMe, user: { ...current.user, pending_email: email } });
+        }
     };
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +159,9 @@ const Profile = () => {
             const { image, ...dataToUpdate } = profileData;
             const response = await updateProfile(dataToUpdate);
             if (response.status) {
+                // The API's message says whether a confirmation link was sent.
                 toast.success(response.message || 'Profile updated successfully!');
+                setPendingEmail(response.data?.pending_email ?? null);
                 await refreshUser();
             } else {
                 toast.error(response.message || 'Failed to update profile');
@@ -372,13 +389,15 @@ const Profile = () => {
                                                     </div>
                                                     <div className="col-md-6">
                                                         <label className="form-label fw-semibold">Email Address</label>
+                                                        <PendingEmailNotice userId={user?.id} pendingEmail={pendingEmail} onChange={handlePendingEmailChange} />
                                                         <input
                                                             type="email"
-                                                            className={`form-control bg-light text-muted ${profileErrors.email ? 'is-invalid' : ''}`}
+                                                            className={`form-control ${profileErrors.email ? 'is-invalid' : ''}`}
                                                             name="email"
                                                             value={profileData.email}
+                                                            onChange={handleProfileChange}
                                                             placeholder="Enter your email"
-                                                            readOnly
+                                                            disabled={isSubmittingProfile}
                                                         />
                                                         {profileErrors.email && <div className="invalid-feedback">{profileErrors.email}</div>}
                                                     </div>
