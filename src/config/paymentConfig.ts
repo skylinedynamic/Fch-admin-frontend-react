@@ -1,3 +1,5 @@
+import { COMMISSION_PAYMENT } from './statusOptions';
+
 export const PAYMENT_STATUS_SUCCEEDED = 'succeeded';
 export const PAYMENT_STATUS_PENDING = 'pending';
 export const PAYMENT_STATUS_PROCESSING = 'processing';
@@ -83,6 +85,8 @@ export const PAYMENT_METHOD_OPTIONS = [
     { label: PROVIDER_ECRYPT, value: PROVIDER_ECRYPT },
     { label: PROVIDER_AUTHORIZE, value: PROVIDER_AUTHORIZE },
     { label: PROVIDER_CASH, value: PROVIDER_CASH },
+    // Commission payouts are recorded with the payout dialog's method.
+    ...COMMISSION_PAYMENT.filter(({ value }) => value !== PROVIDER_STRIPE),
 ];
 
 export const PAYMENT_TYPE_OPTIONS = [
