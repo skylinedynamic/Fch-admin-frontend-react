@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query/queryKeys'
-import { fetchBusinessInfo, saveBusinessInfo, fetchOwnershipInfo, saveOwnershipInfo, fetchFinancialInfo, saveFinancialInfo, fetchDisclosuresConsent, saveDisclosuresConsent, fetchFundingRequest, saveFundingRequest, fetchFederalCompliance, saveFederalCompliance, saveAttestation, fetchAttestation, fetchFundingApplicationDocuments, deleteFundingApplicationDocument, uploadFundingApplicationDocuments, validateCoBorrower } from './services'
+import { fetchBusinessInfo, saveBusinessInfo, fetchOwnershipInfo, saveOwnershipInfo, fetchFinancialInfo, saveFinancialInfo, fetchDisclosuresConsent, saveDisclosuresConsent, fetchFundingRequest, fetchFundingTypes, saveFundingRequest, fetchFederalCompliance, saveFederalCompliance, saveAttestation, fetchAttestation, fetchFundingApplicationDocuments, deleteFundingApplicationDocument, uploadFundingApplicationDocuments, validateCoBorrower } from './services'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { withEditConfirmation } from './editConfirmation'
 import type { FundingRequestData, FundingApplicationDocument, AttestationData } from './types'
@@ -146,6 +146,15 @@ export const useDisclosuresConsent = (fundingRequestId?: number | string | null,
     queryKey: [...queryKeys.fundingApplication.disclosuresConsent(), fundingRequestId ?? 'current', ...(options?.fundingApplicationId ? [String(options.fundingApplicationId)] : [])],
     queryFn: () => fetchDisclosuresConsent(fundingRequestId, options?.fundingApplicationId),
     enabled: wizardEnabled(options),
+  })
+}
+
+/** The funding types the Funding Request step offers (the lender product categories). */
+export const useFundingTypes = () => {
+  return useQuery<string[]>({
+    queryKey: queryKeys.fundingApplication.fundingTypes(),
+    queryFn: fetchFundingTypes,
+    staleTime: 5 * 60 * 1000,
   })
 }
 

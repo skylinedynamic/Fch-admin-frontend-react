@@ -15,7 +15,9 @@ import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSke
 import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { PreQualificationApplication as PreQualificationApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
-import { PRE_QUALIFICATION_STATUS_OPTIONS, FUNDING_TYPE_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
+import { PRE_QUALIFICATION_STATUS_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
+import { useFundingTypes } from '../../../modules/funding-application/queries';
+import { fundingTypeOptionsFrom } from '../../../data/profile';
 import '../../../../assets/css/underwriting-result.css';
 
 
@@ -26,6 +28,8 @@ export default function PreQualificationApplication() {
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state: any) => state.user);
     const isHost = currentUser?.is_host == 1;
+    // Funding Type filter: the common funding types (GET /common/funding-types).
+    const { data: fundingTypes } = useFundingTypes();
 
     // State for leads
     // const [leads, setLeads] = useState([]);
@@ -292,7 +296,7 @@ export default function PreQualificationApplication() {
                                             <div className="col-xxl-2 col-sm-4">
                                                 <Dropdown
                                                     value={selectedLeadType}
-                                                    options={[{ label: 'All Types', value: '' }, ...FUNDING_TYPE_OPTIONS]}
+                                                    options={[{ label: 'All Types', value: '' }, ...fundingTypeOptionsFrom(fundingTypes)]}
                                                     optionLabel="label"
                                                     optionValue="value"
                                                     onChange={(e) => setSelectedLeadType(e.value)}

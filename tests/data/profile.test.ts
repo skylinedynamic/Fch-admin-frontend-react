@@ -1,17 +1,52 @@
 import { describe, expect, it } from 'vitest'
-import { additionalFundingTypeOptions, fundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../src/data/profile'
+import { additionalFundingTypeOptions, fundingTypeOptionsFrom, onlyFundingTypesIn, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../src/data/profile'
+
+/**
+ * The funding types offered: the lender product categories (from the API), so
+ * an application's types are the categories its lenders are matched on.
+ */
+describe('fundingTypeOptionsFrom', () => {
+  it('offers the lender product categories, in their order', () => {
+    expect(fundingTypeOptionsFrom(['Term Loan', 'Business Line of Credit'])).toEqual([
+      { label: 'Term Loan', value: 'Term Loan' },
+      { label: 'Business Line of Credit', value: 'Business Line of Credit' },
+    ])
+  })
+
+  it('offers nothing else', () => {
+    expect(fundingTypeOptionsFrom(['Term Loan']).map((o) => o.value)).toEqual(['Term Loan'])
+    expect(fundingTypeOptionsFrom(undefined)).toEqual([])
+  })
+})
+
+/** A saved type that is not an Active category is not kept: it has to be chosen again from the list. */
+describe('onlyFundingTypesIn', () => {
+  const categories = ['Term Loan', 'Business Line of Credit']
+
+  it('keeps the saved types that are categories', () => {
+    expect(onlyFundingTypesIn(categories, ['Business Line of Credit', 'Line of Credit', 'SBA Loan'])).toEqual(['Business Line of Credit'])
+  })
+
+  it('keeps everything while the categories are still loading', () => {
+    expect(onlyFundingTypesIn(undefined, ['Line of Credit'])).toEqual(['Line of Credit'])
+  })
+})
 
 /** The Additional Funding Types choices on the funding application's Funding Request step. */
 describe('additionalFundingTypeOptions', () => {
-  it('is every funding type but the preferred one', () => {
-    const values = additionalFundingTypeOptions('Term Loan').map((o) => o.value)
+  const options = fundingTypeOptionsFrom(['Term Loan', 'SBA Financing', 'Equipment Financing'])
 
-    expect(values).not.toContain('Term Loan')
-    expect(values).toHaveLength(fundingTypeOptions.length - 1)
+  it('is the same list as Preferred, the preferred one shown but not selectable', () => {
+    expect(additionalFundingTypeOptions(options, 'Term Loan')).toEqual([
+      { label: 'Term Loan', value: 'Term Loan', disabled: true, badge: 'Selected as Preferred', badgeTitle: 'Already selected as the Preferred Funding Type' },
+      { label: 'SBA Financing', value: 'SBA Financing', disabled: false },
+      { label: 'Equipment Financing', value: 'Equipment Financing', disabled: false },
+    ])
   })
 
-  it('is every funding type while none is preferred', () => {
-    expect(additionalFundingTypeOptions('')).toEqual(fundingTypeOptions)
+  it('is every funding type, all selectable, while none is preferred', () => {
+    expect(additionalFundingTypeOptions(options, '').map((o) => o.value)).toEqual(options.map((o) => o.value))
+    expect(additionalFundingTypeOptions(options, '').some((o) => o.disabled)).toBe(false)
   })
 })
 

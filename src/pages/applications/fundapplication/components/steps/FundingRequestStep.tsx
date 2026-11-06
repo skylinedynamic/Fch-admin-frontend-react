@@ -4,9 +4,9 @@ import type { FundingRequest } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
 import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
-import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../../../../data/profile'
+import { purposeOfFundingOptions, fundingTypeOptionsFrom, onlyFundingTypesIn, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../../../../data/profile'
 import ChipMultiSelect from '../../../../../components/Common/ChipMultiSelect'
-import { useFundingRequest, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
+import { useFundingRequest, useFundingTypes, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
 import { PURPOSE_NOTE_MAX_LENGTH } from '../../../../../modules/funding-application/applicationRules'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
 import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
@@ -26,6 +26,7 @@ interface FundingRequestStepProps {
   fundingApplicationId?: number | string | null
   fundingSequenceId?: number | string | null
 }
+
 
 /** A saved purpose_of_funds string, normalised: the known purposes as listed, joined again. */
 const matchPurpose = (raw: string | null | undefined): string => joinPurposes(splitPurposes(raw))
@@ -102,14 +103,20 @@ export default function FundingRequestStep({
     )
   }, [fundingOptionsData])
 
-  const dynamicFundingTypeOptions = React.useMemo(() => {
-    const opts = [...fundingTypeOptions]
-    const currentType = funding.fundingType || urlFundingType || apiData?.preferred_funding_type
-    if (currentType && !opts.find(o => o.value.toLowerCase() === currentType.toLowerCase())) {
-      opts.unshift({ label: currentType, value: currentType })
+  // Exactly the Active lender product categories - nothing else is offered.
+  const { data: fundingTypes } = useFundingTypes()
+  const dynamicFundingTypeOptions = React.useMemo(() => fundingTypeOptionsFrom(fundingTypes), [fundingTypes])
+
+  // A saved type that is not an Active category (an old name, an inactive
+  // category, a funding sequence name) is cleared, to be chosen again.
+  useEffect(() => {
+    if (!fundingTypes) return
+    const preferred = onlyFundingTypesIn(fundingTypes, funding.fundingType ? [funding.fundingType] : [])[0] ?? ''
+    const additional = onlyFundingTypesIn(fundingTypes, funding.additionalFundingTypes ?? [])
+    if (preferred !== (funding.fundingType || '') || additional.length !== (funding.additionalFundingTypes ?? []).length) {
+      setFunding({ ...funding, fundingType: preferred, additionalFundingTypes: additional })
     }
-    return opts
-  }, [funding.fundingType, urlFundingType, apiData?.preferred_funding_type])
+  }, [fundingTypes, funding])
 
   const selectedPurposes = React.useMemo(() => splitPurposes(funding.purpose), [funding.purpose])
   const hasOtherPurpose = selectedPurposes.includes(FUNDING_PURPOSE_OTHER)
@@ -361,7 +368,7 @@ export default function FundingRequestStep({
           inputId="additional_funding_types"
           value={funding.additionalFundingTypes ?? []}
           onChange={(types) => setFunding({ ...funding, additionalFundingTypes: types })}
-          options={additionalFundingTypeOptions(funding.fundingType)}
+          options={additionalFundingTypeOptions(dynamicFundingTypeOptions, funding.fundingType)}
           placeholder="Select any other funding types"
           filter
           filterPlaceholder="Search funding types"

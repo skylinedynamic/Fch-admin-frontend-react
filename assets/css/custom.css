@@ -8402,6 +8402,51 @@ File: Custom Css File
   color: var(--vz-primary, #405189);
 }
 
+/* An option's badge in the chip picker - e.g. the preferred funding type in
+   Additional Funding Types, listed but not selectable: "Selected as Preferred". */
+.chip-multiselect-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chip-multiselect-option__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-multiselect-option__badge {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--vz-primary, #405189);
+  background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.12);
+  border: 1px solid rgba(var(--vz-primary-rgb, 64, 81, 137), 0.25);
+}
+
+/* A disabled option is dimmed by PrimeReact; keep its badge readable. */
+.chip-multiselect-panel .p-multiselect-item.p-disabled {
+  opacity: 1;
+  color: var(--vz-secondary-color, #878a99);
+  cursor: not-allowed;
+}
+
+/* It cannot be picked: its checkbox shows, greyed out. */
+.chip-multiselect-panel .p-multiselect-item.p-disabled .p-checkbox .p-checkbox-box {
+  background: var(--vz-light, #f3f6f9);
+  border-color: var(--vz-border-color, #e9ebec) !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 
 /* Settings > Email Configuration: verifying a mail configuration with a code. */
 .mail-verify-card {
