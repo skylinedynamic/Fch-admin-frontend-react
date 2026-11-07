@@ -2,8 +2,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
 import { REFRESH_ACTIVITIES_EVENT } from '../../config/appConfig'
 import { useConfigPartnerId } from '../settings/configPartner'
-import { fetchAgreement, saveAgreement, fetchAgreements, toggleAgreementStatus, fetchAgreementPreviewValues } from './services'
-import type { AgreementSlug } from './types'
+import {
+  fetchAgreement,
+  saveAgreement,
+  fetchAgreements,
+  toggleAgreementStatus,
+  fetchAgreementPreviewValues,
+  setAgreementRequired,
+  fetchAgreementRequirement,
+} from './services'
+import type { AgreementSlug, AgreementRequirementStatus, ApiResponse } from './types'
 
 /**
  * The cache key an agreement query is held under: the user's own templates,
@@ -68,6 +76,34 @@ export const useSaveAgreement = () => useAgreementMutation(saveAgreement)
  * Hook to toggle the active status of an agreement template.
  */
 export const useToggleAgreementStatus = () => useAgreementMutation(toggleAgreementStatus)
+
+/**
+ * Whether this partner / client must sign, and whether the host can change it
+ * now (signing and the agreement they would sign both on in Settings › Agreement).
+ * Under the agreement keys, so turning a template on or off refreshes it too.
+ */
+export const useAgreementRequirement = (userId: number | null | undefined, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.agreement.requirement(userId ?? 0),
+    queryFn: () => fetchAgreementRequirement(userId as number),
+    enabled: !!userId && enabled,
+  })
+
+/**
+ * Excuse one partner / client from signing, or require it again. The saved
+ * value goes straight into that user's requirement, so nothing is fetched again.
+ */
+export const useSetAgreementRequired = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: setAgreementRequired,
+    onSuccess: (res, { userId, required }) => {
+      qc.setQueryData<ApiResponse<AgreementRequirementStatus>>(queryKeys.agreement.requirement(userId), (prev) =>
+        prev?.data ? { ...prev, data: { ...prev.data, agreement_required: res.data?.agreement_required ?? required } } : prev
+      )
+    },
+  })
+}
 
 /** The template owner's real details for the builder's preview of the merge fields. */
 export const useAgreementPreviewValues = (enabled = true) => {

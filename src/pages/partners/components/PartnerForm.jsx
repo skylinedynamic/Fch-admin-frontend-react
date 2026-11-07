@@ -5,7 +5,8 @@ import DocumentsSection from './DocumentsSection';
 import ClientListSection from './ClientListSection';
 import SubscriptionSection from './SubscriptionSection';
 import SubscriptionListSection from './SubscriptionListSection';
-import AgreementSection from './AgreementSection';
+import AgreementTab from './AgreementTab';
+import { AGREEMENT_SIGNER } from '../../../modules/agreement';
 import TenantConfigSection from './TenantConfigSection';
 import FormLoader from '../../../components/Loader/FormLoader';
 
@@ -21,6 +22,7 @@ export default function PartnerForm({
     cities,
     users,
     partnerId,
+    isHostViewer,
     loading
     , onSelectedFilesChange
     , documentsReloadKey
@@ -29,6 +31,7 @@ export default function PartnerForm({
     , onRefresh
     , setIsSaving
     , wasFreeTrial
+    , onAgreementRequiredChange
 }) {
     return (
         <div className="tab-content">
@@ -125,7 +128,14 @@ export default function PartnerForm({
             {/* Agreement Tab */}
             {activeTab === 'agreement' && (
                 <div className="tab-pane active show">
-                    <AgreementSection partnerId={partnerId} formData={formData} onRefresh={onRefresh} />
+                    <AgreementTab
+                        signer={AGREEMENT_SIGNER.PARTNER}
+                        isHost={!!isHostViewer}
+                        partnerId={partnerId}
+                        formData={formData}
+                        onRefresh={onRefresh}
+                        onRequiredChange={onAgreementRequiredChange}
+                    />
                 </div>
             )}
         </div>
