@@ -2,6 +2,7 @@
 export interface MatchedLender {
     id: number;
     name: string;
+    /** Null for a lender added before the legal name was required. */
     legal_name?: string | null;
     /** "Lender Name - Legal Name", how the screens show it (R2 BUG-008). */
     display_name?: string | null;

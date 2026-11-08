@@ -57,6 +57,7 @@ export const queryKeys = {
     documents: (id?: number | string | null) => [...queryKeys.fundingApplication.all, 'documents', ...(id ? [id] : [])] as const,
     fundingRequest: () => [...queryKeys.fundingApplication.all, 'fundingRequest'] as const,
     documentTypes: () => [...queryKeys.fundingApplication.all, 'documentTypes'] as const,
+    fundingTypes: () => [...queryKeys.fundingApplication.all, 'fundingTypes'] as const,
   },
   documents: {
     all: ['documents'] as const,
@@ -67,6 +68,7 @@ export const queryKeys = {
     all: ['agreement'] as const,
     detail: (slug: string) => [...queryKeys.agreement.all, 'detail', slug] as const,
     previewValues: () => [...queryKeys.agreement.all, 'preview-values'] as const,
+    requirement: (userId: number) => [...queryKeys.agreement.all, 'requirement', userId] as const,
   },
   notifications: {
     all: ['notifications'] as const,

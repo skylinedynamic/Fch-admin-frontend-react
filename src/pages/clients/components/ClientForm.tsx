@@ -6,7 +6,8 @@ import TaskListSection from './TaskListSection';
 import CreditProfileSection from './CreditProfileSection';
 import CapitalAccessSection from './CapitalAccessSection';
 // @ts-ignore
-import AgreementSection from '../../partners/components/AgreementSection';
+import AgreementTab from '../../partners/components/AgreementTab';
+import { AGREEMENT_SIGNER } from '../../../modules/agreement';
 import { ENROLLMENT_TABS } from '../../../modules/client';
 import type { Client } from '../../../modules/client/types';
 // @ts-ignore
@@ -40,6 +41,7 @@ interface ClientFormProps {
     isHost?: boolean;
     nonHostPlan?: any;
     onRefresh?: () => void;
+    onAgreementRequiredChange?: (required: boolean) => void;
 }
 
 export default function ClientForm({
@@ -58,7 +60,8 @@ export default function ClientForm({
     isLoading,
     isHost,
     nonHostPlan,
-    onRefresh
+    onRefresh,
+    onAgreementRequiredChange
 }: ClientFormProps) {
     return (
         <div className="tab-content">
@@ -177,7 +180,14 @@ export default function ClientForm({
             {/* Agreement Tab */}
             {activeTab === ENROLLMENT_TABS.AGREEMENT && (
                 <div className="tab-pane active show" role="tabpanel">
-                    <AgreementSection partnerId={undefined} clientId={clientId} formData={formData} onRefresh={onRefresh} />
+                    <AgreementTab
+                        signer={AGREEMENT_SIGNER.CLIENT}
+                        isHost={!!isHost}
+                        clientId={clientId ?? undefined}
+                        formData={formData ?? {}}
+                        onRefresh={onRefresh}
+                        onRequiredChange={onAgreementRequiredChange}
+                    />
                 </div>
             )}
 

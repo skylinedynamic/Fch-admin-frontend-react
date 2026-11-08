@@ -7,6 +7,7 @@ import { useGuidedSigning } from './useGuidedSigning'
 import SignatureDialog from './SignatureDialog'
 import { withAppCalendar } from '../../../utils/agreementCalendar'
 import { collectAgreementFields, type AgreementFieldValues } from '../../../utils/agreementFields'
+import { USER_REFRESHED_EVENT } from '../../../config/appConfig'
 
 /**
  * AgreementSignModal
@@ -54,9 +55,15 @@ export default function AgreementSignModal() {
 
     try {
       const res = await checkAgreementSign()
-      if (!isCancelled() && res?.status && res.data?.needs_sign && res.data?.template) {
-        setTemplate(res.data.template)
+      if (isCancelled() || !res?.status) return
+      if (res.data?.needs_sign && res.data?.template) {
+        const next = res.data.template
+        // Asked again while already open on the same wording: keep what was filled in.
+        setTemplate((prev) => (prev && prev.id === next.id && prev.version_id === next.version_id ? prev : next))
         setVisible(true)
+      } else {
+        // No longer asked to sign (waived, or signing turned off): close it.
+        setVisible(false)
       }
     } catch (err) { } finally {
       if (!isCancelled()) setLoading(false)
@@ -66,7 +73,14 @@ export default function AgreementSignModal() {
   useEffect(() => {
     let cancelled = false
     loadTemplate(() => cancelled)
-    return () => { cancelled = true }
+    // The host can require or waive it while the portal is open: the user is
+    // then refreshed (is_refresh), and the modal asks again.
+    const askAgain = () => loadTemplate(() => cancelled)
+    window.addEventListener(USER_REFRESHED_EVENT, askAgain)
+    return () => {
+      cancelled = true
+      window.removeEventListener(USER_REFRESHED_EVENT, askAgain)
+    }
   }, [loadTemplate])
 
   useEffect(() => {

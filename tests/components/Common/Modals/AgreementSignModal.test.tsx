@@ -5,6 +5,8 @@ import { renderWithProviders, screen, waitFor } from '../../../test-utils'
 import { server } from '../../../mocks/server'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import AgreementSignModal from '../../../../src/components/Common/Modals/AgreementSignModal'
+import { refreshUser } from '../../../../src/lib/auth/authApi'
+import { act } from '@testing-library/react'
 
 const TEMPLATE_HTML = '<!DOCTYPE html><html><head></head><body><form id="agreement-form"><input class="flatpickr"/></form></body></html>'
 
@@ -187,5 +189,62 @@ describe('AgreementSignModal guided signing', () => {
     await user.click(screen.getByRole('button', { name: /Accept & Continue/ }))
     await waitFor(() => expect(sent()).not.toBeNull())
     expect(sent().fields).toMatchObject({ name: 'Certified Co', sig: 'data:image/png;base64,SIGNED' })
+  })
+})
+
+/**
+ * The host can require or waive the agreement while the partner is using the
+ * portal. The API flags them (is_refresh), their next call refreshes the user
+ * (refresh-user), and the modal asks again - no full reload needed.
+ */
+describe('AgreementSignModal after the user is refreshed', () => {
+  const needsSign = (yes: boolean) =>
+    HttpResponse.json({
+      status: true,
+      data: yes ? { needs_sign: true, template: { id: 7, slug: 'partner', version_id: 1, version: 1, template_html: '<p>Terms</p>' } } : { needs_sign: false },
+    })
+  const refreshedUser = () =>
+    http.get('*/common/refresh-user', () => HttpResponse.json({ status: true, data: { id: 1, is_agreement_signed: false } }))
+
+  it('opens once the host requires it, without a full reload', async () => {
+    useAuthStore.setState({ user: { id: 1, is_agreement_signed: false } } as any)
+    let required = false
+    let checks = 0
+    server.use(
+      http.get('*/common/agreement-sign/check', () => {
+        checks += 1
+        return needsSign(required)
+      }),
+      refreshedUser(),
+    )
+    renderWithProviders(<AgreementSignModal />)
+    await waitFor(() => expect(checks).toBe(1))
+    expect(screen.queryByTitle('Agreement Content')).not.toBeInTheDocument()
+
+    required = true
+    await act(async () => {
+      await refreshUser()
+    })
+
+    expect(await screen.findByTitle('Agreement Content')).toBeInTheDocument()
+    expect(checks).toBe(2)
+  })
+
+  it('closes once the host waives it', async () => {
+    useAuthStore.setState({ user: { id: 1, is_agreement_signed: false } } as any)
+    let required = true
+    server.use(
+      http.get('*/common/agreement-sign/check', () => needsSign(required)),
+      refreshedUser(),
+    )
+    renderWithProviders(<AgreementSignModal />)
+    await screen.findByTitle('Agreement Content')
+
+    required = false
+    await act(async () => {
+      await refreshUser()
+    })
+
+    await waitFor(() => expect(screen.queryByTitle('Agreement Content')).not.toBeInTheDocument())
   })
 })

@@ -1004,6 +1004,8 @@ export default function FundingApplicationDetails() {
                             {isHost && Array.isArray(app.matched_lenders) && (
                                 <LenderInformationCard
                                     cardRef={lenderCardRef}
+                                    // The card shows each lender "Lender Name - Legal Name" (R2 BUG-008): the
+                                    // table, the lender filter and the assigned card.
                                     lenders={app.matched_lenders}
                                     assignedLenderIds={app.assigned_lender_ids || []}
                                     subjectLabel="funding application"
@@ -1016,9 +1018,8 @@ export default function FundingApplicationDetails() {
                                     onlyAssigned={app.can_assign_lender === false && (app.assigned_lender_ids || []).length > 0}
                                     notice={lenderNotice}
                                     highlightFirstRow={highlightLenders}
-                                    emptyText={app.funding_request_id
-                                        ? 'No matched lenders found for this funding type.'
-                                        : 'No matched lenders found for the Preferred or Additional Funding Types.'}
+                                    // Matched on the Preferred and Additional Funding Types, with a funding request or without.
+                                    emptyText="No matched lenders found for the Preferred or Additional Funding Types."
                                 />
                             )}
                         </div>

@@ -184,6 +184,14 @@ describe('EmbedSnippetBuilder', () => {
     expect(code()).not.toContain('<script')
   })
 
+  it('says the preview works here whatever Allowed Domains are listed', () => {
+    // The form now always lets the admin panel frame it (fch-api frame-ancestors),
+    // so the old "the preview stays blank" warning was wrong.
+    mount()
+    expect(screen.getByText(/the preview always works here/i)).toBeInTheDocument()
+    expect(screen.queryByText(/preview stays blank/i)).not.toBeInTheDocument()
+  })
+
   it('copies the current code', async () => {
     // user-event installs its own clipboard; watch that one.
     const user = userEvent.setup()
