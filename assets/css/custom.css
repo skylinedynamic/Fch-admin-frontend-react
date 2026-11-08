@@ -1372,19 +1372,19 @@ File: Custom Css File
   box-shadow: none;
 }
 
-.credit-account-form .credit-account-form__card > .card-header {
+.credit-account-form .credit-account-form__card>.card-header {
   padding: 0.75rem 1rem;
   background: transparent;
   border-bottom: 1px solid var(--vz-border-color);
   border-radius: 4px 4px 0 0;
 }
 
-.credit-account-form .credit-account-form__card > .card-header .card-title {
+.credit-account-form .credit-account-form__card>.card-header .card-title {
   font-size: 0.875rem;
   font-weight: 600;
 }
 
-.credit-account-form .credit-account-form__card > .card-body {
+.credit-account-form .credit-account-form__card>.card-body {
   padding: 1rem;
 }
 
@@ -6931,7 +6931,6 @@ File: Custom Css File
   height: 100%;
   padding: 0.55rem 0.7rem;
   border-radius: var(--ef-radius);
-  background: var(--ef-soft);
 }
 
 .ef-field__label {
@@ -7287,7 +7286,7 @@ File: Custom Css File
   padding: 0.625rem 0;
 }
 
-.ef-fill__group + .ef-fill__group {
+.ef-fill__group+.ef-fill__group {
   border-top: 1px dashed var(--ef-border);
 }
 
@@ -8638,9 +8637,10 @@ File: Custom Css File
    the calendar input's own width instead of its column's. As in the borrower
    portal: the wrapper fills its container. */
 .flatpickr-wrapper {
-    display: block !important;
-    width: 100% !important;
+  display: block !important;
+  width: 100% !important;
 }
+
 /* ==========================================================================
    Partner profile › Configuration — a partner's Email, SMS, Branding and
    Payment settings, edited by the host (PartnerConfigurationSection)

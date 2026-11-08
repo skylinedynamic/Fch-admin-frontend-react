@@ -22,7 +22,8 @@ import EmbedFormSettings from '../../../src/pages/embed-form/EmbedFormSettings'
 const CONFIG = {
   form_title: 'Loan Application', is_active: true, allowed_domains: ['acme.test'],
   public_key: 'pk_live_abc123', direct_url: 'https://forms.fcf.test/f/pk_live_abc123',
-  embed_snippet: '<iframe></iframe>', form_url_available: true,
+  form_url_available: true,
+  embed_script_url: 'https://forms.fcf.test/form/assets/embed.js',
 }
 
 const mount = () => {
