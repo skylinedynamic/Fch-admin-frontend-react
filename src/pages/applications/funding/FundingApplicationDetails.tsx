@@ -110,10 +110,14 @@ export default function FundingApplicationDetails() {
 
     // Sync the status with fetched data. (The commission is read straight from
     // the application by the Closed (Completed) modal and summary.)
+    // Only when the saved status / note itself changes: a reload for anything
+    // else (a lender assigned, say) keeps the status picked in the dropdown.
     useEffect(() => {
         if (app?.status) setStatus(app.status);
+    }, [app?.id, app?.status]);
+    useEffect(() => {
         if (app?.status_note) setStatusNote(app.status_note);
-    }, [app]);
+    }, [app?.id, app?.status_note]);
 
     useEffect(() => {
         if (error || (!isLoading && !apiResponse)) {

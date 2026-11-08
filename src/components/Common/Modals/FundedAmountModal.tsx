@@ -71,16 +71,18 @@ export default function FundedAmountModal({
     const [adminRate, setAdminRate] = useState(toRate(adminCommissionRate));
     const [partnerRate, setPartnerRate] = useState(toRate(partnerCommissionRate));
     const [rateError, setRateError] = useState('');
+    // Each split rate is required once there is a success fee.
+    const [splitErrors, setSplitErrors] = useState<{ admin?: string; partner?: string }>({});
     // Closing locks the application for good, so a funded amount above what
     // was requested (a typo of a zero, say) needs a second look (R2 BUG-038).
     const [aboveRequestedConfirmed, setAboveRequestedConfirmed] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<Modal | null>(null);
 
-    // A partner's application starts at 0% / 0%: the split is set once there is a
-    // success fee, and one rate fills in the other (they share 100%). A split
-    // saved before shows once there is a fee.
-    const noSplitRate = showPartnerCommission ? '0' : '';
+    // A partner's application starts with no split (blank, not 0% / 0%): the
+    // split is set once there is a success fee, and one rate fills in the other
+    // (they share 100%). A split saved before shows once there is a fee.
+    const noSplitRate = '';
     const savedSplit = !!(adminCommissionRate || partnerCommissionRate);
     const splitAdminRate = savedSplit ? String(adminCommissionRate ?? 0) : noSplitRate;
     const splitPartnerRate = savedSplit ? String(partnerCommissionRate ?? 0) : noSplitRate;
@@ -92,6 +94,7 @@ export default function FundedAmountModal({
             setAmount(initialAmount);
             setError('');
             setRateError('');
+            setSplitErrors({});
             setSuccessFee(fee);
             setAdminRate(hasFee(fee) ? splitAdminRate : noSplitRate);
             setPartnerRate(hasFee(fee) ? splitPartnerRate : noSplitRate);
@@ -107,6 +110,7 @@ export default function FundedAmountModal({
         if (!hasFee(value)) {
             setAdminRate(noSplitRate);
             setPartnerRate(noSplitRate);
+            setSplitErrors({});
         } else if (!had) {
             setAdminRate(splitAdminRate);
             setPartnerRate(splitPartnerRate);
@@ -114,11 +118,12 @@ export default function FundedAmountModal({
     };
 
     // Admin and partner always share 100% of the success fee: setting one sets
-    // the other to the rest; clearing one gives the other all of it.
+    // the other to the rest; clearing one clears the split (both blank).
     const changeSplit = (value: string, setOwn: (v: string) => void, setOther: (v: string) => void) => {
         setOwn(value);
+        setSplitErrors({});
         const num = parseFloat(value);
-        setOther(String(+(100 - (isNaN(num) ? 0 : num)).toFixed(2)));
+        setOther(isNaN(num) ? '' : String(+(100 - num).toFixed(2)));
     };
 
     // Initialize Modal
@@ -151,6 +156,8 @@ export default function FundedAmountModal({
     const adminShareAmt = successFeeAmt * (adminShare / 100);
     const partnerShareAmt = successFeeAmt * (partnerShare / 100);
     const hasCommission = feeRate > 0;
+    // No split typed yet: the admin / partner lines stay out of the summary.
+    const hasSplit = adminRate !== '' || partnerRate !== '';
 
     const handleConfirm = () => {
         if (!amount || parsedAmount <= 0) {
@@ -158,6 +165,14 @@ export default function FundedAmountModal({
             return;
         }
         if (canEditCommission && hasCommission && showPartnerCommission) {
+            const missing = {
+                admin: adminRate === '' ? 'Admin commission rate is required.' : undefined,
+                partner: partnerRate === '' ? 'Partner commission rate is required.' : undefined,
+            };
+            if (missing.admin || missing.partner) {
+                setSplitErrors(missing);
+                return;
+            }
             if (Math.abs(adminShare + partnerShare - 100) > 0.001) {
                 setRateError('Admin and partner commission rates must add up to 100%.');
                 return;
@@ -180,13 +195,13 @@ export default function FundedAmountModal({
 
     // Up to 100%. The admin / partner split may be 0; the Success Fee is 1-100%,
     // the API's range (R2 BUG-036). A locked rate waits for the success fee.
+    // No placeholder: a grey "0" in an empty rate reads as 0%.
     const percentInput = (value: string, onChange: (v: string) => void, id: string, invalid?: boolean, locked = false, min = 0, step = 0.1) => (
         <div className="input-group">
             <input
                 id={id}
                 type="number"
                 className={`form-control ${invalid ? 'is-invalid' : ''}`}
-                placeholder="0"
                 value={value}
                 min={min}
                 max="100"
@@ -300,14 +315,16 @@ export default function FundedAmountModal({
                                             <div className="col-sm-6">
                                                 <label htmlFor="closing-admin-rate" className="fam-label">Admin Commission Rate</label>
                                                 <div className="fam-input">
-                                                    {percentInput(adminRate, (v) => changeSplit(v, setAdminRate, setPartnerRate), 'closing-admin-rate', !!commissionErrors.admin_commission, !hasCommission)}
+                                                    {percentInput(adminRate, (v) => changeSplit(v, setAdminRate, setPartnerRate), 'closing-admin-rate', !!(splitErrors.admin || commissionErrors.admin_commission), !hasCommission)}
                                                 </div>
+                                                {splitErrors.admin && <div className="invalid-feedback d-block">{splitErrors.admin}</div>}
                                             </div>
                                             <div className="col-sm-6">
                                                 <label htmlFor="closing-partner-rate" className="fam-label">Partner Commission Rate</label>
                                                 <div className="fam-input">
-                                                    {percentInput(partnerRate, (v) => changeSplit(v, setPartnerRate, setAdminRate), 'closing-partner-rate', !!commissionErrors.partner_commission, !hasCommission)}
+                                                    {percentInput(partnerRate, (v) => changeSplit(v, setPartnerRate, setAdminRate), 'closing-partner-rate', !!(splitErrors.partner || commissionErrors.partner_commission), !hasCommission)}
                                                 </div>
+                                                {splitErrors.partner && <div className="invalid-feedback d-block">{splitErrors.partner}</div>}
                                             </div>
                                         </div>
                                     )}
@@ -331,11 +348,12 @@ export default function FundedAmountModal({
                             )}
                             {summaryRow('Total Requested Amount', formatCurrency(requestedAmount))}
                             {summaryRow('Total Funded Amount', formatCurrency(parsedAmount), 'fam-row--funded')}
-                            {summaryRow(<>Success Fee<span className="fam-chip">{feeRate}%</span></>, formatCurrency(successFeeAmt))}
-                            {showPartnerCommission ? (
+                            {/* No success fee, no commission lines. */}
+                            {hasCommission && summaryRow(<>Success Fee<span className="fam-chip">{feeRate}%</span></>, formatCurrency(successFeeAmt))}
+                            {!hasCommission ? null : showPartnerCommission ? (
                                 <>
-                                    {summaryRow(<>Admin Commission<span className="fam-chip">{adminShare}% of success fee</span></>, formatCurrency(adminShareAmt))}
-                                    {summaryRow(<>Partner Commission<span className="fam-chip">{partnerShare}% of success fee</span></>, formatCurrency(partnerShareAmt))}
+                                    {hasSplit && summaryRow(<>Admin Commission<span className="fam-chip">{adminShare}% of success fee</span></>, formatCurrency(adminShareAmt))}
+                                    {hasSplit && summaryRow(<>Partner Commission<span className="fam-chip">{partnerShare}% of success fee</span></>, formatCurrency(partnerShareAmt))}
                                     {summaryRow('Total Commission', formatCurrency(successFeeAmt), 'fam-row--total')}
                                 </>
                             ) : (
