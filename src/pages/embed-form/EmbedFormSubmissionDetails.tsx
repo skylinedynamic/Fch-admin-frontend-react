@@ -673,7 +673,14 @@ export default function EmbedFormSubmissionDetails() {
                                             copyValue={submission.business_phone_no}
                                         />
                                         <DetailFieldItem label="Industry Type" value={submission.industry_type} />
+                                        {/* What "Other" is; the API keeps it for "Other" only. */}
+                                        {submission.industry_type_note && (
+                                            <DetailFieldItem label="Industry Type Details" value={submission.industry_type_note} />
+                                        )}
                                         <DetailFieldItem label="Entity Type" value={submission.entity_type} />
+                                        {submission.entity_type_note && (
+                                            <DetailFieldItem label="Entity Type Details" value={submission.entity_type_note} />
+                                        )}
                                         <DetailFieldItem
                                             label="Business EIN"
                                             value={submission.business_ein_display || submission.business_ein}

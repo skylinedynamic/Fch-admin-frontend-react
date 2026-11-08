@@ -233,6 +233,27 @@ describe('Loan application details › business and funding answers', () => {
     expect(screen.getByText('SBA Loan, Line of Credit')).toBeInTheDocument()
   })
 
+  it('shows what "Other" is for the industry and entity type', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, industry_type: 'Other', industry_type_note: 'Beekeeping', entity_type: 'Other', entity_type_note: 'Cooperative' })
+    renderPage()
+
+    expect(await screen.findByText('Industry Type Details')).toBeInTheDocument()
+    expect(screen.getByText('Beekeeping')).toBeInTheDocument()
+    expect(screen.getByText('Entity Type Details')).toBeInTheDocument()
+    expect(screen.getByText('Cooperative')).toBeInTheDocument()
+  })
+
+  it('has no details rows for a listed industry and entity type', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, industry_type: 'Retail', entity_type: 'C-Corporation' })
+    renderPage()
+
+    await screen.findByText('Industry Type')
+    expect(screen.queryByText('Industry Type Details')).not.toBeInTheDocument()
+    expect(screen.queryByText('Entity Type Details')).not.toBeInTheDocument()
+  })
+
   it('leaves the additional funding types out when none were chosen', async () => {
     signInWith(['view application'])
     serve({ ...answered, additional_funding_types: [] })
