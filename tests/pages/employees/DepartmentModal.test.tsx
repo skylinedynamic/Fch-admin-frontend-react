@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen, waitFor, within } from '../../test-utils'
-import { api, signIn } from '../pageHarness'
+import { api, renderPage, signIn } from '../pageHarness'
 
 vi.mock('react-toastify', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-toastify')>()
@@ -61,8 +61,44 @@ describe('Employees › Add New Department', () => {
     await user.click(screen.getByRole('button', { name: 'Delete QA-TEST Run2 Dept' }))
     await user.click(await screen.findByRole('button', { name: 'Yes, Delete It', hidden: true }))
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message))
+    // Assigned meanwhile: the refusal opens the "cannot be deleted" modal, as for clients and tags.
+    expect(await screen.findByText('Department Cannot Be Deleted')).toBeInTheDocument()
+    expect(screen.getByTestId('blocked-message')).toHaveTextContent(message)
+    expect(toast.error).not.toHaveBeenCalled()
     expect(onSuccess).not.toHaveBeenCalled()
+  })
+
+  // A department employees are in opens "cannot be deleted" straight away - no confirmation, no delete call.
+  it('says a department in use cannot be deleted, without asking to delete it', async () => {
+    const remove = api('delete', '/common/departments/16', { status: true, data: [] })
+    renderWithProviders(
+      <DepartmentModal visible onHide={vi.fn()} onSuccess={vi.fn()} departments={[{ id: 16, name: 'Sales', employees_count: 2 }]} />
+    )
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Delete Sales' }))
+
+    expect(await screen.findByText('Department Cannot Be Deleted')).toBeInTheDocument()
+    expect(screen.getByTestId('blocked-message')).toHaveTextContent(
+      'Department "Sales" is assigned to 2 employees and cannot be deleted. Move them to another department first.'
+    )
+    // The confirmation stays closed (it is always mounted, hidden).
+    expect(screen.getByText('Delete Department?').closest('.modal')).not.toHaveClass('show')
+    expect(remove.calls).toBe(0)
+  })
+
+  // As "Go to Client" on a client that cannot be deleted: the way out is to move those employees.
+  it('offers to view the employees in a department that cannot be deleted', async () => {
+    renderPage(
+      <DepartmentModal visible onHide={vi.fn()} onSuccess={vi.fn()} departments={[{ id: 16, name: 'Sales & Ops', employees_count: 2 }]} />,
+      { path: '/employees/create' }
+    )
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Delete Sales & Ops' }))
+    await user.click(await screen.findByRole('button', { name: /view employees/i, hidden: true }))
+
+    expect(await screen.findByTestId('landing')).toHaveTextContent('navigated:/employees?department=Sales+%26+Ops')
   })
 
   // Defect: BUG-182 - a name that already existed was added again.
@@ -76,6 +112,36 @@ describe('Employees › Add New Department', () => {
     expect(await screen.findByText('Department already exists.')).toBeInTheDocument()
     expect(toast.success).not.toHaveBeenCalled()
     expect(onSuccess).not.toHaveBeenCalled()
+  })
+
+  // Defect: the "already exists" message showed, but the input box itself was
+  // not marked - the p-invalid class it got has no style on a plain input here.
+  it('marks the input box itself as invalid, until the name is changed', async () => {
+    api('post', '/common/departments', { status: false, message: 'Department already exists.', errors: { name: 'Department already exists.' } }, 422)
+    const { user } = open()
+    const input = screen.getByLabelText('Department Name')
+
+    await user.type(input, 'Sales')
+    await user.click(screen.getByRole('button', { name: /submit/i }))
+
+    await screen.findByText('Department already exists.')
+    expect(input).toHaveClass('form-control', 'is-invalid')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+
+    await user.type(input, 's')
+    expect(input).not.toHaveClass('is-invalid')
+    expect(screen.queryByText('Department already exists.')).not.toBeInTheDocument()
+  })
+
+  it('an empty name is shown on the input box, not only in a toast', async () => {
+    const { user } = open()
+    const input = screen.getByLabelText('Department Name')
+
+    await user.click(screen.getByRole('button', { name: /submit/i }))
+
+    expect(await screen.findByText('Department name is required')).toBeInTheDocument()
+    expect(input).toHaveClass('is-invalid')
+    expect(toast.error).not.toHaveBeenCalled()
   })
 })
 

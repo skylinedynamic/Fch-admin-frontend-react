@@ -4,7 +4,7 @@ import "../../../assets/css/dropdown-validation.css";
 import PageHeader from '../common/PageHeader';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
+import { createPartner, updatePartner, getPartner, getPartnerStatusAgent, updatePartnerStatusAgent,allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
@@ -17,6 +17,7 @@ import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import ErrorPage from '../Utility/ErrorPage';
 import { refreshUserData } from '../../lib/auth/auth';
 import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
 import { PARTNER_CONFIGURATION_TAB, canManagePartnerConfiguration } from '../../config/partnerConfiguration';
@@ -55,6 +56,10 @@ export default function PartnerProfile() {
 
     const [activeTab, setActiveTab] = useState(getInitialTab());
     const [errors, setErrors] = useState({});
+    // The partner does not exist (or is out of reach): the page says so instead of a form.
+    const [notFound, setNotFound] = useState(false);
+    const isMissing = (error) => [403, 404].includes(error?.response?.status);
+    useEffect(() => setNotFound(false), [id]);
     const [selectedDocumentsToAttach, setSelectedDocumentsToAttach] = useState([]);
     const [documentsReloadKey, setDocumentsReloadKey] = useState(0);
     const [documentsClearKey, setDocumentsClearKey] = useState(0);
@@ -394,7 +399,8 @@ export default function PartnerProfile() {
             }
 
         } catch (error) {
-            toast.error("Failed to load partner data");
+            if (isMissing(error)) setNotFound(true);
+            else toast.error("Failed to load partner data");
         } finally {
             setIsPartnerLoading(false);
         }
@@ -408,6 +414,35 @@ export default function PartnerProfile() {
         fetchPartnerData();
         loadProfileStats();
     }, [fetchPartnerData, loadProfileStats]);
+
+    // The Status & Agent tab's values, from its own endpoint. The agent's email
+    // and mobile are read-only and may be empty.
+    const applyStatusAgent = useCallback((sa) => {
+        if (!sa || typeof sa !== 'object' || Array.isArray(sa)) return;
+        setFormData(prev => ({
+            ...prev,
+            status: sa.status || '',
+            agent: sa.assign_to ?? '',
+            agentEmail: sa.agent?.email || '',
+            agentPhone: sa.agent?.phone_number || ''
+        }));
+    }, []);
+
+    const fetchStatusAgent = useCallback(async () => {
+        if (!id) return;
+        try {
+            applyStatusAgent(await getPartnerStatusAgent(id));
+        } catch (error) {
+            if (isMissing(error)) setNotFound(true);
+            else toast.error(error.response?.data?.message || 'Failed to load status and agent');
+        }
+    }, [id, applyStatusAgent]);
+
+    useEffect(() => {
+        if (activeTab === 'statusAgent') {
+            fetchStatusAgent();
+        }
+    }, [activeTab, fetchStatusAgent]);
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
@@ -601,7 +636,18 @@ export default function PartnerProfile() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-
+            // The Status & Agent tab saves only its two fields, on their own endpoint.
+            if (id && activeTab === 'statusAgent') {
+                const saved = await updatePartnerStatusAgent(id, {
+                    status: formData.status || '',
+                    assign_to: formData.agent || ''
+                });
+                applyStatusAgent(saved);
+                setErrors(prev => ({ ...prev, status: null, agent: null }));
+                toast.success('Status and agent updated successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
+                return;
+            }
 
             const formDataToSend = buildPartnerFormDataPayload(formData, id, wasFreeTrial, partnerPlans);
 
@@ -689,6 +735,11 @@ export default function PartnerProfile() {
             setIsSaving(false);
         }
     };
+
+    // Say so rather than show an empty form with Update, as for clients, leads and employees.
+    if (notFound) {
+        return <ErrorPage status={404} title="Partner Not Found" message="The partner you are looking for does not exist or you do not have permission to view it." />;
+    }
 
     return (
         <div className="page-content">

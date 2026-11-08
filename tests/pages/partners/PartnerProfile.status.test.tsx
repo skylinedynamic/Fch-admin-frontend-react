@@ -40,6 +40,10 @@ describe('Partner profile › Status & Agent', () => {
     signIn({ permissions: ['view partners', 'update partners'] })
     allowBackgroundCalls()
     api('get', '/admin/partners-details/86', { status: true, message: 'ok', data: suspendedPartner })
+    // The tab loads its status and agent from their own endpoint.
+    api('get', '/admin/partners/86/status-agent', {
+      status: true, message: 'ok', data: { id: 86, status: 'Suspended', assign_to: null, agent: null },
+    })
     const user = userEvent.setup()
     renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86' })
 
