@@ -44,5 +44,10 @@ test.describe('Topbar › Profile › picture upload — size and content (live)
     expect(response.status()).toBe(422)
     expect((await response.json()).errors?.file).toBe('This file is not a valid image.')
     await expect(page.getByText('This file is not a valid image.')).toBeVisible()
+    // Retest 08-Nov-26: the window also said "Files Uploaded Successfully".
+    // Only the reason is shown; the window goes back to the picker.
+    await expect(page.getByText('Files Uploaded Successfully')).toHaveCount(0)
+    await expect(page.getByText('Your files have been added to the folder.')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Upload (1)' })).toBeVisible()
   })
 })
