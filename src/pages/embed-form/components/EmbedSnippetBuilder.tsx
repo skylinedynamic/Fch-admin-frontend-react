@@ -262,7 +262,7 @@ export default function EmbedSnippetBuilder({ directUrl, scriptUrl, formTitle }:
             </div>
             <div className="form-text fs-12 text-muted mt-2">
               The preview scrolls inside; on your site the form grows to its full height with automatic height.
-              If your Allowed Domains do not include this admin site, the preview stays blank - the code still works on the sites you listed.
+              The preview always works here; on other sites only your Allowed Domains can show the form.
             </div>
           </div>
         </div>
