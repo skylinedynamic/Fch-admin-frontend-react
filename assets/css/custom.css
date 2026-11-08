@@ -6931,7 +6931,6 @@ File: Custom Css File
   height: 100%;
   padding: 0.55rem 0.7rem;
   border-radius: var(--ef-radius);
-  background: var(--ef-soft);
 }
 
 .ef-field__label {

@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import FormLoader from '../../components/Loader/FormLoader';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import type { FileSystemItem } from '../../modules/filemanager/types';
+import ApplyFormCodeField from './components/ApplyFormCodeField';
 import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
@@ -327,7 +328,7 @@ export default function SiteSettings() {
                 </PageHeader>
 
                 {isLoading ? (
-                    <div className="mt-n3">
+                    <div>
                         <div className="row g-4">
                             <div className="col-lg-8">
                                 <div className="card">
@@ -383,8 +384,8 @@ export default function SiteSettings() {
                         </div>
                     </div>
                 ) : (
-                    <form id="site-settings-form" onSubmit={handleSubmit} className="mt-n3">
-                        <div className="row">
+                    <form id="site-settings-form" onSubmit={handleSubmit}>
+                        <div className="row g-4">
                             <div className="col-lg-8">
                                 <div className="card mb-4 shadow-sm border-0">
                                     <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4">
@@ -462,6 +463,13 @@ export default function SiteSettings() {
                                                     </div>
                                                     <div className="form-text text-muted mt-2">Paste the embed code from Google Maps here.</div>
                                                 </div>
+                                            </div>
+                                            <div className="col-md-12 mt-4">
+                                                <ApplyFormCodeField
+                                                    value={formData.apply_form_embed_code || ''}
+                                                    error={validationErrors.apply_form_embed_code}
+                                                    onChange={handleChange}
+                                                />
                                             </div>
 
                                             <div className="col-md-12 mt-4">
