@@ -74,6 +74,52 @@ describe('EmbedFormConvertModal', () => {
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ confirm_existing_borrower: true }))
   })
 
+  // BUG-064: converting onto an existing client quietly filled its blank
+  // profile fields from the submission. The partner now sees which, and they
+  // are filled only if the partner ticks the box.
+  it('lists the blank fields the application would fill and fills them only when the partner agrees', async () => {
+    servePreview({
+      status: true,
+      data: {
+        mode: 'existing_borrower',
+        existing_borrower: {
+          ...existingBorrower,
+          fields_to_fill: [
+            { field: 'date_of_birth', label: 'Date Of Birth', value: '1985-05-05' },
+            { field: 'ssn', label: 'SSN', value: '***-**-6789' },
+          ],
+        },
+      },
+    })
+    const { onConfirm } = renderModal()
+
+    const list = await screen.findByRole('list', { name: 'Empty profile fields this application can fill', hidden: true })
+    expect(list).toHaveTextContent('Date of birth')
+    expect(list).toHaveTextContent('May 5, 1985')
+    expect(list).toHaveTextContent('***-**-6789')
+    expect(screen.getByText('2 fields')).toBeInTheDocument()
+    // Wider while it lists fields, so the two-column grid has room.
+    expect(document.querySelector('.ef-convert-modal .modal-dialog')).toHaveClass('modal-lg')
+    const consent = screen.getByRole('checkbox', { name: /Also fill these empty fields on the client's profile/, hidden: true })
+    expect(consent).not.toBeChecked()
+
+    await userEvent.click(button(/Use Existing Client & Create Funding Application/))
+    expect(onConfirm).toHaveBeenLastCalledWith(expect.not.objectContaining({ fill_profile_fields: true }))
+
+    await userEvent.click(consent)
+    await userEvent.click(button(/Use Existing Client & Create Funding Application/))
+    expect(onConfirm).toHaveBeenLastCalledWith(expect.objectContaining({ confirm_existing_borrower: true, fill_profile_fields: true }))
+  })
+
+  it("says the client's profile is not changed when the application has nothing to fill", async () => {
+    servePreview({ status: true, data: { mode: 'existing_borrower', existing_borrower: { ...existingBorrower, fields_to_fill: [] } } })
+    renderModal()
+
+    expect(await screen.findByText("The client's profile is not changed.")).toBeInTheDocument()
+    expect(document.querySelector('.ef-convert-modal .modal-dialog')).not.toHaveClass('modal-lg')
+    expect(screen.queryByRole('checkbox', { hidden: true })).not.toBeInTheDocument()
+  })
+
   it('says no client was found, a new client will be created and a new funding application generated', async () => {
     servePreview({ status: true, data: { mode: 'new_borrower', existing_borrower: null } })
     const { onConfirm } = renderModal()

@@ -184,3 +184,18 @@
 .flatpickr-calendar.flatpickr-calendar {
     font-family: var(--vz-body-font-family) !important;
 }
+
+/* With altInput the field people see is a second input Flatpickr adds right
+   after the real (hidden) one, and react-flatpickr only ever puts the field's
+   class on the hidden one. So a date field marked .is-invalid - a date of birth
+   under 18, or an error from the API - showed its message with no red border.
+   This draws the invalid border on the visible input - the border and the
+   message only, no warning icon. */
+input[type="hidden"].is-invalid + input.form-control {
+    border-color: var(--vz-form-invalid-border-color, #f06548) !important;
+}
+
+input[type="hidden"].is-invalid + input.form-control:focus {
+    border-color: var(--vz-form-invalid-border-color, #f06548) !important;
+    box-shadow: 0 0 0 0.15rem rgba(240, 101, 72, 0.25);
+}

@@ -11,6 +11,8 @@ import {
   downloadAgreementSign,
   fetchSignedAgreementHtml,
   cancelAgreementSign,
+  setAgreementRequired,
+  fetchAgreementRequirement,
   fetchAgreementPreviewValues,
 } from '../../../src/modules/agreement/services'
 
@@ -290,5 +292,46 @@ describe('fetchAgreementPreviewValues', () => {
 
     expect(body).toEqual({ partner_id: 7 })
     expect(result).toEqual({ 'owner.company_name': 'Acme Lending', today: '10/30/2026' })
+  })
+})
+
+describe('setAgreementRequired', () => {
+  it('POSTs { required } to /required/:userId and resolves with the new state', async () => {
+    let hitUrl = ''
+    let body: unknown = null
+    server.use(
+      http.post('*/common/agreement-sign/required/7', async ({ request }) => {
+        hitUrl = new URL(request.url).pathname
+        body = await request.json()
+        return HttpResponse.json({ status: true, message: 'Updated', data: { user_id: 7, agreement_required: false } })
+      })
+    )
+
+    const result = await setAgreementRequired({ userId: 7, required: false })
+
+    expect(hitUrl).toMatch(/\/common\/agreement-sign\/required\/7$/)
+    expect(body).toEqual({ required: false })
+    expect(result.data).toEqual({ user_id: 7, agreement_required: false })
+  })
+})
+
+describe('fetchAgreementRequirement', () => {
+  it('GETs /required/:userId: whether they must sign, and whether the host can change it now', async () => {
+    const status = {
+      user_id: 7, agreement_required: true, signing_enabled: true, template_active: false,
+      can_change: false, locked_reason: 'The partner agreement is turned off in Settings › Agreement.',
+    }
+    let hitUrl = ''
+    server.use(
+      http.get('*/common/agreement-sign/required/7', ({ request }) => {
+        hitUrl = new URL(request.url).pathname
+        return HttpResponse.json({ status: true, message: 'ok', data: status })
+      })
+    )
+
+    const result = await fetchAgreementRequirement(7)
+
+    expect(hitUrl).toMatch(/\/common\/agreement-sign\/required\/7$/)
+    expect(result.data).toEqual(status)
   })
 })

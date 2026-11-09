@@ -18,8 +18,8 @@ import { setEditRequiresConfirmation, setEditConfirmationResolving, resetEditCon
 // Hooks
 import { useCoBorrowers } from './hooks/useCoBorrowers'
 import { FUNDING_PURPOSE_OTHER, purposeOfFundingOptions, timeframeOptions, withoutPreferredFundingType } from '../../../data/profile'
-import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower'
 import { useFundingRequest, useFundingApplicationDocuments } from '../../../modules/funding-application/queries'
+import { resetApplicationVersion } from '../../../modules/funding-application/applicationVersion'
 import { formatCurrency } from '../../../utils/borrowerFormatters'
 
 // Types & Utils
@@ -34,6 +34,7 @@ import {
   type DisclosureConsent,
   type FederalCompliance,
 } from './types'
+
 
 const matchPurpose = (raw: string | null | undefined): string => {
   if (!raw) return ''
@@ -110,7 +111,11 @@ const FEDERAL_COMPLIANCE_KEYS: (keyof FederalCompliance)[] = [
 
 export default function FundApplication() {
   const navigate = useNavigate()
-  const { id } = useParams()
+  // `id` is a funding request id (/fund-application/:id); `applicationId` is a
+  // funding application's own id (/intake-review/funding-application/:applicationId/edit) -
+  // how an application without a funding request (converted from the embed
+  // form) is opened, and how the details page always opens one for editing.
+  const { id, applicationId } = useParams()
   const location = useLocation()
   const [fundingSequenceId, setFundingSequenceId] = useState<string | number | null>(null)
   const [fundingRequestId, setFundingRequestId] = useState<string | number | null>(null)
@@ -123,6 +128,11 @@ export default function FundApplication() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const activeStepSaveRef = React.useRef<(() => Promise<boolean>) | null>(null)
+
+  // The application version belongs to this wizard: leaving it (or opening
+  // another request) forgets it, so the next one starts from its own load
+  // (R2 BUG-033).
+  useEffect(() => () => resetApplicationVersion(), [id])
 
   // Co-borrower hook
   const {
@@ -259,7 +269,7 @@ export default function FundApplication() {
 
   // Fetch funding request and documents (tab-wise lazy loading)
   const currentReqId = fundingRequestId || id || null
-  const { data: fundingData, isLoading: isFundingDataLoading } = useFundingRequest(currentReqId, { enabled: !!currentReqId })
+  const { data: fundingData, isLoading: isFundingDataLoading } = useFundingRequest(currentReqId, { enabled: !!currentReqId, fundingApplicationId: applicationId })
   const fundingApplicationId = fundingData?.id ?? null
   const { data: documentsData } = useFundingApplicationDocuments(fundingApplicationId, {
     enabled: !!fundingApplicationId,
@@ -308,7 +318,9 @@ export default function FundApplication() {
         purposeNote: fundingData.purpose_note || '',
       })
 
-      if (fundingData.funding_sequence_id && !fundingSequenceId) {
+      // The saved sequence, every time it loads: one changed on the Funding
+      // Request step (embed form applications) must not be sent back stale.
+      if (fundingData.funding_sequence_id) {
         setFundingSequenceId(fundingData.funding_sequence_id)
       }
       if (fundingData.funding_request_id && !fundingRequestId) {
@@ -331,6 +343,21 @@ export default function FundApplication() {
   // Callback for steps to register their save function
   const registerSave = useCallback((fn: (() => Promise<boolean>) | null) => {
     activeStepSaveRef.current = fn
+  }, [])
+
+  // Each step is rendered twice - the desktop pane (lg and up) and the mobile
+  // accordion - and only the copy on screen may register its save. Both did,
+  // the hidden mobile copy last, so a save refused from the sidebar put its
+  // messages ("You must authorize the credit pull.") on the hidden copy and a
+  // desktop showed only "Please resolve validation errors".
+  const [isDesktop, setIsDesktop] = useState<boolean>(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 992px)').matches
+  )
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 992px)')
+    const onChange = () => setIsDesktop(query.matches)
+    query.addEventListener?.('change', onChange)
+    return () => query.removeEventListener?.('change', onChange)
   }, [])
 
   // Validation: Check if business info step can proceed
@@ -477,31 +504,25 @@ export default function FundApplication() {
     [activeStep, highestVisitedStep, documentsData, isStepValid, fundingApplicationId, fundingData]
   )
 
-  // Progress calculations
-  const isApplicationSubmitted = Boolean(
-      fundingData?.status &&
-      fundingData.status !== FUNDING_APPLICATION_STATUS.ON_HOLD &&
-      fundingData.status !== FUNDING_APPLICATION_STATUS.DRAFT
-    )
-
-  // const isApplicationSubmitted = fundingData?.status && !['Draft', 'On Hold', 'Pending'].includes(fundingData.status) ? true : false;
-
+  // Progress follows the steps actually saved, whatever the status. A status
+  // past Draft used to count as "submitted" - 7 of 7, 100%, every step open -
+  // so an application moved to e.g. Closed (Completed) without Disclosures
+  // ever being saved showed as complete and let Federal Compliance be opened
+  // first. A submitted application has every step saved, so it still shows 100%.
   const stepsTotal = tabs.length
-  const completedCount = isApplicationSubmitted ? stepsTotal : tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
-  const progressPct = isApplicationSubmitted ? 100 : Math.round((completedCount / stepsTotal) * 100)
+  const completedCount = tabs.reduce((acc, _, index) => acc + (isStepComplete(index) ? 1 : 0), 0)
+  const progressPct = Math.round((completedCount / stepsTotal) * 100)
   // How far down the list a step may be opened: up to the first one that is not
   // complete (saved - the one without a tick), and never past it. This used to
   // ask only whether a step's fields looked valid, so a step whose form was
   // prefilled but never saved unlocked the one after it, which then showed dark
   // and clickable beside steps that were correctly greyed out.
-  const firstIncompleteIdx = isApplicationSubmitted ? -1 : tabs.findIndex((_, index) => !isStepComplete(index))
+  const firstIncompleteIdx = tabs.findIndex((_, index) => !isStepComplete(index))
   // Open steps are the complete ones (ticked) and the one being worked on.
   // Every other step is greyed out - including the very next one - until the
   // step before it has been saved. The way forward is Save & Next.
   const lastCompleteIdx = firstIncompleteIdx === -1 ? stepsTotal - 1 : firstIncompleteIdx - 1
-  const maxAllowedIdx = isApplicationSubmitted
-    ? stepsTotal - 1
-    : Math.max(activeStep, lastCompleteIdx)
+  const maxAllowedIdx = Math.max(activeStep, lastCompleteIdx)
 
   // Handle tab switching with auto-save
   const handleTabSwitch = useCallback(
@@ -583,6 +604,7 @@ export default function FundApplication() {
             onRegisterSave={isActive ? registerSave : undefined}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
           />
         )
 
@@ -602,6 +624,7 @@ export default function FundApplication() {
             isValid={isStepValid(STEP_INDICES.OWNERSHIP_INFO)}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -614,6 +637,7 @@ export default function FundApplication() {
             setFinancial={setFinancial}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -626,6 +650,7 @@ export default function FundApplication() {
             setFunding={setFunding}
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -649,6 +674,7 @@ export default function FundApplication() {
             setDisclosure={setDisclosure}
             disclosureItems={disclosureItems}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -661,6 +687,7 @@ export default function FundApplication() {
             setFederal={setFederal}
             isValid={isStepValid(STEP_INDICES.FEDERAL_COMPLIANCE)}
             fundingRequestId={fundingRequestId || id}
+            fundingApplicationId={applicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />
@@ -789,7 +816,7 @@ export default function FundApplication() {
               <div className="card-body">
                 {tabs.map((_, idx) => (
                   <div key={idx} style={{ display: activeStep === idx ? 'block' : 'none' }}>
-                    {renderStep(idx, activeStep === idx)}
+                    {renderStep(idx, activeStep === idx && isDesktop)}
                   </div>
                 ))}
               </div>
@@ -825,7 +852,7 @@ export default function FundApplication() {
                           <i className={`ri-arrow-${isOpen ? 'up' : 'down'}-s-line ms-auto`}></i>
                         </button>
                         <div className="p-3" style={{ display: isOpen ? 'block' : 'none' }}>
-                          {renderStep(idx, isOpen)}
+                          {renderStep(idx, isOpen && !isDesktop)}
                         </div>
                       </li>
                     )

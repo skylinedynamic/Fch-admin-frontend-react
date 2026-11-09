@@ -6,6 +6,7 @@ import { useProcessPayout } from '../../../modules/commission/queries';
 import { PAID_BY_PER_DEAL, PAYOUT_TYPE_COMMISSION } from '../../../config/compensationOptions';
 import { formatCurrency } from '../../../utils/helper';
 import PayoutModal from '../PayoutModal';
+import { PaymentEnvironment } from '../../../config/paymentEnvironment';
 
 type Props = {
     commissionId: number;
@@ -44,9 +45,9 @@ export default function PayoutSection({ commissionId, payout, currencySymbol, co
                         ? `${payee.name} has no commission set for Funding.`
                         : null;
 
-    const makePayment = (paymentMethod: string, note: string) => {
+    const makePayment = (paymentMethod: string, note: string, environment: PaymentEnvironment) => {
         processPayout.mutate(
-            { id: commissionId, payload: { partner_payment_method: paymentMethod, note } },
+            { id: commissionId, payload: { partner_payment_method: paymentMethod, note, environment } },
             {
                 onSuccess: () => {
                     toast.success('Payment made successfully');

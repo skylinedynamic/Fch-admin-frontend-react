@@ -4,14 +4,14 @@ import type { FundingRequest } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
 import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
-import { purposeOfFundingOptions, fundingTypeOptions, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../../../../data/profile'
+import { purposeOfFundingOptions, fundingTypeOptionsFrom, onlyFundingTypesIn, timeframeOptions, collateralOptions, FUNDING_PURPOSE_OTHER, additionalFundingTypeOptions, withoutPreferredFundingType, splitPurposes, joinPurposes } from '../../../../../data/profile'
 import ChipMultiSelect from '../../../../../components/Common/ChipMultiSelect'
-import { useFundingRequest, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
+import { useFundingRequest, useFundingSequenceOptions, useFundingTypes, useSaveFundingRequest } from '../../../../../modules/funding-application/queries'
+import { PURPOSE_NOTE_MAX_LENGTH } from '../../../../../modules/funding-application/applicationRules'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { toast } from 'react-toastify'
 import { formatCurrency, unformatCurrency } from '../../../../../utils/borrowerFormatters'
-import { useQuery } from '@tanstack/react-query'
-import { fetchBorrowerFunding } from '../../../../../modules/funding/services'
 
 interface FundingRequestStepProps {
   funding: FundingRequest
@@ -21,13 +21,15 @@ interface FundingRequestStepProps {
   loading: boolean
   onRegisterSave?: (fn: (() => Promise<boolean>) | null) => void
   fundingRequestId?: number | string | null
+  fundingApplicationId?: number | string | null
   fundingSequenceId?: number | string | null
 }
 
-/** A saved purpose_of_funds string, normalised: the known purposes as listed, joined again. */
-const matchPurpose = (raw: string | null | undefined): string => joinPurposes(splitPurposes(raw))
 
-const matchTimeframe = (raw: string | null | undefined): string => {
+/** A saved purpose_of_funds string, normalised: the known purposes as listed, joined again. */
+export const matchPurpose = (raw: string | null | undefined): string => joinPurposes(splitPurposes(raw))
+
+export const matchTimeframe = (raw: string | null | undefined): string => {
   if (!raw) return ''
   const trimmed = raw.trim()
   const exact = timeframeOptions.find(o => o.value.toLowerCase() === trimmed.toLowerCase())
@@ -57,6 +59,7 @@ export default function FundingRequestStep({
   loading,
   onRegisterSave,
   fundingRequestId: initialFundingRequestId,
+  fundingApplicationId,
   fundingSequenceId,
 }: FundingRequestStepProps) {
   const location = useLocation()
@@ -73,39 +76,43 @@ export default function FundingRequestStep({
     || searchParams.get('fundingRequestId')
     || null
 
-  // Load by the funding request id only. The record's own `id` is the funding
-  // application's id - sent back on save, never used to load (the API would
-  // read it as another funding request).
+  // Load by the funding request id, or by the application's own id when the
+  // wizard was opened on one (fundingApplicationId - sent as
+  // funding_application_id, never as a funding request id).
   const loadRequestId = effectiveRequestId ? Number(effectiveRequestId) : null
   const [applicationId, setApplicationId] = useState<number | null>(null)
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFundingRequest(loadRequestId, { enabled: !!loadRequestId })
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFundingRequest(loadRequestId, { enabled: !!loadRequestId, fundingApplicationId })
   const saveMutation = useSaveFundingRequest()
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  // Fetch approved funding options
-  const { data: fundingOptionsData } = useQuery({
-    queryKey: ['borrower-funding'],
-    queryFn: fetchBorrowerFunding
-  })
+  // Exactly the Active lender product categories - nothing else is offered.
+  const { data: fundingTypes } = useFundingTypes()
+  const dynamicFundingTypeOptions = React.useMemo(() => fundingTypeOptionsFrom(fundingTypes), [fundingTypes])
 
-  const approvedFundingOptions = React.useMemo(() => {
-    if (!fundingOptionsData?.data?.groups) return []
-    return fundingOptionsData.data.groups.flatMap((g: any) =>
-      g.sequencings.map((seq: any) => ({
-        label: seq.name,
-        value: seq.name
-      }))
-    )
-  }, [fundingOptionsData])
+  // Preferred Funding Type is read-only once the application (or its funding
+  // request) has one - the API refuses a change too.
+  const lockedFundingType = apiData?.preferred_funding_type || urlFundingType || ''
+  const isFundingTypeLocked = !!lockedFundingType
 
-  const dynamicFundingTypeOptions = React.useMemo(() => {
-    const opts = [...fundingTypeOptions]
-    const currentType = funding.fundingType || urlFundingType || apiData?.preferred_funding_type
-    if (currentType && !opts.find(o => o.value.toLowerCase() === currentType.toLowerCase())) {
-      opts.unshift({ label: currentType, value: currentType })
+  // Only an application converted from the embed form chooses its funding
+  // sequence here, from the sequences offered for its funding type. Every other
+  // one shows the sequence it has, read-only.
+  const choosesFundingSequence = !!apiData?.is_from_embed_form && !apiData?.funding_request_id && !effectiveRequestId
+  const { data: fundingSequenceOptions = [], isFetching: isLoadingSequences } = useFundingSequenceOptions(funding.fundingType, choosesFundingSequence)
+  const [selectedSequenceId, setSelectedSequenceId] = useState<number | null>(null)
+
+  // A saved additional type that is not an Active category is cleared, to be
+  // chosen again; so is the preferred one, unless it is read-only.
+  useEffect(() => {
+    if (!fundingTypes) return
+    const preferred = isFundingTypeLocked
+      ? (funding.fundingType || '')
+      : (onlyFundingTypesIn(fundingTypes, funding.fundingType ? [funding.fundingType] : [])[0] ?? '')
+    const additional = onlyFundingTypesIn(fundingTypes, funding.additionalFundingTypes ?? [])
+    if (preferred !== (funding.fundingType || '') || additional.length !== (funding.additionalFundingTypes ?? []).length) {
+      setFunding({ ...funding, fundingType: preferred, additionalFundingTypes: additional })
     }
-    return opts
-  }, [funding.fundingType, urlFundingType, apiData?.preferred_funding_type])
+  }, [fundingTypes, funding, isFundingTypeLocked])
 
   const selectedPurposes = React.useMemo(() => splitPurposes(funding.purpose), [funding.purpose])
   const hasOtherPurpose = selectedPurposes.includes(FUNDING_PURPOSE_OTHER)
@@ -131,15 +138,20 @@ export default function FundingRequestStep({
   const handleSave = useCallback(async (): Promise<boolean> => {
     setValidationErrors({})
 
+    const chosenSequence = fundingSequenceOptions.find(s => s.id === selectedSequenceId)
+
     const payload = {
       id: applicationId,
       funding_request_id: effectiveRequestId || apiData?.funding_request_id || null,
-      funding_sequence_id: fundingSequenceId || apiData?.funding_sequence_id || null,
+      funding_sequence_id: choosesFundingSequence
+        ? selectedSequenceId
+        : (fundingSequenceId || apiData?.funding_sequence_id || null),
       requested_amount: unformatCurrency(funding.requestedAmount) || null,
       purpose_of_funds: funding.purpose || null,
       preferred_funding_type: funding.fundingType || null,
       additional_funding_types: withoutPreferredFundingType(funding.additionalFundingTypes, funding.fundingType),
-      approved_funding: funding.approvedFunding || null,
+      // The API takes the chosen sequence's name; sent for the form's own state.
+      approved_funding: choosesFundingSequence ? (chosenSequence?.name ?? null) : (funding.approvedFunding || null),
       timeframe_needed: funding.timeframe || null,
       collateral_available: funding.collateral || null,
       purpose_note: hasOtherPurpose ? (funding.purposeNote || null) : null,
@@ -153,6 +165,8 @@ export default function FundingRequestStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       console.error('Error saving funding request:', error)
       const errors = error.response?.data?.errors
       if (errors) {
@@ -162,7 +176,7 @@ export default function FundingRequestStep({
       }
       return false
     }
-  }, [applicationId, effectiveRequestId, apiData, fundingSequenceId, funding, hasOtherPurpose, saveMutation])
+  }, [applicationId, effectiveRequestId, apiData, fundingSequenceId, funding, hasOtherPurpose, saveMutation, choosesFundingSequence, selectedSequenceId, fundingSequenceOptions])
 
   // Register save function
   useEffect(() => {
@@ -178,6 +192,7 @@ export default function FundingRequestStep({
   useEffect(() => {
     if (isSuccess && apiData) {
       setApplicationId(apiData.id || null)
+      setSelectedSequenceId(apiData.funding_sequence_id ?? null)
 
       const rawAmount = urlRequestedAmount || apiData.requested_amount
       const parsedAmount = rawAmount ? formatCurrency(rawAmount) : ''
@@ -222,8 +237,9 @@ export default function FundingRequestStep({
     return !!validationErrors[fieldName]
   }
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
+  // From the form and from Save & Next, both with their event.
+  const handleSubmit = async (e: React.SyntheticEvent) => {
+    e.preventDefault()
 
     const success = await handleSave()
     if (success) {
@@ -235,7 +251,8 @@ export default function FundingRequestStep({
     funding.requestedAmount &&
     funding.purpose &&
     funding.fundingType &&
-    (!hasOtherPurpose || funding.purposeNote)
+    (!hasOtherPurpose || funding.purposeNote) &&
+    (!choosesFundingSequence || selectedSequenceId)
   )
 
   if (loading || isApiLoading) {
@@ -292,33 +309,54 @@ export default function FundingRequestStep({
             className={`form-control ${hasError('purpose_note') ? 'is-invalid' : ''}`}
             placeholder="Please specify the purpose of funds"
             value={funding.purposeNote || ''}
+            maxLength={PURPOSE_NOTE_MAX_LENGTH}
             onChange={(e) => setFunding({ ...funding, purposeNote: e.target.value })}
           />
+          {/* The API takes up to 500 characters (R2 BUG-032). */}
+          <div className="form-text text-end">{(funding.purposeNote || '').length}/{PURPOSE_NOTE_MAX_LENGTH}</div>
           {hasError('purpose_note') && <div className="invalid-feedback">{getFieldError('purpose_note')}</div>}
         </div>
       )}
 
       <div className="col-md-6">
         <label className="form-label">
-          Approved Funding Product <span className="text-danger">*</span>
+          Funding Sequence <span className="text-danger">*</span>
         </label>
-        {/* <CustomDropdown
-              value={funding.approvedFunding}
-              onChange={(value) => setFunding({ ...funding, approvedFunding: value })}
-              options={approvedFundingOptions}
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select approved funding"
-              className={`w-100 ${hasError('approved_funding') ? 'is-invalid' : ''}`}
-              disabled
-           /> */}
-        <input
-          type="text"
-          className={`form-control ${hasError('approved_funding') ? 'is-invalid' : ''}`}
-          value={funding.approvedFunding || ''}
-          readOnly
-          style={{ backgroundColor: '#f8f9fa', cursor: 'default' }}
-        />
+        {choosesFundingSequence ? (
+          <>
+            <CustomDropdown
+              value={selectedSequenceId ?? ''}
+              onChange={(id: number) => {
+                // Always one of the options listed (the dropdown offers nothing else).
+                const chosen = fundingSequenceOptions.find(s => s.id === id)!
+                setSelectedSequenceId(chosen.id)
+                // The wizard shows the product name (page header) at once.
+                setFunding({ ...funding, approvedFunding: chosen.name })
+              }}
+              options={fundingSequenceOptions}
+              optionLabel="name"
+              optionValue="id"
+              placeholder={isLoadingSequences ? 'Loading funding sequences...' : 'Select funding sequence'}
+              disabled={isLoadingSequences || fundingSequenceOptions.length === 0}
+              className={`w-100 ${hasError('funding_sequence_id') ? 'is-invalid' : ''}`}
+            />
+            {!isLoadingSequences && funding.fundingType && fundingSequenceOptions.length === 0 && (
+              <div className="form-text text-danger">No funding sequence is available for {funding.fundingType}.</div>
+            )}
+          </>
+        ) : (
+          // From a funding request: the sequence it was approved for, read-only.
+          <input
+            type="text"
+            className={`form-control ${hasError('approved_funding') ? 'is-invalid' : ''}`}
+            value={funding.approvedFunding || ''}
+            readOnly
+            style={{ backgroundColor: '#f8f9fa', cursor: 'default' }}
+          />
+        )}
+        {hasError('funding_sequence_id') && (
+          <div className="invalid-feedback d-block">{getFieldError('funding_sequence_id')}</div>
+        )}
         {hasError('approved_funding') && (
           <div className="invalid-feedback d-block">{getFieldError('approved_funding')}</div>
         )}
@@ -328,19 +366,29 @@ export default function FundingRequestStep({
         <label className="form-label">
           Preferred Funding Type <span className="text-danger">*</span>
         </label>
-        <CustomDropdown
-          value={funding.fundingType}
-          onChange={(value) => setFunding({
-            ...funding,
-            fundingType: value,
-            additionalFundingTypes: withoutPreferredFundingType(funding.additionalFundingTypes, value),
-          })}
-          options={dynamicFundingTypeOptions}
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Select preferred funding type"
-          className={`w-100 ${hasError('preferred_funding_type') ? 'is-invalid' : ''}`}
-        />
+        {isFundingTypeLocked ? (
+          <input
+            type="text"
+            className={`form-control ${hasError('preferred_funding_type') ? 'is-invalid' : ''}`}
+            value={funding.fundingType || ''}
+            readOnly
+            style={{ backgroundColor: '#f8f9fa', cursor: 'default' }}
+          />
+        ) : (
+          <CustomDropdown
+            value={funding.fundingType}
+            onChange={(value) => setFunding({
+              ...funding,
+              fundingType: value,
+              additionalFundingTypes: withoutPreferredFundingType(funding.additionalFundingTypes, value),
+            })}
+            options={dynamicFundingTypeOptions}
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select preferred funding type"
+            className={`w-100 ${hasError('preferred_funding_type') ? 'is-invalid' : ''}`}
+          />
+        )}
         {hasError('preferred_funding_type') && (
           <div className="invalid-feedback d-block">{getFieldError('preferred_funding_type')}</div>
         )}
@@ -352,7 +400,7 @@ export default function FundingRequestStep({
           inputId="additional_funding_types"
           value={funding.additionalFundingTypes ?? []}
           onChange={(types) => setFunding({ ...funding, additionalFundingTypes: types })}
-          options={additionalFundingTypeOptions(funding.fundingType)}
+          options={additionalFundingTypeOptions(dynamicFundingTypeOptions, funding.fundingType)}
           placeholder="Select any other funding types"
           filter
           filterPlaceholder="Search funding types"

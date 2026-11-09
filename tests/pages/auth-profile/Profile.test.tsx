@@ -8,6 +8,12 @@ vi.mock('react-toastify', async (importOriginal) => {
   return { ...actual, toast: Object.assign(vi.fn(), { info: vi.fn(), success: vi.fn(), error: vi.fn(), warn: vi.fn() }) }
 })
 
+// The file manager is its own suite; here it only hands back the picked file.
+vi.mock('../../../src/components/FileManagerModal/FileManagerModal', () => ({
+  FileManagerModal: ({ isOpen, onSelectFiles }: any) =>
+    isOpen ? <button type="button" onClick={() => onSelectFiles([{ path: '/qa-12mb.png' }])}>Pick qa-12mb.png</button> : null,
+}))
+
 import { toast } from 'react-toastify'
 import Profile from '../../../src/pages/auth-profile/Profile'
 
@@ -182,5 +188,26 @@ describe('Profile - change password', () => {
     await user.type(screen.getByPlaceholderText('Enter current password'), 'x')
 
     expect(screen.queryByText('Current password is required')).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * BUG-014 (QA round 2): a 12 MB file that only started like a PNG could be set
+ * as the profile picture. The API now refuses it; the page shows its reason
+ * instead of "Something went wrong".
+ */
+describe('Profile - picture', () => {
+  const PICTURE = '/common/auth-profile/update-profile-picture'
+
+  it('shows the API reason when the picked picture is refused', async () => {
+    const user = userEvent.setup()
+    const { container } = mount()
+    const seen = api('post', PICTURE, invalid({ image: 'This file is too large. The maximum size is 5 MB.' }), 422)
+
+    await user.click(container.querySelector('.btn.rounded-circle.position-absolute') as HTMLButtonElement)
+    await user.click(await screen.findByRole('button', { name: 'Pick qa-12mb.png' }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('This file is too large. The maximum size is 5 MB.'))
+    expect(seen.bodies[0]).toEqual({ image: '/qa-12mb.png' })
   })
 })

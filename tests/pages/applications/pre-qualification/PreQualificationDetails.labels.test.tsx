@@ -55,4 +55,19 @@ describe('PreQualificationDetails - underwriting result labels', () => {
       expect(screen.queryByText(raw)).not.toBeInTheDocument()
     }
   })
+
+  /**
+   * Defect: the client view button said "(Borrower & WLP View)", but every
+   * partner (WLP and Certified Partner) sees this view, so it says "Partner".
+   */
+  it('names the borrower and the partner on the client view button', async () => {
+    signIn({ permissions: ['view pre-qualification', 'view applications'] })
+    const user = userEvent.setup()
+    renderPage(<PreQualificationDetails />, { path: '/pre-qualification/:id', route: '/pre-qualification/12' })
+
+    await user.click(await screen.findByText('AI Underwriting Result'))
+
+    expect(await screen.findByRole('button', { name: /Client Readiness View \(Borrower & Partner View\)/ })).toBeInTheDocument()
+    expect(screen.queryByText(/Borrower & WLP View/)).not.toBeInTheDocument()
+  })
 })

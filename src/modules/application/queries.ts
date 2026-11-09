@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query/queryKeys';
 import { GPT_STATUS } from './types';
-import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, runAiPreQualification, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus, assignLenderToFundingRequest, getFundingApplicationAuditHistory } from './services';
+import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, runAiPreQualification, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus, assignLenderToFundingRequest, assignLenderToFundingApplication } from './services';
 
 export const usePreQualificationApplications = (params: any = {}) => {
   return useQuery({
@@ -43,15 +43,6 @@ export const useFundingApplicationDetails = (id: string | number) => {
     queryKey: queryKeys.application.detail(id),
     queryFn: () => getFundingApplicationDetails(id),
     enabled: !!id,
-  });
-};
-
-export const useFundingApplicationAuditHistory = (id: string, params: any = {}) => {
-  return useQuery({
-    queryKey: [...queryKeys.application.detail(id), 'audit-history', params],
-    queryFn: () => getFundingApplicationAuditHistory(id, params),
-    enabled: !!id,
-    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -142,6 +133,19 @@ export const useUpdateFundingRequestStatus = () => {
     onSuccess: (data, variables) => {
         queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(variables.id) });
         queryClient.invalidateQueries({ queryKey: queryKeys.application.all });
+    },
+  });
+};
+
+export const useAssignLenderToFundingApplication = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: assignLenderToFundingApplication,
+    onSuccess: (data, variables) => {
+        // The details page caches under the URL's id (a string); callers may
+        // pass the number. Refresh both so "Assigned" shows straight away.
+        queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(String(variables.id)) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(Number(variables.id)) });
     },
   });
 };

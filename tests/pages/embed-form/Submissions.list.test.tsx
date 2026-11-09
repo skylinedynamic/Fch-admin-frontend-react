@@ -24,9 +24,11 @@ describeListPage(
     },
     rows: [
       { id: 1401, first_name: 'Ada', last_name: 'Applicant', email: 'ada@example.test', phone: '(555) 140-0001', desired_funding_amount: 75000, status: 'new', created_at: '2026-03-05T10:00:00Z' },
-      { id: 1402, first_name: 'Ben', last_name: 'Borrowed', email: 'ben@example.test', phone: '(555) 140-0002', desired_funding_amount: 20000, status: 'converted', created_at: '2026-03-01T10:00:00Z' },
+      { id: 1402, first_name: 'Ben', last_name: 'Borrowed', email: 'ben@example.test', phone: '(555) 140-0002', desired_funding_amount: 20000, status: 'converted', created_at: '2026-03-01T10:00:00Z',
+        // BUG-058: converted onto a paid client - the badge names their real plan.
+        converted_borrower: { id: 42, full_name: 'Owner Client Two', is_free_trail: false, enrollment_type: 'One Time Payment' } },
     ],
-    shows: ['ada@example.test', 'ben@example.test', 'Free Plan'],
+    shows: ['ada@example.test', 'ben@example.test', 'One Time Payment'],
     emptyText: 'No form submissions found',
     search: { placeholder: 'Search here...', apply: 'enter' },
     clear: false,

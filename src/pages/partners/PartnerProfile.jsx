@@ -22,6 +22,8 @@ import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
 import { PARTNER_CONFIGURATION_TAB, canManagePartnerConfiguration } from '../../config/partnerConfiguration';
 import { useAuthStore } from '../../store/auth/authStore';
 import PartnerConfigurationSection from './components/PartnerConfigurationSection';
+import ErrorPage from '../Utility/ErrorPage';
+import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -227,6 +229,11 @@ export default function PartnerProfile() {
     });
     const [profileStatsLoading, setProfileStatsLoading] = useState(true);
     const [isPartnerLoading, setIsPartnerLoading] = useState(true);
+    const [partnerNotFound, setPartnerNotFound] = useState(false);
+
+    useEffect(() => {
+        setPartnerNotFound(false);
+    }, [id]);
     const [isSaving, setIsSaving] = useState(false);
     const [partnerPlans, setPartnerPlans] = useState([]);
     const [wasFreeTrial, setWasFreeTrial] = useState(false);
@@ -281,9 +288,11 @@ export default function PartnerProfile() {
         }
     }, [id]);
 
+    // Counters and activity wait for the partner: an id that is not one
+    // (/partners/abc) must not reach them (BUG-001).
     useEffect(() => {
-        loadProfileStats();
-    }, [loadProfileStats]);
+        if (partnerLoaded) loadProfileStats();
+    }, [partnerLoaded, loadProfileStats]);
 
     const [profileImage, setProfileImage] = useState(avatarDefault);
 
@@ -394,7 +403,12 @@ export default function PartnerProfile() {
             }
 
         } catch (error) {
-            toast.error("Failed to load partner data");
+            // 404/403: shown as Partner Not Found, as clients and leads do (BUG-030).
+            if ([403, 404].includes(error?.response?.status)) {
+                setPartnerNotFound(true);
+            } else {
+                toast.error("Failed to load partner data");
+            }
         } finally {
             setIsPartnerLoading(false);
         }
@@ -408,6 +422,11 @@ export default function PartnerProfile() {
         fetchPartnerData();
         loadProfileStats();
     }, [fetchPartnerData, loadProfileStats]);
+
+    // The Agreement tab saved the switch itself: keep the new value, nothing to reload.
+    const handleAgreementRequiredChange = useCallback((required) => {
+        setFormData(prev => ({ ...prev, agreement_required: required }));
+    }, []);
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
@@ -440,10 +459,10 @@ export default function PartnerProfile() {
                     return;
                 }
 
-                // Validate file size (e.g., 2MB)
-                const maxSize = 1 * 1024 * 1024; // 1MB
+                // The API's picture limit, 5 MB (BUG-014)
+                const maxSize = FILE_MANAGER_CONFIG.MAX_PICTURE_SIZE;
                 if (file.size > maxSize) {
-                    setErrors(prev => ({ ...prev, partner_image: 'The image size must not exceed 1 MB (1024 KB).' }));
+                    setErrors(prev => ({ ...prev, partner_image: `The image size must not exceed ${maxSize / 1024 / 1024} MB.` }));
                     return;
                 }
 
@@ -690,6 +709,10 @@ export default function PartnerProfile() {
         }
     };
 
+    if (partnerNotFound) {
+        return <ErrorPage status={404} title="Partner Not Found" message="The partner you are looking for does not exist or you do not have permission to view it." />;
+    }
+
     return (
         <div className="page-content">
             <div className="container-fluid">
@@ -828,7 +851,8 @@ export default function PartnerProfile() {
                                             </a>
                                         </li>
                                     )}
-                                    {formData.has_sign && Number(formData.is_host) == 0 && (
+                                    {/* The host also uses it before signing, to excuse this partner. */}
+                                    {(formData.has_sign || (Number(authUser?.is_host) == 1 && id)) && Number(formData.is_host) == 0 && (
                                         <li className="nav-item">
                                             <a
                                                 className={`nav-link ${activeTab === 'agreement' ? 'active' : ''}`}
@@ -883,6 +907,7 @@ export default function PartnerProfile() {
                                     cities={cities}
                                     users={users}
                                     partnerId={id}
+                                    isHostViewer={Number(authUser?.is_host) == 1}
                                     loading={isPartnerLoading}
                                     onSelectedFilesChange={setSelectedDocumentsToAttach}
                                     documentsReloadKey={documentsReloadKey}
@@ -891,6 +916,7 @@ export default function PartnerProfile() {
                                     onRefresh={handleRefresh}
                                     setIsSaving={setIsSaving}
                                     wasFreeTrial={wasFreeTrial}
+                                    onAgreementRequiredChange={handleAgreementRequiredChange}
                                 />
                                 )}
                             </div>
@@ -900,7 +926,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} taskOwner={formData.agent ? { id: formData.agent, name: formData.assigned_user_name } : null} />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} enabled={partnerLoaded} partnerEmail={formData.email} taskOwner={formData.agent ? { id: formData.agent, name: formData.assigned_user_name } : null} />
                         </div>
                     )}
                 </div>

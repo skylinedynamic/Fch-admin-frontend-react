@@ -29,3 +29,27 @@ export function clearStrayModalBackdrops(): void {
   document.body.style.overflow = ''
   document.body.style.paddingRight = ''
 }
+
+/**
+ * Lift a Bootstrap modal that has just been shown - and its backdrop - above
+ * any open PrimeReact dialog.
+ *
+ * A confirmation opened from inside a PrimeReact dialog (Manage Product
+ * Categories, Funding Groups, ...) sits on Bootstrap's 1050/1055. PrimeReact
+ * raises its dialog's z-index with every overlay opened on the page, so after a
+ * while the dialog was above the confirmation and hid it. This puts the
+ * backdrop just above the highest open dialog (dimming it) and the modal above
+ * that. Nothing changes when no dialog is that high.
+ */
+export function raiseAboveOpenDialogs(modal: HTMLElement | null): void {
+  if (typeof document === 'undefined' || !modal) return
+
+  const highest = Math.max(0, ...Array.from(document.querySelectorAll('.p-dialog-mask'))
+    .map((el) => Number(getComputedStyle(el).zIndex) || 0))
+  if (highest < 1050) return
+
+  const backdrops = document.querySelectorAll<HTMLElement>('.modal-backdrop')
+  const backdrop = backdrops[backdrops.length - 1]
+  if (backdrop) backdrop.style.zIndex = String(highest + 1)
+  modal.style.zIndex = String(highest + 2)
+}

@@ -50,6 +50,10 @@ interface ConfirmationModalProps {
   iconClass?: string
   iconBgClass?: string
   iconTextClass?: string
+  /** Extra detail under the message, e.g. a short list of what will happen. */
+  children?: React.ReactNode
+  /** Button class for the confirm action; btn-danger for a destructive one. */
+  confirmClassName?: string
 }
 
 export default function ConfirmationModal({
@@ -65,7 +69,9 @@ export default function ConfirmationModal({
   icon = 'https://cdn.lordicon.com/lupuorrc.json',
   iconClass,
   iconBgClass = 'bg-danger-subtle',
-  iconTextClass = 'text-danger'
+  iconTextClass = 'text-danger',
+  children,
+  confirmClassName = 'btn-primary'
 }: ConfirmationModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const modalInstanceRef = useRef<BootstrapModalInstance | null>(null)
@@ -138,6 +144,7 @@ export default function ConfirmationModal({
               <p className="text-muted fs-15 mb-4">
                 {message}
               </p>
+              {children}
               <div className="hstack gap-2 justify-content-center">
                 <button
                   type="button"
@@ -149,7 +156,7 @@ export default function ConfirmationModal({
                 </button>
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className={`btn ${confirmClassName}`}
                   onClick={onConfirm}
                   disabled={loading}
                 >

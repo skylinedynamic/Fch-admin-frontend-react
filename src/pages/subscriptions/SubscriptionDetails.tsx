@@ -9,6 +9,7 @@ import BillingDetailsLoader from '../../components/Loader/BillingDetailsLoader';
 import PageHeader from '../common/PageHeader';
 import { INVOICE_STATUS_COLORS } from '../../config/invoiceConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
+import { FINAL_INSTALLMENT_NOTE } from '../../config/subscriptionConfig';
 
 interface SubscriptionDetailData {
     id: string | number;
@@ -45,6 +46,8 @@ interface SubscriptionDetailData {
     payable_amount?: string;
     total_subscription_amount?: string;
     subscription_amount_per_month?: string;
+    /** The last installment when it takes up the monthly rounding; null on an even split (BUG-049). */
+    final_installment_amount?: string | null;
     down_payment?: string;
     monthly_platform_fee?: string;
     borrower_fee_amount?: string;
@@ -321,6 +324,14 @@ export default function SubscriptionDetails() {
                                                 <h5 className="fs-14 mb-0 fw-semibold text-dark">
                                                     {subscriptionDetails.subscription_amount_per_month || '$0.00'}
                                                 </h5>
+                                            </div>
+                                        )}
+
+                                        {isInstallment && !isCompleted && subscriptionDetails.final_installment_amount && (
+                                            <div className="col-sm-6 col-md-3">
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Last Installment</p>
+                                                <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.final_installment_amount}</h5>
+                                                <span className="text-muted fs-11">{FINAL_INSTALLMENT_NOTE}</span>
                                             </div>
                                         )}
 

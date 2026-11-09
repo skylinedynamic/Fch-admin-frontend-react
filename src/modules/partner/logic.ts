@@ -62,6 +62,16 @@ export const mapPartnerBackendErrors = (backendErrors: Record<string, any>): Rec
 /**
  * Builds the FormData payload for create or update partner operations.
  */
+/**
+ * Optional fields an edit may clear (nullable in UpdatePartnerRequest). An
+ * emptied one used to be left out of the payload, so the API kept the old
+ * value (R2 BUG-050); on an edit they are sent empty instead.
+ */
+const CLEARABLE_ON_EDIT = [
+    'contact_person', 'contact_person_phone_number', 'contact_person_email', 'contact_person_relation',
+    'address_line_1', 'address_line_2', 'state', 'city', 'postal_code', 'tax_id', 'website',
+];
+
 export const buildPartnerFormDataPayload = (
     formData: Record<string, any>,
     id?: string | number,
@@ -152,6 +162,8 @@ export const buildPartnerFormDataPayload = (
             formDataToSend.append('free_trail_end_date', isFreeTrial && value ? (value as string) : '');
         } else if (value !== '' && value !== null) {
             formDataToSend.append(key, value as string | Blob);
+        } else if (id && value === '' && CLEARABLE_ON_EDIT.includes(key)) {
+            formDataToSend.append(key, '');
         }
     });
 
@@ -192,3 +204,12 @@ export const partnerOptionLabel = (partner: PartnerOption): string => {
     if (partner.full_name && partner.company_name) return `${partner.company_name} (${partner.full_name})`;
     return partner.company_name || partner.full_name || `Partner #${partner.id}`;
 };
+
+/**
+ * The host after a partner's subdomain. The API saves the domain as
+ * <subdomain>.<BASE_WEBSITE>, so this is the website's host, not the portal's.
+ */
+export const partnerPortalBaseHost = (
+    websiteUrl: string | undefined = import.meta.env.VITE_WEBSITE_URL,
+    currentHost: string = window.location.host
+): string => websiteUrl?.trim().replace(/^https?:\/\//, '').split('/')[0] || currentHost;

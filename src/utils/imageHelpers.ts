@@ -27,3 +27,17 @@ export const buildStorageUrl = (path: any, fallback: string = ''): string => {
 
     return encodeURI(consolidatedUrl);
 };
+
+/** A resource provider's logo as the Resource form holds it. */
+export interface ProviderLogo {
+    logo?: string | null;
+    /** The file manager's URL for a logo just picked (resources/ is private, BUG-016). */
+    logo_preview?: string | null;
+}
+
+/**
+ * Where a provider's logo shows from: a logo just picked in the file manager by
+ * the (signed) URL it gave, a saved one by its public storage URL.
+ */
+export const providerLogoSrc = (provider: ProviderLogo): string =>
+    provider.logo_preview || buildStorageUrl(provider.logo ?? '');

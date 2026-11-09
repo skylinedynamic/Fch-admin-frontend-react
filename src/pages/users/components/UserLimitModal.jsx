@@ -68,9 +68,10 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
                         ></lord-icon>
                         <div className="mt-4 text-center">
                             <h4 className="fw-bold">User Limit Reached</h4>
-                            <p className="text-muted fs-15 mb-4">
-                                You have reached your limit. 
-                                <br />Purchase additional users to add more accounts. Payment is required.
+                            {/* BUG-070: inactive users keep their seat; only deleting one frees it. */}
+                            <p className="text-muted fs-15 mb-4" data-testid="user-limit-message">
+                                All {freeLimit} user seats are in use. Inactive users still take a seat.
+                                <br />To free one, delete a user you no longer need, or buy an additional seat below.
                             </p>
                             
                             <div className="mb-4 text-center">

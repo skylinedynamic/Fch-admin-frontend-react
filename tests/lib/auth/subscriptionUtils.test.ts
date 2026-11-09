@@ -59,4 +59,14 @@ describe('isSubscriptionRestricted', () => {
       isSubscriptionRestricted({ subscription_status: STATUS_ACTIVE, subscription_end_date: pastDate() } as UserSubscription)
     ).toBe(true)
   })
+
+  // BUG-069: cancelling stops renewal, not access - the paid period stays open.
+  it('keeps a cancelled partner open until the end date and locks them after it', () => {
+    expect(
+      isSubscriptionRestricted({ subscription_status: STATUS_CANCELLED, subscription_end_date: futureDate() } as UserSubscription)
+    ).toBe(false)
+    expect(
+      isSubscriptionRestricted({ subscription_status: STATUS_CANCELLED, subscription_end_date: pastDate() } as UserSubscription)
+    ).toBe(true)
+  })
 })

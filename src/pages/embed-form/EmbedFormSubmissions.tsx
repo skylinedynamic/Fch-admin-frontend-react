@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getBorrowerPlanBadgeConfig } from '../../utils/badgeHelper';
 import { DataTable, DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -20,6 +21,8 @@ import { REJECTED_CANNOT_CONVERT, SUBMISSION_STATUS } from '../../modules/embed-
 // @ts-ignore
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 import SubmissionPartner from './components/SubmissionPartner';
+import DeleteSelectedSubmissions from './components/DeleteSelectedSubmissions';
+import { usePartnerOptions, partnerOptionLabel } from '../../modules/partner';
 import { useAuthStore } from '../../store/auth/authStore';
 
 const STATUS_OPTIONS = [
@@ -89,6 +92,13 @@ export default function EmbedFormSubmissions() {
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedStatus, setAppliedStatus] = useState<string>('');
     const [appliedDateRange, setAppliedDateRange] = useState<any>(null);
+    // Host only: one partner's applications.
+    const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('');
+    const [appliedPartnerId, setAppliedPartnerId] = useState<number | ''>('');
+    const { data: partnerOptions = [], isLoading: loadingPartners } = usePartnerOptions(isHost);
+    const partners = partnerOptions.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
+    // Ticked rows for Delete Selected; a converted application cannot be ticked.
+    const [selectedSubmissions, setSelectedSubmissions] = useState<any[]>([]);
     const [filters, setFilters] = useState<DataTableFilterMeta>({
         first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
         email: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -147,9 +157,14 @@ export default function EmbedFormSubmissions() {
                 }
             }
 
+            if (isHost && appliedPartnerId) {
+                payload.partner_id = appliedPartnerId;
+            }
+
             const res = await fetchEmbedFormSubmissions(payload);
 
             if (res.status) {
+                setSelectedSubmissions([]);
                 const data = res.data?.data || res.data || [];
                 // The API answers { status, message, data: [...], meta }, so meta
                 // sits beside data, not inside it. Reading it from data left the
@@ -179,7 +194,7 @@ export default function EmbedFormSubmissions() {
         } finally {
             setLoading(false);
         }
-    }, [appliedSearchText, appliedStatus, appliedDateRange, perPage, page, sortField, sortOrder]);
+    }, [appliedSearchText, appliedStatus, appliedDateRange, appliedPartnerId, isHost, perPage, page, sortField, sortOrder]);
 
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -192,6 +207,7 @@ export default function EmbedFormSubmissions() {
         setAppliedSearchText(searchText);
         setAppliedStatus(selectedStatus);
         setAppliedDateRange(dateRange);
+        setAppliedPartnerId(selectedPartnerId);
         setPage(1);
     };
 
@@ -202,6 +218,8 @@ export default function EmbedFormSubmissions() {
         setAppliedSearchText('');
         setAppliedStatus('');
         setAppliedDateRange(null);
+        setSelectedPartnerId('');
+        setAppliedPartnerId('');
         setFilters({
             first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
             email: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -274,17 +292,10 @@ export default function EmbedFormSubmissions() {
         return (
             <div className="d-flex align-items-center gap-2">
                 <div className="ef-avatar ef-avatar--sm flex-shrink-0">{initials}</div>
-                <div className="min-w-0">
-                    <span className="fw-semibold text-dark fs-13 d-block text-truncate">
-                        {rowData.first_name} {rowData.last_name}
-                    </span>
-                    <span className="text-muted fs-11 d-block text-truncate">
-                        {rowData.business_name || rowData.occupation || 'Applicant'}
-                        {rowData.submission_uid && (
-                            <span className="ef-uid ms-1">#{String(rowData.submission_uid).slice(0, 8)}</span>
-                        )}
-                    </span>
-                </div>
+                {/* The name only - no business, occupation or uid line under it. */}
+                <span className="fw-semibold text-dark fs-13 text-truncate min-w-0">
+                    {rowData.first_name} {rowData.last_name}
+                </span>
             </div>
         );
     };
@@ -371,14 +382,27 @@ export default function EmbedFormSubmissions() {
     const actionBodyTemplate = (rowData: any) => {
         const isConverted = rowData.status === SUBMISSION_STATUS.CONVERTED;
         const isRejected = rowData.status === SUBMISSION_STATUS.REJECTED;
+        // Without the client in the response the plan is unknown: say only that
+        // it was converted, never guess "Free Plan" for a client who may be paid.
+        const plan = rowData.converted_borrower
+            ? getBorrowerPlanBadgeConfig(rowData.converted_borrower)
+            : { label: 'Converted', badgeClass: 'bg-success-subtle text-success' };
         return (
             <div className="d-flex align-items-center justify-content-center gap-1">
                 {isConverted ? (
+                    // BUG-058: the client's real plan, not a hard-coded "Free Plan".
+                    // The row itself keeps the name the applicant submitted.
                     <span
-                        className="badge bg-success-subtle text-success ef-status-pill"
-                        title="Already converted to a free plan borrower"
+                        className={`badge ${plan.badgeClass} ef-status-pill`}
+                        title={rowData.converted_borrower?.full_name ? `Converted to ${rowData.converted_borrower.full_name}` : 'Already converted to a client'}
                     >
-                        <i className="ri-vip-crown-2-fill" /> Free Plan
+                        <i className="ri-vip-crown-2-fill" /> {plan.label}
+                    </span>
+                ) : isRejected ? (
+                    // A rejected application cannot be converted: say so instead
+                    // of offering a disabled convert button.
+                    <span className="badge bg-danger-subtle text-danger ef-status-pill" title={REJECTED_CANNOT_CONVERT}>
+                        <i className="ri-close-circle-line" /> Rejected
                     </span>
                 ) : hasPermission('convert application') ? (
                     <button
@@ -388,8 +412,7 @@ export default function EmbedFormSubmissions() {
                             e.stopPropagation();
                             handleOpenConvertModal(rowData);
                         }}
-                        disabled={isRejected}
-                        title={isRejected ? REJECTED_CANNOT_CONVERT : 'Convert this applicant to a Free Plan Borrower'}
+                        title="Convert this applicant to a Free Plan Borrower"
                     >
                         <i className="ri-vip-crown-2-line" />
                         <span>Convert to Free Plan Borrower</span>
@@ -408,10 +431,13 @@ export default function EmbedFormSubmissions() {
         { title: 'Free Plan Borrowers', count: stats.converted_count, icon: 'ri-vip-crown-2-line', colorVariant: 'success' },
     ];
 
+    // With the host's Partner filter there are five controls, so they narrow.
+    const filterCol = isHost ? 'col-xxl-2 col-sm-6' : 'col-xxl-3 col-sm-6';
     const filterLoaderConfig = [
         { col: 'col-xxl-3 col-sm-6' }, // Search
-        { col: 'col-xxl-3 col-sm-6' }, // Status
-        { col: 'col-xxl-3 col-sm-6' }, // Date Range
+        ...(isHost ? [{ col: filterCol }] : []), // Partner
+        { col: filterCol }, // Status
+        { col: filterCol }, // Date Range
         { col: 'col-xxl-3 col-sm-6', isButton: true }, // Buttons
     ];
 
@@ -425,7 +451,9 @@ export default function EmbedFormSubmissions() {
                         { label: 'Embedded Form', path: '/embed-form/settings' },
                         { label: 'Loan Applications' },
                     ]}
-                />
+                >
+                    <DeleteSelectedSubmissions selected={selectedSubmissions} onDeleted={loadData} />
+                </PageHeader>
 
                 {/* Statistics Cards Row mirrored from Partners.jsx */}
                 <div className="row embed-stats-section partner-section">
@@ -474,7 +502,24 @@ export default function EmbedFormSubmissions() {
                                                 </div>
                                             </div>
 
-                                            <div className="col-xxl-3 col-sm-6">
+                                            {isHost && (
+                                                <div className={filterCol}>
+                                                    <Dropdown
+                                                        value={selectedPartnerId}
+                                                        options={[{ label: 'All Partners', value: '' }, ...partners]}
+                                                        onChange={(e) => setSelectedPartnerId(e.value ?? '')}
+                                                        optionLabel="label"
+                                                        optionValue="value"
+                                                        placeholder={loadingPartners ? 'Loading...' : 'All Partners'}
+                                                        disabled={loadingPartners}
+                                                        ariaLabel="Partner"
+                                                        filter
+                                                        className="w-100 employee-filter-dropdown"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <div className={filterCol}>
                                                 <Dropdown
                                                     value={selectedStatus}
                                                     options={[{ label: 'All Status', value: '' }, ...STATUS_OPTIONS]}
@@ -487,7 +532,7 @@ export default function EmbedFormSubmissions() {
                                                 />
                                             </div>
 
-                                            <div className="col-xxl-3 col-sm-6">
+                                            <div className={filterCol}>
                                                 <div className="search-box">
                                                     <Calendar
                                                         value={dateRange}
@@ -552,15 +597,21 @@ export default function EmbedFormSubmissions() {
                                             onPage={onPage}
                                             onSort={onSort}
                                             dataKey="id"
+                                            selection={selectedSubmissions}
+                                            onSelectionChange={(e: any) => setSelectedSubmissions(e.value)}
+                                            selectionMode="checkbox"
+                                            // Converted applications belong to a client: they cannot be deleted.
+                                            isDataSelectable={(e: any) => e.data?.status !== SUBMISSION_STATUS.CONVERTED}
                                             rowClassName={() => 'cursor-pointer'}
                                             onRowClick={(e) => {
-                                                const isButton = (e.originalEvent.target as HTMLElement)?.closest('button');
-                                                if (!isButton) navigate(`/embed-form/loan-applications/${e.data.id}`);
+                                                const target = e.originalEvent.target as HTMLElement;
+                                                if (!target?.closest('button, .p-selection-column, .p-checkbox')) navigate(`/embed-form/loan-applications/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
                                             emptyMessage="No form submissions found"
                                         >
+                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                                             <Column
                                                 field="first_name"
                                                 header="Applicant"

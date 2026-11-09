@@ -9,6 +9,7 @@ import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { selfReportedCreditScoreOptions, selfReportedBusinessCreditScoreOptions } from '../../../../../data/profile'
 import { useFinancialInfo, useSaveFinancialInfo } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { toast } from 'react-toastify'
 import { formatCurrency, unformatCurrency } from '../../../../../utils/borrowerFormatters'
 
@@ -21,6 +22,7 @@ interface FinancialInformationStepProps {
   onRegisterSave?: (fn: (() => Promise<boolean>) | null) => void
   fundingSequenceId?: number | string | null
   fundingRequestId?: number | string | null
+  fundingApplicationId?: number | string | null
 }
 
 export default function FinancialInformationStep({
@@ -32,10 +34,11 @@ export default function FinancialInformationStep({
   onRegisterSave,
   fundingSequenceId,
   fundingRequestId,
+  fundingApplicationId,
 }: FinancialInformationStepProps) {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFinancialInfo(fundingRequestId, { enabled: !!fundingRequestId })
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFinancialInfo(fundingRequestId, { enabled: !!fundingRequestId, fundingApplicationId })
   const { mutateAsync: saveFinancialInfo, isPending: isSaving } = useSaveFinancialInfo()
 
   // Helper to format date as YYYY-MM-DD
@@ -76,6 +79,8 @@ export default function FinancialInformationStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       const errors = error.response?.data?.errors
       if (errors) {
         setValidationErrors(errors)

@@ -52,7 +52,7 @@ export default function DocumentUploadStep({
   const queryClient = useQueryClient()
 
   // Fetch funding request to get ID
-  const { data: fundingData } = useFundingRequest(initialRequestId)
+  const { data: fundingData } = useFundingRequest(initialRequestId, { fundingApplicationId: initialAppId })
   
   const effectiveAppIdRaw = initialAppId || initialRequestId || fundingData?.id || null
   const effectiveAppId = effectiveAppIdRaw !== null && effectiveAppIdRaw !== undefined ? Number(effectiveAppIdRaw) : null

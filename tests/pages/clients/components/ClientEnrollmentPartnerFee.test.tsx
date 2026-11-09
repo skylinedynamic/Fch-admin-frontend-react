@@ -42,8 +42,10 @@ describe('Client › Enrollment Details, the partner fee', () => {
 
     renderWithProviders(<ClientInfoSection clientId="159" countries={[]} states={[]} cities={[]} />)
 
-    const note = await screen.findByText(/two completely separate invoices are created/i)
-    expect(note).toHaveTextContent('$800.00 is automatically charged to the Partner account')
+    const note = await screen.findByText(/two separate invoices are created/i)
+    expect(note).toHaveTextContent("$800.00 will be charged to you automatically when the client pays, or you can pay it manually from Invoices.")
+    // BUG-059: the fee is charged by the billing run or paid from Invoices.
+    expect(screen.getByText("You'll be charged automatically when the client pays their enrollment, or you can pay it manually from Invoices.")).toBeInTheDocument()
     expect(note).not.toHaveTextContent('$0.00')
     expect(screen.getByText('Partner Invoice:').closest('div')?.parentElement).toHaveTextContent('$800.00')
   })

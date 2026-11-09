@@ -8,8 +8,11 @@ import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 import { 
     ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST,
     ENTITY_TYPE_FUNDING_APPLICATION,
-    TARGET_RECIPIENT_HOST, TARGET_RECIPIENT_BORROWER
+    TARGET_RECIPIENT_HOST, TARGET_RECIPIENT_BORROWER, FCH_SUPPORT_EMAIL
 } from '../../../config/appConfig';
+import { initialEmailRecipient } from '../../../utils/emailRecipient';
+import EmailFromSection from './email-compose/EmailFromSection';
+import { getAuthState } from '../../../store/auth/authStore';
 
 export default function EmailComposeModal({ entityId, entityType, lead }) {
     const choicesRef = useRef(null);
@@ -17,6 +20,11 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
     const textareaRef = useRef(null); // Local ref to capture the DOM node
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState({});
+    const [opened, setOpened] = useState(false);
+    // The host's From section: whose mail settings it goes out with, and the
+    // record's partner, read from the activity context on each open.
+    const [sendFrom, setSendFrom] = useState(null);
+    const [sender, setSender] = useState({ isHost: false, partnerId: null });
     const pendingEmailRef = useRef('');
     const [formData, setFormData] = useState({
         to_emails: '',
@@ -41,7 +49,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 if (ctx.hostEmail) {
                     emailToSet = ctx.hostEmail;
                 } else {
-                    emailToSet = 'support@fourcornerholding.com';
+                    emailToSet = FCH_SUPPORT_EMAIL;
                 }
             }
         }
@@ -122,6 +130,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             // Append emails as a single string to match the input form
             payload.append('to_emails', finalEmailsString);
             payload.append('subject', formData.subject || '');
+            if (sender.isHost && sendFrom) payload.append('send_from', sendFrom);
             payload.append('description', formData.message_body || '');
 
             // Resolve entity context: prefer props, fall back to global context set by ActivitySidebar buttons
@@ -344,6 +353,8 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         const resetForm = (e) => {
             // Prevent nested elements from triggering the reset
             if (e && e.target !== modalEl) return;
+            // The From section reads its sender once the modal has first opened.
+            if (e?.type === 'show.bs.modal') setOpened(true);
 
             // Use a short timeout to prevent race condition with React's onClick
             // which sets window._activityEntityContext
@@ -352,37 +363,17 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 pendingEmailRef.current = '';
 
                 const ctx = window._activityEntityContext || {};
-                let initialEmail = '';
-                let defaultTarget = TARGET_RECIPIENT_BORROWER;
-
                 const resolvedEntityType = entityType ?? ctx.entityType;
-
-                if (resolvedEntityType === ENTITY_TYPE_PARTNER || resolvedEntityType === 'Partner') {
-                    if (ctx.partnerEmail === undefined) {
-                        initialEmail = 'support@fourcornerholding.com';
-                    } else {
-                        initialEmail = ctx.partnerEmail || '';
-                    }
-                } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
-                    defaultTarget = TARGET_RECIPIENT_BORROWER;
-                    initialEmail = ctx.borrowerEmail || '';
-                } else if (ctx.isHost) {
-                    if (ctx.partnerEmail) {
-                        defaultTarget = TARGET_RECIPIENT_HOST;
-                        initialEmail = ctx.partnerEmail;
-                    }
-                } else {
-                    if (ctx.borrowerEmail === undefined) {
-                        defaultTarget = TARGET_RECIPIENT_HOST;
-                        if (ctx.hostEmail) {
-                            initialEmail = ctx.hostEmail;
-                        } else {
-                            initialEmail = '';
-                        }
-                    } else {
-                        initialEmail = ctx.borrowerEmail || '';
-                    }
-                }
+                // A host on a client's activity gets the client's email (it was left empty).
+                const { email: initialEmail, target: defaultTarget } = initialEmailRecipient({ ...ctx, entityType: resolvedEntityType });
+                // Every place New Email opens: the host is the signed-in user (not every
+                // page says isHost); on a partner's own page, that partner is the record's.
+                const signedInHost = Number(getAuthState().user?.is_host) === 1;
+                const recordPartnerId = resolvedEntityType === ENTITY_TYPE_PARTNER
+                    ? (ctx.entityId ?? entityId ?? null)
+                    : (ctx.partnerId ?? null);
+                setSender({ isHost: signedInHost || !!ctx.isHost, partnerId: recordPartnerId });
+                setSendFrom(null);
 
                 setFormData({
                     to_emails: initialEmail,
@@ -465,6 +456,9 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                             </div>
                         )}
                         <form onSubmit={(e) => e.preventDefault()}>
+                            {sender.isHost && (
+                                <EmailFromSection enabled={opened} partnerId={sender.partnerId} sendFrom={sendFrom} onSendFromChange={setSendFrom} />
+                            )}
                             {(() => {
                                 const ctx = window._activityEntityContext || {};
                                 const resolvedEntityType = entityType ?? ctx.entityType;
@@ -508,7 +502,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                 <div className="row g-3">
                                     <div className="col-12">
                                         <label className="form-label">To <span className="text-danger">*</span></label>
-                                        <div className={`acm-tags ${errors.to_emails ? 'is-invalid' : ''}`}>
+                                        <div className={`acm-tags acm-tags--like-input ${errors.to_emails ? 'is-invalid' : ''}`}>
                                             <input
                                                 type="text"
                                                 ref={choicesRef}

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Modal from 'bootstrap/js/dist/modal';
-import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
+import { clearStrayModalBackdrops, raiseAboveOpenDialogs } from '../../../utils/modalBackdrop';
 
 // title and text are optional: a page that passes neither gets the neutral defaults.
 export default function DeleteConfirmationModal({ show, onConfirm, onClose, loading, text, title = "Are you sure?" }) {
@@ -25,6 +25,8 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
     if (!modal) return;
     if (show) {
       modal.show();
+      // Not hidden behind a PrimeReact dialog it was opened from.
+      raiseAboveOpenDialogs(modalRef.current);
     } else {
       modal.hide();
     }

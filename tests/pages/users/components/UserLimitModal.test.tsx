@@ -25,3 +25,21 @@ describe('UserLimitModal', () => {
     await waitFor(() => expect(dispose).toHaveBeenCalledOnce(), { timeout: 2000 })
   })
 })
+
+/**
+ * BUG-070: inactive users still take a seat (only a deleted user frees one).
+ * The message must say so and how to free a seat, not only "Payment is required".
+ */
+describe('UserLimitModal › message', () => {
+  it('says inactive users take a seat and how to free one', () => {
+    const { container } = render(
+      <UserLimitModal show onHide={() => {}} onProceed={() => {}} userCount={3} freeLimit={3} perUserPrice={49} />
+    )
+
+    const message = container.querySelector('[data-testid="user-limit-message"]') as HTMLElement
+    expect(message).toHaveTextContent('All 3 user seats are in use.')
+    expect(message).toHaveTextContent('Inactive users still take a seat.')
+    expect(message).toHaveTextContent('To free one, delete a user you no longer need, or buy an additional seat below.')
+    expect(message).not.toHaveTextContent('Payment is required')
+  })
+})

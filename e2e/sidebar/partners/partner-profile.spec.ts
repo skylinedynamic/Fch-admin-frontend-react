@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, ok, paginated, failure, seedSession, expectCall, confirmDelete, cancelDelete, pickPrime, type ApiMock } from '../../support/helpers'
+import { loadEnv } from 'vite'
 
 /**
  * A partner's profile beyond the create form: the stats strip, the tabs
@@ -73,6 +74,24 @@ test.describe('Partner create - defaults', () => {
     const api = await openProfile(page, 'statusAgent')
     await expectCall(api, 'GET', '/admin/partners-details/5')
     expect(api.find('GET', '/admin/partners/next-id')).toHaveLength(0)
+  })
+})
+
+test.describe('Partner create - subdomain', () => {
+  // The API saves <subdomain>.<BASE_WEBSITE>, so the form shows the website's host.
+  const websiteHost = new URL(loadEnv('development', process.cwd(), 'VITE_').VITE_WEBSITE_URL).host
+
+  test('shows the website host after the subdomain and in the portal url hint', async ({ page }) => {
+    await seedSession(page, { permissions: ADMIN_PERMS })
+    await mockApi(page, [])
+    await page.goto('/partners/create')
+
+    const field = page.locator('.input-group', { has: page.locator('input[name="partner_domain"]') })
+    await expect(field.locator('.input-group-text')).toHaveText(`.${websiteHost}`)
+
+    await page.locator('input[name="company_name"]').fill('Acme Funding')
+    await expect(page.locator('input[name="partner_domain"]')).toHaveValue('acmefunding')
+    await expect(page.locator('label code')).toHaveText(new RegExp(`^acmefunding\\.\\s*${websiteHost.replace(/[.]/g, '\\.')}$`))
   })
 })
 
@@ -163,13 +182,14 @@ test.describe('Partner profile - file manager', () => {
   }
   const fmItem = (page: Page, name: string) => page.locator('.fm-grid-item, .fm-list-item', { hasText: name }).first()
 
-  test('opens on the partner folder and loads its files and folder tree', async ({ page }) => {
+  // A partner's documents are private: the file manager opens on partner-documents/{id}.
+  test("opens on the partner's private documents folder and loads its files and folder tree", async ({ page }) => {
     const api = await openManager(page)
     const list = await expectCall(api, 'POST', '/filemanager/list')
-    expect(list.json).toMatchObject({ path: '/', entity_type: 'partners', get_all: false })
+    expect(list.json).toMatchObject({ path: '/', entity_type: 'partner-documents', get_all: false })
     expect(String(list.json.entity_id)).toBe('5')
     const tree = await expectCall(api, 'POST', '/filemanager/tree')
-    expect(tree.json).toMatchObject({ entity_type: 'partners' })
+    expect(tree.json).toMatchObject({ entity_type: 'partner-documents' })
     await expect(page.locator('.fm-sidebar')).toContainText('Contracts')
   })
 
@@ -179,13 +199,13 @@ test.describe('Partner profile - file manager', () => {
     await expect.poll(() => api.find('POST', '/filemanager/list').some((c) => c.json?.path === '/Contracts')).toBe(true)
   })
 
-  test('selecting a file attaches it to the partner', async ({ page }) => {
+  test('selecting a file files it from the private documents folder, where it is', async ({ page }) => {
     const api = await openManager(page)
     api.add({ method: 'POST', match: /\/admin\/partners\/documents$/, body: ok(null) })
     await fmItem(page, 'w9.pdf').click()
     await page.locator('.fm-floating-select-btn').click()
     const call = await expectCall(api, 'POST', /\/admin\/partners\/documents$/)
-    expect(call.json).toMatchObject({ file_path: ['/w9.pdf'] })
+    expect(call.json).toMatchObject({ entity_type: 'partner-documents', file_path: ['/w9.pdf'] })
     expect(String(call.json.partner_id)).toBe('5')
     await expect(page.getByText('Documents uploaded successfully')).toBeVisible()
   })
@@ -206,7 +226,7 @@ test.describe('Partner profile - file manager', () => {
     await page.getByPlaceholder('Enter folder name').fill('Taxes')
     await create.click()
     const call = await expectCall(api, 'POST', '/filemanager/folder')
-    expect(call.json).toMatchObject({ name: 'Taxes', path: null, entity_type: 'partners' })
+    expect(call.json).toMatchObject({ name: 'Taxes', path: null, entity_type: 'partner-documents' })
   })
 
   test('Rename sends the old path and the new name', async ({ page }) => {
@@ -218,7 +238,7 @@ test.describe('Partner profile - file manager', () => {
     await input.fill('w9-2026.pdf')
     await page.locator('.fm-btn-primary', { hasText: /rename/i }).click()
     const call = await expectCall(api, 'PUT', '/filemanager/rename')
-    expect(call.json).toMatchObject({ path: '/w9.pdf', newName: 'w9-2026.pdf', entity_type: 'partners' })
+    expect(call.json).toMatchObject({ path: '/w9.pdf', newName: 'w9-2026.pdf', entity_type: 'partner-documents' })
   })
 
   test('Rename stays disabled while the name is unchanged', async ({ page }) => {
@@ -258,7 +278,7 @@ test.describe('Partner profile - file manager', () => {
     expect(api.find('POST', '/filemanager/delete')).toHaveLength(0)
     await page.locator('.fm-btn-danger').click()
     const call = await expectCall(api, 'POST', '/filemanager/delete')
-    expect(call.json).toMatchObject({ paths: ['/w9.pdf'], entity_type: 'partners' })
+    expect(call.json).toMatchObject({ paths: ['/w9.pdf'], entity_type: 'partner-documents' })
   })
 
   test('Upload sends the chosen file with the current path', async ({ page }) => {
@@ -269,7 +289,7 @@ test.describe('Partner profile - file manager', () => {
     await page.locator('.fm-btn-primary', { hasText: 'Upload (1)' }).click()
     const call = await expectCall(api, 'POST', '/filemanager/upload')
     expect(call.body).toContain('bank.pdf')
-    expect(call.body).toContain('partners')
+    expect(call.body).toContain('partner-documents')
     await expect(page.getByText('Files Uploaded Successfully')).toBeVisible()
   })
 
@@ -309,6 +329,14 @@ test.describe('Partner profile - Client List', () => {
     const call = await expectCall(api, 'POST', '/admin/partners/fetch-borrowers')
     expect(String(call.json.partner_id)).toBe('5')
     expect(call.json).toMatchObject({ page: 1 })
+  })
+
+  test('the joining date is the day the client was created, not its business start date', async ({ page }) => {
+    const client = { ...CLIENTS[0], business_start_date: '2015-06-01', created_at: '2026-03-14' }
+    await openProfile(page, 'clientList', [{ method: 'POST', match: '/admin/partners/fetch-borrowers', body: paginated([client]) }])
+    await expect(page.getByText('Doe Bakery')).toBeVisible()
+    await expect(page.getByRole('cell', { name: '2026-03-14' })).toBeVisible()
+    await expect(page.getByText('2015-06-01')).toHaveCount(0)
   })
 
   test('shows the empty state', async ({ page }) => {
