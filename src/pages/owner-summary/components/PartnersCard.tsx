@@ -9,7 +9,7 @@ const typeTag = (type: string | null) =>
 export default function PartnersCard({ top }: { top: TopPartner[] }) {
     return (
         <div className="os-card os-grow-wide" data-testid="owner-top-partners">
-            <h2 className="os-card-title">Top partners</h2>
+            <h2 className="os-card-title">Top Partners</h2>
             <p className="os-card-sub">By funded volume, this period</p>
             {top.length === 0 ? (
                 <p className="os-empty">No partner activity this period.</p>

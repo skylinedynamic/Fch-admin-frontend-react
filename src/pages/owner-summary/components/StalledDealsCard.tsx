@@ -30,7 +30,7 @@ export default function StalledDealsCard({ deals, total, totalRequested }: Stall
             <div className="os-card__head os-header" style={{ alignItems: 'center' }}>
                 <div>
                     <div className="os-legend" style={{ gap: 10 }}>
-                        <h2 className="os-card-title">Stalled deals</h2>
+                        <h2 className="os-card-title">Stalled Deals</h2>
                         <span className="os-tag os-tag--warn">{count(total, 'deal', 'deals')} · {compactMoney(totalRequested)} requested</span>
                     </div>
                     <p className="os-card-sub">Open applications with no status change in the last {STALLED_AFTER_DAYS} days</p>

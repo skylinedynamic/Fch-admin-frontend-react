@@ -1,49 +1,121 @@
-import type { OwnerSummaryKpis } from '../../../modules/owner-summary';
-import { compactMoney, count, delta, type DeltaTone } from './format';
+import type { OwnerConversion, OwnerSummaryKpis } from '../../../modules/owner-summary';
+import { compactMoney, delta, percent, type DeltaTone } from './format';
 
-interface Kpi {
+interface KpiRow {
     label: string;
     value: string;
-    tag: string;
-    tone: DeltaTone | 'warn';
-    note: string;
 }
 
-function kpis(k: OwnerSummaryKpis, overdue: number): Kpi[] {
+interface Kpi {
+    key: string;
+    label: string;
+    value: string;
+    tag?: string;
+    tone?: DeltaTone;
+    note?: string;
+    rows?: KpiRow[];
+}
+
+const NO_LEADS = '—';
+
+const hostAndPartners = (host: string, partners: string): KpiRow[] => [
+    { label: 'FCH', value: host },
+    { label: 'Partners', value: partners },
+];
+
+/** "25% (1 of 4)". */
+const conversionOf = ({ leads, funded }: OwnerConversion): string =>
+    leads > 0 ? `${percent(funded, leads)}% (${funded} of ${leads})` : NO_LEADS;
+
+function kpis(k: OwnerSummaryKpis): Kpi[] {
     const cash = delta(k.cash_collected.current, k.cash_collected.previous);
     const funded = delta(k.funded.amount, k.funded.previous_amount);
-    const clients = delta(k.new_clients.current, k.new_clients.previous);
+    const deals = delta(k.funded.deals, k.funded.previous_deals);
     const leads = delta(k.new_leads.current, k.new_leads.previous);
-    const average = k.funded.deals > 0 ? ` · avg ${compactMoney(k.funded.amount / k.funded.deals)}` : '';
+    const conversionLeads = k.lead_conversion.host.leads + k.lead_conversion.partners.leads;
+    const conversionFunded = k.lead_conversion.host.funded + k.lead_conversion.partners.funded;
 
     return [
-        { label: 'Cash collected', value: compactMoney(k.cash_collected.current), tag: cash.text, tone: cash.tone, note: `vs ${compactMoney(k.cash_collected.previous)} before` },
+        { key: 'net', label: 'Net Earnings', value: compactMoney(k.cash_collected.current), tag: cash.text, tone: cash.tone, note: `vs ${compactMoney(k.cash_collected.previous)} before` },
         {
-            label: 'Owed to us',
-            value: compactMoney(k.outstanding.amount),
-            tag: overdue > 0 ? `${overdue} over 30 days` : 'none overdue',
-            tone: overdue > 0 ? 'warn' : 'flat',
-            note: count(k.outstanding.invoices, 'open invoice', 'open invoices'),
+            key: 'funded',
+            label: 'Funded Volume',
+            value: compactMoney(k.funded.amount),
+            tag: funded.text,
+            tone: funded.tone,
+            note: `vs ${compactMoney(k.funded.previous_amount)} before`,
+            rows: hostAndPartners(compactMoney(k.funded.host.amount), compactMoney(k.funded.partners.amount)),
         },
-        { label: 'Funded volume', value: compactMoney(k.funded.amount), tag: funded.text, tone: funded.tone, note: `${count(k.funded.deals, 'deal', 'deals')}${average}` },
-        { label: 'New clients', value: k.new_clients.current.toLocaleString(), tag: clients.text, tone: clients.tone, note: `vs ${k.new_clients.previous.toLocaleString()} before` },
-        { label: 'New leads', value: k.new_leads.current.toLocaleString(), tag: leads.text, tone: leads.tone, note: `vs ${k.new_leads.previous.toLocaleString()} before` },
-        { label: 'Active partners', value: k.active_partners.current.toLocaleString(), tag: `of ${k.active_partners.total}`, tone: 'flat', note: 'sent a lead in 30 days' },
+        {
+            key: 'deals',
+            label: 'Funded Deals',
+            value: k.funded.deals.toLocaleString(),
+            tag: deals.text,
+            tone: deals.tone,
+            note: `vs ${k.funded.previous_deals.toLocaleString()} before`,
+            rows: hostAndPartners(k.funded.host.deals.toLocaleString(), k.funded.partners.deals.toLocaleString()),
+        },
+        {
+            key: 'partners',
+            label: 'Partners',
+            value: k.partners.total.toLocaleString(),
+            rows: [
+                { label: 'Active', value: k.partners.active.toLocaleString() },
+                { label: 'New this period', value: k.partners.new.toLocaleString() },
+            ],
+        },
+        {
+            key: 'clients',
+            label: 'Clients',
+            value: k.clients.total.toLocaleString(),
+            rows: [
+                { label: 'Active', value: k.clients.active.toLocaleString() },
+                { label: 'New this period', value: k.clients.new.toLocaleString() },
+            ],
+        },
+        {
+            key: 'leads',
+            label: 'Leads',
+            value: k.new_leads.current.toLocaleString(),
+            tag: leads.text,
+            tone: leads.tone,
+            note: `vs ${k.new_leads.previous.toLocaleString()} before`,
+            rows: hostAndPartners(k.new_leads.host.toLocaleString(), k.new_leads.partners.toLocaleString()),
+        },
+        {
+            key: 'conversion',
+            label: 'Lead-To-Funded',
+            value: conversionLeads > 0 ? `${percent(conversionFunded, conversionLeads)}%` : NO_LEADS,
+            note: 'leads that reached funded',
+            rows: hostAndPartners(conversionOf(k.lead_conversion.host), conversionOf(k.lead_conversion.partners)),
+        },
     ];
 }
 
-/** The six headline numbers, each with how it moved against the previous period. */
-export default function KpiCards({ data, overdueInvoices }: { data: OwnerSummaryKpis; overdueInvoices: number }) {
+/** The seven headline numbers, split between the host and other partners where that applies. */
+export default function KpiCards({ data }: { data: OwnerSummaryKpis }) {
     return (
         <div className="os-kpis" data-testid="owner-kpis">
-            {kpis(data, overdueInvoices).map((kpi) => (
-                <div className="os-card os-kpi" key={kpi.label}>
+            {kpis(data).map((kpi) => (
+                <div className="os-card os-kpi" key={kpi.key} data-testid={`owner-kpi-${kpi.key}`}>
                     <span className="os-label">{kpi.label}</span>
                     <span className="os-kpi__value">{kpi.value}</span>
-                    <div className="os-kpi__foot">
-                        <span className={`os-tag os-tag--${kpi.tone}`}>{kpi.tag}</span>
-                        <span>{kpi.note}</span>
-                    </div>
+                    {(kpi.tag || kpi.note) && (
+                        <div className="os-kpi__foot">
+                            {kpi.tag && <span className={`os-tag os-tag--${kpi.tone}`}>{kpi.tag}</span>}
+                            {kpi.note && <span>{kpi.note}</span>}
+                        </div>
+                    )}
+                    {kpi.rows && (
+                        <div className="os-kpi__rows">
+                            {kpi.rows.map((row) => (
+                                <div className="os-kpi__row" key={row.label}>
+                                    <span>{row.label}</span>
+                                    <strong>{row.value}</strong>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             ))}
         </div>

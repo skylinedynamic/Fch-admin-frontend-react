@@ -26,12 +26,12 @@ export default function PipelineCard({ data }: { data: OwnerPipeline }) {
     return (
         <div className="os-card os-grow-wide" data-testid="owner-pipeline">
             <div className="os-line" style={{ alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <h2 className="os-card-title">Open applications</h2>
+                <h2 className="os-card-title">Open Applications</h2>
                 <span style={{ fontSize: 13, color: 'var(--os-muted)' }}>{data.open.count} open · {compactMoney(data.open.requested)} requested</span>
             </div>
             <p className="os-card-sub">Where every open funding application stands now</p>
 
-            <div className="os-gap" style={{ gap: 14, marginTop: 18 }} role="table" aria-label="Open applications by stage">
+            <div className="os-gap" style={{ gap: 14, marginTop: 18 }} role="table" aria-label="Open Applications by stage">
                 {data.groups.map((group) => (
                     <div className="os-stage" role="row" key={group.key}>
                         <div role="cell">

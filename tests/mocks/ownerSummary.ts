@@ -14,10 +14,23 @@ export const ownerSummaryFixture: OwnerSummary = {
   kpis: {
     cash_collected: { current: 1550, previous: 400 },
     outstanding: { amount: 400, invoices: 3 },
-    funded: { amount: 150000, deals: 2, previous_amount: 20000 },
+    funded: {
+      amount: 150000,
+      deals: 2,
+      previous_amount: 20000,
+      previous_deals: 1,
+      host: { amount: 50000, deals: 1 },
+      partners: { amount: 100000, deals: 1 },
+    },
     new_clients: { current: 9, previous: 4 },
-    new_leads: { current: 3, previous: 2 },
+    new_leads: { current: 3, previous: 2, host: 1, partners: 2 },
     active_partners: { current: 1, total: 2 },
+    partners: { total: 2, active: 1, new: 1 },
+    clients: { total: 40, active: 35, new: 8 },
+    lead_conversion: {
+      host: { leads: 4, funded: 1 },
+      partners: { leads: 6, funded: 1 },
+    },
   },
   cash_by_stream: [
     { stream: 'partner_enrollment', amount: 1000, payments: 1 },

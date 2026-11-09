@@ -14,7 +14,7 @@ export default function LeadSourcesCard({ data }: { data: OwnerLeadSources }) {
     return (
         <div className="os-card os-grow-side" style={{ gap: 16 }} data-testid="owner-sources">
             <div>
-                <h2 className="os-card-title">Where leads come from</h2>
+                <h2 className="os-card-title">Where Leads Come From</h2>
                 <p className="os-card-sub">{total} leads, by lead source</p>
             </div>
             {leads.length === 0 ? (
@@ -39,7 +39,7 @@ export default function LeadSourcesCard({ data }: { data: OwnerLeadSources }) {
                 </>
             )}
             <div className="os-divider">
-                <span className="os-label">Other ways in</span>
+                <span className="os-label">Other Ways In</span>
                 <div className="os-line"><span>Pre-qualification requests</span><strong>{data.prequalifications}</strong></div>
                 <div className="os-line"><span>Embedded-form applications</span><strong>{data.embedded_applications}</strong></div>
             </div>

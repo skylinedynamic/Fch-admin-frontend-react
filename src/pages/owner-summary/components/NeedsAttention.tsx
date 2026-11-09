@@ -34,7 +34,7 @@ export default function NeedsAttention({ data }: { data: OwnerAttention }) {
     return (
         <div className="os-card os-card--flush" data-testid="owner-attention">
             <div className="os-card__head">
-                <h2 className="os-card-title">Needs attention</h2>
+                <h2 className="os-card-title">Needs Attention</h2>
                 <p className="os-card-sub">As of now, whatever period is selected</p>
             </div>
             <div className="os-attention">

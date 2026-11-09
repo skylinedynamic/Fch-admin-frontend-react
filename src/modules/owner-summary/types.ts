@@ -4,7 +4,11 @@ import type { CashStream, OwnerSummaryEnvironment, OwnerSummaryPeriodKey, Pipeli
 
 export interface OwnerSummaryParams {
     period: OwnerSummaryPeriodKey;
-    environment: OwnerSummaryEnvironment;
+    /** Which payments to count; the API defaults to production. */
+    environment?: OwnerSummaryEnvironment;
+    /** Local Y-m-d dates, for the custom period only. */
+    from?: string;
+    to?: string;
 }
 
 export interface OwnerSummaryPeriod {
@@ -27,13 +31,35 @@ export interface AmountAndInvoices {
     invoices: number;
 }
 
+export interface AmountAndDeals {
+    amount: number;
+    deals: number;
+}
+
+/** Archived ones left out of all three. */
+export interface TotalActiveAndNew {
+    total: number;
+    active: number;
+    new: number;
+}
+
+/** Client leads from the period, and how many of them reached a funded deal. */
+export interface OwnerConversion {
+    leads: number;
+    funded: number;
+}
+
 export interface OwnerSummaryKpis {
+    /** Shown as Net earnings: every payment the host received. */
     cash_collected: CurrentAndPrevious;
     outstanding: AmountAndInvoices;
-    funded: { amount: number; deals: number; previous_amount: number };
+    funded: AmountAndDeals & { previous_amount: number; previous_deals: number; host: AmountAndDeals; partners: AmountAndDeals };
     new_clients: CurrentAndPrevious;
-    new_leads: CurrentAndPrevious;
+    new_leads: CurrentAndPrevious & { host: number; partners: number };
     active_partners: { current: number; total: number };
+    partners: TotalActiveAndNew;
+    clients: TotalActiveAndNew;
+    lead_conversion: { host: OwnerConversion; partners: OwnerConversion };
 }
 
 export interface CashStreamRow {
@@ -135,7 +161,7 @@ export interface MonthlyPoint {
 
 export interface OwnerSummary {
     period: OwnerSummaryPeriod;
-    environment: OwnerSummaryEnvironment;
+    environment: string;
     kpis: OwnerSummaryKpis;
     cash_by_stream: CashStreamRow[];
     receivables: OwnerReceivables;
@@ -153,4 +179,16 @@ export interface OwnerSummaryResponse {
     status: boolean;
     message: string;
     data: OwnerSummary;
+}
+
+/** GET and PUT /common/owner-summary/report-settings - fch-api OwnerReportSettingResource. */
+export interface OwnerReportSettings {
+    enabled: boolean;
+    recipients: string[];
+}
+
+export interface OwnerReportSettingsResponse {
+    status: boolean;
+    message: string;
+    data: OwnerReportSettings;
 }

@@ -17,7 +17,7 @@ export default function CashCard({ streams, periodLabel }: { streams: CashStream
 
     return (
         <div className="os-card os-grow-wide" data-testid="owner-cash">
-            <h2 className="os-card-title">Cash collected</h2>
+            <h2 className="os-card-title">Net Earnings</h2>
             <p className="os-card-sub">Payments that succeeded on invoices billed by Four Corner (commission payouts excluded)</p>
             <div className="os-scroll">
                 <table className="os-tbl">

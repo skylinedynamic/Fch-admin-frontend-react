@@ -15,7 +15,7 @@ export default function OwedCard({ data }: { data: OwnerReceivables }) {
     return (
         <div className="os-card os-gap" data-testid="owner-owed">
             <div>
-                <h2 className="os-card-title">Owed to Four Corner</h2>
+                <h2 className="os-card-title">Owed To Four Corner</h2>
                 <p className="os-card-sub">Open invoices right now</p>
             </div>
             <div className="os-big">

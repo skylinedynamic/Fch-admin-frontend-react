@@ -12,7 +12,7 @@ interface PartnerNetworkCardProps {
 export default function PartnerNetworkCard({ network, active, trialsEnding }: PartnerNetworkCardProps) {
     return (
         <div className="os-card os-grow-side" style={{ gap: 16 }} data-testid="owner-network">
-            <h2 className="os-card-title">Partner network</h2>
+            <h2 className="os-card-title">Partner Network</h2>
             <div className="os-tiles">
                 <div className="os-tile os-tile--wl">
                     <div className="os-tile__label">White-label</div>

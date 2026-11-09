@@ -9,34 +9,41 @@ export const OWNER_SUMMARY_ROUTE = '/owner-summary';
 export const COMMISSION_MANAGE_PERMISSION = 'update commission';
 
 export const OWNER_SUMMARY_PERIOD = {
+    THIS_WEEK: 'this_week',
     THIS_MONTH: 'this_month',
     LAST_MONTH: 'last_month',
     THIS_QUARTER: 'this_quarter',
     THIS_YEAR: 'this_year',
     LAST_30_DAYS: 'last_30_days',
+    CUSTOM: 'custom',
 } as const;
 
 export type OwnerSummaryPeriodKey = typeof OWNER_SUMMARY_PERIOD[keyof typeof OWNER_SUMMARY_PERIOD];
 
+/** What the screen offers; the API accepts a few more (OWNER_SUMMARY_PERIOD). */
 export const OWNER_SUMMARY_PERIOD_OPTIONS: { value: OwnerSummaryPeriodKey; label: string }[] = [
+    { value: OWNER_SUMMARY_PERIOD.THIS_WEEK, label: 'This week' },
     { value: OWNER_SUMMARY_PERIOD.THIS_MONTH, label: 'This month' },
-    { value: OWNER_SUMMARY_PERIOD.LAST_MONTH, label: 'Last month' },
-    { value: OWNER_SUMMARY_PERIOD.LAST_30_DAYS, label: 'Last 30 days' },
-    { value: OWNER_SUMMARY_PERIOD.THIS_QUARTER, label: 'This quarter' },
-    { value: OWNER_SUMMARY_PERIOD.THIS_YEAR, label: 'This year' },
+    { value: OWNER_SUMMARY_PERIOD.CUSTOM, label: 'Custom' },
 ];
 
+/** fch-api OwnerSummaryService::ENVIRONMENTS. Only payments are marked, so only payment numbers follow this. */
 export const OWNER_SUMMARY_ENVIRONMENT = {
+    ALL: 'all',
     PRODUCTION: 'production',
     SANDBOX: 'sandbox',
 } as const;
 
 export type OwnerSummaryEnvironment = typeof OWNER_SUMMARY_ENVIRONMENT[keyof typeof OWNER_SUMMARY_ENVIRONMENT];
 
-export const OWNER_SUMMARY_ENVIRONMENT_OPTIONS: { value: OwnerSummaryEnvironment; label: string }[] = [
-    { value: OWNER_SUMMARY_ENVIRONMENT.PRODUCTION, label: 'Live' },
-    { value: OWNER_SUMMARY_ENVIRONMENT.SANDBOX, label: 'Sandbox' },
+export const OWNER_SUMMARY_ENVIRONMENT_OPTIONS: { value: OwnerSummaryEnvironment; label: string; showing: string }[] = [
+    { value: OWNER_SUMMARY_ENVIRONMENT.ALL, label: 'All Payment', showing: 'All Payment' },
+    { value: OWNER_SUMMARY_ENVIRONMENT.PRODUCTION, label: 'Production', showing: 'Production payments' },
+    { value: OWNER_SUMMARY_ENVIRONMENT.SANDBOX, label: 'Sandbox', showing: 'Sandbox payments' },
 ];
+
+/** fch-api OwnerReportSetting::MAX_RECIPIENTS - the API is what enforces it. */
+export const OWNER_REPORT_MAX_RECIPIENTS = 10;
 
 export const CASH_STREAM = {
     PARTNER_ENROLLMENT: 'partner_enrollment',
