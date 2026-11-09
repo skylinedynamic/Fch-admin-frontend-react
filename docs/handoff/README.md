@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-11-09
+
+| File | Title |
+|---|---|
+| [2026-11-09-date-of-birth-minimum-age-18.md](2026-11-09-date-of-birth-minimum-age-18.md) | Date of birth — minimum age 18, calendars open 18 years back, message + red border on an under-age pick |
+
 ### 2026-11-02
 
 | File | Title |
