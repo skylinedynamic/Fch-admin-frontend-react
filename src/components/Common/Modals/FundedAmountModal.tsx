@@ -79,13 +79,16 @@ export default function FundedAmountModal({
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<Modal | null>(null);
 
-    // A partner's application starts with no split (blank, not 0% / 0%): the
-    // split is set once there is a success fee, and one rate fills in the other
-    // (they share 100%). A split saved before shows once there is a fee.
+    // With no success fee there is nothing to split: both rates blank and
+    // locked. Once a fee is set the rates open at the default split - the saved
+    // split, else Admin 100% / Partner 0% (F181; SCRUM-434 S434-BUG-06: it
+    // opened blank, read as 0% / 0%, and Confirm was refused until a split was
+    // typed). One rate fills in the other (they share 100%).
     const noSplitRate = '';
     const savedSplit = !!(adminCommissionRate || partnerCommissionRate);
-    const splitAdminRate = savedSplit ? String(adminCommissionRate ?? 0) : noSplitRate;
-    const splitPartnerRate = savedSplit ? String(partnerCommissionRate ?? 0) : noSplitRate;
+    // A host client has no split (the admin takes it all): its rates stay blank.
+    const splitAdminRate = savedSplit ? String(adminCommissionRate ?? 0) : showPartnerCommission ? '100' : noSplitRate;
+    const splitPartnerRate = savedSplit ? String(partnerCommissionRate ?? 0) : showPartnerCommission ? '0' : noSplitRate;
     const hasFee = (value: string) => parseFloat(value) > 0;
 
     useEffect(() => {
