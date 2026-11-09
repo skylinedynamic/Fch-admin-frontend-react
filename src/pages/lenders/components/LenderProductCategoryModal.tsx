@@ -4,6 +4,8 @@ import { InputText } from 'primereact/inputtext';
 import { toast } from 'react-toastify';
 import { createLenderProductCategory, updateLenderProductCategory, deleteLenderProductCategory } from '../../../modules/lender/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
+import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
+import { InUseEntry, inUseFromError, inUseFromList, inUseMessage } from '../../../utils/inUseDelete';
 
 export default function LenderProductCategoryModal({ visible, onHide, onSuccess, categories = [] }: any) {
     const [name, setName] = useState<string>('');
@@ -16,6 +18,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
     const [editingLoading, setEditingLoading] = useState<boolean>(false);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
     const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [blocked, setBlocked] = useState<InUseEntry | null>(null);
 
     const handleSave = async () => {
         setNameError('');
@@ -36,8 +39,15 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
         }
     };
 
-    const handleDeleteClick = (id: any) => {
-        setItemToDelete(id);
+    // In use by a funding sequence (the list says so): say it cannot be deleted
+    // at once - no "Are you sure?" for a delete that would be refused.
+    const handleDeleteClick = (item: any) => {
+        const inUse = inUseFromList(item);
+        if (inUse) {
+            setBlocked(inUse);
+            return;
+        }
+        setItemToDelete(item.id);
         setShowDeleteModal(true);
     };
 
@@ -50,7 +60,14 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
             setShowDeleteModal(false);
             onSuccess();
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to delete product category');
+            // Used by a funding sequence: kept, and said why - like a blog tag in use.
+            const refused = inUseFromError(error);
+            if (refused) {
+                setShowDeleteModal(false);
+                setBlocked(refused);
+            } else {
+                toast.error(error?.response?.data?.message || 'Failed to delete product category');
+            }
         } finally {
             setDeletingId(null);
             setItemToDelete(null);
@@ -145,7 +162,10 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                             <hr className="my-3" />
                             <label className="form-label fw-semibold mb-2">Existing Categories</label>
                             <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                                {categories.map((item: any) => (
+                                {/* Newest first, so one just added is at the top, not out of
+                                    sight at the bottom. A copy: the given list (sort order,
+                                    also used by the dropdowns) is left as it is. */}
+                                {[...categories].sort((a: any, b: any) => Number(b.id) - Number(a.id)).map((item: any) => (
                                     <div
                                         key={item.id}
                                         className="d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-light"
@@ -198,7 +218,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                                                 <button
                                                     type="button"
                                                     className="btn btn-sm btn-soft-danger"
-                                                    onClick={() => handleDeleteClick(item.id)}
+                                                    onClick={() => handleDeleteClick(item)}
                                                     disabled={deletingId === item.id}
                                                     title="Delete"
                                                 >
@@ -232,6 +252,13 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                 onConfirm={confirmDelete}
                 loading={deletingId !== null}
                 text="Are you sure you want to delete this product category?"
+            />
+
+            <DeleteBlockedModal
+                show={blocked !== null}
+                title="Product Category Cannot Be Deleted"
+                message={blocked ? inUseMessage(blocked, 'Remove it from their Underwriting Logic first.') : ''}
+                onClose={() => setBlocked(null)}
             />
         </>
     );

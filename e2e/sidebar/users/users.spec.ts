@@ -286,6 +286,16 @@ test.describe('User details - create, opened directly at the seat limit', () => 
     await expect(page.locator('body')).not.toHaveClass(/modal-open/)
   })
 
+  // BUG-070: inactive users keep their seat; the message says so and how to free one.
+  test('the limit message says inactive users take a seat and how to free one', async ({ page }) => {
+    await openCreateAtSeatLimit(page, false)
+
+    const window = page.locator('.modal.show')
+    await expect(window).toContainText('All 3 user seats are in use. Inactive users still take a seat.')
+    await expect(window).toContainText('To free one, delete a user you no longer need, or buy an additional seat below.')
+    await expect(window).not.toContainText('Payment is required')
+  })
+
   test('Proceed opens the form with the seat purchase pending', async ({ page }) => {
     await openCreateAtSeatLimit(page, false)
 

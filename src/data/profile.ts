@@ -122,30 +122,40 @@ export const selfReportedBusinessCreditScoreOptions: OptionType[] = [
   { label: '80-100', value: '80-100' },
 ]
 
-export const fundingTypeOptions: OptionType[] = [
-  { label: 'Term Loan', value: 'Term Loan' },
-  { label: 'Line of Credit', value: 'Line of Credit' },
-  { label: 'Equipment Financing', value: 'Equipment Financing' },
-  { label: 'SBA Loan', value: 'SBA Loan' },
-  { label: 'Merchant Cash Advance', value: 'Merchant Cash Advance' },
-  { label: 'Hard Money / Bridge Loan', value: 'Hard Money / Bridge Loan' },
-  { label: 'Commercial Real Estate Loan', value: 'Commercial Real Estate Loan' },
-  { label: 'Construction Loan', value: 'Construction Loan' },
-  { label: 'Asset-Based Lending (AR / Inventory)', value: 'Asset-Based Lending (AR / Inventory)' },
-  { label: 'Invoice Factoring', value: 'Invoice Factoring' },
-  { label: 'Revenue-Based Financing', value: 'Revenue-Based Financing' },
-  { label: 'Unsecured Business Credit', value: 'Unsecured Business Credit' },
-  { label: 'Business Acquisition Financing', value: 'Business Acquisition Financing' },
-  { label: 'Refinance / Debt Consolidation', value: 'Refinance / Debt Consolidation' },
-]
+/**
+ * Preferred / Additional Funding Types: exactly the Active lender product
+ * categories (Lenders > Product Categories, from GET /common/funding-types),
+ * nothing else - the categories an application's lenders are matched on.
+ */
+export const fundingTypeOptionsFrom = (categories: string[] | null | undefined): OptionType[] =>
+  (categories ?? []).map((name) => ({ label: name, value: name }))
+
+/**
+ * The saved types that are Active categories. Any other (an old name such as
+ * "Line of Credit", an inactive category) is dropped, to be chosen again from
+ * the list. Kept as they are while the categories are still loading.
+ */
+export const onlyFundingTypesIn = (categories: string[] | null | undefined, types: string[]): string[] =>
+  categories ? types.filter((type) => categories.includes(type)) : types
+
+/** The badge beside the preferred type in the Additional Funding Types list. */
+export const ALREADY_PREFERRED_BADGE = 'Selected as Preferred'
 
 /**
  * The Additional Funding Types choices on the funding application's Funding
- * Request step: every funding type except the preferred one, which cannot be
- * picked twice (the API refuses it too).
+ * Request step: the same list as Preferred Funding Type. The preferred one is
+ * listed with an "Selected as Preferred" badge, but cannot be picked again (the
+ * API refuses it too).
  */
-export const additionalFundingTypeOptions = (preferred: string | null | undefined): OptionType[] =>
-  fundingTypeOptions.filter((o) => o.value !== preferred)
+export const additionalFundingTypeOptions = (
+  options: OptionType[],
+  preferred: string | null | undefined
+): (OptionType & { disabled: boolean; badge?: string; badgeTitle?: string })[] =>
+  options.map((o) =>
+    preferred && o.value === preferred
+      ? { ...o, disabled: true, badge: ALREADY_PREFERRED_BADGE, badgeTitle: 'Already selected as the Preferred Funding Type' }
+      : { ...o, disabled: false }
+  )
 
 /** The chosen additional types, without one that has just become the preferred type. */
 export const withoutPreferredFundingType = (

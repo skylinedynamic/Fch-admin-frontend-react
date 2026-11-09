@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { formatRelativeTime, mergePickedDateTime, toLocalYmd, toLocalDateTimeString } from '../../src/utils/dates'
+import { dateOfBirthBounds, formatRelativeTime, mergePickedDateTime, toLocalYmd, toLocalDateTimeString } from '../../src/utils/dates'
+import { BORROWER_AGE } from '../../src/config/borrower'
 
 describe('formatRelativeTime', () => {
   const now = new Date('2026-10-01T12:00:00Z')
@@ -78,5 +79,38 @@ describe('mergePickedDateTime', () => {
 describe('toLocalDateTimeString', () => {
   it('formats a Date as local "YYYY-MM-DD HH:mm:ss" with no zone shift', () => {
     expect(toLocalDateTimeString(new Date(2026, 9, 27, 14, 16, 5))).toBe('2026-10-27 14:16:05')
+  })
+})
+
+/**
+ * BUG-005 (QA round 2): the client date-of-birth picker allowed any past date,
+ * so a 17-year-old (01 Jan 2009) and a 106-year-old were saved. It now offers
+ * only the API's range, 18 to 120 years old.
+ */
+describe('dateOfBirthBounds', () => {
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+  it('allows the 18th birthday as the latest date, and the day after the 121st as the earliest', () => {
+    const { minDate, maxDate } = dateOfBirthBounds(new Date(2026, 9, 21))
+
+    expect(ymd(maxDate)).toBe('2008-10-21')
+    expect(ymd(minDate)).toBe('1905-10-22')
+  })
+
+  it('refuses QA\'s 17-year-old: 01 Jan 2009 is after the latest date', () => {
+    const { maxDate } = dateOfBirthBounds(new Date(2026, 9, 21))
+
+    expect(new Date(2009, 0, 1) > maxDate).toBe(true)
+  })
+
+  it('keeps 29 February inside the month on a non-leap year', () => {
+    const { maxDate } = dateOfBirthBounds(new Date(2028, 1, 29))
+
+    expect(ymd(maxDate)).toBe('2010-02-28')
+  })
+
+  it('reads the ages from BORROWER_AGE', () => {
+    expect(BORROWER_AGE).toEqual({ MIN: 18, MAX: 120 })
   })
 })

@@ -57,9 +57,34 @@ export const defaultStart = <T extends { value: string }>(
   return { date: localDateString(new Date(y, m - 1, d + 1)), time: preferred }
 }
 
-/** The time `minutes` after `start` (HH:mm), kept within the day. */
+const MINUTES_PER_DAY = 24 * 60
+
+const toMinutes = (time: string): number => {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
+
+/** The time `minutes` after `start` (HH:mm); past midnight it is the next day's (R2 BUG-024). */
 export const timeAfter = (start: string, minutes = 30): string => {
-  const [h, m] = start.split(':').map(Number)
-  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59)
+  const total = (toMinutes(start) + minutes) % MINUTES_PER_DAY
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`
 }
+
+/**
+ * The end times for an appointment starting at `start`: every slot after it,
+ * running on past midnight into the next day - those are labelled "(next day)"
+ * (R2 BUG-024).
+ */
+export const endSlotsAfter = <T extends { label: string; value: string }>(slots: T[], start: string): T[] => [
+  ...slots.filter((slot) => slot.value > start),
+  ...slots.filter((slot) => slot.value < start).map((slot) => ({ ...slot, label: `${slot.label} (next day)` })),
+]
+
+/** Minutes from `start` to `end`; an end at or before the start is on the next day (R2 BUG-024). */
+export const minutesBetween = (start: string, end: string): number => {
+  const diff = toMinutes(end) - toMinutes(start)
+  return diff > 0 ? diff : diff + MINUTES_PER_DAY
+}
+
+/** The end as a time on the start's day: an end past midnight closes it at "24:00". */
+export const endWithinDay = (start: string, end: string): string => (end > start ? end : '24:00')

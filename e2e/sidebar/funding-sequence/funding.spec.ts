@@ -12,6 +12,9 @@ const FUNDINGS = [
 ]
 const LIST = '/common/funding-sequencings/fetch'
 
+// The Funding Sequence pages are behind these; without them they never opened.
+const FUNDING_PERMISSIONS = ['view funding', 'create funding', 'update funding', 'delete funding']
+
 function base() {
   return [
     { method: 'POST', match: LIST, body: paginated(FUNDINGS) },
@@ -21,7 +24,7 @@ function base() {
 }
 
 async function openList(page: Page): Promise<ApiMock> {
-  await seedSession(page)
+  await seedSession(page, { permissions: FUNDING_PERMISSIONS })
   const api = await mockApi(page, base())
   await page.goto('/funding')
   await expect(page.getByText('SBA 7(a)')).toBeVisible()
@@ -52,14 +55,14 @@ test.describe('Funding sequences list', () => {
   })
 
   test('shows the empty state', async ({ page }) => {
-    await seedSession(page)
+    await seedSession(page, { permissions: FUNDING_PERMISSIONS })
     await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([]) }])
     await page.goto('/funding')
     await expect(page.getByText('No funding found')).toBeVisible()
   })
 
   test('a failed list request is reported', async ({ page }) => {
-    await seedSession(page)
+    await seedSession(page, { permissions: FUNDING_PERMISSIONS })
     await mockApi(page, [{ method: 'POST', match: LIST, body: failure('Funding catalogue unavailable.') }])
     await page.goto('/funding')
     await expect(page.getByText('Funding catalogue unavailable.').first()).toBeVisible()
@@ -95,7 +98,7 @@ test.describe('Funding sequences list', () => {
   })
 
   test('non-host users cannot reach the funding catalogue', async ({ page }) => {
-    await seedSession(page, { is_host: 0, partner_id: 5 })
+    await seedSession(page, { is_host: 0, partner_id: 5, permissions: FUNDING_PERMISSIONS })
     await mockApi(page, base())
     await page.goto('/funding')
     await expect(page).not.toHaveURL(/\/funding/)
@@ -141,7 +144,7 @@ test.describe('Funding sequence create', () => {
   const save = (page: Page) => page.locator('button[form="funding-sequencing-form"]')
 
   async function openCreate(page: Page) {
-    await seedSession(page)
+    await seedSession(page, { permissions: FUNDING_PERMISSIONS })
     const api = await mockApi(page, base())
     await page.goto('/funding/create')
     await expect(page.locator('input[name="name"]')).toBeVisible()
@@ -196,7 +199,7 @@ for (const kind of [
 ]) {
   test.describe(`Funding ${kind.label} dialog`, () => {
     async function openDialog(page: Page) {
-      await seedSession(page)
+      await seedSession(page, { permissions: FUNDING_PERMISSIONS })
       const api = await mockApi(page, base())
       await page.goto('/funding/create')
       await page.getByRole('button', { name: 'Add New' }).first().click()
@@ -262,9 +265,67 @@ for (const kind of [
   })
 }
 
+/**
+ * Defect: Manage Funding Groups deleted a group funding sequences are filed
+ * under (funding_sequencings.funding_group_id). As with product categories:
+ * a group the list says is in use is refused at once - "Cannot Be Deleted",
+ * no "Are you sure?", nothing sent; one not in use asks "Are you sure?"; and
+ * a late 422 from the API shows the same reason.
+ */
+test.describe('Funding group dialog › a group in use', () => {
+  async function openWith(page: Page, groups: unknown[]) {
+    await seedSession(page, { permissions: FUNDING_PERMISSIONS })
+    const api = await mockApi(page, [
+      { method: 'POST', match: LIST, body: paginated(FUNDINGS) },
+      { method: 'GET', match: '/admin/funding-groups', body: ok(groups) },
+      { method: 'GET', match: '/admin/funding-types', body: ok(TYPES) },
+    ])
+    await page.goto('/funding/create')
+    await page.getByRole('button', { name: 'Add New' }).first().click()
+    const dialog = page.getByRole('dialog', { name: 'Manage Funding Groups' })
+    await expect(dialog).toBeVisible()
+    return { api, dialog }
+  }
+  const row = (dialog: ReturnType<Page['getByRole']>, name: string) => dialog.locator('.border.bg-light', { hasText: name })
+
+  test('is refused at once; a group not in use asks "Are you sure?"', async ({ page }) => {
+    const { api, dialog } = await openWith(page, [
+      { id: 1, name: 'Business Loans', funding_sequences_count: 3 },
+      { id: 2, name: 'Credit Lines', funding_sequences_count: 0 },
+    ])
+
+    await row(dialog, 'Business Loans').getByTitle('Delete').click()
+    const blocked = page.locator('.modal.show').filter({ hasText: 'Funding Group Cannot Be Deleted' })
+    await expect(blocked).toBeVisible()
+    await expect(blocked).toContainText('"Business Loans" is used by 3 funding sequences and cannot be deleted.')
+    await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toHaveCount(0)
+    await blocked.getByRole('button', { name: 'Close' }).last().click()
+    await expect(page.locator('.modal.show')).toHaveCount(0)
+    expect(api.find('DELETE', '/admin/funding-groups')).toHaveLength(0)
+
+    await row(dialog, 'Credit Lines').getByTitle('Delete').click()
+    await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toBeVisible()
+  })
+
+  test('a late refusal from the API shows the same reason', async ({ page }) => {
+    const { api, dialog } = await openWith(page, [{ id: 2, name: 'Credit Lines', funding_sequences_count: 0 }])
+    api.add({
+      method: 'DELETE', match: '/admin/funding-groups/2', status: 422,
+      body: { status: false, message: 'This funding group is used by a funding sequence and cannot be deleted.', errors: { blocked: [{ id: 2, name: 'Credit Lines', count: 1 }] } },
+    })
+    await row(dialog, 'Credit Lines').getByTitle('Delete').click()
+    await confirmDelete(page)
+
+    const blocked = page.locator('.modal.show').filter({ hasText: 'Funding Group Cannot Be Deleted' })
+    await expect(blocked).toBeVisible()
+    await expect(blocked).toContainText('"Credit Lines" is used by 1 funding sequence and cannot be deleted.')
+    await expect(page.getByText('Funding group deleted successfully')).toHaveCount(0)
+  })
+})
+
 test.describe('Funding sequence edit', () => {
   test('loads the sequence and Update saves the display settings', async ({ page }) => {
-    await seedSession(page)
+    await seedSession(page, { permissions: FUNDING_PERMISSIONS })
     const api = await mockApi(page, [
       ...base(),
       { method: 'GET', match: /\/admin\/funding-sequencings\/201$/, body: ok({ ...FUNDINGS[0], funding_group_id: 1, funding_type_id: 1, min_amount: 50000, max_amount: 5000000 }) },
@@ -280,7 +341,7 @@ test.describe('Funding sequence edit', () => {
   })
 
   test('a sequence that fails to load is reported', async ({ page }) => {
-    await seedSession(page)
+    await seedSession(page, { permissions: FUNDING_PERMISSIONS })
     await mockApi(page, [...base(), { method: 'GET', match: /\/admin\/funding-sequencings\/999$/, status: 404, body: failure('Not found') }])
     await page.goto('/funding/999')
     await expect(page.getByText('Failed to load funding details').first()).toBeVisible()

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultInstallmentMonths, mapPartnerBackendErrors, partnerOptionLabel } from '../../../src/modules/partner/logic'
+import { buildPartnerFormDataPayload, defaultInstallmentMonths, mapPartnerBackendErrors, partnerOptionLabel, partnerPortalBaseHost } from '../../../src/modules/partner/logic'
 
 describe('mapPartnerBackendErrors', () => {
   it('keeps each field\'s message, whether the API sends a string or a list', () => {
@@ -54,5 +54,52 @@ describe('defaultInstallmentMonths', () => {
 
   it("follows the API's installment_default_months when it sends one", () => {
     expect(defaultInstallmentMonths({ total_installment_count_upto: 24, installment_default_months: 9 })).toBe(9)
+  })
+})
+
+// R2 BUG-050: emptying Address or Contact Person and saving kept the old value -
+// an emptied field was left out of the update, so the API never saw it cleared.
+describe('buildPartnerFormDataPayload - clearing optional fields', () => {
+  const editForm = {
+    full_name: 'Partner 83',
+    company_name: 'QA Co',
+    address_line_1: '',
+    contact_person: '',
+    contact_person_email: '',
+    city: 'Austin',
+  }
+
+  it('sends an emptied optional field as empty on an edit', () => {
+    const payload = buildPartnerFormDataPayload(editForm, 83)
+
+    expect(payload.get('address_line_1')).toBe('')
+    expect(payload.get('contact_person')).toBe('')
+    expect(payload.get('contact_person_email')).toBe('')
+    expect(payload.get('city')).toBe('Austin')
+  })
+
+  it('still leaves empty fields out when creating, and never blanks a required one', () => {
+    const create = buildPartnerFormDataPayload(editForm)
+    expect(create.has('address_line_1')).toBe(false)
+
+    const edit = buildPartnerFormDataPayload({ ...editForm, company_name: '' }, 83)
+    expect(edit.has('company_name')).toBe(false)
+  })
+})
+
+describe('partnerPortalBaseHost', () => {
+  it.each([
+    ['https://fourcornerfunding.com/', 'fourcornerfunding.com'],
+    ['http://localhost:3000/', 'localhost:3000'],
+    ['https://fourcornerfunding.com/blog', 'fourcornerfunding.com'],
+    ['fourcornerfunding.com', 'fourcornerfunding.com'],
+    ['localhost:3000', 'localhost:3000'],
+    ['  https://fourcornerfunding.com  ', 'fourcornerfunding.com'],
+  ])('reads the host from %s', (websiteUrl, host) => {
+    expect(partnerPortalBaseHost(websiteUrl, 'portal.test')).toBe(host)
+  })
+
+  it.each([[''], ['   ']])('falls back to the current host when the website url is %j', (websiteUrl) => {
+    expect(partnerPortalBaseHost(websiteUrl, 'portal.test')).toBe('portal.test')
   })
 })

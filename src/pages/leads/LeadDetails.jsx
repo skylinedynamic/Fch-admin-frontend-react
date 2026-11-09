@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams, useLocation, Navigate } 
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead } from '../../modules/leads/services';
-import { isMissingConvertInfo, isLeadTypeLocked, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../modules/leads/logic';
+import { isMissingConvertInfo, isLeadTypeLocked, leadCountryFor, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../modules/leads/logic';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -343,6 +343,8 @@ export default function LeadDetails() {
     // another partner's lead picks from that partner's team. An existing lead's
     // partner is known once it has loaded.
     const teamPartnerId = leadTeamPartnerId(currentUser, formData);
+    // Also holds the Activity panel back: an id that is not a lead must not
+    // reach the activity list (BUG-001).
     const leadLoaded = !id || formData.id != null;
 
     useEffect(() => {
@@ -430,8 +432,9 @@ export default function LeadDetails() {
                 if (response.status && response.data) {
                     const data = response.data;
 
-                    // Normalize Country
-                    let finalCountry = data.country;
+                    // Normalize Country - a lead without one starts with the
+                    // default, held in the form so it is what gets saved (R2 BUG-055).
+                    let finalCountry = leadCountryFor(data.country);
                     if (locationData[finalCountry]) {
                         finalCountry = locationData[finalCountry].name;
                     }
@@ -1030,7 +1033,7 @@ export default function LeadDetails() {
                         {/* Activity Sidebar */}
                         {id && (
                             <div className="col-xxl-4">
-                                <ActivitySidebar entityId={id} entityType="Lead" loading={isLoading || isSaving} borrowerEmail={formData.email} partnerId={formData.partner?.id} taskOwner={formData.salesperson_id ? { id: formData.salesperson_id, name: formData.salesperson_name } : null} />
+                                <ActivitySidebar entityId={id} entityType="Lead" loading={isLoading || isSaving} enabled={leadLoaded} borrowerEmail={formData.email} partnerId={formData.partner?.id} taskOwner={formData.salesperson_id ? { id: formData.salesperson_id, name: formData.salesperson_name } : null} />
                             </div>
                         )}
                     </div>

@@ -17,6 +17,8 @@ import { formatApiDate } from '../../utils/dates';
 import EmbedFormConvertModal from './components/EmbedFormConvertModal';
 import SubmissionPartner from './components/SubmissionPartner';
 import { useAuthStore } from '../../store/auth/authStore';
+import { getBorrowerPlanBadgeConfig } from '../../utils/badgeHelper';
+import type { ConvertedBorrower } from '../../modules/embed-form/types';
 
 const STATUS_META: Record<string, { label: string; badge: string; icon: string }> = {
     new: { label: 'New', badge: 'bg-primary-subtle text-primary', icon: 'ri-flashlight-line' },
@@ -214,9 +216,10 @@ export default function EmbedFormSubmissionDetails() {
     const [existingBorrower, setExistingBorrower] = useState<any>(null);
     const [conversionLoading, setConversionLoading] = useState(false);
 
-    const fetchDetails = async () => {
+    /** `silent` re-reads without the page loader, e.g. after a conversion. */
+    const fetchDetails = async ({ silent = false }: { silent?: boolean } = {}) => {
         if (!id) return;
-        setLoading(true);
+        if (!silent) setLoading(true);
         try {
             const res = await getEmbedFormSubmission(id);
             if (res.status) {
@@ -227,7 +230,7 @@ export default function EmbedFormSubmissionDetails() {
         } catch (err: any) {
             toast.error(err?.response?.data?.message || err?.message || 'Error loading submission details');
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
@@ -267,19 +270,10 @@ export default function EmbedFormSubmissionDetails() {
         try {
             const res = await convertEmbedFormSubmissionToBorrower(submission.id, payload);
             if (res.status) {
-                const data = res.data?.data || res.data || {};
-                const borrowerId = data.id || data.borrower_id || data.borrower?.id || null;
-                setSubmission((prev: any) => ({
-                    ...prev,
-                    status: 'converted',
-                    converted_borrower_id: borrowerId,
-                    converted_borrower: {
-                        id: borrowerId,
-                        full_name: `${prev?.first_name || ''} ${prev?.last_name || ''}`.trim(),
-                        is_free_trail: data.is_free_trail ?? true,
-                    },
-                    converted_funding_application_id: data.funding_application_id ?? null,
-                }));
+                // BUG-058: re-read the application, so the page shows the client
+                // it now belongs to (an existing one keeps their own name and plan)
+                // rather than a guess built from the submitted answers.
+                await fetchDetails({ silent: true });
                 setShowConvertModal(false);
                 setExistingBorrower(null);
                 toast.success(res?.message || 'Submission converted to a Free Plan Borrower!');
@@ -329,14 +323,21 @@ export default function EmbedFormSubmissionDetails() {
 
     const isConverted = submission?.status === SUBMISSION_STATUS.CONVERTED;
     const isRejected = submission?.status === SUBMISSION_STATUS.REJECTED;
-    const convertedBorrower = submission?.converted_borrower;
+    const convertedBorrower: ConvertedBorrower | null = isConverted ? submission?.converted_borrower ?? null : null;
+    const planBadge = convertedBorrower ? getBorrowerPlanBadgeConfig(convertedBorrower) : null;
+    // BUG-058: once converted, the header shows the client the application
+    // belongs to; the answers below stay as they were submitted.
+    const headerName = convertedBorrower?.full_name || `${submission?.first_name || ''} ${submission?.last_name || ''}`.trim();
+    const headerBusiness = convertedBorrower ? convertedBorrower.business_name : (submission?.business_name || submission?.occupation);
+    const headerEmail = convertedBorrower ? convertedBorrower.email : submission?.email;
+    const headerPhone = convertedBorrower ? convertedBorrower.phone : submission?.phone;
     const convertedBorrowerId = convertedBorrower?.id || submission?.converted_borrower_id || null;
     // The funding application the conversion created. Its page sits behind
     // "view funding application", so the button is only offered with it.
     const convertedFundingApplicationId = submission?.converted_funding_application_id || null;
     const canViewFundingApplication = hasPermission('view funding application');
     const currentStatus = STATUS_META[submission?.status?.toLowerCase()] || STATUS_META.new;
-    const initials = `${submission?.first_name?.[0] || ''}${submission?.last_name?.[0] || ''}`.toUpperCase() || 'AP';
+    const initials = headerName.split(/\s+/).filter(Boolean).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase() || 'AP';
 
     const fullAddress = submission
         ? [
@@ -419,12 +420,12 @@ export default function EmbedFormSubmissionDetails() {
               {
                   key: 'decision',
                   title: isConverted
-                      ? 'Converted to Free Plan Borrower'
+                      ? 'Converted to Client'
                       : isRejected
                       ? 'Application Rejected'
                       : 'Decision Pending',
                   meta: isConverted
-                      ? 'Active borrower account created'
+                      ? (convertedBorrower?.full_name ? `Linked to ${convertedBorrower.full_name}` : 'Linked to a client')
                       : isRejected
                       ? formatDate(submission.updated_at, true) || undefined
                       : 'Convert or reject to continue',
@@ -530,14 +531,14 @@ export default function EmbedFormSubmissionDetails() {
                                         <div className="min-w-0">
                                             <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
                                                 <h4 className="mb-0 fs-18 fw-bold text-dark text-truncate">
-                                                    {submission.first_name} {submission.last_name}
+                                                    {headerName}
                                                 </h4>
                                                 <span className={`badge ${currentStatus.badge} ef-status-pill`}>
                                                     <i className={currentStatus.icon} /> {currentStatus.label}
                                                 </span>
-                                                {isConverted && (
-                                                    <span className="badge bg-success-subtle text-success ef-status-pill">
-                                                        <i className="ri-vip-crown-2-fill" /> Free Plan Borrower
+                                                {planBadge && (
+                                                    <span className={`badge ${planBadge.badgeClass} ef-status-pill`}>
+                                                        <i className="ri-vip-crown-2-fill" /> {planBadge.label}
                                                     </span>
                                                 )}
                                             </div>
@@ -548,17 +549,17 @@ export default function EmbedFormSubmissionDetails() {
                                                         Partner: <SubmissionPartner partner={submission.partner} />
                                                     </span>
                                                 )}
-                                                {(submission.business_name || submission.occupation) && (
+                                                {headerBusiness && (
                                                     <span>
                                                         <i className="ri-briefcase-line" />
-                                                        {submission.business_name || submission.occupation}
+                                                        {headerBusiness}
                                                     </span>
                                                 )}
-                                                {submission.email && (
-                                                    <span><i className="ri-mail-line" />{submission.email}</span>
+                                                {headerEmail && (
+                                                    <span><i className="ri-mail-line" />{headerEmail}</span>
                                                 )}
-                                                {submission.phone && (
-                                                    <span><i className="ri-phone-line" />{submission.phone}</span>
+                                                {headerPhone && (
+                                                    <span><i className="ri-phone-line" />{headerPhone}</span>
                                                 )}
                                                 <span>
                                                     <i className="ri-calendar-line" />
@@ -610,7 +611,10 @@ export default function EmbedFormSubmissionDetails() {
                                                 )}
                                             </>
                                         ) : canConvert ? (
-                                            <div className="d-flex flex-column align-items-start gap-1">
+                                            // The rejected hint is a hover tooltip on the wrapper (a disabled
+                                            // button gets no hover), so the button stays in line with the
+                                            // Status select; screen readers get it as the description.
+                                            <span className="d-inline-block" title={isRejected ? REJECTED_CANNOT_CONVERT : undefined}>
                                                 <button
                                                     type="button"
                                                     className="btn btn-primary ef-convert-btn ef-convert-btn--lg"
@@ -622,9 +626,9 @@ export default function EmbedFormSubmissionDetails() {
                                                     <span>Convert to Free Plan Borrower</span>
                                                 </button>
                                                 {isRejected && (
-                                                    <small id="ef-convert-blocked" className="text-muted fs-12">{REJECTED_CANNOT_CONVERT}</small>
+                                                    <span id="ef-convert-blocked" className="visually-hidden">{REJECTED_CANNOT_CONVERT}</span>
                                                 )}
-                                            </div>
+                                            </span>
                                         ) : null}
                                     </div>
                                 </div>
@@ -669,7 +673,14 @@ export default function EmbedFormSubmissionDetails() {
                                             copyValue={submission.business_phone_no}
                                         />
                                         <DetailFieldItem label="Industry Type" value={submission.industry_type} />
+                                        {/* What "Other" is; the API keeps it for "Other" only. */}
+                                        {submission.industry_type_note && (
+                                            <DetailFieldItem label="Industry Type Details" value={submission.industry_type_note} />
+                                        )}
                                         <DetailFieldItem label="Entity Type" value={submission.entity_type} />
+                                        {submission.entity_type_note && (
+                                            <DetailFieldItem label="Entity Type Details" value={submission.entity_type_note} />
+                                        )}
                                         <DetailFieldItem
                                             label="Business EIN"
                                             value={submission.business_ein_display || submission.business_ein}
@@ -1016,11 +1027,13 @@ export default function EmbedFormSubmissionDetails() {
                                             <div className="min-w-0 flex-grow-1">
                                                 <span className="ef-field__label d-block">Linked Borrower</span>
                                                 <div className="fw-semibold text-dark fs-13 text-truncate">
-                                                    {convertedBorrower?.full_name || `${submission.first_name} ${submission.last_name}`}
+                                                    {headerName}
                                                 </div>
-                                                <span className="badge bg-primary-subtle text-primary ef-status-pill mt-1">
-                                                    <i className="ri-vip-crown-2-fill" /> Free Plan
-                                                </span>
+                                                {planBadge && (
+                                                    <span className={`badge ${planBadge.badgeClass} ef-status-pill mt-1`}>
+                                                        <i className="ri-vip-crown-2-fill" /> {planBadge.label}
+                                                    </span>
+                                                )}
                                                 {submission.converted_funding_application_id && (
                                                     <span className="badge bg-warning-subtle text-warning ef-status-pill mt-1 ms-1">
                                                         <i className="ri-file-list-3-line" /> Funding application created

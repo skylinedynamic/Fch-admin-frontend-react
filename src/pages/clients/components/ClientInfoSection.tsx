@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo } from 'react';
 import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
@@ -22,10 +22,13 @@ import type { Client, BorrowerPlan, RevealableClientField } from '../../../modul
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
+import { dateOfBirthError } from '../../../utils/dateOfBirth';
+import { dateOfBirthBounds } from '../../../utils/dates';
 import { locationData } from '../../../modules/location';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers, getPartnerBorrowerFee } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
+import { PARTNER_FEE_PAYMENT_HINT, partnerFeePaymentNote } from '../../../config/invoiceConfig';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_ONE_TIME } from '../../../config/subscriptionConfig';
 import { PARTNER_TYPES, CLIENT_TYPE_LABELS } from '../../../config/partnerTypeOptions';
@@ -108,7 +111,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const isFormFreeTrailActive = rawFormIsFreeTrail == 1 || rawFormIsFreeTrail === true || rawFormIsFreeTrail === 'true' || rawFormIsFreeTrail === '1';
     const [isSynced, setIsSynced] = useState(false); // Track if data has been synced from API
     // Who the client may be assigned to: its partner's team (null until loaded).
-    const [users, setUsers] = useState<{ id: number; name: string }[] | null>(null);
+    const [users, setUsers] = useState<{ id: number; name: string; is_inactive?: boolean }[] | null>(null);
     const [showInstallmentModal, setShowInstallmentModal] = useState(false);
 
     // Fetch Plans
@@ -146,6 +149,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         };
         fetchPartnerBorrowerFee();
     }, [isUserHost, clientId, isFetching, wasFreeTrial]);
+
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = borrowerPlans;
@@ -195,11 +199,16 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // 3. Sync Fetch to Local State - Use ref to prevent infinite loops
     const hasSyncedData = React.useRef(false);
+    // Which copy of the client this form shows: from the load, then from each
+    // save's response - not from a background refetch, which could carry
+    // another user's change the form does not show (R2 BUG-065).
+    const clientInfoVersion = React.useRef<string | null>(null);
 
     useEffect(() => {
         if (fetchedData && !hasSyncedData.current) {
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
+            clientInfoVersion.current = apiData.client_info_version ?? null;
 
             // Normalize date
             if (apiData.business_start_date) {
@@ -298,6 +307,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         if (!clientLoaded) return;
         const fetchUsers = async () => {
             try {
+                // Inactive staff are left out of the list, except the client's
+                // current assignee, which comes back flagged (R2 BUG-051).
                 const response = await allUsers({
                     ...(borrowerPartnerId ? { partner_id: Number(borrowerPartnerId) } : {}),
                     active_only: true,
@@ -315,7 +326,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // An assignee saved before the team rule may sit outside the team; it is
     // kept (the API accepts the current one), so show it rather than a blank field.
-    const assignOptions = (users ?? []).map(user => ({ label: user.name, value: user.id }));
+    const assignOptions = (users ?? []).map(user => ({ label: user.is_inactive ? `${user.name} (Inactive)` : user.name, value: user.id }));
     if (users && savedAssigneeId && savedAssigneeName && !users.some(user => String(user.id) === String(savedAssigneeId))) {
         assignOptions.push({ label: `${savedAssigneeName} (not on this partner's team)`, value: savedAssigneeId });
     }
@@ -495,6 +506,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const isEditorEnabled = !isFetching && isSynced;
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange, {}, isEditorEnabled);
 
+    // Stable across renders: a new viewDate each render would reset the open picker.
+    const dobBounds = useMemo(() => dateOfBirthBounds(), []);
+
     // Date Robust Parsing
     const parseDate = (dateStr: any) => {
         if (!dateStr) return undefined;
@@ -519,7 +533,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // 5. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
-            const payload = mapClientUpdatePayload(formData, isHost, wasFreeTrial);
+            const payload = {
+                ...mapClientUpdatePayload(formData, isHost, wasFreeTrial),
+                ...(clientInfoVersion.current ? { expected_version: clientInfoVersion.current } : {}),
+            };
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
@@ -531,6 +548,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         // confirmed; show the one still in effect alongside the
                         // pending one (this form only syncs from the API once).
                         const saved = (data as any)?.data;
+                        if (saved?.client_info_version) {
+                            clientInfoVersion.current = saved.client_info_version;
+                        }
                         if (saved) {
                             setFormData(prev => ({ ...prev, email: saved.email ?? prev.email, pending_email: saved.pending_email ?? null }));
                         }
@@ -908,15 +928,22 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                     handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
                                 }}
                                 dateFormat="dd M, yy"
+                                // Up to 120 years back (BUG-005) and every year up to today;
+                                // an under-18 pick gets the minimum-age message below, as
+                                // the API answers. An empty field opens 18 years back.
+                                minDate={dobBounds.minDate}
                                 maxDate={new Date()}
+                                viewDate={formData.date_of_birth ? undefined : dobBounds.maxDate}
                                 placeholder="Select date"
                                 showIcon
-                                className="w-100"
+                                className={`w-100 ${errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth)) ? 'is-invalid' : ''}`}
                                 appendTo="self"
                                 readOnlyInput
                             />
                         </div>
-                        {errors.date_of_birth && <div className="text-danger mt-1 small">{errors.date_of_birth}</div>}
+                        {(errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth))) && (
+                            <div className="text-danger mt-1 small">{errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth))}</div>
+                        )}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -1721,14 +1748,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             </div>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
-                                                                    Charged automatically on Partner's account.
+                                                                    {PARTNER_FEE_PAYMENT_HINT}
                                                                 </span>
                                                             </div>
 
                                                             <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                 <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                     <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, {partnerFeeLabel} is automatically charged to the Partner account immediately.
+                                                                    Two separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. {partnerFeePaymentNote(partnerFeeLabel)}
                                                                 </p>
                                                             </div>
                                                         </>

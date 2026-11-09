@@ -1,11 +1,12 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, ok, paginated, failure, seedSession, expectCall, pickPrime, type ApiMock } from '../../../support/helpers'
+import { mockApi, ok, paginated, failure, seedSession, expectCall, pickPrime, confirmDelete, type ApiMock } from '../../../support/helpers'
 
 const EF = '/common/embed-forms'
 
 const SUBMISSIONS = [
   { id: 1401, first_name: 'Ada', last_name: 'Applicant', email: 'ada@example.test', phone: '(555) 140-0001', desired_funding_amount: 75000, status: 'new', created_at: '2026-03-05T10:00:00Z' },
-  { id: 1402, first_name: 'Ben', last_name: 'Borrowed', email: 'ben@example.test', phone: '(555) 140-0002', desired_funding_amount: 20000, status: 'converted', created_at: '2026-03-01T10:00:00Z' },
+  { id: 1402, first_name: 'Ben', last_name: 'Borrowed', email: 'ben@example.test', phone: '(555) 140-0002', desired_funding_amount: 20000, status: 'converted', created_at: '2026-03-01T10:00:00Z',
+    converted_borrower: { id: 42, full_name: 'Owner Client Two', is_free_trail: false, enrollment_type: 'One Time Payment' } },
 ]
 
 test.describe('Loan applications (embed form submissions)', () => {
@@ -48,12 +49,37 @@ test.describe('Loan applications (embed form submissions)', () => {
     await expect.poll(() => api.find('POST', LIST).at(-1)?.json.search).toBe('Acme Holdings')
   })
 
-  test('a converted submission shows the Free Plan badge instead of the convert button', async ({ page }) => {
+  // BUG-058: the badge names the client's real plan; the row keeps the submitted name.
+  test("a converted submission shows its client's plan badge instead of the convert button", async ({ page }) => {
     await open(page)
     const converted = page.locator('tr', { hasText: 'ben@example.test' })
-    await expect(converted.getByText('Free Plan')).toBeVisible()
+    await expect(converted.getByText('One Time Payment')).toBeVisible()
+    await expect(converted.getByText('Ben Borrowed')).toBeVisible()
     await expect(converted.getByRole('button', { name: /convert to free plan borrower/i })).toHaveCount(0)
     await expect(page.locator('tr', { hasText: 'ada@example.test' }).getByRole('button', { name: /convert to free plan borrower/i })).toBeVisible()
+  })
+
+  // A rejected application says Rejected in the Action column instead of a
+  // disabled convert button.
+  test('a rejected application shows Rejected instead of the convert button', async ({ page }) => {
+    await seedSession(page, { permissions: ['view application', 'convert application'] })
+    await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([{ ...SUBMISSIONS[0], status: 'rejected' }, SUBMISSIONS[1]]) }])
+    await page.goto('/embed-form/loan-applications')
+
+    const rejected = page.locator('tr', { hasText: 'ada@example.test' })
+    await expect(rejected.getByTitle('Rejected applications cannot be converted. Change the status to convert it.')).toHaveText(/Rejected/)
+    await expect(rejected.getByRole('button', { name: /convert to free plan borrower/i })).toHaveCount(0)
+  })
+
+  test('the Applicant column shows only the name', async ({ page }) => {
+    await seedSession(page, { permissions: ['view application'] })
+    await mockApi(page, [{ method: 'POST', match: LIST, body: paginated([{ ...SUBMISSIONS[0], business_name: 'Applicant Holdings LLC', submission_uid: 'abcdef1234567890' }]) }])
+    await page.goto('/embed-form/loan-applications')
+
+    const nameCell = page.locator('td', { hasText: 'Ada Applicant' })
+    await expect(nameCell).toBeVisible()
+    await expect(nameCell).not.toContainText('Applicant Holdings LLC')
+    await expect(nameCell).not.toContainText('#abcdef12')
   })
 
   test('the convert button is hidden without the convert permission', async ({ page }) => {
@@ -79,6 +105,45 @@ test.describe('Loan applications (embed form submissions)', () => {
     await open(page)
     await page.locator('tr', { hasText: 'ada@example.test' }).getByRole('button', { name: /convert to free plan borrower/i }).click()
     await expect(page).toHaveURL(/\/embed-form\/loan-applications$/)
+  })
+
+  // Ticked applications are deleted from the Actions button, as on Partners and
+  // Clients. A converted one belongs to a client, so its box is disabled.
+  test('deletes the ticked applications from Actions; a converted one cannot be ticked', async ({ page }) => {
+    await seedSession(page, { permissions: ['view application'] })
+    const api = await mockApi(page, [
+      { method: 'POST', match: LIST, body: paginated(SUBMISSIONS) },
+      { method: 'POST', match: `${EF}/submissions/delete`, body: ok({ deleted: 1 }, 'Applications deleted successfully.') },
+    ])
+    await page.goto('/embed-form/loan-applications')
+    await expect(page.getByText('ada@example.test')).toBeVisible()
+
+    await expect(page.locator('tr', { hasText: 'ben@example.test' }).locator('input.p-checkbox-input')).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Actions' })).toHaveCount(0)
+
+    await page.locator('tr', { hasText: 'ada@example.test' }).locator('.p-checkbox').click()
+    await expect(page).toHaveURL(/\/embed-form\/loan-applications$/) // ticking does not open the row
+    await page.locator('.dropdown-toggle-split').click()
+    await page.getByRole('button', { name: /Delete Selected/ }).click()
+    await confirmDelete(page)
+
+    const call = await expectCall(api, 'POST', `${EF}/submissions/delete`)
+    expect(call.json).toEqual({ ids: [1401] })
+  })
+
+  test('the host can filter the list by partner', async ({ page }) => {
+    await seedSession(page, { permissions: ['view application'] })
+    const api = await mockApi(page, [
+      { method: 'POST', match: LIST, body: paginated(SUBMISSIONS) },
+      { method: 'POST', match: '/common/get-all-partners', body: ok([{ id: 4, company_name: 'Acme Lending', full_name: 'Pat Partner' }, { id: 9, company_name: 'Zeta Funding', full_name: 'Zed Z' }]) },
+    ])
+    await page.goto('/embed-form/loan-applications')
+    await expect(page.getByText('ada@example.test')).toBeVisible()
+
+    await pickPrime(page, page.locator('.p-dropdown', { hasText: 'All Partners' }), /Zeta Funding/)
+    await page.getByRole('button', { name: /Filters/ }).click()
+
+    await expect.poll(() => api.find('POST', LIST).some((c) => c.json?.partner_id === 9)).toBe(true)
   })
 
   test('clicking a row opens the application', async ({ page }) => {
@@ -225,6 +290,19 @@ test.describe('Loan application details', () => {
     await pickPrime(page, statusDropdown(page), 'Rejected')
     await expect(page.getByText('Status service is down.').first()).toBeVisible()
     await expect(statusDropdown(page)).toContainText('New')
+  })
+
+  // A rejected application: the disabled Convert button stays in line with the
+  // Status select (the reason is a hover tooltip, not a line under it).
+  test('on a rejected application the disabled Convert button lines up with the Status select', async ({ page }) => {
+    await open(page, { ...SUBMISSIONS[0], status: 'rejected' })
+    const convert = page.getByRole('button', { name: /convert to free plan borrower/i }).first()
+    await expect(convert).toBeDisabled()
+    await expect(page.locator('[title="Rejected applications cannot be converted. Change the status to convert it."]')).toBeVisible()
+
+    const select = await statusDropdown(page).boundingBox()
+    const button = await convert.boundingBox()
+    expect(Math.abs((select!.y + select!.height) - (button!.y + button!.height))).toBeLessThanOrEqual(2)
   })
 
   test('a converted application locks the status and links to the borrower', async ({ page }) => {

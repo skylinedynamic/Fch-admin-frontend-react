@@ -1,3 +1,30 @@
+/** One row of the API's `matched_lenders` (LenderMatchService). */
+export interface MatchedLender {
+    id: number;
+    name: string;
+    /** Null for a lender added before the legal name was required. */
+    legal_name?: string | null;
+    /** "Lender Name - Legal Name", how the screens show it (R2 BUG-008). */
+    display_name?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    /** False only for a fixed, assigned lender made Inactive since (SCRUM-434 S434-BUG-05). */
+    is_active?: boolean;
+    product_category: string;
+    requirements: {
+        min_fico: number | null;
+        min_business_credit_score: number | null;
+        min_revenue: number | null;
+        min_tib: number | null;
+        min_deposit: number | null;
+    };
+    checks: { fico: boolean; business_credit: boolean; revenue: boolean; tib: boolean; deposit: boolean };
+    score: number;
+    score_text: string;
+    score_hex: string;
+    matches_fraction: string;
+}
+
 export interface PaginationLink {
     url: string | null;
     label: string;
@@ -273,7 +300,7 @@ export interface ValidationIssue {
 
 export interface PreQualificationApplicationDetails {
     id: number;
-    borrower_id: number;
+    borrower_id: number | null;
     validation_status?: string | null;
     validation_summary?: string | null;
     validation_issues?: ValidationIssue[] | null;
@@ -353,7 +380,7 @@ export interface FundingApplicationDetails {
     id: number;
     application_number: string;
     partner_id: number;
-    borrower_id: number;
+    borrower_id: number | null;
     // The request the edit form opens on, its status, and whether the
     // application's lifecycle key still allows an edit.
     funding_request_id?: number | null;
@@ -361,6 +388,16 @@ export interface FundingApplicationDetails {
     is_editable?: boolean;
     // Why the application can't be edited; null while it can.
     locked_reason?: string | null;
+    // Lender Information - the host's team only (null for anyone else). From a
+    // funding request: the request's matches and lender; from a loan
+    // application: matched on the Preferred and Additional Funding Types.
+    matched_lenders?: MatchedLender[] | null;
+    assigned_lender_ids?: number[] | null;
+    // Assign opens from Approved (Final) on.
+    can_assign_lender?: boolean;
+    // Statuses that can only be set once a lender is assigned (every viewer).
+    lender_required_statuses?: string[];
+    has_assigned_lender?: boolean;
     full_name: string;
     business_name: string;
     business_email: string;
@@ -442,7 +479,6 @@ export interface FundingApplicationDetails {
     conversion_rate?: string | number | null;
     
     certificates?: Certificate[];
-    download_histories?: DownloadHistory[];
 }
 
 export interface Certificate {
@@ -454,13 +490,3 @@ export interface Certificate {
     pdf_generation_timestamp: string;
 }
 
-export interface DownloadHistory {
-    id: number;
-    user_name: string;
-    user_type: string;
-    file_type: string;
-    action: string;
-    sha256_hash: string;
-    ip_address: string;
-    downloaded_at: string;
-}

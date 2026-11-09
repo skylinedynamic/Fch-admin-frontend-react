@@ -4,6 +4,7 @@ import StepNavigation from '../shared/StepNavigation'
 import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import { useFederalCompliance, useSaveFederalCompliance } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { toast } from 'react-toastify'
 import ConfirmationModal from '../../../../../components/GlobalModal/ConfirmationModal'
 
@@ -15,6 +16,7 @@ interface FederalComplianceStepProps {
   loading: boolean
   isValid: boolean
   fundingRequestId?: number | string | null
+  fundingApplicationId?: number | string | null
   onRegisterSave?: (fn: (() => Promise<boolean>) | null) => void
   nextLabel?: string
 }
@@ -39,10 +41,11 @@ export default function FederalComplianceStep({
   loading,
   isValid,
   fundingRequestId,
+  fundingApplicationId,
   onRegisterSave,
   nextLabel,
 }: FederalComplianceStepProps) {
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFederalCompliance(fundingRequestId, { enabled: !!fundingRequestId })
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useFederalCompliance(fundingRequestId, { enabled: !!fundingRequestId, fundingApplicationId })
   const { mutateAsync: saveCompliance, isPending: isSaving } = useSaveFederalCompliance()
   const [complianceId, setComplianceId] = useState<number | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -84,6 +87,8 @@ export default function FederalComplianceStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       console.error('Error saving federal compliance:', error)
       const errors = error.response?.data?.errors
       if (errors) {

@@ -26,6 +26,7 @@ import "../../../assets/css/appointments.css";
 
 // Config
 import { APPOINTMENT_STATUS_CONFIG } from '../../config/appointmentTypeOptions';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 
 export default function Appointments() {
     const calendarRef = useRef(null);
@@ -303,7 +304,7 @@ export default function Appointments() {
                                                         <h6 className="card-title fs-16 apt-card-title">{evt.title}</h6>
                                                         <div
                                                             className="text-muted text-truncate-two-lines mb-0 fs-12"
-                                                            dangerouslySetInnerHTML={{ __html: evt.extendedProps?.description || evt.description || "" }}
+                                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(evt.extendedProps?.description || evt.description) }}
                                                         />
                                                     </div>
                                                 </div>

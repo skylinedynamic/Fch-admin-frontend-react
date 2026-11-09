@@ -83,3 +83,17 @@ describe('Appointments', () => {
     expect(toast.warn).not.toHaveBeenCalled()
   })
 })
+
+// BUG-004 (QA round 2): an upcoming appointment's description is stored HTML;
+// it must not run script.
+describe('Appointments - descriptions cannot run script (BUG-004)', () => {
+  it('lists the description without the onerror handler', async () => {
+    const { container } = mount(['view appointments'], {
+      status: true,
+      data: [{ ...APPOINTMENT, description: 'Agenda <b>review</b> <img src=x onerror="window.__xss = 1">' }],
+    })
+
+    expect((await screen.findAllByText('review')).length).toBeGreaterThan(0)
+    expect(container.querySelector('[onerror]')).toBeNull()
+  })
+})

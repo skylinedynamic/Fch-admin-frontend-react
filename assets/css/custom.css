@@ -1372,19 +1372,19 @@ File: Custom Css File
   box-shadow: none;
 }
 
-.credit-account-form .credit-account-form__card > .card-header {
+.credit-account-form .credit-account-form__card>.card-header {
   padding: 0.75rem 1rem;
   background: transparent;
   border-bottom: 1px solid var(--vz-border-color);
   border-radius: 4px 4px 0 0;
 }
 
-.credit-account-form .credit-account-form__card > .card-header .card-title {
+.credit-account-form .credit-account-form__card>.card-header .card-title {
   font-size: 0.875rem;
   font-weight: 600;
 }
 
-.credit-account-form .credit-account-form__card > .card-body {
+.credit-account-form .credit-account-form__card>.card-body {
   padding: 1rem;
 }
 
@@ -6931,7 +6931,6 @@ File: Custom Css File
   height: 100%;
   padding: 0.55rem 0.7rem;
   border-radius: var(--ef-radius);
-  background: var(--ef-soft);
 }
 
 .ef-field__label {
@@ -7205,6 +7204,194 @@ File: Custom Css File
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ef-muted);
+}
+
+/* Convert onto an existing client: the blank profile fields the application
+   can fill, and the partner's consent (BUG-064). */
+.ef-fill {
+  border: 1px solid var(--ef-border);
+  border-radius: var(--ef-radius);
+  background: var(--ef-surface);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.ef-fill.is-on {
+  border-color: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.45);
+}
+
+.ef-fill__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid var(--ef-border);
+  background: var(--ef-soft);
+}
+
+.ef-fill__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.1);
+  color: var(--vz-primary, #001f3f);
+  font-size: 16px;
+}
+
+.ef-fill__heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.ef-fill__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ef-heading);
+}
+
+.ef-fill__sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ef-muted);
+}
+
+.ef-fill__count {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.1);
+  color: var(--vz-primary, #001f3f);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ef-fill__groups {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0.875rem 1rem;
+  max-height: 280px;
+  overflow-y: auto;
+  /* Fades the bottom edge so a list that scrolls reads as one that does; the
+     bottom padding lets the last row clear the fade once scrolled to. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+}
+
+.ef-fill__group {
+  padding: 0.625rem 0;
+}
+
+.ef-fill__group+.ef-fill__group {
+  border-top: 1px dashed var(--ef-border);
+}
+
+.ef-fill__group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ef-muted);
+}
+
+.ef-fill__group-title i {
+  font-size: 13px;
+}
+
+.ef-fill__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.ef-fill__item.is-wide {
+  grid-column: 1 / -1;
+}
+
+.ef-fill__item dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ef-muted);
+}
+
+.ef-fill__item dd {
+  margin: 1px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ef-heading);
+  overflow-wrap: anywhere;
+}
+
+.ef-fill__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border-top: 1px solid var(--ef-border);
+  background: var(--ef-soft);
+  cursor: pointer;
+}
+
+.ef-fill.is-on .ef-fill__consent {
+  background: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.07);
+}
+
+.ef-fill__consent .form-check-input {
+  flex-shrink: 0;
+  margin: 2px 0 0;
+  width: 1.05rem;
+  height: 1.05rem;
+  cursor: pointer;
+}
+
+.ef-fill__consent-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ef-heading);
+}
+
+.ef-fill__consent-hint {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--ef-muted);
+}
+
+.ef-fill__unchanged {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ef-muted);
+}
+
+/* In the widened dialog, three to a row. */
+@media (min-width: 992px) {
+  .ef-convert-modal .modal-lg .ef-fill__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ef-convert-modal .modal-lg .ef-fill__groups {
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ef-fill__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* The modal's main message: whether the client exists, and that a funding
@@ -8214,6 +8401,51 @@ File: Custom Css File
   color: var(--vz-primary, #405189);
 }
 
+/* An option's badge in the chip picker - e.g. the preferred funding type in
+   Additional Funding Types, listed but not selectable: "Selected as Preferred". */
+.chip-multiselect-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chip-multiselect-option__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-multiselect-option__badge {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--vz-primary, #405189);
+  background: rgba(var(--vz-primary-rgb, 64, 81, 137), 0.12);
+  border: 1px solid rgba(var(--vz-primary-rgb, 64, 81, 137), 0.25);
+}
+
+/* A disabled option is dimmed by PrimeReact; keep its badge readable. */
+.chip-multiselect-panel .p-multiselect-item.p-disabled {
+  opacity: 1;
+  color: var(--vz-secondary-color, #878a99);
+  cursor: not-allowed;
+}
+
+/* It cannot be picked: its checkbox shows, greyed out. */
+.chip-multiselect-panel .p-multiselect-item.p-disabled .p-checkbox .p-checkbox-box {
+  background: var(--vz-light, #f3f6f9);
+  border-color: var(--vz-border-color, #e9ebec) !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 
 /* Settings > Email Configuration: verifying a mail configuration with a code. */
 .mail-verify-card {
@@ -8450,9 +8682,10 @@ File: Custom Css File
    the calendar input's own width instead of its column's. As in the borrower
    portal: the wrapper fills its container. */
 .flatpickr-wrapper {
-    display: block !important;
-    width: 100% !important;
+  display: block !important;
+  width: 100% !important;
 }
+
 /* ==========================================================================
    Partner profile › Configuration — a partner's Email, SMS, Branding and
    Payment settings, edited by the host (PartnerConfigurationSection)

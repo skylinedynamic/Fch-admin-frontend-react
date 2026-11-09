@@ -959,7 +959,7 @@ export default function PreQualificationDetails() {
                                 onClick={() => setAueViewMode('client')}
                             >
                                 <i className="ri-eye-line fs-14"></i>
-                                <span>Client Readiness View (Borrower &amp; WLP View)</span>
+                                <span>Client Readiness View (Borrower &amp; Partner View)</span>
                             </button>
                         </div>
                         <span className="badge bg-light text-muted border px-2 py-1 fs-11">
@@ -1436,7 +1436,12 @@ export default function PreQualificationDetails() {
                             { label: 'Details' }
                         ]}
                     >
-                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <div className="page-actions page-actions-wrap d-flex align-items-center flex-wrap gap-2 mt-3 mt-lg-0">
+                            {app.borrower_id && (
+                                <Link to={`/clients/${app.borrower_id}`} className="btn btn-primary waves-effect">
+                                    <i className="ri-user-line align-middle me-1"></i> Go to Client
+                                </Link>
+                            )}
                             {/* Host Partner only: running/re running an evaluation produces internal
                                 underwriting output. The API enforces this strictly as well. */}
                             {isHostPartner && (

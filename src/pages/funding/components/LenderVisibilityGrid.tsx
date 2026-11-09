@@ -6,6 +6,8 @@ import { DataTable } from 'primereact/datatable';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { Column } from 'primereact/column';
 import { TIB_OPTIONS, INDUSTRIES_OPTIONS } from '../../../config/funding';
+import { lenderFilterOptions, lenderLabelFor, optionsWithout } from '../../../modules/funding/visibilityRules';
+import { lenderDisplayName } from '../../../modules/lender/displayName';
 import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities, deleteFundingSequencingVisibilities } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
@@ -106,7 +108,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         setLocalActiveLenderId(activeLenderId);
         setLocalActiveCategoryId(activeCategoryId);
     }, [activeLenderId, activeCategoryId]);
-    const [detailsLoading, setDetailsLoading] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [lenderToDelete, setLenderToDelete] = React.useState<number | null>(null);
     const [selectedMasterLenders, setSelectedMasterLenders] = React.useState<any[]>([]);
@@ -164,10 +165,13 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const [loading, setLoading] = React.useState(false);
     const [apiVisibilities, setApiVisibilities] = React.useState<any[]>([]);
 
+    // Inactive lenders that still have rules here are offered too, tagged, so
+    // their rules can be found (R2 BUG-030).
     const sequenceLenders = React.useMemo(() => {
-        const lenderIds = Array.from(new Set(validVisibilities.map(v => String(v.lender_id))));
-        return lenders.filter(l => lenderIds.includes(String(l.id)));
-    }, [validVisibilities, lenders]);
+        const rules = [...validVisibilities, ...apiVisibilities];
+        const lenderIds = new Set(rules.map(v => String(v.lender_id)));
+        return lenderFilterOptions(lenders, rules).filter(l => lenderIds.has(String(l.id)));
+    }, [validVisibilities, apiVisibilities, lenders]);
 
     const sequenceCategories = React.useMemo(() => {
         const categoryIds = Array.from(new Set(validVisibilities.map(v => String(v.lender_product_category_id)).filter(id => id !== 'null' && id !== '')));
@@ -176,15 +180,15 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
     const visibilityUrl = `/funding/visibility-rules/${id}`;
 
+    // The rules are already on the page, so switching shows them at once - no
+    // loading skeleton in between (it made the table flash on every switch).
     const setActiveLenderIdAndCategory = (lenderId: number | null, categoryId: string | number | null = null) => {
-        setDetailsLoading(true);
         if (lenderId === null) {
             navigate(visibilityUrl);
         } else {
             const catPath = categoryId !== null ? `/category/${categoryId}` : '';
             navigate(`${visibilityUrl}/lender/${lenderId}${catPath}`);
         }
-        setTimeout(() => setDetailsLoading(false), 500);
     };
 
 
@@ -206,7 +210,11 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
     const onAddLenderBlock = (newLenderId: number | string) => {
         if (!newLenderId) return;
+        setVisibilities([...visibilities, ...emptyRulesFor(newLenderId)]);
+    };
 
+    /** A lender's empty rules: one per product category, or one general rule. */
+    const emptyRulesFor = (newLenderId: number | string): any[] => {
         const lender = lenders.find(l => String(l.id) === String(newLenderId));
         let categories = [];
         if (typeof lender?.product_categories === 'string') {
@@ -262,7 +270,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
             });
         }
 
-        setVisibilities([...visibilities, ...newRows]);
+        return newRows;
     };
 
     const visibilitiesRef = React.useRef(visibilities);
@@ -432,6 +440,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     };
 
 
+    // The Lender picker names each lender "Lender Name - Legal Name" (R2 BUG-008).
+    const lenderChoices = React.useMemo(() => lenders.map(l => ({ ...l, name: lenderDisplayName(l) })), [lenders]);
+
     const availableLenders = lenders.filter(l => !selectedLenderIds.some(id => String(id) === String(l.id)));
 
     const lenderOptionTemplate = (option: any) => {
@@ -547,7 +558,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             </label>
                             <Dropdown
                                 value={localActiveLenderId}
-                                options={lenders}
+                                options={lenderChoices}
                                 onChange={(e) => {
                                     const nextLenderId = e.value;
                                     let cleanedVisibilities = visibilities;
@@ -557,20 +568,16 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                             cleanedVisibilities = visibilities.filter(v => String(v.lender_id) !== String(localActiveLenderId));
                                         }
                                     }
-                                    setVisibilities(cleanedVisibilities);
-                                    setActiveLenderIdAndCategory(nextLenderId, null);
-
-                                    // Clear all visibility errors when switching lender
-                                    if (setErrors) {
-                                        setErrors((prev: any) => {
-                                            if (!prev) return prev;
-                                            const newErrors = { ...prev };
-                                            Object.keys(newErrors).forEach(key => {
-                                                if (key.startsWith('lender_visibilities.')) delete newErrors[key];
-                                            });
-                                            return newErrors;
-                                        });
-                                    }
+                                    // A lender with no rules yet gets its empty rows in
+                                    // the same update, so "Rules Not Initialized" never
+                                    // flashes before a timer adds them.
+                                    const hasRules = cleanedVisibilities.some(v => String(v.lender_id) === String(nextLenderId));
+                                    setVisibilities(hasRules || !nextLenderId
+                                        ? cleanedVisibilities
+                                        : [...cleanedVisibilities, ...emptyRulesFor(nextLenderId)]);
+                                    // Once: navigating twice re-drew the page twice and
+                                    // left two history entries. The visibility errors
+                                    // are cleared by the effect on activeLenderId.
                                     setActiveLenderIdAndCategory(nextLenderId, null);
                                 }}
                                 optionLabel="name"
@@ -671,9 +678,10 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     responsiveLayout="scroll"
                                     lazy={!!id}
                                     value={displayVisibilities.map((v, i) => {
-                                        const lender = lenders.find(l => String(l.id) === String(v.lender_id));
                                         const category = productCategories?.find(c => String(c.id) === String(v.lender_product_category_id));
-                                        const lenderName = lender?.name || 'Unknown Lender';
+                                        // An inactive lender keeps its name, tagged (R2 BUG-030).
+                                        const lenderLabel = lenderLabelFor(v, lenders);
+                                        const lenderName = lenderLabel.inactive ? `${lenderLabel.name} (Inactive)` : lenderLabel.name;
                                         const catName = category?.name || 'Unknown Category';
                                         const _tibMonths = String(TIB_OPTIONS.find(t => String(t.value) === String(v.min_tib_months))?.label || v.min_tib_months || '');
                                         const _minRevenue = v.min_monthly_revenue ? `$${v.min_monthly_revenue}` : '';
@@ -778,8 +786,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         <p className="text-muted fs-14 mb-0">Please select a lender from the dropdown above to configure its underwriting rules.</p>
                                     </div>
                                 </div>
-                            ) : detailsLoading ? (
-                                <TableLoader rows={6} />
                             ) : (() => {
                                 const activeRows = visibilities.filter(v => {
                                     if (v.lender_id == null) return false;
@@ -862,7 +868,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             if (String(vCatId) !== String(localActiveCategoryId)) return null;
                                                         }
                                                     }
-                                                    const lender = lenders.find(l => l.id === v.lender_id);
+                                                    const lenderLabel = lenderLabelFor(v, lenders);
                                                     let categoryName = '';
                                                     if (v.lender_product_category_id) {
                                                         categoryName = productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
@@ -876,7 +882,10 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                     return (
                                                         <tr key={i} style={{ borderBottom: '1px dashed #e9ebec' }}>
                                                             <td className="py-3" style={{ paddingLeft: 0 }}>
-                                                                <div className="fw-semibold text-dark fs-13">{lender?.name || 'Unknown'}</div>
+                                                                <div className="fw-semibold text-dark fs-13">
+                                                                    {lenderLabel.name}
+                                                                    {lenderLabel.inactive && <span className="badge bg-secondary-subtle text-secondary ms-2">Inactive</span>}
+                                                                </div>
                                                             </td>
                                                             <td className="py-3">
                                                                 {categoryName ? (
@@ -900,7 +909,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <input
                                                                     type="number"
-                                                                    min="0"
                                                                     className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_business_credit_score`] ? 'is-invalid' : ''}`}
                                                                     placeholder="80"
                                                                     value={v.min_business_credit_score ?? ''}
@@ -923,12 +931,12 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <div className="input-group">
                                                                     <span
-                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'text-danger' : 'text-muted'}`}
+                                                                        className={`input-group-text bg-white ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'text-danger' : 'text-muted'}`}
                                                                         style={(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? { borderColor: '#f06548' } : undefined}
                                                                     >$</span>
                                                                     <input
                                                                         type="number"
-                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : ''}`}
                                                                         placeholder="12000.00"
                                                                         value={v.min_monthly_revenue ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
@@ -939,12 +947,12 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <div className="input-group">
                                                                     <span
-                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'text-danger' : 'text-muted'}`}
+                                                                        className={`input-group-text bg-white ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'text-danger' : 'text-muted'}`}
                                                                         style={(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? { borderColor: '#f06548' } : undefined}
                                                                     >$</span>
                                                                     <input
                                                                         type="number"
-                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : ''}`}
                                                                         placeholder="12000.00"
                                                                         value={v.min_monthly_deposits ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
@@ -965,12 +973,12 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <div className="input-group">
                                                                     <span
-                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'text-danger' : 'text-muted'}`}
+                                                                        className={`input-group-text bg-white ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'text-danger' : 'text-muted'}`}
                                                                         style={(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? { borderColor: '#f06548' } : undefined}
                                                                     >$</span>
                                                                     <input
                                                                         type="number"
-                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : ''}`}
                                                                         placeholder="4000.00"
                                                                         value={v.min_average_daily_balance ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
@@ -1012,7 +1020,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <MultiSelect
                                                                     value={v.allowed_states}
-                                                                    options={stateOptions}
+                                                                    options={optionsWithout(stateOptions, v.restricted_states)}
                                                                     onChange={(e) => onChange(i, 'allowed_states', e.value)}
                                                                     optionLabel="label"
                                                                     optionValue="value"
@@ -1028,7 +1036,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <MultiSelect
                                                                     value={v.restricted_states}
-                                                                    options={stateOptions}
+                                                                    options={optionsWithout(stateOptions, v.allowed_states)}
                                                                     onChange={(e) => onChange(i, 'restricted_states', e.value)}
                                                                     optionLabel="label"
                                                                     optionValue="value"
@@ -1044,7 +1052,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <MultiSelect
                                                                     value={(v.allowed_industries || []).filter((x: any) => x !== null && x !== undefined && x !== 'null' && x !== '')}
-                                                                    options={INDUSTRIES_OPTIONS}
+                                                                    options={optionsWithout(INDUSTRIES_OPTIONS, v.restricted_industries)}
                                                                     onChange={(e) => onChange(i, 'allowed_industries', e.value)}
                                                                     optionLabel="label"
                                                                     optionValue="value"
@@ -1060,7 +1068,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <MultiSelect
                                                                     value={(v.restricted_industries || []).filter((x: any) => x !== null && x !== undefined && x !== 'null' && x !== '')}
-                                                                    options={INDUSTRIES_OPTIONS}
+                                                                    options={optionsWithout(INDUSTRIES_OPTIONS, v.allowed_industries)}
                                                                     onChange={(e) => onChange(i, 'restricted_industries', e.value)}
                                                                     optionLabel="label"
                                                                     optionValue="value"

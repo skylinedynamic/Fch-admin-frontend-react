@@ -25,7 +25,8 @@ test("a paid client's enrollment note names the same partner fee as the Partner 
   ])
   await page.goto('/clients/159')
 
-  const note = page.getByText(/two completely separate invoices are created/i)
-  await expect(note).toContainText('$800.00 is automatically charged to the Partner account')
+  const note = page.getByText(/two separate invoices are created/i)
+  // BUG-059: the fee is charged by the billing run, or paid from Invoices.
+  await expect(note).toContainText('$800.00 will be charged to you automatically when the client pays, or you can pay it manually from Invoices.')
   await expect(note).not.toContainText('$0.00')
 })

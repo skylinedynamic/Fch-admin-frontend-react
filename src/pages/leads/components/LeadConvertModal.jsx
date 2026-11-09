@@ -8,6 +8,7 @@ import LeadConvertSkeleton from '../../../components/Loader/LeadConvertSkeleton'
 import { useAuthStore } from '../../../store/auth/authStore';
 import InstallmentDetailsModal from '../../../components/Common/Payment/InstallmentDetailsModal';
 import { ENROLLMENT_TYPE_INSTALLMENT } from '../../../config/subscriptionConfig';
+import { PARTNER_FEE_PAYMENT_HINT, partnerFeePaymentNote } from '../../../config/invoiceConfig';
 
 export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = ENTITY_TYPE_BORROWER, loading, isHost, backendErrors = {}, onFieldChange }) {
     const [planId, setPlanId] = useState(null);
@@ -563,7 +564,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                 </div>
                                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                                     <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
-                                                                        Charged automatically on Partner's card.
+                                                                        {PARTNER_FEE_PAYMENT_HINT}
                                                                     </span>
                                                                 </div>
 
@@ -571,7 +572,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                                 <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                     <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                         <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                        Two separate invoices are created. The Borrower pays <strong>${Number(isBorrowerInstallmentPlan ? (installmentApplied ? installmentDownPayment : (selectedBorrowerPlan?.total_amount || 0)) : customEnrollmentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>, and <strong>${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> is automatically charged to the Partner.
+                                                                        Two separate invoices are created. The Borrower pays <strong>${Number(isBorrowerInstallmentPlan ? (installmentApplied ? installmentDownPayment : (selectedBorrowerPlan?.total_amount || 0)) : customEnrollmentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>. {partnerFeePaymentNote(`$${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)}
                                                                     </p>
                                                                 </div>
                                                             </>

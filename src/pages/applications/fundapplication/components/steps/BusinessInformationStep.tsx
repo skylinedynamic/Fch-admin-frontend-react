@@ -7,6 +7,7 @@ import { entityTypes, industryTypes, yearsInBusinessOptions } from '../../../../
 import { countries as countriesData } from '../../../../../modules/location'
 import { useBusinessInfo, useSaveBusinessInfo } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { formatPhoneNumber, formatNumber, formatZipCode } from '../../../../../utils/borrowerFormatters'
 import { getCountryCodeByName, getPhoneCodeByName, formatCountryDisplay, getCountryCodeFromDisplay } from '../../../../../utils/countryHelpers'
 import { toast } from 'react-toastify'
@@ -22,6 +23,7 @@ interface BusinessInformationStepProps {
   onRegisterSave?: (fn: (() => Promise<boolean>) | null) => void
   fundingSequenceId?: number | string | null
   fundingRequestId?: number | string | null
+  fundingApplicationId?: number | string | null
 }
 
 export default function BusinessInformationStep({
@@ -35,6 +37,7 @@ export default function BusinessInformationStep({
   onRegisterSave,
   fundingSequenceId,
   fundingRequestId,
+  fundingApplicationId,
 }: BusinessInformationStepProps) {
   const [availableStates, setAvailableStates] = useState<{ name: string; code: string; cities?: string[] }[]>([])
   const [availableCities, setAvailableCities] = useState<{ name: string; code: string }[]>([])
@@ -43,7 +46,7 @@ export default function BusinessInformationStep({
   const [businessInfoId, setBusinessInfoId] = useState<number | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useBusinessInfo(fundingRequestId, { enabled: !!fundingRequestId })
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useBusinessInfo(fundingRequestId, { enabled: !!fundingRequestId, fundingApplicationId })
   const { mutateAsync: saveBusinessInfo, isPending: isSaving } = useSaveBusinessInfo()
 
   // Memoized save handler
@@ -81,6 +84,8 @@ export default function BusinessInformationStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       const errors = error.response?.data?.errors
       if (errors) {
         setValidationErrors(errors)

@@ -3,7 +3,24 @@ import { MultiSelect } from 'primereact/multiselect'
 export interface ChipMultiSelectOption {
   label: string
   value: string
+  /** Listed, but cannot be picked. */
+  disabled?: boolean
+  /** A small badge beside the label, e.g. "Selected as Preferred". */
+  badge?: string
+  /** The badge's full meaning, shown on hover. */
+  badgeTitle?: string
 }
+
+/** One row of the list: just the label, or the label and its badge. */
+const optionTemplate = (option: ChipMultiSelectOption) =>
+  option.badge ? (
+    <span className="chip-multiselect-option">
+      <span className="chip-multiselect-option__label">{option.label}</span>
+      <span className="chip-multiselect-option__badge" title={option.badgeTitle ?? option.badge}>{option.badge}</span>
+    </span>
+  ) : (
+    option.label
+  )
 
 interface ChipMultiSelectProps {
   inputId: string
@@ -42,6 +59,8 @@ export default function ChipMultiSelect({
         onChange={(e) => onChange(e.value ?? [])}
         optionLabel="label"
         optionValue="value"
+        optionDisabled="disabled"
+        itemTemplate={optionTemplate}
         placeholder={placeholder}
         className={`w-100${invalid ? ' p-invalid' : ''}`}
         panelClassName="chip-multiselect-panel"

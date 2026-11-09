@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios'
 import { toast } from 'react-toastify'
 import { getToken, clearAuth } from '../auth'
+import { MAINTENANCE_HTTP_STATUS } from '../../config/maintenance'
+import { isMaintenanceResponse, reloadForMaintenance } from './maintenance'
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '',
@@ -67,6 +69,14 @@ apiClient.interceptors.response.use(
   },
   (error: AxiosError) => {
     const status = error?.response?.status
+
+    // Maintenance mode: the whole platform is down on purpose. Reload onto the
+    // server's maintenance page; no error toast, no logout.
+    if (status === MAINTENANCE_HTTP_STATUS && isMaintenanceResponse(error.response?.data)) {
+      reloadForMaintenance((error.response?.data as { message?: string })?.message)
+      return Promise.reject(error)
+    }
+
     const skipToast = (error.config as any)?._skipToast
 
     // Toast for network connectivity issues (no response or network error)

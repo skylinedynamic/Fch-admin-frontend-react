@@ -7,6 +7,7 @@ import { handleFileDownload } from '../../../utils/fileDownload';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { Skeleton } from 'primereact/skeleton';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
+import { FILE_MANAGER_FOLDERS } from '../../../modules/filemanager/config';
 
 export default function DocumentsSection({ partnerId: propPartnerId }) {
     const { id: paramId } = useParams();
@@ -61,6 +62,8 @@ export default function DocumentsSection({ partnerId: propPartnerId }) {
             // Call the attach api
             await attachPartnerDocuments({
                 partner_id: partnerId,
+                // Picked in the private documents folder: filed where it is.
+                entity_type: FILE_MANAGER_FOLDERS.PARTNER_DOCUMENTS,
                 file_path: filePaths
             });
 
@@ -222,7 +225,7 @@ export default function DocumentsSection({ partnerId: propPartnerId }) {
                 toggle={() => setShowFileManager(!showFileManager)}
                 selectionMode={true}
                 onSelectFiles={handleFileSelection}
-                entityType="partners"
+                entityType={FILE_MANAGER_FOLDERS.PARTNER_DOCUMENTS}
                 entityId={partnerId}
             />
 

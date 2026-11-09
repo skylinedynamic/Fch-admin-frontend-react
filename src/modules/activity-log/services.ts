@@ -1,5 +1,5 @@
 import { apiClient } from "../../lib/http/apiClient";
-import type { ActivityLog, ActivityParams } from "./types";
+import type { ActivityEmailSenders, ActivityLog, ActivityParams } from "./types";
 
 export const getActivityLogs = async (params: ActivityParams = {}) => {
     const response = await apiClient.post("/common/activity-logs/fetch-all-activities", params);
@@ -50,4 +50,12 @@ export const updateActivityLogVisibility = async (id: number | string, visibilit
 export const updateActivityTaskStatus = async (id: number | string, taskStatus: string) => {
     const response = await apiClient.patch(`/common/activity-logs/${id}/task-status`, { task_status: taskStatus });
     return response.data;
+};
+
+/** The host's sending choices for a record of this partner (none: a host record). */
+export const getActivityEmailSender = async (partnerId?: number | string | null): Promise<ActivityEmailSenders> => {
+    const response = await apiClient.get("/common/activity-logs/email-sender", {
+        params: partnerId ? { partner_id: partnerId } : {},
+    });
+    return response.data?.data;
 };

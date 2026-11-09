@@ -8,6 +8,7 @@ import { toast } from 'react-toastify'
 import { useConfigStore } from '../../../../../store/config/configStore'
 import ConfirmationModal from '../../../../../components/GlobalModal/ConfirmationModal'
 import DisclosureModal from '../shared/DisclosureModal'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { TERMS_OF_SERVICE_DATA, PRIVACY_POLICY_DATA, AUTHORIZATION_DATA, ATTESTATION_ITEMS } from '../../../../../config/disclosureConfig'
 
 interface AttestationStepProps {
@@ -119,6 +120,8 @@ export default function AttestationStep({
       onError: (error: any) => {
         setShowModal(false)
         console.error('Error submitting application:', error)
+        // Changed elsewhere since this page loaded (R2 BUG-033): say so, offer a reload.
+        if (reportStaleApplication(error)) return
         const errors = error.response?.data?.errors
         if (errors) {
           setValidationErrors(errors)

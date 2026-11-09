@@ -4,6 +4,7 @@ import { fetchClientReadinessFactors } from '../../../modules/client';
 import { QUALIFY_REASONS_MAP, READINESS_BADGE_STYLES, META_ITEM_LABELS, FACTOR_ICON_STYLES, READINESS_FACTOR_LABELS, FACTOR_STATUS_VALUES, BADGE_LABELS } from '../../../config/funding';
 import { FundingDetailLoader } from '../../../components/Loader/FundingSkeletonLoader';
 import { formatSpeedToFunds } from '../../../utils/formatters';
+import { sanitizeHtml } from '../../../utils/sanitizeHtml';
 
 const ReadinessItem: React.FC<{ factor: any, isLast: boolean }> = ({ factor, isLast }) => {
     const s = (factor.status || '').toLowerCase();
@@ -219,7 +220,7 @@ export default function ClientFundingDetail({ clientId, fundingData, onBack, ico
                         <div className="card border-0 shadow-none mb-0 bg-light" style={{ borderRadius: 12 }}>
                             <div className="card-body p-4">
                                 <h5 className="fs-15 fw-bold mb-2">Description</h5>
-                                <p className="text-muted fs-14 mb-0" dangerouslySetInnerHTML={{ __html: description }}></p>
+                                <p className="text-muted fs-14 mb-0" dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}></p>
                             </div>
                         </div>
                     )}

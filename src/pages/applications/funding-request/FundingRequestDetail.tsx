@@ -9,16 +9,18 @@ import { handleFileDownload, downloadFromUrl } from '../../../utils/fileDownload
 import { downloadBorrowerDocument } from '../../../modules/client/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
-import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS } from '../../../config/funding';
+import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS, REJECT_REASON_MAX_LENGTH, REJECT_NOTE_PREVIEW_LENGTH } from '../../../config/funding';
 import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
-import { formatCurrency } from '../../../utils/helper';
+import { isStaleRecordError, staleRecordMessage, withExpectedStatus } from '../../../utils/staleRecord';
 import ReviewProgressCard from './components/ReviewProgressCard';
 import LenderMatchStats from './components/LenderMatchStats';
+import LenderInformationCard, { type MatchedLender } from '../../../components/Common/Lender/LenderInformationCard';
 import '../../../../assets/css/funding-requests.css';
 import { toast } from 'react-toastify';
+import { lenderDisplayName } from '../../../modules/lender/displayName';
 
 import { useAuthStore } from '../../../store/auth/authStore';
 import { getDocStatusBadgeConfig } from '../../../utils/badgeHelper';
@@ -32,8 +34,11 @@ export default function FundingRequestDetail() {
     const isHost = currentUser?.is_host == 1;
 
     const [rejectReason, setRejectReason] = useState('');
+    // A long note is folded in the confirmation; it opens folded each time.
+    const [rejectNoteExpanded, setRejectNoteExpanded] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
+    useEffect(() => { if (showStatusModal) setRejectNoteExpanded(false); }, [showStatusModal]);
     const [showMissingLenderModal, setShowMissingLenderModal] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState('');
     const [validationErrors, setValidationErrors] = useState<any>({});
@@ -41,22 +46,12 @@ export default function FundingRequestDetail() {
     const sidebarColRef = useRef<HTMLDivElement>(null);
     const lenderTableRef = useRef<HTMLDivElement>(null);
 
-    const { data: apiResponse, isLoading, isFetching, error } = useFundingRequestDetails(id || '');
+    const { data: apiResponse, isLoading, isFetching, error, refetch } = useFundingRequestDetails(id || '');
     const updateStatusMutation = useUpdateFundingRequestStatus();
     const assignLenderMutation = useAssignLenderToFundingRequest();
 
-    const [showAssignModal, setShowAssignModal] = useState(false);
-    const [lenderToAssign, setLenderToAssign] = useState<any>(null);
     const [assignedLenderIds, setAssignedLenderIds] = useState<number[]>([]);
     const [showAssignIndicator, setShowAssignIndicator] = useState(false);
-
-    const [lenderSearch, setLenderSearch] = useState('');
-    const [lenderCategoryFilter, setLenderCategoryFilter] = useState('');
-    const [lenderNameFilter, setLenderNameFilter] = useState('');
-
-    const [appliedLenderSearch, setAppliedLenderSearch] = useState('');
-    const [appliedLenderCategoryFilter, setAppliedLenderCategoryFilter] = useState('');
-    const [appliedLenderNameFilter, setAppliedLenderNameFilter] = useState('');
 
     const isUpdatingOrFetching = updateStatusMutation.isPending || isFetching;
 
@@ -82,25 +77,28 @@ export default function FundingRequestDetail() {
         }
     }, [review?.status]);
 
+    // A rejected request opens with the reason it was saved with.
+    useEffect(() => {
+        if (review?.status === FUNDING_REVIEW_STATUS.REJECTED && review.reject_reason) {
+            setRejectReason(review.reject_reason);
+        }
+    }, [review?.status, review?.reject_reason]);
+
     // Use standard CSS sticky instead of JS listener to avoid jumping/cut-off issues
 
-    const matchedLenders = review?.matched_lenders || [];
-
-    const uniqueCategories = Array.from(new Set(matchedLenders.map((l: any) => l.product_category))).map(cat => ({ label: cat, value: cat }));
-    const uniqueLenderNames = Array.from(new Set(matchedLenders.map((l: any) => l.name))).map(name => ({ label: name, value: name }));
-
-    const filteredLenders = matchedLenders.filter((lender: any) => {
-        const matchesSearch = !appliedLenderSearch ||
-            lender.name?.toLowerCase().includes(appliedLenderSearch.toLowerCase()) ||
-            lender.product_category?.toLowerCase().includes(appliedLenderSearch.toLowerCase()) ||
-            lender.requirements?.min_fico?.toString().includes(appliedLenderSearch) ||
-            lender.requirements?.min_revenue?.toString().includes(appliedLenderSearch) ||
-            lender.requirements?.min_tib?.toString().includes(appliedLenderSearch) ||
-            lender.requirements?.min_deposit?.toString().includes(appliedLenderSearch);
-        const matchesCategory = !appliedLenderCategoryFilter || lender.product_category === appliedLenderCategoryFilter;
-        const matchesName = !appliedLenderNameFilter || lender.name === appliedLenderNameFilter;
-        return matchesSearch && matchesCategory && matchesName;
-    });
+    // Lender Information (LenderInformationCard): assign, then show it as assigned.
+    const assignLender = (lender: MatchedLender) =>
+        assignLenderMutation.mutateAsync({ id: review.id, lender_ids: [lender.id] }).then(
+            () => {
+                toast.success(`Lender assigned successfully`);
+                setAssignedLenderIds([lender.id]);
+                window.dispatchEvent(new Event('refreshActivities'));
+            },
+            (err: any) => {
+                toast.error(err?.response?.data?.message || 'Failed to assign lender');
+                throw err;
+            }
+        );
 
     if (isLoading) {
         return <FundingRequestDetailLoader />;
@@ -111,7 +109,12 @@ export default function FundingRequestDetail() {
     const handleStatusUpdate = () => {
         setValidationErrors({});
         updateStatusMutation.mutate(
-            { id: review.id, status: selectedStatus, ...(selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && { reject_reason: rejectReason }) },
+            // With the status this page shows: a decision made on a stale page
+            // is refused instead of flipping what someone else decided (R2 BUG-048).
+            withExpectedStatus(
+                { id: review.id, status: selectedStatus, ...(selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && { reject_reason: rejectReason }) },
+                review.status
+            ),
             {
                 onSuccess: () => {
                     toast.success(`Funding request status updated to ${selectedStatus} successfully`);
@@ -123,7 +126,13 @@ export default function FundingRequestDetail() {
                     window.dispatchEvent(new Event('refreshActivities'));
                 },
                 onError: (err: any) => {
-                    if (err?.response?.status === 422) {
+                    if (isStaleRecordError(err)) {
+                        // Already decided elsewhere: say so and show the current state.
+                        setShowStatusModal(false);
+                        toast.error(staleRecordMessage(err));
+                        refetch();
+                        window.dispatchEvent(new Event('refreshActivities'));
+                    } else if (err?.response?.status === 422) {
                         setValidationErrors(err.response.data.errors || {});
                     } else {
                         toast.error(err?.response?.data?.message || 'Failed to update status');
@@ -233,204 +242,21 @@ export default function FundingRequestDetail() {
                                 statusDates={review.status_dates}
                             />
                             {isHost && review.matched_lenders && review.matched_lenders.length > 0 && (
-                                <>
-
-                                    <div ref={lenderTableRef} className="card shadow-sm border-0 mb-4 rounded-3">
-                                        <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-2 d-block">
-                                            <div className="d-flex align-items-center justify-content-between mb-3 border-bottom">
-                                                <h5 className="card-title mb-0 fs-16 fw-bold text-dark">Lender Information</h5>
-                                            </div>
-                                            <form onSubmit={(e) => {
-                                                e.preventDefault();
-                                                setAppliedLenderSearch(lenderSearch);
-                                                setAppliedLenderCategoryFilter(lenderCategoryFilter);
-                                                setAppliedLenderNameFilter(lenderNameFilter);
-                                            }}>
-                                                <div className="row g-3 mb-3 align-items-end">
-                                                    <div className="col-md-3">
-                                                        <div className="search-box">
-                                                            <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." value={lenderSearch} onChange={(e) => setLenderSearch(e.target.value)} />
-                                                            <i className="ri-search-line search-icon"></i>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-3">
-                                                        <Dropdown value={lenderCategoryFilter} options={[{ label: 'All Categories', value: '' }, ...uniqueCategories]} optionLabel="label" optionValue="value" onChange={(e) => setLenderCategoryFilter(e.value)} placeholder="All Categories" className="w-100" />
-                                                    </div>
-                                                    <div className="col-md-3">
-                                                        <Dropdown value={lenderNameFilter} options={[{ label: 'All Lenders', value: '' }, ...uniqueLenderNames]} optionLabel="label" optionValue="value" onChange={(e) => setLenderNameFilter(e.value)} placeholder="All Lenders" className="w-100" />
-                                                    </div>
-                                                    <div className="col-md-3">
-                                                        <div className="d-flex gap-2">
-                                                            <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
-                                                            <button type="button" className="btn btn-default flex-grow-1" onClick={() => {
-                                                                setLenderSearch('');
-                                                                setLenderCategoryFilter('');
-                                                                setLenderNameFilter('');
-                                                                setAppliedLenderSearch('');
-                                                                setAppliedLenderCategoryFilter('');
-                                                                setAppliedLenderNameFilter('');
-                                                            }}>
-                                                                <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>{/* end card-header */}
-                                        <div className="card-body p-0">
-                                            <div className="fr-style-1d4669b6">
-                                                <table className="table align-middle mb-0 fr-style-310c95f3">
-                                                    <thead>
-                                                        <tr className="fr-style-c2cbac2">
-                                                            <th rowSpan={2} className="px-2 py-3 align-middle text-center fr-style-4ff6cdc1">
-                                                                <div className="text-dark fw-bold fr-style-3f3c752c">Lender Name</div>
-                                                                <div className="text-muted fr-style-3f58a42e">Contact Info</div>
-                                                            </th>
-                                                            <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-26842ef4">Category</th>
-                                                            <th className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Match Analysis</th>
-                                                            <th colSpan={4} className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Requirements Match</th>
-                                                            <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-1b4a0199">Match</th>
-                                                            <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-705890ee">Actions</th>
-                                                        </tr>
-                                                        <tr className="fr-style-123ff9de">
-                                                            <th className="px-1 py-2 text-center fr-style-6fe1846d">Matches</th>
-
-                                                            <th className="px-1 py-2 text-center fr-style-6ed6d344">FICO Score</th>
-                                                            <th className="px-1 py-2 text-center fr-style-45c66d77">Min Revenue</th>
-                                                            <th className="px-1 py-2 text-center fr-style-350c3165">Min TIB</th>
-                                                            <th className="px-1 py-2 text-center fr-style-45c66d77">Min Deposit</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {filteredLenders.length > 0 ? (
-                                                            filteredLenders.map((lender: any, idx: number) => {
-                                                                const radius = 16;
-                                                                const circumference = 2 * Math.PI * radius;
-                                                                const strokeDashoffset = circumference - (lender.score / 100) * circumference;
-
-                                                                const isAssigned = assignedLenderIds.includes(lender.id);
-
-                                                                return (
-                                                                    <tr
-                                                                        key={lender.id || idx}
-                                                                        className={showAssignIndicator && idx === 0 ? 'row-pulse-animation' : ''}
-                                                                        style={{ borderBottom: '1px solid #e2e8f0', background: isAssigned ? '#f1f5f9' : '#fff' }}
-                                                                        onMouseEnter={e => !isAssigned && (e.currentTarget.style.background = showAssignIndicator && idx === 0 ? '' : '#f8fafc')}
-                                                                        onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = showAssignIndicator && idx === 0 ? '' : '#fff')}
-                                                                    >
-
-                                                                        {/* Lender Name */}
-                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="fw-bold text-dark fr-style-747e3e7d">{lender.name || 'Lender Name'}</div>
-                                                                            <div className="text-muted fr-style-3f58a42e">{lender.phone || lender.email || 'N/A'}</div>
-                                                                        </td>
-                                                                        {/* Category */}
-                                                                        <td className="px-1 py-3 text-center fr-style-579eac21">
-                                                                            <span className="fr-style-1db6650e">
-                                                                                {lender.product_category || 'Category'}
-                                                                            </span>
-                                                                        </td>
-                                                                        {/* Matches */}
-                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="fw-bold fr-lender-score-fraction" style={{ color: lender.score_hex }}>{lender.matches_fraction}</div>
-                                                                            <div className="fr-lender-score-text" style={{ color: lender.score_hex }}>{lender.score_text}</div>
-                                                                        </td>
-
-                                                                        {/* FICO Score */}
-                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
-                                                                                {lender.checks.fico ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
-                                                                                <span className="fr-style-d7deedb">{lender.requirements.min_fico ? `${lender.requirements.min_fico}+` : 'N/A'}</span>
-                                                                            </div>
-                                                                        </td>
-                                                                        {/* Min Revenue */}
-                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
-                                                                                {lender.checks.revenue ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
-                                                                                <span className="fr-style-d7deedb">{lender.requirements.min_revenue ? `${formatCurrency(lender.requirements.min_revenue, '$', 1, 0)}+` : 'N/A'}</span>
-                                                                            </div>
-                                                                        </td>
-                                                                        {/* Min TIB */}
-                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
-                                                                                {lender.checks.tib ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
-                                                                                <span className="fr-style-d7deedb">{lender.requirements.min_tib ? `${lender.requirements.min_tib} mo` : 'N/A'}</span>
-                                                                            </div>
-                                                                        </td>
-                                                                        {/* Min Deposit */}
-                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
-                                                                                {lender.checks.deposit ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
-                                                                                <span className="fr-style-d7deedb">{lender.requirements.min_deposit ? `${formatCurrency(lender.requirements.min_deposit, '$', 1, 0)}+` : 'N/A'}</span>
-                                                                            </div>
-                                                                        </td>
-                                                                        {/* Overall Match */}
-                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="d-inline-flex align-items-center justify-content-center position-relative fr-style-210d4313">
-                                                                                <svg width="44" height="44" viewBox="0 0 44 44">
-                                                                                    <circle cx="22" cy="22" r={radius} stroke="#e2e8f0" strokeWidth="3.5" fill="none" />
-                                                                                    <circle cx="22" cy="22" r={radius} stroke={lender.score_hex} strokeWidth="3.5" fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="fr-style-c5a99bb" />
-                                                                                </svg>
-                                                                                <span className="position-absolute fw-bold funding-req-circle-text" style={{ color: lender.score_hex }}>{lender.score}%</span>
-                                                                            </div>
-                                                                        </td>
-                                                                        {/* Actions */}
-                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            {!isAssigned ? (
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        setLenderToAssign(lender);
-                                                                                        setShowAssignModal(true);
-                                                                                    }}
-                                                                                    disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
-                                                                                    className="btn btn-sm btn-light border text-muted fw-medium d-inline-flex align-items-center gap-1 fr-style-4f21c796"
-                                                                                >
-                                                                                    <i className="ri-user-add-line fr-style-3f3c752c"></i> Assign
-                                                                                </button>
-                                                                            ) : (
-                                                                                <span className="badge bg-success-subtle text-success fs-12 px-2 py-1">
-                                                                                    <i className="ri-check-line me-1"></i> Assigned
-                                                                                </span>
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })
-                                                        ) : (
-                                                            <tr>
-                                                                <td colSpan={9} className="text-center py-4 text-muted fs-14">
-                                                                    <i className="ri-search-line fs-24 d-block mb-2"></i>
-                                                                    No matched lenders found for this funding type.
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                        <div className="card-footer bg-white border-top p-3">
-                                            <div className="d-flex align-items-center justify-content-between">
-                                                <div className="text-muted fs-13">
-                                                    Showing <span className="fw-semibold text-dark">1</span> to <span className="fw-semibold text-dark">{review.matched_lenders?.length || 0}</span> of <span className="fw-semibold text-dark">{review.matched_lenders?.length || 0}</span> lenders
-                                                </div>
-                                                <div className="d-flex align-items-center gap-3">
-                                                    <ul className="pagination pagination-sm mb-0">
-                                                        <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-double-line"></i></a></li>
-                                                        <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-s-line"></i></a></li>
-                                                        <li className="page-item active"><a className="page-link rounded bg-dark border-dark text-white fw-medium" href="#!">1</a></li>
-                                                        <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-s-line"></i></a></li>
-                                                        <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-double-line"></i></a></li>
-                                                    </ul>
-                                                    <select className="form-select form-select-sm border-light bg-light fw-medium text-dark fr-style-5dc02308">
-                                                        <option value="10">10</option>
-                                                        <option value="25">25</option>
-                                                        <option value="50">50</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>{/* end card */}
-                                </>
+                                <LenderInformationCard
+                                    cardRef={lenderTableRef}
+                                    // The card shows each lender "Lender Name - Legal Name" (R2 BUG-008).
+                                    lenders={review.matched_lenders}
+                                    assignedLenderIds={assignedLenderIds}
+                                    subjectLabel="funding request"
+                                    onAssign={assignLender}
+                                    isBusy={assignLenderMutation.isPending || updateStatusMutation.isPending}
+                                    highlightFirstRow={showAssignIndicator}
+                                    // As on the application page: past its editable statuses the
+                                    // lender is fixed (SCRUM-434 S434-BUG-03) - just that lender.
+                                    canAssign={review.can_assign_lender !== false}
+                                    assignDisabledReason={`The lender can't be changed now that the funding application is "${review.funding_application?.status ?? ''}".`}
+                                    onlyAssigned={review.can_assign_lender === false && assignedLenderIds.length > 0}
+                                />
                             )}
 
 
@@ -711,7 +537,11 @@ export default function FundingRequestDetail() {
                                                             }
                                                         }}
                                                         placeholder="Please provide a reason for rejection..."
+                                                        maxLength={REJECT_REASON_MAX_LENGTH}
                                                     ></textarea>
+                                                    <div className="form-text text-end">
+                                                        {rejectReason.length.toLocaleString('en-US')} / {REJECT_REASON_MAX_LENGTH.toLocaleString('en-US')}
+                                                    </div>
                                                     {validationErrors.reject_reason && (
                                                         <div className="invalid-feedback d-block mt-2">
                                                             {validationErrors.reject_reason[0]}
@@ -841,7 +671,22 @@ export default function FundingRequestDetail() {
                                         <i className="ri-chat-3-line me-1"></i> Rejection Note
                                     </p>
                                     <div className="border rounded-3 p-3 text-dark fs-13 fr-style-44b06d7f">
-                                        {rejectReason}
+                                        {/* A long note folds, so the dialog stays on one screen. */}
+                                        <div data-testid="reject-note-preview" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                                            {rejectNoteExpanded || rejectReason.length <= REJECT_NOTE_PREVIEW_LENGTH
+                                                ? rejectReason
+                                                : `${rejectReason.slice(0, REJECT_NOTE_PREVIEW_LENGTH).trimEnd()}…`}
+                                        </div>
+                                        {rejectReason.length > REJECT_NOTE_PREVIEW_LENGTH && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-link btn-sm p-0 mt-2 fw-semibold"
+                                                onClick={() => setRejectNoteExpanded(v => !v)}
+                                                aria-expanded={rejectNoteExpanded}
+                                            >
+                                                {rejectNoteExpanded ? 'See less' : 'See more'}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -872,108 +717,6 @@ export default function FundingRequestDetail() {
                     </ModalBody>
                 </Modal>
 
-                {/* Standard Assign Lender Modal */}
-                <Modal isOpen={showAssignModal} toggle={() => !assignLenderMutation.isPending && setShowAssignModal(false)} centered size="md" contentClassName="border-0 shadow-lg" modalClassName="flip">
-                    <ModalBody className="p-0">
-                        {/* Simple white header band */}
-                        <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
-                            <div className="avatar-md mx-auto mb-3">
-                                <span className="avatar-title rounded-circle fs-22 text-white bg-dark">
-                                    <i className="ri-bank-line"></i>
-                                </span>
-                            </div>
-                            <h5 className="fw-bold mb-1">Confirm Assign Lender</h5>
-                            <p className="text-muted fs-13 mb-0">
-                                Are you sure you want to assign <strong>{lenderToAssign?.name}</strong> to this funding request?
-                            </p>
-                        </div>
-
-                        {/* Request Information */}
-                        <div className="p-4">
-                            {lenderToAssign && (
-                                <div className="mb-4 text-start">
-                                    <p className="fs-12 text-uppercase fw-bold text-muted mb-2 fr-style-5385d7b4">
-                                        <i className="ri-information-line me-1"></i> Lender Information
-                                    </p>
-                                    <div className="border rounded-3 p-3">
-                                        {/* Lender Name */}
-                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                            <span className="fs-13 text-muted fw-medium">Lender Name</span>
-                                            <span className="fs-13 fw-semibold text-dark">{lenderToAssign.name}</span>
-                                        </div>
-
-                                        {/* Funding Type */}
-                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                            <span className="fs-13 text-muted fw-medium">Funding Type</span>
-                                            <span className="fs-13 fw-semibold text-dark">{lenderToAssign.product_category || '—'}</span>
-                                        </div>
-
-                                        {/* Match Analysis */}
-                                        <div className="d-flex justify-content-between align-items-center">
-                                            <span className="fs-13 text-muted fw-medium">Match Analysis</span>
-                                            <div className="d-flex align-items-center gap-2">
-                                                <span className={`fs-13 fw-semibold ${lenderToAssign.score_text?.includes('Excellent') ? 'text-success' :
-                                                    lenderToAssign.score_text?.includes('Good') ? 'text-warning' :
-                                                        lenderToAssign.score_text?.includes('Poor') ? 'text-danger' :
-                                                            'text-primary'
-                                                    }`}>
-                                                    {lenderToAssign.matches_fraction || 'N/A'}
-                                                </span>
-                                                <i className="ri-arrow-right-line text-muted fs-12"></i>
-                                                <span className={`badge fs-12 text-white ${lenderToAssign.score_text?.includes('Excellent') ? 'bg-success' :
-                                                    lenderToAssign.score_text?.includes('Good') ? 'bg-warning' :
-                                                        lenderToAssign.score_text?.includes('Poor') ? 'bg-danger' :
-                                                            'bg-primary'
-                                                    }`}>
-                                                    {lenderToAssign.score_text || 'Match'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="d-flex justify-content-center gap-3 mt-4">
-                                <button
-                                    type="button"
-                                    className="btn btn-light fw-medium px-4"
-                                    onClick={() => setShowAssignModal(false)}
-                                    disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn btn-dark fw-medium waves-effect waves-light px-4"
-                                    onClick={() => {
-                                        assignLenderMutation.mutate(
-                                            { id: review.id, lender_ids: [lenderToAssign?.id] },
-                                            {
-                                                onSuccess: () => {
-                                                    toast.success(`Lender assigned successfully`);
-                                                    setShowAssignModal(false);
-                                                    setLenderToAssign(null);
-                                                    setAssignedLenderIds([lenderToAssign?.id]);
-                                                    window.dispatchEvent(new Event('refreshActivities'));
-                                                },
-                                                onError: (err: any) => {
-                                                    toast.error(err?.response?.data?.message || 'Failed to assign lender');
-                                                }
-                                            }
-                                        );
-                                    }}
-                                    disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
-                                >
-                                    {assignLenderMutation.isPending || updateStatusMutation.isPending ? (
-                                        <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...</>
-                                    ) : (
-                                        <><i className="ri-user-add-line align-bottom me-1"></i> Assign Lender</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </ModalBody>
-                </Modal>
                 {/* Standard Missing Lender Modal */}
                 <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} centered size="md" contentClassName="border-0 shadow-lg" modalClassName="flip">
                     <ModalBody className="p-0">
@@ -985,7 +728,7 @@ export default function FundingRequestDetail() {
                             </div>
                             <h5 className="fw-bold mb-1">Lender Required</h5>
                             <p className="text-muted fs-13 mb-0">
-                                Assign to Lender. You can assign Before <strong className="text-dark">Approved</strong>
+                                Assign a lender before approving this request.
                             </p>
                         </div>
                         <div className="p-4">

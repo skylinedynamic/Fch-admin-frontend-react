@@ -120,9 +120,10 @@ export default function ClientDetails() {
         }
     }, [activeTab]);
 
-    // Profile Stats Query
-    const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useClientProfileStats(id as string, !!id);
-    const { data: clientFullData, error: clientError, refetch: refetchClient } = useClient(id as string, !!id);
+    const { data: clientFullData, error: clientError, isSuccess: clientLoaded, refetch: refetchClient } = useClient(id as string, !!id);
+    // Counters and activity wait for the client: an id that is not one
+    // (/clients/abc) must not reach them (BUG-001).
+    const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useClientProfileStats(id as string, clientLoaded);
 
     // The Agreement tab saved the switch itself: keep the new value, nothing to reload.
     const handleAgreementRequiredChange = (required: boolean) => {
@@ -405,7 +406,7 @@ export default function ClientDetails() {
                     <div className="row pt-1">
                         <div className="col-12">
                             <div className="d-flex flex-wrap metrics-strip justify-content-center">
-                                {statsLoading ? (
+                                {statsLoading || !clientLoaded ? (
                                     <>
                                         {[1, 2, 3, 4, 5, 6].map((i) => (
                                             <div key={`skeleton-${i}`} className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative px-3 py-2 shadow-sm">
@@ -622,6 +623,7 @@ export default function ClientDetails() {
                                 entityId={id}
                                 entityType="Client"
                                 loading={isSaving}
+                                enabled={clientLoaded}
                                 borrowerEmail={formData.email}
                                 partnerId={formData.partner_id ?? undefined}
                                 taskOwner={formData.assign_id ? { id: formData.assign_id, name: (formData as Client & { assign_name?: string | null }).assign_name } : null}

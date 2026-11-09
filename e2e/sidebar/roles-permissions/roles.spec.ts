@@ -192,3 +192,25 @@ test.describe('Edit role', () => {
     expect(api.find('PUT', '/common/roles/2')).toHaveLength(0)
   })
 })
+
+// R2 BUG-011: a static (system) role - the seeded Admin - is read-only.
+test.describe('A static (system) role', () => {
+  test('its card offers View Role, which opens the role read-only', async ({ page }) => {
+    const api = await openList(page)
+    api.add({ method: 'POST', match: '/common/permissions', body: ok(PERMS) })
+    api.add({ method: 'GET', match: '/common/roles/1', body: ok({ id: 1, name: 'Super Admin', description: 'Everything', is_static: true, permission: { 1: 'view users', 2: 'create users', 3: 'view clients', 4: 'delete clients' }, users: [] }) })
+    const card = page.locator('.role-summary-card').nth(0)
+    await expect(card.getByRole('button', { name: /edit role/i })).toHaveCount(0)
+    await card.getByRole('button', { name: /view role/i }).click()
+
+    await expect(page).toHaveURL(/\/roles-permissions\/edit\/1$/)
+    await expect(page.getByRole('heading', { name: 'View Role' })).toBeVisible()
+    await expect(page.getByText('This is a system role. Its name and permissions cannot be changed.')).toBeVisible()
+    await expect(page.getByPlaceholder('Enter a role name')).toHaveValue('Super Admin')
+    await expect(page.getByPlaceholder('Enter a role name')).toBeDisabled()
+    await expect(page.getByLabel('Administrator Access')).toBeDisabled()
+    await expect(page.locator('input[id^="perm-"]:checked')).toHaveCount(4)
+    await expect(page.locator('input[id^="perm-"]:enabled')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /update/i })).toHaveCount(0)
+  })
+})
