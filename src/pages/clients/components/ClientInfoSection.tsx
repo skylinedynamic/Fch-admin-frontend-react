@@ -22,6 +22,7 @@ import type { Client, BorrowerPlan, RevealableClientField } from '../../../modul
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
+import { dateOfBirthError, latestDateOfBirth } from '../../../utils/dateOfBirth';
 import { locationData } from '../../../modules/location';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers, getPartnerBorrowerFee } from '../../../modules/partner/services';
@@ -146,6 +147,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         };
         fetchPartnerBorrowerFee();
     }, [isUserHost, clientId, isFetching, wasFreeTrial]);
+
+    // An empty Date of Birth calendar opens 18 years back; worked out once so
+    // the calendar is not sent back there on every re-render.
+    const dateOfBirthOpensOn = React.useMemo(() => latestDateOfBirth(), []);
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = borrowerPlans;
@@ -922,14 +927,17 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                 }}
                                 dateFormat="dd M, yy"
                                 maxDate={new Date()}
+                                viewDate={formData.date_of_birth ? undefined : dateOfBirthOpensOn}
                                 placeholder="Select date"
                                 showIcon
-                                className="w-100"
+                                className={`w-100 ${errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth)) ? 'is-invalid' : ''}`}
                                 appendTo="self"
                                 readOnlyInput
                             />
                         </div>
-                        {errors.date_of_birth && <div className="text-danger mt-1 small">{errors.date_of_birth}</div>}
+                        {(errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth))) && (
+                            <div className="text-danger mt-1 small">{errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth))}</div>
+                        )}
                     </div>
                 </div>
                 <div className="col-lg-6">
