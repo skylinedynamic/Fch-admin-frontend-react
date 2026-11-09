@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, ok, paginated, failure, seedSession, expectCall, confirmDelete, cancelDelete, pickPrime, type ApiMock } from '../../support/helpers'
+import { loadEnv } from 'vite'
 
 /**
  * A partner's profile beyond the create form: the stats strip, the tabs
@@ -73,6 +74,24 @@ test.describe('Partner create - defaults', () => {
     const api = await openProfile(page, 'statusAgent')
     await expectCall(api, 'GET', '/admin/partners-details/5')
     expect(api.find('GET', '/admin/partners/next-id')).toHaveLength(0)
+  })
+})
+
+test.describe('Partner create - subdomain', () => {
+  // The API saves <subdomain>.<BASE_WEBSITE>, so the form shows the website's host.
+  const websiteHost = new URL(loadEnv('development', process.cwd(), 'VITE_').VITE_WEBSITE_URL).host
+
+  test('shows the website host after the subdomain and in the portal url hint', async ({ page }) => {
+    await seedSession(page, { permissions: ADMIN_PERMS })
+    await mockApi(page, [])
+    await page.goto('/partners/create')
+
+    const field = page.locator('.input-group', { has: page.locator('input[name="partner_domain"]') })
+    await expect(field.locator('.input-group-text')).toHaveText(`.${websiteHost}`)
+
+    await page.locator('input[name="company_name"]').fill('Acme Funding')
+    await expect(page.locator('input[name="partner_domain"]')).toHaveValue('acmefunding')
+    await expect(page.locator('label code')).toHaveText(new RegExp(`^acmefunding\\.\\s*${websiteHost.replace(/[.]/g, '\\.')}$`))
   })
 })
 

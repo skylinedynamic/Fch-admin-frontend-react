@@ -204,3 +204,12 @@ export const partnerOptionLabel = (partner: PartnerOption): string => {
     if (partner.full_name && partner.company_name) return `${partner.company_name} (${partner.full_name})`;
     return partner.company_name || partner.full_name || `Partner #${partner.id}`;
 };
+
+/**
+ * The host after a partner's subdomain. The API saves the domain as
+ * <subdomain>.<BASE_WEBSITE>, so this is the website's host, not the portal's.
+ */
+export const partnerPortalBaseHost = (
+    websiteUrl: string | undefined = import.meta.env.VITE_WEBSITE_URL,
+    currentHost: string = window.location.host
+): string => websiteUrl?.trim().replace(/^https?:\/\//, '').split('/')[0] || currentHost;
