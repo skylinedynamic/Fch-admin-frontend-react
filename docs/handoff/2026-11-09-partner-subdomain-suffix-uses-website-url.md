@@ -21,7 +21,10 @@ All four places now use one helper, `partnerPortalBaseHost()`, which reads the h
 
 ## Testing
 
-RESULTS_PLACEHOLDER
+- **Vitest:** `tests/modules/partner`, `tests/pages/partners` and `PictureLimit.test.tsx`: 19 files, 128 pass. The new tests failed before the change.
+- **Typecheck:** pass.
+- **E2E:** `partner-profile.spec.ts`, `partners.spec.ts` and `partner-field-errors.spec.ts`: 62 pass, against the dev server on :5174. The new spec failed before the change (`.localhost:5174` instead of `.localhost:3000`).
+- **Not run:** the full Vitest and E2E suites, and a live-API check.
 
 ## Open items
 
