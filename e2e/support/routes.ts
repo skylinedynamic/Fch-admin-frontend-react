@@ -18,6 +18,8 @@ export type Guard =
   | { kind: 'partnerHost' }
   /** NonHostPartnerRoute: a non-host partner account with a first payment date. */
   | { kind: 'nonHostPartner' }
+  /** HostOwnerRoute: is_host AND (the partner account itself OR "update commission") - fch-api CommissionViewer::HOST_OWNER. */
+  | { kind: 'hostOwner' }
 
 export type RouteCheck = {
   name: string
@@ -32,6 +34,7 @@ const perm = (...any: string[]): Guard => ({ kind: 'permission', any })
 export const ROUTES: RouteCheck[] = [
   { name: 'Dashboard', path: '/', guard: { kind: 'none' }, api: { method: 'GET', path: '/common/dashboard' } },
   { name: 'Profile', path: '/profile', guard: { kind: 'none' } },
+  { name: 'Owner summary', path: '/owner-summary', guard: { kind: 'hostOwner' }, api: { method: 'GET', path: '/common/owner-summary' } },
   { name: 'Notifications', path: '/notifications', guard: { kind: 'none' }, api: { method: 'GET', path: '/common/notifications' } },
 
   { name: 'Reminders', path: '/reminders', guard: perm('view reminders'), api: { method: 'POST', path: '/common/reminders/fetch-reminders', body: { page: 1, per_page: 5 } } },
@@ -140,6 +143,8 @@ export function expectedOutcome(route: RouteCheck, user: SessionUser, sub: Sessi
       return expectedOutcome({ ...route, guard: { kind: 'permission', any: route.guard.any } }, user, sub)
     case 'partnerHost':
       return host && partnerAccount ? 'allowed' : 'home'
+    case 'hostOwner':
+      return host && (partnerAccount || (user.permissions || []).includes('update commission')) ? 'allowed' : 'home'
     case 'nonHostPartner':
       return !host && partnerAccount && Boolean(user.first_payment_date) ? 'allowed' : 'home'
     case 'permission': {

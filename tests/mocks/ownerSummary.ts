@@ -1,0 +1,117 @@
+import type { OwnerSummary, OwnerSummaryResponse } from '../../src/modules/owner-summary/types'
+
+/** GET /common/owner-summary, in fch-api OwnerSummaryService's shape. */
+export const ownerSummaryFixture: OwnerSummary = {
+  period: {
+    key: 'this_month',
+    timezone: 'UTC',
+    from: '2026-11-01',
+    to: '2026-11-30',
+    previous_from: '2026-10-01',
+    previous_to: '2026-10-31',
+  },
+  environment: 'production',
+  kpis: {
+    cash_collected: { current: 1550, previous: 400 },
+    outstanding: { amount: 400, invoices: 3 },
+    funded: { amount: 150000, deals: 2, previous_amount: 20000 },
+    new_clients: { current: 9, previous: 4 },
+    new_leads: { current: 3, previous: 2 },
+    active_partners: { current: 1, total: 2 },
+  },
+  cash_by_stream: [
+    { stream: 'partner_enrollment', amount: 1000, payments: 1 },
+    { stream: 'platform_fee', amount: 200, payments: 1 },
+    { stream: 'user_seat', amount: 0, payments: 0 },
+    { stream: 'borrower_fee', amount: 50, payments: 1 },
+    { stream: 'client_enrollment', amount: 300, payments: 1 },
+  ],
+  receivables: {
+    unpaid_recent: { amount: 120, invoices: 1 },
+    unpaid_over_30_days: { amount: 80, invoices: 1 },
+    failed: { amount: 200, invoices: 1 },
+  },
+  commissions: {
+    host_share_booked: 11000,
+    partner_share: 4000,
+    paid_to_partners: 0,
+    paid_to_staff: 0,
+    payouts_due: 4000,
+  },
+  attention: {
+    unpaid_over_30_days: { amount: 80, invoices: 1 },
+    failed_invoices: { amount: 200, invoices: 1 },
+    partners_owing: 1,
+    suspended_partners: 1,
+    failed_payments: 1,
+    disputed_payments: 0,
+    manual_payments_to_approve: 1,
+    payouts_due: { amount: 4000, deals: 1 },
+    unreviewed_embedded_applications: 1,
+    pending_prequalifications: 1,
+    trials_ending: { partners: 1, clients: 0 },
+    stalled_deals: 1,
+    stalled_requested: 30000,
+  },
+  pipeline: {
+    open: { count: 2, requested: 100000 },
+    groups: [
+      { key: 'intake', statuses: ['Submitted (Received)'], count: 0, requested: 0 },
+      { key: 'underwriting', statuses: ['Underwriting Review'], count: 1, requested: 30000 },
+      { key: 'approved', statuses: ['Approved (Conditional)'], count: 0, requested: 0 },
+      { key: 'with_lender', statuses: ['Lender Reviewing'], count: 1, requested: 70000 },
+      { key: 'closing', statuses: ['Cleared to Fund'], count: 0, requested: 0 },
+      { key: 'on_hold', statuses: ['On Hold'], count: 0, requested: 0 },
+    ],
+    activity: { intake: 2, underwriting: 0, approved: 0, with_lender: 1, closing: 0, on_hold: 0, funded: 2 },
+    median_days_to_fund: 20,
+  },
+  stalled_deals: [
+    {
+      id: 4,
+      application_number: 'FUND-000044',
+      client: 'Biz Acme',
+      partner: 'Host Co',
+      status: 'Underwriting Review',
+      requested_amount: 30000,
+      days_in_status: 45,
+    },
+  ],
+  lead_sources: {
+    leads: [
+      { source: 'Referral Partner', count: 1 },
+      { source: 'Website', count: 1 },
+      { source: 'Cold Outreach', count: 0 },
+      { source: 'not_set', count: 1 },
+    ],
+    prequalifications: 1,
+    embedded_applications: 3,
+  },
+  partners: { total: 2, white_label: 1, certified: 1, new: 2, on_trial: 1, suspended: 1 },
+  top_partners: [
+    {
+      id: 2,
+      company_name: 'Partner One',
+      partner_type: 'White-Label Partner (WL)',
+      leads: 2,
+      funded_deals: 1,
+      funded_amount: 100000,
+      commission_share: 4000,
+      commission_paid: 0,
+    },
+  ],
+  monthly: [
+    { month: '2026-06', funded: 0, cash: 0 },
+    { month: '2026-07', funded: 0, cash: 0 },
+    { month: '2026-08', funded: 0, cash: 0 },
+    { month: '2026-09', funded: 0, cash: 0 },
+    { month: '2026-10', funded: 20000, cash: 400 },
+    { month: '2026-11', funded: 150000, cash: 1550 },
+  ],
+}
+
+export const ownerSummaryResponse = (data: OwnerSummary = ownerSummaryFixture): OwnerSummaryResponse => ({
+  status: true,
+  message: 'Owner summary retrieved successfully',
+  data,
+})

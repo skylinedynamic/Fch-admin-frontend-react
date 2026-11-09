@@ -6,6 +6,8 @@ import { useConfigStore } from "../../store/config";
 import faviconImg from "../../../assets/images/Favicon.png";
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from "../../config/appConfig";
 import { NOTIFICATIONS_ROUTE } from "../../config/notifications";
+import { OWNER_SUMMARY_ROUTE } from "../../config/ownerSummary";
+import { useIsHostOwner } from "../../lib/auth/useIsHostOwner";
 import { useUnreadNotificationCount, formatUnreadCount } from "../../modules/notifications";
 
 // Menu item configuration with required permissions
@@ -16,6 +18,13 @@ const menuItems = [
     label: "Dashboard",
     permission: "",
     exact: true,
+  },
+  {
+    to: OWNER_SUMMARY_ROUTE,
+    icon: "ri-line-chart-line",
+    label: "Owner Summary",
+    permission: "",
+    isHostOwnerOnly: true,
   },
   {
     to: "/partners",
@@ -334,6 +343,7 @@ export default function Sidebar() {
   const currentUser = useAuthStore((state) => state.user);
   const userSubscription = useAuthStore((state) => state.userSubscription);
   const isHost = currentUser?.is_host == 1;
+  const isHostOwner = useIsHostOwner();
 
   const isFreeTrial = !!userSubscription?.is_free_trail;
   const trialEndDate = userSubscription?.free_trail_end_date;
@@ -412,6 +422,11 @@ export default function Sidebar() {
         return false;
       }
 
+      // Only whoever sees the host's whole book (see useIsHostOwner)
+      if (item.isHostOwnerOnly && !isHostOwner) {
+        return false;
+      }
+
       // 6. Generic rule: Check isPartnerOnly flag
       if (item.isPartnerOnly && currentUser?.entity_type !== ENTITY_TYPE_PARTNER) {
         return false;
@@ -450,7 +465,7 @@ export default function Sidebar() {
         return checkVisibility(item) ? item : null;
       })
       .filter((item) => item !== null);
-  }, [menuItems, hasPermission, isHost, currentUser]);
+  }, [menuItems, hasPermission, isHost, isHostOwner, currentUser]);
 
   return (
     <div className={menuClass}>
