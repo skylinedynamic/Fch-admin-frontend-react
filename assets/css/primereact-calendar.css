@@ -120,6 +120,25 @@
   position: relative !important;
 }
 
+/* A half was too narrow for the longer month names on a narrow calendar, so
+   "November" broke onto two lines. The year (four digits) gets a fixed width
+   and the month takes the rest; neither label may wrap. */
+.p-datepicker .p-datepicker-title .p-cal-nav[data-kind="month"] {
+  flex: 1 1 auto !important;
+  max-width: none !important;
+}
+
+.p-datepicker .p-datepicker-title .p-cal-nav[data-kind="year"] {
+  flex: 0 0 76px !important;
+  max-width: 76px !important;
+}
+
+.p-datepicker .p-datepicker-title .p-cal-nav .fp-yd-trigger {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
 /* The list's text settings are what the Flatpickr calendar hands down to its
    own list; here it would otherwise inherit the header's bold white title. */
 .p-datepicker .p-datepicker-title .p-cal-nav .fp-yd-list {
@@ -429,4 +448,26 @@
 .p-datepicker .p-timepicker:has(~ .p-datepicker-footer),
 .p-datepicker .p-timepicker:has(~ .p-datepicker-buttonbar) {
   border-radius: 0 !important;
+}
+
+/* A date field with an error (e.g. a date of birth under 18): a red border
+   and the message under it. Bootstrap's .is-invalid also draws a warning icon
+   in the input; the calendar input does not have room for it (it sat over the
+   date, top left), so it is left out. */
+.p-calendar.is-invalid .p-inputtext,
+.p-calendar .p-inputtext.is-invalid,
+.p-calendar .p-inputtext.is-invalid:enabled:focus {
+  background-image: none !important;
+  border-color: var(--vz-form-invalid-border-color, #f06548) !important;
+  padding-right: 0.9rem !important;
+}
+
+.p-calendar .p-inputtext.is-invalid:enabled:focus {
+  box-shadow: 0 0 0 0.15rem rgba(240, 101, 72, 0.25) !important;
+}
+
+/* The whole box goes red - the calendar button on the right as well as the
+   input - when the calendar (its wrapper, className) is marked .is-invalid. */
+.p-calendar.is-invalid .p-datepicker-trigger {
+  border-color: var(--vz-form-invalid-border-color, #f06548) !important;
 }

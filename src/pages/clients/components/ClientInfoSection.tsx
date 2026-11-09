@@ -22,6 +22,7 @@ import type { Client, BorrowerPlan, RevealableClientField } from '../../../modul
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
+import { dateOfBirthError } from '../../../utils/dateOfBirth';
 import { dateOfBirthBounds } from '../../../utils/dates';
 import { locationData } from '../../../modules/location';
 import { getCountryPhoneInfo } from '../../../config/locations';
@@ -148,6 +149,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         };
         fetchPartnerBorrowerFee();
     }, [isUserHost, clientId, isFetching, wasFreeTrial]);
+
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = borrowerPlans;
@@ -926,18 +928,22 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                     handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
                                 }}
                                 dateFormat="dd M, yy"
-                                // 18 to 120 years old, as the API checks (BUG-005).
+                                // Up to 120 years back (BUG-005) and every year up to today;
+                                // an under-18 pick gets the minimum-age message below, as
+                                // the API answers. An empty field opens 18 years back.
                                 minDate={dobBounds.minDate}
-                                maxDate={dobBounds.maxDate}
+                                maxDate={new Date()}
                                 viewDate={formData.date_of_birth ? undefined : dobBounds.maxDate}
                                 placeholder="Select date"
                                 showIcon
-                                className="w-100"
+                                className={`w-100 ${errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth)) ? 'is-invalid' : ''}`}
                                 appendTo="self"
                                 readOnlyInput
                             />
                         </div>
-                        {errors.date_of_birth && <div className="text-danger mt-1 small">{errors.date_of_birth}</div>}
+                        {(errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth))) && (
+                            <div className="text-danger mt-1 small">{errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth))}</div>
+                        )}
                     </div>
                 </div>
                 <div className="col-lg-6">

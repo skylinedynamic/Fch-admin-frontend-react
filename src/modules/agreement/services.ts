@@ -1,5 +1,14 @@
 import { apiClient } from '../../lib/http/apiClient'
-import { AgreementTemplate, ApiResponse, AgreementSlug, AgreementSignCheck, AgreementPreviewValues } from './types'
+import {
+  AgreementTemplate,
+  ApiResponse,
+  AgreementSlug,
+  AgreementSignCheck,
+  AgreementPreviewValues,
+  AgreementRequirement,
+  AgreementRequirementStatus,
+  SetAgreementRequiredPayload,
+} from './types'
 
 /**
  * `partner_id` for Partner profile › Configuration, where the host edits
@@ -126,6 +135,21 @@ export async function fetchSignedAgreementHtml(userId?: number | string): Promis
 export async function cancelAgreementSign(userId?: number | string): Promise<ApiResponse<null>> {
   const url = userId ? `/common/agreement-sign/cancel/${userId}` : '/common/agreement-sign/cancel'
   const res = await apiClient.post(url)
+  return res.data
+}
+
+/**
+ * Excuse one partner (from the partner agreement) or one client (from their
+ * borrower agreement), or require it again. The host's team only.
+ */
+export async function setAgreementRequired({ userId, required }: SetAgreementRequiredPayload): Promise<ApiResponse<AgreementRequirement>> {
+  const res = await apiClient.post(`/common/agreement-sign/required/${userId}`, { required })
+  return res.data
+}
+
+/** Whether this partner / client must sign, and whether the host can change it now. The host's team only. */
+export async function fetchAgreementRequirement(userId: number): Promise<ApiResponse<AgreementRequirementStatus>> {
+  const res = await apiClient.get(`/common/agreement-sign/required/${userId}`)
   return res.data
 }
 

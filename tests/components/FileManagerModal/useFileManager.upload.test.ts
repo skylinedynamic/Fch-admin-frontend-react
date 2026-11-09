@@ -59,4 +59,30 @@ describe('file manager upload errors', () => {
 
     expect(toast.error).toHaveBeenCalledWith('Failed to upload file')
   })
+
+  // BUG-014 retest: the upload window said "Files Uploaded Successfully" after a
+  // refusal, because it was never told the file failed.
+  const outcome = async (name: string) => {
+    const { result } = renderHook(() => useFileManager('Profile', '/', { enabled: false }, context))
+    let uploaded: boolean | undefined
+    await act(async () => {
+      uploaded = await result.current.handleUploadFile(new File(['x'], name, { type: 'image/png' }), '/', false)
+    })
+    return uploaded
+  }
+
+  it('reports a refused file as not uploaded', async () => {
+    server.use(
+      http.post('*/filemanager/upload', () =>
+        HttpResponse.json({ status: false, errors: { file: 'This file is not a valid image.' } }, { status: 422 })
+      )
+    )
+
+    expect(await outcome('qa-fake.png')).toBe(false)
+  })
+
+  it('reports an accepted file as uploaded', async () => {
+    expect(await outcome('photo.png')).toBe(true)
+    expect(toast.error).not.toHaveBeenCalled()
+  })
 })

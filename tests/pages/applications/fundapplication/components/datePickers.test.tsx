@@ -5,6 +5,7 @@ import { createTestQueryClient } from '../../../../test-utils'
 import CoBorrowerModal from '../../../../../src/pages/applications/fundapplication/components/shared/CoBorrowerModal'
 import FinancialInformationStep from '../../../../../src/pages/applications/fundapplication/components/steps/FinancialInformationStep'
 import OwnershipInformationStep from '../../../../../src/pages/applications/fundapplication/components/steps/OwnershipInformationStep'
+import { openOnLatestDateOfBirth } from '../../../../../src/utils/dateOfBirth'
 import type { CoBorrower, FinancialInfo, OwnerInfo } from '../../../../../src/pages/applications/fundapplication/types'
 
 vi.mock('react-toastify', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
@@ -78,5 +79,62 @@ describe('fund application date pickers use the shared month/year dropdowns', ()
       />
     )
     expectSharedDropdowns()
+  })
+})
+
+describe('fund application date-of-birth pickers open 18 years back', () => {
+  // Every year up to today can be picked; an empty field opens on the latest
+  // date that is old enough (openOnLatestDateOfBirth), a saved one on its date.
+  const expectCutoff = () => {
+    // One entry per render of the one picker.
+    expect(pickerOptions.length).toBeGreaterThan(0)
+    pickerOptions.forEach(options => {
+      expect(options.maxDate).toBe('today')
+      expect(options.onOpen).toBe(openOnLatestDateOfBirth)
+    })
+  }
+
+  it('co-borrower date of birth', () => {
+    pickerOptions.length = 0
+    wrap(<CoBorrowerModal coDraft={coBorrower} setCoDraft={() => {}} onSubmit={() => {}} isEditing={false} />)
+    expectCutoff()
+  })
+
+  it('owner date of birth', () => {
+    pickerOptions.length = 0
+    wrap(
+      <OwnershipInformationStep
+        owner={owner} setOwner={() => {}} coBorrowers={[]} setCoBorrowers={() => {}}
+        onShowCoModal={() => {}} onDeleteCoBorrower={() => {}} coDraft={coBorrower} setCoDraft={() => {}}
+        onAddCoBorrower={() => {}} onEditCoBorrower={() => {}} onNext={() => {}} onBack={() => {}} loading={false}
+        isValid
+      />
+    )
+    expectCutoff()
+  })
+})
+
+describe('fund application date-of-birth message', () => {
+  it('an under-18 co-borrower date shows the minimum-age message', () => {
+    pickerOptions.length = 0
+    const { getByText } = wrap(<CoBorrowerModal coDraft={{ ...coBorrower, dob: '2026-01-01' }} setCoDraft={() => {}} onSubmit={() => {}} isEditing={false} />)
+    expect(getByText('You must be at least 18 years old to continue.')).toBeInTheDocument()
+    // The field itself is marked too (red border), not just the message.
+    expect(document.querySelector('input.is-invalid')).not.toBeNull()
+  })
+
+  it('an under-18 owner date shows the minimum-age message', () => {
+    pickerOptions.length = 0
+    const { getByText } = wrap(
+      <OwnershipInformationStep
+        owner={{ ...owner, dob: '2026-01-01' }} setOwner={() => {}} coBorrowers={[]} setCoBorrowers={() => {}}
+        onShowCoModal={() => {}} onDeleteCoBorrower={() => {}} coDraft={coBorrower} setCoDraft={() => {}}
+        onAddCoBorrower={() => {}} onEditCoBorrower={() => {}} onNext={() => {}} onBack={() => {}} loading={false}
+        isValid
+      />
+    )
+    expect(getByText('You must be at least 18 years old to continue.')).toBeInTheDocument()
+    // The field itself is marked too (red border), not just the message.
+    expect(document.querySelector('input.is-invalid')).not.toBeNull()
   })
 })

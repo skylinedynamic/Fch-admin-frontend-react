@@ -12,9 +12,11 @@ vi.mock('../../../../src/hooks/useSummernote', () => ({ useSummernote: () => ({ 
 
 /**
  * BUG-005 (QA round 2): Clients › Add/Edit Client offered every past date of
- * birth, so a 17-year-old (01 Jan 2009) was saved. The picker now opens on, and
- * stops at, the latest allowed date - 18 years ago - and the API refuses
- * anything outside 18 to 120.
+ * birth, so a 17-year-old (01 Jan 2009) was saved. The picker now opens on the
+ * latest allowed date - 18 years ago - and goes back no further than 120 years;
+ * a later day can still be picked (every year up to today is offered) but gets
+ * "You must be at least 18 years old to continue." under the field, and the API
+ * refuses anything outside 18 to 120.
  */
 const CLIENT = {
   id: 5, first_name: 'Ada', last_name: 'Lovelace', email: 'ada@example.test', phone_number: '(555) 234-5678',
@@ -36,7 +38,7 @@ describe('Client date of birth picker', () => {
     server.resetHandlers()
   })
 
-  it('opens 18 years back and does not offer a later day', async () => {
+  it('opens 18 years back, offers later days, and goes back no further than 120 years', async () => {
     const user = userEvent.setup()
     renderWithProviders(<ClientInfoSection clientId="5" countries={[]} states={[]} cities={[]} />)
 
@@ -54,11 +56,18 @@ describe('Client date of birth picker', () => {
       return el as HTMLElement
     })
 
-    // October 2008: the 21st (the 18th birthday) can be picked, the 22nd cannot.
+    // October 2008: the 21st (the 18th birthday) and the 22nd can both be
+    // picked - the 22nd then gets the minimum-age message (ClientDateOfBirth.test.tsx).
     expect(panel.querySelector('.fp-yd-trigger[data-kind="year"]')).toHaveTextContent('2008')
     const day = (n: number) =>
       Array.from(panel.querySelectorAll('td:not(.p-datepicker-other-month) span')).find((s) => s.textContent === String(n))
     expect(day(21)).not.toHaveClass('p-disabled')
-    expect(day(22)).toHaveClass('p-disabled')
+    expect(day(22)).not.toHaveClass('p-disabled')
+
+    // The year list runs from the oldest allowed birth year (22 Oct 1905: still
+    // 120, a day short of 121) to this year.
+    const years = Array.from(panel.querySelectorAll('.fp-yd-list[data-kind="year"] .fp-yd-opt')).map((o) => o.textContent)
+    expect(years[0]).toBe('1905')
+    expect(years[years.length - 1]).toBe('2026')
   })
 })

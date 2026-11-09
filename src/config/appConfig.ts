@@ -48,6 +48,9 @@ export const LOG_TYPE_PARTNER_CONFIGURATION_UPDATE = 'partner_configuration_upda
 
 // Window event the activity sidebar listens for to reload its entries.
 export const REFRESH_ACTIVITIES_EVENT = 'refreshActivities';
+// Window event fired once refresh-user has stored fresh user data (the API
+// flagged the user with is_refresh) - e.g. the agreement sign modal asks again.
+export const USER_REFRESHED_EVENT = 'fch:user-refreshed';
 export const LOG_TYPE_PARTNER_DELETE = 'partner_delete';
 export const LOG_TYPE_EMAIL_SENT = 'email_sent';
 export const LOG_TYPE_ACTIVITY = 'activity';

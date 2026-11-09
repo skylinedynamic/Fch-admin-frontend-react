@@ -10,11 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
-### 2026-11-09 (lender)
+### 2026-11-09
 
 | File | Title |
 |---|---|
 | [2026-11-09-fixed-inactive-lender-shown-on-lender-information.md](2026-11-09-fixed-inactive-lender-shown-on-lender-information.md) | Lender Information — a fixed lender made Inactive is still shown, with an Inactive badge (SCRUM-434 S434-BUG-05) |
+| [2026-11-09-date-of-birth-minimum-age-18.md](2026-11-09-date-of-birth-minimum-age-18.md) | Date of birth — minimum age 18, calendars open 18 years back, message + red border on an under-age pick |
 
 ### 2026-11-02
 

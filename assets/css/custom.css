@@ -1372,19 +1372,19 @@ File: Custom Css File
   box-shadow: none;
 }
 
-.credit-account-form .credit-account-form__card > .card-header {
+.credit-account-form .credit-account-form__card>.card-header {
   padding: 0.75rem 1rem;
   background: transparent;
   border-bottom: 1px solid var(--vz-border-color);
   border-radius: 4px 4px 0 0;
 }
 
-.credit-account-form .credit-account-form__card > .card-header .card-title {
+.credit-account-form .credit-account-form__card>.card-header .card-title {
   font-size: 0.875rem;
   font-weight: 600;
 }
 
-.credit-account-form .credit-account-form__card > .card-body {
+.credit-account-form .credit-account-form__card>.card-body {
   padding: 1rem;
 }
 
@@ -6931,7 +6931,6 @@ File: Custom Css File
   height: 100%;
   padding: 0.55rem 0.7rem;
   border-radius: var(--ef-radius);
-  background: var(--ef-soft);
 }
 
 .ef-field__label {
@@ -7287,7 +7286,7 @@ File: Custom Css File
   padding: 0.625rem 0;
 }
 
-.ef-fill__group + .ef-fill__group {
+.ef-fill__group+.ef-fill__group {
   border-top: 1px dashed var(--ef-border);
 }
 
@@ -8683,9 +8682,10 @@ File: Custom Css File
    the calendar input's own width instead of its column's. As in the borrower
    portal: the wrapper fills its container. */
 .flatpickr-wrapper {
-    display: block !important;
-    width: 100% !important;
+  display: block !important;
+  width: 100% !important;
 }
+
 /* ==========================================================================
    Partner profile › Configuration — a partner's Email, SMS, Branding and
    Payment settings, edited by the host (PartnerConfigurationSection)
@@ -9306,4 +9306,208 @@ File: Custom Css File
   .blocked-modal__footer {
     flex-direction: column-reverse;
   }
+}
+
+/* Agreement tab: the host's "is this partner / client asked to sign" control,
+   and where their signature stands. In the portal's primary (brand) colour. */
+.agr-req {
+  --agr-primary: var(--brand-primary, var(--vz-primary, #405189));
+  --agr-primary-rgb: var(--brand-primary-rgb, var(--vz-primary-rgb, 64, 81, 137));
+  --agr-muted-rgb: 135, 138, 153;
+  border: 1px solid var(--vz-border-color, #e9ebec);
+  border-radius: 4px;
+  background: var(--vz-secondary-bg, #fff);
+  overflow: hidden;
+}
+
+.agr-req__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.agr-req__icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  transition: background-color .2s ease, color .2s ease;
+}
+
+.agr-req__icon--on {
+  color: var(--agr-primary);
+  background: rgba(var(--agr-primary-rgb), .1);
+}
+
+.agr-req__icon--off {
+  color: rgb(var(--agr-muted-rgb));
+  background: rgba(var(--agr-muted-rgb), .12);
+}
+
+/* Required / Waived pill. */
+.agr-req__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.agr-req__pill--on {
+  color: var(--agr-primary);
+  background: rgba(var(--agr-primary-rgb), .1);
+}
+
+.agr-req__pill--off {
+  color: rgb(var(--agr-muted-rgb));
+  background: rgba(var(--agr-muted-rgb), .14);
+}
+
+.agr-req__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.agr-req__text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--vz-secondary-color, #878a99);
+}
+
+.agr-req__control {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  padding-left: 16px;
+  border-left: 1px solid var(--vz-border-color, #e9ebec);
+}
+
+.agr-req__control-label {
+  margin: 0;
+  line-height: 1;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--vz-secondary-color, #878a99);
+  white-space: nowrap;
+}
+
+.agr-req__control .form-check {
+  margin: 0;
+  min-height: 0;
+}
+
+.agr-req__control .form-check-input {
+  cursor: pointer;
+}
+
+.agr-req__control .form-check-input:checked {
+  background-color: var(--agr-primary);
+  border-color: var(--agr-primary);
+}
+
+.agr-req__control .form-check-input:focus {
+  border-color: rgba(var(--agr-primary-rgb), .5);
+  box-shadow: 0 0 0 .2rem rgba(var(--agr-primary-rgb), .2);
+}
+
+.agr-req__control .form-check-input:disabled {
+  cursor: not-allowed;
+}
+
+/* Where the signature stands, under the control. */
+.agr-req__status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  border-top: 1px dashed var(--vz-border-color, #e9ebec);
+  background: rgba(var(--agr-primary-rgb), .03);
+}
+
+.agr-req__status-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+}
+
+.agr-req__status-icon--on {
+  color: var(--agr-primary);
+  background: rgba(var(--agr-primary-rgb), .1);
+}
+
+.agr-req__status-icon--off {
+  color: rgb(var(--agr-muted-rgb));
+  background: rgba(var(--agr-muted-rgb), .14);
+}
+
+.agr-req__status-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.agr-req__status-text {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--vz-secondary-color, #878a99);
+}
+
+.agr-req__note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--vz-secondary-color, #878a99);
+}
+
+@media (max-width: 575.98px) {
+  .agr-req__head {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .agr-req__control {
+    width: 100%;
+    margin-left: 0;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--vz-border-color, #e9ebec);
+    justify-content: space-between;
+  }
+
+  .agr-req__status {
+    padding: 14px 16px;
+  }
+}
+
+/* Signing is off in Settings › Agreement: the switch is locked. */
+.agr-req__status--locked {
+  --agr-warning-rgb: var(--vz-warning-rgb, 247, 184, 75);
+  border-top: 1px solid rgba(var(--agr-warning-rgb), .35);
+  background: rgba(var(--agr-warning-rgb), .12);
+}
+
+.agr-req__status--locked .agr-req__status-icon {
+  color: rgb(var(--agr-warning-rgb));
+  background: rgba(var(--agr-warning-rgb), .2);
+  filter: brightness(.85);
 }
