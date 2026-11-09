@@ -739,6 +739,42 @@ describe('FundingApplicationDetails — Lender Required', () => {
     expect(mutations.updateStatus).not.toHaveBeenCalled()
   })
 
+  /**
+   * Defect: picking Closed (Completed) on a Draft application with no lender
+   * opened Lender Required; once the lender was assigned the page reloaded the
+   * application and the status dropdown went back to Draft, so the status
+   * picked had to be chosen again. The picked status stays selected through
+   * Lender Required and the lender assignment, ready for Update Status.
+   */
+  it('keeps the picked status through Lender Required and the lender assignment', async () => {
+    useAuthStore.setState({ user: hostWithRights as never })
+    const { rerender } = renderWithProviders(<FundingApplicationDetails />)
+    const shownStatus = () => document.querySelector('.p-dropdown .p-dropdown-label')?.textContent?.trim()
+    await openLenderRequired()
+
+    await userEvent.click(screen.getByRole('button', { name: /got it, take me there/i }))
+    await waitFor(() => expect(screen.queryByText('Lender Required')).not.toBeInTheDocument())
+    expect(shownStatus()).toBe(FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER)
+
+    // The lender is assigned: the page gets the application again, status unchanged.
+    detail.application = { ...detail.application, has_assigned_lender: true, assigned_lender_ids: [5] }
+    rerender(<FundingApplicationDetails />)
+
+    expect(shownStatus()).toBe(FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER)
+    expect(mutations.updateStatus).not.toHaveBeenCalled()
+  })
+
+  it('shows the new status once the application status itself changes', async () => {
+    useAuthStore.setState({ user: hostWithRights as never })
+    const { rerender } = renderWithProviders(<FundingApplicationDetails />)
+    const shownStatus = () => document.querySelector('.p-dropdown .p-dropdown-label')?.textContent?.trim()
+
+    detail.application = { ...detail.application, status: FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER }
+    rerender(<FundingApplicationDetails />)
+
+    expect(shownStatus()).toBe(FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER)
+  })
+
   it('just closes when there is no Lender Information to go to', async () => {
     detail.application = { ...detail.application, matched_lenders: undefined }
     useAuthStore.setState({ user: hostWithRights as never })
