@@ -26,7 +26,11 @@ The Pre-Qualification header now also wraps (`page-actions-wrap flex-wrap`), bec
 
 ## Testing
 
-RESULTS_PLACEHOLDER
+- **Vitest:** `tests/pages/applications/pre-qualification`, `tests/pages/applications/funding`, `tests/modules/application` and `tests/AppRoutes.fundingApplicationEdit.test.tsx`: 16 files, 178 pass, 1 expected fail. The new button tests failed before the change.
+- **Typecheck:** pass.
+- **E2E:** `pre-qualification.spec.ts`, `funding-application-details-r2.spec.ts` and `edit-funding-application-access.spec.ts`: 23 pass, 7 fail. All 8 new Go to Client specs pass.
+- **The 7 failures are not from this change.** The same 7 fail on `05789751`, the commit before it (logged in `docs/e2e/ISSUES.md`).
+- **Not run:** the full Vitest and E2E suites, and a live-API check.
 
 ## Open items
 
