@@ -50,6 +50,20 @@ test.describe('Invoices list', () => {
     await expect(page.getByPlaceholder('Search invoices...')).toHaveValue('')
   })
 
+  // BUG-021 round 2: no invoice is ever Overdue (an unpaid one locks the
+  // profile instead); older invoices are Expired, and the API spells Canceled.
+  test('the status filter offers the statuses invoices have and sends the one picked', async ({ page }) => {
+    const api = await openList(page)
+    await page.locator('.employee-filter-dropdown', { hasText: 'All Status' }).click()
+    const panel = page.locator('.p-dropdown-panel')
+    await expect(panel.getByRole('option', { name: 'Expired', exact: true })).toBeVisible()
+    await expect(panel.getByRole('option', { name: 'Canceled', exact: true })).toBeVisible()
+    await expect(panel.getByRole('option', { name: 'Overdue', exact: true })).toHaveCount(0)
+    await panel.getByRole('option', { name: 'Expired', exact: true }).click()
+    await page.locator('button', { hasText: 'Filters' }).click()
+    await expect.poll(() => api.find('POST', I_LIST).at(-1)?.json.status).toBe('Expired')
+  })
+
   test('shows the empty state', async ({ page }) => {
     await seedSession(page, { permissions: ['view invoices'] })
     await mockApi(page, [{ method: 'POST', match: I_LIST, body: paginated([]) }])

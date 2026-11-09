@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import PageHeader from '../common/PageHeader'
 import { useGroupedPermissions, useUpdateRole } from '../../modules/role/queries'
-import type { ApiModulePermissions } from '../../modules/role/types'
+import type { ApiModulePermissions, RoleDetail } from '../../modules/role/types'
 import PermissionCardsLoader from '../../components/Loader/PermissionCardsLoader'
 import ErrorState from '../../components/Loader/ErrorState'
 import { toast } from 'react-toastify'
 import { fetchRoleDetail } from '../../modules/role/services'
+import '../../../assets/css/roles.css'
 
 type PermissionItem = { id?: number; key: string; label: string; icon: string }
 type ModuleDef = { key: string; name: string; icon: string; desc: string; permissions: PermissionItem[] }
@@ -60,7 +61,9 @@ export default function EditRole() {
   const [selected, setSelected] = useState<Record<string, Record<string, boolean>>>({})
   const [errors, setErrors] = useState<{ name?: string; description?: string; permission_ids?: string }>({})
   const [detailError, setDetailError] = useState<string | null>(null)
-  const [detail, setDetail] = useState<{ id: number | string; name: string; description?: string; permission: string[]; permission_ids?: number[] } | null>(null)
+  const [detail, setDetail] = useState<RoleDetail | null>(null)
+  // A static (system) role is shown, never changed (R2 BUG-011).
+  const readOnly = !!detail?.is_static
   const hasFetchedDetailRef = React.useRef<boolean>(false)
 
   const { data: groupedPerms, isLoading: permsLoading, isError: permsError } = useGroupedPermissions({ fresh: true })
@@ -241,16 +244,17 @@ export default function EditRole() {
     <div className="page-content">
       <div className="container-fluid">
         <PageHeader
-          title="Edit Roles & Permissions"
+          title={readOnly ? 'View Role' : 'Edit Roles & Permissions'}
           breadcrumbs={[
             { label: 'Roles & Permissions', path: '/roles-permissions' },
-            { label: 'Edit' }
+            { label: readOnly ? 'View' : 'Edit' }
           ]}
         >
           <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
             <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
               <i className="ri-arrow-left-line align-middle me-1"></i> Back
             </button>
+            {!readOnly && (
             <button type="button" className="btn btn-primary w-lg" onClick={handleSave} disabled={updating}>
               {updating ? (
                 <>
@@ -263,6 +267,7 @@ export default function EditRole() {
                 </>
               )}
             </button>
+            )}
           </div>
         </PageHeader>
 
@@ -270,7 +275,24 @@ export default function EditRole() {
           <div className="col-xxl-12">
             <div className="card">
               <div className="card-body" style={{ minHeight: '73vh' }}>
-                <div className="role-form">
+                {readOnly && (
+                  <div className="role-system-notice" role="status">
+                    <span className="role-system-notice__icon" aria-hidden="true">
+                      <i className="ri-shield-keyhole-line"></i>
+                    </span>
+                    <div className="role-system-notice__body">
+                      <p className="role-system-notice__title">
+                        System role
+                        <span className="role-system-notice__badge">
+                          <i className="ri-lock-line" aria-hidden="true"></i> Read-only
+                        </span>
+                      </p>
+                      <p className="role-system-notice__text">This is a system role. Its name and permissions cannot be changed.</p>
+                    </div>
+                  </div>
+                )}
+                {/* A disabled fieldset disables every control inside it. */}
+                <fieldset className="role-form" disabled={readOnly}>
                   <div className="mb-4">
                     <label className="form-label">Role name <span className="text-danger">*</span></label>
                     <input type="text" className={`form-control${errors.name ? ' is-invalid' : ''}`} placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
@@ -369,7 +391,7 @@ export default function EditRole() {
                     </div>
                   </div>
 
-                </div>
+                </fieldset>
               </div>
             </div>
           </div >

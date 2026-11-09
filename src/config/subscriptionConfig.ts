@@ -37,6 +37,11 @@ export const SUBSCRIPTION_STATUS_COLORS: { [key: string]: string } = {
 
 export const ENROLLMENT_TYPE_ONE_TIME = 'One Time Payment';
 export const ENROLLMENT_TYPE_INSTALLMENT = 'Installment';
+/**
+ * Why the last installment differs from the monthly one (BUG-049): the monthly
+ * amount is rounded to the cent, and the last takes up the difference.
+ */
+export const FINAL_INSTALLMENT_NOTE = 'The last payment differs by a few cents from the monthly amount so that all payments add up to exactly the plan total.';
 // Installment months offered first, unless the plan's "Installment Upto" is lower.
 export const DEFAULT_INSTALLMENT_MONTHS = 12;
 export const FIXED_ENROLLMENT_FOR_BORROWER = 'Fixed Enrollment';
@@ -51,6 +56,10 @@ export const PLAN_GROUP_BORROWER_ENROLLMENT = 'borrower_enrollment';
 export const PLAN_GROUP_BORROWER_FEE = 'borrower_fee';
 export const PLAN_GROUP_USER_SEAT = 'user_seat';
 export const PLAN_GROUP_UNASSIGNED = 'unassigned';
+
+// A plan's price is kept to the cent: decimal(10, 2) in fch-api (BUG-076).
+export const PLAN_AMOUNT_DECIMAL_PLACES = 2;
+export const PLAN_AMOUNT_FIELDS = ['total_amount', 'platform_fee'] as const;
 
 // Helper for identifying installment plans
 export const checkIsInstallmentPlan = (plan: {

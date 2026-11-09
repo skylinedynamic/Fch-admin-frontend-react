@@ -16,10 +16,21 @@ Several features or tasks on the same date means several files with the same dat
 |---|---|
 | [2026-11-09-date-of-birth-minimum-age-18.md](2026-11-09-date-of-birth-minimum-age-18.md) | Date of birth — minimum age 18, calendars open 18 years back, message + red border on an under-age pick |
 
+### 2026-11-02
+
+| File | Title |
+|---|---|
+| [2026-11-02-appointments-ending-after-midnight.md](2026-11-02-appointments-ending-after-midnight.md) | Appointments can end after midnight, and a refused save says why (BUG-024, round 2) |
+| [2026-11-02-static-roles-read-only.md](2026-11-02-static-roles-read-only.md) | Roles & Permissions — a static (system) role is read-only (BUG-011, round 2) |
+| [2026-11-02-embed-form-allowed-domains-errors-under-field.md](2026-11-02-embed-form-allowed-domains-errors-under-field.md) | Embedded Form — Allowed Domains take a bare host, and refusals show under the field (BUG-035, round 2) |
+
 ### 2026-10-31
 
 | File | Title |
 |---|---|
+| [2026-10-31-file-manager-no-svg.md](2026-10-31-file-manager-no-svg.md) | File manager — SVG is no longer an allowed upload (BUG-015, round 2) |
+| [2026-10-31-stored-html-sanitized.md](2026-10-31-stored-html-sanitized.md) | Stored HTML is sanitized before it is rendered — Activity panel XSS (BUG-004, round 2) |
+| [2026-10-31-client-profile-invalid-id.md](2026-10-31-client-profile-invalid-id.md) | Client, lead and partner profiles — an id that is not a record loads no counters or activity (BUG-001, round 2) |
 | [2026-10-31-agreement-builder-template-test-race.md](2026-10-31-agreement-builder-template-test-race.md) | Agreement Builder — starting-template test waits for block text (flaky on CI) |
 | [2026-10-31-agreement-builder-drag-test-race.md](2026-10-31-agreement-builder-drag-test-race.md) | Agreement Builder — editor waits for the loaded agreement; reopening shows the saved one (flaky drag test on CI) |
 

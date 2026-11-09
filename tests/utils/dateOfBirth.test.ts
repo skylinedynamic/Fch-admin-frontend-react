@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { MINIMUM_AGE, MINIMUM_AGE_MESSAGE, dateOfBirthError, latestDateOfBirth, openOnLatestDateOfBirth } from '../../src/utils/dateOfBirth'
+import { MAXIMUM_AGE_MESSAGE, MINIMUM_AGE, MINIMUM_AGE_MESSAGE, dateOfBirthError, latestDateOfBirth, openOnLatestDateOfBirth } from '../../src/utils/dateOfBirth'
 
 /**
  * The platform minimum age (18), as the API checks it (App\Rules\DateOfBirth):
@@ -54,6 +54,13 @@ describe('dateOfBirthError', () => {
 
   it('gives the future-date message for a date after today', () => {
     expect(dateOfBirthError('2026-11-10', today)).toBe('Date of birth cannot be in the future.')
+  })
+
+  it('accepts up to 120 years old and gives the API maximum-age message past it (BUG-005)', () => {
+    expect(dateOfBirthError('1906-11-09', today)).toBeNull() // 120 today
+    expect(dateOfBirthError('1905-11-10', today)).toBeNull() // a day short of 121
+    expect(dateOfBirthError('1905-11-09', today)).toBe('Enter a date of birth no more than 120 years ago.')
+    expect(dateOfBirthError('1800-01-01', today)).toBe(MAXIMUM_AGE_MESSAGE)
   })
 
   it('leaves an empty field to the form', () => {

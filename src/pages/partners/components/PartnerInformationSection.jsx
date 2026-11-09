@@ -16,6 +16,7 @@ import { buildStorageUrl } from '../../../utils/imageHelpers';
 import { ENROLLMENT_TYPE_ONE_TIME, ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_OPTIONS } from '../../../config/subscriptionConfig';
 import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
 import { defaultInstallmentMonths } from '../../../modules/partner';
+import { FILE_MANAGER_CONFIG } from '../../../modules/filemanager/config';
 
 
 export default function PartnerInformationSection({
@@ -213,7 +214,7 @@ export default function PartnerInformationSection({
                     <div className="text-center mb-3">
                         <span className="badge bg-light text-muted border text-wrap lh-base px-3 py-2" style={{ whiteSpace: 'normal' }}>
                             <i className="ri-information-line me-1"></i>
-                            Allowed image types: JPG, JPEG, PNG (Maximum size: 1 MB).
+                            Allowed image types: JPG, JPEG, PNG (Maximum size: {FILE_MANAGER_CONFIG.MAX_PICTURE_SIZE / 1024 / 1024} MB).
                         </span>
                     </div>
                     {errors.partner_image && (

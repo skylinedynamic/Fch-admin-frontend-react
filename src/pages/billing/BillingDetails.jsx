@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import BillingDetailsLoader from '../../components/Loader/BillingDetailsLoader';
 import PageHeader from '../common/PageHeader';
 import { STATUS_PAID as INVOICE_STATUS_PAID, INVOICE_STATUS_COLORS } from '../../config/invoiceConfig';
-import { STATUS_ACTIVE as SUBSCRIPTION_STATUS_ACTIVE } from '../../config/subscriptionConfig';
+import { STATUS_ACTIVE as SUBSCRIPTION_STATUS_ACTIVE, FINAL_INSTALLMENT_NOTE } from '../../config/subscriptionConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 
 export default function BillingDetails() {
@@ -253,6 +253,13 @@ export default function BillingDetails() {
                                                                     {subscription.subscription_amount_per_month || subscription.payable_amount || '$0.00'}
                                                                 </h5>
                                                             </div>
+                                                            {subscription.final_installment_amount && (
+                                                                <div className="col-sm-6">
+                                                                    <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Last Installment</p>
+                                                                    <h5 className="fs-14 mb-0">{subscription.final_installment_amount}</h5>
+                                                                    <span className="text-muted fs-11">{FINAL_INSTALLMENT_NOTE}</span>
+                                                                </div>
+                                                            )}
                                                             <div className="col-sm-6">
                                                                 <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Installments Progress</p>
                                                                 <h5 className="fs-14 mb-0">

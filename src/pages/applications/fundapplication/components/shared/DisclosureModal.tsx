@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Modal, ModalBody, ModalHeader, ModalFooter } from 'reactstrap';
 import './disclosure-modal.css';
+import { sanitizeHtml } from '../../../../../utils/sanitizeHtml';
 
 interface DisclosureModalProps {
   isOpen: boolean;
@@ -63,7 +64,7 @@ export default function DisclosureModal({ isOpen, toggle, title, content }: Disc
       </div>
 
       <ModalBody className="p-0" innerRef={scrollRef} onScroll={handleScroll}>
-        <div className="legal-doc" dangerouslySetInnerHTML={{ __html: content }} />
+        <div className="legal-doc" dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }} />
       </ModalBody>
 
       <ModalFooter className="border-top-0">

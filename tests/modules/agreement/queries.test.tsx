@@ -4,7 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { server } from '../../mocks/server'
 import { createTestQueryClient } from '../../test-utils'
-import { useAgreement, useAgreements, useSaveAgreement, useToggleAgreementStatus } from '../../../src/modules/agreement/queries'
+import { useAgreement, useAgreements, useSaveAgreement, useToggleAgreementStatus, useSetAgreementRequired, useAgreementRequirement } from '../../../src/modules/agreement/queries'
 import { queryKeys } from '../../../src/lib/query/queryKeys'
 import { ConfigPartnerProvider } from '../../../src/modules/settings/configPartner'
 import { REFRESH_ACTIVITIES_EVENT } from '../../../src/config/appConfig'
@@ -185,5 +185,59 @@ describe('inside a ConfigPartnerProvider', () => {
     expect(statusBody).toMatchObject({ is_active: false, partner_id: 42 })
     expect(refreshed).toHaveBeenCalledTimes(2)
     window.removeEventListener(REFRESH_ACTIVITIES_EVENT, refreshed)
+  })
+})
+
+describe('useSetAgreementRequired', () => {
+  it('posts the change and resolves with the new state', async () => {
+    server.use(
+      http.post('*/common/agreement-sign/required/9', () =>
+        HttpResponse.json({ status: true, message: 'Updated', data: { user_id: 9, agreement_required: true } })
+      )
+    )
+    const { wrapper } = wrap()
+    const { result } = renderHook(() => useSetAgreementRequired(), { wrapper })
+
+    const res = await result.current.mutateAsync({ userId: 9, required: true })
+
+    expect(res.data).toEqual({ user_id: 9, agreement_required: true })
+  })
+})
+
+describe('useAgreementRequirement', () => {
+  const status = { user_id: 9, agreement_required: true, signing_enabled: true, template_active: true, can_change: true, locked_reason: null }
+
+  it('does not fetch without a login to ask about', () => {
+    const { wrapper } = wrap()
+    const { result } = renderHook(() => useAgreementRequirement(null), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
+  })
+
+  it("fetches the user's requirement under its own key", async () => {
+    server.use(http.get('*/common/agreement-sign/required/9', () => HttpResponse.json({ status: true, message: 'ok', data: status })))
+    const { wrapper, queryClient } = wrap()
+    const { result } = renderHook(() => useAgreementRequirement(9), { wrapper })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.data).toEqual(status)
+    expect(queryClient.getQueryData(queryKeys.agreement.requirement(9))).toBeDefined()
+  })
+
+  it('takes the saved value from a change, without fetching again', async () => {
+    server.use(
+      http.post('*/common/agreement-sign/required/9', () =>
+        HttpResponse.json({ status: true, message: 'Updated', data: { user_id: 9, agreement_required: false } })
+      )
+    )
+    const { wrapper, queryClient } = wrap()
+    queryClient.setQueryData(queryKeys.agreement.requirement(9), { status: true, message: 'ok', data: status })
+    const { result } = renderHook(() => useSetAgreementRequired(), { wrapper })
+
+    await result.current.mutateAsync({ userId: 9, required: false })
+
+    expect(queryClient.getQueryData<{ data: typeof status }>(queryKeys.agreement.requirement(9))?.data).toEqual({
+      ...status,
+      agreement_required: false,
+    })
   })
 })

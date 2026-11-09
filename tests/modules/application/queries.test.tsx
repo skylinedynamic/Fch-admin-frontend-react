@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { server } from '../../mocks/server'
 import { queryKeys } from '../../../src/lib/query/queryKeys'
 import {
+  useAssignLenderToFundingApplication,
   useAssignLenderToFundingRequest,
-  useFundingApplicationAuditHistory,
   useFundingApplicationDetails,
   useFundingApplications,
   useFundingApplicationStats,
@@ -71,7 +71,6 @@ describe('application detail queries', () => {
     expectIdle(() => usePreQualificationApplicationDetails(''))
     expectIdle(() => useFundingApplicationDetails(''))
     expectIdle(() => useFundingRequestDetails(''))
-    expectIdle(() => useFundingApplicationAuditHistory(''))
   })
 
   it('usePreQualificationApplicationDetails fetches the application', async () => {
@@ -96,14 +95,6 @@ describe('application detail queries', () => {
     const { result } = await runQuery(() => useFundingRequestDetails(7))
 
     expect((result.current.data as any).data.id).toBe(7)
-  })
-
-  it('useFundingApplicationAuditHistory posts its paging to the audit endpoint', async () => {
-    const seen = stub('post', `${RA}/funding-application/6/audit-history`, list([{ id: 1, event: 'updated' }]))
-
-    await runQuery(() => useFundingApplicationAuditHistory('6', { page: 1 }))
-
-    expect(seen.bodies[0]).toEqual({ page: 1 })
   })
 
   // KNOWN BUG: pre-qualification, funding application and funding request
@@ -184,6 +175,16 @@ describe('application mutations', () => {
 
     expect(seen.bodies[0]).toEqual(payload)
     expect(invalidated).toEqual([queryKeys.application.detail(7), queryKeys.application.all])
+  })
+
+  it('useAssignLenderToFundingApplication refreshes the details under both id shapes', async () => {
+    const seen = stub('post', `${RA}/funding-application/56/assign-lender`, { status: true })
+
+    const { invalidated } = await runMutation(() => useAssignLenderToFundingApplication(), { id: '56', lender_ids: [4] } as never)
+
+    // The lender list goes in the body; the id is in the URL.
+    expect(seen.bodies[0]).toEqual({ lender_ids: [4] })
+    expect(invalidated).toEqual([queryKeys.application.detail('56'), queryKeys.application.detail(56)])
   })
 
   it('useAssignLenderToFundingRequest refreshes only that request', async () => {

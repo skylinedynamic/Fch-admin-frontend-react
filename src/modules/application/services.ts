@@ -79,6 +79,12 @@ export const assignLenderToFundingRequest = async (payload: { id: number | strin
   return response.data;
 };
 
+// Host only. An application with a funding request shares the request's lender.
+export const assignLenderToFundingApplication = async (payload: { id: number | string; lender_ids: number[] }): Promise<SingleApiResponse<any>> => {
+  const response = await apiClient.post(`/common/request-application/funding-application/${payload.id}/assign-lender`, { lender_ids: payload.lender_ids });
+  return response.data;
+};
+
 export const downloadFundingApplication = async (id: string | number, password?: string): Promise<void> => {
   // The password goes in the body, never the URL (BUG-094).
   const response = await apiClient.post(`/common/request-application/funding-application/${id}/download-application`, password ? { password } : {}, {
@@ -153,32 +159,4 @@ export const downloadFundingZip = async (id: string | number, password?: string)
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
-};
-
-export const downloadHistoryFile = async (historyId: string | number, defaultFileName?: string): Promise<void> => {
-  const urlPath = `/common/request-application/download-history/${historyId}/download`;
-  const response = await apiClient.get(urlPath, {
-    responseType: 'blob'
-  });
-  const url = window.URL.createObjectURL(new Blob([response.data]));
-  const link = document.createElement('a');
-  link.href = url;
-  const contentDisposition = response.headers['content-disposition'];
-  let fileName = defaultFileName || `Download_${historyId}.pdf`;
-  if (contentDisposition) {
-    const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-    if (fileNameMatch && fileNameMatch.length === 2) {
-      fileName = fileNameMatch[1];
-    }
-  }
-  link.setAttribute('download', fileName);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-};
-
-export const getFundingApplicationAuditHistory = async (id: string, params?: any): Promise<any> => {
-  const { data } = await apiClient.post(`/common/request-application/funding-application/${id}/audit-history`, params);
-  return data;
 };

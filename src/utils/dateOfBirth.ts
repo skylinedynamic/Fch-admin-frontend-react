@@ -16,8 +16,11 @@
  * carry identical copies of this file; keep the two in sync.
  */
 export const MINIMUM_AGE = 18
+/** Past 120 the date is a typo, not a person (BUG-005, the API's app.maximum_age). */
+export const MAXIMUM_AGE = 120
 
 export const MINIMUM_AGE_MESSAGE = `You must be at least ${MINIMUM_AGE} years old to continue.`
+export const MAXIMUM_AGE_MESSAGE = `Enter a date of birth no more than ${MAXIMUM_AGE} years ago.`
 export const FUTURE_DATE_OF_BIRTH_MESSAGE = 'Date of birth cannot be in the future.'
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
@@ -33,6 +36,18 @@ export const latestDateOfBirth = (today: Date = new Date()): Date => {
   const lastDayOfMonth = new Date(year, month + 1, 0).getDate()
 
   return new Date(year, month, Math.min(today.getDate(), lastDayOfMonth))
+}
+
+/**
+ * The earliest date of birth still within the maximum age: someone is still 120
+ * the day before their 121st birthday.
+ */
+export const earliestDateOfBirth = (today: Date = new Date()): Date => {
+  const year = today.getFullYear() - (MAXIMUM_AGE + 1)
+  const month = today.getMonth()
+  const lastDayOfMonth = new Date(year, month + 1, 0).getDate()
+
+  return new Date(year, month, Math.min(today.getDate(), lastDayOfMonth) + 1)
 }
 
 /** A YYYY-MM-DD value (what the calendars post) as a local date. */
@@ -52,6 +67,7 @@ export const dateOfBirthError = (value: Date | string | null | undefined, today:
   const day = startOfDay(date)
   if (day > startOfDay(today)) return FUTURE_DATE_OF_BIRTH_MESSAGE
   if (day > latestDateOfBirth(today)) return MINIMUM_AGE_MESSAGE
+  if (day < earliestDateOfBirth(today)) return MAXIMUM_AGE_MESSAGE
 
   return null
 }

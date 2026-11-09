@@ -140,7 +140,13 @@ describe('Loan application details › Convert on a rejected application', () =>
 
     const [convert] = await screen.findAllByRole('button', { name: /Convert to Free Plan Borrower/ })
     expect(convert).toBeDisabled()
-    expect(screen.getByText('Rejected applications cannot be converted. Change the status to convert it.')).toBeInTheDocument()
+    // The reason is a hover tooltip (and the button's accessible description),
+    // not a line under the button that pushes it out of line with the Status
+    // select.
+    const hint = 'Rejected applications cannot be converted. Change the status to convert it.'
+    expect(convert).toHaveAccessibleDescription(hint)
+    expect(convert.closest('[title]')).toHaveAttribute('title', hint)
+    expect(screen.getByText(hint)).toHaveClass('visually-hidden')
   })
 
   it('stays enabled on an application in review', async () => {
@@ -227,6 +233,27 @@ describe('Loan application details › business and funding answers', () => {
     expect(screen.getByText('SBA Loan, Line of Credit')).toBeInTheDocument()
   })
 
+  it('shows what "Other" is for the industry and entity type', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, industry_type: 'Other', industry_type_note: 'Beekeeping', entity_type: 'Other', entity_type_note: 'Cooperative' })
+    renderPage()
+
+    expect(await screen.findByText('Industry Type Details')).toBeInTheDocument()
+    expect(screen.getByText('Beekeeping')).toBeInTheDocument()
+    expect(screen.getByText('Entity Type Details')).toBeInTheDocument()
+    expect(screen.getByText('Cooperative')).toBeInTheDocument()
+  })
+
+  it('has no details rows for a listed industry and entity type', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, industry_type: 'Retail', entity_type: 'C-Corporation' })
+    renderPage()
+
+    await screen.findByText('Industry Type')
+    expect(screen.queryByText('Industry Type Details')).not.toBeInTheDocument()
+    expect(screen.queryByText('Entity Type Details')).not.toBeInTheDocument()
+  })
+
   it('leaves the additional funding types out when none were chosen', async () => {
     signInWith(['view application'])
     serve({ ...answered, additional_funding_types: [] })
@@ -282,5 +309,65 @@ describe('Loan application details › partner', () => {
     // The header line is for the host; "Received Via Partner" stays in the metadata card.
     expect(screen.queryByText(/Partner:/)).not.toBeInTheDocument()
     expect(screen.queryByText('White Label')).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * BUG-058: converted onto an existing client, the header and the Linked
+ * Borrower card show that client - name, business, email, phone and real plan -
+ * not the submitted applicant or a hard-coded "Free Plan".
+ */
+describe('Loan application details › converted onto an existing client', () => {
+  const ontoClient = {
+    ...converted,
+    first_name: 'QA-TEST R2',
+    last_name: 'Host Embed Two',
+    email: 'embed-two@example.test',
+    phone: '(555) 000-0002',
+    business_name: 'Embed Two Co',
+    converted_borrower: {
+      id: 42, full_name: 'QA-TEST Owner Client Two', status: 'active',
+      is_free_trail: false, free_trail_end_date: null, enrollment_type: 'One Time Payment',
+      email: 'client-two@example.test', phone: '(555) 123-4567', business_name: 'Client Two LLC',
+    },
+  }
+
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  it('heads the page with the client and their real plan', async () => {
+    signInWith(['view application', 'convert application'])
+    serve(ontoClient)
+    renderPage()
+
+    const hero = (await screen.findByRole('heading', { name: 'QA-TEST Owner Client Two' })).closest('.ef-hero') as HTMLElement
+    expect(within(hero).getByText('client-two@example.test')).toBeInTheDocument()
+    expect(within(hero).getByText('(555) 123-4567')).toBeInTheDocument()
+    expect(within(hero).getByText('Client Two LLC')).toBeInTheDocument()
+    expect(within(hero).getByText('One Time Payment')).toBeInTheDocument()
+    expect(within(hero).queryByText(/Free Plan/)).not.toBeInTheDocument()
+    expect(within(hero).queryByText('QA-TEST R2 Host Embed Two')).not.toBeInTheDocument()
+  })
+
+  it('names the client and their plan on the Linked Borrower card', async () => {
+    signInWith(['view application', 'convert application'])
+    serve(ontoClient)
+    renderPage()
+
+    const card = (await screen.findByText('Linked Borrower')).closest('.card') as HTMLElement
+    expect(within(card).getByText('QA-TEST Owner Client Two')).toBeInTheDocument()
+    expect(within(card).getByText('One Time Payment')).toBeInTheDocument()
+    expect(within(card).queryByText(/Free Plan/)).not.toBeInTheDocument()
+  })
+
+  it('still calls a free client Free Plan', async () => {
+    signInWith(['view application', 'convert application'])
+    serve({ ...ontoClient, converted_borrower: { ...ontoClient.converted_borrower, is_free_trail: true, enrollment_type: null } })
+    renderPage()
+
+    const card = (await screen.findByText('Linked Borrower')).closest('.card') as HTMLElement
+    expect(within(card).getByText('Free Plan')).toBeInTheDocument()
   })
 })

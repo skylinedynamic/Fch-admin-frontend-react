@@ -343,6 +343,8 @@ export default function LeadDetails() {
     // another partner's lead picks from that partner's team. An existing lead's
     // partner is known once it has loaded.
     const teamPartnerId = leadTeamPartnerId(currentUser, formData);
+    // Also holds the Activity panel back: an id that is not a lead must not
+    // reach the activity list (BUG-001).
     const leadLoaded = !id || formData.id != null;
 
     useEffect(() => {
@@ -1031,7 +1033,7 @@ export default function LeadDetails() {
                         {/* Activity Sidebar */}
                         {id && (
                             <div className="col-xxl-4">
-                                <ActivitySidebar entityId={id} entityType="Lead" loading={isLoading || isSaving} borrowerEmail={formData.email} partnerId={formData.partner?.id} taskOwner={formData.salesperson_id ? { id: formData.salesperson_id, name: formData.salesperson_name } : null} />
+                                <ActivitySidebar entityId={id} entityType="Lead" loading={isLoading || isSaving} enabled={leadLoaded} borrowerEmail={formData.email} partnerId={formData.partner?.id} taskOwner={formData.salesperson_id ? { id: formData.salesperson_id, name: formData.salesperson_name } : null} />
                             </div>
                         )}
                     </div>

@@ -136,8 +136,19 @@ describe('fetchRoleDetail normalization', () => {
       description: undefined,
       permission: ['manage-users', 'edit-roles'],
       users: [],
+      is_static: false,
       permission_ids: [5, 9],
     })
+  })
+
+  // R2 BUG-011: a static (system) role is read-only; the editor needs to know.
+  it('passes on whether the role is static', async () => {
+    server.use(
+      http.get('*/common/roles/:id', () =>
+        HttpResponse.json({ data: { id: 1, name: 'Admin', is_static: true, permission: ['manage-users'], users: [] } })
+      )
+    )
+    expect((await fetchRoleDetail(1)).is_static).toBe(true)
   })
 
   it('leaves permission_ids undefined when permission is already an array', async () => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo } from 'react';
 import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
@@ -22,11 +22,13 @@ import type { Client, BorrowerPlan, RevealableClientField } from '../../../modul
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
-import { dateOfBirthError, latestDateOfBirth } from '../../../utils/dateOfBirth';
+import { dateOfBirthError } from '../../../utils/dateOfBirth';
+import { dateOfBirthBounds } from '../../../utils/dates';
 import { locationData } from '../../../modules/location';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers, getPartnerBorrowerFee } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
+import { PARTNER_FEE_PAYMENT_HINT, partnerFeePaymentNote } from '../../../config/invoiceConfig';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_ONE_TIME } from '../../../config/subscriptionConfig';
 import { PARTNER_TYPES, CLIENT_TYPE_LABELS } from '../../../config/partnerTypeOptions';
@@ -148,9 +150,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         fetchPartnerBorrowerFee();
     }, [isUserHost, clientId, isFetching, wasFreeTrial]);
 
-    // An empty Date of Birth calendar opens 18 years back; worked out once so
-    // the calendar is not sent back there on every re-render.
-    const dateOfBirthOpensOn = React.useMemo(() => latestDateOfBirth(), []);
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = borrowerPlans;
@@ -506,6 +505,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // Enable editor only when data is synced to prevent empty initialization race condition
     const isEditorEnabled = !isFetching && isSynced;
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange, {}, isEditorEnabled);
+
+    // Stable across renders: a new viewDate each render would reset the open picker.
+    const dobBounds = useMemo(() => dateOfBirthBounds(), []);
 
     // Date Robust Parsing
     const parseDate = (dateStr: any) => {
@@ -926,8 +928,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                     handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
                                 }}
                                 dateFormat="dd M, yy"
+                                // Up to 120 years back (BUG-005) and every year up to today;
+                                // an under-18 pick gets the minimum-age message below, as
+                                // the API answers. An empty field opens 18 years back.
+                                minDate={dobBounds.minDate}
                                 maxDate={new Date()}
-                                viewDate={formData.date_of_birth ? undefined : dateOfBirthOpensOn}
+                                viewDate={formData.date_of_birth ? undefined : dobBounds.maxDate}
                                 placeholder="Select date"
                                 showIcon
                                 className={`w-100 ${errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth)) ? 'is-invalid' : ''}`}
@@ -1742,14 +1748,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             </div>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
-                                                                    Charged automatically on Partner's account.
+                                                                    {PARTNER_FEE_PAYMENT_HINT}
                                                                 </span>
                                                             </div>
 
                                                             <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                                 <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                                     <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                                    Two completely separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, {partnerFeeLabel} is automatically charged to the Partner account immediately.
+                                                                    Two separate invoices are created. The Borrower pays ${Number(isInstallmentPlan ? (formData.installment_applied ? formData.installment_down_payment : (selectedOption?.total_amount || 0)) : customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. {partnerFeePaymentNote(partnerFeeLabel)}
                                                                 </p>
                                                             </div>
                                                         </>

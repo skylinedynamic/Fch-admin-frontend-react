@@ -33,6 +33,9 @@ export const TYPE_ACTIVITY = 'activity';
 export const TARGET_RECIPIENT_HOST = 'host';
 export const TARGET_RECIPIENT_BORROWER = 'borrower';
 
+// Where a partner's New Email goes when no host email is known.
+export const FCH_SUPPORT_EMAIL = 'support@fourcornerholding.com';
+
 export const OTHERS = 'Others';
 
 // New Log Types
@@ -45,6 +48,9 @@ export const LOG_TYPE_PARTNER_CONFIGURATION_UPDATE = 'partner_configuration_upda
 
 // Window event the activity sidebar listens for to reload its entries.
 export const REFRESH_ACTIVITIES_EVENT = 'refreshActivities';
+// Window event fired once refresh-user has stored fresh user data (the API
+// flagged the user with is_refresh) - e.g. the agreement sign modal asks again.
+export const USER_REFRESHED_EVENT = 'fch:user-refreshed';
 export const LOG_TYPE_PARTNER_DELETE = 'partner_delete';
 export const LOG_TYPE_EMAIL_SENT = 'email_sent';
 export const LOG_TYPE_ACTIVITY = 'activity';
@@ -77,6 +83,9 @@ export const LOG_TYPE_BUSINESS_UPDATE = 'business_update';
 export const LOG_TYPE_DOCUMENT_UPLOAD = 'document_upload';
 export const LOG_TYPE_CHECKLIST_UPDATE = 'checklist_update';
 export const LOG_TYPE_TASK_VERIFICATION = 'task_verification';
+// A client's credit profile saved or removed on Client › Credit Profile (BUG-075).
+export const LOG_TYPE_CREDIT_PROFILE_SAVE = 'credit_profile_save';
+export const LOG_TYPE_CREDIT_PROFILE_DELETE = 'credit_profile_delete';
 
 export const PASSWORD_GENERATE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
 export const PASSWORD_GENERATE_LENGTH = 14;

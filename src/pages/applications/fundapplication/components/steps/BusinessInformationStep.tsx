@@ -23,6 +23,7 @@ interface BusinessInformationStepProps {
   onRegisterSave?: (fn: (() => Promise<boolean>) | null) => void
   fundingSequenceId?: number | string | null
   fundingRequestId?: number | string | null
+  fundingApplicationId?: number | string | null
 }
 
 export default function BusinessInformationStep({
@@ -36,6 +37,7 @@ export default function BusinessInformationStep({
   onRegisterSave,
   fundingSequenceId,
   fundingRequestId,
+  fundingApplicationId,
 }: BusinessInformationStepProps) {
   const [availableStates, setAvailableStates] = useState<{ name: string; code: string; cities?: string[] }[]>([])
   const [availableCities, setAvailableCities] = useState<{ name: string; code: string }[]>([])
@@ -44,7 +46,7 @@ export default function BusinessInformationStep({
   const [businessInfoId, setBusinessInfoId] = useState<number | null>(null)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  const { data: apiData, isLoading: isApiLoading, isSuccess } = useBusinessInfo(fundingRequestId, { enabled: !!fundingRequestId })
+  const { data: apiData, isLoading: isApiLoading, isSuccess } = useBusinessInfo(fundingRequestId, { enabled: !!fundingRequestId, fundingApplicationId })
   const { mutateAsync: saveBusinessInfo, isPending: isSaving } = useSaveBusinessInfo()
 
   // Memoized save handler

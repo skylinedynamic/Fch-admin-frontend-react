@@ -21,7 +21,7 @@ vi.mock('../../../../src/modules/application/queries', async (original) => ({
   ...(await original<typeof import('../../../../src/modules/application/queries')>()),
   useFundingApplicationDetails: () => ({ data: { data: mocks.application }, isLoading: false, error: null, refetch: mocks.refetch }),
   useUpdateFundingApplicationStatus: () => ({ mutate: mocks.updateStatus, isPending: false }),
-  useSaveFundingApplicationCommission: () => ({ mutate: mocks.saveCommission, isPending: false }),
+  useSaveFundingApplicationCommission: () => ({ mutate: vi.fn(), mutateAsync: mocks.saveCommission, isPending: false }),
 }))
 
 vi.mock('../../../../src/components/Common/Activity/ActivitySidebar', () => ({ default: () => null }))
@@ -83,22 +83,40 @@ describe('FundingApplicationDetails - QA round 2', () => {
     expect(mocks.refetch).toHaveBeenCalled()
   })
 
-  // R2 BUG-036: 0 was refused with nothing on screen, and the card showed the unsaved 0%.
-  it('shows a refused Success Fee and keeps the card on the saved rate', async () => {
-    mocks.saveCommission.mockImplementation((_payload, options) =>
-      options.onError({ response: { status: 422, data: { errors: { total_commission: ['The success fee commission must be at least 1.'] } } } })
-    )
+  // R2 BUG-036: 0 was refused with nothing on screen. The commission is now set
+  // in the Closed (Completed) modal: its Success Fee takes the API's 1-100%, and
+  // a refusal is shown under it and the application is not closed.
+  it('shows a refused Success Fee in the Closed modal and does not close', async () => {
+    mocks.application = {
+      ...application,
+      status: FUNDING_APPLICATION_STATUS.APPROVED_FINAL,
+      total_commission: null,
+      admin_commission: null,
+      partner_commission: null,
+      has_assigned_lender: true,
+      lender_required_statuses: [FUNDING_APPLICATION_STATUS.CLOSED],
+    }
+    mocks.saveCommission.mockRejectedValue({ response: { status: 422, data: { errors: { total_commission: ['The success fee commission must be at least 1.'] } } } })
     renderWithProviders(<FundingApplicationDetails />)
 
-    const fee = screen.getByLabelText('Success Fee (%)')
+    await userEvent.click(document.querySelector('.p-dropdown') as HTMLElement)
+    const closed = await waitFor(() => {
+      const found = Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item'))
+        .find((el) => el.textContent?.trim() === FUNDING_APPLICATION_STATUS.CLOSED)
+      if (!found) throw new Error('no Closed option')
+      return found as HTMLElement
+    })
+    await userEvent.click(closed)
+    await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
+
+    const fee = await screen.findByLabelText('Success Fee (%)')
     expect(fee).toHaveAttribute('min', '1')
     expect(fee).toHaveAttribute('max', '100')
-    fireEvent.change(fee, { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /save commission/i }))
+    await userEvent.type(fee, '0.5')
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm & Update', hidden: true }))
 
     expect(await screen.findByText('The success fee commission must be at least 1.')).toBeInTheDocument()
-    expect(toast.error).toHaveBeenCalledWith('The success fee commission must be at least 1.')
-    await waitFor(() => expect(screen.getByLabelText('Success Fee (%)')).toHaveValue(7.5))
-    expect(screen.getByText('7.5% of success fee')).toBeInTheDocument()
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(mocks.updateStatus).not.toHaveBeenCalled()
   })
 })
