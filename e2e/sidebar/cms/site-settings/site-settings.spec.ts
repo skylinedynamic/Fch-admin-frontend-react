@@ -57,6 +57,16 @@ test.describe('Site settings', () => {
     await expect(page.locator('input[name="email"]')).toHaveValue('hello@fcf.test')
   })
 
+  // SCRUM-435 S435-BUG-03: the help promised a default form for an empty field.
+  test('the Apply Page Form Code help says an empty field means no form', async ({ page }) => {
+    await open(page)
+    const help = page.locator('.form-text', { hasText: 'Copy Embed HTML' })
+
+    await expect(help).toBeVisible()
+    await expect(help).toContainText('If this is empty, the Apply page shows no application form')
+    await expect(help).not.toContainText('default')
+  })
+
   test('saving posts the edited values', async ({ page }) => {
     const api = await open(page)
     api.add({ method: 'POST', match: `${CMS}/site-settings`, body: ok(SETTINGS, 'Site settings updated successfully') })

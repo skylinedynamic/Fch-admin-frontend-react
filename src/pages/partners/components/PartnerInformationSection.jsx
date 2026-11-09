@@ -6,6 +6,7 @@ import { Calendar } from 'primereact/calendar';
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
+import { partnerPortalBaseHost } from '../../../modules/partner/logic';
 import { formatPhoneNumber, formatZipCode, formatBusinessEIN, displayEIN } from '../../../utils/formatters';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
@@ -38,6 +39,7 @@ export default function PartnerInformationSection({
 
     // Show partner_domain field: always in create mode, only for Certified in edit mode
     const showPartnerDomain = !partnerId || formData.partner_type === PARTNER_TYPES.CERTIFIED;
+    const portalBaseHost = partnerPortalBaseHost();
 
     // Auto-sync partner_domain from company_name in create mode when user hasn't manually edited it
     useEffect(() => {
@@ -252,12 +254,12 @@ export default function PartnerInformationSection({
                                     {formData.partner_domain ? (
                                         <>
                                             {formData.partner_domain}.
-                                            {new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                            {portalBaseHost}
                                         </>
                                     ) : (
                                         <>
                                             {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}.
-                                            {new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                            {portalBaseHost}
                                         </>
                                     )}
                                 </code>)
@@ -299,7 +301,7 @@ export default function PartnerInformationSection({
                                 }}
                             />
                             <span className="input-group-text text-muted px-3">
-                                .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                .{portalBaseHost}
                             </span>
                         </div>
                         {errors.partner_domain && <div className="invalid-feedback d-block mt-1">{errors.partner_domain}</div>}
@@ -332,7 +334,7 @@ export default function PartnerInformationSection({
                                 }}
                             />
                             <span className="input-group-text text-muted px-3">
-                                .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                .{portalBaseHost}
                             </span>
                         </div>
                         {errors.partner_domain && <div className="invalid-feedback d-block mt-1">{errors.partner_domain}</div>}
