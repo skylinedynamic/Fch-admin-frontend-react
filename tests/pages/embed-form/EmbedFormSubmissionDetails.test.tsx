@@ -53,6 +53,34 @@ const renderPage = () =>
     { route: '/embed-form/loan-applications/3' }
   )
 
+// SCRUM-435 S435-BUG-05: staff can see which page an application came from. A
+// direct-link application has none, and the API sends null for it.
+describe('Loan application details › Source Page', () => {
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  it('links to the page the form was framed on', async () => {
+    signInWith(['view application'])
+    serve({ ...converted, origin_url: 'https://example.test/apply' })
+    renderPage()
+
+    const link = await screen.findByRole('link', { name: 'https://example.test/apply' })
+    expect(link).toHaveAttribute('href', 'https://example.test/apply')
+    expect(screen.getByText('Source Page')).toBeInTheDocument()
+  })
+
+  it('shows no link for a direct-link application', async () => {
+    signInWith(['view application'])
+    serve({ ...converted, origin_url: null })
+    renderPage()
+
+    expect(await screen.findByText('Source Page')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /example\.test\/apply/ })).not.toBeInTheDocument()
+  })
+})
+
 describe('Loan application details › View Funding Application', () => {
   afterEach(() => {
     server.resetHandlers()
