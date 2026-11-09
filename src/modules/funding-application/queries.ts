@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query/queryKeys'
-import { fetchBusinessInfo, saveBusinessInfo, fetchOwnershipInfo, saveOwnershipInfo, fetchFinancialInfo, saveFinancialInfo, fetchDisclosuresConsent, saveDisclosuresConsent, fetchFundingRequest, fetchFundingTypes, saveFundingRequest, fetchFederalCompliance, saveFederalCompliance, saveAttestation, fetchAttestation, fetchFundingApplicationDocuments, deleteFundingApplicationDocument, uploadFundingApplicationDocuments, validateCoBorrower } from './services'
+import { fetchBusinessInfo, saveBusinessInfo, fetchOwnershipInfo, saveOwnershipInfo, fetchFinancialInfo, saveFinancialInfo, fetchDisclosuresConsent, saveDisclosuresConsent, fetchFundingRequest, fetchFundingTypes, fetchFundingSequenceOptions, type FundingSequenceOption, saveFundingRequest, fetchFederalCompliance, saveFederalCompliance, saveAttestation, fetchAttestation, fetchFundingApplicationDocuments, deleteFundingApplicationDocument, uploadFundingApplicationDocuments, validateCoBorrower } from './services'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { withEditConfirmation } from './editConfirmation'
 import type { FundingRequestData, FundingApplicationDocument, AttestationData } from './types'
@@ -154,6 +154,16 @@ export const useFundingTypes = () => {
   return useQuery<string[]>({
     queryKey: queryKeys.fundingApplication.fundingTypes(),
     queryFn: fetchFundingTypes,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+/** The Funding Sequence dropdown: the sequences offered for the Preferred Funding Type. */
+export const useFundingSequenceOptions = (fundingType: string | null | undefined, enabled = true) => {
+  return useQuery<FundingSequenceOption[]>({
+    queryKey: [...queryKeys.fundingApplication.fundingSequences(), fundingType ?? ''],
+    queryFn: () => fetchFundingSequenceOptions(fundingType as string),
+    enabled: enabled && !!fundingType,
     staleTime: 5 * 60 * 1000,
   })
 }

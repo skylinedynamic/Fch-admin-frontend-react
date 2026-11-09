@@ -2,7 +2,8 @@ import React from 'react'
 
 type StepNavigationProps = {
   onBack?: () => void
-  onNext?: () => void
+  /** Called with the button's click event. */
+  onNext?: (e: React.MouseEvent<HTMLButtonElement>) => void
   isNextDisabled?: boolean
   isLastStep?: boolean
   loading?: boolean
