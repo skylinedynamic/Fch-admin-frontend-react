@@ -101,3 +101,37 @@ test.describe('Funding application details › QA round 2', () => {
     await expect(fee).toHaveValue('7.5')
   })
 })
+
+test.describe('Funding application details › Go to Client', () => {
+  const link = (page: Page) => page.getByRole('link', { name: 'Go to Client' })
+
+  async function openAs(page: Page, permissions: string[], application: Record<string, unknown> = APPLICATION) {
+    await seedSession(page, { id: 1, is_host: 1, partner_id: 1, permissions })
+    await mockApi(page, [{ method: 'GET', match: DETAIL, body: ok(application) }])
+    await page.goto('/intake-review/funding-application/90')
+    await expect(page.getByRole('heading', { name: 'Funding Application Details' })).toBeVisible()
+  }
+
+  test('opens the client of this application', async ({ page }) => {
+    await openAs(page, ['view funding application', 'view clients'], { ...APPLICATION, borrower_id: 7 })
+    await link(page).click()
+    await expect(page).toHaveURL(/\/clients\/7$/)
+  })
+
+  test('shows whatever the viewer\'s permissions', async ({ page }) => {
+    await openAs(page, ['view funding application'], { ...APPLICATION, borrower_id: 7 })
+    await expect(link(page)).toHaveAttribute('href', '/clients/7')
+  })
+
+  test('is hidden when the application has no client', async ({ page }) => {
+    await openAs(page, ['view funding application', 'view clients'], { ...APPLICATION, borrower_id: null })
+    await expect(link(page)).toHaveCount(0)
+  })
+
+  test('the header buttons fit a phone', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openAs(page, ['view funding application', 'view clients'])
+    await expect(link(page)).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  })
+})

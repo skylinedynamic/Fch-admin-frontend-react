@@ -853,3 +853,26 @@ describe('FundingApplicationDetails — commission before closing', () => {
     expect(screen.queryAllByText('Commission Details').filter((el) => !el.closest('.fam-modal'))).toHaveLength(0)
   })
 })
+
+describe('FundingApplicationDetails — Go to Client', () => {
+  const goToClient = () => screen.queryByRole('link', { name: /go to client/i })
+
+  beforeEach(() => {
+    detail.application = { ...editable, borrower_id: 7 }
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+  })
+
+  it('opens the client this application belongs to, in the primary colour', () => {
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(goToClient()).toHaveAttribute('href', '/clients/7')
+    expect(goToClient()).toHaveClass('btn-primary')
+  })
+
+  it('is not offered when the application has no client', () => {
+    detail.application = { ...editable, borrower_id: null }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(goToClient()).not.toBeInTheDocument()
+  })
+})
