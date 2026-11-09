@@ -12,7 +12,8 @@ import { test, expect, type Page, type Route } from '@playwright/test'
 const API_ORIGIN = 'http://127.0.0.1:8000/api/v1'
 
 const HOST_USER = {
-  id: 1, name: 'Host Admin', email: 'host@example.test', user_type: 'Admin', is_host: 1, partner_id: null, permissions: [],
+  // The edit route is behind "view funding application".
+  id: 1, name: 'Host Admin', email: 'host@example.test', user_type: 'Admin', is_host: 1, partner_id: null, permissions: ['view funding application'],
 }
 
 const THEME = {
@@ -44,6 +45,12 @@ const EMBED_APPLICATION = {
   is_funding_request_saved: true,
 }
 
+const BUSINESS = {
+  full_name: 'Jane Borrower', business_name: 'Borrower Co', business_email: 'jane@example.test', business_phone_no: '5125550100',
+  business_country: 'United States', business_address: '9 Main St', business_city: 'Austin', business_state: 'Texas',
+  business_postal_code: '78701', industry_type: 'Retail', entity_type: 'LLC', years_in_business: '5',
+}
+
 // The API maps the older "Line of Credit" to "Business Line of Credit".
 const SEQUENCES: Record<string, { id: number; name: string }[]> = {
   'Line of Credit': [{ id: 5, name: 'Business Lines of Credit' }, { id: 19, name: 'Fast Credit Lines' }],
@@ -70,7 +77,9 @@ async function openStep(page: Page, application: Record<string, unknown>) {
     askedFor.push(type)
     return ok(route, SEQUENCES[type] ?? [])
   })
-  await page.route(`${API_ORIGIN}/common/funding-application/business-info**`, (route) => ok(route, { id: application.id, business_name: 'Borrower Co' }))
+  // Steps 1-3 are saved and Business Information (open first) is complete, so
+  // the wizard lets Step 4 open.
+  await page.route(`${API_ORIGIN}/common/funding-application/business-info**`, (route) => ok(route, { ...BUSINESS, id: application.id }))
   await page.route(`${API_ORIGIN}/common/funding-application/funding-request**`, (route) => {
     if (route.request().method() === 'POST') {
       sent.body = route.request().postDataJSON()
