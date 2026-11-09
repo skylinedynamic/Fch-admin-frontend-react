@@ -8,6 +8,8 @@ export interface MatchedLender {
     display_name?: string | null;
     phone?: string | null;
     email?: string | null;
+    /** False only for a fixed, assigned lender made Inactive since (SCRUM-434 S434-BUG-05). */
+    is_active?: boolean;
     product_category: string;
     requirements: {
         min_fico: number | null;

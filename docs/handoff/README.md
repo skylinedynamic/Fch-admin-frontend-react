@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-11-09 (lender)
+
+| File | Title |
+|---|---|
+| [2026-11-09-fixed-inactive-lender-shown-on-lender-information.md](2026-11-09-fixed-inactive-lender-shown-on-lender-information.md) | Lender Information — a fixed lender made Inactive is still shown, with an Inactive badge (SCRUM-434 S434-BUG-05) |
+
 ### 2026-11-02
 
 | File | Title |

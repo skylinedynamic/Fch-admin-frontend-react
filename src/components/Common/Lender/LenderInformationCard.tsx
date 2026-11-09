@@ -134,6 +134,10 @@ export default function LenderInformationCard({
                             <h5 className="fs-17 fw-bold mb-1 text-dark">{lenderDisplayName(assigned)}</h5>
                             <div className="d-flex flex-wrap align-items-center gap-3 text-muted fs-13">
                                 <span className="badge bg-primary-subtle text-primary fs-12 fw-medium">{assigned.product_category}</span>
+                                {/* Made Inactive after the lender was fixed: still the lender the deal went to (S434-BUG-05). */}
+                                {assigned.is_active === false && (
+                                    <span className="badge bg-secondary-subtle text-secondary fs-12 fw-medium">Inactive</span>
+                                )}
                                 {assigned.phone && <span><i className="ri-phone-line me-1"></i>{assigned.phone}</span>}
                                 {assigned.email && <span><i className="ri-mail-line me-1"></i>{assigned.email}</span>}
                             </div>
