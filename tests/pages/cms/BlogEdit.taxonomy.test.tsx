@@ -110,6 +110,25 @@ describe('BlogEdit - categories and tags', () => {
     expect(toast.success).toHaveBeenCalledWith('Category deleted successfully')
   })
 
+  // Defect: BUG-186 - the tag added with "+ Add New" was put into the post's
+  // Tags field as its numeric id, which matched no option, so the chip read "141".
+  it('puts a tag added with Add New into the Tags field by its name', async () => {
+    api('post', '/admin/cms/blog-tags', { status: true, data: { id: 141, name: 'qa-test run2 tag' } }, 201)
+    const user = userEvent.setup()
+    renderPage(<BlogEdit />, { path: '/cms/blogs/create' })
+    await user.click((await screen.findAllByRole('button', { name: /add new/i }))[1])
+    await screen.findByText('SBA', { selector: '.p-dialog .badge' })
+    // The list the page refetches after the create carries the new tag.
+    api('get', '/admin/cms/blog-tags', { status: true, data: [...TAGS, { id: 141, name: 'qa-test run2 tag', blogs_count: 0 }] })
+
+    await user.type(screen.getByPlaceholderText('Enter tag name'), 'qa-test run2 tag')
+    await user.click(within(dialog('Add New Tag')).getByRole('button', { name: /submit/i }))
+
+    const tagsField = () => screen.getByText('Tags', { selector: 'label' }).parentElement!.parentElement!.querySelector('.p-multiselect') as HTMLElement
+    await waitFor(() => expect(tagsField().querySelector('.p-multiselect-token')).toHaveTextContent('qa-test run2 tag'))
+    expect(tagsField()).not.toHaveTextContent('141')
+  })
+
   it('tags work the same way: added, renamed and deleted with full messages', async () => {
     api('post', '/admin/cms/blog-tags', { status: true, data: { id: 6, name: 'QA-TEST Tag' } }, 201)
     const update = api('post', '/admin/cms/blog-tags/5', { status: true, data: { id: 5, name: 'SBA Loans' } })
