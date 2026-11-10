@@ -615,6 +615,24 @@ describe('FundingApplicationDetails — closing with a commission', () => {
     expect(mutations.updateStatus.mock.calls[0][0]).toMatchObject({ funding_application_id: 80, status: FUNDING_APPLICATION_STATUS.CLOSED, funded_amount: '25000' })
   })
 
+  it("splits a partner client's success fee at the partner's own commission (Partner profile › Commissions)", async () => {
+    mutations.saveCommission.mockResolvedValue({})
+    detail.application = { ...closable, partner_id: 7, partner_default_commission: 30 }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
+    await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
+    await userEvent.type(await screen.findByLabelText('Success Fee (%)'), '10')
+
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(70)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm & Update' }))
+
+    await waitFor(() => expect(mutations.updateStatus).toHaveBeenCalled())
+    expect(mutations.saveCommission).toHaveBeenCalledWith({ funding_application_id: 80, total_commission: 10, admin_commission: 70, partner_commission: 30 })
+  })
+
   it('closes without saving a commission when none is entered', async () => {
     renderWithProviders(<FundingApplicationDetails />)
 

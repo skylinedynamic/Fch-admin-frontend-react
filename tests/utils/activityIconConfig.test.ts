@@ -4,6 +4,7 @@ import {
   LOG_TYPE_CREDIT_PROFILE_DELETE,
   LOG_TYPE_CREDIT_PROFILE_SAVE,
   LOG_TYPE_PARTNER_CONFIGURATION_UPDATE,
+  LOG_TYPE_PARTNER_COMMISSION_UPDATE,
   LOG_TYPE_PARTNER_UPDATE,
 } from '../../src/config/appConfig'
 
@@ -13,6 +14,14 @@ describe('getAvatarConfig', () => {
     expect(getAvatarConfig(LOG_TYPE_PARTNER_CONFIGURATION_UPDATE)).toEqual({
       icon: 'ri-settings-3-line',
       bgClass: 'bg-primary-subtle text-primary',
+    })
+  })
+
+  // The host added, changed or removed the partner's commission (Partner profile › Commissions).
+  it('shows a percent icon for a partner commission change', () => {
+    expect(getAvatarConfig(LOG_TYPE_PARTNER_COMMISSION_UPDATE)).toEqual({
+      icon: 'ri-percent-line',
+      bgClass: 'bg-success-subtle text-success',
     })
   })
 

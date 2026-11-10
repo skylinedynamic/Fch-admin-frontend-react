@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
-import { createPartner, deletePartner, fetchPartnerById, fetchPartnerOptions, updatePartner, fetchSubscriptionStats } from './services'
-import type { Partner, SubscriptionStats } from './types'
+import { REFRESH_ACTIVITIES_EVENT } from '../../config/appConfig'
+import { createPartner, deletePartner, fetchPartnerById, fetchPartnerOptions, updatePartner, updatePartnerCommission, fetchSubscriptionStats } from './services'
+import type { Partner, PartnerCommissionPayload, SubscriptionStats } from './types'
 
 /** Every partner for the host's filter dropdowns, loaded once and shared. */
 export const usePartnerOptions = (enabled = true) => {
@@ -38,6 +39,19 @@ export const useUpdatePartner = () => {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: queryKeys.partner.detail(variables.id) })
       qc.invalidateQueries({ queryKey: queryKeys.partner.list() })
+    },
+  })
+}
+
+/** Partner profile › Commissions: saves the partner's share of the success fee. */
+export const useUpdatePartnerCommission = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string | number; payload: PartnerCommissionPayload }) => updatePartnerCommission(id, payload),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: queryKeys.partner.detail(variables.id) })
+      // The API logged "Commission added / updated / removed": show it in the activity sidebar now.
+      window.dispatchEvent(new Event(REFRESH_ACTIVITIES_EVENT))
     },
   })
 }

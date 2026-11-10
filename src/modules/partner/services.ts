@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Partner, PartnerOption, TenantConfig } from './types';
+import type { Partner, PartnerCommissionPayload, PartnerCommissionResponse, PartnerOption, TenantConfig } from './types';
 
 /** The Partners table: paginated, filtered and sorted. */
 export const fetchPartners = async (payload: any = {}) => {
@@ -39,6 +39,15 @@ export const updatePartner = async (id: string | number, payload: Partial<Partne
     return data;
   }
 }
+
+/** Partner profile › Commissions: the partner's share (%) of the success fee. */
+export const updatePartnerCommission = async (
+  id: string | number,
+  payload: PartnerCommissionPayload
+): Promise<PartnerCommissionResponse> => {
+  const { data } = await apiClient.put(`/admin/partners/${id}/commission`, payload);
+  return data;
+};
 
 export const deletePartner = async (id: string | number): Promise<void> => {
   await apiClient.delete(`/admin/partners/${id}`);

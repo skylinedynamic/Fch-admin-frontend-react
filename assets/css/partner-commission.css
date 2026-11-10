@@ -1,0 +1,212 @@
+/* Partner profile › Commissions: the rate field on the left, a donut of the
+   split with a Partner / Admin legend on the right. No borders: the light
+   right panel alone separates the two halves. The field is plain
+   Bootstrap (form-label / input-group / form-control) as on the other partner
+   tabs. Lays out by the tab's own width (container queries): the profile shares
+   its row with the Activity sidebar. */
+.pcm {
+  --pcm-primary: var(--brand-primary, var(--vz-primary, #405189));
+  --pcm-primary-rgb: var(--brand-primary-rgb, var(--vz-primary-rgb, 64, 81, 137));
+  --pcm-muted: var(--vz-secondary-color, #878a99);
+  --pcm-admin: #e3e5ea;
+  --pcm-panel: #fafbfc;
+  /* The width the layout responds to (a box can't query its own width). */
+  container-type: inline-size;
+  container-name: pcm;
+}
+
+.pcm__card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-radius: 10px;
+  background: var(--vz-secondary-bg, #fff);
+  overflow: hidden;
+}
+
+/* Left: title + field */
+.pcm__left {
+  padding: 28px;
+}
+
+.pcm__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pcm__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pcm__sub {
+  margin: 3px 0 22px;
+  font-size: 13px;
+  color: var(--pcm-muted);
+}
+
+.pcm__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--pcm-muted);
+  background: rgba(135, 138, 153, .12);
+}
+
+.pcm__status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pcm__status--saved {
+  color: var(--pcm-primary);
+  background: rgba(var(--pcm-primary-rgb), .1);
+}
+
+.pcm__status--draft {
+  color: #b7791f;
+  background: rgba(247, 184, 75, .18);
+}
+
+.pcm__help,
+.pcm__readonly {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--pcm-muted);
+}
+
+/* Right: donut + legend */
+.pcm__right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 28px 24px;
+  background: var(--pcm-panel);
+}
+
+.pcm-donut {
+  --pcm-share: 0%;
+  position: relative;
+  flex: none;
+  width: 136px;
+  height: 136px;
+  border-radius: 50%;
+  background: conic-gradient(var(--pcm-primary) 0 var(--pcm-share), var(--pcm-admin) var(--pcm-share) 100%);
+  transition: background .3s ease;
+}
+
+.pcm-donut::after {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  background: var(--pcm-panel);
+}
+
+.pcm-donut__center {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.pcm-donut__center b {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcm-donut__center small {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--pcm-muted);
+}
+
+.pcm-legend {
+  flex: none;
+}
+
+.pcm-legend__caption {
+  padding-bottom: 8px;
+  font-size: 12.5px;
+  color: var(--pcm-muted);
+}
+
+.pcm-legend__row {
+  display: grid;
+  grid-template-columns: 10px 56px 44px 64px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+}
+
+.pcm-legend__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.pcm-legend__dot--partner {
+  background: var(--pcm-primary);
+}
+
+.pcm-legend__dot--admin {
+  background: var(--pcm-admin);
+}
+
+.pcm-legend__name {
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--pcm-muted);
+}
+
+.pcm-legend__rate {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcm-legend__amount {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Narrow tab (phones): field above, donut + legend below. */
+@container pcm (max-width: 679.98px) {
+  .pcm__card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pcm__left,
+  .pcm__right {
+    padding: 20px;
+  }
+}
+
+@container pcm (max-width: 419.98px) {
+  .pcm__right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pcm-donut {
+    align-self: center;
+  }
+}

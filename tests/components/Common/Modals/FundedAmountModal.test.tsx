@@ -89,6 +89,47 @@ describe('FundedAmountModal', () => {
     expect(onConfirm).toHaveBeenCalledWith('20000', { successFee: '10', adminRate: '100', partnerRate: '0' })
   })
 
+  it("starts a partner application with no saved split at the partner's own commission (Partner profile › Commissions)", async () => {
+    const onConfirm = vi.fn()
+    renderWithProviders(
+      <FundedAmountModal {...base} initialAmount="20000" onConfirm={onConfirm} canEditCommission showPartnerCommission defaultPartnerCommissionRate={30} />
+    )
+
+    // Still locked and blank until there is a success fee.
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(null)
+
+    await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(70)
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
+    expect(row('Admin Commission')).toHaveTextContent('$1,400.00')
+    expect(row('Partner Commission')).toHaveTextContent('$600.00')
+
+    await userEvent.click(confirm())
+    expect(onConfirm).toHaveBeenCalledWith('20000', { successFee: '10', adminRate: '70', partnerRate: '30' })
+  })
+
+  it("keeps a saved split over the partner's commission", async () => {
+    renderWithProviders(
+      <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission adminCommissionRate={60} partnerCommissionRate={40} defaultPartnerCommissionRate={30} />
+    )
+
+    await userEvent.type(screen.getByLabelText('Success Fee (%)'), '5')
+
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(60)
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(40)
+  })
+
+  it("ignores a partner commission on a host client - the admin takes the whole fee", async () => {
+    const onConfirm = vi.fn()
+    renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} canEditCommission defaultPartnerCommissionRate={30} />)
+
+    await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+
+    expect(screen.queryByLabelText('Partner Commission Rate')).not.toBeInTheDocument()
+    expect(row('Admin Commission')).toHaveTextContent('$2,500.00')
+  })
+
   it('splits a partner application admin / partner, each rate filling in the other', async () => {
     const onConfirm = vi.fn()
     renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} canEditCommission showPartnerCommission />)

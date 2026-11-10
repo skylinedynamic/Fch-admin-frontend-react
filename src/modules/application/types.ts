@@ -466,6 +466,8 @@ export interface FundingApplicationDetails {
     total_commission?: string | number | null;
     admin_commission?: string | number | null;
     partner_commission?: string | number | null;
+    /** The partner's own commission (Partner profile › Commissions); null when unset or a host client. */
+    partner_default_commission?: number | null;
     total_commission_amount?: string | number | null;
     admin_commission_amount?: string | number | null;
     partner_commission_amount?: string | number | null;

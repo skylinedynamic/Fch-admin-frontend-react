@@ -24,6 +24,11 @@ interface FundedAmountModalProps {
     successFeeRate?: number;
     adminCommissionRate?: number;
     partnerCommissionRate?: number;
+    /**
+     * The partner's own commission (Partner profile › Commissions): with no
+     * split saved yet, the split opens at it instead of Admin 100% / Partner 0%.
+     */
+    defaultPartnerCommissionRate?: number | null;
     /** Total Requested Amount, shown beside the funded amount as on the page's card. */
     requestedAmount?: number;
     /** The application belongs to a partner: the success fee is split admin / partner. */
@@ -60,6 +65,7 @@ export default function FundedAmountModal({
     successFeeRate = 0,
     adminCommissionRate = 0,
     partnerCommissionRate = 0,
+    defaultPartnerCommissionRate = null,
     requestedAmount = 0,
     showPartnerCommission = false,
     canEditCommission = false,
@@ -81,14 +87,16 @@ export default function FundedAmountModal({
 
     // With no success fee there is nothing to split: both rates blank and
     // locked. Once a fee is set the rates open at the default split - the saved
-    // split, else Admin 100% / Partner 0% (F181; SCRUM-434 S434-BUG-06: it
-    // opened blank, read as 0% / 0%, and Confirm was refused until a split was
-    // typed). One rate fills in the other (they share 100%).
+    // split, else the partner's own commission (Partner profile › Commissions),
+    // else Admin 100% / Partner 0% (F181; SCRUM-434 S434-BUG-06: it opened
+    // blank, read as 0% / 0%, and Confirm was refused until a split was typed).
+    // One rate fills in the other (they share 100%).
     const noSplitRate = '';
     const savedSplit = !!(adminCommissionRate || partnerCommissionRate);
+    const partnerDefault = defaultPartnerCommissionRate ?? 0;
     // A host client has no split (the admin takes it all): its rates stay blank.
-    const splitAdminRate = savedSplit ? String(adminCommissionRate ?? 0) : showPartnerCommission ? '100' : noSplitRate;
-    const splitPartnerRate = savedSplit ? String(partnerCommissionRate ?? 0) : showPartnerCommission ? '0' : noSplitRate;
+    const splitAdminRate = savedSplit ? String(adminCommissionRate ?? 0) : showPartnerCommission ? String(+(100 - partnerDefault).toFixed(2)) : noSplitRate;
+    const splitPartnerRate = savedSplit ? String(partnerCommissionRate ?? 0) : showPartnerCommission ? String(partnerDefault) : noSplitRate;
     const hasFee = (value: string) => parseFloat(value) > 0;
 
     useEffect(() => {

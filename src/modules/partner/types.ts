@@ -27,3 +27,14 @@ export interface PartnerOption {
   full_name: string;
   company_name: string | null;
 }
+
+/** PUT /admin/partners/{id}/commission: the partner's share (%) of the success fee; null clears it. */
+export interface PartnerCommissionPayload {
+  commission: number | null;
+}
+
+export interface PartnerCommissionResponse {
+  status: boolean;
+  message: string;
+  data: { id: number; commission: number | null };
+}

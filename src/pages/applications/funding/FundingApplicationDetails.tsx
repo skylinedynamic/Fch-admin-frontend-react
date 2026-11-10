@@ -1112,6 +1112,7 @@ export default function FundingApplicationDetails() {
                 successFeeRate={parseFloat(app.total_commission?.toString() || '0')}
                 adminCommissionRate={parseFloat(app.admin_commission?.toString() || '0')}
                 partnerCommissionRate={parseFloat(app.partner_commission?.toString() || '0')}
+                defaultPartnerCommissionRate={app.partner_default_commission != null ? Number(app.partner_default_commission) : null}
                 showPartnerCommission={showPartnerCommission}
                 isCommissionSet={isCommissionSet}
                 requestedAmount={requestedAmountValue}
