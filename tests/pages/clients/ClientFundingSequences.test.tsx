@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders, screen, waitFor } from '../../test-utils'
@@ -127,6 +127,96 @@ describe('ClientFundingSequences — Enter applies the search and the category',
     await user.click(screen.getByRole('button', { name: 'Reset Filters' }))
     expect(await screen.findByText('Business Credit Builder')).toBeInTheDocument()
     expect(screen.getByText('Premium Term Loan')).toBeInTheDocument()
+  })
+})
+
+/**
+ * Defect: the "Failed Requirements" tooltip was always centred above its card
+ * by CSS, inside the card list - a tall one ran over the filter bar and tabs
+ * and out of the window. It is now drawn on top of the page (document.body),
+ * placed where it fits (here: below a card near the top), and its arrow points
+ * at the card.
+ */
+describe('ClientFundingSequences — tooltip placement', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('opens below a card near the top of the window, on top of the page, with the arrow on the card', async () => {
+    withOption([
+      { label: 'Revenue', status: 'Failed' },
+      { label: 'Time in Business', status: 'Failed' },
+    ])
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const rect = (top: number, left: number, width: number, height: number) =>
+        ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+      if (this.classList.contains('funding-card')) return rect(100, 400, 290, 300)
+      if (this.classList.contains('funding-missing-tooltip')) return rect(0, 0, 320, 300)
+      return rect(0, 0, 0, 0)
+    })
+    renderWithProviders(<ClientFundingSequences clientId="7" />)
+
+    await userEvent.hover(await screen.findByText('0% Intro Business Cards'))
+
+    const tip = (await screen.findByText('Failed Requirements')).closest('.funding-missing-tooltip') as HTMLElement
+    expect(tip.parentElement).toBe(document.body)
+    await waitFor(() => expect(tip).toHaveAttribute('data-placement', 'bottom'))
+    expect(tip.style.top).toBe('410px')
+    expect(tip.style.left).toBe(`${400 + 145 - 160}px`)
+    expect(tip.style.getPropertyValue('--tooltip-arrow-left')).toBe('160px')
+  })
+
+  /**
+   * Defect: near the bottom of the window a tall tooltip fitted neither above
+   * nor below its card, so it was cut short and scrolled. It opens beside the
+   * card instead, in full, with its arrow on the card's middle.
+   */
+  it('opens beside a card near the bottom of the window, in full, without scrolling', async () => {
+    withOption([
+      { label: 'Revenue', status: 'Failed' },
+      { label: 'Time in Business', status: 'Failed' },
+    ])
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const rect = (top: number, left: number, width: number, height: number) =>
+        ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+      // jsdom's window is 1024 x 768.
+      if (this.classList.contains('funding-card')) return rect(500, 300, 290, 300)
+      if (this.classList.contains('funding-missing-tooltip')) return rect(0, 0, 320, 520)
+      return rect(0, 0, 0, 0)
+    })
+    renderWithProviders(<ClientFundingSequences clientId="7" />)
+
+    await userEvent.hover(await screen.findByText('0% Intro Business Cards'))
+
+    const tip = (await screen.findByText('Failed Requirements')).closest('.funding-missing-tooltip') as HTMLElement
+    await waitFor(() => expect(tip).toHaveAttribute('data-placement', 'right'))
+    expect(tip.style.left).toBe('600px')
+    expect(tip.style.top).toBe('240px')
+    expect(tip.style.getPropertyValue('--tooltip-arrow-top')).toBe('410px')
+    expect((tip.querySelector('.funding-missing-tooltip-body') as HTMLElement).style.maxHeight).toBe('')
+  })
+
+  it('lines each requirement icon up with its text', async () => {
+    withOption([{ label: 'Revenue', status: 'Failed' }])
+    renderWithProviders(<ClientFundingSequences clientId="7" />)
+
+    await userEvent.hover(await screen.findByText('0% Intro Business Cards'))
+
+    const item = (await screen.findByText(/^Revenue:/)).closest('.funding-missing-tooltip-item') as HTMLElement
+    const icon = item.querySelector('i') as HTMLElement
+    // The icon sits in a box one text line high, centred in it - no hand-tuned margin.
+    expect(icon).toHaveClass('funding-missing-tooltip-icon')
+    expect(icon.style.marginTop).toBe('')
+  })
+
+  it('closes when the pointer leaves the card', async () => {
+    withOption([{ label: 'Revenue', status: 'Failed' }])
+    renderWithProviders(<ClientFundingSequences clientId="7" />)
+
+    const name = await screen.findByText('0% Intro Business Cards')
+    await userEvent.hover(name)
+    expect(await screen.findByText('Failed Requirements')).toBeInTheDocument()
+    await userEvent.unhover(name)
+
+    await waitFor(() => expect(screen.queryByText('Failed Requirements')).not.toBeInTheDocument())
   })
 })
 

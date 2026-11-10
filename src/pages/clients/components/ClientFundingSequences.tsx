@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import '../../../../assets/css/client-funding.css';
 import { toast } from 'react-toastify';
 import { fetchClientFundingOptions } from '../../../modules/client';
@@ -6,6 +7,7 @@ import ClientFundingDetail from './ClientFundingDetail';
 import { Dropdown } from 'primereact/dropdown';
 import { FundingOptionsLoader } from '../../../components/Loader/FundingSkeletonLoader';
 import { FACTOR_STATUS_VALUES } from '../../../config/funding';
+import { placeTooltip, type TooltipPlacement } from '../../../utils/tooltipPosition';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const FUNDING_ICON_MAP: Record<string, string> = {
@@ -86,10 +88,67 @@ const getFundingColorStyles = (colorName: string) => {
 };
 
 // ─── Tooltips ────────────────────────────────────────────────────────────────
-const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factors, visible }) => {
+type AnchorRef = React.RefObject<HTMLElement | null>;
+
+/**
+ * The tooltip's frame, drawn on top of the page (document.body) so the card
+ * list cannot clip it, and placed against its card where it fits: above, else
+ * below, kept inside the window, arrow on the card (utils/tooltipPosition). It
+ * follows the card while the page scrolls or resizes.
+ */
+const TooltipShell: React.FC<{ anchorRef: AnchorRef; children: React.ReactNode }> = ({ anchorRef, children }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [pos, setPos] = useState<TooltipPlacement | null>(null);
+
+    useLayoutEffect(() => {
+        const update = () => {
+            const anchor = anchorRef.current;
+            const tip = ref.current;
+            if (!anchor || !tip) return;
+            const tipRect = tip.getBoundingClientRect();
+            setPos(placeTooltip(
+                anchor.getBoundingClientRect(),
+                // The natural height, also once a max height has capped it.
+                { width: tipRect.width, height: Math.max(tip.scrollHeight, tipRect.height) },
+                { width: window.innerWidth, height: window.innerHeight },
+            ));
+        };
+        update();
+        window.addEventListener('scroll', update, true);
+        window.addEventListener('resize', update);
+        return () => {
+            window.removeEventListener('scroll', update, true);
+            window.removeEventListener('resize', update);
+        };
+    }, [anchorRef]);
+
+    return createPortal(
+        <div
+            ref={ref}
+            className="funding-missing-tooltip is-floating"
+            role="tooltip"
+            data-placement={pos?.placement ?? 'top'}
+            style={{
+                top: pos?.top ?? 0,
+                left: pos?.left ?? 0,
+                visibility: pos ? 'visible' : 'hidden',
+                ['--tooltip-arrow-left' as string]: pos?.arrowLeft !== undefined ? `${pos.arrowLeft}px` : '50%',
+                ['--tooltip-arrow-top' as string]: pos?.arrowTop !== undefined ? `${pos.arrowTop}px` : '50%',
+            }}
+        >
+            {/* Scrolls only when it fits nowhere in full; the arrow stays outside it. */}
+            <div className="funding-missing-tooltip-body" style={pos?.maxHeight !== undefined ? { maxHeight: Math.max(0, pos.maxHeight - 30) } : undefined}>
+                {children}
+            </div>
+        </div>,
+        document.body,
+    );
+};
+
+const MissingTooltip: React.FC<{ factors: any[]; visible: boolean; anchorRef: AnchorRef }> = ({ factors, visible, anchorRef }) => {
     if (!visible || factors.length === 0) return null;
     return (
-        <div className="funding-missing-tooltip">
+        <TooltipShell anchorRef={anchorRef}>
             <div className="funding-missing-tooltip-header">
                 <i className="ri-error-warning-fill" style={{ color: '#EF4444', fontSize: 18 }} />
                 <span>Failed Requirements</span>
@@ -140,8 +199,8 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
                     return (
                         <li key={i} className="funding-missing-tooltip-item">
                             <div className="d-flex align-items-start gap-2">
-                                <i className="ri-close-circle-fill" style={{ color: '#EF4444', fontSize: 15, marginTop: 1 }} />
-                                <div>
+                                <i className="ri-close-circle-fill funding-missing-tooltip-icon" style={{ color: '#EF4444', fontSize: 15 }} />
+                                <div className="funding-missing-tooltip-text">
                                     {f.reason ? (
                                         <>
                                             {/* The API says why and what to do (e.g. statements not uploaded). */}
@@ -166,17 +225,17 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
             </ul>
             <div className="funding-missing-tooltip-divider" />
             <div className="funding-missing-tooltip-footer-info">
-                <i className="ri-information-fill" style={{ color: '#3B82F6', fontSize: 16, marginTop: 1 }} />
+                <i className="ri-information-fill funding-missing-tooltip-icon" style={{ color: '#3B82F6', fontSize: 16 }} />
                 <span>Update the failed requirement(s) above to unlock this funding option.</span>
             </div>
-        </div>
+        </TooltipShell>
     );
 };
 
-const PendingTooltip: React.FC<{ visible: boolean }> = ({ visible }) => {
+const PendingTooltip: React.FC<{ visible: boolean; anchorRef: AnchorRef }> = ({ visible, anchorRef }) => {
     if (!visible) return null;
     return (
-        <div className="funding-missing-tooltip">
+        <TooltipShell anchorRef={anchorRef}>
             <div className="funding-missing-tooltip-header">
                 <i className="ri-time-fill" style={{ color: '#3B82F6', fontSize: 18 }} />
                 <span>Application Under Review</span>
@@ -186,24 +245,24 @@ const PendingTooltip: React.FC<{ visible: boolean }> = ({ visible }) => {
             <ul className="funding-missing-tooltip-list">
                 <li className="funding-missing-tooltip-item">
                     <div className="d-flex align-items-start gap-2">
-                        <i className="ri-information-line" style={{ color: '#3B82F6', fontSize: 15, marginTop: 1 }} />
+                        <i className="ri-information-line funding-missing-tooltip-icon" style={{ color: '#3B82F6', fontSize: 15 }} />
                         <div className="tooltip-item-title">Status: Awaiting Review</div>
                     </div>
                 </li>
             </ul>
             <div className="funding-missing-tooltip-divider" />
             <div className="funding-missing-tooltip-footer-info">
-                <i className="ri-information-fill" style={{ color: '#3B82F6', fontSize: 16, marginTop: 1 }} />
+                <i className="ri-information-fill funding-missing-tooltip-icon" style={{ color: '#3B82F6', fontSize: 16 }} />
                 <span>Please wait for approval or rejection before reapplying.</span>
             </div>
-        </div>
+        </TooltipShell>
     );
 };
 
-const EngineLockedTooltip: React.FC<{ visible: boolean }> = ({ visible }) => {
+const EngineLockedTooltip: React.FC<{ visible: boolean; anchorRef: AnchorRef }> = ({ visible, anchorRef }) => {
     if (!visible) return null;
     return (
-        <div className="funding-missing-tooltip">
+        <TooltipShell anchorRef={anchorRef}>
             <div className="funding-missing-tooltip-header">
                 <i className="ri-lock-fill" style={{ color: '#6B7280', fontSize: 18 }} />
                 <span>Locked</span>
@@ -211,10 +270,10 @@ const EngineLockedTooltip: React.FC<{ visible: boolean }> = ({ visible }) => {
             <p className="funding-missing-tooltip-desc">This funding option is currently locked because no underwriting logic is configured.</p>
             <div className="funding-missing-tooltip-divider" />
             <div className="funding-missing-tooltip-footer-info">
-                <i className="ri-information-fill" style={{ color: '#3B82F6', fontSize: 16, marginTop: 1 }} />
+                <i className="ri-information-fill funding-missing-tooltip-icon" style={{ color: '#3B82F6', fontSize: 16 }} />
                 <span>Please wait until requirements are set up.</span>
             </div>
-        </div>
+        </TooltipShell>
     );
 };
 
@@ -223,6 +282,8 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
     const iconClass = resolveIcon(item.icon);
     const colors = getFundingColorStyles(item.icon_color);
     const [tooltipVisible, setTooltipVisible] = useState(false);
+    // The tooltip is placed against this card.
+    const cardRef = useRef<HTMLDivElement>(null);
 
     // Status badges based on borrower's logic
     const missingFactors = (item.readiness_factors || []).filter((f: any) => {
@@ -242,6 +303,7 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <div
+                ref={cardRef}
                 className={`funding-card ${isFullyDisabled ? 'funding-card-disabled' : ''} ${isLocked ? 'funding-card-locked' : ''}`}
                 onClick={(e) => {
                     if (isFullyDisabled) {
@@ -295,9 +357,9 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
                 </div>
             </div>
 
-            <MissingTooltip factors={missingFactors} visible={tooltipVisible && hasMissing && !isEngineLocked} />
-            <PendingTooltip visible={tooltipVisible && isPending && !hasMissing && !isEngineLocked} />
-            <EngineLockedTooltip visible={tooltipVisible && isEngineLocked} />
+            <MissingTooltip factors={missingFactors} visible={tooltipVisible && hasMissing && !isEngineLocked} anchorRef={cardRef} />
+            <PendingTooltip visible={tooltipVisible && isPending && !hasMissing && !isEngineLocked} anchorRef={cardRef} />
+            <EngineLockedTooltip visible={tooltipVisible && isEngineLocked} anchorRef={cardRef} />
         </div>
     );
 };
