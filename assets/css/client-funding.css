@@ -116,3 +116,99 @@ div.client-funding-options .funding-card:hover:not(.funding-card-disabled) .fund
 div.client-funding-options .funding-card:hover:not(.funding-card-disabled) .funding-card-arrow i {
   color: #ffffff !important;
 }
+
+/* ── Funding card tooltip: placed against its card (utils/tooltipPosition) ──
+   Drawn on document.body, so the card list cannot clip it: above the card when
+   it fits, else below, kept inside the window; the arrow follows the card. */
+.funding-missing-tooltip.is-floating {
+  position: fixed;
+  bottom: auto;
+  transform: none;
+  z-index: 1080;
+  /* The width it had inside the card list; never wider than the window. */
+  box-sizing: border-box;
+  width: 320px;
+  min-width: 0;
+  max-width: calc(100vw - 16px);
+  animation: fundingTooltipFloatIn 0.15s ease-out;
+}
+
+.funding-missing-tooltip.is-floating::after {
+  left: var(--tooltip-arrow-left, 50%);
+}
+
+/* Below the card: the arrow sits on the top edge and points up. */
+.funding-missing-tooltip.is-floating[data-placement="bottom"]::after {
+  top: -6px;
+  bottom: auto;
+  border-top: 0;
+  border-bottom: 6px solid var(--primary-color);
+}
+
+/* Beside the card: the arrow sits on the edge facing the card, level with its middle. */
+.funding-missing-tooltip.is-floating[data-placement="right"]::after,
+.funding-missing-tooltip.is-floating[data-placement="left"]::after {
+  top: var(--tooltip-arrow-top, 50%);
+  bottom: auto;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+.funding-missing-tooltip.is-floating[data-placement="right"]::after {
+  left: -6px;
+  border-left: 0;
+  border-right: 6px solid var(--primary-color);
+}
+
+.funding-missing-tooltip.is-floating[data-placement="left"]::after {
+  left: auto;
+  right: -6px;
+  border-right: 0;
+  border-left: 6px solid var(--primary-color);
+}
+
+/* Only in a window too small to show it whole anywhere: the content scrolls,
+   with a slim scrollbar in the tooltip's colours; the arrow stays put. */
+.funding-missing-tooltip.is-floating .funding-missing-tooltip-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 232, 240, 0.3) transparent;
+}
+
+.funding-missing-tooltip.is-floating .funding-missing-tooltip-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.funding-missing-tooltip.is-floating .funding-missing-tooltip-body::-webkit-scrollbar-thumb {
+  background: rgba(226, 232, 240, 0.3);
+  border-radius: 3px;
+}
+
+.funding-missing-tooltip.is-floating .funding-missing-tooltip-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes fundingTooltipFloatIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Each icon sits in a box one text line high and is centred in it, so it lines
+   up with the first line of its text (also when the text wraps). */
+.funding-missing-tooltip .funding-missing-tooltip-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 17px;
+  line-height: 1;
+  margin-top: 0;
+}
+
+.funding-missing-tooltip .funding-missing-tooltip-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

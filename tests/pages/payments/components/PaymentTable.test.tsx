@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test-utils'
 import PaymentTable from '../../../../src/pages/payments/components/PaymentTable'
@@ -54,5 +55,35 @@ describe('PaymentTable', () => {
 
     expect(screen.getByRole('columnheader', { name: /Company/ })).toBeInTheDocument()
     expect(cellsOf('INV-7').some((c) => c.textContent === '-')).toBe(true)
+  })
+})
+
+/**
+ * BUG-179: the NAME header had no sort field, so a click sent none and the API
+ * fell back to sorting by date. It now asks for the payer name ('name').
+ */
+describe('PaymentTable NAME sort', () => {
+  it('asks to sort by the payer name', async () => {
+    const onSort = vi.fn()
+    renderWithProviders(
+      <PaymentTable
+        data={[payment]}
+        loading={false}
+        totalRecords={1}
+        page={1}
+        perPage={10}
+        onPage={() => {}}
+        onSort={onSort}
+        onFilter={() => {}}
+        filters={{}}
+        sortField="transaction_date"
+        sortOrder="desc"
+      />
+    )
+
+    const header = screen.getByRole('columnheader', { name: /^Name/ })
+    await userEvent.click(within(header).getByText('Name'))
+
+    expect(onSort).toHaveBeenCalledWith(expect.objectContaining({ sortField: 'name' }))
   })
 })

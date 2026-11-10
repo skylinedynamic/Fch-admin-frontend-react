@@ -20,6 +20,7 @@ import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfi
 import PaymentDetailsLoader from '../../components/Loader/PaymentDetailsLoader';
 import { formatDate } from '../../utils/formatters';
 import ErrorPage from '../Utility/ErrorPage';
+import PaymentEnvironmentNotice from './components/PaymentEnvironmentNotice';
 import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function PaymentDetails() {
@@ -383,6 +384,7 @@ export default function PaymentDetails() {
                                             <p className="text-muted fs-13 mb-3">
                                                 This payment is currently <strong>Processing</strong> and requires your action. Enter notes/remarks below and select <strong>Approve Payment</strong> or <strong>Reject Payment</strong>.
                                             </p>
+                                            <PaymentEnvironmentNotice isProduction={!!payment.is_environment} className="mb-3" />
                                             <div className="mb-3">
                                                 <label className="form-label fw-semibold fs-13">
                                                     Note / Remarks <span className="text-muted fw-normal fs-12">(Required for Rejection, Optional for Approval)</span>
@@ -446,6 +448,7 @@ export default function PaymentDetails() {
                             <p className="text-muted fs-14 mb-3">
                                 Are you sure you want to approve this payment of <strong className="text-dark">{payment?.amount}</strong> for Invoice <strong className="text-dark">{payment?.invoice_id || '-'}</strong>?
                             </p>
+                            <PaymentEnvironmentNotice isProduction={!!payment?.is_environment} className="mb-3" />
                             <div className="bg-light rounded p-3 mb-3 border">
                                 <span className="fw-semibold fs-13 text-muted d-block mb-1">Note / Remarks:</span>
                                 <p className="mb-0 fs-13 text-dark text-break fw-medium">{note.trim() || <span className="text-muted fs-12 italic">No note provided</span>}</p>
@@ -502,6 +505,7 @@ export default function PaymentDetails() {
                             <p className="text-muted fs-14 mb-3">
                                 Are you sure you want to reject this payment of <strong className="text-dark">{payment?.amount}</strong> for Invoice <strong className="text-dark">{payment?.invoice_id || '-'}</strong>?
                             </p>
+                            <PaymentEnvironmentNotice isProduction={!!payment?.is_environment} className="mb-3" />
                             <div className="bg-light rounded p-3 mb-3 border border-danger-subtle">
                                 <span className="fw-semibold fs-13 text-danger d-block mb-1">Rejection Reason / Remarks:</span>
                                 <p className="mb-0 fs-13 text-dark text-break fw-medium">{note}</p>

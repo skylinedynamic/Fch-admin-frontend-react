@@ -24,6 +24,26 @@ export const INVOICE_STATUS_OPTIONS = [
     { label: STATUS_CANCELED, value: STATUS_CANCELED }
 ];
 
+// Invoice types as the API stores them (fch-api Invoice::INVOICE_TYPES).
+export const INVOICE_TYPE_ENROLLMENT = 'enrollment';
+export const INVOICE_TYPE_DOWN_PAYMENT = 'down_payment';
+export const INVOICE_TYPE_INSTALLMENT = 'installment';
+export const INVOICE_TYPE_PLATFORM_FEE = 'platform_fee';
+export const INVOICE_TYPE_BORROWER_FEE = 'borrower_fee';
+export const INVOICE_TYPE_USER_SEAT = 'user_seat';
+export const INVOICE_TYPE_COMMISSION_PAYOUT = 'commission_payout';
+
+export const INVOICE_TYPE_OPTIONS = [
+    { label: 'All Types', value: null },
+    { label: 'Enrollment', value: INVOICE_TYPE_ENROLLMENT },
+    { label: 'Down Payment', value: INVOICE_TYPE_DOWN_PAYMENT },
+    { label: 'Installment', value: INVOICE_TYPE_INSTALLMENT },
+    { label: 'Platform Fee', value: INVOICE_TYPE_PLATFORM_FEE },
+    { label: 'Borrower Fee', value: INVOICE_TYPE_BORROWER_FEE },
+    { label: 'User Seat', value: INVOICE_TYPE_USER_SEAT },
+    { label: 'Commission Payout', value: INVOICE_TYPE_COMMISSION_PAYOUT },
+];
+
 export const INVOICE_CYCLE_OPTIONS = [
     { label: 'All Cycle', value: null },
     { label: 'Monthly', value: 'Monthly' },

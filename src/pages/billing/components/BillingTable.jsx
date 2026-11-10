@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { SUBSCRIPTION_STATUS_COLORS } from '../../../config/subscriptionConfig';
+import { INVOICE_STATUS_COLORS } from '../../../config/invoiceConfig';
+import { BILLING_ROW_BORROWER_FEE } from '../../../config/billingOptions';
 import { parseDateOnly, startOfToday } from '../../../utils/helper';
 
 export default function BillingTable({
@@ -11,6 +13,7 @@ export default function BillingTable({
     sortField, sortOrder
 }) {
     const navigate = useNavigate();
+    const isBorrowerFee = (rowData) => rowData.billing_row === BILLING_ROW_BORROWER_FEE;
 
     const amountBodyTemplate = (rowData) => {
         const value = rowData.upcoming_billing_amount;
@@ -65,6 +68,9 @@ export default function BillingTable({
                 </span>
                 <span className="text-muted small ms-1">({typeLabel})</span>
                 {email && <div className="text-muted small">{email}</div>}
+                {isBorrowerFee(rowData) && rowData.for_client_name && (
+                    <div className="text-muted small">For client: {rowData.for_client_name}</div>
+                )}
             </div>
         );
     };
@@ -114,7 +120,9 @@ export default function BillingTable({
         const status = rowData.status;
         // Colour by the actual status — hardcoding success rendered a Past Due
         // subscription in green.
-        const color = SUBSCRIPTION_STATUS_COLORS[status] || 'secondary';
+        // A borrower fee row carries its invoice's status (Unpaid / Processing).
+        const colors = isBorrowerFee(rowData) ? INVOICE_STATUS_COLORS : SUBSCRIPTION_STATUS_COLORS;
+        const color = colors[status] || 'secondary';
         return <span className={`badge bg-${color}-subtle text-${color}`}>{status}</span>;
     };
 
@@ -143,7 +151,9 @@ export default function BillingTable({
                 responsiveLayout="scroll"
                 className="p-datatable-sm"
                 emptyMessage="No upcoming billing found"
-                onRowClick={(e) => navigate(`/billing/${e.data.subscription_id}`)}
+                onRowClick={(e) => navigate(isBorrowerFee(e.data) && e.data.fee_invoice_id
+                    ? `/invoices/${e.data.fee_invoice_id}`
+                    : `/billing/${e.data.subscription_id}`)}
                 rowClassName={() => 'cursor-pointer'}
             >
                 <Column field="partner_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by Name" style={{ minWidth: '200px' }} />

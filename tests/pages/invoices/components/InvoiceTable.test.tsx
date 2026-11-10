@@ -123,7 +123,7 @@ describe('InvoiceTable payment', () => {
     useConfigStore.setState({ setupPromptOpen: false } as never)
     useAuthStore.setState({
       token: 't',
-      user: { id: 1, name: 'Pat', entity_type: 'Partner', is_host: 0, partner_id: 2, permissions: [] },
+      user: { id: 1, name: 'Pat', entity_type: 'Partner', is_host: 0, partner_id: 2, permissions: ['Pay Invoice'] },
       userSubscription: null,
     } as never)
   })
@@ -154,5 +154,30 @@ describe('InvoiceTable payment', () => {
 
     expect(useConfigStore.getState().setupPromptOpen).toBe(true)
     expect(onRefresh).toHaveBeenCalled()
+  })
+})
+
+// BUG-202: Pay Now is offered only to a partner user holding "Pay Invoice".
+describe('InvoiceTable Pay Now permission', () => {
+  const signInAs = (permissions: string[]) =>
+    useAuthStore.setState({
+      token: 't',
+      user: { id: 3, name: 'Sam Staff', entity_type: 'Employee', is_host: 0, partner_id: 2, permissions },
+      userSubscription: null,
+    } as never)
+
+  it('offers Pay Now with Pay Invoice', async () => {
+    signInAs(['view invoices', 'Pay Invoice'])
+    renderTable()
+
+    expect(await screen.findByRole('button', { name: /pay now/i })).toBeInTheDocument()
+  })
+
+  it('does not offer Pay Now without Pay Invoice', () => {
+    signInAs(['view invoices'])
+    renderTable()
+
+    expect(screen.getByRole('row', { name: /INV-7/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /pay now/i })).not.toBeInTheDocument()
   })
 })

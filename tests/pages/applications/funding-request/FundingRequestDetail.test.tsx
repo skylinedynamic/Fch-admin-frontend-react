@@ -104,7 +104,7 @@ describe('Funding Request Details: action buttons', () => {
   })
 
   /**
-   * Defect: a rejected request opened with an empty Reason / Note - the saved
+   * Defect (BUG-159): a rejected request opened with an empty Reason / Note - the saved
    * reject_reason came back from the API but the box always started blank, so
    * after a save or a reload the reason seemed lost.
    */

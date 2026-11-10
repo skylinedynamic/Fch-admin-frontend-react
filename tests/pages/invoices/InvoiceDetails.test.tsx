@@ -132,14 +132,23 @@ describe('InvoiceDetails', () => {
     expect(screen.queryByRole('button', { name: /pay now/i })).not.toBeInTheDocument()
   })
 
-  it('offers Pay Now to a partner for their own unpaid invoice', async () => {
-    mount({ permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Partner' })
+  it('offers Pay Now to a partner user holding Pay Invoice, for their own unpaid invoice', async () => {
+    mount({ permissions: ['view invoices', 'Pay Invoice'], is_host: 0, partner_id: 5, entity_type: 'Partner' })
 
     expect(await screen.findByRole('button', { name: /pay now/i })).toBeInTheDocument()
   })
 
+  // BUG-202: staff saw Pay Now, but the API refused them. Without "Pay
+  // Invoice" the button is not offered at all.
+  it('does not offer Pay Now to a partner user without Pay Invoice', async () => {
+    mount({ permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Employee' })
+
+    await screen.findByText('Total Amount')
+    expect(screen.queryByRole('button', { name: /pay now/i })).not.toBeInTheDocument()
+  })
+
   it.each(['Paid', 'Processing'])('does not offer Pay Now for a %s invoice', async (status) => {
-    mount({ permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Partner' }, { ...INVOICE, status })
+    mount({ permissions: ['view invoices', 'Pay Invoice'], is_host: 0, partner_id: 5, entity_type: 'Partner' }, { ...INVOICE, status })
 
     await screen.findByText('Total Amount')
     expect(screen.queryByRole('button', { name: /pay now/i })).not.toBeInTheDocument()

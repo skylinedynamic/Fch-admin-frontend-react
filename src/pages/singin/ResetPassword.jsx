@@ -174,9 +174,9 @@ export default function ResetPassword() {
           <div id="password-contain" className="p-3 bg-light mb-2 rounded d-block">
             <h5 className="fs-13">Password must contain:</h5>
             <p className={`${rules.hasLength ? 'valid' : 'invalid'} fs-12 mb-2`}>Minimum <b>8 characters</b></p>
-            <p className={`${rules.hasLower ? 'valid' : 'invalid'} fs-12 mb-2`}>At <b>lowercase</b> letter (a-z)</p>
-            <p className={`${rules.hasUpper ? 'valid' : 'invalid'} fs-12 mb-2`}>At least <b>uppercase</b> letter (A-Z)</p>
-            <p className={`${rules.hasNumber ? 'valid' : 'invalid'} fs-12 mb-0`}>A least <b>number</b> (0-9)</p>
+            <p className={`${rules.hasLower ? 'valid' : 'invalid'} fs-12 mb-2`}>At least one <b>lowercase</b> letter (a-z)</p>
+            <p className={`${rules.hasUpper ? 'valid' : 'invalid'} fs-12 mb-2`}>At least one <b>uppercase</b> letter (A-Z)</p>
+            <p className={`${rules.hasNumber ? 'valid' : 'invalid'} fs-12 mb-0`}>At least one <b>number</b> (0-9)</p>
           </div>
 
           {/* Removed Remember me checkbox as it is not needed here */}

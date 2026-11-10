@@ -86,6 +86,20 @@ type LogoFieldKey = 'logo_sidebar' | 'logo_document' | 'logo_mail' | 'logo_mobil
 const RECOMMENDED_LOGO_SIZE = '420 x 127 px';
 const RECOMMENDED_MARK_SIZE = '60 x 60 px';
 
+/**
+ * The surfaces with no logo of their own, for the "No logo set for ..." note.
+ * The square mark is listed too (BUG-166): without one the tab icon and the
+ * collapsed menu borrow another of the tenant's logos.
+ */
+export const missingLogoSurfaces = (branding: Pick<BrandingState, LogoFieldKey>): string[] =>
+    ([
+        ['logo_sidebar', 'sidebar'],
+        ['logo_mobile', 'mobile'],
+        ['logo_document', 'documents'],
+        ['logo_mail', 'email'],
+        ['favicon', 'square mark (browser tab, collapsed menu)'],
+    ] as const).filter(([key]) => !(branding[key] || '').trim()).map(([, label]) => label);
+
 const EMPTY_BRANDING: BrandingState = {
     site_name: '',
     site_slogan: '',
@@ -1122,12 +1136,7 @@ const BrandingForm: React.FC = () => {
                                 </div>
 
                                 {(() => {
-                                    const missing = ([
-                                        ['logo_sidebar', 'sidebar'],
-                                        ['logo_mobile', 'mobile'],
-                                        ['logo_document', 'documents'],
-                                        ['logo_mail', 'email'],
-                                    ] as const).filter(([key]) => !branding[key].trim()).map(([, label]) => label);
+                                    const missing = missingLogoSurfaces(branding);
                                     const hasAny = !!(branding.logo_sidebar || branding.logo_document
                                         || branding.logo_mail || branding.logo_mobile);
 

@@ -211,6 +211,10 @@ export default function CommissionList() {
                                                         placeholder="Search borrower or ID..."
                                                         value={searchText}
                                                         onChange={(e) => setSearchText(e.target.value)}
+                                                        // Enter searches, as on the other lists (BUG-162).
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleApplyFilters();
+                                                        }}
                                                     />
                                                     <i className="ri-search-line search-icon"></i>
                                                 </div>

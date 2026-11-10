@@ -32,3 +32,26 @@ describe('ReviewProgressCard - step dates', () => {
     expect(screen.getByText(day('2026-10-21T10:30:00+00:00'))).toBeInTheDocument()
   })
 })
+
+/**
+ * Defect (BUG-159, OP-FREQ-14): the reason a request was rejected was saved
+ * and shown to the client, but the staff page never showed it - the card got
+ * the reason and dropped it. A rejected request shows why.
+ */
+describe('ReviewProgressCard - rejection reason', () => {
+  const reason = 'Please add 3 months of bank statements'
+
+  it('shows the reason on a rejected request', () => {
+    renderWithProviders(<ReviewProgressCard status="Rejected" createdAt="2026-10-19T08:00:00+00:00" rejectReason={reason} />)
+
+    const block = screen.getByRole('region', { name: 'Rejection reason' })
+    expect(block).toHaveTextContent(reason)
+  })
+
+  it('shows no reason block while the request is not rejected', () => {
+    renderWithProviders(<ReviewProgressCard status="Approved" createdAt="2026-10-19T08:00:00+00:00" rejectReason={reason} />)
+
+    expect(screen.queryByRole('region', { name: 'Rejection reason' })).not.toBeInTheDocument()
+    expect(screen.queryByText(reason)).not.toBeInTheDocument()
+  })
+})

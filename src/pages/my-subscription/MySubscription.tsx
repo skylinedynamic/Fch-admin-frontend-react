@@ -39,6 +39,7 @@ import {
 } from '../../config/paymentConfig';
 import {
   STATUS_SUCCESS as INVOICE_STATUS_SUCCESS,
+  INVOICE_TYPE_OPTIONS,
 } from '../../config/invoiceConfig';
 
 export interface PaymentProviderItem {
@@ -63,6 +64,8 @@ export interface PaymentHistoryItem {
   displayable_amount?: string;
   amount?: string;
   transaction_type?: string;
+  /** The invoice's type (fch-api Invoice::INVOICE_TYPES), e.g. user_seat. */
+  invoice_type?: string | null;
   status?: string;
 }
 
@@ -571,6 +574,10 @@ export default function MySubscription(): JSX.Element {
     }
   };
 
+  // Enrollment, User Seat, Borrower Fee, ... - the label the Invoices filter uses.
+  const invoiceTypeBodyTemplate = (row: PaymentHistoryItem) =>
+    INVOICE_TYPE_OPTIONS.find((option) => option.value && option.value === row.invoice_type)?.label || '-';
+
   const recentBill = data?.recent_bill;
   const upcoming = data?.upcoming_billing;
   const subscription = data?.subscription;
@@ -675,6 +682,85 @@ export default function MySubscription(): JSX.Element {
           <MySubscriptionLoader />
         ) : (
           <>
+            {/* Active Subscription & Plan Details Card */}
+            <div className="row mb-3">
+              <div className="col-12">
+                <div className="card billing-card-wrapper mb-0">
+                  <div className="card-body p-4">
+                    <div className="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="avatar-md">
+                          <span className="avatar-title bg-primary-subtle text-primary rounded-circle fs-24">
+                            <i className="ri-vip-crown-2-line"></i>
+                          </span>
+                        </div>
+                        <div>
+                          <h5 className="fs-16 fw-bold text-dark mb-1">
+                            Active Subscription Plan: {subscription?.enrollment_type || ENROLLMENT_TYPE_ONE_TIME}
+                          </h5>
+                          <span className="text-muted fs-13">Manage your partner subscription and payment breakdown</span>
+                        </div>
+                      </div>
+                      <div className="d-flex align-items-center gap-2">
+                        {!isSubscriptionCompleted && !isSubscriptionCancelled && subscription && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger px-2.5 py-1 fs-12 fw-medium rounded-1 d-inline-flex align-items-center gap-1"
+                            onClick={() => setShowCancelModal(true)}
+                          >
+                            <i className="ri-close-circle-line"></i> Cancel Subscription
+                          </button>
+                        )}
+                        {isSubscriptionCancelled && <ResumeSubscription onResumed={() => loadSubscriptionDetails(false)} />}
+                        <span
+                          className={`badge billing-card-badge-pill ${isSubscriptionCompleted
+                              ? 'bg-success-subtle text-success border border-success-subtle'
+                              : isSubscriptionCancelled
+                                ? 'bg-danger-subtle text-danger border border-danger-subtle'
+                                : 'bg-info-subtle text-info border border-info-subtle'
+                            }`}
+                        >
+                          {isSubscriptionCompleted ? SUBSCRIPTION_STATUS_COMPLETED : subscription?.status || SUBSCRIPTION_STATUS_ACTIVE}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="row g-3 fs-13">
+                      <div className="col-xl-3 col-md-6 col-12">
+                        <span className="text-muted d-block fs-12">Total Plan Amount</span>
+                        <strong className="text-dark fs-14">{subscription?.payable_amount || 'N/A'}</strong>
+                      </div>
+                      <div className="col-xl-3 col-md-6 col-12">
+                        <span className="text-muted d-block fs-12">Monthly Platform Fee</span>
+                        <strong className="text-dark fs-14">{subscription?.monthly_platform_fee || 'N/A'}</strong>
+                      </div>
+                      {!subIsOneTime && subscription?.subscription_amount_per_month && (
+                        <div className="col-xl-3 col-md-6 col-12">
+                          <span className="text-muted d-block fs-12">Monthly Installment</span>
+                          <strong className="text-dark fs-14">{subscription.subscription_amount_per_month}</strong>
+                        </div>
+                      )}
+                      {!subIsOneTime && subscription?.final_installment_amount && (
+                        <div className="col-xl-3 col-md-6 col-12">
+                          <span className="text-muted d-block fs-12">Last Installment</span>
+                          <strong className="text-dark fs-14">{subscription.final_installment_amount}</strong>
+                          <span className="text-muted d-block fs-11">{FINAL_INSTALLMENT_NOTE}</span>
+                        </div>
+                      )}
+                      <div className="col-xl-3 col-md-6 col-12">
+                        <span className="text-muted d-block fs-12">Start Date</span>
+                        <strong className="text-dark fs-14">{subscription?.subscription_start_date || 'N/A'}</strong>
+                      </div>
+                      <div className="col-xl-3 col-md-6 col-12">
+                        <span className="text-muted d-block fs-12">Next Billing Date</span>
+                        <strong className="text-info fs-14">{upcoming?.next_date || subscription?.subscription_end_date || 'N/A'}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Top Metric Cards */}
             <div className="row g-3 mb-3">
               {/* 1. Recent / Current Bill */}
@@ -871,85 +957,6 @@ export default function MySubscription(): JSX.Element {
               </div>
             </div>
 
-            {/* Active Subscription & Plan Details Card */}
-            <div className="row mb-3">
-              <div className="col-12">
-                <div className="card billing-card-wrapper mb-0">
-                  <div className="card-body p-4">
-                    <div className="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="avatar-md">
-                          <span className="avatar-title bg-primary-subtle text-primary rounded-circle fs-24">
-                            <i className="ri-vip-crown-2-line"></i>
-                          </span>
-                        </div>
-                        <div>
-                          <h5 className="fs-16 fw-bold text-dark mb-1">
-                            Active Subscription Plan: {subscription?.enrollment_type || ENROLLMENT_TYPE_ONE_TIME}
-                          </h5>
-                          <span className="text-muted fs-13">Manage your partner subscription and payment breakdown</span>
-                        </div>
-                      </div>
-                      <div className="d-flex align-items-center gap-2">
-                        {!isSubscriptionCompleted && !isSubscriptionCancelled && subscription && (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger px-2.5 py-1 fs-12 fw-medium rounded-1 d-inline-flex align-items-center gap-1"
-                            onClick={() => setShowCancelModal(true)}
-                          >
-                            <i className="ri-close-circle-line"></i> Cancel Subscription
-                          </button>
-                        )}
-                        {isSubscriptionCancelled && <ResumeSubscription onResumed={() => loadSubscriptionDetails(false)} />}
-                        <span
-                          className={`badge billing-card-badge-pill ${isSubscriptionCompleted
-                              ? 'bg-success-subtle text-success border border-success-subtle'
-                              : isSubscriptionCancelled
-                                ? 'bg-danger-subtle text-danger border border-danger-subtle'
-                                : 'bg-info-subtle text-info border border-info-subtle'
-                            }`}
-                        >
-                          {isSubscriptionCompleted ? SUBSCRIPTION_STATUS_COMPLETED : subscription?.status || SUBSCRIPTION_STATUS_ACTIVE}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="row g-3 fs-13">
-                      <div className="col-xl-3 col-md-6 col-12">
-                        <span className="text-muted d-block fs-12">Total Plan Amount</span>
-                        <strong className="text-dark fs-14">{subscription?.payable_amount || 'N/A'}</strong>
-                      </div>
-                      <div className="col-xl-3 col-md-6 col-12">
-                        <span className="text-muted d-block fs-12">Monthly Platform Fee</span>
-                        <strong className="text-dark fs-14">{subscription?.monthly_platform_fee || 'N/A'}</strong>
-                      </div>
-                      {!subIsOneTime && subscription?.subscription_amount_per_month && (
-                        <div className="col-xl-3 col-md-6 col-12">
-                          <span className="text-muted d-block fs-12">Monthly Installment</span>
-                          <strong className="text-dark fs-14">{subscription.subscription_amount_per_month}</strong>
-                        </div>
-                      )}
-                      {!subIsOneTime && subscription?.final_installment_amount && (
-                        <div className="col-xl-3 col-md-6 col-12">
-                          <span className="text-muted d-block fs-12">Last Installment</span>
-                          <strong className="text-dark fs-14">{subscription.final_installment_amount}</strong>
-                          <span className="text-muted d-block fs-11">{FINAL_INSTALLMENT_NOTE}</span>
-                        </div>
-                      )}
-                      <div className="col-xl-3 col-md-6 col-12">
-                        <span className="text-muted d-block fs-12">Start Date</span>
-                        <strong className="text-dark fs-14">{subscription?.subscription_start_date || 'N/A'}</strong>
-                      </div>
-                      <div className="col-xl-3 col-md-6 col-12">
-                        <span className="text-muted d-block fs-12">Next Billing Date</span>
-                        <strong className="text-info fs-14">{upcoming?.next_date || subscription?.subscription_end_date || 'N/A'}</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Recent Payments History Table */}
             <div className="row">
               <div className="col-12">
@@ -966,6 +973,7 @@ export default function MySubscription(): JSX.Element {
                       <Column field="invoice_no" header="INVOICE #" body={(r: PaymentHistoryItem) => r.invoice_no || r.invoice_id || r.invoice?.invoice_id || '-'} className="col-w-160" />
                       <Column field="payment_method" header="PAYMENT METHOD" body={methodBodyTemplate} className="col-w-160" />
                       <Column field="amount" header="AMOUNT" body={amountBodyTemplate} className="col-w-130" />
+                      <Column field="invoice_type" header="INVOICE TYPE" body={invoiceTypeBodyTemplate} className="col-w-130" />
                       <Column field="transaction_type" header="TYPE" body={typeBodyTemplate} className="col-w-110" />
                       <Column field="status" header="STATUS" body={statusBodyTemplate} className="col-w-130" />
                     </DataTable>

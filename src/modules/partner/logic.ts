@@ -48,6 +48,8 @@ export const mapPartnerBackendErrors = (backendErrors: Record<string, any>): Rec
         'enrollment.remaining_balance':         'installment_remaining_balance',
         // The create endpoint validates the zip as zip_code; the form field is postal_code.
         'zip_code':                             'postal_code',
+        // The API takes the agent as assign_to; the form field is agent.
+        'assign_to':                            'agent',
     };
 
     Object.entries(backendErrors).forEach(([field, errorMsg]) => {
@@ -119,7 +121,8 @@ export const buildPartnerFormDataPayload = (
         if (skipAlways.includes(key)) return;
 
         if (id) {
-            const updateSkipFields = ['partner_type', 'invoice'];
+            // Status and agent are saved by the Status & Agent tab's own endpoint.
+            const updateSkipFields = ['partner_type', 'invoice', 'status', 'agent'];
             if (!wasFreeTrial) {
                 updateSkipFields.push('is_free_trail', 'free_trail_end_date');
             }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { screen, waitFor } from '../../test-utils'
+import { screen, waitFor, within } from '../../test-utils'
 import { allowBackgroundCalls, api, renderPage, signIn } from '../pageHarness'
 
 vi.mock('react-toastify', async (importOriginal) => {
@@ -152,6 +152,36 @@ describe('PaymentDetails - reject', () => {
       expect(reject.bodies[0]).toEqual({ reason: 'Amount does not match the invoice', note: 'Amount does not match the invoice' })
     )
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Payment rejected.'))
+  })
+})
+
+// BUG-180: the approver sees, before deciding, whether the payment is recorded
+// as Sandbox (test money) or Production (live money).
+describe('PaymentDetails - environment before a decision', () => {
+  const recordedIn = (scope: HTMLElement) => within(scope).getByTestId('payment-environment-notice')
+  const modal = (title: RegExp) => screen.getByText(title).closest('.modal-content') as HTMLElement
+
+  it('shows Sandbox in the decision panel and both confirmations', async () => {
+    const user = userEvent.setup()
+    mount(undefined, { ...PAYMENT, is_environment: false })
+
+    const panel = (await screen.findByText(/Payment Approval & Decision/)).closest('div') as HTMLElement
+    expect(recordedIn(panel)).toHaveTextContent(/Recorded in\s*Sandbox/i)
+
+    await user.click(screen.getByRole('button', { name: /approve payment/i }))
+    expect(recordedIn(modal(/Confirm Payment Approval/))).toHaveTextContent(/Recorded in\s*Sandbox/i)
+
+    await user.type(screen.getByPlaceholderText(NOTE), 'Wrong amount')
+    await user.click(screen.getByRole('button', { name: /reject payment/i }))
+    expect(recordedIn(modal(/Confirm Payment Rejection/))).toHaveTextContent(/Recorded in\s*Sandbox/i)
+  })
+
+  it('shows Production for a live payment', async () => {
+    mount(undefined, { ...PAYMENT, is_environment: true })
+
+    const panel = (await screen.findByText(/Payment Approval & Decision/)).closest('div') as HTMLElement
+    expect(recordedIn(panel)).toHaveTextContent(/Recorded in\s*Production/i)
+    expect(recordedIn(panel)).toHaveTextContent(/live/i)
   })
 })
 
