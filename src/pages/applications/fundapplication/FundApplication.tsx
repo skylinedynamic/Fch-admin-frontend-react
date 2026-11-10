@@ -35,6 +35,7 @@ import {
   type FederalCompliance,
 } from './types'
 
+
 const matchPurpose = (raw: string | null | undefined): string => {
   if (!raw) return ''
   const trimmed = raw.trim()
@@ -317,7 +318,9 @@ export default function FundApplication() {
         purposeNote: fundingData.purpose_note || '',
       })
 
-      if (fundingData.funding_sequence_id && !fundingSequenceId) {
+      // The saved sequence, every time it loads: one changed on the Funding
+      // Request step (embed form applications) must not be sent back stale.
+      if (fundingData.funding_sequence_id) {
         setFundingSequenceId(fundingData.funding_sequence_id)
       }
       if (fundingData.funding_request_id && !fundingRequestId) {

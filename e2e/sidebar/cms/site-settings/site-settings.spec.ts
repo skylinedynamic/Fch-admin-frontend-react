@@ -36,10 +36,35 @@ test.describe('Site settings', () => {
     return api
   }
 
+  // The cards were pulled up under the page header (a negative top margin),
+  // so the breadcrumb and the first card had no space between them.
+  test('the cards sit below the page header with the usual gap', async ({ page }) => {
+    await open(page)
+    const crumbs = await page.locator('.breadcrumb').first().boundingBox()
+    const general = await page.locator('.card', { hasText: 'General Information' }).first().boundingBox()
+    const branding = await page.locator('.card', { hasText: 'Site Branding' }).first().boundingBox()
+
+    // 12px is the shared PageHeader's gap, as on SEO Settings; it was -4.
+    expect(general!.y - (crumbs!.y + crumbs!.height)).toBeGreaterThanOrEqual(12)
+    // Both columns start on the same line, with the grid's gutter between them.
+    expect(Math.abs(general!.y - branding!.y)).toBeLessThanOrEqual(1)
+    expect(branding!.x - (general!.x + general!.width)).toBeGreaterThanOrEqual(20)
+  })
+
   test('loads the current settings into the form', async ({ page }) => {
     await open(page)
     await expect(page.locator('input[name="site_slogan"]')).toHaveValue('Capital made simple')
     await expect(page.locator('input[name="email"]')).toHaveValue('hello@fcf.test')
+  })
+
+  // SCRUM-435 S435-BUG-03: the help promised a default form for an empty field.
+  test('the Apply Page Form Code help says an empty field means no form', async ({ page }) => {
+    await open(page)
+    const help = page.locator('.form-text', { hasText: 'Copy Embed HTML' })
+
+    await expect(help).toBeVisible()
+    await expect(help).toContainText('If this is empty, the Apply page shows no application form')
+    await expect(help).not.toContainText('default')
   })
 
   test('saving posts the edited values', async ({ page }) => {

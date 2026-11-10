@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPartnerFormDataPayload, defaultInstallmentMonths, mapPartnerBackendErrors, partnerOptionLabel } from '../../../src/modules/partner/logic'
+import { buildPartnerFormDataPayload, defaultInstallmentMonths, mapPartnerBackendErrors, partnerOptionLabel, partnerPortalBaseHost } from '../../../src/modules/partner/logic'
 
 describe('mapPartnerBackendErrors', () => {
   it('keeps each field\'s message, whether the API sends a string or a list', () => {
@@ -84,5 +84,22 @@ describe('buildPartnerFormDataPayload - clearing optional fields', () => {
 
     const edit = buildPartnerFormDataPayload({ ...editForm, company_name: '' }, 83)
     expect(edit.has('company_name')).toBe(false)
+  })
+})
+
+describe('partnerPortalBaseHost', () => {
+  it.each([
+    ['https://fourcornerfunding.com/', 'fourcornerfunding.com'],
+    ['http://localhost:3000/', 'localhost:3000'],
+    ['https://fourcornerfunding.com/blog', 'fourcornerfunding.com'],
+    ['fourcornerfunding.com', 'fourcornerfunding.com'],
+    ['localhost:3000', 'localhost:3000'],
+    ['  https://fourcornerfunding.com  ', 'fourcornerfunding.com'],
+  ])('reads the host from %s', (websiteUrl, host) => {
+    expect(partnerPortalBaseHost(websiteUrl, 'portal.test')).toBe(host)
+  })
+
+  it.each([[''], ['   ']])('falls back to the current host when the website url is %j', (websiteUrl) => {
+    expect(partnerPortalBaseHost(websiteUrl, 'portal.test')).toBe('portal.test')
   })
 })

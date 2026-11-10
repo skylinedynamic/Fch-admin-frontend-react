@@ -1,3 +1,4 @@
+import { USER_REFRESHED_EVENT } from '../../config/appConfig'
 import { apiClient } from '../http'
 import { setAuth, AuthUser, setUserSubscription } from './auth'
 import { getAuthState } from '../../store/auth'
@@ -125,6 +126,8 @@ export async function refreshUser(): Promise<any> {
 
       // Set the fresh user data in the auth state
       setAuth(token, newUser, rememberMe)
+      // Let what depends on more than the user record (the agreement prompt) look again.
+      window.dispatchEvent(new Event(USER_REFRESHED_EVENT))
 
       return data
     }

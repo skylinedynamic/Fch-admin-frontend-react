@@ -416,6 +416,31 @@ describe('Funding Request Details: assigning a lender', () => {
 
     await waitFor(() => expect(failure).toHaveBeenCalledWith('Failed to assign lender'))
   })
+
+  /** As on the funding application details page (R2 BUG-008): "Lender Name - Legal Name". */
+  it('names each lender "Lender Name - Legal Name"', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({
+          status: true,
+          message: 'ok',
+          data: {
+            ...review,
+            matched_lenders: [
+              { ...lender, legal_name: 'Fundbox, Inc.' },
+              { ...lender, id: 7, name: 'OnDeck', legal_name: null },
+            ],
+          },
+        })
+      )
+    )
+    renderPage()
+
+    expect(await screen.findByText('Fundbox Financing - Fundbox, Inc.')).toBeInTheDocument()
+    expect(screen.queryByText('Fundbox Financing')).not.toBeInTheDocument()
+    // No legal name: the name alone.
+    expect(screen.getByText('OnDeck')).toBeInTheDocument()
+  })
 })
 
 /**

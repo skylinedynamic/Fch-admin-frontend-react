@@ -98,6 +98,30 @@ test.describe('Embed Form › Loan application › business and funding answers'
   })
 })
 
+// SCRUM-435 S435-BUG-05: staff can see which page an application came from.
+test.describe('Embed Form › Loan application › Source Page', () => {
+  const open = async (page: Page, originUrl: string | null) => {
+    await seedHostSession(page)
+    await page.route(`${API_ORIGIN}/**`, (route) => jsonOk(route, []))
+    await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => jsonOk(route, { ...THEME, branding: THEME }))
+    await page.route(`${API_ORIGIN}/common/embed-forms/submissions/5`, (route) => jsonOk(route, { ...SUBMISSION, origin_url: originUrl }))
+    await page.goto('/embed-form/loan-applications/5')
+    await expect(page.getByText('Source Page')).toBeVisible()
+  }
+
+  test('an application from /apply links to that page', async ({ page }) => {
+    await open(page, 'https://skylinedynamic.dev/apply')
+
+    await expect(page.getByRole('link', { name: 'https://skylinedynamic.dev/apply' })).toHaveAttribute('href', 'https://skylinedynamic.dev/apply')
+  })
+
+  test('a direct-link application has no link', async ({ page }) => {
+    await open(page, null)
+
+    await expect(page.getByRole('link', { name: /skylinedynamic\.dev/ })).toHaveCount(0)
+  })
+})
+
 // The host sees every partner's applications: the list and the details page
 // say which partner each one came through.
 test.describe('Embed Form › Loan applications › which partner (host)', () => {

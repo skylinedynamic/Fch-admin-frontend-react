@@ -49,14 +49,6 @@ export const CHANGE_REQUEST_STATUS_CLASS_MAP: Record<string, string> = {
   [CHANGE_REQUEST_STATUS.REJECTED]: 'bg-danger-subtle text-danger'
 };
 
-export const FUNDING_TYPE_OPTIONS = [
-  { label: 'Working Capital', value: 'Working Capital' },
-  { label: 'Equipment', value: 'Equipment' },
-  { label: 'Inventory', value: 'Inventory' },
-  { label: 'Marketing', value: 'Marketing' },
-  { label: 'Expansion', value: 'Expansion' },
-  { label: 'Other', value: 'Other' }
-];
 
 
 // Stage's statuses; SCRUM-331's two editable ones after In Verification, its closing ones after Denied.

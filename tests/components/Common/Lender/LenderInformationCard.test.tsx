@@ -238,6 +238,24 @@ describe('LenderInformationCard', () => {
       expect(screen.getByText(/can't be changed now that this application is "Funded"/)).toBeInTheDocument()
     })
 
+    // SCRUM-434 S434-BUG-05: a fixed lender made Inactive since (app 90's R2
+    // Lender A) is still shown - the API lists it, marked is_active: false.
+    it('shows a fixed lender made Inactive since, marked Inactive', () => {
+      renderWithProviders(
+        <LenderInformationCard lenders={[lender({ id: 24, name: 'R2 Lender A', is_active: false })]} assignedLenderIds={[24]} subjectLabel="funding application" onAssign={vi.fn()} canAssign={false} onlyAssigned />
+      )
+
+      expect(screen.getByText('R2 Lender A')).toBeInTheDocument()
+      expect(screen.getByText('Inactive')).toBeInTheDocument()
+      expect(screen.queryByText('The assigned lender is not among the lenders matched for this application.')).not.toBeInTheDocument()
+    })
+
+    it('does not mark an Active assigned lender', () => {
+      renderWithProviders(<LenderInformationCard lenders={[lender({ id: 1, is_active: true })]} assignedLenderIds={[1]} subjectLabel="funding application" onAssign={vi.fn()} canAssign={false} onlyAssigned />)
+
+      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+    })
+
     it('shows N/A for requirements the lender does not set, and leaves out missing contacts', () => {
       renderWithProviders(<LenderInformationCard lenders={lenders} assignedLenderIds={[2]} subjectLabel="funding application" onAssign={vi.fn()} canAssign={false} onlyAssigned />)
 

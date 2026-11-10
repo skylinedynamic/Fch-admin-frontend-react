@@ -8,6 +8,8 @@ import {
     regenerateEmbedKey,
 } from '../../modules/embed-form/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import EmbedSnippetBuilder from './components/EmbedSnippetBuilder';
+import RegenerateKeyModal from './components/RegenerateKeyModal';
 
 // A refusal of one Allowed Domains entry: "allowed_domains.<index>" (R2 BUG-035).
 const ALLOWED_DOMAIN_ERROR_KEY = /^allowed_domains\.(\d+)$/;
@@ -115,10 +117,10 @@ export default function EmbedFormSettings() {
         }
     };
 
+    // Asked in the app's modal (RegenerateKeyModal), not the browser's confirm box.
+    const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+
     const handleRegenerate = async () => {
-        if (!window.confirm('Warning: Regenerating this key will invalidate your current embed code and shareable links. Existing embeds must be updated with the new code. Continue?')) {
-            return;
-        }
         setRegenerating(true);
         try {
             const res = await regenerateEmbedKey();
@@ -132,6 +134,7 @@ export default function EmbedFormSettings() {
             toast.error(err?.response?.data?.message || err?.message || 'Failed to regenerate key.');
         } finally {
             setRegenerating(false);
+            setConfirmRegenerate(false);
         }
     };
 
@@ -389,7 +392,7 @@ export default function EmbedFormSettings() {
                                 <CardHeader
                                     icon="ri-code-s-slash-line"
                                     title="Embed & Share"
-                                    subtitle="Copy the integration code or direct link"
+                                    subtitle="Your form key and direct link"
                                 />
 
                                 <div className="card-body p-4">
@@ -465,34 +468,6 @@ export default function EmbedFormSettings() {
                                         </div>
                                     </div>
 
-                                    {/* iFrame Embed Code */}
-                                    <div className="mb-4">
-                                        <label className="form-label fw-semibold fs-13">Website &lt;iframe&gt; Embed Snippet</label>
-                                        <div className="position-relative">
-                                            <textarea
-                                                className="form-control bg-light font-monospace fs-12 text-dark p-3"
-                                                rows={4}
-                                                readOnly
-                                                value={config?.embed_snippet || ''}
-                                                style={{ resize: 'none' }}
-                                            />
-                                        </div>
-                                        <button
-                                            type="button"
-                                            className={`btn w-100 mt-2 fw-semibold ${copied === 'snippet' ? 'btn-success' : 'btn-primary'}`}
-                                            onClick={() => copyToClipboard(config?.embed_snippet, 'snippet')}
-                                        >
-                                            {copied === 'snippet' ? (
-                                                <><i className="ri-check-line me-1" /> Embed Code Copied!</>
-                                            ) : (
-                                                <><i className="ri-code-box-line me-1" /> Copy Embed HTML</>
-                                            )}
-                                        </button>
-                                        <div className="form-text fs-12 text-muted mt-2">
-                                            Paste this code into WordPress, Webflow, Shopify, or any custom website.
-                                        </div>
-                                    </div>
-
                                     </>
                                     )}
 
@@ -508,7 +483,7 @@ export default function EmbedFormSettings() {
                                                     <button
                                                         type="button"
                                                         className="btn btn-outline-danger btn-sm fw-semibold"
-                                                        onClick={handleRegenerate}
+                                                        onClick={() => setConfirmRegenerate(true)}
                                                         disabled={regenerating}
                                                     >
                                                         {regenerating ? (
@@ -530,6 +505,23 @@ export default function EmbedFormSettings() {
                             </div>
                         </div>
                     </div>
+                )}
+
+                <RegenerateKeyModal
+                    show={confirmRegenerate}
+                    loading={regenerating}
+                    onClose={() => setConfirmRegenerate(false)}
+                    onConfirm={handleRegenerate}
+                />
+
+                {/* Embed code builder: full width, below the settings, so the
+                    options sit beside a real-size preview. */}
+                {!loading && canPublish && config?.direct_url && (
+                    <EmbedSnippetBuilder
+                        directUrl={config.direct_url}
+                        scriptUrl={config.embed_script_url}
+                        formTitle={config.form_title}
+                    />
                 )}
             </div>
         </div>

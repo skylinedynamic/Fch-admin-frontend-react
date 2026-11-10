@@ -440,6 +440,73 @@ describe('FundingApplicationDetails — Lender Information', () => {
     expect(screen.getByText('Assigned Lender')).toBeInTheDocument()
   })
 
+  /**
+   * Defect: Lender Information named the lender "LendingClub" alone; it is
+   * shown as "Lender Name - Legal Name" (R2 BUG-008) - in the table, the
+   * "All Lenders" filter and the assigned lender card.
+   */
+  describe('names each lender "Lender Name - Legal Name"', () => {
+    const named = [
+      { ...lender, legal_name: 'Fundbox, Inc.' },
+      { ...lender, id: 6, name: 'LendingClub', legal_name: 'LendingClub Bank, N.A.' },
+      { ...lender, id: 7, name: 'OnDeck', legal_name: null },
+    ]
+
+    it('in the table, and the lender filter picks that lender', async () => {
+      detail.application = { ...withLenders, matched_lenders: named }
+      useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+      renderWithProviders(<FundingApplicationDetails />)
+
+      const table = () => within(screen.getByRole('table'))
+      expect(table().getByText('Fundbox Financing - Fundbox, Inc.')).toBeInTheDocument()
+      expect(table().getByText('LendingClub - LendingClub Bank, N.A.')).toBeInTheDocument()
+      // No legal name: the name alone.
+      expect(table().getByText('OnDeck')).toBeInTheDocument()
+
+      const dropdown = screen.getAllByText('All Lenders').map((el) => el.closest('.p-dropdown')).find(Boolean) as HTMLElement
+      await userEvent.click(dropdown)
+      const option = await waitFor(() => {
+        const found = Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item'))
+          .find((el) => el.textContent?.trim() === 'LendingClub - LendingClub Bank, N.A.')
+        if (!found) throw new Error('no "Lender Name - Legal Name" option')
+        return found as HTMLElement
+      })
+      await userEvent.click(option)
+
+      expect(table().getByText('LendingClub - LendingClub Bank, N.A.')).toBeInTheDocument()
+      expect(table().queryByText('Fundbox Financing - Fundbox, Inc.')).not.toBeInTheDocument()
+      expect(table().queryByText('OnDeck')).not.toBeInTheDocument()
+    })
+
+    it('finds a lender by its legal name in the search', async () => {
+      detail.application = { ...withLenders, matched_lenders: named }
+      useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+      renderWithProviders(<FundingApplicationDetails />)
+
+      await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'fundbox, inc')
+
+      const table = within(screen.getByRole('table'))
+      expect(table.getByText('Fundbox Financing - Fundbox, Inc.')).toBeInTheDocument()
+      expect(table.queryByText('LendingClub - LendingClub Bank, N.A.')).not.toBeInTheDocument()
+      expect(table.queryByText('OnDeck')).not.toBeInTheDocument()
+    })
+
+    it('on the assigned lender card', () => {
+      detail.application = {
+        ...withLenders,
+        status: FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER,
+        is_editable: false,
+        matched_lenders: named,
+        assigned_lender_ids: [6],
+        can_assign_lender: false,
+      }
+      useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+      renderWithProviders(<FundingApplicationDetails />)
+
+      expect(screen.getByText('LendingClub - LendingClub Bank, N.A.')).toBeInTheDocument()
+    })
+  })
+
   async function assignFundbox() {
     await userEvent.click(screen.getByRole('button', { name: /^assign$/i }))
     const dialog = await screen.findByRole('dialog')
@@ -672,6 +739,42 @@ describe('FundingApplicationDetails — Lender Required', () => {
     expect(mutations.updateStatus).not.toHaveBeenCalled()
   })
 
+  /**
+   * Defect: picking Closed (Completed) on a Draft application with no lender
+   * opened Lender Required; once the lender was assigned the page reloaded the
+   * application and the status dropdown went back to Draft, so the status
+   * picked had to be chosen again. The picked status stays selected through
+   * Lender Required and the lender assignment, ready for Update Status.
+   */
+  it('keeps the picked status through Lender Required and the lender assignment', async () => {
+    useAuthStore.setState({ user: hostWithRights as never })
+    const { rerender } = renderWithProviders(<FundingApplicationDetails />)
+    const shownStatus = () => document.querySelector('.p-dropdown .p-dropdown-label')?.textContent?.trim()
+    await openLenderRequired()
+
+    await userEvent.click(screen.getByRole('button', { name: /got it, take me there/i }))
+    await waitFor(() => expect(screen.queryByText('Lender Required')).not.toBeInTheDocument())
+    expect(shownStatus()).toBe(FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER)
+
+    // The lender is assigned: the page gets the application again, status unchanged.
+    detail.application = { ...detail.application, has_assigned_lender: true, assigned_lender_ids: [5] }
+    rerender(<FundingApplicationDetails />)
+
+    expect(shownStatus()).toBe(FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER)
+    expect(mutations.updateStatus).not.toHaveBeenCalled()
+  })
+
+  it('shows the new status once the application status itself changes', async () => {
+    useAuthStore.setState({ user: hostWithRights as never })
+    const { rerender } = renderWithProviders(<FundingApplicationDetails />)
+    const shownStatus = () => document.querySelector('.p-dropdown .p-dropdown-label')?.textContent?.trim()
+
+    detail.application = { ...detail.application, status: FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER }
+    rerender(<FundingApplicationDetails />)
+
+    expect(shownStatus()).toBe(FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER)
+  })
+
   it('just closes when there is no Lender Information to go to', async () => {
     detail.application = { ...detail.application, matched_lenders: undefined }
     useAuthStore.setState({ user: hostWithRights as never })
@@ -748,5 +851,28 @@ describe('FundingApplicationDetails — commission before closing', () => {
     expect(screen.queryByText('Your Commission Breakdown')).not.toBeInTheDocument()
     // On the page itself - the hidden Closed (Completed) modal has its own section.
     expect(screen.queryAllByText('Commission Details').filter((el) => !el.closest('.fam-modal'))).toHaveLength(0)
+  })
+})
+
+describe('FundingApplicationDetails — Go to Client', () => {
+  const goToClient = () => screen.queryByRole('link', { name: /go to client/i })
+
+  beforeEach(() => {
+    detail.application = { ...editable, borrower_id: 7 }
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+  })
+
+  it('opens the client this application belongs to, in the primary colour', () => {
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(goToClient()).toHaveAttribute('href', '/clients/7')
+    expect(goToClient()).toHaveClass('btn-primary')
+  })
+
+  it('is not offered when the application has no client', () => {
+    detail.application = { ...editable, borrower_id: null }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(goToClient()).not.toBeInTheDocument()
   })
 })

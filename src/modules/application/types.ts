@@ -2,11 +2,14 @@
 export interface MatchedLender {
     id: number;
     name: string;
+    /** Null for a lender added before the legal name was required. */
     legal_name?: string | null;
     /** "Lender Name - Legal Name", how the screens show it (R2 BUG-008). */
     display_name?: string | null;
     phone?: string | null;
     email?: string | null;
+    /** False only for a fixed, assigned lender made Inactive since (SCRUM-434 S434-BUG-05). */
+    is_active?: boolean;
     product_category: string;
     requirements: {
         min_fico: number | null;
@@ -297,7 +300,7 @@ export interface ValidationIssue {
 
 export interface PreQualificationApplicationDetails {
     id: number;
-    borrower_id: number;
+    borrower_id: number | null;
     validation_status?: string | null;
     validation_summary?: string | null;
     validation_issues?: ValidationIssue[] | null;
@@ -377,7 +380,7 @@ export interface FundingApplicationDetails {
     id: number;
     application_number: string;
     partner_id: number;
-    borrower_id: number;
+    borrower_id: number | null;
     // The request the edit form opens on, its status, and whether the
     // application's lifecycle key still allows an edit.
     funding_request_id?: number | null;

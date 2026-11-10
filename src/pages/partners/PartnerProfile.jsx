@@ -423,6 +423,11 @@ export default function PartnerProfile() {
         loadProfileStats();
     }, [fetchPartnerData, loadProfileStats]);
 
+    // The Agreement tab saved the switch itself: keep the new value, nothing to reload.
+    const handleAgreementRequiredChange = useCallback((required) => {
+        setFormData(prev => ({ ...prev, agreement_required: required }));
+    }, []);
+
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
         if (formData.agent && users.length > 0) {
@@ -846,7 +851,8 @@ export default function PartnerProfile() {
                                             </a>
                                         </li>
                                     )}
-                                    {formData.has_sign && Number(formData.is_host) == 0 && (
+                                    {/* The host also uses it before signing, to excuse this partner. */}
+                                    {(formData.has_sign || (Number(authUser?.is_host) == 1 && id)) && Number(formData.is_host) == 0 && (
                                         <li className="nav-item">
                                             <a
                                                 className={`nav-link ${activeTab === 'agreement' ? 'active' : ''}`}
@@ -901,6 +907,7 @@ export default function PartnerProfile() {
                                     cities={cities}
                                     users={users}
                                     partnerId={id}
+                                    isHostViewer={Number(authUser?.is_host) == 1}
                                     loading={isPartnerLoading}
                                     onSelectedFilesChange={setSelectedDocumentsToAttach}
                                     documentsReloadKey={documentsReloadKey}
@@ -909,6 +916,7 @@ export default function PartnerProfile() {
                                     onRefresh={handleRefresh}
                                     setIsSaving={setIsSaving}
                                     wasFreeTrial={wasFreeTrial}
+                                    onAgreementRequiredChange={handleAgreementRequiredChange}
                                 />
                                 )}
                             </div>

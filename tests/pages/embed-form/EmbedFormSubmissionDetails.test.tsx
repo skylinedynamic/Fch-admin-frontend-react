@@ -53,6 +53,34 @@ const renderPage = () =>
     { route: '/embed-form/loan-applications/3' }
   )
 
+// SCRUM-435 S435-BUG-05: staff can see which page an application came from. A
+// direct-link application has none, and the API sends null for it.
+describe('Loan application details › Source Page', () => {
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ token: undefined, user: null })
+  })
+
+  it('links to the page the form was framed on', async () => {
+    signInWith(['view application'])
+    serve({ ...converted, origin_url: 'https://example.test/apply' })
+    renderPage()
+
+    const link = await screen.findByRole('link', { name: 'https://example.test/apply' })
+    expect(link).toHaveAttribute('href', 'https://example.test/apply')
+    expect(screen.getByText('Source Page')).toBeInTheDocument()
+  })
+
+  it('shows no link for a direct-link application', async () => {
+    signInWith(['view application'])
+    serve({ ...converted, origin_url: null })
+    renderPage()
+
+    expect(await screen.findByText('Source Page')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /example\.test\/apply/ })).not.toBeInTheDocument()
+  })
+})
+
 describe('Loan application details › View Funding Application', () => {
   afterEach(() => {
     server.resetHandlers()
@@ -231,6 +259,27 @@ describe('Loan application details › business and funding answers', () => {
 
     expect(await screen.findByText('Additional Funding Types')).toBeInTheDocument()
     expect(screen.getByText('SBA Loan, Line of Credit')).toBeInTheDocument()
+  })
+
+  it('shows what "Other" is for the industry and entity type', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, industry_type: 'Other', industry_type_note: 'Beekeeping', entity_type: 'Other', entity_type_note: 'Cooperative' })
+    renderPage()
+
+    expect(await screen.findByText('Industry Type Details')).toBeInTheDocument()
+    expect(screen.getByText('Beekeeping')).toBeInTheDocument()
+    expect(screen.getByText('Entity Type Details')).toBeInTheDocument()
+    expect(screen.getByText('Cooperative')).toBeInTheDocument()
+  })
+
+  it('has no details rows for a listed industry and entity type', async () => {
+    signInWith(['view application'])
+    serve({ ...answered, industry_type: 'Retail', entity_type: 'C-Corporation' })
+    renderPage()
+
+    await screen.findByText('Industry Type')
+    expect(screen.queryByText('Industry Type Details')).not.toBeInTheDocument()
+    expect(screen.queryByText('Entity Type Details')).not.toBeInTheDocument()
   })
 
   it('leaves the additional funding types out when none were chosen', async () => {

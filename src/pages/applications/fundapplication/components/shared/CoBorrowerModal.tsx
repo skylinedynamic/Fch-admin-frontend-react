@@ -9,6 +9,7 @@ import SsnInput from '../../../../../components/Common/SsnInput'
 import Flatpickr from 'react-flatpickr'
 import 'flatpickr/dist/themes/material_blue.css'
 import { yearDropdownPlugin } from '../../../../../utils/flatpickrPlugins'
+import { dateOfBirthError, openOnLatestDateOfBirth } from '../../../../../utils/dateOfBirth'
 import { toast } from 'react-toastify'
 
 /** The API's name for each draft field, where it is not just the snake_case of it. */
@@ -269,7 +270,7 @@ export default function CoBorrowerModal({ coDraft, setCoDraft: setDraft, onSubmi
                   </label>
                   <div className="position-relative">
                     <Flatpickr
-                      className={`form-control ${hasError('date_of_birth') ? 'is-invalid' : ''}`}
+                      className={`form-control ${hasError('date_of_birth') || dateOfBirthError(coDraft.dob) ? 'is-invalid' : ''}`}
                       value={coDraft.dob}
                       onChange={(dates, dateStr) => {
                         setCoDraft({ ...coDraft, dob: dateStr })
@@ -278,7 +279,8 @@ export default function CoBorrowerModal({ coDraft, setCoDraft: setDraft, onSubmi
                         dateFormat: "Y-m-d",
                         altInput: true,
                         altFormat: "j M, Y",
-                        maxDate: "today",
+                        maxDate: 'today',
+                        onOpen: openOnLatestDateOfBirth,
                         monthSelectorType: "dropdown",
                         plugins: [yearDropdownPlugin(1900)],
                         static: true,
@@ -286,7 +288,7 @@ export default function CoBorrowerModal({ coDraft, setCoDraft: setDraft, onSubmi
                       placeholder="Select date of birth"
                     />
                   </div>
-                  {hasError('date_of_birth') && <div className="invalid-feedback d-block">{getError('date_of_birth')}</div>}
+                  {(hasError('date_of_birth') || dateOfBirthError(coDraft.dob)) && <div className="invalid-feedback d-block">{hasError('date_of_birth') ? getError('date_of_birth') : dateOfBirthError(coDraft.dob)}</div>}
                 </div>
                 <div className="col-md-6">
                   <label className="form-label" htmlFor="co-borrower-ssn">

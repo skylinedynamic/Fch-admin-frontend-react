@@ -84,21 +84,28 @@ export const useFileManager = (section?: string, initialPath: string = '/', conf
     }
   }
 
-  const handleUploadFile = async (file: File, parentPath?: string, refresh: boolean = true, onProgress?: (progress: number) => void) => {
+  /**
+   * Upload one file. Resolves true when the API took it, false when it was
+   * refused (the reason is shown), so the upload window only reports success
+   * for files that were actually added (BUG-014 retest).
+   */
+  const handleUploadFile = async (file: File, parentPath?: string, refresh: boolean = true, onProgress?: (progress: number) => void): Promise<boolean> => {
     // Use currentPath if parentPath is not provided or is invalid
     const targetPath = parentPath && parentPath !== '/' ? parentPath : currentPath
     try {
       await uploadFile(file, targetPath, onProgress, context)
-      if (refresh) {
-        await loadFiles(targetPath)
-      }
     } catch (error) {
       console.error('Upload failed', error)
       // Say why: too large, not a valid image, type not allowed (BUG-014).
       toast.error((error as any)?.response?.status === HTTP_PAYLOAD_TOO_LARGE
         ? 'This file is too large to upload.'
         : apiErrorMessage(error, 'Failed to upload file'))
+      return false
     }
+    if (refresh) {
+      await loadFiles(targetPath)
+    }
+    return true
   }
 
   const handleRename = async (path: string, newName: string) => {
