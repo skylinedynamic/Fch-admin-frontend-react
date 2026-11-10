@@ -112,6 +112,31 @@ test.describe('Change requests', () => {
     await expect(page.getByText('Something went wrong')).toBeVisible()
   })
 
+  // BUG-041: deciding a request another tab already decided.
+  test('a request already decided elsewhere: the review closes, a dialog gives the reason and its button reloads the list', async ({ page }) => {
+    const ALREADY = 'This change request has already been processed and cannot be modified.'
+    const api = await open(page)
+    let decided = false
+    api.add({ method: 'POST', match: LIST, body: () => paginated(decided ? [{ ...ROWS[0], status: 'Rejected', note: 'Done in another tab' }, ROWS[1]] : ROWS) })
+    api.add({ method: 'PATCH', match: '/admin/change-requests/701', status: 422, body: () => { decided = true; return failure(ALREADY) } })
+
+    await page.getByText('Smithfield Bakery LLC').click()
+    await modal(page).getByRole('button', { name: /confirm/i }).click()
+
+    const dialog = page.getByRole('dialog', { name: 'Request Not Updated' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText(ALREADY)).toBeVisible()
+    await expect(modal(page)).toHaveCount(0)
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
+
+    const listCallsBefore = api.find('POST', LIST).length
+    await dialog.getByRole('button', { name: 'Reload list' }).click()
+
+    await expect(dialog).toBeHidden()
+    await expect.poll(() => api.find('POST', LIST).length).toBeGreaterThan(listCallsBefore)
+    await expect(page.locator('tr', { hasText: 'Smithfield Bakery LLC' }).getByText('Rejected')).toBeVisible()
+  })
+
   test('a user without the update permission cannot decide', async ({ page }) => {
     await open(page, { permissions: ['view change requests'] })
     await page.getByText('Smithfield Bakery LLC').click()

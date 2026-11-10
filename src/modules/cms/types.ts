@@ -139,6 +139,8 @@ export interface SiteSettingsData {
     phone_number: string;
     email: string;
     map_iframe: string;
+    /** Embed code for the website's /apply page, copied from Embed Form Settings. */
+    apply_form_embed_code?: string | null;
 }
 
 export interface SiteSetting extends SiteSettingsData {

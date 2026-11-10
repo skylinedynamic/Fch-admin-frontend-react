@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import type { FileSystemItem } from '../../modules/filemanager/types'
-import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config'
+import { FILE_MANAGER_CONFIG, maxUploadSizeFor } from '../../modules/filemanager/config'
 import { FolderTree } from './FolderTree'
 import { Breadcrumb } from './Breadcrumb'
 import { FileGrid } from './FileGrid'
 import { ContextMenu } from './ContextMenu'
 import { NewFolderModal, RenameModal, DeleteConfirmDialog, UploadModal, DuplicateFileModal } from './Modals'
+import type { UploadResult } from './Modals'
 import {
   PlusIcon,
   UploadIcon,
@@ -30,7 +31,8 @@ interface CustomFileManagerProps {
   onNavigate: (path: string) => void
   onRefresh: () => void
   onCreateFolder: (name: string, path: string) => Promise<void>
-  onUploadFile: (file: File, path?: string, refresh?: boolean, onProgress?: (progress: number) => void) => Promise<void>
+  /** Resolves true when the file was added, false when it was refused. */
+  onUploadFile: (file: File, path?: string, refresh?: boolean, onProgress?: (progress: number) => void) => Promise<boolean>
   onRename: (path: string, newName: string) => Promise<void>
   onDelete: (paths: string[]) => Promise<void>
   onDownload: (path: string, filename: string) => Promise<void>
@@ -80,6 +82,8 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [currentUploadingFile, setCurrentUploadingFile] = useState<string | null>(null)
   const [uploadComplete, setUploadComplete] = useState(false)
+  // How many of the batch the API took, so the window never claims a refused file went in.
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null)
   // notify parent when file manager made changes (upload/rename/delete/paste)
   const notifyChanged = () => {
     if (typeof onChanged === 'function') onChanged()
@@ -146,6 +150,14 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
     const knownFileNames = new Set(files.map(f => f.name))
 
     const totalFiles = currentQueue.length
+    let attempted = 0
+    let uploaded = 0
+    let lastRefused = false
+    const record = (added: boolean) => {
+      attempted++
+      if (added) uploaded++
+      lastRefused = !added
+    }
     for (let i = 0; i < totalFiles; i++) {
       const file = currentQueue[i]
       const isLastFile = i === totalFiles - 1
@@ -166,10 +178,10 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
         if (action === 'replace') {
           setCurrentUploadingFile(file.name)
           setUploadProgress((i * 100) / totalFiles)
-          await onUploadFile(file, currentPath, isLastFile, (progress) => {
+          record(await onUploadFile(file, currentPath, isLastFile, (progress) => {
             const batchProgress = ((i * 100) + progress) / totalFiles
             setUploadProgress(batchProgress)
-          })
+          }))
           // State cleaned up after loop
           // No need to update knownFileNames, name exists
         } else if (action === 'keep') {
@@ -189,29 +201,43 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
           const newFile = new File([file], newName, { type: file.type })
           setCurrentUploadingFile(newName)
           setUploadProgress((i * 100) / totalFiles)
-          await onUploadFile(newFile, currentPath, isLastFile, (progress) => {
+          const added = await onUploadFile(newFile, currentPath, isLastFile, (progress) => {
             const batchProgress = ((i * 100) + progress) / totalFiles
             setUploadProgress(batchProgress)
           })
-          knownFileNames.add(newName)
+          record(added)
+          if (added) knownFileNames.add(newName)
         }
       } else {
         setCurrentUploadingFile(file.name)
         setUploadProgress((i * 100) / totalFiles)
-        await onUploadFile(file, currentPath, isLastFile, (progress) => {
+        const added = await onUploadFile(file, currentPath, isLastFile, (progress) => {
           const batchProgress = ((i * 100) + progress) / totalFiles
           setUploadProgress(batchProgress)
         })
-        knownFileNames.add(file.name)
+        record(added)
+        if (added) knownFileNames.add(file.name)
       }
     }
 
     isProcessingQueue.current = false
     setUploadProgress(null)
     setCurrentUploadingFile(null)
+
+    // Every file refused (or the duplicates cancelled): no success screen - back
+    // to the picker, the reason already shown (BUG-014 retest).
+    if (uploaded === 0) {
+      setUploadResult(null)
+      setUploadComplete(false)
+      return
+    }
+
+    // The list refreshes after the last file; if that one was refused, refresh here.
+    if (lastRefused) onRefresh()
+    setUploadResult({ uploaded, total: attempted })
     setUploadComplete(true)
     if (typeof onChanged === 'function') onChanged()
-  }, [files, currentPath, onUploadFile, onChanged])
+  }, [files, currentPath, onUploadFile, onChanged, onRefresh])
 
   // Trigger processing when queue changes
   useEffect(() => {
@@ -227,8 +253,10 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
 
     newFiles.forEach(file => {
       // Validate Size
-      if (file.size > FILE_MANAGER_CONFIG.MAX_FILE_SIZE) {
-        toast.error(`File "${file.name}" exceeds ${(FILE_MANAGER_CONFIG.MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB limit.`)
+      // 5 MB for a picture, 20 MB for anything else - the API's limits (BUG-014).
+      const maxSize = maxUploadSizeFor(file.name)
+      if (file.size > maxSize) {
+        toast.error(`File "${file.name}" exceeds ${(maxSize / 1024 / 1024).toFixed(0)}MB limit.`)
         return
       }
 
@@ -475,6 +503,7 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
         uploadProgress={uploadProgress}
         currentUploadingFile={currentUploadingFile}
         uploadComplete={uploadComplete}
+        uploadResult={uploadResult}
       />
 
       {currentCollision && (

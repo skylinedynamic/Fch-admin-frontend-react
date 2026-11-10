@@ -76,7 +76,11 @@ export interface FetchTimeSlotsResponse {
 }
 
 export interface CheckAvailabilityPayload {
-  assigned_for: number | string
+  /** The attendee's user id (R2 BUG-073). */
+  assigned_for?: number
+  /** With entity_id: the attendee's record, when no user id is known. */
+  entity_type?: string
+  entity_id?: number
   appointment_date: string
   id?: string | number
 }

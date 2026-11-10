@@ -38,6 +38,10 @@ interface FundedAmountModalProps {
 
 const toRate = (value?: number) => (value ? String(value) : '');
 
+// The Success Fee the API accepts: 1-100%, to the hundredth (R2 BUG-036).
+const SUCCESS_FEE_MIN = 1;
+const SUCCESS_FEE_STEP = 0.01;
+
 /**
  * Closed (Completed): the final funded amount, and - optional but recommended -
  * the commission, saved through the same API as the Commission Details card
@@ -67,20 +71,63 @@ export default function FundedAmountModal({
     const [adminRate, setAdminRate] = useState(toRate(adminCommissionRate));
     const [partnerRate, setPartnerRate] = useState(toRate(partnerCommissionRate));
     const [rateError, setRateError] = useState('');
+    // Each split rate is required once there is a success fee.
+    const [splitErrors, setSplitErrors] = useState<{ admin?: string; partner?: string }>({});
+    // Closing locks the application for good, so a funded amount above what
+    // was requested (a typo of a zero, say) needs a second look (R2 BUG-038).
+    const [aboveRequestedConfirmed, setAboveRequestedConfirmed] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<Modal | null>(null);
 
+    // With no success fee there is nothing to split: both rates blank and
+    // locked. Once a fee is set the rates open at the default split - the saved
+    // split, else Admin 100% / Partner 0% (F181; SCRUM-434 S434-BUG-06: it
+    // opened blank, read as 0% / 0%, and Confirm was refused until a split was
+    // typed). One rate fills in the other (they share 100%).
+    const noSplitRate = '';
+    const savedSplit = !!(adminCommissionRate || partnerCommissionRate);
+    // A host client has no split (the admin takes it all): its rates stay blank.
+    const splitAdminRate = savedSplit ? String(adminCommissionRate ?? 0) : showPartnerCommission ? '100' : noSplitRate;
+    const splitPartnerRate = savedSplit ? String(partnerCommissionRate ?? 0) : showPartnerCommission ? '0' : noSplitRate;
+    const hasFee = (value: string) => parseFloat(value) > 0;
+
     useEffect(() => {
         if (show) {
+            const fee = toRate(successFeeRate);
             setAmount(initialAmount);
             setError('');
             setRateError('');
-            setSuccessFee(toRate(successFeeRate));
-            // A partner's application with no split yet starts at 100% admin, as the card does.
-            setAdminRate(toRate(adminCommissionRate) || (showPartnerCommission ? '100' : ''));
-            setPartnerRate(toRate(partnerCommissionRate) || (showPartnerCommission ? '0' : ''));
+            setSplitErrors({});
+            setSuccessFee(fee);
+            setAdminRate(hasFee(fee) ? splitAdminRate : noSplitRate);
+            setPartnerRate(hasFee(fee) ? splitPartnerRate : noSplitRate);
+            setAboveRequestedConfirmed(false);
         }
-    }, [show, initialAmount, successFeeRate, adminCommissionRate, partnerCommissionRate, showPartnerCommission]);
+    }, [show, initialAmount, successFeeRate, splitAdminRate, splitPartnerRate, noSplitRate]);
+
+    // The success fee comes first. Set: the rates open at the default split.
+    // Cleared: back to 0% / 0%, locked until a fee is set again.
+    const changeSuccessFee = (value: string) => {
+        const had = hasFee(successFee);
+        setSuccessFee(value);
+        if (!hasFee(value)) {
+            setAdminRate(noSplitRate);
+            setPartnerRate(noSplitRate);
+            setSplitErrors({});
+        } else if (!had) {
+            setAdminRate(splitAdminRate);
+            setPartnerRate(splitPartnerRate);
+        }
+    };
+
+    // Admin and partner always share 100% of the success fee: setting one sets
+    // the other to the rest; clearing one clears the split (both blank).
+    const changeSplit = (value: string, setOwn: (v: string) => void, setOther: (v: string) => void) => {
+        setOwn(value);
+        setSplitErrors({});
+        const num = parseFloat(value);
+        setOther(isNaN(num) ? '' : String(+(100 - num).toFixed(2)));
+    };
 
     // Initialize Modal
     useEffect(() => {
@@ -112,15 +159,32 @@ export default function FundedAmountModal({
     const adminShareAmt = successFeeAmt * (adminShare / 100);
     const partnerShareAmt = successFeeAmt * (partnerShare / 100);
     const hasCommission = feeRate > 0;
+    // No split typed yet: the admin / partner lines stay out of the summary.
+    const hasSplit = adminRate !== '' || partnerRate !== '';
 
     const handleConfirm = () => {
         if (!amount || parsedAmount <= 0) {
             setError('Please enter a valid funded amount');
             return;
         }
-        if (canEditCommission && hasCommission && showPartnerCommission && Math.abs(adminShare + partnerShare - 100) > 0.001) {
-            setRateError('Admin and partner commission rates must add up to 100%.');
-            return;
+        if (canEditCommission && hasCommission && showPartnerCommission) {
+            const missing = {
+                admin: adminRate === '' ? 'Admin commission rate is required.' : undefined,
+                partner: partnerRate === '' ? 'Partner commission rate is required.' : undefined,
+            };
+            if (missing.admin || missing.partner) {
+                setSplitErrors(missing);
+                return;
+            }
+            if (Math.abs(adminShare + partnerShare - 100) > 0.001) {
+                setRateError('Admin and partner commission rates must add up to 100%.');
+                return;
+            }
+            // The API keeps at least 1% of the success fee for the admin.
+            if (adminShare < 1) {
+                setRateError('Admin commission rate must be at least 1%.');
+                return;
+            }
         }
         onConfirm(amount, canEditCommission && hasCommission ? { successFee, adminRate, partnerRate } : null);
     };
@@ -130,20 +194,23 @@ export default function FundedAmountModal({
     };
 
     const formatCurrency = (val: number) => val.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    const isAboveRequested = requestedAmount > 0 && parsedAmount > requestedAmount;
 
-    // 0-100, as the Commission Details card accepts.
-    const percentInput = (value: string, onChange: (v: string) => void, id: string, invalid?: boolean) => (
+    // Up to 100%. The admin / partner split may be 0; the Success Fee is 1-100%,
+    // the API's range (R2 BUG-036). A locked rate waits for the success fee.
+    // No placeholder: a grey "0" in an empty rate reads as 0%.
+    const percentInput = (value: string, onChange: (v: string) => void, id: string, invalid?: boolean, locked = false, min = 0, step = 0.1) => (
         <div className="input-group">
             <input
                 id={id}
                 type="number"
                 className={`form-control ${invalid ? 'is-invalid' : ''}`}
-                placeholder="0"
                 value={value}
-                min="0"
+                min={min}
                 max="100"
-                step="0.1"
-                disabled={loading}
+                step={step}
+                disabled={loading || locked}
+                title={locked ? 'Set the success fee first.' : undefined}
                 onChange={(e) => {
                     const val = e.target.value;
                     const num = parseFloat(val);
@@ -200,6 +267,7 @@ export default function FundedAmountModal({
                                         value={amount}
                                         onChange={(e) => {
                                             setAmount(e.target.value);
+                                            setAboveRequestedConfirmed(false);
                                             if (error) setError('');
                                         }}
                                         step="0.01"
@@ -209,6 +277,25 @@ export default function FundedAmountModal({
                                     {error && <div className="invalid-feedback">{error}</div>}
                                 </div>
                             </div>
+                            {isAboveRequested && (
+                                <div className="alert alert-warning border-0 bg-warning-subtle text-warning text-start fs-13 mt-3 mb-0">
+                                    <i className="ri-error-warning-fill align-middle me-2 fs-15"></i>
+                                    The funded amount {formatCurrency(parsedAmount)} is above the requested {formatCurrency(requestedAmount)}.
+                                    <div className="form-check mt-2">
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            id="funded-amount-confirmed"
+                                            checked={aboveRequestedConfirmed}
+                                            onChange={(e) => setAboveRequestedConfirmed(e.target.checked)}
+                                            disabled={loading}
+                                        />
+                                        <label className="form-check-label text-dark" htmlFor="funded-amount-confirmed">
+                                            I have checked this amount and it is correct.
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <hr className="fam-divider" />
@@ -224,29 +311,28 @@ export default function FundedAmountModal({
                                 <>
                                     <div className="fam-inline">
                                         <label htmlFor="closing-success-fee" className="fam-label">Success Fee (%)</label>
-                                        <div className="fam-input">{percentInput(successFee, setSuccessFee, 'closing-success-fee', !!commissionErrors.total_commission)}</div>
+                                        <div className="fam-input">{percentInput(successFee, changeSuccessFee, 'closing-success-fee', !!commissionErrors.total_commission, false, SUCCESS_FEE_MIN, SUCCESS_FEE_STEP)}</div>
                                     </div>
                                     {showPartnerCommission && (
                                         <div className="row g-2 mt-1">
                                             <div className="col-sm-6">
                                                 <label htmlFor="closing-admin-rate" className="fam-label">Admin Commission Rate</label>
                                                 <div className="fam-input">
-                                                    {percentInput(adminRate, (v) => {
-                                                        setAdminRate(v);
-                                                        if (v !== '') setPartnerRate(String(+(100 - parseFloat(v)).toFixed(2)));
-                                                    }, 'closing-admin-rate', !!commissionErrors.admin_commission)}
+                                                    {percentInput(adminRate, (v) => changeSplit(v, setAdminRate, setPartnerRate), 'closing-admin-rate', !!(splitErrors.admin || commissionErrors.admin_commission), !hasCommission)}
                                                 </div>
+                                                {splitErrors.admin && <div className="invalid-feedback d-block">{splitErrors.admin}</div>}
                                             </div>
                                             <div className="col-sm-6">
                                                 <label htmlFor="closing-partner-rate" className="fam-label">Partner Commission Rate</label>
                                                 <div className="fam-input">
-                                                    {percentInput(partnerRate, (v) => {
-                                                        setPartnerRate(v);
-                                                        if (v !== '') setAdminRate(String(+(100 - parseFloat(v)).toFixed(2)));
-                                                    }, 'closing-partner-rate', !!commissionErrors.partner_commission)}
+                                                    {percentInput(partnerRate, (v) => changeSplit(v, setPartnerRate, setAdminRate), 'closing-partner-rate', !!(splitErrors.partner || commissionErrors.partner_commission), !hasCommission)}
                                                 </div>
+                                                {splitErrors.partner && <div className="invalid-feedback d-block">{splitErrors.partner}</div>}
                                             </div>
                                         </div>
+                                    )}
+                                    {showPartnerCommission && !hasCommission && (
+                                        <p className="fam-hint mt-2 mb-0">Set the success fee to split it between admin and partner.</p>
                                     )}
                                     {hasError && <div className="fam-error">{hasError}</div>}
                                 </>
@@ -265,11 +351,12 @@ export default function FundedAmountModal({
                             )}
                             {summaryRow('Total Requested Amount', formatCurrency(requestedAmount))}
                             {summaryRow('Total Funded Amount', formatCurrency(parsedAmount), 'fam-row--funded')}
-                            {summaryRow(<>Success Fee<span className="fam-chip">{feeRate}%</span></>, formatCurrency(successFeeAmt))}
-                            {showPartnerCommission ? (
+                            {/* No success fee, no commission lines. */}
+                            {hasCommission && summaryRow(<>Success Fee<span className="fam-chip">{feeRate}%</span></>, formatCurrency(successFeeAmt))}
+                            {!hasCommission ? null : showPartnerCommission ? (
                                 <>
-                                    {summaryRow(<>Admin Commission<span className="fam-chip">{adminShare}% of success fee</span></>, formatCurrency(adminShareAmt))}
-                                    {summaryRow(<>Partner Commission<span className="fam-chip">{partnerShare}% of success fee</span></>, formatCurrency(partnerShareAmt))}
+                                    {hasSplit && summaryRow(<>Admin Commission<span className="fam-chip">{adminShare}% of success fee</span></>, formatCurrency(adminShareAmt))}
+                                    {hasSplit && summaryRow(<>Partner Commission<span className="fam-chip">{partnerShare}% of success fee</span></>, formatCurrency(partnerShareAmt))}
                                     {summaryRow('Total Commission', formatCurrency(successFeeAmt), 'fam-row--total')}
                                 </>
                             ) : (
@@ -288,7 +375,7 @@ export default function FundedAmountModal({
                         <button type="button" className="btn fam-btn-cancel" onClick={handleClose} disabled={loading}>
                             {cancelText}
                         </button>
-                        <button type="button" className="btn fam-btn-confirm" onClick={handleConfirm} disabled={loading}>
+                        <button type="button" className="btn fam-btn-confirm" onClick={handleConfirm} disabled={loading || (isAboveRequested && !aboveRequestedConfirmed)}>
                             {loading ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>

@@ -47,7 +47,8 @@ test.describe('Funding request details', () => {
     await expect(modal.getByText('Confirm Status Update')).toBeVisible()
     await modal.getByRole('button', { name: /Confirm/ }).click()
     const call = await expectCall(api, 'POST', STATUS)
-    expect(call.json).toEqual({ id: 501, status: 'In Progress' })
+    // With the status the page showed, so a stale page cannot overwrite a newer decision (R2 BUG-048).
+    expect(call.json).toEqual({ id: 501, status: 'In Progress', expected_status: 'Pending' })
     await expect(page.getByText('Funding request status updated to In Progress successfully')).toBeVisible()
   })
 
@@ -75,7 +76,7 @@ test.describe('Funding request details', () => {
     await actions(page).getByRole('button', { name: /Confirm/ }).click()
     await page.locator('.modal.show').getByRole('button', { name: /Confirm/ }).click()
     const call = await expectCall(api, 'POST', STATUS)
-    expect(call.json).toEqual({ id: 501, status: 'Rejected', reject_reason: 'Revenue too low' })
+    expect(call.json).toEqual({ id: 501, status: 'Rejected', reject_reason: 'Revenue too low', expected_status: 'Pending' })
   })
 
   test('approving without an assigned lender asks for a lender first', async ({ page }) => {
@@ -83,6 +84,8 @@ test.describe('Funding request details', () => {
     await pickPrime(page, actions(page).locator('.p-dropdown'), 'Approved')
     await actions(page).getByRole('button', { name: /Confirm/ }).click()
     await expect(page.locator('.modal.show').getByText('Lender Required')).toBeVisible()
+    // Plain words (R2 BUG-019); it read "Assign to Lender. You can assign Before Approved".
+    await expect(page.locator('.modal.show').getByText('Assign a lender before approving this request.')).toBeVisible()
     expect(api.find('POST', STATUS)).toHaveLength(0)
   })
 
@@ -93,6 +96,25 @@ test.describe('Funding request details', () => {
     await actions(page).getByRole('button', { name: /Confirm/ }).click()
     await page.locator('.modal.show').getByRole('button', { name: /Confirm/ }).click()
     await expect(page.getByText('Could not update')).toBeVisible()
+  })
+
+  // R2 BUG-048: a tab left on Pending flipped a request another tab had
+  // approved to Rejected. The API refuses a decision made on an older status
+  // (409); the page says so and reloads the request instead.
+  test('a decision made on a stale page is refused, explained, and the request reloaded', async ({ page }) => {
+    const api = await open(page)
+    const stale = 'This request is already "Approved" - it was changed by someone else since you opened it. Reload to see the latest.'
+    api.add({ method: 'POST', match: STATUS, status: 409, body: { status: false, message: stale, errors: { status: 'Approved' } } })
+    await pickPrime(page, actions(page).locator('.p-dropdown'), 'Rejected')
+    await page.getByPlaceholder('Please provide a reason for rejection...').fill('Stale tab')
+    await actions(page).getByRole('button', { name: /Confirm/ }).click()
+    await page.locator('.modal.show').getByRole('button', { name: /Confirm/ }).click()
+
+    const call = await expectCall(api, 'POST', STATUS)
+    expect(call.json).toMatchObject({ status: 'Rejected', expected_status: 'Pending' })
+    await expect(page.getByText(stale)).toBeVisible()
+    await expect.poll(() => api.find('GET', DETAIL).length).toBeGreaterThan(1)
+    await expect(page.getByText(/updated to Rejected successfully/)).toHaveCount(0)
   })
 
   test('a partner sees the request but no review actions', async ({ page }) => {

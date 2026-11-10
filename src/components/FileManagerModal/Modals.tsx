@@ -163,9 +163,17 @@ interface UploadModalProps {
   uploadProgress: number | null
   currentUploadingFile: string | null
   uploadComplete?: boolean
+  /** How many of the batch were added; the rest were refused with a reason. */
+  uploadResult?: UploadResult | null
 }
 
-export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload, uploadProgress, currentUploadingFile, uploadComplete }) => {
+export interface UploadResult {
+  uploaded: number
+  total: number
+}
+
+export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload, uploadProgress, currentUploadingFile, uploadComplete, uploadResult }) => {
+  const someRefused = !!uploadResult && uploadResult.uploaded < uploadResult.total
   const [isDragOver, setIsDragOver] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -243,8 +251,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpl
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h5 className="mb-2" style={{ color: '#001f3f' }}>Files Uploaded Successfully</h5>
-              <p className="text-muted">Your files have been added to the folder.</p>
+              {someRefused ? (
+                <>
+                  <h5 className="mb-2" style={{ color: '#001f3f' }}>{uploadResult!.uploaded} of {uploadResult!.total} files uploaded</h5>
+                  <p className="text-muted">The others were not added; the reason is shown in the message.</p>
+                </>
+              ) : (
+                <>
+                  <h5 className="mb-2" style={{ color: '#001f3f' }}>Files Uploaded Successfully</h5>
+                  <p className="text-muted">Your files have been added to the folder.</p>
+                </>
+              )}
             </div>
           ) : isUploading ? (
             <div className="fm-upload-area" style={{ borderColor: '#d4af37', backgroundColor: 'rgba(212, 175, 55, 0.05)' }}>

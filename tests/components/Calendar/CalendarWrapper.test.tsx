@@ -5,6 +5,7 @@ import { act, render, screen, fireEvent } from '@testing-library/react'
 // alias, exactly as every page's import does.
 import { Calendar } from 'primereact/calendar'
 import { yearRangeFor } from '../../../src/components/Calendar/CalendarWrapper'
+import { latestDateOfBirth } from '../../../src/utils/dateOfBirth'
 
 const Harness = (props: Record<string, unknown>) => {
   const [value, setValue] = useState<Date | null>(new Date(2026, 9, 9))
@@ -206,5 +207,55 @@ describe('Calendar popup on phones', () => {
     const panel = await openPopup()
 
     expect(panel.style.left).toBe('0px')
+  })
+})
+
+describe('a date-of-birth calendar (maxDate today, empty field opens 18 years back)', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  // As the client and employee forms set it up: viewDate only while empty.
+  const openDob = async (value: Date | null) => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 9, 10, 0))
+    const opensOn = latestDateOfBirth()
+    const Popup = () => {
+      const [v, setV] = useState<Date | null>(value)
+      return <Calendar inputId="dob" value={v} onChange={e => setV(e.value as Date)} maxDate={new Date()} viewDate={v ? undefined : opensOn} appendTo="self" />
+    }
+    render(<Popup />)
+    act(() => {
+      fireEvent.focus(document.getElementById('dob')!)
+    })
+    for (let i = 0; i < 3; i++) await act(() => new Promise(r => setTimeout(r, 100)))
+  }
+
+  const day = (n: string) =>
+    Array.from(document.querySelectorAll<HTMLElement>('td:not(.p-datepicker-other-month) > span')).find(s => s.textContent === n)!
+
+  it('with nothing saved, opens on the month 18 years ago, not today', async () => {
+    await openDob(null)
+
+    expect(trigger('month').textContent).toBe('November')
+    expect(trigger('year').textContent).toBe('2008')
+    // Days after the cutoff are not blocked - picking one gets the message.
+    expect(day('10').classList.contains('p-disabled')).toBe(false)
+  })
+
+  it('with a saved date of birth, opens on that date', async () => {
+    await openDob(new Date(1990, 4, 12))
+
+    expect(trigger('month').textContent).toBe('May')
+    expect(trigger('year').textContent).toBe('1990')
+  })
+
+  it('offers every year up to this one, and can move to it', async () => {
+    await openDob(null)
+
+    fireEvent.click(trigger('year'))
+    expect(labels('year')[labels('year').length - 1]).toBe('2026')
+    fireEvent.click(list('year').querySelector('.fp-yd-opt[data-value="2026"]')!)
+    expect(trigger('year').textContent).toBe('2026')
   })
 })

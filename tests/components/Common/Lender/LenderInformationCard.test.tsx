@@ -238,6 +238,24 @@ describe('LenderInformationCard', () => {
       expect(screen.getByText(/can't be changed now that this application is "Funded"/)).toBeInTheDocument()
     })
 
+    // SCRUM-434 S434-BUG-05: a fixed lender made Inactive since (app 90's R2
+    // Lender A) is still shown - the API lists it, marked is_active: false.
+    it('shows a fixed lender made Inactive since, marked Inactive', () => {
+      renderWithProviders(
+        <LenderInformationCard lenders={[lender({ id: 24, name: 'R2 Lender A', is_active: false })]} assignedLenderIds={[24]} subjectLabel="funding application" onAssign={vi.fn()} canAssign={false} onlyAssigned />
+      )
+
+      expect(screen.getByText('R2 Lender A')).toBeInTheDocument()
+      expect(screen.getByText('Inactive')).toBeInTheDocument()
+      expect(screen.queryByText('The assigned lender is not among the lenders matched for this application.')).not.toBeInTheDocument()
+    })
+
+    it('does not mark an Active assigned lender', () => {
+      renderWithProviders(<LenderInformationCard lenders={[lender({ id: 1, is_active: true })]} assignedLenderIds={[1]} subjectLabel="funding application" onAssign={vi.fn()} canAssign={false} onlyAssigned />)
+
+      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+    })
+
     it('shows N/A for requirements the lender does not set, and leaves out missing contacts', () => {
       renderWithProviders(<LenderInformationCard lenders={lenders} assignedLenderIds={[2]} subjectLabel="funding application" onAssign={vi.fn()} canAssign={false} onlyAssigned />)
 
@@ -250,5 +268,46 @@ describe('LenderInformationCard', () => {
 
       expect(screen.getByText('The assigned lender is not among the lenders matched for this application.')).toBeInTheDocument()
     })
+  })
+})
+
+// R2 BUG-008: two lenders named "Kabbage" looked identical; each reads
+// "Lender Name - Legal Name" in the table, the Lender filter, the dialog and
+// the assigned-lender card.
+describe('LenderInformationCard - lenders that share a name', () => {
+  const kabbage = [
+    lender({ id: 5, name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }),
+    lender({ id: 6, name: 'Kabbage', legal_name: 'Kabbage Funding LLC', display_name: 'Kabbage - Kabbage Funding LLC' }),
+  ]
+
+  it('names each row and the assign dialog with the legal name', async () => {
+    renderWithProviders(<LenderInformationCard lenders={kabbage} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    expect(screen.getByText('Kabbage - Kabbage Inc.')).toBeInTheDocument()
+    await userEvent.click(within(rowFor('Kabbage - Kabbage Funding LLC')).getByRole('button', { name: /assign/i }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getAllByText('Kabbage - Kabbage Funding LLC').length).toBeGreaterThan(0)
+  })
+
+  it('offers each lender once in the Lender filter, by its display name', async () => {
+    renderWithProviders(<LenderInformationCard lenders={kabbage} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    const lenderFilter = Array.from(document.querySelectorAll('.p-dropdown')).find((el) => el.textContent?.includes('All Lenders')) as HTMLElement
+    await userEvent.click(lenderFilter)
+    const option = await waitFor(() => {
+      const found = Array.from(document.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent?.trim() === 'Kabbage - Kabbage Inc.')
+      if (!found) throw new Error('no option')
+      return found as HTMLElement
+    })
+    await userEvent.click(option)
+
+    await waitFor(() => expect(screen.queryByText('Kabbage - Kabbage Funding LLC')).not.toBeInTheDocument())
+  })
+
+  it('names the assigned lender with its legal name once it is fixed', () => {
+    renderWithProviders(<LenderInformationCard lenders={kabbage} assignedLenderIds={[6]} subjectLabel="funding request" onAssign={vi.fn()} canAssign={false} onlyAssigned />)
+
+    expect(screen.getByText('Kabbage - Kabbage Funding LLC')).toBeInTheDocument()
   })
 })

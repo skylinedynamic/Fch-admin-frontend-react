@@ -59,4 +59,33 @@ describe('Partner profile › Status & Agent', () => {
 
     await waitFor(() => expect(statusDropdown().querySelector('.p-dropdown-label')).toHaveTextContent(option))
   })
+
+  // BUG-171 expects the chosen status to save on Update, not only to show.
+  it.each(['Active', 'Inactive', 'OnBoarding'])('Update saves %s for a suspended partner', async (option) => {
+    signIn({ permissions: ['view partners', 'update partners'] })
+    allowBackgroundCalls()
+    api('get', '/admin/partners-details/86', { status: true, message: 'ok', data: suspendedPartner })
+    api('get', '/admin/partners/86/status-agent', {
+      status: true, message: 'ok', data: { id: 86, status: 'Suspended', assign_to: 7, agent: { id: 7, email: 'agent@example.test', phone_number: null } },
+    })
+    const saved = api('put', '/admin/partners/86/status-agent', {
+      status: true, message: 'ok', data: { id: 86, status: option, assign_to: 7, agent: { id: 7, email: 'agent@example.test', phone_number: null } },
+    })
+    const user = userEvent.setup()
+    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86' })
+
+    await waitFor(() => expect(statusDropdown().querySelector('.p-dropdown-label')).toHaveTextContent('Suspended'), { timeout: 5000 })
+    await user.click(statusDropdown())
+    const item = await waitFor(() => {
+      const found = Array.from(document.querySelectorAll('.p-dropdown-item')).find((o) => o.textContent === option)
+      expect(found).toBeTruthy()
+      return found as HTMLElement
+    })
+    await user.click(item)
+    await user.click(screen.getAllByRole('button', { name: /update/i })[0])
+
+    await waitFor(() => expect(saved.calls).toBe(1))
+    expect(saved.bodies[0]).toMatchObject({ status: option })
+    await waitFor(() => expect(statusDropdown().querySelector('.p-dropdown-label')).toHaveTextContent(option))
+  })
 })

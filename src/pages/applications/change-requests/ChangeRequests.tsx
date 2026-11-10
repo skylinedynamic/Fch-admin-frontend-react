@@ -5,6 +5,7 @@ import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
+import { apiErrorMessage } from '../../../utils/formUtils';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { useChangeRequests, useUpdateChangeRequestStatus } from '../../../modules/change-request';
 import type { ChangeRequest, ChangeRequestStatus } from '../../../modules/change-request';
@@ -17,6 +18,7 @@ import {
 } from '../../../config/borrower';
 import StatisticsCard from '../../../components/Common/StatisticsCard';
 import ChangeRequestValues from './components/ChangeRequestValues';
+import DeleteBlockedModal from '../../../components/Common/Modals/DeleteBlockedModal';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
@@ -69,10 +71,12 @@ export default function ChangeRequests() {
     const [reviewStatus, setReviewStatus] = useState<ChangeRequestStatus>('Approved');
     const [reviewNote, setReviewNote] = useState('');
     const [animateShow, setAnimateShow] = useState(false);
+    // BUG-041: why a decision was refused (e.g. already decided in another tab).
+    const [refused, setRefused] = useState({ show: false, message: '' });
 
     const { mutate: updateStatus, isPending: isUpdating } = useUpdateChangeRequestStatus();
 
-    const { data: apiResponse, isLoading, isFetching } = useChangeRequests({
+    const { data: apiResponse, isLoading, isFetching, refetch } = useChangeRequests({
         page,
         per_page: perPage,
         search: applied.search || undefined,
@@ -170,7 +174,16 @@ export default function ChangeRequests() {
                     toast.error(res.message || 'Failed to update');
                 }
             },
-            onError: () => toast.error('Something went wrong'),
+            onError: (error: any) => {
+                if (error?.response?.status !== 422) {
+                    toast.error('Something went wrong');
+                    return;
+                }
+                // Refused with a reason: close the review and say why; the
+                // dialog's button reloads the list so it shows the real status.
+                handleCloseModal();
+                setRefused({ show: true, message: apiErrorMessage(error, 'This change request could not be updated.') });
+            },
         });
     };
 
@@ -532,6 +545,17 @@ export default function ChangeRequests() {
                     <div className={`modal-backdrop fade ${animateShow ? 'show' : ''}`} onClick={handleCloseModal} />
                 </>
             )}
+
+            <DeleteBlockedModal
+                show={refused.show}
+                title="Request Not Updated"
+                message={refused.message}
+                closeLabel="Reload list"
+                onClose={() => {
+                    setRefused((r) => ({ ...r, show: false }));
+                    refetch();
+                }}
+            />
         </div>
     );
 }

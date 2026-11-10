@@ -19,20 +19,19 @@ vi.mock('../../../../src/hooks/useSummernote', () => ({
 const { default: ActivityEditModal } = await import('../../../../src/components/Common/Modals/ActivityEditModal')
 
 /**
- * The sent multipart body as FormData. Node's `request.formData()` (undici)
- * throws an AssertionError on a body carrying a jsdom File, so the handler
- * answered 500 and nothing was recorded. The raw body is split by hand
- * instead; a file part comes back as its contents, enough to count it.
+ * The multipart body as FormData, parsed by hand. Node 22+ refuses jsdom's
+ * File in `request.formData()` (an undici assertion; CI's Node 20 does not),
+ * so a request carrying an attachment is read as text. A file part comes back
+ * as a string, which is enough to count what was sent.
  */
 async function readMultipart(request: Request): Promise<FormData> {
-  const boundary = /boundary=(?:"([^"]+)"|([^;]+))/.exec(request.headers.get('content-type') || '')
-  const text = await request.text()
   const form = new FormData()
+  const boundary = /boundary=(.+)$/.exec(request.headers.get('content-type') ?? '')?.[1]
   if (!boundary) return form
-  for (const part of text.split(`--${boundary[1] || boundary[2]}`)) {
-    const match = /^\r\n([\s\S]*?)\r\n\r\n([\s\S]*)\r\n$/.exec(part)
-    const name = match && /name="([^"]*)"/.exec(match[1])
-    if (match && name) form.append(name[1], match[2])
+  for (const part of (await request.text()).split(`--${boundary}`)) {
+    const name = /name="([^"]+)"/.exec(part)?.[1]
+    if (!name) continue
+    form.append(name, part.slice(part.indexOf('\r\n\r\n') + 4).replace(/\r\n$/, ''))
   }
   return form
 }

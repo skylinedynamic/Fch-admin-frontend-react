@@ -7,7 +7,8 @@ test.describe('Embed form settings', () => {
   const CONFIG = {
     form_title: 'Loan Application', is_active: true, allowed_domains: ['https://acme.test'],
     public_key: 'pk_live_abc123', direct_url: 'https://forms.fcf.test/f/pk_live_abc123',
-    embed_snippet: '<iframe src="https://forms.fcf.test/f/pk_live_abc123"></iframe>', form_url_available: true,
+    form_url_available: true,
+    embed_script_url: 'https://forms.fcf.test/form/assets/embed.js',
   }
   const PERMS = ['view configuration', 'update configuration']
 
@@ -19,7 +20,7 @@ test.describe('Embed form settings', () => {
     return api
   }
   const save = (page: Page) => page.getByRole('button', { name: /save configuration/i })
-  const domainBox = (page: Page) => page.getByPlaceholder('https://yourwebsite.com')
+  const domainBox = (page: Page) => page.getByPlaceholder('yourwebsite.com')
 
   test('loads the title, status, domains, key and link', async ({ page }) => {
     await open(page)
@@ -68,12 +69,39 @@ test.describe('Embed form settings', () => {
     expect(api.find('PUT', `${EF}/config`)).toHaveLength(0)
   })
 
-  test('a duplicate domain is refused with a warning', async ({ page }) => {
+  // R2 BUG-035: the repeat is named under the field, not in a toast.
+  test('a duplicate domain is refused under the field', async ({ page }) => {
     await open(page)
-    await domainBox(page).fill('https://acme.test')
+    await domainBox(page).fill('https://ACME.test')
     await page.getByRole('button', { name: /add domain/i }).click()
-    await expect(page.getByText('Domain is already in the allowed list.')).toBeVisible()
+    await expect(page.locator('.invalid-feedback', { hasText: '"https://ACME.test" is already in the list.' })).toBeVisible()
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
     await expect(page.locator('.badge', { hasText: 'https://acme.test' })).toHaveCount(1)
+  })
+
+  // R2 BUG-035: a bare host goes in (the box was a URL field, so the browser
+  // blocked Save with "Please enter a URL."), and an entry the API refuses is
+  // named under the field with its chip marked.
+  test('a bare host name can be added and saved', async ({ page }) => {
+    const api = await open(page)
+    api.add({ method: 'PUT', match: `${EF}/config`, body: ok({}, 'Saved.') })
+    await domainBox(page).fill('x.com')
+    await page.getByRole('button', { name: /add domain/i }).click()
+    await save(page).click()
+    const call = await expectCall(api, 'PUT', `${EF}/config`)
+    expect(call.json.allowed_domains).toEqual(['https://acme.test', 'x.com'])
+  })
+
+  test('an entry the API refuses is named under the field, not in a toast', async ({ page }) => {
+    const api = await open(page)
+    const message = '"*.x.com": wildcards are not supported. Add each site, such as shop.example.com, on its own.'
+    api.add({ method: 'PUT', match: `${EF}/config`, status: 422, body: failure(message, { 'allowed_domains.1': message }) })
+    await domainBox(page).fill('*.x.com')
+    await page.getByRole('button', { name: /add domain/i }).click()
+    await save(page).click()
+    await expect(page.locator('.invalid-feedback', { hasText: message })).toBeVisible()
+    await expect(page.locator('.allowed-domain-chip--refused')).toHaveText('*.x.com')
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
   })
 
   test('a blank domain is ignored', async ({ page }) => {
@@ -97,11 +125,60 @@ test.describe('Embed form settings', () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('pk_live_abc123')
   })
 
-  test('regenerating the key needs confirmation', async ({ page }) => {
+  // Partners fit the embed code to their site; the direct link is untouched.
+  test('the embed code follows the chosen options and the preview shows them', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+    await page.route('https://forms.fcf.test/**', (route) => route.fulfill({ contentType: 'text/html', body: '<p>form</p>' }))
+    await open(page)
+    const code = page.getByLabel('Embed code')
+    await expect(code).toHaveValue(/data-fch-embed/)
+    await expect(code).toHaveValue(/<script src="https:\/\/forms\.fcf\.test\/form\/assets\/embed\.js" async><\/script>/)
+
+    await page.getByRole('checkbox', { name: /show header/i }).uncheck()
+    await page.getByRole('button', { name: 'Background', exact: true }).click()
+    await page.getByRole('button', { name: /^transparent/i }).click()
+    await expect(code).toHaveValue(/src="https:\/\/forms\.fcf\.test\/f\/pk_live_abc123\?header=0&amp;bg=transparent"/)
+    await expect(page.getByTitle('Embed preview')).toHaveAttribute('src', `${CONFIG.direct_url}?header=0&bg=transparent`)
+
+    // A colour code for the background, sent without the '#'.
+    await page.getByRole('button', { name: 'Background', exact: true }).click()
+    await page.getByRole('button', { name: /^colour code$/i }).click()
+    await page.getByLabel('Background colour code').fill('#F5F7FA')
+    await expect(code).toHaveValue(/\?header=0&amp;bg=f5f7fa"/)
+
+    // The site's primary colour, also without the '#'.
+    await page.getByRole('checkbox', { name: /use my site's primary colour/i }).check()
+    await page.getByLabel('Primary colour code').fill('#2D9A96')
+    await expect(code).toHaveValue(/bg=f5f7fa&amp;color=2d9a96"/)
+
+    await page.getByRole('radio', { name: /fixed height/i }).check()
+    await page.getByLabel('Height in pixels').fill('950')
+    await expect(code).toHaveValue(/height="950"/)
+    await expect(code).not.toHaveValue(/<script/)
+
+    await page.getByRole('button', { name: /copy embed html/i }).click()
+    await expect(page.getByRole('button', { name: /embed code copied/i })).toBeVisible()
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(await code.inputValue())
+    // The direct link is not changed by any option.
+    await expect(page.locator('input[readonly]').first()).toHaveValue(CONFIG.direct_url)
+  })
+
+  // Asked in the app's modal (not the browser confirm box), which says what
+  // stops working and what to do next.
+  test('regenerating the key asks in a modal, and Cancel keeps the key', async ({ page }) => {
     const api = await open(page)
-    page.once('dialog', (d) => d.dismiss())
+    let browserDialog = false
+    page.on('dialog', (d) => { browserDialog = true; return d.dismiss() })
     await page.getByRole('button', { name: /regenerate public key/i }).click()
-    await page.waitForTimeout(300)
+
+    const modal = page.locator('.modal.show')
+    await expect(modal.getByRole('heading', { name: 'Regenerate the public key?' })).toBeVisible()
+    await expect(modal.getByText(/no longer load on any website/i)).toBeVisible()
+    await expect(modal.getByText(/Direct Shareable Link also stops working/i)).toBeVisible()
+    await modal.getByRole('button', { name: /cancel/i }).click()
+    await expect(modal).toHaveCount(0)
+
+    expect(browserDialog).toBe(false)
     expect(api.find('POST', `${EF}/config/generate-key`)).toHaveLength(0)
   })
 
@@ -109,8 +186,8 @@ test.describe('Embed form settings', () => {
     const api = await open(page)
     api.add({ method: 'POST', match: `${EF}/config/generate-key`, body: ok(null, 'Public embed key regenerated successfully.') })
     const before = api.find('GET', `${EF}/config`).length
-    page.once('dialog', (d) => { expect(d.message()).toContain('invalidate your current embed code'); return d.accept() })
     await page.getByRole('button', { name: /regenerate public key/i }).click()
+    await page.locator('.modal.show').getByRole('button', { name: /yes, regenerate key/i }).click()
     await expectCall(api, 'POST', `${EF}/config/generate-key`)
     await expect(page.getByText('Public embed key regenerated successfully.')).toBeVisible()
     await expect.poll(() => api.find('GET', `${EF}/config`).length).toBeGreaterThan(before)

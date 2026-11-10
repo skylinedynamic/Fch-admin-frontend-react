@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import { server } from '../../../mocks/server'
-import { renderWithProviders, screen, waitFor, within } from '../../../test-utils'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, renderWithProviders, screen, waitFor, within } from '../../../test-utils'
 import { toast } from 'react-toastify'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import FundingRequestDetail from '../../../../src/pages/applications/funding-request/FundingRequestDetail'
@@ -72,6 +72,23 @@ describe('Funding Request Details: action buttons', () => {
     expect(confirm).not.toHaveClass('btn-dark')
   })
 
+  // R2 BUG-019: the modal read "Assign to Lender. You can assign Before Approved".
+  it('asks for a lender in plain words before an approval', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Approved' } })
+      )
+    )
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: /^confirm/i }))
+
+    expect(await screen.findByText('Lender Required')).toBeInTheDocument()
+    expect(screen.getByText('Assign a lender before approving this request.')).toBeInTheDocument()
+    expect(screen.queryByText(/You can assign Before/i)).not.toBeInTheDocument()
+  })
+
   it('keeps Confirm primary when rejecting, below the reason', async () => {
     server.use(
       http.get('*/common/funding-request/:id', () =>
@@ -87,20 +104,80 @@ describe('Funding Request Details: action buttons', () => {
   })
 
   /**
-   * Defect (BUG-159): after a rejection was saved, Review Actions showed an
-   * empty required "Reason / Note" box, as if nothing had been entered. It
-   * opens with the saved reason.
+   * Defect (BUG-159): a rejected request opened with an empty Reason / Note - the saved
+   * reject_reason came back from the API but the box always started blank, so
+   * after a save or a reload the reason seemed lost.
    */
   it('opens a rejected request with its saved reason in Reason / Note', async () => {
-    const reason = 'Please add 3 months of bank statements'
     server.use(
       http.get('*/common/funding-request/:id', () =>
-        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected', reject_reason: reason } })
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected', reject_reason: 'Missing bank statements' } })
       )
     )
     renderPage()
 
-    await waitFor(() => expect(screen.getByPlaceholderText(/reason/i)).toHaveValue(reason))
+    const note = await screen.findByPlaceholderText(/reason/i)
+    await waitFor(() => expect(note).toHaveValue('Missing bank statements'))
+    expect(screen.getByText('23 / 10,000')).toBeInTheDocument()
+  })
+
+  /**
+   * Defect: Reason / Note had no limit and no counter; the API now takes up to
+   * 10,000 characters, and the box stops there and shows how many are used.
+   */
+  it('counts the rejection note against its 10,000 characters', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected' } })
+      )
+    )
+    renderPage()
+
+    const note = await screen.findByPlaceholderText(/reason/i)
+    expect(note).toHaveAttribute('maxLength', '10000')
+    expect(screen.getByText('0 / 10,000')).toBeInTheDocument()
+    fireEvent.change(note, { target: { value: 'Missing bank statements' } })
+    expect(screen.getByText('23 / 10,000')).toBeInTheDocument()
+  })
+
+  /**
+   * Defect: a long rejection note made "Confirm Status Update" taller than the
+   * screen. The note shows its start with See more, and See less folds it again.
+   */
+  it('shows a long rejection note folded in the confirmation, with See more and See less', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected' } })
+      )
+    )
+    renderPage()
+    const longNote = 'The borrower did not send the bank statements we asked for. '.repeat(20).trim()
+
+    fireEvent.change(await screen.findByPlaceholderText(/reason/i), { target: { value: longNote } })
+    fireEvent.click(screen.getByRole('button', { name: /^confirm/i }))
+
+    const preview = await screen.findByTestId('reject-note-preview')
+    expect(preview.textContent).not.toContain(longNote)
+    const more = within(preview.parentElement as HTMLElement).getByRole('button', { name: 'See more' })
+    fireEvent.click(more)
+    expect(preview.textContent).toContain(longNote)
+    fireEvent.click(within(preview.parentElement as HTMLElement).getByRole('button', { name: 'See less' }))
+    expect(preview.textContent).not.toContain(longNote)
+  })
+
+  it('shows a short rejection note in full, without See more', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, status: 'Rejected' } })
+      )
+    )
+    renderPage()
+
+    fireEvent.change(await screen.findByPlaceholderText(/reason/i), { target: { value: 'Missing bank statements' } })
+    fireEvent.click(screen.getByRole('button', { name: /^confirm/i }))
+
+    expect((await screen.findByTestId('reject-note-preview')).textContent).toContain('Missing bank statements')
+    expect(screen.queryByRole('button', { name: 'See more' })).not.toBeInTheDocument()
   })
 })
 
@@ -338,5 +415,94 @@ describe('Funding Request Details: assigning a lender', () => {
     await assignFundbox()
 
     await waitFor(() => expect(failure).toHaveBeenCalledWith('Failed to assign lender'))
+  })
+
+  /** As on the funding application details page (R2 BUG-008): "Lender Name - Legal Name". */
+  it('names each lender "Lender Name - Legal Name"', async () => {
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({
+          status: true,
+          message: 'ok',
+          data: {
+            ...review,
+            matched_lenders: [
+              { ...lender, legal_name: 'Fundbox, Inc.' },
+              { ...lender, id: 7, name: 'OnDeck', legal_name: null },
+            ],
+          },
+        })
+      )
+    )
+    renderPage()
+
+    expect(await screen.findByText('Fundbox Financing - Fundbox, Inc.')).toBeInTheDocument()
+    expect(screen.queryByText('Fundbox Financing')).not.toBeInTheDocument()
+    // No legal name: the name alone.
+    expect(screen.getByText('OnDeck')).toBeInTheDocument()
+  })
+})
+
+/**
+ * Defect: R2 BUG-008 - two lenders named "Kabbage" looked identical in Lender
+ * Information, its Lender filter and the assign dialog. Each now reads
+ * "Lender Name - Legal Name", and the filter picks just the one chosen.
+ */
+describe('Funding Request Details: lenders shown with their legal name', () => {
+  const lender = (id: number, legal: string) => ({
+    id,
+    name: 'Kabbage',
+    legal_name: legal,
+    display_name: `Kabbage - ${legal}`,
+    phone: null,
+    email: null,
+    product_category: 'Term Loan',
+    requirements: { min_fico: 450, min_business_credit_score: null, min_revenue: 4500, min_tib: 6, min_deposit: 2700 },
+    checks: { fico: true, business_credit: true, revenue: true, tib: true, deposit: false },
+    score: 75,
+    score_text: 'Good Match',
+    score_hex: '#d97706',
+    matches_fraction: '3/4',
+  })
+
+  beforeEach(() => {
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [] } } as never)
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, matched_lenders: [lender(5, 'Kabbage Inc.'), lender(6, 'Kabbage Funding LLC')] } })
+      )
+    )
+  })
+
+  afterEach(() => server.resetHandlers())
+
+  it('names each lender with its legal name, and the assign dialog too', async () => {
+    renderPage()
+
+    expect(await screen.findByText('Kabbage - Kabbage Inc.')).toBeInTheDocument()
+    expect(screen.getByText('Kabbage - Kabbage Funding LLC')).toBeInTheDocument()
+
+    const row = screen.getByText('Kabbage - Kabbage Funding LLC').closest('tr') as HTMLElement
+    await userEvent.click(within(row).getByRole('button', { name: /assign/i }))
+    await waitFor(() => expect(screen.getAllByText('Kabbage - Kabbage Funding LLC').length).toBeGreaterThan(1))
+  })
+
+  it('offers each lender once in the Lender filter, by that name, and filters to just it', async () => {
+    renderPage()
+    await screen.findByText('Kabbage - Kabbage Inc.')
+
+    const lenderFilter = Array.from(document.querySelectorAll('.p-dropdown')).find((el) => el.textContent?.includes('All Lenders')) as HTMLElement
+    await userEvent.click(lenderFilter)
+    const option = await waitFor(() => {
+      const found = Array.from(document.querySelectorAll('.p-dropdown-panel .p-dropdown-item'))
+        .find((el) => el.textContent?.trim() === 'Kabbage - Kabbage Inc.')
+      if (!found) throw new Error('no option')
+      return found as HTMLElement
+    })
+    await userEvent.click(option)
+    await userEvent.click(screen.getByRole('button', { name: /filters/i }))
+
+    await waitFor(() => expect(screen.queryByText('Kabbage - Kabbage Funding LLC')).not.toBeInTheDocument())
+    expect(screen.getAllByText('Kabbage - Kabbage Inc.').length).toBeGreaterThan(0)
   })
 })

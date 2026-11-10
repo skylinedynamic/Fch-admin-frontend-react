@@ -35,6 +35,8 @@ import ErrorPage from '../Utility/ErrorPage';
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { scrollToFirstError } from '../../utils/formUtils';
+import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
+import { formDataValue } from '../../modules/employee/logic';
 
 const TAB_PERSONAL = 'personalDetails';
 const TAB_COMMISSIONS = 'commissions';
@@ -497,10 +499,10 @@ export default function EmployeeDetails() {
           return;
         }
 
-        // Validate file size (1MB)
-        const maxSize = 1 * 1024 * 1024; // 1MB
+        // The API's picture limit, 5 MB (BUG-014)
+        const maxSize = FILE_MANAGER_CONFIG.MAX_PICTURE_SIZE;
         if (file.size > maxSize) {
-          setErrors(prev => ({ ...prev, image: 'Image size must be less than 1 MB.' }));
+          setErrors(prev => ({ ...prev, image: `Image size must be less than ${maxSize / 1024 / 1024} MB.` }));
           return;
         }
 
@@ -663,7 +665,11 @@ export default function EmployeeDetails() {
               formData.append('country_code', value);
             }
           } else if (value !== '') {
-            formData.append(key, value);
+            // Never an object's string form, e.g. job status "[object Object]" (R2 BUG-029).
+            const sent = formDataValue(value);
+            if (sent !== null) {
+              formData.append(key, sent);
+            }
           }
         }
       });

@@ -9,6 +9,7 @@ import { AgreementBlock } from './types';
 import { createMergeChip, decorateMergeFields, undecorateMergeFields } from './mergeChips';
 import { MergeChipMenu } from './MergeChipMenu';
 import { pastedToHtml } from './pastedText';
+import { sanitizeHtml } from '../../../../utils/sanitizeHtml';
 
 /** Drag data types: a block being moved, and a palette item being added. */
 export const BLOCK_DRAG_TYPE = 'application/x-agreement-block';
@@ -192,7 +193,7 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
                 <div
                     className="ab4-editor ab4-editor--readonly"
                     style={bVars}
-                    dangerouslySetInnerHTML={{ __html: block.content || '' }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content) }}
                 />
             ) : (
                 <div ref={ref} contentEditable suppressContentEditableWarning className="ab4-editor"

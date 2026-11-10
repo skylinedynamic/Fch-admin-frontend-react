@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { allUsers } from '../partner/services';
-import { getActivityLog, updateActivityTaskStatus } from './services';
+import { getActivityEmailSender, getActivityLog, updateActivityTaskStatus } from './services';
 
 export const activityLogKeys = {
     all: ['activity-log'] as const,
@@ -8,6 +8,7 @@ export const activityLogKeys = {
     taskAssignees: (partnerId: number | null, keepIds: number[] = []) =>
         [...activityLogKeys.all, 'task-assignees', partnerId ?? 'own', keepIds] as const,
     detail: (id: number | string) => [...activityLogKeys.all, 'detail', String(id)] as const,
+    emailSender: (partnerId: number | string | null) => [...activityLogKeys.all, 'email-sender', partnerId ? String(partnerId) : 'host'] as const,
 };
 
 /**
@@ -82,3 +83,12 @@ export const useUpdateTaskStatus = () => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: activityLogKeys.all }),
     });
 };
+
+/** The host's sending choices for New Email, read once the modal opens (host only). */
+export const useActivityEmailSender = (partnerId: number | string | null, enabled: boolean) =>
+    useQuery({
+        queryKey: activityLogKeys.emailSender(partnerId),
+        queryFn: () => getActivityEmailSender(partnerId),
+        enabled,
+        staleTime: 5 * 60 * 1000,
+    });

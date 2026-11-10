@@ -1,4 +1,4 @@
-import { createRef } from 'react'
+import { createRef, useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
@@ -229,3 +229,90 @@ describe('Client business financials - Currency', () => {
   })
 })
 
+
+/**
+ * BUG-006 (QA round 2): a Current Business Debt of -500 was saved as 500 - the
+ * field stripped the minus sign as it was typed, so the API's "0 or more" rule
+ * never saw it. The minus now stays, is sent, and the API's message shows under
+ * the field. A negative profit margin (a loss-making business) is sent as typed.
+ */
+describe('Client business financials - out-of-range values (BUG-006)', () => {
+  afterEach(() => server.resetHandlers())
+
+  const AMOUNT_MIN = 'Enter an amount of 0 or more.'
+
+  const SectionWithErrors = ({ sectionRef }: { sectionRef: React.RefObject<BusinessFinancialsSectionRef | null> }) => {
+    const [errors, setErrors] = useState<Record<string, string>>({})
+    return <BusinessFinancialsSection ref={sectionRef} clientId="1" errors={errors} setErrors={setErrors} />
+  }
+
+  it('keeps the minus sign on a money field and sends it, so the API can refuse it', async () => {
+    const saved = mockApi()
+    const user = userEvent.setup()
+    const ref = renderSection()
+
+    await incomeField()
+    const debt = screen.getByLabelText('Current Business Debt')
+    await user.type(debt, '-500')
+    expect(debt).toHaveValue('-500')
+
+    await save(ref)
+
+    expect(saved[0]).toHaveProperty('current_business_debt', '-500')
+  })
+
+  it('shows the API message under the field when a negative amount is refused', async () => {
+    server.use(
+      http.get('*/common/borrowers/business-financials/:id', () =>
+        HttpResponse.json({ status: true, data: financials() })
+      ),
+      http.post('*/common/borrowers/:id/business-financials', () =>
+        HttpResponse.json(
+          { status: false, message: 'Validation failed', errors: { current_business_debt: AMOUNT_MIN } },
+          { status: 422 }
+        )
+      )
+    )
+    const user = userEvent.setup()
+    const ref = createRef<BusinessFinancialsSectionRef>()
+    renderWithProviders(<SectionWithErrors sectionRef={ref} />)
+
+    await incomeField()
+    const debt = screen.getByLabelText('Current Business Debt')
+    await user.type(debt, '-500')
+
+    await act(async () => {
+      await ref.current!.save().catch(() => undefined)
+    })
+
+    expect(await screen.findByText(AMOUNT_MIN)).toBeInTheDocument()
+    expect(debt).toHaveClass('is-invalid')
+    expect(debt).toHaveValue('-500')
+  })
+
+  it('formats a negative amount with thousands separators like a positive one', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    renderSection()
+
+    await incomeField()
+    const debt = screen.getByLabelText('Current Business Debt')
+    await user.type(debt, '-12500.5')
+
+    expect(debt).toHaveValue('-12,500.5')
+  })
+
+  it('sends a negative profit margin as typed', async () => {
+    const saved = mockApi()
+    const user = userEvent.setup()
+    const ref = renderSection()
+
+    await incomeField()
+    const margin = screen.getByLabelText('Profit Margin (%)')
+    await user.type(margin, '-35.5')
+
+    await save(ref)
+
+    expect(String(saved[0].profit_margin)).toBe('-35.5')
+  })
+})

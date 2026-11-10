@@ -10,11 +10,13 @@ import CustomDropdown from '../../../../../components/Common/CustomDropdown'
 import { countries } from '../../../../../modules/location'
 import { useOwnershipInfo, useSaveOwnershipInfo } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
+import { reportStaleApplication } from '../../../../../modules/funding-application/staleApplication'
 import { citizenshipOptions } from '../../../../../data/profile'
 import { toast } from 'react-toastify'
 import { formatPhoneNumber, formatSSN, unformatSSN, formatZipCode } from '../../../../../utils/borrowerFormatters'
 import { getCountryCodeByName, getPhoneCodeByName, getCountryNameByCode, getDefaultCountry } from '../../../../../utils/countryHelpers'
 import { yearDropdownPlugin } from '../../../../../utils/flatpickrPlugins'
+import { dateOfBirthError, openOnLatestDateOfBirth } from '../../../../../utils/dateOfBirth'
 
 interface OwnershipInformationStepProps {
   owner: OwnerInfo
@@ -124,6 +126,8 @@ export default function OwnershipInformationStep({
       // The partner backed out of the re-signature confirmation - nothing was
       // attempted, so say nothing.
       if (isEditConfirmationCancelled(error)) return false
+      // Saved from an older copy: say so, offer a reload (R2 BUG-033).
+      if (reportStaleApplication(error)) return false
       const errors = error.response?.data?.errors
       if (errors) {
         setValidationErrors(errors)
@@ -362,7 +366,7 @@ export default function OwnershipInformationStep({
           </label>
           <div className="position-relative">
             <Flatpickr
-              className={`form-control ${hasError('date_of_birth') ? 'is-invalid' : ''}`}
+              className={`form-control ${hasError('date_of_birth') || dateOfBirthError(owner.dob) ? 'is-invalid' : ''}`}
               value={owner.dob}
               onChange={(dates, dateStr) => {
                 setOwner({ ...owner, dob: dateStr })
@@ -372,13 +376,14 @@ export default function OwnershipInformationStep({
                 altInput: true,
                 altFormat: 'j M, Y',
                 maxDate: 'today',
+                onOpen: openOnLatestDateOfBirth,
                 monthSelectorType: 'dropdown',
                 plugins: [yearDropdownPlugin(1900)],
               }}
               placeholder="Select date of birth"
             />
           </div>
-          {hasError('date_of_birth') && <div className="invalid-feedback d-block">{getFieldError('date_of_birth')}</div>}
+          {(hasError('date_of_birth') || dateOfBirthError(owner.dob)) && <div className="invalid-feedback d-block">{hasError('date_of_birth') ? getFieldError('date_of_birth') : dateOfBirthError(owner.dob)}</div>}
         </div>
         <div className="col-md-6">
           <label className="form-label" htmlFor="owner-ssn">
