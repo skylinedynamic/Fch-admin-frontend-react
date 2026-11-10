@@ -26,6 +26,12 @@ export const queryKeys = {
     list: () => [...queryKeys.appointment.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.appointment.all, 'detail', id] as const,
   },
+  calendly: {
+    all: ['calendly'] as const,
+    status: () => [...queryKeys.calendly.all, 'status'] as const,
+    eventTypes: () => [...queryKeys.calendly.all, 'event-types'] as const,
+    availableTimes: (payload: object) => [...queryKeys.calendly.all, 'available-times', payload] as const,
+  },
   contact: {
     all: ['contact'] as const,
     list: () => [...queryKeys.contact.all, 'list'] as const,

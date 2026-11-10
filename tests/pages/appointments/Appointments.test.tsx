@@ -97,3 +97,52 @@ describe('Appointments - descriptions cannot run script (BUG-004)', () => {
     expect(container.querySelector('[onerror]')).toBeNull()
   })
 })
+
+// Calendly: meetings on the company Calendly account show here, marked, with
+// their join and reschedule links; coming back from connecting Calendly says
+// how it went.
+describe('Appointments - Calendly', () => {
+  const CALENDLY = {
+    ...APPOINTMENT,
+    id: 2,
+    subject: '30 Minute Meeting with Jane',
+    is_calendly: true,
+    source: 'calendly',
+    join_url: 'https://meet.google.com/abc',
+    reschedule_url: 'https://calendly.com/reschedulings/INV1',
+  }
+
+  it('marks a Calendly meeting and links to join and reschedule it', async () => {
+    mount(['view appointments'], { status: true, data: [CALENDLY] })
+
+    expect((await screen.findAllByText('30 Minute Meeting with Jane')).length).toBeGreaterThan(0)
+    expect(screen.getByText('Calendly', { selector: '.calendly-badge' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /join/i })).toHaveAttribute('href', 'https://meet.google.com/abc')
+    expect(screen.getByRole('link', { name: /reschedule/i })).toHaveAttribute('href', 'https://calendly.com/reschedulings/INV1')
+  })
+
+  it('does not mark an FCH meeting as Calendly', async () => {
+    mount(['view appointments'])
+
+    expect((await screen.findAllByText('Intro call with Acme')).length).toBeGreaterThan(0)
+    expect(screen.queryByText('Calendly', { selector: '.calendly-badge' })).not.toBeInTheDocument()
+  })
+
+  it('confirms Calendly was connected when coming back from Calendly', async () => {
+    signIn({ permissions: ['view appointments'] })
+    allowBackgroundCalls()
+    api('post', LIST, { status: true, data: [] })
+    renderPage(<Appointments />, { path: '/appointments', route: '/appointments?calendly=connected' })
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Calendly connected'))
+  })
+
+  it('reports a failed Calendly connection when coming back from Calendly', async () => {
+    signIn({ permissions: ['view appointments'] })
+    allowBackgroundCalls()
+    api('post', LIST, { status: true, data: [] })
+    renderPage(<Appointments />, { path: '/appointments', route: '/appointments?calendly=error' })
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Calendly could not be connected'))
+  })
+})
