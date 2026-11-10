@@ -1479,6 +1479,37 @@
   border-bottom: 1px solid #f1f5f9
 }
 
+/* "Insert Dynamic Value": its own boxed section at the top of the right panel,
+   always shown. Set apart by its box and heading, not by colour. */
+.ab4-dynamic-values {
+  margin: 10px 10px 2px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+  flex-shrink: 0
+}
+
+.ab4-dynamic-values__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #334155
+}
+
+.ab4-dynamic-values__hint {
+  margin: 8px 0 0;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: #64748b
+}
+
 .ab4-pl {
   display: block;
   font-size: 10.5px;
@@ -3746,8 +3777,11 @@
 
 
 /* ── Insert field (merge fields) ── */
+/* "Insert Dynamic Value": a boxy, neutral button and a square-cornered dropdown
+   of bordered rows. Grey borders, 4px corners; the theme colour only on focus
+   and on the row being pointed at. */
 .ab4-insert-field {
-  margin-top: 14px;
+  position: relative;
 }
 
 .ab4-insert-field__toggle {
@@ -3755,99 +3789,405 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 8px 12px;
-  border: 1px dashed #a5b4fc;
-  border-radius: 8px;
-  background: #eef2ff;
-  color: #3730a3;
+  height: 37.5px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  color: #0f172a;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .15s, border-color .15s;
+  transition: background .15s, border-color .15s, box-shadow .15s;
 }
 
 .ab4-insert-field__toggle:hover,
 .ab4-insert-field__toggle.is-open {
-  background: #e0e7ff;
-  border-color: #6366f1;
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.ab4-insert-field__toggle:focus-visible {
+  outline: none;
+  border-color: var(--brand-primary, #001f3f);
+  box-shadow: 0 0 0 2px rgba(var(--brand-primary-rgb, 0, 31, 63), .18);
 }
 
 .ab4-insert-field__toggle .ri-braces-line {
-  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
 }
 
-.ab4-insert-field__menu {
-  margin-top: 6px;
-  padding: 6px;
-  max-height: 300px;
-  overflow-y: auto;
+/* The Insert Dynamic Value list: a popover over the page (portalled to <body>),
+   340px wide, beside the button. Quiet and precise: white surface, hairline
+   borders, soft shadow, 4px corners; the theme navy only marks the active row,
+   the search focus and what matched. */
+.ab4-insert-popover {
+  position: fixed;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 10px 24px -8px rgba(15, 23, 42, .18);
+  border-radius: 4px;
+  box-shadow: -12px 0 32px -16px rgba(15, 23, 42, .28), 0 1px 2px rgba(15, 23, 42, .06);
+  animation: ab4-drawer-in .18s cubic-bezier(.2, .8, .2, 1);
 }
 
-.ab4-insert-field__group+.ab4-insert-field__group {
-  margin-top: 4px;
-  padding-top: 4px;
+@keyframes ab4-drawer-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.ab4-insert-popover__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 16px 14px 12px 16px;
+}
+
+.ab4-insert-popover__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #fff, #f5f7fa);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+  font-size: 16px;
+  color: var(--brand-primary, #001f3f);
+}
+
+.ab4-insert-popover__heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.ab4-insert-popover__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #0f172a;
+}
+
+.ab4-insert-popover__subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.ab4-insert-popover__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.ab4-insert-popover__close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.ab4-insert-popover__close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--brand-primary-rgb, 0, 31, 63), .25);
+}
+
+.ab4-insert-popover__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 14px 12px 16px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.ab4-insert-popover__search .ri-search-line {
+  position: absolute;
+  left: 28px;
+  font-size: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.ab4-insert-popover__search input {
+  flex: 1;
+  height: 37.5px;
+  padding: 0 44px 0 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #f8fafc;
+  font-size: 13px;
+  color: #0f172a;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+
+.ab4-insert-popover__search input::placeholder {
+  color: #94a3b8;
+}
+
+.ab4-insert-popover__search input:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--brand-primary, #001f3f);
+  box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb, 0, 31, 63), .1);
+}
+
+.ab4-insert-popover__search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.ab4-insert-popover__count {
+  position: absolute;
+  right: 24px;
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #eef2f6;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ab4-insert-popover__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 0 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.ab4-insert-popover__list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ab4-insert-popover__list::-webkit-scrollbar-thumb {
+  border: 2px solid #fff;
+  border-radius: 4px;
+  background: #cbd5e1;
+}
+
+.ab4-insert-popover__group {
+  padding-bottom: 4px;
+}
+
+.ab4-insert-popover__group + .ab4-insert-popover__group {
   border-top: 1px solid #f1f5f9;
 }
 
-.ab4-insert-field__group-title {
-  padding: 6px 8px 4px;
-  font-size: 10px;
+.ab4-insert-popover__group-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 16px 6px;
+  background: #fff;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
   color: #94a3b8;
 }
 
-.ab4-insert-field__item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  padding: 7px 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  text-align: left;
-  font-size: 12.5px;
-  color: #334155;
-  cursor: pointer;
+.ab4-insert-popover__group-title i {
+  font-size: 13px;
+  color: #94a3b8;
 }
 
-.ab4-insert-field__item:hover,
-.ab4-insert-field__item:focus-visible {
-  background: #f1f5ff;
-  color: #1e293b;
-  outline: none;
-}
-
-.ab4-insert-field__token {
-  flex-shrink: 0;
-  padding: 1px 6px;
+.ab4-insert-popover__group-count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 6px;
   border-radius: 4px;
-  background: #f8fafc;
+  background: #f1f5f9;
   font-size: 10.5px;
-  color: #6366f1;
-  font-family: 'Fira Code', ui-monospace, monospace;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0;
+  color: #64748b;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
-.ab4-insert-field__item:hover .ab4-insert-field__token {
-  background: #fff;
-}
-
-.ab4-insert-field__hint {
+.ab4-insert-popover__plan {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
-  padding: 8px 8px 4px;
-  border-top: 1px solid #f1f5f9;
-  font-size: 11px;
+  padding: 8px 16px 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #475569;
+}
+
+.ab4-insert-popover__plan i {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.ab4-insert-popover__plan mark {
+  padding: 0;
+  background: transparent;
+  color: var(--brand-primary, #001f3f);
+  font-weight: 700;
+}
+
+/* A plan's rows sit under its name, indented a step. */
+.ab4-insert-popover__item.ab4-insert-popover__item--plan {
+  padding-left: 34px;
+}
+
+.ab4-insert-popover__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.ab4-insert-popover__item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: transparent;
+}
+
+.ab4-insert-popover__item.is-active {
+  background: #f5f7fa;
+}
+
+.ab4-insert-popover__item.is-active::before {
+  background: var(--brand-primary, #001f3f);
+}
+
+.ab4-insert-popover__item:focus-visible {
+  outline: none;
+  background: #f5f7fa;
+}
+
+.ab4-insert-popover__label {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.ab4-insert-popover__label mark {
+  padding: 0;
+  background: transparent;
+  color: var(--brand-primary, #001f3f);
+  font-weight: 700;
+}
+
+.ab4-insert-popover__value {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border: 1px solid #e8edf3;
+  border-radius: 4px;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+
+.ab4-insert-popover__item.is-active .ab4-insert-popover__value {
+  border-color: #dbe3ec;
+  background: #fff;
+}
+
+.ab4-insert-popover__enter {
+  flex-shrink: 0;
+  width: 14px;
+  font-size: 13px;
+  color: transparent;
+  transition: color .12s;
+}
+
+.ab4-insert-popover__item.is-active .ab4-insert-popover__enter {
+  color: #94a3b8;
+}
+
+.ab4-insert-popover__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 16px;
+  font-size: 12.5px;
   color: #64748b;
+  text-align: center;
+}
+
+.ab4-insert-popover__empty i {
+  font-size: 22px;
+  color: #cbd5e1;
+}
+
+.ab4-insert-popover__footer {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-top: 1px solid #eef2f6;
+  background: #fafbfc;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ab4-insert-popover__footer kbd {
+  display: inline-block;
+  min-width: 18px;
+  margin-right: 3px;
+  padding: 0 4px;
+  border: 1px solid #e2e8f0;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 10.5px;
+  line-height: 16px;
+  color: #475569;
+  text-align: center;
 }
 
 /* Merge field chip in the canvas */

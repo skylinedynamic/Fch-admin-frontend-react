@@ -25,7 +25,7 @@ export const MergeFieldsHint: React.FC<{ hasMergeFields: boolean }> = ({ hasMerg
             <p className="ab4-merge-hint__text">
                 <strong>Blue fields fill in by themselves.</strong> When someone signs, each one is replaced with their own
                 details (name, business, email, phone) or your company's. Preview shows example values. Add one from
-                <strong> Insert field</strong> in the right panel.
+                <strong> Insert Dynamic Value</strong> at the top of the right panel.
             </p>
             <button type="button" className="btn btn-primary btn-sm ab4-merge-hint__ok" onClick={dismiss}>Got it</button>
         </div>

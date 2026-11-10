@@ -1,4 +1,4 @@
-import { AGREEMENT_MERGE_FIELDS, mergeFieldToken } from '../../../../config/agreementMergeFields';
+import { AGREEMENT_MERGE_FIELDS, mergeFieldToken, type AgreementMergeField } from '../../../../config/agreementMergeFields';
 
 /**
  * Merge fields in the builder's canvas: a {{signer.name}} in a text block shows
@@ -6,16 +6,32 @@ import { AGREEMENT_MERGE_FIELDS, mergeFieldToken } from '../../../../config/agre
  * back as the bare {{signer.name}} the server fills (fch-api AgreementMergeFields).
  */
 const CHIP_CLASS = 'ab4-merge-chip';
-const TOKEN = /\{\{\s*([a-z_.]+)\s*\}\}/g;
+// Plan & Fee keys may hold digits (an "11-month" plan).
+const TOKEN = /\{\{\s*([a-z0-9_.]+)\s*\}\}/g;
 const labels = new Map(AGREEMENT_MERGE_FIELDS.map((f) => [f.key, f.label]));
+
+const PLAN_KEY_PREFIX = 'plan.';
+const PLAN_FALLBACK_LABEL = 'Plan & Fee value';
+
+/** Adds the labels of the Plan & Fee values the builder loaded from the API. */
+export const registerMergeFieldLabels = (fields: AgreementMergeField[]): void => {
+    fields.forEach((f) => labels.set(f.key, f.label));
+};
+
+/**
+ * The chip's label. A Plan & Fee value not loaded yet, or whose plan was
+ * switched off, is still a chip (never text to type over), labelled generically.
+ */
+const labelFor = (key: string): string | undefined =>
+    labels.get(key) ?? (key.startsWith(PLAN_KEY_PREFIX) ? PLAN_FALLBACK_LABEL : undefined);
 
 export const createMergeChip = (key: string, doc: Document = document): HTMLSpanElement => {
     const chip = doc.createElement('span');
     chip.className = CHIP_CLASS;
     chip.setAttribute('contenteditable', 'false');
     chip.setAttribute('data-merge', key);
-    chip.title = `Filled in automatically with ${(labels.get(key) ?? key).replace(/^Your /, 'your ').replace(/^Signer/, 'the signer').replace(/^Today/, 'today')} when the agreement is signed (${mergeFieldToken(key)}). Click to change.`;
-    chip.textContent = labels.get(key) ?? key;
+    chip.title = `Filled in automatically with ${(labelFor(key) ?? key).replace(/^Your /, 'your ').replace(/^Signer/, 'the signer').replace(/^Today/, 'today')} when the agreement is signed (${mergeFieldToken(key)}). Click to change.`;
+    chip.textContent = labelFor(key) ?? key;
     return chip;
 };
 
@@ -36,7 +52,7 @@ export const decorateMergeFields = (html: string): string => {
         let last = 0;
         value.replace(TOKEN, (token, key: string, at: number) => {
             fragment.appendChild(document.createTextNode(value.slice(last, at)));
-            fragment.appendChild(labels.has(key) ? createMergeChip(key) : document.createTextNode(token));
+            fragment.appendChild(labelFor(key) ? createMergeChip(key) : document.createTextNode(token));
             last = at + token.length;
             return token;
         });

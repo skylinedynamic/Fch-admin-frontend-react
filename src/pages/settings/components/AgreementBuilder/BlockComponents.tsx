@@ -8,6 +8,7 @@ import { measureLineBoxes, planPages, type PageItem } from './pagination';
 import { AgreementBlock } from './types';
 import { createMergeChip, decorateMergeFields, undecorateMergeFields } from './mergeChips';
 import { MergeChipMenu } from './MergeChipMenu';
+import { MergeFieldsContext } from './mergeFieldsContext';
 import { pastedToHtml } from './pastedText';
 import { sanitizeHtml } from '../../../../utils/sanitizeHtml';
 
@@ -59,7 +60,16 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
         }
     }, []);
 
-    // Content changed from outside the editor (e.g. a field added from the Insert field menu).
+    // The Plan & Fee values arrive from the API after the page is drawn: relabel
+    // their chips then (not while the text is being typed in).
+    const mergeFields = useContext(MergeFieldsContext);
+    useEffect(() => {
+        if (!ref.current || document.activeElement === ref.current) return;
+        ref.current.innerHTML = decorateMergeFields(block.content || '');
+        lastValidHtml.current = ref.current.innerHTML;
+    }, [mergeFields]);
+
+    // Content changed from outside the editor (e.g. a field added from the Insert Dynamic Value menu).
     useEffect(() => {
         if (!ref.current || document.activeElement === ref.current) return;
         if (undecorateMergeFields(ref.current.innerHTML) !== (block.content || '')) {

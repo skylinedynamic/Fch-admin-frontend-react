@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
-import { useAgreement, useAgreementPreviewValues, useSaveAgreement } from '../../../../modules/agreement';
+import { useAgreement, useAgreementMergeFields, useAgreementPreviewValues, useSaveAgreement } from '../../../../modules/agreement';
+import { AGREEMENT_MERGE_FIELDS } from '../../../../config/agreementMergeFields';
+import { MergeFieldsContext } from './mergeFieldsContext';
+import { registerMergeFieldLabels } from './mergeChips';
 import { useConfigPartner } from '../../../../modules/settings/configPartner';
 import { useAuthStore } from '../../../../store/auth/authStore';
 
@@ -191,6 +194,16 @@ const AgreementBuilder: React.FC = () => {
         setSelectedId(newBlock.id);
     };
 
+    // "Insert Dynamic Value" with no text block to take it: a new text block holding it,
+    // placed as the palette would place one.
+    const onAddDynamicValue = (token: string) => {
+        const arr = [...blocks];
+        const newBlock = { ...makeBlock('text'), content: token };
+        arr.splice(paletteInsertIndex(), 0, newBlock);
+        setBlocks(arr);
+        setSelectedId(newBlock.id);
+    };
+
     // The palette adds below the selected top-level block, or at the end.
     const paletteInsertIndex = () => {
         const selectedIndex = blocks.findIndex(b => b.id === selectedId);
@@ -239,8 +252,16 @@ const AgreementBuilder: React.FC = () => {
     // The preview opens the app's own calendar in the date fields; the
     // agreement is saved as it is (handleSave uses `html`).
     // The company fields show the owner's real details; signer fields show examples.
+    // The fixed fields plus this agreement's Plan & Fee values (all plans for the
+    // partner agreement, Borrower Enrollment for the borrower one).
+    const { data: planFields } = useAgreementMergeFields(editingType, !!editingType);
+    const mergeFields = useMemo(() => {
+        const all = [...AGREEMENT_MERGE_FIELDS, ...(planFields ?? [])];
+        registerMergeFieldLabels(all);
+        return all;
+    }, [planFields]);
     const { data: previewValues } = useAgreementPreviewValues(view === 'preview');
-    const previewHtml = useMemo(() => withAppCalendar(withMergeSamples(html, previewValues)), [html, previewValues]);
+    const previewHtml = useMemo(() => withAppCalendar(withMergeSamples(html, previewValues, mergeFields)), [html, previewValues, mergeFields]);
 
     const handleEdit = (type: 'partner' | 'borrower') => {
         setEditingType(type);
@@ -475,6 +496,7 @@ const AgreementBuilder: React.FC = () => {
                             setPagePad={setPagePad}
                             docBg={docBg}
                             setDocBg={setDocBg}
+                            onAddDynamicValue={onAddDynamicValue}
                         />
                     </>
                 ) : (
@@ -511,8 +533,10 @@ const AgreementBuilder: React.FC = () => {
         </div>
     );
 
+    const editorWithFields = <MergeFieldsContext.Provider value={mergeFields}>{editor}</MergeFieldsContext.Provider>;
+
     if (!fullScreen) {
-        return editor;
+        return editorWithFields;
     }
 
     // Portalled to <body> so no ancestor's width, padding or overflow can clip it;
@@ -524,7 +548,7 @@ const AgreementBuilder: React.FC = () => {
             aria-modal="true"
             aria-label={configPartner ? `${configPartnerName}'s ${editingType} agreement` : agreementName}
         >
-            {editor}
+            {editorWithFields}
         </div>,
         document.body
     );

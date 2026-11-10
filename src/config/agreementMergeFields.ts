@@ -7,7 +7,8 @@
 export interface AgreementMergeField {
   key: string
   label: string
-  group: 'Signer' | 'Your company' | 'Other'
+  /** 'Signer', 'Your company', 'Other', or a Plan & Fee group from the API. */
+  group: string
   /** Shown in the builder's preview in place of the field. */
   sample: string
 }

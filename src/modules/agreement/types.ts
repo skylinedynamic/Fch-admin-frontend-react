@@ -61,3 +61,14 @@ export interface AgreementRequirementStatus extends AgreementRequirement {
 
 /** Merge field => the value signing fills it with, e.g. { 'owner.company_name': 'Acme Lending' }. */
 export type AgreementPreviewValues = Record<string, string>
+
+/**
+ * A Plan & Fee dynamic value the builder offers for an agreement type
+ * (fch-api AgreementPlanFields): `sample` is the price signing fills it with.
+ */
+export interface AgreementPlanField {
+  key: string
+  label: string
+  group: string
+  sample: string
+}

@@ -5,6 +5,7 @@ import {
   AgreementSlug,
   AgreementSignCheck,
   AgreementPreviewValues,
+  AgreementPlanField,
   AgreementRequirement,
   AgreementRequirementStatus,
   SetAgreementRequiredPayload,
@@ -161,4 +162,14 @@ export async function fetchAgreementRequirement(userId: number): Promise<ApiResp
 export async function fetchAgreementPreviewValues(partnerId?: number): Promise<AgreementPreviewValues> {
   const res = await apiClient.post('/common/agreement-templates/preview-values', forPartner(partnerId))
   return res.data?.data ?? {}
+}
+
+/**
+ * The Plan & Fee dynamic values the builder offers for this type of agreement:
+ * every active plan for the partner agreement, Borrower Enrollment only for the
+ * borrower agreement (fch-api AgreementPlanFields).
+ */
+export async function fetchAgreementMergeFields(type: AgreementSlug): Promise<AgreementPlanField[]> {
+  const res = await apiClient.post('/common/agreement-templates/merge-fields', { type })
+  return res.data?.data ?? []
 }

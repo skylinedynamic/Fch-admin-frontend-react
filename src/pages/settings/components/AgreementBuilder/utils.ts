@@ -1,4 +1,4 @@
-import { AGREEMENT_MERGE_FIELDS } from '../../../../config/agreementMergeFields';
+import { AGREEMENT_MERGE_FIELDS, type AgreementMergeField } from '../../../../config/agreementMergeFields';
 import { measureLineBoxes, planPages } from './pagination';
 
 /**
@@ -693,9 +693,14 @@ const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
  * has none while a template is built. Only the preview: the saved template
  * keeps the fields, which the server fills for each signer.
  */
-export const withMergeSamples = (html: string, real: Record<string, string> = {}): string => {
-  const samples = new Map(AGREEMENT_MERGE_FIELDS.map((f) => [f.key, real[f.key]?.trim() ? escapeHtml(real[f.key].trim()) : f.sample]));
-  const filled = html.replace(/\{\{\s*([a-z_.]+)\s*\}\}/g, (token, key: string) =>
+export const withMergeSamples = (
+  html: string,
+  real: Record<string, string> = {},
+  fields: AgreementMergeField[] = AGREEMENT_MERGE_FIELDS,
+): string => {
+  // Plan & Fee values (in `fields`) carry their real price as the sample.
+  const samples = new Map(fields.map((f) => [f.key, real[f.key]?.trim() ? escapeHtml(real[f.key].trim()) : escapeHtml(f.sample)]));
+  const filled = html.replace(/\{\{\s*([a-z0-9_.]+)\s*\}\}/g, (token, key: string) =>
     samples.has(key) ? `<span class="ab4-merge-sample" title="{{${key}}}">${samples.get(key)}</span>` : token);
   return filled === html ? html : filled.replace('</head>', `${MERGE_SAMPLE_CSS}</head>`);
 };

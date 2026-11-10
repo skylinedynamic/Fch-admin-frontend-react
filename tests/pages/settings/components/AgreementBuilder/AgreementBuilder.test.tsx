@@ -18,9 +18,19 @@ vi.mock('../../../../../src/pages/settings/components/AgreementBuilder/Agreement
   ),
 }))
 
+/** The agreement type each builder asked for Plan & Fee dynamic values, and what it got back. */
+let mergeFieldsAskedFor: string[] = []
+let planFields: Record<string, string>[] = []
+
 const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partner' | 'borrower' = 'partner') => {
+  mergeFieldsAskedFor = []
   server.use(
     http.post('*/common/agreement-templates/show', () => HttpResponse.json({ status: true, data: null })),
+    http.post('*/common/agreement-templates/merge-fields', async ({ request }) => {
+      const body = (await request.json()) as { type: string }
+      mergeFieldsAskedFor.push(body.type)
+      return HttpResponse.json({ status: true, data: planFields })
+    }),
   )
   const view = renderWithProviders(ui)
   fireEvent.click(screen.getByRole('button', { name: `Edit ${type} agreement` }))
@@ -35,6 +45,9 @@ const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partn
  * their 20 s timeout. Queries for toolbar controls stay inside the toolbar.
  */
 const toolbar = () => within(document.querySelector('.ab4-toolbar') as HTMLElement)
+
+/** The Insert Dynamic Value popover (portalled to the page, outside the panel). */
+const popover = () => within(document.querySelector('.ab4-insert-popover') as HTMLElement)
 
 describe('AgreementBuilder calendar', () => {
   it('the preview opens the app calendar in the agreement date fields', async () => {
@@ -388,6 +401,49 @@ describe('AgreementBuilder placing blocks', () => {
 
     expect(await savedTypes()).toEqual(['text'])
     expect(document.querySelector('.ab4-doc--drop')).toBeNull()
+  })
+
+  // An empty page has no text block to take a dynamic value, so picking one adds it in a new text block.
+  it('adds a dynamic value to an empty page in a new text block', async () => {
+    await openBuilder()
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
+    await screen.findByText('Empty Agreement')
+    window.getSelection()?.removeAllRanges()
+    const panel = within(document.querySelector('.ab4-props') as HTMLElement)
+
+    fireEvent.click(panel.getByRole('button', { name: /Insert Dynamic Value/ }))
+    // The list opens in a popover over the page, outside the panel.
+    fireEvent.click(popover().getByRole('menuitem', { name: "Signer's name" }))
+
+    expect(await savedTypes()).toEqual(['text'])
+    expect(document.querySelector('.ab4-doc .ab4-merge-chip[data-merge="signer.name"]')).not.toBeNull()
+  })
+})
+
+describe('AgreementBuilder Plan & Fee dynamic values', () => {
+  const panel = () => within(document.querySelector('.ab4-props') as HTMLElement)
+
+  it('the borrower agreement asks for its own values and lists them', async () => {
+    planFields = [{ key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount', group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00' }]
+    await openBuilder(undefined, 'borrower')
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+
+    expect(await popover().findByRole('menuitem', { name: /Installment: Total amount/ })).toBeInTheDocument()
+    expect(mergeFieldsAskedFor).toEqual(['borrower'])
+    planFields = []
+  })
+
+  it('the partner agreement asks for the partner values', async () => {
+    planFields = [{ key: 'plan.user_seat.certified_partner.monthly.total_amount', label: 'Certified Partner · Monthly: Monthly seat fee', group: 'Plan & Fee: User seats', sample: '$49.00' }]
+    await openBuilder(undefined, 'partner')
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+
+    expect(await popover().findByText('Plan & Fee: User seats')).toBeInTheDocument()
+    expect(mergeFieldsAskedFor).toEqual(['partner'])
+    planFields = []
   })
 })
 

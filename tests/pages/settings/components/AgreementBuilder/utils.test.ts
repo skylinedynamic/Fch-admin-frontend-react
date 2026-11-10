@@ -248,6 +248,13 @@ describe('merge fields in the preview', () => {
     expect(html).toContain('title="{{signer.name}}">Jane Doe</span>')
   })
 
+  it('shows the Plan & Fee price the builder loaded for a Plan & Fee value', () => {
+    const fields = [{ key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount', group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00' }]
+    const html = withMergeSamples('<html><head></head><body><p>{{plan.borrower_enrollment.installment.total_amount}}</p></body></html>', {}, fields)
+
+    expect(html).toContain('title="{{plan.borrower_enrollment.installment.total_amount}}">$3,000.00</span>')
+  })
+
   it('escapes the real details', () => {
     expect(withMergeSamples(page, { 'owner.company_name': 'A&B <Lending>' })).toContain('>A&amp;B &lt;Lending&gt;</span>')
   })

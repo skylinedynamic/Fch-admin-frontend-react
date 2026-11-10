@@ -10,6 +10,7 @@ import {
   fetchAgreementPreviewValues,
   setAgreementRequired,
   fetchAgreementRequirement,
+  fetchAgreementMergeFields,
 } from './services'
 import type { AgreementSlug, AgreementRequirementStatus, ApiResponse } from './types'
 
@@ -115,3 +116,12 @@ export const useAgreementPreviewValues = (enabled = true) => {
     staleTime: 1000 * 60 * 5,
   })
 }
+
+/** The Plan & Fee dynamic values the builder offers for this agreement type. */
+export const useAgreementMergeFields = (type: AgreementSlug | null, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.agreement.mergeFields(type ?? ''),
+    queryFn: () => fetchAgreementMergeFields(type as AgreementSlug),
+    enabled: enabled && !!type,
+    staleTime: 1000 * 60 * 5,
+  })

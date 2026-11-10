@@ -3,12 +3,25 @@ import { mockApi, ok, seedSession } from '../../support/helpers'
 
 /**
  * Settings › Agreement Builder in a real browser: the editor opens full screen,
- * merge fields go in from the Insert field menu, blocks are dragged into place
+ * merge fields go in from the Insert Dynamic Value menu, blocks are dragged into place
  * (from the palette and by their handle), changes can be undone, and closing
  * with unsaved changes asks first. The API is mocked; nothing is written.
  */
 
 type Saved = { template_html: string; template_json: string } | null
+
+// Plan & Fee dynamic values as the API lists them per agreement type (fch-api AgreementPlanFields).
+const PLAN_FIELDS: Record<'partner' | 'borrower', { key: string; label: string; group: string; sample: string }[]> = {
+  partner: [
+    { key: 'plan.partner_enrollment.certified_partner.one_time_payment.total_amount', label: 'Certified Partner · One Time Payment: Total amount', group: 'Plan & Fee: Partner enrollment', sample: '$4,997.00' },
+    { key: 'plan.user_seat.certified_partner.monthly.total_amount', label: 'Certified Partner · Monthly: Monthly seat fee', group: 'Plan & Fee: User seats', sample: '$49.00' },
+    { key: 'plan.user_seat.certified_partner.monthly.free_seats', label: 'Certified Partner · Monthly: Free seats', group: 'Plan & Fee: User seats', sample: '3' },
+    { key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount', group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00' },
+  ],
+  borrower: [
+    { key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount', group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00' },
+  ],
+}
 
 async function openBuilder(page: Page, type: 'partner' | 'borrower' = 'partner'): Promise<{ saved: () => Saved }> {
   await page.setViewportSize({ width: 1600, height: 900 })
@@ -19,6 +32,10 @@ async function openBuilder(page: Page, type: 'partner' | 'borrower' = 'partner')
     { method: 'POST', match: '/common/agreement-templates/show', body: ok(null) },
     { method: 'POST', match: /\/common\/app-configurations$/, body: ok({ agreement_signing_enabled: '1' }) },
   ])
+  await page.route('**/common/agreement-templates/merge-fields**', async (route) => {
+    const { type } = route.request().postDataJSON() as { type: 'partner' | 'borrower' }
+    await route.fulfill({ json: ok(PLAN_FIELDS[type] ?? []) })
+  })
   await page.route('**/common/agreement-templates/save**', async (route) => {
     saved = route.request().postDataJSON()
     await route.fulfill({ json: ok({ id: 8 }, 'Saved') })
@@ -62,7 +79,7 @@ test.describe('Settings - Agreement Builder', () => {
     await page.keyboard.press('End')
     await page.keyboard.type(' for ')
 
-    await page.getByRole('button', { name: /Insert field/ }).click()
+    await page.getByRole('button', { name: /Insert Dynamic Value/ }).click()
     await page.getByRole('menuitem', { name: "Signer's name" }).click()
 
     await expect(title.locator('.ab4-merge-chip', { hasText: "Signer's name" })).toBeVisible()
@@ -113,6 +130,92 @@ test.describe('Settings - Agreement Builder', () => {
     await expect.poll(saved).not.toBeNull()
     expect(saved()!.template_html).toContain('I, {{signer.name}}, on behalf of {{signer.business_name}}')
     expect(saved()!.template_html).not.toContain('BUSINESS CREDIT BUILDER')
+  })
+
+  // "Insert Dynamic Value" sits in its own section at the top of the right panel,
+  // so an empty page can take one too: it comes in a new text block.
+  test('adds a dynamic value to an empty page from the top of the right panel', async ({ page }) => {
+    const { saved } = await openBuilder(page)
+    await page.getByRole('button', { name: 'Clear All' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Clear everything' }).click()
+    await expect(page.getByText('Empty Agreement')).toBeVisible()
+
+    const section = page.locator('.ab4-props > .ab4-dynamic-values')
+    await expect(section).toBeVisible()
+    await expect(page.locator('.ab4-props').locator(':scope > *').first()).toHaveClass(/ab4-dynamic-values/)
+    await section.getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    await page.locator('.ab4-insert-popover').getByRole('menuitem', { name: "Signer's business name" }).click()
+
+    await expect(page.locator('.ab4-block')).toHaveCount(1)
+    await expect(page.locator('.ab4-doc .ab4-merge-chip', { hasText: "Signer's business name" })).toBeVisible()
+    await page.getByRole('button', { name: 'Save Template' }).click()
+    await expect.poll(saved).not.toBeNull()
+    expect(blockTypes(saved())).toEqual(['text'])
+    expect(saved()!.template_html).toContain('{{signer.business_name}}')
+  })
+
+  test('finds a Plan & Fee value by search and saves it as its field', async ({ page }) => {
+    const { saved } = await openBuilder(page)
+    await page.getByRole('button', { name: 'Clear All' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Clear everything' }).click()
+    await expect(page.getByText('Empty Agreement')).toBeVisible()
+
+    const section = page.locator('.ab4-props > .ab4-dynamic-values')
+    await section.getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    const popover = page.locator('.ab4-insert-popover')
+    const search = popover.getByRole('searchbox', { name: 'Search dynamic values' })
+    await expect(search).toBeFocused()
+    await search.fill('seat')
+
+    await expect(popover.getByRole('menuitem')).toHaveCount(2)
+    await expect(popover.getByText('Plan & Fee: User seats')).toBeVisible()
+    await popover.getByRole('menuitem', { name: /Monthly seat fee/ }).click()
+    await expect(popover).toHaveCount(0)
+
+    await expect(page.locator('.ab4-doc .ab4-merge-chip', { hasText: 'Certified Partner · Monthly: Monthly seat fee' })).toBeVisible()
+    await page.getByRole('button', { name: 'Save Template' }).click()
+    await expect.poll(saved).not.toBeNull()
+    expect(saved()!.template_html).toContain('{{plan.user_seat.certified_partner.monthly.total_amount}}')
+  })
+
+  test('says so when the search matches nothing', async ({ page }) => {
+    await openBuilder(page)
+    const section = page.locator('.ab4-props > .ab4-dynamic-values')
+    await section.getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    const popover = page.locator('.ab4-insert-popover')
+    await popover.getByRole('searchbox', { name: 'Search dynamic values' }).fill('zzz')
+
+    await expect(popover.getByRole('menuitem')).toHaveCount(0)
+    await expect(popover.getByText('No dynamic values match "zzz".')).toBeVisible()
+  })
+
+  test('the dynamic value list floats over the page and closes when clicking outside it', async ({ page }) => {
+    await openBuilder(page)
+    const section = page.locator('.ab4-props > .ab4-dynamic-values')
+    await section.getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    const popover = page.locator('.ab4-insert-popover')
+    await expect(popover).toBeVisible()
+    // Wider than the panel it opens from, and the panel's full height: toolbar to the bottom of the screen.
+    const box = (await popover.boundingBox())!
+    const props = (await page.locator('.ab4-props').boundingBox())!
+    expect(box.width).toBeGreaterThan(props.width)
+    expect(Math.abs(box.y - props.y)).toBeLessThanOrEqual(2)
+    expect(Math.abs(box.y + box.height - (props.y + props.height))).toBeLessThanOrEqual(2)
+
+    await page.locator('.ab4-toolbar').click({ position: { x: 5, y: 5 } })
+
+    await expect(popover).toHaveCount(0)
+  })
+
+  test('the borrower agreement lists only Borrower Enrollment among Plan & Fee values', async ({ page }) => {
+    await openBuilder(page, 'borrower')
+    const section = page.locator('.ab4-props > .ab4-dynamic-values')
+    await section.getByRole('button', { name: /Insert Dynamic Value/ }).click()
+
+    const popover = page.locator('.ab4-insert-popover')
+    await expect(popover.getByText('Plan & Fee: Borrower enrollment')).toBeVisible()
+    await expect(popover.getByText('Plan & Fee: User seats')).toHaveCount(0)
+    await expect(popover.getByText('Plan & Fee: Partner enrollment')).toHaveCount(0)
   })
 
   test('drops a palette block anywhere on an empty page', async ({ page }) => {
