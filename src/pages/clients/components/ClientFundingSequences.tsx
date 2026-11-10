@@ -436,6 +436,13 @@ const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
                                 placeholder="Search funding options..."
                                 value={tempSearchQuery}
                                 onChange={(e) => setTempSearchQuery(e.target.value)}
+                                // Enter applies the search and the chosen category, as Filters does (BUG-162 class).
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleApplyFilters();
+                                    }
+                                }}
                             />
                         </div>
                     </div>
