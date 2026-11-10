@@ -16,6 +16,9 @@ export const MODULE_OPENAI = 'openai';
  * into an input: a blank secret on save keeps the stored one.
  */
 export const SETTINGS_SECRET_MASK = '••••••••';
+
+/** Sent by CMS Site Settings to delete the saved reCAPTCHA secret (fch-api SiteSettingsService::REMOVE_RECAPTCHA_SECRET). */
+export const REMOVE_RECAPTCHA_SECRET_FIELD = 'remove_recaptcha_secret_key';
 export const SAVED_SECRET_PLACEHOLDER = 'Saved - leave blank to keep';
 
 export const ENTITY_TYPE_LEAD = 'Lead';

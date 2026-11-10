@@ -17,9 +17,10 @@ import { SAVED_SECRET_PLACEHOLDER, SETTINGS_SECRET_MASK } from '../../../src/con
  * Defect (BUG-022, OP-CMS-03 / OP-SET-07): secrets were loaded into the page in
  * full - the reCAPTCHA secret as plain text, the MicroBilt client secret (and
  * the Credit Profile OpenAI key) in a password field holding the real value.
- * The API now sends only a mask; the form shows "Saved - leave blank to keep",
- * never puts the mask in the input, and a blank secret on save keeps the
- * stored one.
+ * The API now sends only a mask. MicroBilt and Credit Profile show "Saved -
+ * leave blank to keep" and a blank secret keeps the stored one. Site Settings
+ * shows the mask itself in the field (it looks saved); clearing it removes the
+ * secret.
  */
 
 const secretInput = (container: HTMLElement, name: string) => container.querySelector(`input[name="${name}"]`) as HTMLInputElement
@@ -37,7 +38,10 @@ describe('CMS Site Settings - reCAPTCHA secret', () => {
     recaptcha_secret_key: SETTINGS_SECRET_MASK, social_links: [],
   }
 
-  it('shows a saved secret as a blank password field and saves it blank', async () => {
+  // The field shows the mask (dots), so a saved secret looks saved; the secret
+  // itself still never reaches the page. Untouched, the mask goes back and the
+  // API keeps the secret.
+  it('shows a saved secret as dots and keeps it when left alone', async () => {
     api('get', '/admin/cms/site-settings', { status: true, data: SETTINGS })
     const save = api('post', '/admin/cms/site-settings', { status: true, data: SETTINGS })
     const { container } = renderPage(<SiteSettings />, { path: '/cms/site-settings' })
@@ -45,13 +49,62 @@ describe('CMS Site Settings - reCAPTCHA secret', () => {
     await screen.findByDisplayValue('site-key-public')
     const secret = secretInput(container, 'recaptcha_secret_key')
     expect(secret.type).toBe('password')
-    expect(secret.value).toBe('')
-    expect(secret.placeholder).toBe(SAVED_SECRET_PLACEHOLDER)
+    expect(secret.value).toBe(SETTINGS_SECRET_MASK)
 
     await userEvent.setup().click(screen.getByRole('button', { name: /save settings/i }))
 
     await waitFor(() => expect(save.calls).toBe(1))
+    expect(save.bodies[0].recaptcha_secret_key).toBe(SETTINGS_SECRET_MASK)
+    expect(save.bodies[0]).not.toHaveProperty('remove_recaptcha_secret_key')
+  })
+
+  // A blank secret means "keep" to the API, so clearing the field asks for removal.
+  it('removes the saved secret when the field is cleared', async () => {
+    api('get', '/admin/cms/site-settings', { status: true, data: SETTINGS })
+    const save = api('post', '/admin/cms/site-settings', { status: true, data: SETTINGS })
+    const { container } = renderPage(<SiteSettings />, { path: '/cms/site-settings' })
+    const user = userEvent.setup()
+
+    await screen.findByDisplayValue('site-key-public')
+    await user.clear(secretInput(container, 'recaptcha_secret_key'))
+    await user.click(screen.getByRole('button', { name: /save settings/i }))
+
+    await waitFor(() => expect(save.calls).toBe(1))
+    expect(save.bodies[0].remove_recaptcha_secret_key).toBe('1')
     expect(save.bodies[0].recaptcha_secret_key).toBe('')
+  })
+
+  it('replaces the saved secret with a new one typed in', async () => {
+    api('get', '/admin/cms/site-settings', { status: true, data: SETTINGS })
+    const save = api('post', '/admin/cms/site-settings', { status: true, data: SETTINGS })
+    const { container } = renderPage(<SiteSettings />, { path: '/cms/site-settings' })
+    const user = userEvent.setup()
+
+    await screen.findByDisplayValue('site-key-public')
+    const secret = secretInput(container, 'recaptcha_secret_key')
+    await user.clear(secret)
+    await user.type(secret, 'new-secret')
+    await user.click(screen.getByRole('button', { name: /save settings/i }))
+
+    await waitFor(() => expect(save.calls).toBe(1))
+    expect(save.bodies[0].recaptcha_secret_key).toBe('new-secret')
+    expect(save.bodies[0]).not.toHaveProperty('remove_recaptcha_secret_key')
+  })
+
+  it('leaves an unsaved secret empty and asks for no removal', async () => {
+    api('get', '/admin/cms/site-settings', { status: true, data: { ...SETTINGS, recaptcha_secret_key: '' } })
+    const save = api('post', '/admin/cms/site-settings', { status: true, data: SETTINGS })
+    const { container } = renderPage(<SiteSettings />, { path: '/cms/site-settings' })
+
+    await screen.findByDisplayValue('site-key-public')
+    const secret = secretInput(container, 'recaptcha_secret_key')
+    expect(secret.value).toBe('')
+    expect(secret.placeholder).toBe('Secret Key')
+
+    await userEvent.setup().click(screen.getByRole('button', { name: /save settings/i }))
+
+    await waitFor(() => expect(save.calls).toBe(1))
+    expect(save.bodies[0]).not.toHaveProperty('remove_recaptcha_secret_key')
   })
 })
 
