@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import "../../../assets/css/dropdown-validation.css";
 import PageHeader from '../common/PageHeader';
@@ -232,9 +232,15 @@ export default function PartnerProfile() {
     const [profileStatsLoading, setProfileStatsLoading] = useState(true);
     const [isPartnerLoading, setIsPartnerLoading] = useState(true);
     const [partnerNotFound, setPartnerNotFound] = useState(false);
+    // Set once the user changes Status or Agent: from then on a load that comes
+    // back late (details or status-agent) must not put the old values back, or
+    // Update saves those instead of the user's choice (BUG-171). Cleared by a
+    // save and by opening another partner.
+    const statusAgentEditedRef = useRef(false);
 
     useEffect(() => {
         setPartnerNotFound(false);
+        statusAgentEditedRef.current = false;
     }, [id]);
     const [isSaving, setIsSaving] = useState(false);
     const [partnerPlans, setPartnerPlans] = useState([]);
@@ -371,8 +377,9 @@ export default function PartnerProfile() {
                 state: finalState,
                 city: cityValue, // Set city (either actual city or "Others")
                 other_city: otherCityValue, // Set other_city if applicable
-                agent: data.assigned_user_id || '', // Keep as number/string from DB
-                status: data.status || '', // Explicitly map status
+                // Keep the user's unsaved Status/Agent if this load came back after they changed them (BUG-171).
+                agent: statusAgentEditedRef.current ? prev.agent : (data.assigned_user_id || ''), // Keep as number/string from DB
+                status: statusAgentEditedRef.current ? prev.status : (data.status || ''), // Explicitly map status
                 address_line_1: data.address_line_1 || '', // Map address_line_1 → address
                 partner_image: data.partner_image || '', // Map company_logo → partner_image
                 country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
@@ -427,8 +434,11 @@ export default function PartnerProfile() {
 
     // The Status & Agent tab's values, from its own endpoint. The agent's email
     // and mobile are read-only and may be empty.
-    const applyStatusAgent = useCallback((sa) => {
+    // A load is skipped while the user has unsaved Status/Agent changes; the
+    // saved values (force) always apply.
+    const applyStatusAgent = useCallback((sa, { force = false } = {}) => {
         if (!sa || typeof sa !== 'object' || Array.isArray(sa)) return;
+        if (statusAgentEditedRef.current && !force) return;
         setFormData(prev => ({
             ...prev,
             status: sa.status || '',
@@ -479,6 +489,7 @@ export default function PartnerProfile() {
     // Handle input changes
     const handleInputChange = (e) => {
         const { name, value, type, files } = e.target;
+        if (name === 'status' || name === 'agent') statusAgentEditedRef.current = true;
 
         if (type === 'file') {
             const file = files[0];
@@ -635,6 +646,7 @@ export default function PartnerProfile() {
 
     // Handle agent selection
     const handleAgentChange = (e) => {
+        statusAgentEditedRef.current = true;
         const agentId = e.target.value;
         const selectedUser = users.find(user => user.id == agentId);
         setFormData(prev => ({
@@ -657,7 +669,9 @@ export default function PartnerProfile() {
                     status: formData.status || '',
                     assign_to: formData.agent || ''
                 });
-                applyStatusAgent(saved);
+                // Saved: what the API kept is now the form's value, and later loads apply again.
+                statusAgentEditedRef.current = false;
+                applyStatusAgent(saved, { force: true });
                 setErrors(prev => ({ ...prev, status: null, agent: null }));
                 toast.success('Status and agent updated successfully');
                 window.dispatchEvent(new Event('refreshActivities'));
