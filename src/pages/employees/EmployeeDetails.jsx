@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useIsHostPartner } from '../../lib/auth/useIsHostPartner';
@@ -31,6 +31,7 @@ import DepartmentModal from './components/DepartmentModal';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import FormLoader from '../../components/Loader/FormLoader';
+import ErrorPage from '../Utility/ErrorPage';
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { scrollToFirstError } from '../../utils/formUtils';
@@ -42,6 +43,7 @@ const TAB_COMMISSIONS = 'commissions';
 
 export default function EmployeeDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { hasPermission } = usePermissions();
 
   // Permission checks
@@ -54,6 +56,8 @@ export default function EmployeeDetails() {
   const user = useAuthStore((state) => state.user);
   const userSubscription = useAuthStore((state) => state.userSubscription);
   const [loading, setLoading] = useState(true);
+  // 404/403 on the record: another partner's (or a deleted) employee (BUG-164).
+  const [notFound, setNotFound] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [roles, setRoles] = useState([]);
@@ -254,7 +258,10 @@ export default function EmployeeDetails() {
             setProfileImage(data.image);
           }
         })
-        .catch((err) => console.error('Failed to fetch employee', err))
+        .catch((err) => {
+          if ([403, 404].includes(err?.response?.status)) setNotFound(true);
+          else console.error('Failed to fetch employee', err);
+        })
         .finally(() => setLoading(false));
     }
   }, [id]);
@@ -722,6 +729,10 @@ export default function EmployeeDetails() {
           setShowPaymentModal(true);
           return;
         }
+
+        // Leave the create form: kept filled in, a second Save looked like the
+        // first had failed ("Email is already in use.") (BUG-165).
+        navigate(newEmployeeId ? `/employee-details/${newEmployeeId}` : '/employees');
       }
 
     } catch (error) {
@@ -730,6 +741,11 @@ export default function EmployeeDetails() {
       setIsSaving(false);
     }
   };
+
+  // Say so rather than show an empty form with Update, as for clients and leads (BUG-030).
+  if (notFound) {
+    return <ErrorPage status={404} title="Employee Not Found" message="The employee you are looking for does not exist or you do not have permission to view it." />;
+  }
 
   return (
     <div className="page-content">

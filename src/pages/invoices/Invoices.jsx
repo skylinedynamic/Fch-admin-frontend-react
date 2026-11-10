@@ -35,6 +35,7 @@ export default function Invoices() {
     const [selectedMine, setSelectedMine] = useState(null);
     const [selectedPayee, setSelectedPayee] = useState(null);
     const [selectedCycle, setSelectedCycle] = useState(null);
+    const [selectedType, setSelectedType] = useState(null);
     const [dateRange, setDateRange] = useState([]);
 
     // Applied filter states (to trigger fetch)
@@ -43,6 +44,7 @@ export default function Invoices() {
     const [appliedMine, setAppliedMine] = useState(null);
     const [appliedPayee, setAppliedPayee] = useState(null);
     const [appliedCycle, setAppliedCycle] = useState(null);
+    const [appliedType, setAppliedType] = useState(null);
     const [appliedDateRange, setAppliedDateRange] = useState(null);
     const [appliedFilters, setAppliedFilters] = useState({});
 
@@ -102,6 +104,7 @@ export default function Invoices() {
                 is_mine: extractValue(appliedMine),
                 payee_id: extractValue(appliedPayee),
                 cycle: extractValue(appliedCycle),
+                type: extractValue(appliedType),
                 date_from: dateFrom,
                 date_to: dateTo,
                 filters: appliedFilters,
@@ -137,7 +140,7 @@ export default function Invoices() {
         if (Object.keys(appliedFilters).length > 0) {
             loadData();
         }
-    }, [appliedSearchText, appliedStatus, appliedMine, appliedPayee, appliedCycle, appliedDateRange, appliedFilters, page, perPage, sortField, sortOrder]);
+    }, [appliedSearchText, appliedStatus, appliedMine, appliedPayee, appliedCycle, appliedType, appliedDateRange, appliedFilters, page, perPage, sortField, sortOrder]);
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
@@ -145,6 +148,7 @@ export default function Invoices() {
         setAppliedMine(selectedMine);
         setAppliedPayee(selectedPayee);
         setAppliedCycle(selectedCycle);
+        setAppliedType(selectedType);
         setAppliedDateRange(dateRange);
         setAppliedFilters(filters);
         setPage(1);
@@ -156,12 +160,14 @@ export default function Invoices() {
         setSelectedMine(null);
         setSelectedPayee(null);
         setSelectedCycle(null);
+        setSelectedType(null);
         setDateRange([]);
         setAppliedSearchText('');
         setAppliedStatus(null);
         setAppliedMine(null);
         setAppliedPayee(null);
         setAppliedCycle(null);
+        setAppliedType(null);
         setAppliedDateRange(null);
         initFilters();
         setPage(1);
@@ -210,6 +216,7 @@ export default function Invoices() {
                                             selectedMine={selectedMine} setSelectedMine={setSelectedMine}
                                             selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
                                             selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
+                                            selectedType={selectedType} setSelectedType={setSelectedType}
                                             dateRange={dateRange} setDateRange={setDateRange}
                                             onApply={handleApplyFilters}
                                             onClear={handleClearFilters}

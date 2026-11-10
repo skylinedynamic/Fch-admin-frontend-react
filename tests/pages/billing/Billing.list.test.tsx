@@ -67,3 +67,30 @@ describe('Upcoming billing - sorting', () => {
     await waitFor(() => expect(lastSort(list)).toEqual({ field, order: 'desc' }))
   })
 })
+
+// The host's row for a borrower fee a partner still owes: billed to the
+// partner, naming the client it is for; it opens the fee invoice, not the
+// client's subscription.
+describe('Upcoming billing - borrower fee row', () => {
+  const FEE_ROW = {
+    id: 73, subscription_id: 73, billing_row: 'borrower_fee', subscriber_type: 'Partner', subscriber_name: 'Wanda Wells',
+    subscriber_email: 'wanda@example.test', for_client_name: 'Dee Client', fee_invoice_id: 55, fee_invoice_number: 'INV-55',
+    upcoming_billing_type: 'Borrower Fee', upcoming_billing_amount: 800, upcoming_billing_date: '2026-05-24',
+    outstanding_amount: 800, current_phase: 'borrower_fee', enrollment_type: null, status: 'Unpaid', is_billing_paused: false,
+  }
+
+  it('names the client and opens the fee invoice', async () => {
+    const user = userEvent.setup()
+    signIn({ permissions: ['view subscriptions'] })
+    allowBackgroundCalls()
+    api('post', '/common/billing/fetch-upcoming', paginated([FEE_ROW]))
+    renderPage(<Billing />, { path: '/billing' })
+
+    expect(await screen.findByText('Wanda Wells')).toBeInTheDocument()
+    expect(screen.getByText('For client: Dee Client')).toBeInTheDocument()
+    expect(screen.getByText('Unpaid')).toHaveClass('bg-danger-subtle')
+
+    await user.click(screen.getByText('Wanda Wells'))
+    expect(await screen.findByTestId('landing')).toHaveTextContent('navigated:/invoices/55')
+  })
+})

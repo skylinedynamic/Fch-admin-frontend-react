@@ -45,6 +45,28 @@ test.describe('My profile', () => {
     await expect(page.getByText('Profile updated successfully!')).toBeVisible()
   })
 
+  // BUG-204: the email was read-only. A new one is sent, and Profile says it
+  // waits for confirmation; Cancel change withdraws it.
+  test('a new email is sent and waits for confirmation, and can be withdrawn', async ({ page }) => {
+    const api = await open(page)
+    const pending = { ...USER, id: 1, pending_email: 'new.host@example.test' }
+    api.add({ method: 'POST', match: PROFILE, body: ok(pending, 'A confirmation link has been sent to new.host@example.test. The email will change once it is confirmed.') })
+    api.add({ method: 'GET', match: '/common/refresh-user', body: ok(pending) })
+    api.add({ method: 'POST', match: '/common/email-change/cancel', body: ok({ pending_email: null }, 'The pending email change has been cancelled.') })
+
+    await page.getByPlaceholder('Enter your email').fill('new.host@example.test')
+    await saveProfile(page).click()
+
+    const call = await expectCall(api, 'POST', PROFILE)
+    expect(call.json).toMatchObject({ email: 'new.host@example.test' })
+    await expect(page.getByText('A confirmation link has been sent to new.host@example.test.', { exact: false }).first()).toBeVisible()
+    await expect(page.getByText(/Waiting for confirmation from/)).toContainText('new.host@example.test')
+
+    await page.getByRole('button', { name: 'Cancel change' }).click()
+    expect((await expectCall(api, 'POST', '/common/email-change/cancel')).json).toMatchObject({ user_id: 1 })
+    await expect(page.getByText(/Waiting for confirmation from/)).toHaveCount(0)
+  })
+
   test('server validation errors are shown under the fields', async ({ page }) => {
     const api = await open(page)
     api.add({ method: 'POST', match: PROFILE, status: 422, body: failure('Invalid', { phone_number: 'The phone number is not valid.' }) })

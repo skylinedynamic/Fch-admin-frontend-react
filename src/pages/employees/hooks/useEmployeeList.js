@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchEmployees, fetchDepartmentStatus, deleteEmployees } from '../../../modules/employee';
 import { toast } from 'react-toastify';
 
 export function useEmployeeList() {
+    // ?department=<name> (from "View Employees" on a department that cannot be
+    // deleted) opens the list filtered to that department.
+    const [searchParams] = useSearchParams();
+    const linkedDepartment = searchParams.get('department') || '';
+
     // State
     const [filters, setFilters] = useState({});
     const [globalFilterValue, setGlobalFilterValue] = useState('');
     const [selection, setSelection] = useState([]);
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [deptFilter, setDeptFilter] = useState('');
+    const [deptFilter, setDeptFilter] = useState(linkedDepartment);
     const [statusFilter, setStatusFilter] = useState('');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
@@ -19,7 +25,7 @@ export function useEmployeeList() {
     const [totalRecords, setTotalRecords] = useState(0);
     const [appliedFilters, setAppliedFilters] = useState({});
     const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('');
-    const [appliedDeptFilter, setAppliedDeptFilter] = useState('');
+    const [appliedDeptFilter, setAppliedDeptFilter] = useState(linkedDepartment);
     const [appliedStatusFilter, setAppliedStatusFilter] = useState('');
     const [departments, setDepartments] = useState([]);
     const [deleteRows, setDeleteRows] = useState([]);

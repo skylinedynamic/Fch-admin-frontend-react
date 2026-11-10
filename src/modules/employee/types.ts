@@ -79,3 +79,10 @@ export type EmployeeListResponse = {
     links?: Array<{ url: string | null; label: string; page?: number | null; active: boolean }>
   }
 }
+/** A department from POST /common/departments/fetch-departments. */
+export type Department = {
+  id: number
+  name: string
+  /** How many of the partner's employees are in it; a department in use cannot be deleted. */
+  employees_count?: number
+}

@@ -4,7 +4,8 @@ import { usePermissions } from "../../lib/auth/usePermissions";
 import { useAuthStore } from "../../store/auth/authStore";
 import { useConfigStore } from "../../store/config";
 import faviconImg from "../../../assets/images/Favicon.png";
-import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from "../../config/appConfig";
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER, APP_CONFIG } from "../../config/appConfig";
+import BrandLogo from "./BrandLogo";
 import { NOTIFICATIONS_ROUTE } from "../../config/notifications";
 import { useUnreadNotificationCount, formatUnreadCount } from "../../modules/notifications";
 
@@ -295,6 +296,10 @@ export default function Sidebar() {
   const dynamicLogoWide = settings?.logo_sidebar_full_url;
   const dynamicLogo = settings?.logo_document_full_url;
   const dynamicFavicon = settings?.favicon_full_url;
+  // Shown in place of a logo that can't be loaded (BUG-170); the collapsed
+  // sidebar has room for its first letter only.
+  const siteName = settings?.site_name || APP_CONFIG.name;
+  const siteInitial = siteName ? siteName.trim().charAt(0).toUpperCase() : '';
 
   // Auto-expand menu on route change
   useEffect(() => {
@@ -461,10 +466,10 @@ export default function Sidebar() {
           onClick={closeSidebarOnMobile}
         >
           <span className="logo-sm">
-            <img src={dynamicFavicon} alt="" className="sidebar-logo-sm" />
+            <BrandLogo src={dynamicFavicon} fallbackText={siteInitial} alt={siteName} className="sidebar-logo-sm" />
           </span>
           <span className="logo-lg">
-            <img src={dynamicLogo} alt="" className="sidebar-logo-lg" />
+            <BrandLogo src={dynamicLogo} fallbackText={siteName} className="sidebar-logo-lg" />
           </span>
         </Link>
         <Link
@@ -473,10 +478,10 @@ export default function Sidebar() {
           onClick={closeSidebarOnMobile}
         >
           <span className="logo-sm">
-            <img src={dynamicFavicon} alt="" className="sidebar-logo-sm" />
+            <BrandLogo src={dynamicFavicon} fallbackText={siteInitial} alt={siteName} className="sidebar-logo-sm" />
           </span>
           <span className="logo-lg">
-            <img src={dynamicLogoWide} alt="" className="sidebar-logo-lg" />
+            <BrandLogo src={dynamicLogoWide} fallbackText={siteName} className="sidebar-logo-lg" />
           </span>
         </Link>
         <button
