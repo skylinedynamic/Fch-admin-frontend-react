@@ -13,7 +13,7 @@ import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import { usePermissions } from '../../lib/auth/usePermissions';
-import { REMOVE_RECAPTCHA_SECRET_FIELD, SETTINGS_SECRET_MASK } from '../../config/appConfig';
+import { REMOVE_RECAPTCHA_SECRET_FIELD, SECRET_DISPLAY_MASK, secretForSave } from '../../config/appConfig';
 
 const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
@@ -34,8 +34,8 @@ export default function SiteSettings() {
     const [showFileManager, setShowFileManager] = useState<'primary' | 'secondary' | 'favicon' | false>(false);
 
     // The API reports the reCAPTCHA secret only as set (a mask), never the
-    // secret itself. The field shows that mask, so a saved secret looks saved;
-    // the mask sent back keeps it, a new value replaces it, and clearing the
+    // secret itself. The field shows 16 dots, so a saved secret looks saved;
+    // left alone the API's mask goes back and keeps it, a new value replaces it, and clearing the
     // field removes it (a blank secret alone means "keep" to the API).
     const [recaptchaSecretSaved, setRecaptchaSecretSaved] = useState(false);
 
@@ -48,7 +48,7 @@ export default function SiteSettings() {
             setFormData(prev => ({
                 ...prev,
                 ...s,
-                recaptcha_secret_key: savedSecret ? SETTINGS_SECRET_MASK : '',
+                recaptcha_secret_key: savedSecret ? SECRET_DISPLAY_MASK : '',
                 // A US number, shown (XXX) XXX-XXXX however it was stored.
                 ...(s.phone_number ? { phone_number: formatPhoneNumber(s.phone_number) ?? s.phone_number } : {})
             }));
@@ -242,7 +242,9 @@ export default function SiteSettings() {
         const data = new FormData();
 
         Object.entries(formData).forEach(([key, value]) => {
-            if (!['header_logo', 'footer_logo', 'website_favicon'].includes(key)) {
+            if (key === 'recaptcha_secret_key') {
+                data.append(key, secretForSave(value as string | null | undefined));
+            } else if (!['header_logo', 'footer_logo', 'website_favicon'].includes(key)) {
                 data.append(key, value !== null && value !== undefined ? String(value) : '');
             }
         });
