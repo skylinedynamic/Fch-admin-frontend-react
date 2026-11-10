@@ -19,6 +19,16 @@ const inUseMessage = (dept) => {
         : `Department "${dept.name}" is assigned to ${count} employees and cannot be deleted. Move them to another department first.`;
 };
 
+/**
+ * Typed for the .tsx callers and tests: without it, `departments = []` is
+ * inferred as `never[]` and no real list type-checks.
+ * @param {{
+ *   visible: boolean,
+ *   onHide: () => void,
+ *   onSuccess: () => void,
+ *   departments?: import('../../../modules/employee/types').Department[],
+ * }} props
+ */
 export default function DepartmentModal({ visible, onHide, onSuccess, departments = [] }) {
     const [departmentName, setDepartmentName] = useState('');
     const [nameError, setNameError] = useState('');
