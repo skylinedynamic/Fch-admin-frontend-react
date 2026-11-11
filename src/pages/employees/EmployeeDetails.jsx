@@ -74,6 +74,8 @@ export default function EmployeeDetails() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0, invoiceId: null, userId: null, entityId: null, entityType: null });
   const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
+  // The employee created in a seat-purchase Save, opened once the payment window is done.
+  const [createdEmployeeId, setCreatedEmployeeId] = useState(null);
 
   // Location states
   const [countries] = useState(
@@ -540,13 +542,22 @@ export default function EmployeeDetails() {
     setEmployee(prev => ({ ...prev, create_account: true }));
   };
 
+  // The employee already exists when the payment window opens, so whether the
+  // seat is paid now or the window is closed, leave the create form: reloading
+  // it showed an empty form as if nothing had been saved (BUG-165).
+  const openCreatedEmployee = () => {
+    navigate(createdEmployeeId ? `/employee-details/${createdEmployeeId}` : '/employees');
+  };
+
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false);
     toast.success('Payment completed successfully!');
-    // Delay reload to allow toast to be seen
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+    openCreatedEmployee();
+  };
+
+  const handlePaymentHide = () => {
+    setShowPaymentModal(false);
+    if (!id) openCreatedEmployee();
   };
 
   const applySaveError = (error, fallbackMessage, { toastValidationErrors = false } = {}) => {
@@ -715,6 +726,7 @@ export default function EmployeeDetails() {
           const entityId = res.data?.user?.entity_id;
           const entityType = res.data?.user?.entity_type;
           setLimitData(prev => ({ ...prev, invoiceId, userId, entityId, entityType }));
+          setCreatedEmployeeId(newEmployeeId || null);
           if (invoiceId) {
             try {
               const invoiceRes = await fetchInvoiceDetails(invoiceId);
@@ -968,7 +980,7 @@ export default function EmployeeDetails() {
 
         <InvoicePaymentModal
           show={showPaymentModal}
-          onHide={() => setShowPaymentModal(false)}
+          onHide={handlePaymentHide}
           onSuccess={handlePaymentSuccess}
           invoice={limitData.invoice}
         />

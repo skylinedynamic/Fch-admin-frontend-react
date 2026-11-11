@@ -45,4 +45,19 @@ describe('Sidebar logo', () => {
     expect(container.querySelectorAll('.navbar-brand-box .logo-lg img')).toHaveLength(0)
     expect(screen.getAllByText(SITE).length).toBeGreaterThan(0)
   })
+
+  // BUG-170 retest: the fallbacks sit where the sidebar-text colour rule in
+  // brand-tokens.css (.app-menu .navbar-brand-box .brand-logo-text) reaches them.
+  it('draws the fallback name and the collapsed-menu initial as sidebar text', () => {
+    const { container } = renderWithProviders(<Sidebar />)
+
+    for (const img of Array.from(container.querySelectorAll('.navbar-brand-box img'))) fireEvent.error(img)
+
+    const wide = Array.from(container.querySelectorAll('.app-menu .navbar-brand-box .logo-lg .brand-logo-text'))
+    const mark = Array.from(container.querySelectorAll('.app-menu .navbar-brand-box .logo-sm .brand-logo-text'))
+    expect(wide.length).toBeGreaterThan(0)
+    expect(mark.length).toBeGreaterThan(0)
+    for (const el of wide) expect(el).toHaveTextContent(SITE)
+    for (const el of mark) expect(el).toHaveTextContent('F')
+  })
 })
