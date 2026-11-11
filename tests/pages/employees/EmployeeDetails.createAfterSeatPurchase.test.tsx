@@ -98,4 +98,24 @@ describe('EmployeeDetails › creating an employee with a bought seat', () => {
 
     expect(await screen.findByText('Employee 85 details page')).toBeInTheDocument()
   })
+
+  it('opens the employee list when the create response names no employee', async () => {
+    server.use(
+      http.post('*/common/employees', () =>
+        HttpResponse.json({ status: true, message: 'Employee created successfully', data: { user: { id: 300, invoice_id: 77 } } })
+      )
+    )
+    renderWithProviders(
+      <Routes>
+        <Route path="/employees/create" element={<EmployeeDetails />} />
+        <Route path="/employees" element={<div>Employee list page</div>} />
+      </Routes>,
+      { route: '/employees/create' }
+    )
+    const user = await buySeatAndSave()
+
+    await user.click(screen.getByRole('button', { name: 'Pay invoice' }))
+
+    expect(await screen.findByText('Employee list page')).toBeInTheDocument()
+  })
 })

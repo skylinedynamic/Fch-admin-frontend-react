@@ -555,9 +555,10 @@ export default function EmployeeDetails() {
     openCreatedEmployee();
   };
 
+  // The payment window only opens after a create (the seat-purchase Save).
   const handlePaymentHide = () => {
     setShowPaymentModal(false);
-    if (!id) openCreatedEmployee();
+    openCreatedEmployee();
   };
 
   const applySaveError = (error, fallbackMessage, { toastValidationErrors = false } = {}) => {
