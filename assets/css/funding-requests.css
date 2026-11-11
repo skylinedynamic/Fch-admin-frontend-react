@@ -85,7 +85,9 @@
 .fr-style-210d4313 { width: 44px; height: 44px; }
 .fr-style-c5a99bb { transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 0.5s ease; }
 .fr-style-4f21c796 { background: #fff; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 500; padding: 5px 12px; }
-.fr-style-5dc02308 { width: 65px; }
+/* Lender Information rows-per-page: room for "25"/"50" beside the arrow
+   (at 65px the arrow covered the number). */
+.fr-style-5dc02308 { width: 80px; }
 .fr-style-4ac477ea { table-layout: fixed; }
 .fr-style-55c8853f { width: 30%; }
 .fr-style-55d69cc0 { width: 20%; }

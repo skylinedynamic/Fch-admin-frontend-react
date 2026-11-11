@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, ModalBody } from 'reactstrap';
 import { Dropdown } from 'primereact/dropdown';
 import { formatCurrency } from '../../../utils/helper';
 import { filterLenders } from './lenderFilter';
+import { LENDER_PAGE_SIZES, paginate } from './lenderPagination';
 import { lenderDisplayName } from '../../../modules/lender/displayName';
 import '../../../../assets/css/funding-requests.css';
 
@@ -79,10 +80,44 @@ export default function LenderInformationCard({
         lenderName: lenderNameFilter,
     });
 
+    // The table shows one page of the filtered lenders.
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(LENDER_PAGE_SIZES[0]);
+    const shown = paginate(filteredLenders, page, perPage);
+    const pageNumbers = Array.from({ length: shown.pageCount }, (_, i) => i + 1);
+
+    // Page 2 can hold far fewer rows than page 1, so the table shrinks under
+    // the reader; after they change page or page size, bring the whole card -
+    // title, rows and pager - back into view.
+    const cardElement = useRef<HTMLDivElement | null>(null);
+    const setCardRef = (el: HTMLDivElement | null) => {
+        cardElement.current = el;
+        if (typeof cardRef === 'function') cardRef(el);
+        else if (cardRef) (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    };
+    const [pagerMoves, setPagerMoves] = useState(0);
+    useEffect(() => {
+        if (pagerMoves > 0) cardElement.current?.scrollIntoView?.({ block: 'nearest' });
+    }, [pagerMoves]);
+    const goToPage = (n: number) => {
+        setPage(n);
+        setPagerMoves((m) => m + 1);
+    };
+
+    // A new search or filter starts again from page 1.
+    const filterChanged = <T,>(set: (value: T) => void) => (value: T) => {
+        set(value);
+        setPage(1);
+    };
+    const changeSearch = filterChanged(setLenderSearch);
+    const changeCategory = filterChanged(setLenderCategoryFilter);
+    const changeLenderName = filterChanged(setLenderNameFilter);
+
     const clearFilters = () => {
         setLenderSearch('');
         setLenderCategoryFilter('');
         setLenderNameFilter('');
+        setPage(1);
     };
 
     // The dialog keeps its button while it fades out after an assignment, when
@@ -188,7 +223,7 @@ export default function LenderInformationCard({
 
     return (
         <>
-            <div ref={cardRef} className="card shadow-sm border-0 mb-4 rounded-3">
+            <div ref={setCardRef} className="card shadow-sm border-0 mb-4 rounded-3">
                 <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-2 d-block">
                     <div className="d-flex align-items-center justify-content-between mb-3 border-bottom">
                         <h5 className="card-title mb-0 fs-16 fw-bold text-dark">Lender Information</h5>
@@ -210,13 +245,13 @@ export default function LenderInformationCard({
                         <div className="row g-3 mb-3 align-items-end">
                             <div className="col-md-3">
                                 <div className="search-box">
-                                    <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." value={lenderSearch} onChange={(e) => setLenderSearch(e.target.value)} />
+                                    <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." value={lenderSearch} onChange={(e) => changeSearch(e.target.value)} />
                                     <i className="ri-search-line search-icon"></i>
                                 </div>
                             </div>
                             <div className="col-md-3">
                                 <Dropdown value={lenderCategoryFilter} options={[{ label: 'All Categories', value: '' }, ...uniqueCategories]} optionLabel="label" optionValue="value" onChange={(e) => {
-                                    setLenderCategoryFilter(e.value);
+                                    changeCategory(e.value);
                                     // A lender not in the new category would show nothing.
                                     if (e.value && lenderNameFilter && !lenders.some((l) => lenderDisplayName(l) === lenderNameFilter && l.product_category === e.value)) {
                                         setLenderNameFilter('');
@@ -224,7 +259,7 @@ export default function LenderInformationCard({
                                 }} placeholder="All Categories" className="w-100" />
                             </div>
                             <div className="col-md-3">
-                                <Dropdown value={lenderNameFilter} options={[{ label: 'All Lenders', value: '' }, ...uniqueLenderNames]} optionLabel="label" optionValue="value" onChange={(e) => setLenderNameFilter(e.value)} placeholder="All Lenders" className="w-100" />
+                                <Dropdown value={lenderNameFilter} options={[{ label: 'All Lenders', value: '' }, ...uniqueLenderNames]} optionLabel="label" optionValue="value" onChange={(e) => changeLenderName(e.value)} placeholder="All Lenders" className="w-100" />
                             </div>
                             <div className="col-md-3">
                                 <div className="d-flex gap-2">
@@ -263,21 +298,23 @@ export default function LenderInformationCard({
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredLenders.length > 0 ? (
-                                    filteredLenders.map((lender, idx) => {
+                                {shown.rows.length > 0 ? (
+                                    shown.rows.map((lender, idx) => {
                                         const radius = 16;
                                         const circumference = 2 * Math.PI * radius;
                                         const strokeDashoffset = circumference - (lender.score / 100) * circumference;
 
                                         const isAssigned = assignedLenderIds.includes(lender.id);
+                                        // The list's first lender, not the first of each page.
+                                        const pulses = highlightFirstRow && shown.page === 1 && idx === 0;
 
                                         return (
                                             <tr
                                                 key={lender.id || idx}
-                                                className={highlightFirstRow && idx === 0 ? 'row-pulse-animation' : ''}
+                                                className={pulses ? 'row-pulse-animation' : ''}
                                                 style={{ borderBottom: '1px solid #e2e8f0', background: isAssigned ? '#f1f5f9' : '#fff' }}
-                                                onMouseEnter={e => !isAssigned && (e.currentTarget.style.background = highlightFirstRow && idx === 0 ? '' : '#f8fafc')}
-                                                onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = highlightFirstRow && idx === 0 ? '' : '#fff')}
+                                                onMouseEnter={e => !isAssigned && (e.currentTarget.style.background = pulses ? '' : '#f8fafc')}
+                                                onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = pulses ? '' : '#fff')}
                                             >
 
                                                 {/* Lender Name */}
@@ -374,20 +411,52 @@ export default function LenderInformationCard({
                 <div className="card-footer bg-white border-top p-3">
                     <div className="d-flex align-items-center justify-content-between">
                         <div className="text-muted fs-13">
-                            Showing <span className="fw-semibold text-dark">{filteredLenders.length > 0 ? 1 : 0}</span> to <span className="fw-semibold text-dark">{filteredLenders.length}</span> of <span className="fw-semibold text-dark">{lenders.length}</span> lenders
+                            Showing <span className="fw-semibold text-dark">{shown.from}</span> to <span className="fw-semibold text-dark">{shown.to}</span> of <span className="fw-semibold text-dark">{shown.total}</span> lenders
                         </div>
                         <div className="d-flex align-items-center gap-3">
                             <ul className="pagination pagination-sm mb-0">
-                                <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-double-line"></i></a></li>
-                                <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-s-line"></i></a></li>
-                                <li className="page-item active"><a className="page-link rounded bg-dark border-dark text-white fw-medium" href="#!">1</a></li>
-                                <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-s-line"></i></a></li>
-                                <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-double-line"></i></a></li>
+                                {[
+                                    { label: 'First page', icon: 'ri-arrow-left-double-line', to: 1, off: shown.page === 1 },
+                                    { label: 'Previous page', icon: 'ri-arrow-left-s-line', to: shown.page - 1, off: shown.page === 1 },
+                                ].map(({ label, icon, to, off }) => (
+                                    <li key={label} className={`page-item${off ? ' disabled' : ''}`}>
+                                        <button type="button" className={`page-link border-0 ${off ? 'text-muted' : 'text-dark'}`} aria-label={label} disabled={off} onClick={() => goToPage(to)}><i className={icon}></i></button>
+                                    </li>
+                                ))}
+                                {pageNumbers.map((n) => (
+                                    <li key={n} className={`page-item${n === shown.page ? ' active' : ''}`}>
+                                        <button
+                                            type="button"
+                                            className={n === shown.page ? 'page-link rounded bg-dark border-dark text-white fw-medium' : 'page-link border-0 text-dark'}
+                                            aria-label={`Page ${n}`}
+                                            aria-current={n === shown.page ? 'page' : undefined}
+                                            onClick={() => goToPage(n)}
+                                        >
+                                            {n}
+                                        </button>
+                                    </li>
+                                ))}
+                                {[
+                                    { label: 'Next page', icon: 'ri-arrow-right-s-line', to: shown.page + 1, off: shown.page === shown.pageCount },
+                                    { label: 'Last page', icon: 'ri-arrow-right-double-line', to: shown.pageCount, off: shown.page === shown.pageCount },
+                                ].map(({ label, icon, to, off }) => (
+                                    <li key={label} className={`page-item${off ? ' disabled' : ''}`}>
+                                        <button type="button" className={`page-link border-0 ${off ? 'text-muted' : 'text-dark'}`} aria-label={label} disabled={off} onClick={() => goToPage(to)}><i className={icon}></i></button>
+                                    </li>
+                                ))}
                             </ul>
-                            <select className="form-select form-select-sm border-light bg-light fw-medium text-dark fr-style-5dc02308">
-                                <option value="10">10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
+                            <select
+                                className="form-select form-select-sm border-light bg-light fw-medium text-dark fr-style-5dc02308"
+                                aria-label="Lenders per page"
+                                value={perPage}
+                                onChange={(e) => {
+                                    setPerPage(Number(e.target.value));
+                                    goToPage(1);
+                                }}
+                            >
+                                {LENDER_PAGE_SIZES.map((size) => (
+                                    <option key={size} value={size}>{size}</option>
+                                ))}
                             </select>
                         </div>
                     </div>

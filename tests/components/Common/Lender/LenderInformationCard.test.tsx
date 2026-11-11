@@ -50,12 +50,13 @@ describe('LenderInformationCard', () => {
     await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'line credit')
     expect(screen.queryByText('Fundbox Financing')).not.toBeInTheDocument()
     expect(screen.getByText('LendingClub')).toBeInTheDocument()
-    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 2 lenders')
+    // "of" counts the lenders the filters leave - the table pages through those.
+    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 1 lenders')
 
     await userEvent.clear(screen.getByPlaceholderText('Search lenders...'))
     await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'term load')
     expect(screen.getByText('No lenders match these filters.')).toBeInTheDocument()
-    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 0 to 0 of 2 lenders')
+    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 0 to 0 of 0 lenders')
 
     await userEvent.click(screen.getByRole('button', { name: /clear/i }))
     expect(screen.getByText('Fundbox Financing')).toBeInTheDocument()
@@ -87,7 +88,7 @@ describe('LenderInformationCard', () => {
     await pick('All Categories', 'Business Line of Credit')
     expect(table().queryByText('Fundbox Financing')).not.toBeInTheDocument()
     expect(table().getByText('LendingClub')).toBeInTheDocument()
-    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 2 lenders')
+    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 1 lenders')
   })
 
   it('keeps the search when Filters or Enter is pressed - filtering is already live', async () => {
@@ -218,6 +219,127 @@ describe('LenderInformationCard', () => {
     renderWithProviders(<LenderInformationCard lenders={lenders} assignedLenderIds={[]} subjectLabel="funding application" onAssign={vi.fn()} highlightFirstRow />)
 
     expect(screen.getAllByRole('row')[2]).toHaveClass('row-pulse-animation')
+  })
+
+  /**
+   * Defect (found 2026-11-11, funding application 115 / funding request 76):
+   * the footer said 10 per page with page 1 of 1, but the table listed all 12
+   * matched lenders - the pagination was static markup (links to "#!"), so
+   * nothing paged and there was no page 2.
+   */
+  describe('pagination', () => {
+    const twelve = Array.from({ length: 12 }, (_, i) =>
+      lender({ id: i + 1, name: `Lender ${String(i + 1).padStart(2, '0')}`, phone: null, email: null })
+    )
+    const bodyRows = () => within(screen.getByRole('table')).getAllByRole('row').slice(2)
+    const showing = () => screen.getByText(/Showing/)
+    const nav = (label: string) => screen.getByRole('button', { name: label })
+    const mount = (props: Partial<React.ComponentProps<typeof LenderInformationCard>> = {}) =>
+      renderWithProviders(<LenderInformationCard lenders={twelve} assignedLenderIds={[]} subjectLabel="funding application" onAssign={vi.fn()} {...props} />)
+
+    it('shows ten lenders on page 1 and the other two on page 2', async () => {
+      mount()
+
+      expect(bodyRows()).toHaveLength(10)
+      expect(showing()).toHaveTextContent('Showing 1 to 10 of 12 lenders')
+      expect(screen.getByText('Lender 10')).toBeInTheDocument()
+      expect(screen.queryByText('Lender 11')).not.toBeInTheDocument()
+
+      await userEvent.click(nav('Page 2'))
+
+      expect(bodyRows()).toHaveLength(2)
+      expect(showing()).toHaveTextContent('Showing 11 to 12 of 12 lenders')
+      expect(screen.getByText('Lender 11')).toBeInTheDocument()
+      expect(screen.getByText('Lender 12')).toBeInTheDocument()
+      expect(screen.queryByText('Lender 01')).not.toBeInTheDocument()
+    })
+
+    it('moves with next, previous, last and first, each off at its end', async () => {
+      mount()
+
+      expect(nav('First page')).toBeDisabled()
+      expect(nav('Previous page')).toBeDisabled()
+
+      await userEvent.click(nav('Next page'))
+      expect(showing()).toHaveTextContent('Showing 11 to 12 of 12 lenders')
+      expect(nav('Next page')).toBeDisabled()
+      expect(nav('Last page')).toBeDisabled()
+
+      await userEvent.click(nav('Previous page'))
+      expect(showing()).toHaveTextContent('Showing 1 to 10 of 12 lenders')
+
+      await userEvent.click(nav('Last page'))
+      expect(showing()).toHaveTextContent('Showing 11 to 12 of 12 lenders')
+
+      await userEvent.click(nav('First page'))
+      expect(showing()).toHaveTextContent('Showing 1 to 10 of 12 lenders')
+      expect(nav('Page 1')).toHaveAttribute('aria-current', 'page')
+    })
+
+    it('shows them all on one page at 25 per page', async () => {
+      mount()
+      await userEvent.click(nav('Page 2'))
+
+      await userEvent.selectOptions(screen.getByRole('combobox', { name: /lenders per page/i }), '25')
+
+      expect(bodyRows()).toHaveLength(12)
+      expect(showing()).toHaveTextContent('Showing 1 to 12 of 12 lenders')
+      expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+    })
+
+    it('goes back to page 1 when the search changes', async () => {
+      mount()
+      await userEvent.click(nav('Page 2'))
+
+      // Lender 01 is on page 1; from page 2 the search must show page 1.
+      await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'Lender 01')
+
+      expect(showing()).toHaveTextContent('Showing 1 to 1 of 1 lenders')
+      expect(screen.getByText('Lender 01')).toBeInTheDocument()
+    })
+
+    /**
+     * Defect (found 2026-11-11): page 2 holds 2 lenders where page 1 held 10,
+     * so the table shrank and the page below moved up under the reader. After
+     * a page change the whole card - title, rows and pager - is brought into view.
+     */
+    it('brings the whole Lender Information card into view when the page or page size changes, not on first load', async () => {
+      const scrolled = vi.fn(function (this: Element) { return this })
+      const original = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = scrolled
+      try {
+        mount()
+        expect(scrolled).not.toHaveBeenCalled()
+
+        await userEvent.click(nav('Page 2'))
+        expect(scrolled).toHaveBeenCalledTimes(1)
+        expect(scrolled).toHaveBeenLastCalledWith({ block: 'nearest' })
+        const target = scrolled.mock.results[0].value as HTMLElement
+        expect(target).toHaveClass('card')
+        expect(target).toContainElement(screen.getByText('Lender Information'))
+        expect(target).toContainElement(screen.getByText(/Showing/))
+
+        await userEvent.selectOptions(screen.getByRole('combobox', { name: /lenders per page/i }), '25')
+        expect(scrolled).toHaveBeenCalledTimes(2)
+      } finally {
+        Element.prototype.scrollIntoView = original
+      }
+    })
+
+    it('pulses only the first lender of the list, not the first of page 2', async () => {
+      mount({ highlightFirstRow: true })
+      expect(bodyRows()[0]).toHaveClass('row-pulse-animation')
+
+      await userEvent.click(nav('Page 2'))
+
+      expect(bodyRows()[0]).not.toHaveClass('row-pulse-animation')
+    })
+
+    it('does not navigate the browser (no "#!" links)', () => {
+      const { container } = mount()
+
+      expect(container.querySelectorAll('a[href="#!"]')).toHaveLength(0)
+    })
   })
 
   describe('once the lender is fixed', () => {
