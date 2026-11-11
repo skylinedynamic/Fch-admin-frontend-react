@@ -61,10 +61,35 @@ test.describe('My profile', () => {
     expect(call.json).toMatchObject({ email: 'new.host@example.test' })
     await expect(page.getByText('A confirmation link has been sent to new.host@example.test.', { exact: false }).first()).toBeVisible()
     await expect(page.getByText(/Waiting for confirmation from/)).toContainText('new.host@example.test')
+    // BUG-203: the field shows the pending email; the notice names the one still in use.
+    await expect(page.getByText(/Waiting for confirmation from/)).toContainText('Sign-in stays host@example.test')
+    await expect(page.getByPlaceholder('Enter your email')).toHaveValue('new.host@example.test')
 
     await page.getByRole('button', { name: 'Cancel change' }).click()
     expect((await expectCall(api, 'POST', '/common/email-change/cancel')).json).toMatchObject({ user_id: 1 })
     await expect(page.getByText(/Waiting for confirmation from/)).toHaveCount(0)
+    await expect(page.getByPlaceholder('Enter your email')).toHaveValue('host@example.test')
+  })
+
+  // BUG-203: with a change waiting, typing the current email back in withdraws it.
+  test('typing the current email back in withdraws a waiting change', async ({ page }) => {
+    const waiting = { ...USER, id: 1, pending_email: 'new.host@example.test' }
+    await seedSession(page, waiting)
+    const api = await mockApi(page)
+    const cleared = { ...USER, id: 1, pending_email: null }
+    api.add({ method: 'POST', match: PROFILE, body: ok(cleared, 'The pending email change has been cancelled.') })
+    api.add({ method: 'GET', match: '/common/refresh-user', body: ok(cleared) })
+    await page.goto('/profile')
+    const email = page.getByPlaceholder('Enter your email')
+    await expect(email).toHaveValue('new.host@example.test')
+
+    await email.fill('host@example.test')
+    await saveProfile(page).click()
+
+    expect((await expectCall(api, 'POST', PROFILE)).json).toMatchObject({ email: 'host@example.test' })
+    await expect(page.getByText('The pending email change has been cancelled.').first()).toBeVisible()
+    await expect(page.getByText(/Waiting for confirmation from/)).toHaveCount(0)
+    await expect(email).toHaveValue('host@example.test')
   })
 
   test('server validation errors are shown under the fields', async ({ page }) => {

@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/auth';
 import { refreshUser } from '../../lib/auth/authApi';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
+import { emailFieldValue } from '../../modules/account';
 import { apiErrorMessage } from '../../utils/formUtils';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_EMPLOYEE } from '../../config/appConfig';
@@ -71,7 +72,8 @@ const Profile = () => {
                 first_name: firstName,
                 last_name: lastName,
                 phone_number: formatPhoneNumber(user.phone_number as string | null | undefined) || '',
-                email: user.email || '',
+                // The pending email while a change waits (BUG-203).
+                email: emailFieldValue(user.email, user.pending_email),
                 image: user.image || ''
             });
             setPendingEmail(user.pending_email || null);
@@ -389,7 +391,7 @@ const Profile = () => {
                                                     </div>
                                                     <div className="col-md-6">
                                                         <label className="form-label fw-semibold">Email Address</label>
-                                                        <PendingEmailNotice userId={user?.id} pendingEmail={pendingEmail} onChange={handlePendingEmailChange} />
+                                                        <PendingEmailNotice userId={user?.id} pendingEmail={pendingEmail} currentEmail={user?.email} onChange={handlePendingEmailChange} />
                                                         <input
                                                             type="email"
                                                             className={`form-control ${profileErrors.email ? 'is-invalid' : ''}`}

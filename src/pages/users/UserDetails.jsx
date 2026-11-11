@@ -21,6 +21,7 @@ import ErrorPage from '../Utility/ErrorPage';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
 import { scrollToFirstError } from '../../utils/formUtils';
+import { emailFieldValue } from '../../modules/account';
 
 /**
  * Adding a user (/users/create) and viewing/editing one (/user-details/:id).
@@ -59,6 +60,8 @@ export default function UserDetails() {
   const [roles, setRoles] = useState([]);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(null);
+  // The email still used to sign in; the field shows the pending one meanwhile (BUG-203).
+  const [signInEmail, setSignInEmail] = useState('');
   // 404/403 on the record: another partner's (or the host's) user (BUG-164).
   const [notFound, setNotFound] = useState(false);
 
@@ -89,12 +92,13 @@ export default function UserDetails() {
         setValues((prev) => ({
           ...prev,
           name: data.name || '',
-          email: data.email || '',
+          email: emailFieldValue(data.email, data.pending_email),
           phone_number: data.phone_number || '',
           role_id: data.role_id != null ? String(data.role_id) : '',
           status: data.status || ''
         }));
         setPendingEmail(data.pending_email || null);
+        setSignInEmail(data.email || '');
       })
       .catch((err) => {
         if ([403, 404].includes(err?.response?.status)) setNotFound(true);
@@ -297,10 +301,12 @@ export default function UserDetails() {
 
       toast.success('User updated successfully');
       setShowPasswordFields(false);
-      // A new email isn't applied until it's confirmed, so show the one that
-      // is still in effect alongside the pending one.
-      setValues((prev) => ({ ...prev, email: updated?.email ?? prev.email, new_password: '', confirm_password: '' }));
+      // A new email isn't applied until it's confirmed: the field shows the
+      // pending one and the notice the one still in effect (BUG-203).
+      const current = updated?.email ?? signInEmail;
+      setValues((prev) => ({ ...prev, email: emailFieldValue(current, updated?.pending_email), new_password: '', confirm_password: '' }));
       setPendingEmail(updated?.pending_email || null);
+      setSignInEmail(current);
     } catch (error) {
       applySaveError(error, 'Failed to update user');
     } finally {
@@ -408,7 +414,12 @@ export default function UserDetails() {
                                 <PendingEmailNotice
                                   userId={id}
                                   pendingEmail={pendingEmail}
-                                  onChange={setPendingEmail}
+                                  currentEmail={signInEmail}
+                                  onChange={(value) => {
+                                    setPendingEmail(value);
+                                    // Cancelled: back to the email still in use.
+                                    if (!value) setValues((prev) => ({ ...prev, email: signInEmail }));
+                                  }}
                                   canManage={canUpdate}
                                 />
                               )}

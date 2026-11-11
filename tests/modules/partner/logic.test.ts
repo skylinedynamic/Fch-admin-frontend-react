@@ -87,6 +87,22 @@ describe('buildPartnerFormDataPayload - clearing optional fields', () => {
   })
 })
 
+// BUG-203: the form keeps the login's email state beside the field - read-only,
+// never sent back. The field itself carries the pending email while one waits.
+describe('buildPartnerFormDataPayload - sign-in email state', () => {
+  it('sends the field email but none of the login state kept beside it', () => {
+    const payload = buildPartnerFormDataPayload(
+      { full_name: 'Acme Owner', email: 'new@example.test', pending_email: 'new@example.test', signin_email: 'old@example.test', login_user_id: 41 },
+      83
+    )
+
+    expect(payload.get('email')).toBe('new@example.test')
+    expect(payload.has('pending_email')).toBe(false)
+    expect(payload.has('signin_email')).toBe(false)
+    expect(payload.has('login_user_id')).toBe(false)
+  })
+})
+
 describe('partnerPortalBaseHost', () => {
   it.each([
     ['https://fourcornerfunding.com/', 'fourcornerfunding.com'],

@@ -65,9 +65,49 @@ describe('Profile - changing the sign-in email', () => {
 
     await waitFor(() => expect(update.bodies[0]).toMatchObject({ email: 'new.host@example.test' }))
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith(message))
-    expect(await screen.findByText(/Waiting for confirmation from/)).toHaveTextContent('new.host@example.test')
-    // The sign-in email stays the current one until the link is followed.
-    await waitFor(() => expect(screen.getByPlaceholderText('Enter your email')).toHaveValue('host@example.test'))
+    const notice = await screen.findByText(/Waiting for confirmation from/)
+    expect(notice).toHaveTextContent('new.host@example.test')
+    // The sign-in email stays the current one until the link is followed; the
+    // notice names it and the field shows the pending one (BUG-203).
+    expect(notice).toHaveTextContent('Sign-in stays host@example.test')
+    await waitFor(() => expect(screen.getByPlaceholderText('Enter your email')).toHaveValue('new.host@example.test'))
+  })
+
+  // BUG-203: while a change waits the field shows the pending email.
+  it('saving only the name while a change waits sends the pending email back, so it stays', async () => {
+    const user = userEvent.setup()
+    signIn({ id: 1, name: 'Host Admin Senior', email: 'host@example.test', pending_email: 'new.host@example.test' })
+    allowBackgroundCalls()
+    const update = api('post', PROFILE, { status: true, message: 'Profile updated successfully.', data: { id: 1, email: 'host@example.test', pending_email: 'new.host@example.test' } })
+    const { container } = renderPage(<Profile />, { path: '/profile' })
+
+    expect(await screen.findByPlaceholderText('Enter your email')).toHaveValue('new.host@example.test')
+    await user.click(submit(container, 'profile-form'))
+
+    await waitFor(() => expect(update.bodies[0]).toMatchObject({ email: 'new.host@example.test' }))
+  })
+
+  it('typing the current email back in withdraws the change', async () => {
+    const user = userEvent.setup()
+    signIn({ id: 1, name: 'Host Admin Senior', email: 'host@example.test', pending_email: 'new.host@example.test' })
+    allowBackgroundCalls()
+    const message = 'The pending email change has been cancelled.'
+    const update = api('post', PROFILE, { status: true, message, data: { id: 1, email: 'host@example.test', pending_email: null } })
+    api('get', '/common/refresh-user', {
+      status: true,
+      data: { id: 1, name: 'Host Admin Senior', email: 'host@example.test', pending_email: null, is_host: 1, entity_type: 'Partner', partner_id: 1, permissions: [] },
+    })
+    const { container } = renderPage(<Profile />, { path: '/profile' })
+
+    const email = await screen.findByPlaceholderText('Enter your email')
+    await user.clear(email)
+    await user.type(email, 'host@example.test')
+    await user.click(submit(container, 'profile-form'))
+
+    await waitFor(() => expect(update.bodies[0]).toMatchObject({ email: 'host@example.test' }))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(message))
+    await waitFor(() => expect(screen.queryByText(/Waiting for confirmation from/)).not.toBeInTheDocument())
+    expect(screen.getByPlaceholderText('Enter your email')).toHaveValue('host@example.test')
   })
 
   // The notice reads the signed-in user kept in the browser; a cancel that
@@ -84,6 +124,8 @@ describe('Profile - changing the sign-in email', () => {
     await waitFor(() => expect(cancel.calls).toBe(1))
     await waitFor(() => expect(useAuthStore.getState().user?.pending_email ?? null).toBeNull())
     expect(useAuthStore.getState().user?.email).toBe('host@example.test')
+    // The field goes back to the email still in use.
+    await waitFor(() => expect(screen.getByPlaceholderText('Enter your email')).toHaveValue('host@example.test'))
 
     // "Reload": the page opens again from the stored user.
     unmount()
@@ -114,6 +156,7 @@ describe('Profile - changing the sign-in email', () => {
     renderPage(<Profile />, { path: '/profile' })
 
     expect(await screen.findByText(/Waiting for confirmation from/)).toHaveTextContent('new.host@example.test')
+    expect(screen.getByPlaceholderText('Enter your email')).toHaveValue('new.host@example.test')
   })
 })
 

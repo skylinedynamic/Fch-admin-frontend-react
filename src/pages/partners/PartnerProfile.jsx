@@ -4,7 +4,7 @@ import "../../../assets/css/dropdown-validation.css";
 import PageHeader from '../common/PageHeader';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, getPartnerStatusAgent, updatePartnerStatusAgent,allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
+import { createPartner, updatePartner, getPartner, getPartnerStatusAgent, updatePartnerStatusAgent, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
@@ -24,6 +24,7 @@ import { useAuthStore } from '../../store/auth/authStore';
 import PartnerConfigurationSection from './components/PartnerConfigurationSection';
 import ErrorPage from '../Utility/ErrorPage';
 import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
+import { emailFieldValue } from '../../modules/acc0ount';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -373,6 +374,10 @@ export default function PartnerProfile() {
             setFormData(prev => ({
                 ...prev,
                 ...data, // Keep all existing backend fields
+                // The pending email while a change waits, and the one still in
+                // use beside it for the notice (BUG-203). Never sent back.
+                email: emailFieldValue(data.email, data.pending_email),
+                signin_email: data.email || '',
                 country: finalCountry,
                 state: finalState,
                 city: cityValue, // Set city (either actual city or "Others")
@@ -952,29 +957,29 @@ export default function PartnerProfile() {
                                         }}
                                     />
                                 ) : (
-                                <PartnerForm
-                                    activeTab={activeTab}
-                                    formData={formData}
-                                    errors={errors}
-                                    profileImage={profileImage}
-                                    handleInputChange={handleInputChange}
-                                    handleAgentChange={handleAgentChange}
-                                    countries={countries}
-                                    states={states}
-                                    cities={cities}
-                                    users={users}
-                                    partnerId={id}
-                                    isHostViewer={Number(authUser?.is_host) == 1}
-                                    loading={isPartnerLoading}
-                                    onSelectedFilesChange={setSelectedDocumentsToAttach}
-                                    documentsReloadKey={documentsReloadKey}
-                                    documentsClearKey={documentsClearKey}
-                                    partnerPlans={partnerPlans}
-                                    onRefresh={handleRefresh}
-                                    setIsSaving={setIsSaving}
-                                    wasFreeTrial={wasFreeTrial}
-                                    onAgreementRequiredChange={handleAgreementRequiredChange}
-                                />
+                                    <PartnerForm
+                                        activeTab={activeTab}
+                                        formData={formData}
+                                        errors={errors}
+                                        profileImage={profileImage}
+                                        handleInputChange={handleInputChange}
+                                        handleAgentChange={handleAgentChange}
+                                        countries={countries}
+                                        states={states}
+                                        cities={cities}
+                                        users={users}
+                                        partnerId={id}
+                                        isHostViewer={Number(authUser?.is_host) == 1}
+                                        loading={isPartnerLoading}
+                                        onSelectedFilesChange={setSelectedDocumentsToAttach}
+                                        documentsReloadKey={documentsReloadKey}
+                                        documentsClearKey={documentsClearKey}
+                                        partnerPlans={partnerPlans}
+                                        onRefresh={handleRefresh}
+                                        setIsSaving={setIsSaving}
+                                        wasFreeTrial={wasFreeTrial}
+                                        onAgreementRequiredChange={handleAgreementRequiredChange}
+                                    />
                                 )}
                             </div>
                         </div>

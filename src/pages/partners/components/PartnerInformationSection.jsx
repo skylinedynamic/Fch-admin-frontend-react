@@ -378,7 +378,12 @@ export default function PartnerInformationSection({
                         <PendingEmailNotice
                             userId={formData.login_user_id}
                             pendingEmail={formData.pending_email}
-                            onChange={(value) => handleInputChange({ target: { name: 'pending_email', value } })}
+                            currentEmail={formData.signin_email}
+                            onChange={(value) => {
+                                handleInputChange({ target: { name: 'pending_email', value } });
+                                // Cancelled: back to the email still in use.
+                                if (!value) handleInputChange({ target: { name: 'email', value: formData.signin_email || '' } });
+                            }}
                         />
                     )}
                     <input

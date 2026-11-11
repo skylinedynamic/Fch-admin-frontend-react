@@ -37,6 +37,7 @@ import { FileManagerModal } from '../../components/FileManagerModal/FileManagerM
 import { scrollToFirstError } from '../../utils/formUtils';
 import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
 import { formDataValue } from '../../modules/employee/logic';
+import { emailFieldValue } from '../../modules/account';
 
 const TAB_PERSONAL = 'personalDetails';
 const TAB_COMMISSIONS = 'commissions';
@@ -65,6 +66,8 @@ export default function EmployeeDetails() {
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [activeTab, setActiveTab] = useState(TAB_PERSONAL);
   const [pendingEmail, setPendingEmail] = useState(null);
+  // The email still used to sign in; the field shows the pending one meanwhile (BUG-203).
+  const [signInEmail, setSignInEmail] = useState('');
 
   // User Limit States
   const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
@@ -237,6 +240,7 @@ export default function EmployeeDetails() {
 
           const normalizedData = {
             ...data,
+            email: emailFieldValue(data.email, data.user?.pending_email),
             country: finalCountry,
             state: finalState,
             city: cityValue,
@@ -252,6 +256,7 @@ export default function EmployeeDetails() {
           };
           setEmployee((prev) => ({ ...prev, ...normalizedData }));
           setPendingEmail(data.user?.pending_email || null);
+          setSignInEmail(data.email || '');
 
           // Set profile image matches partner pattern
           if (data.image) {
@@ -691,12 +696,13 @@ export default function EmployeeDetails() {
         const res = await updateEmployee(id, formData);
         toast.success('Employee updated successfully');
 
-        // With a login, a new email isn't applied until it's confirmed, so show
-        // the one still in effect alongside the pending one.
+        // With a login, a new email isn't applied until it's confirmed: the
+        // field shows the pending one and the notice the one in effect (BUG-203).
         const savedEmail = res?.data?.employee?.email;
         const savedPending = res?.data?.user?.pending_email || null;
         if (savedEmail !== undefined) {
-          setEmployee((prev) => ({ ...prev, email: savedEmail }));
+          setEmployee((prev) => ({ ...prev, email: emailFieldValue(savedEmail, savedPending) }));
+          setSignInEmail(savedEmail || '');
         }
         setPendingEmail(savedPending);
       } else {
@@ -848,7 +854,12 @@ export default function EmployeeDetails() {
                           <PendingEmailNotice
                             userId={employee.user?.id}
                             pendingEmail={pendingEmail}
-                            onChange={setPendingEmail}
+                            currentEmail={signInEmail}
+                            onChange={(value) => {
+                              setPendingEmail(value);
+                              // Cancelled: back to the email still in use.
+                              if (!value) setEmployee((prev) => ({ ...prev, email: signInEmail }));
+                            }}
                             canManage={canUpdate}
                           />
                         }
