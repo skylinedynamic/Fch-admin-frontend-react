@@ -22,6 +22,24 @@ test.describe('Invoices list', () => {
     return api
   }
 
+  // BUG-206: View Details said "Payment Method: Stripe" and showed a Card Holder for an invoice paid by Bank Transfer.
+  test('View Details shows the method the invoice was really paid with', async ({ page }) => {
+    const api = await openList(page)
+    api.add({
+      method: 'GET', match: /\/common\/invoices\/1002$/,
+      body: ok({ ...INVOICES[1], payment_amount: 1200, payment_method: 'Bank Transfer', payment_reference: 'QA-TEST-REF-0320', is_card_payment: false, billed_to: { name: 'Johnathan Smithfield' } }),
+    })
+
+    await page.locator('tr', { hasText: 'INV-1002' }).getByTitle('View Details').click()
+
+    const details = page.locator('.modal.show').getByRole('heading', { name: /Payment Details/ }).locator('..')
+    await expect(details).toContainText('Payment Method: Bank Transfer')
+    await expect(details).toContainText('Reference: QA-TEST-REF-0320')
+    await expect(details).toContainText('Paid By: Johnathan Smithfield')
+    await expect(details).not.toContainText('Card Holder')
+    await expect(details).not.toContainText('Stripe')
+  })
+
   test('lists invoices', async ({ page }) => {
     await openList(page)
     await expect(page.getByText('INV-1002')).toBeVisible()

@@ -15,11 +15,11 @@ test.describe('Upcoming Billings › borrower fee (live)', () => {
     const body = await (await list).json()
 
     const fee = body.data.find((r: { fee_invoice_id?: number }) => r.fee_invoice_id === invoiceId)
-    expect(fee).toMatchObject({ billing_row: 'borrower_fee', subscriber_type: 'Partner', subscriber_name: partner, upcoming_billing_type: 'Borrower Fee', outstanding_amount: 800, status: 'Unpaid' })
+    expect(fee).toMatchObject({ billing_row: 'borrower_fee', subscriber_type: 'Partner', subscriber_name: partner, upcoming_billing_type: 'Client Activation Fee', outstanding_amount: 800, status: 'Unpaid' })
 
     const row = page.locator('tr', { hasText: 'For client: E2E Fee Client' })
     await expect(row).toContainText(partner)
-    await expect(row).toContainText('Borrower Fee')
+    await expect(row).toContainText('Client Activation Fee')
     await row.getByText(partner).click()
     await expect(page).toHaveURL(new RegExp(`/invoices/${invoiceId}$`))
   })

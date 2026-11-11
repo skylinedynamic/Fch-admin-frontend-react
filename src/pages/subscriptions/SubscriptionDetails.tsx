@@ -7,7 +7,7 @@ import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
 import BillingDetailsLoader from '../../components/Loader/BillingDetailsLoader';
 import PageHeader from '../common/PageHeader';
-import { INVOICE_STATUS_COLORS } from '../../config/invoiceConfig';
+import { INVOICE_STATUS_COLORS, INVOICE_TYPE_BORROWER_FEE_LABEL } from '../../config/invoiceConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import { FINAL_INSTALLMENT_NOTE } from '../../config/subscriptionConfig';
 
@@ -361,7 +361,7 @@ export default function SubscriptionDetails() {
 
                                         {subscriptionDetails.borrower_fee_amount && (
                                             <div className="col-sm-6 col-md-3">
-                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Borrower Fee</p>
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">{INVOICE_TYPE_BORROWER_FEE_LABEL}</p>
                                                 <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.borrower_fee_amount}</h5>
                                             </div>
                                         )}

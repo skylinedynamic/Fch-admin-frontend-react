@@ -218,15 +218,15 @@ describe('MySubscription - layout and payment history', () => {
   })
 
   // Recent Payments History holds the partner's plan, seat and borrower fee
-  // payments, each with its invoice type.
+  // payments, each with the invoice type name the API sends.
   it('names the invoice type of each payment', async () => {
     mount({
       subscription: subscription(),
       partner: { id: 5 },
       recent_payments: [
-        { id: 1, invoice_no: 'INV-1', invoice_type: 'enrollment', amount: '$499.00', status: 'SUCCEEDED', created_at: '2026-01-01' },
-        { id: 2, invoice_no: 'INV-2', invoice_type: 'user_seat', amount: '$49.00', status: 'SUCCEEDED', created_at: '2026-02-01' },
-        { id: 3, invoice_no: 'INV-3', invoice_type: 'borrower_fee', amount: '$800.00', status: 'SUCCEEDED', created_at: '2026-03-01' },
+        { id: 1, invoice_no: 'INV-1', invoice_type: 'enrollment', invoice_type_label: 'Enrollment', amount: '$499.00', status: 'SUCCEEDED', created_at: '2026-01-01' },
+        { id: 2, invoice_no: 'INV-2', invoice_type: 'user_seat', invoice_type_label: 'User Seat', amount: '$49.00', status: 'SUCCEEDED', created_at: '2026-02-01' },
+        { id: 3, invoice_no: 'INV-3', invoice_type: 'borrower_fee', invoice_type_label: 'Client Activation Fee', amount: '$800.00', status: 'SUCCEEDED', created_at: '2026-03-01' },
       ],
     })
 
@@ -234,6 +234,25 @@ describe('MySubscription - layout and payment history', () => {
     const row = (invoice: string) => screen.getByText(invoice).closest('tr') as HTMLElement
     expect(row('INV-1')).toHaveTextContent('Enrollment')
     expect(row('INV-2')).toHaveTextContent('User Seat')
-    expect(row('INV-3')).toHaveTextContent('Borrower Fee')
+    expect(row('INV-3')).toHaveTextContent('Client Activation Fee')
+  })
+
+  // BUG-194 retest: the $800 fee still read "Borrower Fee" here. The page now
+  // shows the API's name, never the stored type turned into words.
+  it('shows the borrower fee as a Client Activation Fee and never as Borrower Fee', async () => {
+    mount({
+      subscription: subscription(),
+      partner: { id: 5 },
+      recent_payments: [
+        { id: 3, invoice_no: 'INV-3', invoice_type: 'borrower_fee', invoice_type_label: 'Client Activation Fee', amount: '$800.00', status: 'SUCCEEDED', created_at: '2026-03-01' },
+        { id: 4, invoice_no: 'INV-4', invoice_type: null, invoice_type_label: '', amount: '$10.00', status: 'SUCCEEDED', created_at: '2026-03-02' },
+      ],
+    })
+
+    const row = (invoice: string) => screen.getByText(invoice).closest('tr') as HTMLElement
+    await screen.findByText('INV-3')
+    expect(row('INV-3')).toHaveTextContent('Client Activation Fee')
+    expect(row('INV-3')).not.toHaveTextContent('Borrower Fee')
+    expect(row('INV-4')).toHaveTextContent('-')
   })
 })

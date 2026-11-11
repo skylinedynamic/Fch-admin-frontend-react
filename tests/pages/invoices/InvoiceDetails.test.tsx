@@ -31,7 +31,7 @@ const reseller = {
   country: 'United States',
 }
 
-const BORROWER_FEE = { ...INVOICE, type: 'Borrower Fee', displayable_payment_amount: '$800.00', billed_to: reseller }
+const BORROWER_FEE = { ...INVOICE, type: 'Client Activation Fee', displayable_payment_amount: '$800.00', billed_to: reseller }
 
 const mount = (user: TestUser = { permissions: ['view invoices'] }, invoice: Record<string, unknown> = INVOICE) => {
   signIn(user)
@@ -84,7 +84,7 @@ describe('InvoiceDetails', () => {
     mount({ permissions: ['view invoices'] }, BORROWER_FEE)
 
     await billedToSection()
-    expect(screen.getByText('Borrower Fee')).toBeInTheDocument()
+    expect(screen.getByText('Client Activation Fee')).toBeInTheDocument()
     expect(screen.queryByText(/Enrollment Type/)).not.toBeInTheDocument()
   })
 

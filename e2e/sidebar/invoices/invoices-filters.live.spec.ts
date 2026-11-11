@@ -10,7 +10,7 @@ import type { Page, Response } from '@playwright/test'
 
 type Row = { type: string; entity_type?: string; customer_name?: string }
 
-const TYPES = ['Enrollment', 'Down Payment', 'Installment', 'Platform Fee', 'Borrower Fee', 'User Seat', 'Commission Payout']
+const TYPES = ['Enrollment', 'Down Payment', 'Installment', 'Platform Fee', 'Client Activation Fee', 'User Seat', 'Commission Payout']
 
 const list = (page: Page) =>
   page.waitForResponse((r: Response) => r.url().includes('/common/invoices/fetch-invoices') && r.request().method() === 'POST')
@@ -69,12 +69,12 @@ test.describe('Invoices filters (live)', () => {
 
     expect(sent.is_mine).toBe(false)
     for (const row of rows) {
-      expect(row.type).not.toMatch(/^Borrower Fee|^Commission Payout/)
+      expect(row.type).not.toMatch(/^Client Activation Fee|^Commission Payout/)
     }
   })
 
   test('Partner Only lists every borrower fee', async ({ page }) => {
-    await pick(page, 'All Types', 'Borrower Fee')
+    await pick(page, 'All Types', 'Client Activation Fee')
     const allFees = await apply(page)
 
     await pick(page, 'All Invoice', 'Partner Only')

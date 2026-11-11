@@ -39,7 +39,6 @@ import {
 } from '../../config/paymentConfig';
 import {
   STATUS_SUCCESS as INVOICE_STATUS_SUCCESS,
-  INVOICE_TYPE_OPTIONS,
 } from '../../config/invoiceConfig';
 
 export interface PaymentProviderItem {
@@ -66,6 +65,8 @@ export interface PaymentHistoryItem {
   transaction_type?: string;
   /** The invoice's type (fch-api Invoice::INVOICE_TYPES), e.g. user_seat. */
   invoice_type?: string | null;
+  /** The type's shown name from the API, e.g. "Client Activation Fee" for borrower_fee. */
+  invoice_type_label?: string | null;
   status?: string;
 }
 
@@ -574,9 +575,8 @@ export default function MySubscription(): JSX.Element {
     }
   };
 
-  // Enrollment, User Seat, Borrower Fee, ... - the label the Invoices filter uses.
-  const invoiceTypeBodyTemplate = (row: PaymentHistoryItem) =>
-    INVOICE_TYPE_OPTIONS.find((option) => option.value && option.value === row.invoice_type)?.label || '-';
+  // Enrollment, User Seat, Client Activation Fee, ... - the name the API sends (BUG-194).
+  const invoiceTypeBodyTemplate = (row: PaymentHistoryItem) => row.invoice_type_label || '-';
 
   const recentBill = data?.recent_bill;
   const upcoming = data?.upcoming_billing;

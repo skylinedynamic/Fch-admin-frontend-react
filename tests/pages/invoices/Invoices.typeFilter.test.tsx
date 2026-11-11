@@ -44,9 +44,21 @@ describe('Invoices type filter', () => {
 
     await user.click(typeDropdown())
 
-    for (const label of ['All Types', 'Enrollment', 'Down Payment', 'Installment', 'Platform Fee', 'Borrower Fee', 'User Seat', 'Commission Payout']) {
+    for (const label of ['All Types', 'Enrollment', 'Down Payment', 'Installment', 'Platform Fee', 'Client Activation Fee', 'User Seat', 'Commission Payout']) {
       expect(option(label)).toBeTruthy()
     }
+  })
+
+  // BUG-194: the option is named "Client Activation Fee" but still filters on the stored type.
+  it('sends borrower_fee for Client Activation Fee', async () => {
+    const user = userEvent.setup()
+    const list = mount()
+    await screen.findByText('INV-20260719003')
+
+    await user.click(typeDropdown())
+    await user.click(option('Client Activation Fee'))
+    await user.click(filtersButton())
+    await waitFor(() => expect(list.bodies[list.bodies.length - 1]).toMatchObject({ type: 'borrower_fee' }))
   })
 
   it('sends the picked type, and nothing for All Types', async () => {

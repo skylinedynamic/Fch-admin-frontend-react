@@ -33,13 +33,22 @@ export const INVOICE_TYPE_BORROWER_FEE = 'borrower_fee';
 export const INVOICE_TYPE_USER_SEAT = 'user_seat';
 export const INVOICE_TYPE_COMMISSION_PAYOUT = 'commission_payout';
 
+/**
+ * The name shown for a borrower_fee invoice (BUG-194), as on Plan & Fee and in
+ * fch-api's Invoice::INVOICE_TYPE_LABELS. The stored type stays borrower_fee.
+ */
+export const INVOICE_TYPE_BORROWER_FEE_LABEL = 'Client Activation Fee';
+
+/** Payment Details when nothing has paid the invoice yet (BUG-093 / BUG-206). */
+export const PAYMENT_METHOD_NOT_PAID_LABEL = 'Not paid yet';
+
 export const INVOICE_TYPE_OPTIONS = [
     { label: 'All Types', value: null },
     { label: 'Enrollment', value: INVOICE_TYPE_ENROLLMENT },
     { label: 'Down Payment', value: INVOICE_TYPE_DOWN_PAYMENT },
     { label: 'Installment', value: INVOICE_TYPE_INSTALLMENT },
     { label: 'Platform Fee', value: INVOICE_TYPE_PLATFORM_FEE },
-    { label: 'Borrower Fee', value: INVOICE_TYPE_BORROWER_FEE },
+    { label: INVOICE_TYPE_BORROWER_FEE_LABEL, value: INVOICE_TYPE_BORROWER_FEE },
     { label: 'User Seat', value: INVOICE_TYPE_USER_SEAT },
     { label: 'Commission Payout', value: INVOICE_TYPE_COMMISSION_PAYOUT },
 ];

@@ -6,7 +6,7 @@ import { parseDateOnly } from '../../../utils/helper';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../../store/auth';
 import { APP_CONFIG } from '../../../config';
-import { STATUS_PAID } from '../../../config/invoiceConfig';
+import { STATUS_PAID, PAYMENT_METHOD_NOT_PAID_LABEL } from '../../../config/invoiceConfig';
 import invoiceLogo from "../../../../assets/images/logo-mail.png";
 import InvoicePartyDetails from './InvoicePartyDetails';
 import InvoicePreviewSkeleton from './InvoicePreviewSkeleton';
@@ -186,6 +186,14 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
 
     const subtotal = amount;
 
+    // How it was actually paid, from the API (BUG-206). It used to say "Stripe"
+    // and "Card Holder" for every invoice, even one paid by Bank Transfer.
+    const isPaid = displayInvoice?.status?.toLowerCase() == STATUS_PAID.toLowerCase();
+    const paymentMethod = displayInvoice?.payment_method;
+    const paymentMethodLabel = paymentMethod || (isPaid ? '-' : PAYMENT_METHOD_NOT_PAID_LABEL);
+    const paidByCard = paymentMethod ? Boolean(displayInvoice?.is_card_payment) : true;
+    const payerLabel = isCommissionPayout ? 'Payee Name' : (paidByCard ? 'Card Holder' : 'Paid By');
+
     return (
         <div className="modal fade" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -299,14 +307,17 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             </div>
                                             <div className="mt-3">
                                                 <h6 className="text-muted text-uppercase fw-semibold mb-3">Payment Details:</h6>
-                                                {!isCommissionPayout && <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">Stripe</span></p>}
-                                                <p className="text-muted mb-1">Payment Status: <span className="fw-medium" id="payment-method">{displayInvoice.status}</span></p>
+                                                {!isCommissionPayout && <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">{paymentMethodLabel}</span></p>}
+                                                {displayInvoice.payment_reference && (
+                                                    <p className="text-muted mb-1">Reference: <span className="fw-medium" id="payment-reference">{displayInvoice.payment_reference}</span></p>
+                                                )}
+                                                <p className="text-muted mb-1">Payment Status: <span className="fw-medium" id="payment-status">{displayInvoice.status}</span></p>
                                                 {displayInvoice.payment_date && (
                                                     <p className="text-muted mb-1">Paid Date: <span className="fw-medium" id="paid-date">{displayInvoice.payment_date}</span></p>
                                                 )}
-                                                {displayInvoice.status?.toLowerCase() == STATUS_PAID.toLowerCase() && (
+                                                {isPaid && (
                                                     <>
-                                                        <p className="text-muted mb-1">{isCommissionPayout ? 'Payee Name' : 'Card Holder'}: <span className="fw-medium" id="card-holder-name">{billedTo.name || billedTo.company_name}</span></p>
+                                                        <p className="text-muted mb-1">{payerLabel}: <span className="fw-medium" id="card-holder-name">{billedTo.name || billedTo.company_name}</span></p>
                                                         <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                                                     </>
                                                 )}
@@ -318,7 +329,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                             {isCommissionPayout ? (
                                                                 displayInvoice.note ? ` ${displayInvoice.note}` : ' No additional notes provided.'
                                                             ) : (
-                                                                ' All accounts are to be paid within 7 days from receipt of invoice. To be paid by Stripe. If account is not paid within 7 days the credits details supplied as confirmation of work undertaken will be charged the agreed quoted fee noted above.'
+                                                                ` All accounts are to be paid within 7 days from receipt of invoice.${paidByCard ? ' To be paid by Stripe.' : ''} If account is not paid within 7 days the credits details supplied as confirmation of work undertaken will be charged the agreed quoted fee noted above.`
                                                             )}
                                                         </span>
                                                     </p>

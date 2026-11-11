@@ -75,7 +75,7 @@ describe('Upcoming billing - borrower fee row', () => {
   const FEE_ROW = {
     id: 73, subscription_id: 73, billing_row: 'borrower_fee', subscriber_type: 'Partner', subscriber_name: 'Wanda Wells',
     subscriber_email: 'wanda@example.test', for_client_name: 'Dee Client', fee_invoice_id: 55, fee_invoice_number: 'INV-55',
-    upcoming_billing_type: 'Borrower Fee', upcoming_billing_amount: 800, upcoming_billing_date: '2026-05-24',
+    upcoming_billing_type: 'Client Activation Fee', upcoming_billing_amount: 800, upcoming_billing_date: '2026-05-24',
     outstanding_amount: 800, current_phase: 'borrower_fee', enrollment_type: null, status: 'Unpaid', is_billing_paused: false,
   }
 

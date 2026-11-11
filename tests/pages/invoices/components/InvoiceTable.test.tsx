@@ -43,7 +43,7 @@ const fee = {
   entity_type: 'Partner',
   displayable_payment_amount: '$800.00',
   payment_amount: 800,
-  type: 'Borrower Fee',
+  type: 'Client Activation Fee',
   status: 'Unpaid',
 }
 

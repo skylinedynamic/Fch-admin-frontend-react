@@ -10,7 +10,7 @@ import PaymentMethodStatusModal from '../../../../components/Common/Modals/Payme
 import { useAuthStore } from '../../../../store/auth/authStore';
 import { useConfigPartnerId } from '../../../../modules/settings/configPartner';
 import { apiClient } from '../../../../lib/http/apiClient';
-import { PAYMENT_METHOD_PROVIDER, PAYMENT_ENVIRONMENT_LABELS } from '../../../../config/paymentConfig';
+import { PAYMENT_METHOD_PROVIDER, PAYMENT_ENVIRONMENT_LABELS, environmentChangeWarning } from '../../../../config/paymentConfig';
 import PaymentSetupAlert from './PaymentSetupAlert';
 
 const MODE_SANDBOX = PAYMENT_ENVIRONMENT_LABELS[0].toLowerCase();
@@ -201,13 +201,18 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
         }
     };
 
-    const confirmModeChange = () => {
-        if (pendingMode) {
-            setFormData(prev => ({ ...prev, payment_mode: pendingMode }));
-            setErrors({});
-        }
+    // Confirming saves the new environment at once (BUG-207): it used to change
+    // only the dropdown, so the provider stayed in the old mode until Save
+    // Configuration was pressed again.
+    const confirmModeChange = async () => {
+        const mode = pendingMode;
         setShowModal(false);
         setPendingMode(null);
+        if (!mode) return;
+
+        setFormData(prev => ({ ...prev, payment_mode: mode }));
+        setErrors({});
+        await saveConfiguration(mode);
     };
 
     const cancelModeChange = () => {
@@ -300,9 +305,9 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
         });
     };
 
-    const validate = (): boolean => {
+    const validate = (modeOverride?: string): boolean => {
         const newErrors: FormErrors = {};
-        const mode = formData.payment_mode || MODE_SANDBOX;
+        const mode = modeOverride || formData.payment_mode || MODE_SANDBOX;
         const suffix = `_${mode}`;
 
         if (isStripe) {
@@ -372,7 +377,13 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!validate()) return;
+        await saveConfiguration();
+    };
+
+    /** Saves the configuration, in `modeOverride` when an environment change was just confirmed. */
+    const saveConfiguration = async (modeOverride?: string) => {
+        const mode = modeOverride || formData.payment_mode || MODE_SANDBOX;
+        if (!validate(mode)) return;
 
         setLoading(true);
         try {
@@ -431,7 +442,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             const response = await updatePartnerPaymentProviderConfig({
                 id: linkageId,
                 payment_provider_id: provider.id,
-                payment_mode: formData.payment_mode || MODE_SANDBOX,
+                payment_mode: mode,
                 status: status,
                 is_default: isDefault,
                 configuration: configuration,
@@ -1034,7 +1045,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                         You are about to switch the payment environment to <strong>{pendingMode === MODE_PRODUCTION ? PAYMENT_ENVIRONMENT_LABELS[1] : PAYMENT_ENVIRONMENT_LABELS[0]}</strong>.
                     </>
                 }
-                warningText={`Switching to ${pendingMode === MODE_PRODUCTION ? PAYMENT_ENVIRONMENT_LABELS[1] : PAYMENT_ENVIRONMENT_LABELS[0]} will use live ${provider.name} keys. Real transactions will be processed if this is used in checkout.`}
+                warningText={environmentChangeWarning(pendingMode === MODE_PRODUCTION, provider.name)}
                 warningBgClass={pendingMode === MODE_PRODUCTION
                     ? 'bg-danger-subtle border-start border-3 border-danger'
                     : 'bg-info-subtle border-start border-3 border-info'
