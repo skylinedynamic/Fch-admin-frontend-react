@@ -1,6 +1,8 @@
 /** One row of the API's `matched_lenders` (LenderMatchService). */
 export interface MatchedLender {
     id: number;
+    /** Lender Code ("LND-4821"), shown in its own column and in the Lender filter. */
+    lender_code?: string | null;
     name: string;
     /** Null for a lender added before the legal name was required. */
     legal_name?: string | null;

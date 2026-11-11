@@ -1,5 +1,18 @@
 import { apiClient } from '../../lib/http/apiClient';
-import { Lender, LenderFilterParams } from './types';
+import { Lender, LenderDuplicates, LenderFilterParams } from './types';
+
+/**
+ * The lenders that already have this name / legal name - Add/Edit Lender
+ * warns (names may repeat; the Lender Code tells lenders apart).
+ */
+export const checkLenderDuplicates = async (params: { name?: string; legal_name?: string; ignore_id?: number }): Promise<LenderDuplicates> => {
+    const { data } = await apiClient.post('/admin/lenders/check-duplicates', params);
+    // Always both lists, whatever the reply holds - the form reads them directly.
+    return {
+        name: Array.isArray(data?.data?.name) ? data.data.name : [],
+        legal_name: Array.isArray(data?.data?.legal_name) ? data.data.legal_name : [],
+    };
+};
 
 export const getLenders = async (params: LenderFilterParams = {}) => {
     const { data } = await apiClient.get('/admin/lenders', { params });

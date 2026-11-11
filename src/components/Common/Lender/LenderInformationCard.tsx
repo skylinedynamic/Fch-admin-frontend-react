@@ -4,7 +4,8 @@ import { Dropdown } from 'primereact/dropdown';
 import { formatCurrency } from '../../../utils/helper';
 import { filterLenders } from './lenderFilter';
 import { LENDER_PAGE_SIZES, paginate } from './lenderPagination';
-import { lenderDisplayName } from '../../../modules/lender/displayName';
+import { lenderDisplayName, lenderOptionLabel, lenderOptionParts } from '../../../modules/lender/displayName';
+import LenderOption from './LenderOption';
 import '../../../../assets/css/funding-requests.css';
 
 import type { MatchedLender } from '../../../modules/application/types';
@@ -58,7 +59,8 @@ export default function LenderInformationCard({
     // Applied as they change - typing, or picking a category or lender.
     const [lenderSearch, setLenderSearch] = useState('');
     const [lenderCategoryFilter, setLenderCategoryFilter] = useState('');
-    const [lenderNameFilter, setLenderNameFilter] = useState('');
+    // The lender picked: its id - two lenders may share a name and a legal name.
+    const [lenderIdFilter, setLenderIdFilter] = useState<number | ''>('');
 
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [lenderToAssign, setLenderToAssign] = useState<MatchedLender | null>(null);
@@ -69,15 +71,22 @@ export default function LenderInformationCard({
     // From the lenders matched: one funding type for a funding request, the
     // Preferred + Additional ones for a loan application.
     const uniqueCategories = Array.from(new Set(lenders.map((l) => l.product_category).filter(Boolean))).map(cat => ({ label: cat, value: cat })).sort(byLabel);
-    // The lender list follows the chosen category.
-    const uniqueLenderNames = Array.from(new Set(
-        lenders.filter((l) => !lenderCategoryFilter || l.product_category === lenderCategoryFilter).map((l) => lenderDisplayName(l)).filter(Boolean)
-    )).map(name => ({ label: name, value: name })).sort(byLabel);
+    // The lender list follows the chosen category: each lender once (it can
+    // match several funding types). `label` ("Lender Name - Lender Code") is
+    // what the search matches; the list shows the name and code apart.
+    type LenderOptionItem = { label: string; value: number | ''; name?: string; code?: string | null };
+    const lenderOptions: LenderOptionItem[] = Array.from(new Map(
+        lenders
+            .filter((l) => !lenderCategoryFilter || l.product_category === lenderCategoryFilter)
+            .map((l) => [l.id, { label: lenderOptionLabel(l), value: l.id, ...lenderOptionParts(l) }] as const)
+    ).values()).filter((o) => o.label).sort(byLabel);
+    const lenderItem = (option: LenderOptionItem, inline = false) =>
+        option?.name ? <LenderOption name={option.name} code={option.code} inline={inline} /> : option?.label;
 
     const filteredLenders = filterLenders(lenders, {
         search: lenderSearch,
         category: lenderCategoryFilter,
-        lenderName: lenderNameFilter,
+        lenderId: lenderIdFilter,
     });
 
     // The table shows one page of the filtered lenders.
@@ -111,12 +120,12 @@ export default function LenderInformationCard({
     };
     const changeSearch = filterChanged(setLenderSearch);
     const changeCategory = filterChanged(setLenderCategoryFilter);
-    const changeLenderName = filterChanged(setLenderNameFilter);
+    const changeLender = filterChanged(setLenderIdFilter);
 
     const clearFilters = () => {
         setLenderSearch('');
         setLenderCategoryFilter('');
-        setLenderNameFilter('');
+        setLenderIdFilter('');
         setPage(1);
     };
 
@@ -168,6 +177,7 @@ export default function LenderInformationCard({
                         <div className="flex-grow-1 min-w-0">
                             <h5 className="fs-17 fw-bold mb-1 text-dark">{lenderDisplayName(assigned)}</h5>
                             <div className="d-flex flex-wrap align-items-center gap-3 text-muted fs-13">
+                                {assigned.lender_code && <span className="badge bg-light text-dark border fs-12 fw-medium" title="Lender Code">{assigned.lender_code}</span>}
                                 <span className="badge bg-primary-subtle text-primary fs-12 fw-medium">{assigned.product_category}</span>
                                 {/* Made Inactive after the lender was fixed: still the lender the deal went to (S434-BUG-05). */}
                                 {assigned.is_active === false && (
@@ -253,13 +263,27 @@ export default function LenderInformationCard({
                                 <Dropdown value={lenderCategoryFilter} options={[{ label: 'All Categories', value: '' }, ...uniqueCategories]} optionLabel="label" optionValue="value" onChange={(e) => {
                                     changeCategory(e.value);
                                     // A lender not in the new category would show nothing.
-                                    if (e.value && lenderNameFilter && !lenders.some((l) => lenderDisplayName(l) === lenderNameFilter && l.product_category === e.value)) {
-                                        setLenderNameFilter('');
+                                    if (e.value && lenderIdFilter !== '' && !lenders.some((l) => l.id === lenderIdFilter && l.product_category === e.value)) {
+                                        setLenderIdFilter('');
                                     }
                                 }} placeholder="All Categories" className="w-100" />
                             </div>
                             <div className="col-md-3">
-                                <Dropdown value={lenderNameFilter} options={[{ label: 'All Lenders', value: '' }, ...uniqueLenderNames]} optionLabel="label" optionValue="value" onChange={(e) => changeLenderName(e.value)} placeholder="All Lenders" className="w-100" />
+                                <Dropdown
+                                    value={lenderIdFilter}
+                                    options={[{ label: 'All Lenders', value: '' }, ...lenderOptions]}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    onChange={(e) => changeLender(e.value)}
+                                    filter
+                                    filterBy="label"
+                                    placeholder="All Lenders"
+                                    className="w-100"
+                                    itemTemplate={(option: LenderOptionItem) => lenderItem(option)}
+                                    // The value is always "All Lenders" or a listed lender: a
+                                    // category that leaves the picked one out resets it.
+                                    valueTemplate={(option: LenderOptionItem) => lenderItem(option, true)}
+                                />
                             </div>
                             <div className="col-md-3">
                                 <div className="d-flex gap-2">
@@ -278,6 +302,7 @@ export default function LenderInformationCard({
                         <table className="table align-middle mb-0 fr-style-310c95f3">
                             <thead>
                                 <tr className="fr-style-c2cbac2">
+                                    <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-lender-code-col" style={{ background: '#f8fafc', fontSize: 13 }}>Lender Code</th>
                                     <th rowSpan={2} className="px-2 py-3 align-middle text-center fr-style-4ff6cdc1">
                                         <div className="text-dark fw-bold fr-style-3f3c752c">Lender Name</div>
                                         <div className="text-muted fr-style-3f58a42e">Contact Info</div>
@@ -286,7 +311,7 @@ export default function LenderInformationCard({
                                     <th className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Match Analysis</th>
                                     <th colSpan={4} className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Requirements Match</th>
                                     <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-1b4a0199">Match</th>
-                                    <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-705890ee">Actions</th>
+                                    <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-705890ee fr-actions-col">Actions</th>
                                 </tr>
                                 <tr className="fr-style-123ff9de">
                                     <th className="px-1 py-2 text-center fr-style-6fe1846d">Matches</th>
@@ -317,6 +342,10 @@ export default function LenderInformationCard({
                                                 onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = pulses ? '' : '#fff')}
                                             >
 
+                                                {/* Lender Code */}
+                                                <td className="px-2 py-3 text-center fw-medium text-dark fr-lender-code-col">
+                                                    {lender.lender_code || '-'}
+                                                </td>
                                                 {/* Lender Name */}
                                                 <td className="px-2 py-3 text-center fr-style-73d7d324">
                                                     <div className="fw-bold text-dark fr-style-747e3e7d">{lenderDisplayName(lender) || 'Lender Name'}</div>
@@ -373,7 +402,7 @@ export default function LenderInformationCard({
                                                     </div>
                                                 </td>
                                                 {/* Actions */}
-                                                <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                <td className="px-2 py-3 text-center fr-style-73d7d324 fr-actions-col">
                                                     {isAssigned ? (
                                                         <span className="badge bg-success-subtle text-success fs-12 px-2 py-1">
                                                             <i className="ri-check-line me-1"></i> Assigned
@@ -397,7 +426,7 @@ export default function LenderInformationCard({
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan={9} className="text-center py-4 text-muted fs-14">
+                                        <td colSpan={10} className="text-center py-4 text-muted fs-14">
                                             <i className="ri-search-line fs-24 d-block mb-2"></i>
                                             {onlyAssigned ? 'The assigned lender is not among the lenders matched for this application.' : lenders.length > 0 ? 'No lenders match these filters.' : emptyText}
                                         </td>

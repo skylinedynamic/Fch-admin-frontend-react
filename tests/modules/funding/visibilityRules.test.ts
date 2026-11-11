@@ -57,9 +57,9 @@ describe('underwriting logic rules', () => {
         ]
       )
 
-      expect(options).toEqual([
-        { id: 1, name: 'Open Bank' },
-        { id: 7, name: 'Closed Bank (Inactive)' },
+      expect(options.map(({ id, name, inactive }) => ({ id, name, inactive }))).toEqual([
+        { id: 1, name: 'Open Bank', inactive: false },
+        { id: 7, name: 'Closed Bank (Inactive)', inactive: true },
       ])
     })
   })
@@ -84,6 +84,29 @@ describe('underwriting logic rules', () => {
       )
 
       expect(options.map(o => o.name)).toEqual(['Kabbage - Kabbage Inc.', 'Kabbage - Kabbage Funding LLC (Inactive)'])
+    })
+  })
+
+  // 2026-11-11: a dropdown names a lender "Lender Name - Lender Code" (a name
+  // and a legal name may repeat, the code never does); a rule row keeps
+  // "Lender Name - Legal Name".
+  describe('lenders with a Lender Code', () => {
+    const one = { id: 1, lender_code: 'LND-1111', name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }
+    const inactiveRule = { lender_id: 7, lender: { id: 7, lender_code: 'LND-7777', name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.', status: 'Inactive' } }
+
+    it('names each lender in Filter by Lender by its name and Lender Code', () => {
+      const options = lenderFilterOptions([one], [inactiveRule])
+
+      // `name` is what the dropdown search matches; the parts are what it shows.
+      expect(options.map(o => o.name)).toEqual(['Kabbage - LND-1111', 'Kabbage - LND-7777 (Inactive)'])
+      expect(options.map(o => [o.lenderName, o.code, o.inactive])).toEqual([
+        ['Kabbage', 'LND-1111', false],
+        ['Kabbage', 'LND-7777', true],
+      ])
+    })
+
+    it('keeps "Lender Name - Legal Name" on a rule row', () => {
+      expect(lenderLabelFor({ lender_id: 1 }, [one])).toEqual({ name: 'Kabbage - Kabbage Inc.', inactive: false })
     })
   })
 })

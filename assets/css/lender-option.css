@@ -1,0 +1,41 @@
+/*
+ * A lender in a lender dropdown (LenderOption.tsx, design A): the name on the
+ * left, the Lender Code right-aligned in a small grey monospace font, all on
+ * one line - "Name - LND-72648" used to wrap onto two.
+ */
+.lender-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.lender-option-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lender-option-code {
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* The selected value: the code right after the name. */
+.lender-option-inline {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+/* On the highlighted (dark) row the code stays readable. */
+.p-dropdown-item.p-highlight .lender-option-code,
+.p-dropdown-item:hover .lender-option-code {
+  color: inherit;
+  opacity: 0.75;
+}
