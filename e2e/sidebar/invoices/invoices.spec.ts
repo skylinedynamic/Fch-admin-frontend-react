@@ -112,6 +112,12 @@ test.describe('Invoice details', () => {
     return api
   }
 
+  // BUG-202: who paid it - for a partner's invoice, often one of its staff.
+  test('a paid invoice says who paid it', async ({ page }) => {
+    await open(page, undefined, { ...INVOICES[0], status: 'Paid', payment_date: '11 Nov, 2026', paid_by_name: 'Sam Staff' })
+    await expect(page.getByText('Paid By: Sam Staff')).toBeVisible()
+  })
+
   test('shows the invoice total', async ({ page }) => {
     await open(page)
     await expect(page.getByText('Total Amount')).toBeVisible()

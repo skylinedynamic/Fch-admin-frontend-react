@@ -159,6 +159,10 @@ export default function InvoiceDetails() {
                                                     {invoice.payment_date && (
                                                         <p className="mb-2 text-muted">Paid Date: <span className="fw-medium text-body">{invoice.payment_date}</span></p>
                                                     )}
+                                                    {/* Who paid it - for a partner's invoice, often one of its staff (BUG-202). */}
+                                                    {invoice.paid_by_name && (
+                                                        <p className="mb-2 text-muted">Paid By: <span className="fw-medium text-body">{invoice.paid_by_name}</span></p>
+                                                    )}
                                                     {invoice.enrollment_type && (
                                                         <p className="mb-2 text-muted">Enrollment Type: <span className="fw-medium text-body">{invoice.enrollment_type}</span></p>
                                                     )}

@@ -21,6 +21,7 @@ import PaymentDetailsLoader from '../../components/Loader/PaymentDetailsLoader';
 import { formatDate } from '../../utils/formatters';
 import ErrorPage from '../Utility/ErrorPage';
 import PaymentEnvironmentNotice from './components/PaymentEnvironmentNotice';
+import PaidByInfo from './components/PaidByInfo';
 import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function PaymentDetails() {
@@ -316,6 +317,7 @@ export default function PaymentDetails() {
                                             <h5 className="fs-14 mb-0">{payment.phone || '-'}</h5>
                                         </div>
                                     </div>
+                                    <PaidByInfo name={payment.paid_by_name} />
 
                                     {/* Bottom Approval / Rejection Info Section */}
                                     {!isStripe && hasRawDetails && (
@@ -324,10 +326,11 @@ export default function PaymentDetails() {
 
                                             {typeof rawDetails === 'object' && (
                                                 <div className="row">
-                                                    {rawDetails.approved_by && (
+                                                    {/* Names from the API's user ids (BUG-202); older payments fall back to the details. */}
+                                                    {(payment.approved_by_name || rawDetails.approved_by) && (
                                                         <div className="col-lg-3 col-sm-6 mb-3">
                                                             <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Approved By</p>
-                                                            <h5 className="fs-14 mb-0">{rawDetails.approved_by}</h5>
+                                                            <h5 className="fs-14 mb-0">{payment.approved_by_name || rawDetails.approved_by}</h5>
                                                         </div>
                                                     )}
                                                     {rawDetails.approved_at && (
@@ -336,10 +339,10 @@ export default function PaymentDetails() {
                                                             <h5 className="fs-14 mb-0">{formatDate(rawDetails.approved_at)}</h5>
                                                         </div>
                                                     )}
-                                                    {rawDetails.rejected_by && (
+                                                    {(payment.rejected_by_name || rawDetails.rejected_by) && (
                                                         <div className="col-lg-3 col-sm-6 mb-3">
                                                             <p className="text-muted mb-1 text-uppercase fw-semibold fs-12 text-danger">Rejected By</p>
-                                                            <h5 className="fs-14 mb-0 text-danger">{rawDetails.rejected_by}</h5>
+                                                            <h5 className="fs-14 mb-0 text-danger">{payment.rejected_by_name || rawDetails.rejected_by}</h5>
                                                         </div>
                                                     )}
                                                     {rawDetails.rejected_at && (

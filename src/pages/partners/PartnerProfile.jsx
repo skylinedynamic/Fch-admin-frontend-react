@@ -24,7 +24,7 @@ import { useAuthStore } from '../../store/auth/authStore';
 import PartnerConfigurationSection from './components/PartnerConfigurationSection';
 import ErrorPage from '../Utility/ErrorPage';
 import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
-import { emailFieldValue } from '../../modules/acc0ount';
+import { emailFieldValue } from '../../modules/account';
 
 export default function PartnerProfile() {
     const { id } = useParams();

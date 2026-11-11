@@ -196,3 +196,44 @@ describe('PaymentDetails - loading', () => {
     expect(await screen.findByText('Payment Not Found')).toBeInTheDocument()
   })
 })
+
+/**
+ * BUG-202: who paid, approved or rejected a payment, by their current name from
+ * the API (paid_by_name, approved_by_name, rejected_by_name).
+ */
+describe('PaymentDetails - who paid and who decided', () => {
+  it('shows who paid a card payment', async () => {
+    mount(['view payments'], { ...PAYMENT, status: 'SUCCEEDED', can_approve: false, payment_type: 'Card', from: 'Stripe', paid_by_name: 'Sam Staff' })
+
+    const paidBy = await screen.findByText('Paid By')
+    expect(paidBy.parentElement).toHaveTextContent('Sam Staff')
+  })
+
+  it('leaves Paid By out when the API does not know', async () => {
+    mount(['view payments'], { ...PAYMENT, status: 'SUCCEEDED', can_approve: false, paid_by_name: null })
+
+    await screen.findAllByText(/Payment Details/)
+    expect(screen.queryByText('Paid By')).not.toBeInTheDocument()
+  })
+
+  it('shows who approved a manual payment by the name the API gives', async () => {
+    mount(['view payments'], {
+      ...PAYMENT, status: 'SUCCEEDED', can_approve: false, from: 'Cash', payment_type: 'Cash',
+      approved_by_name: 'Hana Host', raw_details: { approved_by: 'Old Name', approved_at: '2026-11-10 10:00:00' },
+    })
+
+    const approvedBy = await screen.findByText('Approved By')
+    expect(approvedBy.parentElement).toHaveTextContent('Hana Host')
+    expect(screen.queryByText('Old Name')).not.toBeInTheDocument()
+  })
+
+  it('shows who rejected a manual payment by the name the API gives', async () => {
+    mount(['view payments'], {
+      ...PAYMENT, status: 'FAILED', can_approve: false, from: 'Cash', payment_type: 'Cash',
+      rejected_by_name: 'Hana Host', raw_details: { rejected_by: 'Old Name', rejected_at: '2026-11-10 10:00:00' },
+    })
+
+    const rejectedBy = await screen.findByText('Rejected By')
+    expect(rejectedBy.parentElement).toHaveTextContent('Hana Host')
+  })
+})

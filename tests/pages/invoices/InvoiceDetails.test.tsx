@@ -200,3 +200,20 @@ describe('InvoiceDetails', () => {
     expect(await screen.findByText('Invoice Not Found')).toBeInTheDocument()
   })
 })
+
+// BUG-202: who paid the invoice - for a partner's invoice, often one of its staff.
+describe('InvoiceDetails - who paid', () => {
+  it('shows who paid a paid invoice', async () => {
+    mount(undefined, { ...INVOICE, status: 'Paid', payment_date: '11 Nov, 2026', paid_by_name: 'Sam Staff' })
+
+    expect(await screen.findByText('Sam Staff')).toBeInTheDocument()
+    expect(screen.getByText('Sam Staff').parentElement).toHaveTextContent('Paid By: Sam Staff')
+  })
+
+  it('leaves Paid By out when nobody is recorded', async () => {
+    mount(undefined, { ...INVOICE, status: 'Paid', payment_date: '11 Nov, 2026', paid_by_name: null })
+
+    await screen.findAllByText(/Paid Date/)
+    expect(screen.queryByText(/Paid By/)).not.toBeInTheDocument()
+  })
+})

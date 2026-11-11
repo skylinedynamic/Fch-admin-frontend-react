@@ -38,6 +38,7 @@ import { scrollToFirstError } from '../../utils/formUtils';
 import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
 import { formDataValue } from '../../modules/employee/logic';
 import { emailFieldValue } from '../../modules/account';
+import { SEAT_INVOICE_WAITING } from '../../config/limitOptions';
 
 const TAB_PERSONAL = 'personalDetails';
 const TAB_COMMISSIONS = 'commissions';
@@ -721,6 +722,12 @@ export default function EmployeeDetails() {
           const entityId = res.data?.user?.entity_id;
           const entityType = res.data?.user?.entity_type;
           setLimitData(prev => ({ ...prev, invoiceId, userId, entityId, entityType }));
+          // Paying it needs "Pay Invoice", as Pay Now on Invoices does (BUG-202).
+          if (invoiceId && !hasPermission('Pay Invoice')) {
+            toast.info(SEAT_INVOICE_WAITING('Employee'));
+            navigate(newEmployeeId ? `/employee-details/${newEmployeeId}` : '/employees');
+            return;
+          }
           if (invoiceId) {
             try {
               const invoiceRes = await fetchInvoiceDetails(invoiceId);

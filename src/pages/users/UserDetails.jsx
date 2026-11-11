@@ -20,6 +20,7 @@ import FormLoader from '../../components/Loader/FormLoader';
 import ErrorPage from '../Utility/ErrorPage';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
+import { SEAT_INVOICE_WAITING } from '../../config/limitOptions';
 import { scrollToFirstError } from '../../utils/formUtils';
 import { emailFieldValue } from '../../modules/account';
 
@@ -206,6 +207,12 @@ export default function UserDetails() {
 
       // A paid seat stays inactive until its invoice is paid.
       const invoiceId = res?.data?.invoice_id;
+      // Paying it needs "Pay Invoice", as Pay Now on Invoices does (BUG-202).
+      if (paidSeat && invoiceId && !hasPermission('Pay Invoice')) {
+        toast.info(SEAT_INVOICE_WAITING('User'));
+        navigate('/users');
+        return;
+      }
       if (paidSeat && invoiceId) {
         const invoiceRes = await fetchInvoiceDetails(invoiceId);
         if (invoiceRes?.status) {

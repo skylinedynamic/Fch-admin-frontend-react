@@ -5,6 +5,7 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { getStripe } from '../../../lib/stripe';
 import { CHECKOUT_OUTCOME, CHECKOUT_STAGE, useStripeCardCheckout } from '../hooks/useStripeCardCheckout';
 import type { CheckoutStage } from '../hooks/useStripeCardCheckout';
+import SaveCardCheckbox from './SaveCardCheckbox';
 
 /*
  * Card payments through Stripe Elements: the card number never touches this
@@ -124,6 +125,8 @@ const StripeCardFormInner = ({ amount, invoice, selectedProvider, onPaymentSucce
   const elements = useElements();
   const [tokenizing, setTokenizing] = useState(false);
   const [isValid, setIsValid] = useState(false);
+  // The card is kept as the payer's default only when this is ticked.
+  const [saveCard, setSaveCard] = useState(false);
   const { checkout, stage } = useStripeCardCheckout();
 
   const handlePay = async () => {
@@ -152,6 +155,7 @@ const StripeCardFormInner = ({ amount, invoice, selectedProvider, onPaymentSucce
         payment_token: paymentMethod.id,
         invoice_id: invoice.id,
         payment_method_id: selectedProvider.id,
+        save_card: saveCard,
       });
 
       if (outcome.status === CHECKOUT_OUTCOME.SUCCEEDED) {
@@ -184,6 +188,7 @@ const StripeCardFormInner = ({ amount, invoice, selectedProvider, onPaymentSucce
           />
         </div>
       </div>
+      <SaveCardCheckbox checked={saveCard} onChange={setSaveCard} disabled={tokenizing || stage !== CHECKOUT_STAGE.IDLE} />
       <PaymentSummary amount={amount} />
       <PayButton
         amount={amount}
