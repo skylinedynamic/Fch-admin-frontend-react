@@ -40,6 +40,22 @@ test.describe('My subscription', () => {
     await expect(row).not.toContainText('Borrower Fee')
   })
 
+  // BUG-187: the Current / Recent Bill card shows the invoice's own date as the API sends it,
+  // even in a browser ahead of UTC (Dhaka, where QA saw it a day off).
+  test.describe('in a browser ahead of UTC', () => {
+    test.use({ timezoneId: 'Asia/Dhaka' })
+
+    test('the recent bill shows the invoice date the API sends', async ({ page }) => {
+      await open(page, {
+        ...DATA,
+        recent_bill: { id: 276, invoice_id: 'INV-20261020008', amount: '$2,000.00', raw_amount: 2000, status: 'Paid', type: 'Commission Payout', created_at: '2026-10-20' },
+      })
+      const card = page.locator('.billing-card-wrapper', { hasText: 'Current / Recent Bill' })
+      await expect(card).toContainText('INV-20261020008')
+      await expect(card.locator('span', { hasText: /^Date:/ })).toHaveText('Date: 2026-10-20')
+    })
+  })
+
   test('cancelling asks for confirmation and can be backed out of', async ({ page }) => {
     const api = await open(page)
     await page.getByRole('button', { name: /cancel subscription/i }).click()

@@ -69,6 +69,20 @@ describe('MySubscription', () => {
     expect(screen.queryByText('Last Installment')).not.toBeInTheDocument()
   })
 
+  // BUG-187: the card shows the invoice's own date exactly as the API sends it;
+  // the page itself never shifts it into the browser's timezone.
+  it('shows the recent bill with the invoice date the API sends', async () => {
+    mount({
+      subscription: subscription(),
+      recent_payments: [],
+      partner: { id: 5 },
+      recent_bill: { id: 276, invoice_id: 'INV-20261020008', amount: '$2,000.00', raw_amount: 2000, status: 'Paid', type: 'Commission Payout', created_at: '2026-10-20' },
+    })
+
+    expect(await screen.findByText('INV-20261020008')).toBeInTheDocument()
+    expect(screen.getByText('Date:').closest('span')).toHaveTextContent('Date: 2026-10-20')
+  })
+
   it('shows an empty payment history', async () => {
     mount()
 
