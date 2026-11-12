@@ -5,6 +5,10 @@ import { server } from '../../../../mocks/server'
 import { renderWithProviders, screen, waitFor, within } from '../../../../test-utils'
 import { useAuthStore } from '../../../../../src/store/auth'
 
+// The real Modal finishes hiding after the test has unmounted and throws on the
+// gone element, failing the run with unhandled errors.
+vi.mock('bootstrap/js/dist/modal', () => import('../../../../mocks/fakeBootstrapModal'))
+
 vi.mock('react-toastify', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-toastify')>()
   return { ...actual, toast: Object.assign(vi.fn(), { info: vi.fn(), success: vi.fn(), error: vi.fn(), warn: vi.fn() }) }
