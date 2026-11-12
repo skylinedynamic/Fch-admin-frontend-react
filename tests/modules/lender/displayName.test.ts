@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lenderDisplayName } from '../../../src/modules/lender/displayName'
+import { lenderDisplayName, lenderOptionLabel } from '../../../src/modules/lender/displayName'
 import * as lenderModule from '../../../src/modules/lender'
 
 /**
@@ -27,5 +27,25 @@ describe('lenderDisplayName', () => {
 
   it('is offered by the lender module', () => {
     expect(lenderModule.lenderDisplayName).toBe(lenderDisplayName)
+  })
+})
+
+/**
+ * Every lender dropdown names a lender "Lender Name - Lender Code" (2026-11-11):
+ * names and legal names may repeat, the Lender Code never does.
+ */
+describe('lenderOptionLabel', () => {
+  it('is the name and the Lender Code', () => {
+    expect(lenderOptionLabel({ name: ' Kabbage ', legal_name: 'Kabbage Inc.', lender_code: 'LND-4821' })).toBe('Kabbage - LND-4821')
+  })
+
+  it('falls back to the usual name for a lender without a Lender Code yet', () => {
+    expect(lenderOptionLabel({ name: 'Kabbage', legal_name: 'Kabbage Inc.' })).toBe('Kabbage - Kabbage Inc.')
+    expect(lenderOptionLabel({ lender_code: 'LND-0007' })).toBe('LND-0007')
+    expect(lenderOptionLabel(null)).toBe('')
+  })
+
+  it('is offered by the lender module', () => {
+    expect(lenderModule.lenderOptionLabel).toBe(lenderOptionLabel)
   })
 })

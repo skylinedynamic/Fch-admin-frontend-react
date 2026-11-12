@@ -7,7 +7,8 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import { Column } from 'primereact/column';
 import { TIB_OPTIONS, INDUSTRIES_OPTIONS } from '../../../config/funding';
 import { lenderFilterOptions, lenderLabelFor, optionsWithout } from '../../../modules/funding/visibilityRules';
-import { lenderDisplayName } from '../../../modules/lender/displayName';
+import { lenderOptionLabel, lenderOptionParts } from '../../../modules/lender/displayName';
+import LenderOption from '../../../components/Common/Lender/LenderOption';
 import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities, deleteFundingSequencingVisibilities } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
@@ -440,27 +441,39 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     };
 
 
-    // The Lender picker names each lender "Lender Name - Legal Name" (R2 BUG-008).
-    const lenderChoices = React.useMemo(() => lenders.map(l => ({ ...l, name: lenderDisplayName(l) })), [lenders]);
+    // The Lender picker (design A, 2026-11-11): each lender's name, its Lender
+    // Code apart on the right. `name` ("Lender Name - Lender Code") is what the
+    // search matches - a name and a legal name may repeat, the code never does.
+    const lenderChoices = React.useMemo(
+        () => lenders.map(l => {
+            const parts = lenderOptionParts(l);
+            return { ...l, name: lenderOptionLabel(l), optionName: parts.name, optionCode: parts.code };
+        }),
+        [lenders]
+    );
 
     const availableLenders = lenders.filter(l => !selectedLenderIds.some(id => String(id) === String(l.id)));
 
     const lenderOptionTemplate = (option: any) => {
         const isSelected = selectedLenderIds.some(id => String(id) === String(option.id));
         if (isSelected) {
+            // Already has rules here: green, with a tick after the code.
             return (
-                <div className="d-flex align-items-center justify-content-between w-100 pe-2">
-                    <span className="text-success fw-bold">{option.name}</span>
-                    <i className="ri-check-line text-success fw-bold" style={{ fontSize: '18px' }}></i>
+                <div className="d-flex align-items-center gap-2 w-100 pe-2">
+                    <LenderOption name={option.optionName} code={option.optionCode} className="text-success fw-bold" />
+                    <i className="ri-check-line text-success fw-bold flex-shrink-0" style={{ fontSize: '18px' }}></i>
                 </div>
             );
         }
-        return (
-            <div className="d-flex align-items-center w-100">
-                <span>{option.name}</span>
-            </div>
-        );
+        return <LenderOption name={option.optionName} code={option.optionCode} />;
     };
+
+    const lenderValueTemplate = (option: any, props: { placeholder?: React.ReactNode }) =>
+        option ? <LenderOption name={option.optionName} code={option.optionCode} inline /> : props.placeholder;
+
+    // Filter by Lender: the same, and an inactive lender says so after its name.
+    const filterLenderTemplate = (option: any) =>
+        option?.lenderName ? <LenderOption name={option.lenderName} code={option.code} suffix={option.inactive ? ' (Inactive)' : undefined} /> : option?.name;
 
     const handleLenderSelect = (e: any) => {
         const lenderId = e.value;
@@ -588,6 +601,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 className="w-100 employee-filter-dropdown"
                                 style={{ minWidth: '200px' }}
                                 itemTemplate={lenderOptionTemplate}
+                                valueTemplate={lenderValueTemplate}
                             />
                         </div>
                     </div>
@@ -643,6 +657,11 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     className="w-100 employee-filter-dropdown"
                                     filter
                                     filterBy="name"
+                                    itemTemplate={filterLenderTemplate}
+                                    valueTemplate={(option: any, props: { placeholder?: React.ReactNode }) =>
+                                        option?.lenderName
+                                            ? <LenderOption name={option.lenderName} code={option.code} suffix={option.inactive ? ' (Inactive)' : undefined} inline />
+                                            : option?.name ?? props.placeholder}
                                 />
                             </div>
                             <div className="col-xxl-3 col-sm-4">

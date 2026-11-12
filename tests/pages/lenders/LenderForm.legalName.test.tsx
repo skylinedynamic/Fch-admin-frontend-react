@@ -11,8 +11,10 @@ vi.mock('../../../src/hooks/useSummernote', () => ({ useSummernote: () => ({ edi
 import LenderForm from '../../../src/pages/lenders/LenderForm'
 
 /**
- * Defect: R2 BUG-008 - Add Lender saved a second "Kabbage". The legal name is
- * unique now; the API's refusal shows under Legal Name and nothing is saved.
+ * An API refusal of the Legal Name shows under the field and nothing is saved.
+ * (R2 BUG-008 made the legal name unique; since 2026-11-11 it may repeat and
+ * the form only warns - LenderForm.lenderCode.test.tsx - but any other
+ * refusal of the field still shows here.)
  */
 describe('Edit Lender: a legal name another lender has', () => {
   it('shows the refusal under Legal Name and stays on the form', async () => {

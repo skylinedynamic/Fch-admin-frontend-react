@@ -5,7 +5,8 @@ import { lenderDisplayName } from '../../../modules/lender/displayName';
 export type LenderFilters = {
     search: string;
     category: string;
-    lenderName: string;
+    /** The lender picked in the Lender filter: its id, as names may repeat. */
+    lenderId: number | '';
 };
 
 /**
@@ -16,6 +17,7 @@ export type LenderFilters = {
 export const lenderSearchText = (lender: MatchedLender): string => {
     const r = lender.requirements || ({} as MatchedLender['requirements']);
     return [
+        lender.lender_code,
         lenderDisplayName(lender),
         lender.phone,
         lender.email,
@@ -40,7 +42,7 @@ export const filterLenders = (lenders: MatchedLender[], filters: LenderFilters):
 
     return lenders.filter((lender) => {
         if (filters.category && lender.product_category !== filters.category) return false;
-        if (filters.lenderName && lenderDisplayName(lender) !== filters.lenderName) return false;
+        if (filters.lenderId !== '' && lender.id !== filters.lenderId) return false;
         if (words.length === 0) return true;
 
         const text = lenderSearchText(lender);

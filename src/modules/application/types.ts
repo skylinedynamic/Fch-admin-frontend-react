@@ -1,6 +1,8 @@
 /** One row of the API's `matched_lenders` (LenderMatchService). */
 export interface MatchedLender {
     id: number;
+    /** Lender Code ("LND-4821"), shown in its own column and in the Lender filter. */
+    lender_code?: string | null;
     name: string;
     /** Null for a lender added before the legal name was required. */
     legal_name?: string | null;
@@ -71,6 +73,8 @@ export interface FundingApplication {
     id: number;
     application_number?: string;
     full_name: string;
+    /** Whose client this is; sent on the host's Intake & Review list only. */
+    partner_name?: string | null;
     /** The company on this application (one person can apply for several). */
     business_name: string | null;
     industry_type: string;
@@ -88,6 +92,8 @@ export interface ApplicationQueryParams {
     search: string;
     status: string;
     funding_type?: string;
+    /** The host's Partner dropdown. */
+    partner_id?: number;
     start_date: string | null;
     end_date: string | null;
     filters: any;
