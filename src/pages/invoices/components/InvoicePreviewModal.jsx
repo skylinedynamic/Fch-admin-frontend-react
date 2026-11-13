@@ -192,7 +192,12 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
     const paymentMethod = displayInvoice?.payment_method;
     const paymentMethodLabel = paymentMethod || (isPaid ? '-' : PAYMENT_METHOD_NOT_PAID_LABEL);
     const paidByCard = paymentMethod ? Boolean(displayInvoice?.is_card_payment) : true;
-    const payerLabel = isCommissionPayout ? 'Payee Name' : (paidByCard ? 'Card Holder' : 'Paid By');
+    // The user who paid, from the API (BUG-202): a partner's staff user can pay
+    // the partner's invoice, so the party billed is not always the payer. An
+    // invoice paid before payers were recorded falls back to the party billed.
+    const paidByName = isCommissionPayout ? null : displayInvoice?.paid_by_name;
+    const payerLabel = isCommissionPayout ? 'Payee Name' : ((paidByCard && !paidByName) ? 'Card Holder' : 'Paid By');
+    const payerName = paidByName || billedTo.name || billedTo.company_name;
 
     return (
         <div className="modal fade" ref={modalRef} tabIndex="-1" aria-hidden="true">
@@ -317,7 +322,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 )}
                                                 {isPaid && (
                                                     <>
-                                                        <p className="text-muted mb-1">{payerLabel}: <span className="fw-medium" id="card-holder-name">{billedTo.name || billedTo.company_name}</span></p>
+                                                        <p className="text-muted mb-1">{payerLabel}: <span className="fw-medium" id="card-holder-name">{payerName}</span></p>
                                                         <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                                                     </>
                                                 )}

@@ -325,6 +325,36 @@ describe('InvoicePreviewModal - payment details', () => {
     expect(details).not.toHaveTextContent('Reference:')
   })
 
+  // BUG-202: a partner's staff user paid the partner's invoice, but the modal
+  // named the party billed (the partner owner). It names the user who paid.
+  it('names the user who paid, not the party billed', async () => {
+    respondWith({
+      id: 7, invoice_id: 'INV-20261112002', type: 'Seat', status: 'Paid', payment_amount: 50,
+      payment_method: 'Cash', payment_reference: 'QA-TEST-REF-1112', is_card_payment: false,
+      paid_by_name: 'Sam Staff', billed_from: host, billed_to: reseller,
+    })
+
+    renderModal()
+
+    const details = await paymentDetails()
+    expect(details).toHaveTextContent('Paid By: Sam Staff')
+    expect(details).not.toHaveTextContent('Rita Reseller')
+  })
+
+  it('names the user who paid by card too', async () => {
+    respondWith({
+      id: 7, invoice_id: 'INV-10', type: 'Seat', status: 'Paid', payment_amount: 50,
+      payment_method: 'Stripe', payment_reference: null, is_card_payment: true,
+      paid_by_name: 'Sam Staff', billed_from: host, billed_to: reseller,
+    })
+
+    renderModal()
+
+    const details = await paymentDetails()
+    expect(details).toHaveTextContent('Paid By: Sam Staff')
+    expect(details).not.toHaveTextContent('Card Holder')
+  })
+
   it('says Not paid yet when nothing has paid the invoice', async () => {
     respondWith({
       id: 7, invoice_id: 'INV-9', type: 'Enrollment', status: 'Unpaid', payment_amount: 500,

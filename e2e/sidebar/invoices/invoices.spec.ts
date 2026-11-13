@@ -40,6 +40,21 @@ test.describe('Invoices list', () => {
     await expect(details).not.toContainText('Stripe')
   })
 
+  // BUG-202: View Details named the party billed (the partner owner) as the payer of an invoice its staff user paid.
+  test('View Details names the user who paid the invoice', async ({ page }) => {
+    const api = await openList(page)
+    api.add({
+      method: 'GET', match: /\/common\/invoices\/1002$/,
+      body: ok({ ...INVOICES[1], payment_amount: 1200, payment_method: 'Cash', payment_reference: 'QA-TEST-REF-1112', is_card_payment: false, paid_by_name: 'Sam Staff', billed_to: { name: 'Johnathan Smithfield' } }),
+    })
+
+    await page.locator('tr', { hasText: 'INV-1002' }).getByTitle('View Details').click()
+
+    const details = page.locator('.modal.show').getByRole('heading', { name: /Payment Details/ }).locator('..')
+    await expect(details).toContainText('Paid By: Sam Staff')
+    await expect(details).not.toContainText('Johnathan Smithfield')
+  })
+
   test('lists invoices', async ({ page }) => {
     await openList(page)
     await expect(page.getByText('INV-1002')).toBeVisible()
