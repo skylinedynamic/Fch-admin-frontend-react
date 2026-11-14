@@ -37,6 +37,12 @@ if (!window.ResizeObserver) {
   window.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver
 }
 
+// jsdom has no layout, so Range has no box. PendingEmailNotice measures its
+// label's text with one; an empty box is what jsdom gives elements too.
+if (typeof Range !== 'undefined' && !Range.prototype.getBoundingClientRect) {
+  Range.prototype.getBoundingClientRect = () => new DOMRect(0, 0, 0, 0)
+}
+
 if (!window.IntersectionObserver) {
   class MockIntersectionObserver implements IntersectionObserver {
     readonly root: Element | Document | null = null

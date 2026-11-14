@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '../../test-utils'
 import { delay, http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
@@ -16,6 +16,32 @@ import { toast } from 'react-toastify'
 import PartnerProfile from '../../../src/pages/partners/PartnerProfile'
 
 const HOST = { permissions: ['view partners', 'update partners'] }
+const missing = { status: false, message: 'Partner not found.' }
+
+beforeEach(() => vi.clearAllMocks())
+
+/**
+ * Defect: opening a partner that does not exist (/partners/86 after it was
+ * deleted, or any unknown id) showed an empty Status & Agent form with Update
+ * and a stack of "Failed to load partner data" / "Partner not found." toasts.
+ * As for clients, leads, employees and users (BUG-030, BUG-164), the page says
+ * the partner was not found - once, with no form.
+ */
+describe('Partner profile of a partner that does not exist', () => {
+  it('says the partner was not found, with no form, update or error toasts', async () => {
+    signIn(HOST)
+    allowBackgroundCalls()
+    api('get', '/admin/partners-details/86', missing, 404)
+    api('get', '/admin/partners/86/status-agent', missing, 404)
+
+    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86' })
+
+    expect(await screen.findByText('Partner Not Found')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /update/i })).not.toBeInTheDocument()
+    expect(screen.queryByText('Status & Agent')).not.toBeInTheDocument()
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+})
 
 /**
  * BUG-001 (QA round 2), as on the client profile: /partners/abc showed an empty
@@ -27,7 +53,7 @@ describe('PartnerProfile - an id that is not a partner (BUG-001)', () => {
   it.each(['abc', '999999999'])('/partners/%s shows Partner Not Found and loads no counters or activity', async (id) => {
     signIn(HOST)
     allowBackgroundCalls()
-    api('get', `/admin/partners-details/${id}`, { status: false, message: 'Partner not found.' }, 404)
+    api('get', `/admin/partners-details/${id}`, missing, 404)
     const stats = api('post', `/admin/partners-profile-states-details-count/${id}`, { status: false }, 500)
     const activity = api('post', '/common/activity-logs/fetch-all-activities', { status: true, data: [] })
 

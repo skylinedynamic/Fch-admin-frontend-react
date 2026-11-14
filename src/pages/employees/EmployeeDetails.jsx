@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useIsHostPartner } from '../../lib/auth/useIsHostPartner';
@@ -31,17 +31,21 @@ import DepartmentModal from './components/DepartmentModal';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import FormLoader from '../../components/Loader/FormLoader';
+import ErrorPage from '../Utility/ErrorPage';
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { scrollToFirstError } from '../../utils/formUtils';
 import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
 import { formDataValue } from '../../modules/employee/logic';
+import { emailFieldValue } from '../../modules/account';
+import { SEAT_INVOICE_WAITING } from '../../config/limitOptions';
 
 const TAB_PERSONAL = 'personalDetails';
 const TAB_COMMISSIONS = 'commissions';
 
 export default function EmployeeDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { hasPermission } = usePermissions();
 
   // Permission checks
@@ -54,6 +58,8 @@ export default function EmployeeDetails() {
   const user = useAuthStore((state) => state.user);
   const userSubscription = useAuthStore((state) => state.userSubscription);
   const [loading, setLoading] = useState(true);
+  // 404/403 on the record: another partner's (or a deleted) employee (BUG-164).
+  const [notFound, setNotFound] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [roles, setRoles] = useState([]);
@@ -61,6 +67,8 @@ export default function EmployeeDetails() {
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [activeTab, setActiveTab] = useState(TAB_PERSONAL);
   const [pendingEmail, setPendingEmail] = useState(null);
+  // The email still used to sign in; the field shows the pending one meanwhile (BUG-203).
+  const [signInEmail, setSignInEmail] = useState('');
 
   // User Limit States
   const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
@@ -70,6 +78,8 @@ export default function EmployeeDetails() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0, invoiceId: null, userId: null, entityId: null, entityType: null });
   const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
+  // The employee created in a seat-purchase Save, opened once the payment window is done.
+  const [createdEmployeeId, setCreatedEmployeeId] = useState(null);
 
   // Location states
   const [countries] = useState(
@@ -233,6 +243,7 @@ export default function EmployeeDetails() {
 
           const normalizedData = {
             ...data,
+            email: emailFieldValue(data.email, data.user?.pending_email),
             country: finalCountry,
             state: finalState,
             city: cityValue,
@@ -248,13 +259,17 @@ export default function EmployeeDetails() {
           };
           setEmployee((prev) => ({ ...prev, ...normalizedData }));
           setPendingEmail(data.user?.pending_email || null);
+          setSignInEmail(data.email || '');
 
           // Set profile image matches partner pattern
           if (data.image) {
             setProfileImage(data.image);
           }
         })
-        .catch((err) => console.error('Failed to fetch employee', err))
+        .catch((err) => {
+          if ([403, 404].includes(err?.response?.status)) setNotFound(true);
+          else console.error('Failed to fetch employee', err);
+        })
         .finally(() => setLoading(false));
     }
   }, [id]);
@@ -533,13 +548,23 @@ export default function EmployeeDetails() {
     setEmployee(prev => ({ ...prev, create_account: true }));
   };
 
+  // The employee already exists when the payment window opens, so whether the
+  // seat is paid now or the window is closed, leave the create form: reloading
+  // it showed an empty form as if nothing had been saved (BUG-165).
+  const openCreatedEmployee = () => {
+    navigate(createdEmployeeId ? `/employee-details/${createdEmployeeId}` : '/employees');
+  };
+
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false);
     toast.success('Payment completed successfully!');
-    // Delay reload to allow toast to be seen
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+    openCreatedEmployee();
+  };
+
+  // The payment window only opens after a create (the seat-purchase Save).
+  const handlePaymentHide = () => {
+    setShowPaymentModal(false);
+    openCreatedEmployee();
   };
 
   const applySaveError = (error, fallbackMessage, { toastValidationErrors = false } = {}) => {
@@ -684,12 +709,13 @@ export default function EmployeeDetails() {
         const res = await updateEmployee(id, formData);
         toast.success('Employee updated successfully');
 
-        // With a login, a new email isn't applied until it's confirmed, so show
-        // the one still in effect alongside the pending one.
+        // With a login, a new email isn't applied until it's confirmed: the
+        // field shows the pending one and the notice the one in effect (BUG-203).
         const savedEmail = res?.data?.employee?.email;
         const savedPending = res?.data?.user?.pending_email || null;
         if (savedEmail !== undefined) {
-          setEmployee((prev) => ({ ...prev, email: savedEmail }));
+          setEmployee((prev) => ({ ...prev, email: emailFieldValue(savedEmail, savedPending) }));
+          setSignInEmail(savedEmail || '');
         }
         setPendingEmail(savedPending);
       } else {
@@ -708,6 +734,13 @@ export default function EmployeeDetails() {
           const entityId = res.data?.user?.entity_id;
           const entityType = res.data?.user?.entity_type;
           setLimitData(prev => ({ ...prev, invoiceId, userId, entityId, entityType }));
+          setCreatedEmployeeId(newEmployeeId || null);
+          // Paying it needs "Pay Invoice", as Pay Now on Invoices does (BUG-202).
+          if (invoiceId && !hasPermission('Pay Invoice')) {
+            toast.info(SEAT_INVOICE_WAITING('Employee'));
+            navigate(newEmployeeId ? `/employee-details/${newEmployeeId}` : '/employees');
+            return;
+          }
           if (invoiceId) {
             try {
               const invoiceRes = await fetchInvoiceDetails(invoiceId);
@@ -722,6 +755,10 @@ export default function EmployeeDetails() {
           setShowPaymentModal(true);
           return;
         }
+
+        // Leave the create form: kept filled in, a second Save looked like the
+        // first had failed ("Email is already in use.") (BUG-165).
+        navigate(newEmployeeId ? `/employee-details/${newEmployeeId}` : '/employees');
       }
 
     } catch (error) {
@@ -730,6 +767,11 @@ export default function EmployeeDetails() {
       setIsSaving(false);
     }
   };
+
+  // Say so rather than show an empty form with Update, as for clients and leads (BUG-030).
+  if (notFound) {
+    return <ErrorPage status={404} title="Employee Not Found" message="The employee you are looking for does not exist or you do not have permission to view it." />;
+  }
 
   return (
     <div className="page-content">
@@ -832,7 +874,12 @@ export default function EmployeeDetails() {
                           <PendingEmailNotice
                             userId={employee.user?.id}
                             pendingEmail={pendingEmail}
-                            onChange={setPendingEmail}
+                            currentEmail={signInEmail}
+                            onChange={(value) => {
+                              setPendingEmail(value);
+                              // Cancelled: back to the email still in use.
+                              if (!value) setEmployee((prev) => ({ ...prev, email: signInEmail }));
+                            }}
                             canManage={canUpdate}
                           />
                         }
@@ -952,7 +999,7 @@ export default function EmployeeDetails() {
 
         <InvoicePaymentModal
           show={showPaymentModal}
-          onHide={() => setShowPaymentModal(false)}
+          onHide={handlePaymentHide}
           onSuccess={handlePaymentSuccess}
           invoice={limitData.invoice}
         />

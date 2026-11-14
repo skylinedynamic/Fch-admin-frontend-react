@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
-import { INVOICE_STATUS_OPTIONS, INVOICE_OWNERSHIP_OPTIONS, INVOICE_HOST_OWNERSHIP_OPTIONS } from '../../../config/invoiceConfig';
+import { INVOICE_STATUS_OPTIONS, INVOICE_OWNERSHIP_OPTIONS, INVOICE_HOST_OWNERSHIP_OPTIONS, INVOICE_TYPE_OPTIONS } from '../../../config/invoiceConfig';
 import FilterLoader from '../../../components/Loader/FilterLoader';
 
 export default function InvoiceFilters({ 
@@ -10,6 +10,7 @@ export default function InvoiceFilters({
     selectedMine, setSelectedMine,
     selectedPayee, setSelectedPayee,
     selectedCycle, setSelectedCycle,
+    selectedType, setSelectedType,
     dateRange, setDateRange,
     onApply,
     onClear,
@@ -19,10 +20,11 @@ export default function InvoiceFilters({
     const ownershipOptions = isHost ? INVOICE_HOST_OWNERSHIP_OPTIONS : INVOICE_OWNERSHIP_OPTIONS;
 
     const loaderConfig = [
-        { col: 'col-xxl-3 col-sm-12' }, // Search
-        { col: 'col-xxl-3 col-sm-6' },  // Date Range
+        { col: 'col-xxl-2 col-sm-12' }, // Search
+        { col: 'col-xxl-2 col-sm-6' },  // Date Range
         { col: 'col-xxl-2 col-sm-6' },  // Ownership
         { col: 'col-xxl-2 col-sm-6' },  // Status
+        { col: 'col-xxl-2 col-sm-6' },  // Type
         { col: 'col-xxl-2 col-sm-12', isButton: true } // Buttons
     ];
 
@@ -35,7 +37,7 @@ export default function InvoiceFilters({
                 <FilterLoader config={loaderConfig} />
             ) : (
                 <div className="row g-3 mb-3 align-items-center">
-            <div className="col-xxl-3 col-sm-12">
+            <div className="col-xxl-2 col-sm-12">
                 <div className="search-box">
                     <input
                         type="text"
@@ -55,7 +57,7 @@ export default function InvoiceFilters({
                 </div>
             </div>
 
-            <div className="col-xxl-3 col-sm-6">
+            <div className="col-xxl-2 col-sm-6">
                 <div className="search-box">
                     <Calendar 
                         value={dateRange}
@@ -91,6 +93,18 @@ export default function InvoiceFilters({
                     placeholder="All Status" 
                     className="w-100 employee-filter-dropdown"
                     onChange={(e) => setSelectedStatus(e.value)}
+                />
+            </div>
+
+            <div className="col-xxl-2 col-sm-6">
+                <Dropdown
+                    value={selectedType}
+                    options={INVOICE_TYPE_OPTIONS}
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="All Types"
+                    className="w-100 employee-filter-dropdown"
+                    onChange={(e) => setSelectedType(e.value)}
                 />
             </div>
 

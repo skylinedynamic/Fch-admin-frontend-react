@@ -319,3 +319,47 @@ test.describe('User details - create, opened directly at the seat limit', () => 
     await expect(page.locator('.modal-backdrop')).toHaveCount(0)
   })
 })
+
+// BUG-202: paying the bought seat's invoice needs "Pay Invoice", as Pay Now on
+// Invoices does. Without it the user is still created and the invoice waits.
+test.describe('User details - paying for a bought seat', () => {
+  const EMPLOYEE = { id: 7, first_name: 'Jane Doe', full_name: 'Jane Doe', email: 'jane@example.test', phone_number_1: '5551234567', country_code: '+1', employee_code: 'EMP-00007' }
+
+  async function buySeatAndSave(page: Page, permissions: string[]) {
+    await seedSession(page, { is_host: 0, entity_type: 'Partner', permissions: ['view users', 'create users', ...permissions] } as never)
+    const api = await mockApi(page, [
+      { method: 'GET', match: '/common/user-details', body: ok({ user: { is_host: 0, is_free_trail: false } }) },
+      { method: 'GET', match: '/common/user-count', body: ok({ count: 3, seat_limit: 3, per_user_price: 49 }) },
+      { method: 'GET', match: '/common/employees-available-for-user', body: ok([EMPLOYEE]) },
+      { method: 'POST', match: '/common/roles/fetch-roles', body: ok(ROLES) },
+      { method: 'POST', match: '/common/users/fetch-users', body: paginated(USERS) },
+      { method: 'POST', match: /\/common\/users$/, body: ok({ id: 51, invoice_id: 88 }, 'User created successfully') },
+      { method: 'GET', match: /\/common\/invoices\/88$/, body: ok({ id: 88, invoice_id: 'INV-88', status: 'Unpaid', payment_amount: 49, displayable_payment_amount: '$49.00' }) },
+    ])
+    await page.goto('/users/create')
+    await page.locator('.modal.show').getByRole('button', { name: /proceed/i }).click()
+    await expect(page.getByText(/seat purchase pending activation/i)).toBeVisible()
+
+    await pickPrime(page, page.locator('#user-employee').locator('xpath=ancestor::div[contains(@class,"p-dropdown")][1]'), /Jane Doe/)
+    await pickPrime(page, page.locator('#role_id').locator('xpath=ancestor::div[contains(@class,"p-dropdown")][1]'), 'Agent')
+    await page.getByLabel(/^password/i).fill('secret123')
+    await page.getByRole('button', { name: /^\W*save$/i }).click()
+    await expectCall(api, 'POST', /\/common\/users$/)
+    return api
+  }
+
+  test('someone holding Pay Invoice goes on to pay the seat invoice', async ({ page }) => {
+    const api = await buySeatAndSave(page, ['Pay Invoice'])
+
+    await expectCall(api, 'GET', /\/common\/invoices\/88$/)
+    await expect(page).toHaveURL(/\/users\/create$/)
+  })
+
+  test('without Pay Invoice, the seat invoice is left waiting and the list opens', async ({ page }) => {
+    const api = await buySeatAndSave(page, [])
+
+    await expect(page).toHaveURL(/\/users$/)
+    await expect(page.getByText('User created. Its seat invoice is still unpaid - someone with the Pay Invoice permission can pay it from Invoices.')).toBeVisible()
+    expect(api.find('GET', /\/common\/invoices\/88$/)).toHaveLength(0)
+  })
+})

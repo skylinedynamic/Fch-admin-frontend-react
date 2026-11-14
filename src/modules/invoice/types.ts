@@ -55,6 +55,8 @@ export type ProcessPaymentPayload = {
     invoice_id: number | string;
     payment_method_id: number;
     bank_detail_id?: number | string;
+    /** "Save card as default payment method" - only then is the card kept. */
+    save_card?: boolean;
 };
 
 /**

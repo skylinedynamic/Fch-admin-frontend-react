@@ -7,6 +7,12 @@ import { toast } from 'react-toastify';
 import { buildStorageUrl } from '../../../../utils/imageHelpers';
 import { FILE_MANAGER_CONFIG } from '../../../../modules/filemanager/config';
 
+// An employee keeps a department name even after that department was removed
+// (BUG-183). Offer it, so the form shows it and an Update does not drop it.
+export const withCurrentDepartment = (departments = [], current) => {
+    if (!current || departments.some((d) => d.name === current)) return departments;
+    return [...departments, { id: `current-${current}`, name: current }];
+};
 
 export default function PersonalInfoSection({
     employee,
@@ -207,7 +213,7 @@ export default function PersonalInfoSection({
                     <Dropdown
                         inputId="department"
                         value={employee.department}
-                        options={departments}
+                        options={withCurrentDepartment(departments, employee.department)}
                         onChange={(e) => onChange({ target: { name: 'department', value: e.value } })}
                         optionLabel="name"
                         optionValue="name"

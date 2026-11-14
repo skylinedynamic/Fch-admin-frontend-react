@@ -20,6 +20,8 @@ import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfi
 import PaymentDetailsLoader from '../../components/Loader/PaymentDetailsLoader';
 import { formatDate } from '../../utils/formatters';
 import ErrorPage from '../Utility/ErrorPage';
+import PaymentEnvironmentNotice from './components/PaymentEnvironmentNotice';
+import PaidByInfo from './components/PaidByInfo';
 import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function PaymentDetails() {
@@ -315,6 +317,7 @@ export default function PaymentDetails() {
                                             <h5 className="fs-14 mb-0">{payment.phone || '-'}</h5>
                                         </div>
                                     </div>
+                                    <PaidByInfo name={payment.paid_by_name} />
 
                                     {/* Bottom Approval / Rejection Info Section */}
                                     {!isStripe && hasRawDetails && (
@@ -323,10 +326,11 @@ export default function PaymentDetails() {
 
                                             {typeof rawDetails === 'object' && (
                                                 <div className="row">
-                                                    {rawDetails.approved_by && (
+                                                    {/* Names from the API's user ids (BUG-202); older payments fall back to the details. */}
+                                                    {(payment.approved_by_name || rawDetails.approved_by) && (
                                                         <div className="col-lg-3 col-sm-6 mb-3">
                                                             <p className="text-muted mb-1 text-uppercase fw-semibold fs-12">Approved By</p>
-                                                            <h5 className="fs-14 mb-0">{rawDetails.approved_by}</h5>
+                                                            <h5 className="fs-14 mb-0">{payment.approved_by_name || rawDetails.approved_by}</h5>
                                                         </div>
                                                     )}
                                                     {rawDetails.approved_at && (
@@ -335,10 +339,10 @@ export default function PaymentDetails() {
                                                             <h5 className="fs-14 mb-0">{formatDate(rawDetails.approved_at)}</h5>
                                                         </div>
                                                     )}
-                                                    {rawDetails.rejected_by && (
+                                                    {(payment.rejected_by_name || rawDetails.rejected_by) && (
                                                         <div className="col-lg-3 col-sm-6 mb-3">
                                                             <p className="text-muted mb-1 text-uppercase fw-semibold fs-12 text-danger">Rejected By</p>
-                                                            <h5 className="fs-14 mb-0 text-danger">{rawDetails.rejected_by}</h5>
+                                                            <h5 className="fs-14 mb-0 text-danger">{payment.rejected_by_name || rawDetails.rejected_by}</h5>
                                                         </div>
                                                     )}
                                                     {rawDetails.rejected_at && (
@@ -383,6 +387,7 @@ export default function PaymentDetails() {
                                             <p className="text-muted fs-13 mb-3">
                                                 This payment is currently <strong>Processing</strong> and requires your action. Enter notes/remarks below and select <strong>Approve Payment</strong> or <strong>Reject Payment</strong>.
                                             </p>
+                                            <PaymentEnvironmentNotice isProduction={!!payment.is_environment} className="mb-3" />
                                             <div className="mb-3">
                                                 <label className="form-label fw-semibold fs-13">
                                                     Note / Remarks <span className="text-muted fw-normal fs-12">(Required for Rejection, Optional for Approval)</span>
@@ -446,6 +451,7 @@ export default function PaymentDetails() {
                             <p className="text-muted fs-14 mb-3">
                                 Are you sure you want to approve this payment of <strong className="text-dark">{payment?.amount}</strong> for Invoice <strong className="text-dark">{payment?.invoice_id || '-'}</strong>?
                             </p>
+                            <PaymentEnvironmentNotice isProduction={!!payment?.is_environment} className="mb-3" />
                             <div className="bg-light rounded p-3 mb-3 border">
                                 <span className="fw-semibold fs-13 text-muted d-block mb-1">Note / Remarks:</span>
                                 <p className="mb-0 fs-13 text-dark text-break fw-medium">{note.trim() || <span className="text-muted fs-12 italic">No note provided</span>}</p>
@@ -502,6 +508,7 @@ export default function PaymentDetails() {
                             <p className="text-muted fs-14 mb-3">
                                 Are you sure you want to reject this payment of <strong className="text-dark">{payment?.amount}</strong> for Invoice <strong className="text-dark">{payment?.invoice_id || '-'}</strong>?
                             </p>
+                            <PaymentEnvironmentNotice isProduction={!!payment?.is_environment} className="mb-3" />
                             <div className="bg-light rounded p-3 mb-3 border border-danger-subtle">
                                 <span className="fw-semibold fs-13 text-danger d-block mb-1">Rejection Reason / Remarks:</span>
                                 <p className="mb-0 fs-13 text-dark text-break fw-medium">{note}</p>

@@ -124,12 +124,32 @@ describe('StripeForm', () => {
     await clickPay()
 
     await waitFor(() => expect(onPaymentSuccess).toHaveBeenCalledWith(999))
-    expect(posted.pay).toEqual([{ payment_token: 'pm_abc123', invoice_id: 42, payment_method_id: 7 }])
+    expect(posted.pay).toEqual([{ payment_token: 'pm_abc123', invoice_id: 42, payment_method_id: 7, save_card: false }])
     expect(JSON.stringify(posted.pay)).not.toMatch(/cardNumber|cvv/)
     expect(toastSuccess).toHaveBeenCalledWith('Payment completed successfully!')
     expect(mockStripe.handleNextAction).not.toHaveBeenCalled()
     expect(posted.confirm).toBeUndefined()
     expect(window.location.reload).toHaveBeenCalled()
+  })
+
+  // The card is kept as the payer's default only when this box is ticked.
+  it('offers to save the card as the default payment method, unticked by default', async () => {
+    renderForm()
+
+    const box = await screen.findByRole('checkbox', { name: 'Save card as default payment method' })
+    expect(box).not.toBeChecked()
+  })
+
+  it('sends save_card when the box is ticked', async () => {
+    payAnswers({ status: true, message: 'Payment processed successfully.', data: { success: true, payment_id: 999, status: 'succeeded' } })
+    const { onPaymentSuccess } = renderForm()
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Save card as default payment method' }))
+    await clickPay()
+
+    await waitFor(() => expect(onPaymentSuccess).toHaveBeenCalledWith(999))
+    expect(posted.pay).toEqual([{ payment_token: 'pm_abc123', invoice_id: 42, payment_method_id: 7, save_card: true }])
   })
 
   it('shows an error toast and does not call the payment API when Stripe rejects the card', async () => {

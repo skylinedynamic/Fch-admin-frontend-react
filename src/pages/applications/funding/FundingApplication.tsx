@@ -6,6 +6,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { useFundingApplications, useFundingApplicationStats } from '../../../modules/application';
+import { usePartnerOptions, partnerOptionLabel } from '../../../modules/partner';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 
@@ -37,17 +38,24 @@ export default function FundingApplication() {
     const [searchText, setSearchText] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [dateRange, setDateRange] = useState<Date[] | null>(null);
+    const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('');
     const [filters, setFilters] = useState<any>({});
+
+    // The host's Partner dropdown: every partner (a partner sees only its own rows).
+    const { data: partnerOptions = [] } = usePartnerOptions(isHost);
+    const partners = partnerOptions.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
 
     // Applied Filters (For API Query)
     const [appliedFilters, setAppliedFilters] = useState<{
         search: string;
         status: string;
+        partner_id: number | '';
         date_range: Date[] | null;
         filters: any;
     }>({
         search: '',
         status: '',
+        partner_id: '',
         date_range: null,
         filters: {}
     });
@@ -58,6 +66,7 @@ export default function FundingApplication() {
         per_page: perPage,
         search: appliedFilters.search,
         status: appliedFilters.status,
+        partner_id: appliedFilters.partner_id || undefined,
         start_date: toLocalYmd(appliedFilters.date_range?.[0]),
         end_date: toLocalYmd(appliedFilters.date_range?.[1]),
         filters: appliedFilters.filters,
@@ -76,16 +85,20 @@ export default function FundingApplication() {
     const { data: statsResponse, isLoading: statsLoading } = useFundingApplicationStats();
     const stats = statsResponse?.data || { total_applications: 0, approved: 0, pending: 0, approved_amount: 0 };
 
+    // The column filters, empty.
+    const emptyFilters = () => ({
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        industry_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        purpose_of_funds: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    });
+
     // Initialize filters
     const initFilters = () => {
-        const initial = {
-            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            industry_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            purpose_of_funds: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-        };
+        const initial = emptyFilters();
         setFilters(initial);
         setAppliedFilters(prev => ({ ...prev, filters: initial }));
     };
@@ -114,6 +127,7 @@ export default function FundingApplication() {
             ...prev,
             search: searchText,
             status: selectedStatus,
+            partner_id: selectedPartnerId,
             date_range: dateRange,
             filters: filters
         }));
@@ -124,31 +138,16 @@ export default function FundingApplication() {
         // Reset Inputs
         setSearchText('');
         setSelectedStatus('');
+        setSelectedPartnerId('');
         setDateRange(null);
-        initFilters();
 
-        // Reset Applied Filters
-        setAppliedFilters(prev => ({
-            ...prev,
-            search: '',
-            status: '',
-            date_range: null,
-            filters: {}
-        }));
-
-        // Re-call initFilters to reset state properly
-        const initial = {
-            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            industry_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            purpose_of_funds: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-        };
+        // Reset the column filters and everything applied
+        const initial = emptyFilters();
         setFilters(initial);
         setAppliedFilters({
             search: '',
             status: '',
+            partner_id: '',
             date_range: null,
             filters: initial
         });
@@ -181,6 +180,9 @@ export default function FundingApplication() {
         }));
         setPage(1);
     };
+
+    // Five filters for the host (with Partner), four for a partner.
+    const filterCol = isHost ? 'col-xl col-md-6 col-12' : 'col-lg-3 col-md-6 col-12';
 
     // Template body
     const statusBodyTemplate = (rowData: FundingApplicationType) => {
@@ -226,7 +228,7 @@ export default function FundingApplication() {
                                     handleApplyFilters();
                                 }}>
                                     <div className="row g-3 mb-3">
-                                        <div className="col-lg-3 col-md-6 col-12">
+                                        <div className={filterCol}>
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -239,7 +241,7 @@ export default function FundingApplication() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-lg-3 col-md-6 col-12">
+                                        <div className={filterCol}>
                                             <Dropdown
                                                 value={selectedStatus}
                                                 options={[{ label: 'All Status', value: '' }, ...FUNDING_APPLICATION_STATUS_OPTIONS]}
@@ -250,7 +252,22 @@ export default function FundingApplication() {
                                                 className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
-                                        <div className="col-lg-3 col-md-6 col-12">
+                                        {isHost && (
+                                            <div className={filterCol}>
+                                                <Dropdown
+                                                    value={selectedPartnerId}
+                                                    options={[{ label: 'All Partners', value: '' }, ...partners]}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    onChange={(e) => setSelectedPartnerId(e.value)}
+                                                    filter
+                                                    filterBy="label"
+                                                    placeholder="All Partners"
+                                                    className="w-100 employee-filter-dropdown"
+                                                />
+                                            </div>
+                                        )}
+                                        <div className={filterCol}>
                                             <div className="search-box">
                                                 <Calendar
                                                     value={dateRange}
@@ -264,7 +281,7 @@ export default function FundingApplication() {
                                                 <i className="ri-calendar-2-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-lg-3 col-md-6 col-12">
+                                        <div className={filterCol}>
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
@@ -278,7 +295,7 @@ export default function FundingApplication() {
                                 </form>
 
                                 {loading ? (
-                                    <TableLoader rows={10} columns={new Array(8).fill({ style: { minWidth: '100px' } })} />
+                                    <TableLoader rows={10} columns={new Array(isHost ? 9 : 8).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
@@ -319,6 +336,18 @@ export default function FundingApplication() {
                                                 filterPlaceholder="Search company"
                                                 style={{ minWidth: '180px' }}
                                             />
+                                            {/* Whose client this is - the host's view across partners. */}
+                                            {isHost && (
+                                                <Column
+                                                    field="partner_name"
+                                                    header="Partner Name"
+                                                    body={(rowData: FundingApplicationType) => rowData.partner_name || <span className="text-muted">-</span>}
+                                                    sortable
+                                                    filter
+                                                    filterPlaceholder="Search partner"
+                                                    style={{ minWidth: '160px' }}
+                                                />
+                                            )}
                                             <Column
                                                 field="application_number"
                                                 header="App No"
