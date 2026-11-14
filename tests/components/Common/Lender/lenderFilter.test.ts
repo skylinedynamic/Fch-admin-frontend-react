@@ -29,7 +29,7 @@ const lenders = [
   lender({ id: 3, name: 'Balboa Capital', phone: '(888) 555-0106', email: 'deals@balboa.example', product_category: 'Equipment Financing' }),
 ]
 
-const none = { search: '', category: '', lenderName: '' }
+const none = { search: '', category: '', lenderId: '' as number | '' }
 const ids = (list: MatchedLender[]) => list.map((l) => l.id)
 
 describe('filterLenders', () => {
@@ -60,21 +60,28 @@ describe('filterLenders', () => {
 
   it('filters by category and by lender, combined with the search', () => {
     expect(ids(filterLenders(lenders, { ...none, category: 'Equipment Financing' }))).toEqual([3])
-    expect(ids(filterLenders(lenders, { ...none, lenderName: 'LendingClub' }))).toEqual([2])
-    expect(ids(filterLenders(lenders, { search: 'fundbox', category: 'Equipment Financing', lenderName: '' }))).toEqual([])
+    expect(ids(filterLenders(lenders, { ...none, lenderId: 2 }))).toEqual([2])
+    expect(ids(filterLenders(lenders, { search: 'fundbox', category: 'Equipment Financing', lenderId: '' }))).toEqual([])
   })
 })
 
-// R2 BUG-008: two lenders may share a name; each is shown, filtered and
-// searched as "Lender Name - Legal Name".
+// R2 BUG-008: two lenders may share a name - since 2026-11-11 a legal name
+// too. The Lender filter picks the lender itself, and its Lender Code
+// (LND-1234) is searchable.
 describe('filterLenders - lenders that share a name', () => {
   const kabbage = [
-    lender({ id: 5, name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }),
-    lender({ id: 6, name: 'Kabbage', legal_name: 'Kabbage Funding LLC', display_name: 'Kabbage - Kabbage Funding LLC' }),
+    lender({ id: 5, lender_code: 'LND-1111', name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }),
+    lender({ id: 6, lender_code: 'LND-2222', name: 'Kabbage', legal_name: 'Kabbage Funding LLC', display_name: 'Kabbage - Kabbage Funding LLC' }),
+    lender({ id: 7, lender_code: 'LND-3333', name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }),
   ]
 
-  it('filters to the one lender chosen by its display name', () => {
-    expect(ids(filterLenders(kabbage, { ...none, lenderName: 'Kabbage - Kabbage Funding LLC' }))).toEqual([6])
+  it('filters to the one lender chosen, even when another has the same name and legal name', () => {
+    expect(ids(filterLenders(kabbage, { ...none, lenderId: 6 }))).toEqual([6])
+    expect(ids(filterLenders(kabbage, { ...none, lenderId: 7 }))).toEqual([7])
+  })
+
+  it('finds a lender by its Lender Code', () => {
+    expect(ids(filterLenders(kabbage, { ...none, search: 'lnd-3333' }))).toEqual([7])
   })
 
   it('finds a lender by its legal name', () => {

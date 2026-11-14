@@ -61,3 +61,28 @@ describe('Subscription details - the last installment', () => {
     expect(screen.queryByText('Last Installment')).not.toBeInTheDocument()
   })
 })
+
+// The subscriber icon sits on the same light tile for every subscriber type,
+// as on Payment and Invoice details.
+describe('Subscription details - subscriber icon tile', () => {
+  it.each(['Partner', 'Borrower', 'User'])('is the neutral tile for a %s', async (entityType) => {
+    open({ entity_type: entityType })
+
+    await screen.findByText('Bo Rower')
+    const tile = document.querySelector('.card-header .avatar-title') as HTMLElement
+    expect(tile).toHaveClass('bg-gray-subtle', 'text-primary')
+    expect(tile.className).not.toMatch(/\b(bg|text)-(success|info)(-subtle)?\b/)
+  })
+})
+
+// BUG-194: the per-client fee is named "Client Activation Fee", as on Plan & Fee
+// and the invoices; the amount still comes from borrower_fee_amount.
+describe('Subscription details - client activation fee', () => {
+  it('heads the fee amount Client Activation Fee', async () => {
+    open({ entity_type: 'Partner', borrower_fee_amount: '$800.00' })
+
+    expect(await screen.findByText('Client Activation Fee')).toBeInTheDocument()
+    expect(screen.getByText('$800.00')).toBeInTheDocument()
+    expect(screen.queryByText('Borrower Fee')).not.toBeInTheDocument()
+  })
+})

@@ -7,7 +7,7 @@ import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
 import BillingDetailsLoader from '../../components/Loader/BillingDetailsLoader';
 import PageHeader from '../common/PageHeader';
-import { INVOICE_STATUS_COLORS } from '../../config/invoiceConfig';
+import { INVOICE_STATUS_COLORS, INVOICE_TYPE_BORROWER_FEE_LABEL } from '../../config/invoiceConfig';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import { FINAL_INSTALLMENT_NOTE } from '../../config/subscriptionConfig';
 
@@ -206,7 +206,8 @@ export default function SubscriptionDetails() {
                                 <div className="card-header align-items-center d-flex border-bottom border-light">
                                     <div className="d-flex align-items-center flex-grow-1">
                                         <div className="avatar-xs flex-shrink-0 me-3">
-                                            <div className={`avatar-title bg-${typeColor}-subtle text-${typeColor} rounded fs-16 d-flex align-items-center justify-content-center`} style={{ width: '32px', height: '32px' }}>
+                                            {/* Same light tile for every subscriber type, as on Payment and Invoice details. */}
+                                            <div className="avatar-title bg-gray-subtle bg-opacity-10 text-primary rounded fs-16 d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
                                                 <i className={isBorrower ? 'ri-user-3-line' : isPartner ? 'ri-building-2-line' : 'ri-team-line'}></i>
                                             </div>
                                         </div>
@@ -360,7 +361,7 @@ export default function SubscriptionDetails() {
 
                                         {subscriptionDetails.borrower_fee_amount && (
                                             <div className="col-sm-6 col-md-3">
-                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Borrower Fee</p>
+                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">{INVOICE_TYPE_BORROWER_FEE_LABEL}</p>
                                                 <h5 className="fs-14 mb-0 fw-semibold text-dark">{subscriptionDetails.borrower_fee_amount}</h5>
                                             </div>
                                         )}

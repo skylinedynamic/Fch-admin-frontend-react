@@ -67,6 +67,20 @@ describe('ResetPassword', () => {
     await user.type(screen.getByPlaceholderText('Confirm password'), confirm)
   }
 
+  // Defect: BUG-199 - the checklist read "At lowercase letter" and "A least number".
+  it('lists the password rules in plain English', () => {
+    mount()
+
+    const checklist = screen.getByText('Password must contain:').parentElement!
+    const rules = Array.from(checklist.querySelectorAll('p')).map((p) => p.textContent)
+    expect(rules).toEqual([
+      'Minimum 8 characters',
+      'At least one lowercase letter (a-z)',
+      'At least one uppercase letter (A-Z)',
+      'At least one number (0-9)',
+    ])
+  })
+
   it('refuses a link with no token or email without calling the API', async () => {
     const user = userEvent.setup()
     const reset = api('post', '/auth/reset', { status: true })

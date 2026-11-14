@@ -79,6 +79,26 @@ describe('Dashboard: Recent Funding Applications', () => {
     expect(text).toHaveAttribute('title', LONG_FUNDING_TYPE)
     expect(text.style.maxWidth).toBe('260px')
   })
+
+  /**
+   * Defect (BUG-161, PP-DASH-04): "View all Applications" under Total Funding
+   * Applications, and View All on this widget, opened the Funding Requests
+   * list - other records, another total. Both open Funding Applications.
+   */
+  it("links the widget's View All to the Funding Applications list", async () => {
+    mountWithApplications()
+    const table = await recentTable()
+
+    const viewAll = table.closest('.card')!.querySelector('a') as HTMLAnchorElement
+    expect(viewAll).toHaveTextContent('View All')
+    expect(viewAll).toHaveAttribute('href', '/intake-review/funding-application')
+  })
+
+  it("links a partner's Total Funding Applications card to the Funding Applications list", async () => {
+    mount({ is_host: 0, partner_id: 5 }, { is_host: false, subscription_status: 'Active', subscription_end_date: '2999-01-01' })
+
+    expect(await screen.findByRole('link', { name: 'View all Applications' })).toHaveAttribute('href', '/intake-review/funding-application')
+  })
 })
 
 describe('Dashboard', () => {

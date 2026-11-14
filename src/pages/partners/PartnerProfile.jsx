@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import "../../../assets/css/dropdown-validation.css";
 import PageHeader from '../common/PageHeader';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
+import { createPartner, updatePartner, getPartner, getPartnerStatusAgent, updatePartnerStatusAgent, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
@@ -24,6 +24,7 @@ import { useAuthStore } from '../../store/auth/authStore';
 import PartnerConfigurationSection from './components/PartnerConfigurationSection';
 import ErrorPage from '../Utility/ErrorPage';
 import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
+import { emailFieldValue } from '../../modules/account';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -57,6 +58,8 @@ export default function PartnerProfile() {
 
     const [activeTab, setActiveTab] = useState(getInitialTab());
     const [errors, setErrors] = useState({});
+    // The partner does not exist (or is out of reach): shown as Partner Not Found (partnerNotFound).
+    const isMissing = (error) => [403, 404].includes(error?.response?.status);
     const [selectedDocumentsToAttach, setSelectedDocumentsToAttach] = useState([]);
     const [documentsReloadKey, setDocumentsReloadKey] = useState(0);
     const [documentsClearKey, setDocumentsClearKey] = useState(0);
@@ -230,9 +233,15 @@ export default function PartnerProfile() {
     const [profileStatsLoading, setProfileStatsLoading] = useState(true);
     const [isPartnerLoading, setIsPartnerLoading] = useState(true);
     const [partnerNotFound, setPartnerNotFound] = useState(false);
+    // Set once the user changes Status or Agent: from then on a load that comes
+    // back late (details or status-agent) must not put the old values back, or
+    // Update saves those instead of the user's choice (BUG-171). Cleared by a
+    // save and by opening another partner.
+    const statusAgentEditedRef = useRef(false);
 
     useEffect(() => {
         setPartnerNotFound(false);
+        statusAgentEditedRef.current = false;
     }, [id]);
     const [isSaving, setIsSaving] = useState(false);
     const [partnerPlans, setPartnerPlans] = useState([]);
@@ -365,12 +374,17 @@ export default function PartnerProfile() {
             setFormData(prev => ({
                 ...prev,
                 ...data, // Keep all existing backend fields
+                // The pending email while a change waits, and the one still in
+                // use beside it for the notice (BUG-203). Never sent back.
+                email: emailFieldValue(data.email, data.pending_email),
+                signin_email: data.email || '',
                 country: finalCountry,
                 state: finalState,
                 city: cityValue, // Set city (either actual city or "Others")
                 other_city: otherCityValue, // Set other_city if applicable
-                agent: data.assigned_user_id || '', // Keep as number/string from DB
-                status: data.status || '', // Explicitly map status
+                // Keep the user's unsaved Status/Agent if this load came back after they changed them (BUG-171).
+                agent: statusAgentEditedRef.current ? prev.agent : (data.assigned_user_id || ''), // Keep as number/string from DB
+                status: statusAgentEditedRef.current ? prev.status : (data.status || ''), // Explicitly map status
                 address_line_1: data.address_line_1 || '', // Map address_line_1 → address
                 partner_image: data.partner_image || '', // Map company_logo → partner_image
                 country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
@@ -423,6 +437,38 @@ export default function PartnerProfile() {
         loadProfileStats();
     }, [fetchPartnerData, loadProfileStats]);
 
+    // The Status & Agent tab's values, from its own endpoint. The agent's email
+    // and mobile are read-only and may be empty.
+    // A load is skipped while the user has unsaved Status/Agent changes; the
+    // saved values (force) always apply.
+    const applyStatusAgent = useCallback((sa, { force = false } = {}) => {
+        if (!sa || typeof sa !== 'object' || Array.isArray(sa)) return;
+        if (statusAgentEditedRef.current && !force) return;
+        setFormData(prev => ({
+            ...prev,
+            status: sa.status || '',
+            agent: sa.assign_to ?? '',
+            agentEmail: sa.agent?.email || '',
+            agentPhone: sa.agent?.phone_number || ''
+        }));
+    }, []);
+
+    const fetchStatusAgent = useCallback(async () => {
+        if (!id) return;
+        try {
+            applyStatusAgent(await getPartnerStatusAgent(id));
+        } catch (error) {
+            if (isMissing(error)) setPartnerNotFound(true);
+            else toast.error(error.response?.data?.message || 'Failed to load status and agent');
+        }
+    }, [id, applyStatusAgent]);
+
+    useEffect(() => {
+        if (activeTab === 'statusAgent') {
+            fetchStatusAgent();
+        }
+    }, [activeTab, fetchStatusAgent]);
+
     // The Agreement tab saved the switch itself: keep the new value, nothing to reload.
     const handleAgreementRequiredChange = useCallback((required) => {
         setFormData(prev => ({ ...prev, agreement_required: required }));
@@ -448,6 +494,7 @@ export default function PartnerProfile() {
     // Handle input changes
     const handleInputChange = (e) => {
         const { name, value, type, files } = e.target;
+        if (name === 'status' || name === 'agent') statusAgentEditedRef.current = true;
 
         if (type === 'file') {
             const file = files[0];
@@ -604,6 +651,7 @@ export default function PartnerProfile() {
 
     // Handle agent selection
     const handleAgentChange = (e) => {
+        statusAgentEditedRef.current = true;
         const agentId = e.target.value;
         const selectedUser = users.find(user => user.id == agentId);
         setFormData(prev => ({
@@ -620,7 +668,20 @@ export default function PartnerProfile() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-
+            // The Status & Agent tab saves only its two fields, on their own endpoint.
+            if (id && activeTab === 'statusAgent') {
+                const saved = await updatePartnerStatusAgent(id, {
+                    status: formData.status || '',
+                    assign_to: formData.agent || ''
+                });
+                // Saved: what the API kept is now the form's value, and later loads apply again.
+                statusAgentEditedRef.current = false;
+                applyStatusAgent(saved, { force: true });
+                setErrors(prev => ({ ...prev, status: null, agent: null }));
+                toast.success('Status and agent updated successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
+                return;
+            }
 
             const formDataToSend = buildPartnerFormDataPayload(formData, id, wasFreeTrial, partnerPlans);
 
@@ -709,6 +770,7 @@ export default function PartnerProfile() {
         }
     };
 
+    // Say so rather than show an empty form with Update, as for clients, leads and employees.
     if (partnerNotFound) {
         return <ErrorPage status={404} title="Partner Not Found" message="The partner you are looking for does not exist or you do not have permission to view it." />;
     }
@@ -895,29 +957,29 @@ export default function PartnerProfile() {
                                         }}
                                     />
                                 ) : (
-                                <PartnerForm
-                                    activeTab={activeTab}
-                                    formData={formData}
-                                    errors={errors}
-                                    profileImage={profileImage}
-                                    handleInputChange={handleInputChange}
-                                    handleAgentChange={handleAgentChange}
-                                    countries={countries}
-                                    states={states}
-                                    cities={cities}
-                                    users={users}
-                                    partnerId={id}
-                                    isHostViewer={Number(authUser?.is_host) == 1}
-                                    loading={isPartnerLoading}
-                                    onSelectedFilesChange={setSelectedDocumentsToAttach}
-                                    documentsReloadKey={documentsReloadKey}
-                                    documentsClearKey={documentsClearKey}
-                                    partnerPlans={partnerPlans}
-                                    onRefresh={handleRefresh}
-                                    setIsSaving={setIsSaving}
-                                    wasFreeTrial={wasFreeTrial}
-                                    onAgreementRequiredChange={handleAgreementRequiredChange}
-                                />
+                                    <PartnerForm
+                                        activeTab={activeTab}
+                                        formData={formData}
+                                        errors={errors}
+                                        profileImage={profileImage}
+                                        handleInputChange={handleInputChange}
+                                        handleAgentChange={handleAgentChange}
+                                        countries={countries}
+                                        states={states}
+                                        cities={cities}
+                                        users={users}
+                                        partnerId={id}
+                                        isHostViewer={Number(authUser?.is_host) == 1}
+                                        loading={isPartnerLoading}
+                                        onSelectedFilesChange={setSelectedDocumentsToAttach}
+                                        documentsReloadKey={documentsReloadKey}
+                                        documentsClearKey={documentsClearKey}
+                                        partnerPlans={partnerPlans}
+                                        onRefresh={handleRefresh}
+                                        setIsSaving={setIsSaving}
+                                        wasFreeTrial={wasFreeTrial}
+                                        onAgreementRequiredChange={handleAgreementRequiredChange}
+                                    />
                                 )}
                             </div>
                         </div>

@@ -13,7 +13,7 @@ import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import { usePermissions } from '../../lib/auth/usePermissions';
-import { SAVED_SECRET_PLACEHOLDER } from '../../config/appConfig';
+import { REMOVE_RECAPTCHA_SECRET_FIELD, SECRET_DISPLAY_MASK, secretForSave } from '../../config/appConfig';
 
 const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
@@ -34,7 +34,9 @@ export default function SiteSettings() {
     const [showFileManager, setShowFileManager] = useState<'primary' | 'secondary' | 'favicon' | false>(false);
 
     // The API reports the reCAPTCHA secret only as set (a mask), never the
-    // secret itself. The input starts blank; saving it blank keeps the stored one.
+    // secret itself. The field shows 16 dots, so a saved secret looks saved;
+    // left alone the API's mask goes back and keeps it, a new value replaces it, and clearing the
+    // field removes it (a blank secret alone means "keep" to the API).
     const [recaptchaSecretSaved, setRecaptchaSecretSaved] = useState(false);
 
     useEffect(() => {
@@ -46,7 +48,7 @@ export default function SiteSettings() {
             setFormData(prev => ({
                 ...prev,
                 ...s,
-                recaptcha_secret_key: '',
+                recaptcha_secret_key: savedSecret ? SECRET_DISPLAY_MASK : '',
                 // A US number, shown (XXX) XXX-XXXX however it was stored.
                 ...(s.phone_number ? { phone_number: formatPhoneNumber(s.phone_number) ?? s.phone_number } : {})
             }));
@@ -240,10 +242,16 @@ export default function SiteSettings() {
         const data = new FormData();
 
         Object.entries(formData).forEach(([key, value]) => {
-            if (!['header_logo', 'footer_logo', 'website_favicon'].includes(key)) {
+            if (key === 'recaptcha_secret_key') {
+                data.append(key, secretForSave(value as string | null | undefined));
+            } else if (!['header_logo', 'footer_logo', 'website_favicon'].includes(key)) {
                 data.append(key, value !== null && value !== undefined ? String(value) : '');
             }
         });
+
+        if (recaptchaSecretSaved && !formData.recaptcha_secret_key) {
+            data.append(REMOVE_RECAPTCHA_SECRET_FIELD, '1');
+        }
 
         const linksToSave = socialLinks.map(({ isCustom: _ic, ...rest }) => rest);
         data.append('social_links', JSON.stringify(linksToSave));
@@ -509,7 +517,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">reCAPTCHA Secret Key</label>
                                                     <div className="input-group">
                                                         <span className="input-group-text bg-light d-flex align-items-center justify-content-center" style={{ width: '42px' }}><i className="ri-lock-password-line fs-16"></i></span>
-                                                        <input type="password" className="form-control ps-2" name="recaptcha_secret_key" value={formData.recaptcha_secret_key || ''} onChange={handleChange} placeholder={recaptchaSecretSaved ? SAVED_SECRET_PLACEHOLDER : 'Secret Key'} autoComplete="new-password" />
+                                                        <input type="password" className="form-control ps-2" name="recaptcha_secret_key" value={formData.recaptcha_secret_key || ''} onChange={handleChange} placeholder="Secret Key" autoComplete="new-password" />
                                                     </div>
                                                 </div>
                                             </div>

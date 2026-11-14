@@ -114,3 +114,33 @@ test.describe('Settings › Payment Integration — methods that are not set up'
     await expect(alert).not.toContainText("aren't offered")
   })
 })
+
+// BUG-207: switching Cash Payment to Sandbox warned about live keys and real
+// transactions, and "Yes, Change to Sandbox" did not save the change.
+test.describe('Settings › Payment Integration — changing the environment', () => {
+  test('Cash Payment to Sandbox: a test-mode warning, and confirming saves it at once', async ({ page }) => {
+    const api = await open(page, [provider({ id: 7, name: 'Cash Payment', payment_mode: 'production' })])
+    api.add({
+      method: 'GET', match: '/common/partner-payment-providers/7',
+      body: ok({ id: 9, status: true, is_default: false, payment_mode: 'production', configuration: {}, bank_details: [], setup_issues: [] }),
+    })
+    api.add({
+      method: 'POST', match: /^\/common\/partner-payment-providers$/,
+      body: ok({ id: 9, status: true, is_default: false, payment_mode: 'sandbox', configuration: {}, bank_details: [], setup_issues: [] }),
+    })
+
+    await page.locator('.payment-method-row', { hasText: 'Cash Payment' }).click()
+    await page.locator('.p-dropdown', { hasText: /Production/ }).click()
+    await page.locator('.p-dropdown-panel .p-dropdown-item', { hasText: 'Sandbox' }).click()
+
+    const modal = page.locator('.modal.show', { hasText: 'Confirm Environment Change' })
+    await expect(modal).toContainText('test mode')
+    await expect(modal).not.toContainText('live')
+    await expect(modal).not.toContainText('Real transactions')
+
+    await modal.getByRole('button', { name: 'Yes, Change to Sandbox' }).click()
+
+    const saved = await expectCall(api, 'POST', '/common/partner-payment-providers')
+    expect(saved.json).toMatchObject({ payment_provider_id: 7, payment_mode: 'sandbox' })
+  })
+})

@@ -157,3 +157,29 @@ test.describe('Payment details - approve / reject', () => {
     await expect(page.getByRole('button', { name: /approve payment/i })).toHaveCount(0)
   })
 })
+
+// BUG-202: who paid, approved or rejected a payment, by the names the API gives.
+test.describe('Payment details - who paid and who decided', () => {
+  async function open(page: Page, detail: Record<string, unknown>) {
+    await seedSession(page, { permissions: ['view payments'] })
+    await mockApi(page, [{ method: 'GET', match: /\/common\/payments\/901$/, body: ok({ id: 901, transaction_id: 'TXN-901', invoice_id: 'INV-1001', amount: '$499.00', can_approve: false, ...detail }) }])
+    await page.goto('/payments/901')
+    await expect(page.getByText('Payment Details').first()).toBeVisible()
+  }
+
+  test('shows who paid a card payment', async ({ page }) => {
+    await open(page, { status: 'SUCCEEDED', from: 'Stripe', payment_type: 'Card', paid_by_name: 'Sam Staff' })
+
+    await expect(page.getByText('Paid By', { exact: true }).locator('..')).toContainText('Sam Staff')
+  })
+
+  test('shows who approved a manual payment', async ({ page }) => {
+    await open(page, {
+      status: 'SUCCEEDED', from: 'Cash', payment_type: 'Cash', paid_by_name: 'Sam Staff', approved_by_name: 'Hana Host',
+      raw_details: { approved_by: 'Old Name', approved_at: '2026-11-10 10:00:00' },
+    })
+
+    await expect(page.getByText('Approved By', { exact: true }).locator('..')).toContainText('Hana Host')
+    await expect(page.getByText('Old Name')).toHaveCount(0)
+  })
+})

@@ -83,6 +83,40 @@ describe.each([
   })
 })
 
+// /intake-review/funding-application/:id/edit opens by application id; the
+// funding request id arrives with the first response. The read is by the
+// application either way, so learning the request id must not refetch every
+// step - it did, and the page loaded twice on each refresh.
+describe.each([
+  { name: 'useBusinessInfo', hook: useBusinessInfo, path: 'business-info' },
+  { name: 'useOwnershipInfo', hook: useOwnershipInfo, path: 'ownership-info' },
+  { name: 'useFinancialInfo', hook: useFinancialInfo, path: 'financial-info' },
+  { name: 'useDisclosuresConsent', hook: useDisclosuresConsent, path: 'disclosures-and-consent' },
+  { name: 'useFederalCompliance', hook: useFederalCompliance, path: 'federal-compliance-disclosures' },
+  { name: 'useFundingRequest', hook: useFundingRequest, path: 'funding-request' },
+])('$name opened by application id', ({ hook: typedHook, path }) => {
+  const hook = typedHook as (id?: number | string | null, options?: { fundingApplicationId?: number | string }) => any
+
+  it('reads once and does not refetch when the funding request id arrives', async () => {
+    const seen = stub('get', `${FA}/${path}`, { status: true, data: { id: 61 } })
+    const queryClient = createTestQueryClient()
+
+    const { result, rerender } = renderHook(
+      ({ reqId }: { reqId: number | null }) => hook(reqId, { fundingApplicationId: '61' }),
+      { wrapper: wrapperFor(queryClient), initialProps: { reqId: null as number | null } }
+    )
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    rerender({ reqId: 900 })
+
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.data).toEqual({ id: 61 })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(seen.calls).toBe(1)
+    expect(new URL(seen.urls[0]).searchParams.get('funding_application_id')).toBe('61')
+  })
+})
+
 describe('useFundingRequest', () => {
   it('keys the cache by the id as a string', async () => {
     stub('get', `${FA}/funding-request`, { status: true, data: { id: 5 } })

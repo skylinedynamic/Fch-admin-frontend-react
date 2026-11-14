@@ -5,6 +5,8 @@ export type AuthUser = {
   id?: string | number
   name?: string
   email?: string
+  /** A sign-in email change waiting for confirmation (BUG-204). */
+  pending_email?: string | null
   phone_number?: string | null
   partner_id?: string | number | null
   user_type?: string

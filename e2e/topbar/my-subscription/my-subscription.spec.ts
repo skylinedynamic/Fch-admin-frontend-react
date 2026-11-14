@@ -27,6 +27,35 @@ test.describe('My subscription', () => {
     await expect(page.getByText('No payment history found')).toBeVisible()
   })
 
+  // BUG-194: the $800 fee reads "Client Activation Fee" in Recent Payments History, as the API names it.
+  test('payment history names the per-client fee Client Activation Fee', async ({ page }) => {
+    await open(page, {
+      ...DATA,
+      recent_payments: [
+        { id: 7, invoice_no: 'INV-FEE-1', invoice_type: 'borrower_fee', invoice_type_label: 'Client Activation Fee', amount: '$800.00', status: 'SUCCEEDED', created_at: '2026-03-01' },
+      ],
+    })
+    const row = page.locator('tr', { hasText: 'INV-FEE-1' })
+    await expect(row).toContainText('Client Activation Fee')
+    await expect(row).not.toContainText('Borrower Fee')
+  })
+
+  // BUG-187: the Current / Recent Bill card shows the invoice's own date as the API sends it,
+  // even in a browser ahead of UTC (Dhaka, where QA saw it a day off).
+  test.describe('in a browser ahead of UTC', () => {
+    test.use({ timezoneId: 'Asia/Dhaka' })
+
+    test('the recent bill shows the invoice date the API sends', async ({ page }) => {
+      await open(page, {
+        ...DATA,
+        recent_bill: { id: 276, invoice_id: 'INV-20261020008', amount: '$2,000.00', raw_amount: 2000, status: 'Paid', type: 'Commission Payout', created_at: '2026-10-20' },
+      })
+      const card = page.locator('.billing-card-wrapper', { hasText: 'Current / Recent Bill' })
+      await expect(card).toContainText('INV-20261020008')
+      await expect(card.locator('span', { hasText: /^Date:/ })).toHaveText('Date: 2026-10-20')
+    })
+  })
+
   test('cancelling asks for confirmation and can be backed out of', async ({ page }) => {
     const api = await open(page)
     await page.getByRole('button', { name: /cancel subscription/i }).click()
