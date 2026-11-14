@@ -124,6 +124,15 @@ test.describe('Employee create', () => {
     return api
   }
 
+  // R3-BUG-002: the file manager opens only an employee that exists, so the
+  // picture is added once the employee is saved (the next id was refused).
+  test('the picture waits for the employee to be saved', async ({ page }) => {
+    const api = await openCreate(page)
+    await expect(page.getByTitle('Select profile image')).toBeDisabled()
+    await expect(page.getByText('Save the employee first, then add a picture.')).toBeVisible()
+    expect(api.find('POST', '/filemanager/list')).toEqual([])
+  })
+
   // The same rule as Users › Add User: at the seat limit a partner on a free
   // trial is told it is a paid feature, a paid partner is offered a seat.
   async function openCreateAtSeatLimit(page: Page, isFreeTrial: boolean) {

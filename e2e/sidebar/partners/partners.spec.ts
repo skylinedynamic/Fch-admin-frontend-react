@@ -148,6 +148,15 @@ test.describe('Partner create', () => {
     return api
   }
 
+  // R3-BUG-002: the file manager opens only a partner that exists, so the
+  // picture is added once the partner is saved.
+  test('the picture waits for the partner to be saved', async ({ page }) => {
+    const api = await openCreate(page)
+    await expect(page.getByTitle('Upload profile image')).toBeDisabled()
+    await expect(page.getByText('Save the partner first, then add a picture.')).toBeVisible()
+    expect(api.find('POST', '/filemanager/list')).toEqual([])
+  })
+
   test('server validation errors mark the fields and keep the user on the form', async ({ page }) => {
     const api = await openCreate(page)
     api.add({
