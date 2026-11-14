@@ -8,6 +8,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import type { FileSystemItem } from '../../modules/filemanager/types';
 import { WEBSITE_PAGES } from '../../config/websitePages';
+import { SEO_META_TITLE_MAX_LENGTH, suggestSeoTitle } from '../../config/seo';
 
 const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 const WEBSITE_URL = import.meta.env.VITE_WEBSITE_URL?.replace(/\/$/, '') || '';
@@ -127,7 +128,7 @@ export default function SeoSettingEdit() {
             page_name: value,
             path: selected?.path || '',
             // Suggest default SEO title and description
-            meta_title: `${value} | Four Corner Funding`,
+            meta_title: suggestSeoTitle(value),
             meta_description: `Learn more about ${value} at Four Corner Funding. We provide expert business funding and credit building solutions.`
         }));
 
@@ -137,6 +138,9 @@ export default function SeoSettingEdit() {
 
         if (errors.page_name) setErrors(prev => ({ ...prev, page_name: '' }));
     };
+
+    // A title saved before the limit may be longer; the API keeps it while it is left unchanged.
+    const metaTitleTooLong = formData.meta_title.length > SEO_META_TITLE_MAX_LENGTH;
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -332,12 +336,20 @@ export default function SeoSettingEdit() {
                                                         <input
                                                             type="text"
                                                             name="meta_title"
-                                                            className={`form-control ${errors.meta_title ? 'is-invalid' : ''}`}
+                                                            className={`form-control ${errors.meta_title || metaTitleTooLong ? 'is-invalid' : ''}`}
                                                             value={formData.meta_title}
                                                             onChange={handleChange}
+                                                            maxLength={SEO_META_TITLE_MAX_LENGTH}
                                                             placeholder="SEO optimized title"
                                                         />
-                                                        {errors.meta_title && <div className="invalid-feedback d-block">{errors.meta_title}</div>}
+                                                        <div className="d-flex justify-content-between mt-1 small">
+                                                            <span className="text-danger">
+                                                                {errors.meta_title || (metaTitleTooLong && `This title is over the ${SEO_META_TITLE_MAX_LENGTH}-character limit. Shorten it to change it.`)}
+                                                            </span>
+                                                            <span data-testid="meta-title-count" className={metaTitleTooLong ? 'text-danger' : 'text-muted'}>
+                                                                {formData.meta_title.length} / {SEO_META_TITLE_MAX_LENGTH}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
 
