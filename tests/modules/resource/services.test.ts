@@ -9,6 +9,7 @@ import {
   updateResource,
   deleteResource,
   downloadResource,
+  fetchResourceFile,
   getResourceNextId,
 } from '../../../src/modules/resource/services'
 import type { ResourceFormData } from '../../../src/modules/resource/types'
@@ -63,6 +64,26 @@ describe('resource read services', () => {
     )
     const res = await downloadResource(9)
     expect(res.data).toBeInstanceOf(Blob)
+  })
+
+  // R3-BUG-003: the preview reads the file through the API, not the signed link.
+  it('fetchResourceFile reads the file from the download route', async () => {
+    server.use(
+      http.get('*/common/resources/download/:id', ({ params }) =>
+        new HttpResponse(`%PDF-${params.id}`, { headers: { 'Content-Type': 'application/pdf' } }))
+    )
+    const file = await fetchResourceFile(9)
+    expect(file).toBeInstanceOf(Blob)
+    expect(file.type).toBe('application/pdf')
+    expect(await file.text()).toBe('%PDF-9')
+  })
+
+  it('fetchResourceFile rejects when the API answers with an error', async () => {
+    server.use(
+      http.get('*/common/resources/download/:id', () =>
+        HttpResponse.json({ status: false, message: 'File not found on server' }, { status: 400 }))
+    )
+    await expect(fetchResourceFile(9)).rejects.toThrow()
   })
 })
 
