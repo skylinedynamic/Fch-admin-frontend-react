@@ -26,6 +26,7 @@ import ClosedApplicationSummary from './components/ClosedApplicationSummary';
 import DownloadPdfModal from './DownloadPdfModal';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { LastStatusNote, StatusNoteVisibility } from './components/StatusNoteVisibility';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 
 type StepType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
@@ -56,7 +57,10 @@ export default function FundingApplicationDetails() {
 
     // Status update state
     const [status, setStatus] = useState<string>('');
+    // Starts empty for each change: the last note is shown above the box,
+    // so it is never re-sent by accident (R3-BUG-016).
     const [status_note, setStatusNote] = useState<string>('');
+    const [noteVisibleToClient, setNoteVisibleToClient] = useState<boolean>(false);
     const [notesError, setNotesError] = useState<string>('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showFundedModal, setShowFundedModal] = useState(false);
@@ -115,9 +119,6 @@ export default function FundingApplicationDetails() {
     useEffect(() => {
         if (app?.status) setStatus(app.status);
     }, [app?.id, app?.status]);
-    useEffect(() => {
-        if (app?.status_note) setStatusNote(app.status_note);
-    }, [app?.id, app?.status_note]);
 
     useEffect(() => {
         if (error || (!isLoading && !apiResponse)) {
@@ -186,7 +187,7 @@ export default function FundingApplicationDetails() {
         }
         // Nothing to update - as the funding request page says. (Also what is
         // left after a status that needs a lender was picked and set back.)
-        if (status === app?.status && status_note.trim() === (app?.status_note || '').trim()) {
+        if (status === app?.status && status_note.trim() === '') {
             toast.info('Status is unchanged.');
             return;
         }
@@ -204,6 +205,12 @@ export default function FundingApplicationDetails() {
         }
     };
 
+    const resetStatusNote = () => {
+        setStatusNote('');
+        setNoteVisibleToClient(false);
+        setNotesError('');
+    };
+
     const handleConfirmUpdate = () => {
         if (!app.id) return;
         // With the status this page shows: a double-click or a stale page is
@@ -211,12 +218,13 @@ export default function FundingApplicationDetails() {
         updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
-            status_note: status_note
+            status_note: status_note,
+            status_note_visible_to_client: noteVisibleToClient
         }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowConfirmModal(false);
-                setNotesError('');
+                resetStatusNote();
                 window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
@@ -273,12 +281,13 @@ export default function FundingApplicationDetails() {
             funding_application_id: app.id,
             status: status,
             status_note: status_note,
+            status_note_visible_to_client: noteVisibleToClient,
             funded_amount: amount
         }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowFundedModal(false);
-                setNotesError('');
+                resetStatusNote();
                 window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
@@ -911,7 +920,7 @@ export default function FundingApplicationDetails() {
                                                     <div className="mb-3">
                                                         <label className="form-label text-muted">Status Notes</label>
                                                         <div className="p-3 bg-light rounded text-muted">
-                                                            {status_note || 'No notes available'}
+                                                            {app?.status_note || 'No notes available'}
                                                         </div>
                                                     </div>
                                                 </>
@@ -931,6 +940,9 @@ export default function FundingApplicationDetails() {
                                                             disabled={!hasPermission("update funding application") || isClosed}
                                                         />
                                                     </div>
+                                                    {app?.status_note && (
+                                                        <LastStatusNote note={app.status_note} visibleToClient={!!app.status_note_visible_to_client} />
+                                                    )}
                                                     <div className="mb-3">
                                                         <label htmlFor="status-notes" className="form-label text-muted">Status Notes</label>
                                                         <textarea
@@ -950,6 +962,11 @@ export default function FundingApplicationDetails() {
                                                         <div className="form-text text-end">
                                                             {status_note.length.toLocaleString('en-US')} / {FUNDING_APPLICATION_STATUS_NOTE_MAX.toLocaleString('en-US')}
                                                         </div>
+                                                        <StatusNoteVisibility
+                                                            checked={noteVisibleToClient}
+                                                            onChange={setNoteVisibleToClient}
+                                                            disabled={!hasPermission("update funding application") || isClosed}
+                                                        />
                                                     </div>
                                                     {hasPermission("update funding application") && !isClosed && (
                                                         <div className="d-grid">

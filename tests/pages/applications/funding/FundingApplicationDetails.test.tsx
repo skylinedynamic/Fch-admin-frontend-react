@@ -293,10 +293,13 @@ describe('FundingApplicationDetails — Status Notes', () => {
     expect(mutations.updateStatus.mock.calls[0][0]).toMatchObject({ funding_application_id: 80, status_note: '' })
   })
 
+  // The box starts empty for each change (R3-BUG-016), so the count is of what is typed.
   it('shows how many characters are used', () => {
-    detail.application = { ...editable, status_note: 'Withdrawn by borrower' }
+    detail.application = { ...editable, status_note: 'An earlier note' }
     renderWithProviders(<FundingApplicationDetails />)
 
+    expect(screen.getByText('0 / 10,000')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/status notes/i), { target: { value: 'Withdrawn by borrower' } })
     expect(screen.getByText('21 / 10,000')).toBeInTheDocument()
   })
 })
