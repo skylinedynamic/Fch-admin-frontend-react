@@ -1,10 +1,11 @@
 import type { ReactElement } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { fireEvent, renderWithProviders, screen, waitFor, within } from '../../../../test-utils'
 import { server } from '../../../../mocks/server'
 import AgreementBuilder from '../../../../../src/pages/settings/components/AgreementBuilder'
 import { ConfigPartnerProvider } from '../../../../../src/modules/settings/configPartner'
+import { useAuthStore } from '../../../../../src/store/auth'
 
 vi.mock('react-toastify', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 // The dashboard (agreement list, settings) is not what is under test here:
@@ -512,5 +513,47 @@ describe('AgreementBuilder loading the saved agreement', () => {
 
     expect(firstShown).not.toBeNull()
     expect(firstShown!.isConnected).toBe(true)
+  })
+})
+
+// R3-BUG-002: the logo picker opened a folder of its own, agreements/{id} -
+// agreements/1 when the user had no partner. It now opens the partner's own
+// folder (where its logo and branding already are), at its base: nothing is
+// created inside it on the picker's behalf.
+describe('AgreementBuilder logo picker', () => {
+  const listed = () => {
+    const bodies: Record<string, unknown>[] = []
+    server.use(
+      http.post('*/filemanager/list', async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json({ status: true, data: [] })
+      }),
+      http.post('*/filemanager/tree', () => HttpResponse.json({ status: true, data: [] })),
+    )
+    return bodies
+  }
+
+  afterEach(() => useAuthStore.setState({ user: null } as never))
+
+  it("opens the partner's own folder at its base", async () => {
+    useAuthStore.setState({ user: { id: 9, partner_id: 42, entity_id: 42 } } as never)
+    const bodies = listed()
+    await openBuilder()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add your logo' })[0])
+
+    await waitFor(() => expect(bodies.length).toBeGreaterThan(0))
+    expect(bodies[0]).toMatchObject({ entity_type: 'partners', entity_id: 42, path: '/' })
+  })
+
+  it('opens no folder for a user with no partner', async () => {
+    useAuthStore.setState({ user: { id: 9, partner_id: null, entity_id: null } } as never)
+    const bodies = listed()
+    await openBuilder()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add your logo' })[0])
+
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(bodies).toEqual([])
   })
 })

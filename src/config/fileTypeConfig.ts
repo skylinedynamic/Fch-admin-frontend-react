@@ -46,6 +46,20 @@ export const fileTypeConfig: Record<string, FileTypeConfig> = {
     default: { icon: 'ri-file-text-fill', color: 'text-secondary', bg: 'bg-secondary-subtle' }
 };
 
+/** The extension a PDF is recognised by. */
+export const PDF_EXTENSION = 'pdf';
+
+/**
+ * A file's extension, lower-cased, read from its path: a signed private-file
+ * link ends with `?expires=…&signature=…`, not with the extension (R3-BUG-003).
+ * '' when the name has none.
+ */
+export const fileExtension = (filePath: string | null | undefined): string => {
+    const name = (filePath || '').split(/[?#]/)[0].split('/').pop() || '';
+    const dot = name.lastIndexOf('.');
+    return dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
+};
+
 export const getFileConfig = (filePath: string): FileTypeConfig => {
     if (!filePath) return fileTypeConfig.default;
 

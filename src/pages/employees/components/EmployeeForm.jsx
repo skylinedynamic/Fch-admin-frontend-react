@@ -42,6 +42,7 @@ export default function EmployeeForm({
                     onPhonePrefixChange={onPhonePrefixChange}
                     onOpenFileManager={onOpenFileManager}
                     employeeId={employeeId}
+                    isEditMode={isEditMode}
                     emailNotice={emailNotice}
                 />
 

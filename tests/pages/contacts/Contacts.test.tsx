@@ -145,4 +145,23 @@ describe('Contacts bulk delete', () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Contact is linked to a lead.'))
   })
+
+  // R3-BUG-017: a lead's Referral Contact is refused (422) and the API says which.
+  it("shows why a lead's Referral Contact was not deleted", async () => {
+    const user = userEvent.setup()
+    const { container } = mount(['view contacts', 'delete contacts'])
+    const message = 'Some selected contacts are the Referral Contact on a lead and cannot be deleted: QA-TEST R3 Cont02. '
+      + 'Unselect them to delete the others, or choose another Referral Contact on those leads.'
+    api('post', '/common/contacts/multiple-delete', {
+      status: false,
+      message,
+      errors: { contacts: [{ id: 31, name: 'QA-TEST R3 Cont02', lead_count: 1 }] },
+    }, 422)
+
+    await selectFirst(user, container)
+    await user.click(await screen.findByRole('button', { name: 'Yes, Delete It' }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message))
+    expect(toast.success).not.toHaveBeenCalled()
+  })
 })

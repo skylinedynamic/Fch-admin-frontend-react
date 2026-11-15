@@ -6,7 +6,8 @@ import {
     fetchResourceById,
     createResource,
     updateResource,
-    deleteResource
+    deleteResource,
+    fetchResourceFile
 } from './services';
 import type { ResourceFormData } from './types';
 
@@ -16,6 +17,7 @@ export const resourceKeys = {
     grouped: () => [...resourceKeys.all, 'grouped'] as const,
     list: (type: string) => [...resourceKeys.all, 'list', type] as const,
     detail: (id: number | string) => [...resourceKeys.all, 'detail', id] as const,
+    file: (id: number | string) => [...resourceKeys.all, 'file', id] as const,
 };
 
 export const useGroupedResources = () => {
@@ -38,6 +40,17 @@ export const useResource = (id: number | string | undefined) => {
         queryKey: resourceKeys.detail(id || ''),
         queryFn: () => fetchResourceById(id!),
         enabled: !!id,
+    });
+};
+
+/** A resource's file for the preview (R3-BUG-003); read only when `enabled`. */
+export const useResourceFile = (id: number | string | undefined, enabled = true) => {
+    return useQuery({
+        queryKey: resourceKeys.file(id || ''),
+        queryFn: () => fetchResourceFile(id!),
+        enabled: !!id && enabled,
+        staleTime: Infinity,
+        retry: false,
     });
 };
 

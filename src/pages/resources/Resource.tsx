@@ -11,6 +11,8 @@ import { toast } from 'react-toastify';
 import { handleFileDownload } from '../../utils/fileDownload';
 import { downloadResource } from '../../modules/resource/services';
 import ResourceLoader from '../../components/Loader/ResourceLoader';
+import ResourceFilePreview from './components/ResourceFilePreview';
+import { fileExtension, PDF_EXTENSION } from '../../config/fileTypeConfig';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
 
@@ -118,13 +120,8 @@ const Resource: React.FC = () => {
 
   const handleItemClick = (item: ResourceItem, forceDownload = false) => {
     if (forceDownload && item.id) {
-      let extension = 'pdf';
-      if (item.file_url) {
-        const parts = item.file_url.split('.');
-        if (parts.length > 1) {
-          extension = parts[parts.length - 1];
-        }
-      }
+      // From the path: a signed link ends with its query, not the extension (R3-BUG-003).
+      const extension = fileExtension(item.file_url) || PDF_EXTENSION;
 
       let fileName = item.title || 'document';
       if (!fileName.toLowerCase().endsWith(`.${extension.toLowerCase()}`)) {
@@ -622,11 +619,20 @@ const Resource: React.FC = () => {
             </div>
           </ModalHeader>
           <ModalBody className="p-0 bg-light pdf-modal-body">
-            {(activePreviewResource?.file_url || activePreviewResource?.link) ? (
+            {activePreviewResource?.file_url ? (
+              <div className="h-100 w-100 position-relative">
+                {/* Read through the API: the signed link can't be framed (R3-BUG-003) */}
+                <ResourceFilePreview
+                  resourceId={activePreviewResource.id}
+                  title={activePreviewResource.title}
+                  fileUrl={activePreviewResource.file_url}
+                />
+              </div>
+            ) : activePreviewResource?.link ? (
               <div className="h-100 w-100 position-relative">
                 <iframe
-                  src={activePreviewResource.file_url ? `${activePreviewResource.file_url}#toolbar=0&navpanes=0&scrollbar=1` : getEmbedUrl(activePreviewResource.link || '')}
-                  title={activePreviewResource?.title}
+                  src={getEmbedUrl(activePreviewResource.link)}
+                  title={activePreviewResource.title}
                   className="border-0 shadow-sm bg-white pdf-iframe"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

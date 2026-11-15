@@ -463,6 +463,7 @@ export interface FundingApplicationDetails {
     federal_compliance_disclosures_explanation: string;
     notes: string | null;
     status_note: string | null;
+    status_note_visible_to_client?: boolean;
     status: string;
     status_class: string;
     attestation_authorization: boolean;

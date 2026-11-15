@@ -117,6 +117,21 @@ export const downloadResource = async (id: number | string): Promise<any> => {
     });
 };
 
+/**
+ * A resource's file, read through the API (R3-BUG-003). Its signed link can't
+ * be shown in an iframe - the API refuses to be framed by another origin - so
+ * the preview shows this blob instead.
+ */
+export const fetchResourceFile = async (id: number | string): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`/common/resources/download/${id}`, {
+        responseType: 'blob'
+    });
+    if (data.type.includes('application/json')) {
+        throw new Error('The resource file could not be read.');
+    }
+    return data;
+};
+
 // Get the next available ID for folder prediction
 export const getResourceNextId = async (): Promise<{ next_id: number }> => {
     const response = await apiClient.get('/admin/resources/next-id');
