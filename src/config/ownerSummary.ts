@@ -107,3 +107,28 @@ export const OWNER_SUMMARY_LINKS = {
 export const STALLED_AFTER_DAYS = 14;
 export const UNPAID_AGE_DAYS = 30;
 export const TRIAL_ENDING_DAYS = 14;
+
+/** Business Insights › Export PDF - fch-api OwnerSummaryExportPdf::TYPES. */
+export const OWNER_SUMMARY_EXPORT_TYPE = {
+    SUMMARY: 'summary',
+    DETAILS: 'details',
+} as const;
+
+export type OwnerSummaryExportType = typeof OWNER_SUMMARY_EXPORT_TYPE[keyof typeof OWNER_SUMMARY_EXPORT_TYPE];
+
+export const OWNER_SUMMARY_EXPORT_OPTIONS: { value: OwnerSummaryExportType; label: string; description: string; icon: string }[] = [
+    {
+        value: OWNER_SUMMARY_EXPORT_TYPE.SUMMARY,
+        label: 'Summary report',
+        description: 'One page: the headline figures and net earnings by stream.',
+        icon: 'ri-file-chart-line',
+    },
+    {
+        value: OWNER_SUMMARY_EXPORT_TYPE.DETAILS,
+        label: 'Details report',
+        description: 'Every section in full: money, pipeline, lead sources, partners and every stalled deal.',
+        icon: 'ri-file-list-3-line',
+    },
+];
+
+export const OWNER_SUMMARY_EXPORT_FAILED = 'The report could not be made. Please try again.';

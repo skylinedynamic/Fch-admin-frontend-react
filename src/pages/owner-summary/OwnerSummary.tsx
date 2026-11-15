@@ -24,6 +24,7 @@ import StalledDealsCard from './components/StalledDealsCard';
 import Definitions from './components/Definitions';
 import CustomRangePanel, { type CustomRange, type CustomRangeErrors } from './components/CustomRangePanel';
 import ReportSettingsModal from './components/ReportSettingsModal';
+import ExportPdfMenu from './components/ExportPdfMenu';
 import OwnerSummarySkeleton from './components/OwnerSummarySkeleton';
 import { dateRange, daysInRange, firstMessage } from './components/format';
 import './ownerSummary.css';
@@ -105,10 +106,7 @@ export default function OwnerSummary() {
                                 <i className="ri-mail-line" aria-hidden="true"></i>
                                 Report settings
                             </button>
-                            <button type="button" className="os-btn os-btn--primary" onClick={() => window.print()} disabled={!data}>
-                                <i className="ri-download-2-line" aria-hidden="true"></i>
-                                Export PDF
-                            </button>
+                            <ExportPdfMenu params={{ ...requested, environment }} disabled={!data} />
                         </div>
                     </div>
 

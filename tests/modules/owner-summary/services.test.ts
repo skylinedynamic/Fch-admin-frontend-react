@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
 import { ownerSummaryResponse } from '../../mocks/ownerSummary'
-import { getOwnerReportSettings, getOwnerSummary, updateOwnerReportSettings } from '../../../src/modules/owner-summary/services'
-import { OWNER_SUMMARY_PERIOD } from '../../../src/config/ownerSummary'
+import { exportOwnerSummaryPdf, getOwnerReportSettings, getOwnerSummary, updateOwnerReportSettings } from '../../../src/modules/owner-summary/services'
+import { OWNER_SUMMARY_ENVIRONMENT, OWNER_SUMMARY_EXPORT_TYPE, OWNER_SUMMARY_PERIOD } from '../../../src/config/ownerSummary'
 
 afterEach(() => server.resetHandlers())
 
@@ -66,5 +66,42 @@ describe('report settings', () => {
 
     expect(body).toEqual({ enabled: false, recipients: ['finance@example.test'] })
     expect(response.message).toBe('Report settings saved')
+  })
+})
+
+describe('exportOwnerSummaryPdf', () => {
+  it('asks GET /common/owner-summary/export for the report, period and payments, and names the file from the API', async () => {
+    let query: URLSearchParams | null = null
+    server.use(
+      http.get('*/common/owner-summary/export', ({ request }) => {
+        query = new URL(request.url).searchParams
+        return new HttpResponse(new Blob(['%PDF-1.7'], { type: 'application/pdf' }), {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=business-insights-details-2026-11-01-to-2026-11-30.pdf',
+          },
+        })
+      })
+    )
+
+    const file = await exportOwnerSummaryPdf({
+      type: OWNER_SUMMARY_EXPORT_TYPE.DETAILS,
+      period: OWNER_SUMMARY_PERIOD.THIS_MONTH,
+      environment: OWNER_SUMMARY_ENVIRONMENT.PRODUCTION,
+    })
+
+    expect(query!.get('type')).toBe('details')
+    expect(query!.get('period')).toBe('this_month')
+    expect(query!.get('environment')).toBe('production')
+    expect(file.filename).toBe('business-insights-details-2026-11-01-to-2026-11-30.pdf')
+    expect(file.blob.size).toBeGreaterThan(0)
+  })
+
+  it('falls back to a name of its own when the API sends none', async () => {
+    server.use(http.get('*/common/owner-summary/export', () => new HttpResponse(new Blob(['%PDF']), { headers: { 'Content-Type': 'application/pdf' } })))
+
+    const file = await exportOwnerSummaryPdf({ type: OWNER_SUMMARY_EXPORT_TYPE.SUMMARY, period: OWNER_SUMMARY_PERIOD.THIS_WEEK })
+
+    expect(file.filename).toBe('business-insights-summary.pdf')
   })
 })

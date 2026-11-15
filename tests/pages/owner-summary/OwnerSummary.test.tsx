@@ -392,15 +392,7 @@ describe('Owner Summary page', () => {
     })
   })
 
-  it('exports by printing the page', async () => {
-    const print = vi.spyOn(window, 'print').mockImplementation(() => {})
-    await renderPage()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Export PDF' }))
-
-    expect(print).toHaveBeenCalledTimes(1)
-    print.mockRestore()
-  })
+  // Export PDF (the summary and details reports) is OwnerSummary.export.test.tsx.
 
   it('lists what needs attention with a count and a link to its screen', async () => {
     await renderPage()

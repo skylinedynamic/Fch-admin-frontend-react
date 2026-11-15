@@ -1,4 +1,4 @@
-import type { CashStream, OwnerSummaryEnvironment, OwnerSummaryPeriodKey, PipelineStage } from '../../config/ownerSummary';
+import type { CashStream, OwnerSummaryEnvironment, OwnerSummaryExportType, OwnerSummaryPeriodKey, PipelineStage } from '../../config/ownerSummary';
 
 /** GET /common/owner-summary - fch-api OwnerSummaryService::summary(). */
 
@@ -9,6 +9,17 @@ export interface OwnerSummaryParams {
     /** Local Y-m-d dates, for the custom period only. */
     from?: string;
     to?: string;
+}
+
+/** GET /common/owner-summary/export - the screen's params plus which report. */
+export interface OwnerSummaryExportParams extends OwnerSummaryParams {
+    type: OwnerSummaryExportType;
+}
+
+/** The PDF and the name the API gave it. */
+export interface OwnerSummaryExportFile {
+    blob: Blob;
+    filename: string;
 }
 
 export interface OwnerSummaryPeriod {

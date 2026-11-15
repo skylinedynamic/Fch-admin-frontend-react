@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { getOwnerReportSettings, getOwnerSummary, updateOwnerReportSettings } from './services';
+import { exportOwnerSummaryPdf, getOwnerReportSettings, getOwnerSummary, updateOwnerReportSettings } from './services';
 import type { OwnerReportSettings, OwnerSummary, OwnerSummaryParams } from './types';
 
 export const OWNER_SUMMARY_QUERIES = {
@@ -57,3 +57,9 @@ export const useUpdateOwnerReportSettings = () => {
         onSuccess: ({ data }) => queryClient.setQueryData(OWNER_SUMMARY_QUERIES.reportSettings, data),
     });
 };
+
+/** Business Insights › Export PDF - builds the report on the API and hands back the file. */
+export const useExportOwnerSummaryPdf = () =>
+    useMutation({
+        mutationFn: exportOwnerSummaryPdf,
+    });

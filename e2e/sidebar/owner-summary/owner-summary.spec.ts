@@ -276,4 +276,59 @@ test.describe('Sidebar › Business Insights', () => {
 
     await expect(page.getByText('Only the FCH owner can see this summary.')).toBeVisible()
   })
+
+  // Export PDF: the summary or details report, made on the API for the period and payments on screen.
+  test('export PDF offers both reports and downloads the one chosen for what is on screen', async ({ page }) => {
+    await seedSession(page, HOST_OWNER)
+    await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
+    const exports: URL[] = []
+    await page.route('**/common/owner-summary/export**', async (route) => {
+      const url = new URL(route.request().url())
+      exports.push(url)
+      await route.fulfill({
+        status: 200,
+        body: Buffer.from('%PDF-1.7 %%EOF'),
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename=business-insights-${url.searchParams.get('type')}-2026-11-01-to-2026-11-30.pdf`,
+          'Access-Control-Expose-Headers': 'Content-Disposition',
+        },
+      })
+    })
+
+    await page.goto('/owner-summary')
+    await expect(page.getByTestId('owner-kpis')).toBeVisible()
+    await page.getByRole('group', { name: 'Payments' }).getByRole('button', { name: 'All Payment' }).click()
+
+    await page.getByRole('button', { name: 'Export PDF' }).click()
+    const menu = page.getByRole('menu', { name: 'Export PDF' })
+    await expect(menu.getByRole('menuitem', { name: /Summary report/ })).toBeVisible()
+    await expect(menu.getByRole('menuitem', { name: /Details report/ })).toBeVisible()
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      menu.getByRole('menuitem', { name: /Details report/ }).click(),
+    ])
+
+    expect(download.suggestedFilename()).toBe('business-insights-details-2026-11-01-to-2026-11-30.pdf')
+    expect(exports[0].searchParams.get('type')).toBe('details')
+    expect(exports[0].searchParams.get('period')).toBe('this_month')
+    expect(exports[0].searchParams.get('environment')).toBe('all')
+    await expect(menu).toBeHidden()
+  })
+
+  test('the export menu fits a phone', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 760 })
+    await seedSession(page, HOST_OWNER)
+    await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
+
+    await page.goto('/owner-summary')
+    await expect(page.getByTestId('owner-kpis')).toBeVisible()
+    await page.getByRole('button', { name: 'Export PDF' }).click()
+
+    const box = await page.getByRole('menu', { name: 'Export PDF' }).boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.x).toBeGreaterThanOrEqual(0)
+    expect(box!.x + box!.width).toBeLessThanOrEqual(375)
+  })
 })
