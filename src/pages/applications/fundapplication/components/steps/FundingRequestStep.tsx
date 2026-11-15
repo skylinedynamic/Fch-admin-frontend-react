@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { FundingRequest } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
@@ -178,15 +178,24 @@ export default function FundingRequestStep({
     }
   }, [applicationId, effectiveRequestId, apiData, fundingSequenceId, funding, hasOtherPurpose, saveMutation, choosesFundingSequence, selectedSequenceId, fundingSequenceOptions])
 
-  // Register save function
+  // Register one stable save that always runs the latest handleSave. Re-registering
+  // handleSave itself in an effect left a gap after each render (e.g. right after
+  // the load) in which the wizard still held the previous closure and saved the
+  // old values - the empty form, before the load.
+  const latestSave = useRef(handleSave)
+  useLayoutEffect(() => {
+    latestSave.current = handleSave
+  }, [handleSave])
+  const registeredSave = useCallback(() => latestSave.current(), [])
+
   useEffect(() => {
     if (onRegisterSave) {
-      onRegisterSave(handleSave)
+      onRegisterSave(registeredSave)
     }
     return () => {
       if (onRegisterSave) onRegisterSave(null)
     }
-  }, [onRegisterSave, handleSave])
+  }, [onRegisterSave, registeredSave])
 
   // Pre-fill form from API
   useEffect(() => {

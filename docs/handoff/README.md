@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-11-15
+
+| File | Title |
+|---|---|
+| [2026-11-15-funding-request-save-sends-loaded-values.md](2026-11-15-funding-request-save-sends-loaded-values.md) | Funding Request step: a save right after the load sends the loaded values (CI flake) |
+
 ### 2026-11-11
 
 | File | Title |
