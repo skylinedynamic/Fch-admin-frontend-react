@@ -103,6 +103,20 @@ describe('buildPartnerFormDataPayload - sign-in email state', () => {
   })
 })
 
+describe('buildPartnerFormDataPayload - commission', () => {
+  it('leaves the commission out: the Commissions tab saves it through its own endpoint', () => {
+    const payload = buildPartnerFormDataPayload(
+      { full_name: 'Acme Owner', commission: 25, commission_tiers: [{ id: 1, min_count: 0, max_count: null, percentage: 25 }], funded_deal_count: 3 },
+      83
+    )
+
+    expect(payload.get('full_name')).toBe('Acme Owner')
+    expect(payload.has('commission')).toBe(false)
+    expect(payload.has('commission_tiers')).toBe(false)
+    expect(payload.has('funded_deal_count')).toBe(false)
+  })
+})
+
 describe('partnerPortalBaseHost', () => {
   it.each([
     ['https://fourcornerfunding.com/', 'fourcornerfunding.com'],

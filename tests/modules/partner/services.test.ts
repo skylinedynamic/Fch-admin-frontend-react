@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { createPartner, updatePartner, fetchSubscriptionStats, getPartner, fetchPartnerById, fetchPartnerOptions, allUsers } from '../../../src/modules/partner/services'
+import { createPartner, updatePartner, fetchSubscriptionStats, getPartner, fetchPartnerById, fetchPartnerOptions, allUsers, updatePartnerCommission } from '../../../src/modules/partner/services'
 
 afterEach(() => server.resetHandlers())
 
@@ -124,5 +124,22 @@ describe('partner services', () => {
       )
     )
     await expect(fetchSubscriptionStats()).resolves.toEqual({ status: true, message: 'ok', data: { total: 42 } })
+  })
+})
+
+describe('updatePartnerCommission', () => {
+  it("sends the partner's Funding tiers and returns them with the funded-deal count", async () => {
+    const bodies: unknown[] = []
+    const data = { id: 21, commission_tiers: [{ id: 1, min_count: 0, max_count: null, percentage: 25 }], funded_deal_count: 4 }
+    server.use(
+      http.put('*/admin/partners/21/commission', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json({ status: true, message: 'ok', data })
+      })
+    )
+
+    const payload = { tiers: [{ min_count: 0, max_count: null, percentage: 25 }] }
+    await expect(updatePartnerCommission(21, payload)).resolves.toEqual({ status: true, message: 'ok', data })
+    expect(bodies).toEqual([payload])
   })
 })

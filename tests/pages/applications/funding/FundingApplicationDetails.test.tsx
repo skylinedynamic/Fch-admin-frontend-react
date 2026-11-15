@@ -617,12 +617,21 @@ describe('FundingApplicationDetails — closing with a commission', () => {
 
   it("splits a partner client's success fee at the partner's own commission (Partner profile › Commissions)", async () => {
     mutations.saveCommission.mockResolvedValue({})
-    detail.application = { ...closable, partner_id: 7, partner_default_commission: 30 }
+    detail.application = {
+      ...closable,
+      partner_id: 7,
+      partner_default_commission: 30,
+      partner_commission_setup: { tiers: [{ id: 1, min_count: 0, max_count: null, percentage: 30 }], deal_position: 4, funded_deal_count: 3 },
+    }
     renderWithProviders(<FundingApplicationDetails />)
 
     await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
     await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
     await userEvent.type(await screen.findByLabelText('Success Fee (%)'), '10')
+
+    // The partner's commission tiers, and the one this deal falls in.
+    expect(screen.getByTestId('partner-commission-rate')).toHaveTextContent('30%')
+    expect(screen.getByTestId('partner-commission-deal')).toHaveTextContent('Deal #4 · 0+ deals tier')
 
     expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
     expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(70)

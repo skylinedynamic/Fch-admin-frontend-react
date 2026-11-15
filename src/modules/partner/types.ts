@@ -28,13 +28,32 @@ export interface PartnerOption {
   company_name: string | null;
 }
 
-/** PUT /admin/partners/{id}/commission: the partner's share (%) of the success fee; null clears it. */
+/**
+ * One Funding commission tier of a partner: for its clients' funded deals
+ * min_count..max_count (inclusive; null max = "and up") the partner's share
+ * of the success fee is `percentage`.
+ */
+export interface PartnerCommissionTier {
+  id?: number;
+  min_count: number | null;
+  max_count: number | null;
+  percentage: number | null;
+}
+
+/** PUT /admin/partners/{id}/commission: the partner's Funding tiers; an empty list clears them. */
 export interface PartnerCommissionPayload {
-  commission: number | null;
+  tiers: PartnerCommissionTier[];
+}
+
+/** The partner's tiers, and how many of its clients' funding applications are funded. */
+export interface PartnerCommission {
+  id: number;
+  commission_tiers: PartnerCommissionTier[];
+  funded_deal_count: number;
 }
 
 export interface PartnerCommissionResponse {
   status: boolean;
   message: string;
-  data: { id: number; commission: number | null };
+  data: PartnerCommission;
 }

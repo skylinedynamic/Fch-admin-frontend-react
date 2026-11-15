@@ -112,6 +112,8 @@ export const buildPartnerFormDataPayload = (
         'borrower_domain',
         // Read-only login state, shown with the email field — never sent back.
         'pending_email', 'login_user_id', 'signin_email',
+        // Saved by the Commissions tab's own endpoint.
+        'commission', 'commission_tiers', 'funded_deal_count',
     ];
 
     // Append top-level (non-enrollment) fields

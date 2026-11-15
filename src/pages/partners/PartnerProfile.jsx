@@ -476,9 +476,13 @@ export default function PartnerProfile() {
         setFormData(prev => ({ ...prev, agreement_required: required }));
     }, []);
 
-    // The Commissions tab saved the rate itself: keep the new value, nothing to reload.
-    const handleCommissionSaved = useCallback((commission) => {
-        setFormData(prev => ({ ...prev, commission }));
+    // The Commissions tab saved the tiers itself: keep them, nothing to reload.
+    const handleCommissionSaved = useCallback((saved) => {
+        setFormData(prev => ({
+            ...prev,
+            commission_tiers: saved.commission_tiers,
+            funded_deal_count: saved.funded_deal_count,
+        }));
     }, []);
 
     // Partner profile › Commissions: the host's team sets a partner's share of
@@ -1009,7 +1013,8 @@ export default function PartnerProfile() {
                                 ) : activeTab === PARTNER_COMMISSION_TAB && canViewCommission ? (
                                     <PartnerCommissionTab
                                         partnerId={id}
-                                        commission={formData.commission}
+                                        tiers={formData.commission_tiers}
+                                        fundedDealCount={formData.funded_deal_count}
                                         canEdit={canEditCommission}
                                         onSaved={handleCommissionSaved}
                                         onStateChange={setCommissionForm}

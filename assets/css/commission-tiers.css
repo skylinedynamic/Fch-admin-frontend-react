@@ -1,0 +1,62 @@
+/* Partner profile › Commissions: the Funding tiers table (CommissionTierTable),
+   one row per tier, plain Bootstrap fields. Theme colours, 4px corners,
+   37.5px fields. */
+.ct {
+  --ct-primary-rgb: var(--brand-primary-rgb, var(--vz-primary-rgb, 64, 81, 137));
+  --ct-muted: var(--vz-secondary-color, #878a99);
+}
+
+.ct__table {
+  min-width: 460px;
+}
+
+.ct__table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ct-muted);
+  white-space: nowrap;
+  border-bottom-width: 1px;
+}
+
+.ct__table td {
+  vertical-align: top;
+  min-width: 110px;
+}
+
+.ct__table .form-control,
+.ct__table .form-select,
+.ct__table .input-group-text {
+  height: 37.5px;
+  border-radius: 4px;
+}
+
+.ct__table .input-group > .form-control:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ct__table .input-group > .form-control:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.ct__table td.ct__actions,
+.ct__table th.ct__actions {
+  width: 1%;
+  min-width: 0;
+}
+
+.ct__table td.ct__actions .btn {
+  height: 37.5px;
+  border-radius: 4px;
+}
+
+.ct__row--current td {
+  background: rgba(var(--ct-primary-rgb), .06);
+}
+
+.ct__help {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ct-muted);
+}

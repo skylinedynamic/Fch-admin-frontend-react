@@ -43,7 +43,7 @@ export const useUpdatePartner = () => {
   })
 }
 
-/** Partner profile › Commissions: saves the partner's share of the success fee. */
+/** Partner profile › Commissions: saves the partner's Funding commission tiers. */
 export const useUpdatePartnerCommission = () => {
   const qc = useQueryClient()
   return useMutation({

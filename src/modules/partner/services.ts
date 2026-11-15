@@ -40,7 +40,7 @@ export const updatePartner = async (id: string | number, payload: Partial<Partne
   }
 }
 
-/** Partner profile › Commissions: the partner's share (%) of the success fee. */
+/** Partner profile › Commissions: the partner's Funding tiers - its share (%) of the success fee by funded-deal count. */
 export const updatePartnerCommission = async (
   id: string | number,
   payload: PartnerCommissionPayload

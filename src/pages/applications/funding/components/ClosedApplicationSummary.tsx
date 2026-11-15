@@ -30,8 +30,17 @@ const fundedOn = (date?: string | null) => {
         : parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const card: React.CSSProperties = { borderRadius: 4, border: 0, boxShadow: '0 4px 18px rgba(15, 29, 58, .10)' };
-const head: React.CSSProperties = { background: 'rgba(var(--vz-success-rgb, 10, 179, 156), .1)', borderBottom: 0 };
+// A light shadow only - the theme's card shadow reads heavy under this card.
+// Inner boxes take the theme's light border colour, not Bootstrap's darker .border.
+const card: React.CSSProperties = { borderRadius: 4, boxShadow: '0 1px 2px rgba(56, 65, 74, .15)' };
+const innerBox: React.CSSProperties = { borderRadius: 4, border: '1px solid var(--vz-border-color, #e9ebec)' };
+// The theme's subtle success header, edged in success so it reads at a glance.
+const head: React.CSSProperties = {
+    background: 'var(--vz-success-bg-subtle, #daf4f0)',
+    border: '1px solid var(--vz-success-border-subtle, #9de1d7)',
+    borderRadius: '4px 4px 0 0',
+};
+const headTitle: React.CSSProperties = { color: 'var(--vz-success-text-emphasis, #099885)' };
 const tile: React.CSSProperties = { borderRadius: 4, background: 'var(--vz-light, #f3f6f9)' };
 
 /**
@@ -46,13 +55,13 @@ export default function ClosedApplicationSummary({ app, viewer, partnerApplicati
     const date = fundedOn((app as FundingApplicationDetails & { funded_date?: string | null }).funded_date);
 
     const header = (title: string, icon: string) => (
-        <div className="card-header d-flex align-items-center gap-3 py-3" style={head}>
+        <div className="card-header d-flex align-items-center gap-3 py-3" style={head} data-testid="closed-summary-header">
             <span className="avatar-xs flex-shrink-0">
                 <span className="avatar-title rounded-circle bg-success text-white fs-16"><i className={icon}></i></span>
             </span>
             <div className="min-w-0">
-                <h5 className="card-title fs-16 mb-0">{title}</h5>
-                <p className="text-muted fs-13 mb-0">
+                <h5 className="card-title fs-16 fw-semibold mb-0" style={headTitle}>{title}</h5>
+                <p className="fs-13 mb-0 text-body">
                     Closed (Completed){date ? ` · Funded on ${date}` : ''}
                 </p>
             </div>
@@ -90,7 +99,7 @@ export default function ClosedApplicationSummary({ app, viewer, partnerApplicati
                 <div className="card-body p-4">
                     {amountTiles}
                     {partnerAmount > 0 ? (
-                        <div className="d-flex flex-wrap align-items-center gap-3 mt-3 p-3 border" style={{ borderRadius: 4 }}>
+                        <div className="d-flex flex-wrap align-items-center gap-3 mt-3 p-3" style={innerBox}>
                             <div className="flex-grow-1">
                                 <div className="text-muted fs-13">Your commission</div>
                                 <div className="fs-22 fw-bold text-success">{money(partnerAmount)}</div>
@@ -130,11 +139,12 @@ export default function ClosedApplicationSummary({ app, viewer, partnerApplicati
                 {amountTiles}
 
                 {hasCommission ? (
-                    <div className="mt-3 border overflow-hidden" style={{ borderRadius: 4 }}>
+                    <div className="mt-3 overflow-hidden" style={innerBox}>
                         {rows.map((row, index) => (
                             <div
                                 key={index}
-                                className={`d-flex align-items-center justify-content-between px-3 py-2 fs-14 ${index < rows.length - 1 ? 'border-bottom' : ''}`}
+                                className="d-flex align-items-center justify-content-between px-3 py-2 fs-14"
+                                style={index < rows.length - 1 ? { borderBottom: innerBox.border } : undefined}
                                 data-row
                             >
                                 <span className={row.strong ? 'fw-semibold text-dark' : 'text-muted'}>{row.label}</span>

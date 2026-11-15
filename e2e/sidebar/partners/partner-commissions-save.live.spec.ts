@@ -1,10 +1,10 @@
 import { test, expect, openFromSidebar, dataRows, expectOk, waitForApi } from '../../support/live/fixtures'
 
 // Real fch-backend-api and local database (see e2e/auth.setup.ts).
-// Partner profile › Commissions: sets a partner's commission, checks it is kept
-// after a reload, then puts the original value back - safe to repeat.
+// Partner profile › Commissions: changes the first Funding tier's rate, checks
+// it is kept after a reload, then puts the original value back - safe to repeat.
 test.describe('Partners › profile › Commissions (live)', () => {
-  test('the host saves a partner commission and it is kept', async ({ page }) => {
+  test('the host saves a partner commission tier and it is kept', async ({ page }) => {
     await openFromSidebar(page, 'Partners', /\/partners$/)
     // The tabs depend on the partner (none for the host), so wait for its details.
     const details = waitForApi(page, /\/admin\/partners-details\/\d+$/)
@@ -14,11 +14,13 @@ test.describe('Partners › profile › Commissions (live)', () => {
 
     // The first row may be the host itself, which has no commission.
     test.skip(!!partner?.is_host, 'first partner is the host, which has no commission')
-    const tab = page.getByRole('tab', { name: 'Commissions' })
-    await tab.click()
+    await page.getByRole('tab', { name: 'Commissions' }).click()
 
-    const rate = page.getByLabel('Partner Commission (%)')
+    const rate = page.getByLabel('Tier 1 commission (%)')
     const original = await rate.inputValue()
+    // The commission is required and can't be cleared from the screen, so a
+    // partner without one couldn't be put back as it was.
+    test.skip(original === '', 'first partner has no commission set; it could not be restored')
     const next = original === '12.5' ? '13.5' : '12.5'
 
     const save = async (value: string) => {
@@ -31,12 +33,11 @@ test.describe('Partners › profile › Commissions (live)', () => {
     try {
       await save(next)
       // Logged on the partner's activity, and shown without a reload.
-      const activity = page.locator('.accordion-button', { hasText: original === '' ? 'Commission added' : 'Commission updated' }).first()
+      const activity = page.locator('.accordion-button', { hasText: 'Commission updated' }).first()
       await expect(activity).toBeVisible()
       await page.reload()
       await page.getByRole('tab', { name: 'Commissions' }).click()
       await expect(rate).toHaveValue(next)
-      await expect(page.getByTestId('commission-split-admin')).toHaveText(`${100 - Number(next)}%`)
     } finally {
       await save(original)
     }

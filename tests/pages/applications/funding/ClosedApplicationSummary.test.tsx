@@ -90,3 +90,37 @@ describe('ClosedApplicationSummary - partner', () => {
     expect(screen.queryByText(/Funded on/)).not.toBeInTheDocument()
   })
 })
+
+describe('ClosedApplicationSummary - look', () => {
+  it.each(['host', 'partner'] as const)('is a card with only a light shadow (%s)', (viewer) => {
+    renderWithProviders(<ClosedApplicationSummary app={closed} viewer={viewer} partnerApplication requestedAmount={120000} />)
+
+    const card = screen.getByTestId('closed-summary')
+    expect(card).toHaveClass('card')
+    expect(card.style.boxShadow).toBe('0 1px 2px rgba(56, 65, 74, .15)')
+    expect(card.style.borderRadius).toBe('4px')
+  })
+
+  it("draws the commission lines with the theme's light border, not Bootstrap's darker one", () => {
+    renderWithProviders(<ClosedApplicationSummary app={closed} viewer="host" partnerApplication requestedAmount={120000} />)
+
+    const box = row('Success Fee').parentElement as HTMLElement
+    expect(box).not.toHaveClass('border')
+    expect(box.style.border).toContain('var(--vz-border-color')
+    expect(row('Success Fee')).not.toHaveClass('border-bottom')
+    expect(row('Success Fee').style.borderBottom).toContain('var(--vz-border-color')
+  })
+})
+
+describe('ClosedApplicationSummary - header', () => {
+  it.each(['host', 'partner'] as const)("is the theme's subtle success header, edged and titled in success so it reads at a glance (%s)", (viewer) => {
+    renderWithProviders(<ClosedApplicationSummary app={closed} viewer={viewer} partnerApplication requestedAmount={120000} />)
+
+    const header = screen.getByTestId('closed-summary-header')
+    expect(header.style.background).toContain('var(--vz-success-bg-subtle')
+    // Edged on every side, not just the bottom.
+    expect(header.style.border).toContain('var(--vz-success-border-subtle')
+    expect((header.querySelector('.card-title') as HTMLElement).style.color).toContain('var(--vz-success-text-emphasis')
+    expect(screen.getByText('Completed', { selector: '.badge' })).toHaveClass('bg-success')
+  })
+})

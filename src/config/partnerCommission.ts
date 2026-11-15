@@ -1,8 +1,9 @@
 /**
- * Partner profile › Commissions: the host sets a partner's commission - its
- * share (%) of the success fee on its clients' funding applications. The
- * funding application's commission split (the Closed (Completed) modal) opens
- * at it until a split is saved (fch-api PUT /admin/partners/{id}/commission).
+ * Partner profile › Commissions: the host sets a partner's Funding commission
+ * tiers - its share (%) of the success fee by how many of its clients' funding
+ * applications have been funded (0-10, 11-20, 21 and up). The funding
+ * application's commission split (the Closed (Completed) modal) opens at the
+ * tier for that deal until a split is saved (fch-api PUT /admin/partners/{id}/commission).
  */
 
 /** The partner profile tab id. */
@@ -21,8 +22,6 @@ export const COMMISSION_MANAGE_PERMISSION = 'update commission';
 export const PARTNER_COMMISSION_MIN = 0;
 export const PARTNER_COMMISSION_MAX = 99;
 
-export const PARTNER_COMMISSION_RANGE_ERROR =
-    `Commission must be between ${PARTNER_COMMISSION_MIN}% and ${PARTNER_COMMISSION_MAX}%. The admin keeps at least 1% of the success fee.`;
 
 /** The tab's form, submitted by the page header's Save Commission button. */
 export const PARTNER_COMMISSION_FORM_ID = 'partner-commission-form';

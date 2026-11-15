@@ -500,4 +500,32 @@ describe('FundedAmountModal - commission ranges', () => {
     expect(screen.getByLabelText('Admin Commission Rate')).toHaveAttribute('min', '0')
     expect(screen.getByLabelText('Partner Commission Rate')).toHaveAttribute('min', '0')
   })
+
+  describe('Partner Commission section', () => {
+    const setup = { tiers: [{ id: 1, min_count: 0, max_count: null, percentage: 30 }], deal_position: 3, funded_deal_count: 2 }
+
+    it("shows a partner client's commission tiers", () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={setup} defaultPartnerCommissionRate={30} />
+      )
+
+      const panel = screen.getByRole('region', { name: 'Partner Commission' })
+      expect(within(panel).getByTestId('partner-commission-rate')).toHaveTextContent('30%')
+      expect(within(panel).getByTestId('partner-commission-deal')).toHaveTextContent('Deal #3 · 0+ deals tier')
+    })
+
+    it('shows it, saying "Not set", when the partner has none', () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={{ ...setup, tiers: [] }} />
+      )
+
+      expect(within(screen.getByRole('region', { name: 'Partner Commission' })).getByText('Not set')).toBeInTheDocument()
+    })
+
+    it('is not shown for a host client, which has no partner split', () => {
+      renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission partnerCommissionSetup={null} />)
+
+      expect(screen.queryByRole('region', { name: 'Partner Commission' })).not.toBeInTheDocument()
+    })
+  })
 })

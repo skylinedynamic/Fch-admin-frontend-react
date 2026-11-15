@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 // @ts-ignore
 import Modal from 'bootstrap/js/dist/modal';
 import '../../../../assets/css/funded-amount-modal.css';
+import type { PartnerCommissionSetup } from '../../../modules/application/types';
+import PartnerCommissionPanel from './PartnerCommissionPanel';
 
 /** The rates as typed (percent strings), as the Commission Details card holds them. */
 export type CommissionRates = {
@@ -29,6 +31,8 @@ interface FundedAmountModalProps {
      * split saved yet, the split opens at it instead of Admin 100% / Partner 0%.
      */
     defaultPartnerCommissionRate?: number | null;
+    /** The partner's tiers and this deal's number, for the Partner Commission section (partner clients only). */
+    partnerCommissionSetup?: PartnerCommissionSetup | null;
     /** Total Requested Amount, shown beside the funded amount as on the page's card. */
     requestedAmount?: number;
     /** The application belongs to a partner: the success fee is split admin / partner. */
@@ -66,6 +70,7 @@ export default function FundedAmountModal({
     adminCommissionRate = 0,
     partnerCommissionRate = 0,
     defaultPartnerCommissionRate = null,
+    partnerCommissionSetup = null,
     requestedAmount = 0,
     showPartnerCommission = false,
     canEditCommission = false,
@@ -307,6 +312,9 @@ export default function FundedAmountModal({
                         </div>
 
                         <hr className="fam-divider" />
+
+                        {/* The partner's own commission tiers, set or not */}
+                        {showPartnerCommission && partnerCommissionSetup && <PartnerCommissionPanel setup={partnerCommissionSetup} />}
 
                         {/* Commission details */}
                         <div className={showPartnerCommission ? 'fam-panel' : ''}>

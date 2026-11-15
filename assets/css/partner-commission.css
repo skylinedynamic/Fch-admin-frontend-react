@@ -210,3 +210,28 @@
     align-self: center;
   }
 }
+
+/* Funding tiers: the tier table takes the wider half, and the panel wraps so
+   the "next deal" line sits above the donut and legend. */
+.pcm__card--tiers {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+.pcm__card--tiers .pcm__right {
+  flex-wrap: wrap;
+  align-content: center;
+}
+
+.pcm__next {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 12.5px;
+  text-align: center;
+  color: var(--pcm-muted);
+}
+
+@container pcm (max-width: 899.98px) {
+  .pcm__card--tiers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
