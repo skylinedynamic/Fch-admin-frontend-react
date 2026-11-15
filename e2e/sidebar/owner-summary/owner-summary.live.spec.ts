@@ -17,6 +17,10 @@ test.describe('Sidebar › Owner Summary (live)', () => {
     for (const title of ['Partners', 'Clients', 'Leads']) {
       await expect(kpis.getByText(title, { exact: true }).first()).toBeVisible()
     }
+    // The real API splits clients between FCH and partners.
+    const clients = page.getByTestId('owner-kpi-clients')
+    await expect(clients.locator('.os-kpi__row').filter({ hasText: 'FCH' })).toBeVisible()
+    await expect(clients.locator('.os-kpi__row').filter({ hasText: 'Partners' })).toBeVisible()
     for (const section of ['owner-attention', 'owner-cash', 'owner-commissions', 'owner-owed', 'owner-pipeline', 'owner-sources', 'owner-chart-funded', 'owner-chart-cash', 'owner-network', 'owner-top-partners', 'owner-stalled']) {
       await expect(page.getByTestId(section)).toBeVisible()
     }

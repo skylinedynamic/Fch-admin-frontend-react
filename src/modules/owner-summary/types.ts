@@ -58,7 +58,8 @@ export interface OwnerSummaryKpis {
     new_leads: CurrentAndPrevious & { host: number; partners: number };
     active_partners: { current: number; total: number };
     partners: TotalActiveAndNew;
-    clients: TotalActiveAndNew;
+    /** host + partners = total: the host's own clients and other partners' clients. */
+    clients: TotalActiveAndNew & { host: number; partners: number };
     lead_conversion: { host: OwnerConversion; partners: OwnerConversion };
 }
 

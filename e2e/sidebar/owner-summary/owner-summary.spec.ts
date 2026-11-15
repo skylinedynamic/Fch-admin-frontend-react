@@ -91,6 +91,11 @@ test.describe('Sidebar › Owner Summary', () => {
     await expect(kpis.getByText('$150.0K')).toBeVisible()
     await expect(page.getByTestId('owner-kpi-funded').getByText('Partners')).toBeVisible()
     await expect(page.getByTestId('owner-kpi-conversion').getByText('25% (1 of 4)')).toBeVisible()
+    // Clients: FCH's own and other partners' shown apart, active and new underneath the total.
+    const clients = page.getByTestId('owner-kpi-clients')
+    await expect(clients.locator('.os-kpi__row').filter({ hasText: 'FCH' }).getByText('15')).toBeVisible()
+    await expect(clients.locator('.os-kpi__row').filter({ hasText: 'Partners' }).getByText('25')).toBeVisible()
+    await expect(clients.getByText('35 active · 8 new this period')).toBeVisible()
     await expect(page.getByTestId('owner-attention').getByRole('link', { name: 'Review failed invoices' })).toBeVisible()
     await expect(page.getByTestId('owner-stalled').getByText('FUND-000044')).toBeVisible()
   })

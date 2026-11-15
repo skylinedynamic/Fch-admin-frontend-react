@@ -26,7 +26,7 @@ export const ownerSummaryFixture: OwnerSummary = {
     new_leads: { current: 3, previous: 2, host: 1, partners: 2 },
     active_partners: { current: 1, total: 2 },
     partners: { total: 2, active: 1, new: 1 },
-    clients: { total: 40, active: 35, new: 8 },
+    clients: { total: 40, active: 35, new: 8, host: 15, partners: 25 },
     lead_conversion: {
       host: { leads: 4, funded: 1 },
       partners: { leads: 6, funded: 1 },

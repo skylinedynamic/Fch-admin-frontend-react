@@ -81,7 +81,7 @@ export default function OwnerSummary() {
                     <div className="os-header">
                         <div>
                             <div className="os-legend" style={{ gap: 10 }}>
-                                <h1 className="os-title">Owner Summary</h1>
+                                <h1 className="os-title">Business Insights</h1>
                                 <span className="os-tag os-tag--owner">FCH owner only</span>
                             </div>
                             <p className="os-subtitle">Four Corner Funding · business summary</p>

@@ -56,9 +56,11 @@ describe('Owner Summary page', () => {
     expect(row('partners', 'Active').getByText('1')).toBeInTheDocument()
 
     expect(card('clients').getByText('40')).toBeInTheDocument()
-    expect(row('clients', 'Active').getByText('35')).toBeInTheDocument()
-    // Archived clients are left out of this as well, so it can't exceed the total.
-    expect(row('clients', 'New this period').getByText('8')).toBeInTheDocument()
+    // FCH's own clients and other partners' clients, which add up to the total.
+    expect(row('clients', 'FCH').getByText('15')).toBeInTheDocument()
+    expect(row('clients', 'Partners').getByText('25')).toBeInTheDocument()
+    // Archived clients are left out of active and new as well, so neither can exceed the total.
+    expect(card('clients').getByText('35 active · 8 new this period')).toBeInTheDocument()
 
     expect(card('leads').getByText('3')).toBeInTheDocument()
     expect(row('leads', 'FCH').getByText('1')).toBeInTheDocument()
