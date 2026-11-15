@@ -20,7 +20,8 @@ const BANK = {
   ],
 }
 const CASH = { id: 5, name: 'Cash Payment' }
-const PARTNER = { permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Partner', entity_id: 5 }
+// The owner's Admin role carries "Pay Invoice" (PayInvoicePermissionSeeder).
+const PARTNER = { permissions: ['view invoices', 'Pay Invoice'], is_host: 0, partner_id: 5, entity_type: 'Partner', entity_id: 5 }
 
 async function open(page: Page, providers: unknown = [BANK, CASH], user: Record<string, unknown> = PARTNER, invoice: Record<string, unknown> = INVOICE): Promise<ApiMock> {
   await seedSession(page, user)
@@ -40,6 +41,12 @@ test.describe('Invoice payment - who can pay', () => {
   test('a partner sees Pay Now on an unpaid partner invoice', async ({ page }) => {
     await open(page)
     await expect(payNow(page)).toBeVisible()
+  })
+
+  // BUG-202: Pay Now only for a partner user holding "Pay Invoice".
+  test('a partner staff user without Pay Invoice sees no Pay Now', async ({ page }) => {
+    await open(page, [BANK], { permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Employee', entity_id: 9 })
+    await expect(payNow(page)).toHaveCount(0)
   })
 
   test('the host does not pay invoices', async ({ page }) => {

@@ -49,6 +49,28 @@ export const updatePartnerCommission = async (
   return data;
 };
 
+/** The Status & Agent tab: the partner's status and its agent (email/phone may be null). */
+export interface PartnerStatusAgent {
+  id: number;
+  status: string | null;
+  assign_to: number | null;
+  agent: { id: number; name: string; email: string | null; phone_number: string | null } | null;
+}
+
+export const getPartnerStatusAgent = async (id: string | number): Promise<PartnerStatusAgent> => {
+  const { data } = await apiClient.get(`/admin/partners/${id}/status-agent`);
+  return data?.data;
+};
+
+/** Saves only the status and agent, apart from the partner's other details. */
+export const updatePartnerStatusAgent = async (
+  id: string | number,
+  payload: { status: string; assign_to: string | number }
+): Promise<PartnerStatusAgent> => {
+  const { data } = await apiClient.put(`/admin/partners/${id}/status-agent`, payload);
+  return data?.data;
+};
+
 export const deletePartner = async (id: string | number): Promise<void> => {
   await apiClient.delete(`/admin/partners/${id}`);
 };

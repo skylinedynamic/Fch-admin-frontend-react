@@ -96,7 +96,7 @@ describe('InvoicePreviewModal', () => {
     respondWith({
       id: 7,
       invoice_id: 'INV-7',
-      type: 'Borrower Fee',
+      type: 'Client Activation Fee',
       name: 'Bo Rower',
       customer_name: 'Reseller LLC',
       billed_from: host,
@@ -166,7 +166,7 @@ describe('InvoicePreviewModal', () => {
     respondWith({
       id: 7,
       invoice_id: 'INV-7',
-      type: 'Borrower Fee',
+      type: 'Client Activation Fee',
       payment_amount: 800,
       billed_from: host,
       billed_to: reseller,
@@ -175,7 +175,7 @@ describe('InvoicePreviewModal', () => {
     renderModal()
 
     const items = within(await screen.findByRole('table', { name: 'Invoice items' }))
-    expect(items.getByText('Borrower Fee')).toBeInTheDocument()
+    expect(items.getByText('Client Activation Fee')).toBeInTheDocument()
     expect(items.getByText('$800.00')).toBeInTheDocument()
     expect(screen.queryByText(/Enrollment/)).not.toBeInTheDocument()
   })
@@ -283,3 +283,89 @@ describe('InvoicePreviewModal - a down-payment invoice', () => {
   })
 })
 
+
+// BUG-206: an invoice paid by Bank Transfer showed "Payment Method: Stripe", a
+// Card Holder and "To be paid by Stripe". It now shows how it was really paid.
+describe('InvoicePreviewModal - payment details', () => {
+  const paymentDetails = async () => {
+    const title = await screen.findByRole('heading', { name: /Payment Details/ })
+    return title.parentElement as HTMLElement
+  }
+
+  it('shows Bank Transfer, its reference and the payer for an invoice paid by bank transfer', async () => {
+    respondWith({
+      id: 7, invoice_id: 'INV-20261105007', type: 'Client Activation Fee', status: 'Paid', payment_amount: 800,
+      payment_method: 'Bank Transfer', payment_reference: 'QA-TEST-REF-0322', is_card_payment: false,
+      billed_from: host, billed_to: reseller,
+    })
+
+    renderModal()
+
+    const details = await paymentDetails()
+    expect(details).toHaveTextContent('Payment Method: Bank Transfer')
+    expect(details).toHaveTextContent('Reference: QA-TEST-REF-0322')
+    expect(details).toHaveTextContent('Paid By: Rita Reseller')
+    expect(details).not.toHaveTextContent('Card Holder')
+    expect(details).not.toHaveTextContent('Stripe')
+    expect(screen.getByText(/NOTES:/).parentElement).not.toHaveTextContent('To be paid by Stripe')
+  })
+
+  it('keeps Card Holder for an invoice paid by card', async () => {
+    respondWith({
+      id: 7, invoice_id: 'INV-8', type: 'Enrollment', status: 'Paid', payment_amount: 500,
+      payment_method: 'Stripe', payment_reference: null, is_card_payment: true,
+      billed_from: host, billed_to: reseller,
+    })
+
+    renderModal()
+
+    const details = await paymentDetails()
+    expect(details).toHaveTextContent('Payment Method: Stripe')
+    expect(details).toHaveTextContent('Card Holder: Rita Reseller')
+    expect(details).not.toHaveTextContent('Reference:')
+  })
+
+  // BUG-202: a partner's staff user paid the partner's invoice, but the modal
+  // named the party billed (the partner owner). It names the user who paid.
+  it('names the user who paid, not the party billed', async () => {
+    respondWith({
+      id: 7, invoice_id: 'INV-20261112002', type: 'Seat', status: 'Paid', payment_amount: 50,
+      payment_method: 'Cash', payment_reference: 'QA-TEST-REF-1112', is_card_payment: false,
+      paid_by_name: 'Sam Staff', billed_from: host, billed_to: reseller,
+    })
+
+    renderModal()
+
+    const details = await paymentDetails()
+    expect(details).toHaveTextContent('Paid By: Sam Staff')
+    expect(details).not.toHaveTextContent('Rita Reseller')
+  })
+
+  it('names the user who paid by card too', async () => {
+    respondWith({
+      id: 7, invoice_id: 'INV-10', type: 'Seat', status: 'Paid', payment_amount: 50,
+      payment_method: 'Stripe', payment_reference: null, is_card_payment: true,
+      paid_by_name: 'Sam Staff', billed_from: host, billed_to: reseller,
+    })
+
+    renderModal()
+
+    const details = await paymentDetails()
+    expect(details).toHaveTextContent('Paid By: Sam Staff')
+    expect(details).not.toHaveTextContent('Card Holder')
+  })
+
+  it('says Not paid yet when nothing has paid the invoice', async () => {
+    respondWith({
+      id: 7, invoice_id: 'INV-9', type: 'Enrollment', status: 'Unpaid', payment_amount: 500,
+      payment_method: null, payment_reference: null, is_card_payment: false,
+      billed_from: host, billed_to: reseller,
+    })
+
+    renderModal()
+
+    const details = await paymentDetails()
+    expect(details).toHaveTextContent('Payment Method: Not paid yet')
+    expect(details).not.toHaveTextContent('Stripe')
+  })
+})

@@ -288,6 +288,57 @@ describe('UserDetails - adding a user on a newly bought seat', () => {
     await waitFor(() => expect(received).not.toBeNull())
     expect(received).toMatchObject({ employee_id: 7, is_paid: true, months: 3 })
   })
+
+  /**
+   * BUG-202: paying the new seat's invoice needs "Pay Invoice", as Pay Now on
+   * Invoices does. Without it the user is still created and the invoice waits
+   * for someone who holds the permission.
+   */
+  async function createPaidSeat(permissions: string[]) {
+    useAuthStore.setState({ user: { id: 1, is_host: 0, entity_type: 'Partner', permissions } } as never)
+    mockLookups()
+    let invoiceFetched = false
+    server.use(
+      http.post('*/common/users', () => HttpResponse.json({ status: true, message: 'ok', data: { id: 51, invoice_id: 88 } })),
+      http.get('*/common/invoices/88', () => {
+        invoiceFetched = true
+        return HttpResponse.json({ status: true, message: 'ok', data: { id: 88, invoice_id: 'INV-88', status: 'Unpaid', payment_amount: 49 } })
+      })
+    )
+    const user = userEvent.setup()
+    const { container } = renderWithProviders(
+      <Routes>
+        <Route path="/users/create" element={<UserDetails />} />
+        <Route path="/users" element={<div>Users list page</div>} />
+      </Routes>,
+      { route: { pathname: '/users/create', state: { purchase: { months: 1, totalPrice: 49 } } } as never }
+    )
+    await screen.findByText(/seat purchase pending activation/i)
+    await waitFor(() => expect(container.querySelector('#user-employee')).not.toBeNull())
+    await choose(user, container, 'user-employee', 'Jane Doe')
+    await choose(user, container, 'role_id', 'Staff')
+    await user.type(screen.getByLabelText(/^password/i), 'secret123')
+    await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+    return { invoiceFetched: () => invoiceFetched }
+  }
+
+  it("opens the seat invoice's payment for someone holding Pay Invoice", async () => {
+    const { invoiceFetched } = await createPaidSeat(['create users', 'Pay Invoice'])
+
+    await waitFor(() => expect(invoiceFetched()).toBe(true))
+    expect(screen.queryByText('Users list page')).not.toBeInTheDocument()
+  })
+
+  it('without Pay Invoice, says the seat invoice is waiting and goes back to the list', async () => {
+    const { invoiceFetched } = await createPaidSeat(['create users'])
+
+    expect(await screen.findByText('Users list page')).toBeInTheDocument()
+    expect(invoiceFetched()).toBe(false)
+    expect(toast.info).toHaveBeenCalledWith(
+      'User created. Its seat invoice is still unpaid - someone with the Pay Invoice permission can pay it from Invoices.'
+    )
+  })
 })
 
 /**

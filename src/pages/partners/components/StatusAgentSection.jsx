@@ -37,9 +37,8 @@ export default function StatusAgentSection({
                         onChange={(e) =>
                             handleAgentChange({ target: { name: 'agent', value: e.value } })
                         }
-                        onBlur={() =>
-                            handleInputChange({ target: { name: 'agent', value: formData.agent } })
-                        }
+                        // No onBlur: it wrote back the value from the last render, which
+                        // could undo the pick just made (BUG-171).
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Select agent..."
@@ -98,9 +97,8 @@ export default function StatusAgentSection({
                         onChange={(e) =>
                             handleInputChange({ target: { name: 'status', value: e.value } })
                         }
-                        onBlur={() =>
-                            handleInputChange({ target: { name: 'status', value: formData.status } })
-                        }
+                        // No onBlur: it wrote back the value from the last render, which
+                        // could undo the pick just made (BUG-171).
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Select Status..."

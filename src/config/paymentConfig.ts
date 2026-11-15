@@ -1,3 +1,5 @@
+import { COMMISSION_PAYMENT } from './statusOptions';
+
 export const PAYMENT_STATUS_SUCCEEDED = 'succeeded';
 export const PAYMENT_STATUS_PENDING = 'pending';
 export const PAYMENT_STATUS_PROCESSING = 'processing';
@@ -56,6 +58,15 @@ export const PAYMENT_ENVIRONMENT_LABELS: { [key: number]: string } = {
     [0]: 'Sandbox'
 };
 
+/**
+ * The warning in the "Confirm Environment Change" window. A switch to Sandbox
+ * is test mode; only a switch to Production uses live keys (BUG-207).
+ */
+export const environmentChangeWarning = (toProduction: boolean, providerName: string): string =>
+    toProduction
+        ? `Switching to ${PAYMENT_ENVIRONMENT_LABELS[1]} will use live ${providerName} keys. Real transactions will be processed if this is used in checkout.`
+        : `Switching to ${PAYMENT_ENVIRONMENT_LABELS[0]} puts ${providerName} in test mode. Payments made in ${PAYMENT_ENVIRONMENT_LABELS[0]} are test payments and move no real money.`;
+
 export const PAYMENT_METHOD_PROVIDER = {
     [1]: 'Stripe',
     [2]: 'Square',
@@ -83,6 +94,8 @@ export const PAYMENT_METHOD_OPTIONS = [
     { label: PROVIDER_ECRYPT, value: PROVIDER_ECRYPT },
     { label: PROVIDER_AUTHORIZE, value: PROVIDER_AUTHORIZE },
     { label: PROVIDER_CASH, value: PROVIDER_CASH },
+    // Commission payouts are recorded with the payout dialog's method.
+    ...COMMISSION_PAYMENT.filter(({ value }) => value !== PROVIDER_STRIPE),
 ];
 
 export const PAYMENT_TYPE_OPTIONS = [

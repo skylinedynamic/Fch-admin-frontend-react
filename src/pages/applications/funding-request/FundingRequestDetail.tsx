@@ -77,9 +77,10 @@ export default function FundingRequestDetail() {
         }
     }, [review?.status]);
 
-    // A rejected request opens with the reason it was saved with.
+    // A rejected request opens with the reason it was saved with, not an empty
+    // required box as if none had been given (BUG-159).
     useEffect(() => {
-        if (review?.status === FUNDING_REVIEW_STATUS.REJECTED && review.reject_reason) {
+        if (review?.status === FUNDING_REVIEW_STATUS.REJECTED && review?.reject_reason) {
             setRejectReason(review.reject_reason);
         }
     }, [review?.status, review?.reject_reason]);

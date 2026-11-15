@@ -17,9 +17,12 @@ import { useAuthStore } from '../../store/auth';
 import { checkSeatLimit } from '../../utils/seatLimit';
 import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
 import FormLoader from '../../components/Loader/FormLoader';
+import ErrorPage from '../Utility/ErrorPage';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
+import { SEAT_INVOICE_WAITING } from '../../config/limitOptions';
 import { scrollToFirstError } from '../../utils/formUtils';
+import { emailFieldValue } from '../../modules/account';
 
 /**
  * Adding a user (/users/create) and viewing/editing one (/user-details/:id).
@@ -58,6 +61,10 @@ export default function UserDetails() {
   const [roles, setRoles] = useState([]);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(null);
+  // The email still used to sign in; the field shows the pending one meanwhile (BUG-203).
+  const [signInEmail, setSignInEmail] = useState('');
+  // 404/403 on the record: another partner's (or the host's) user (BUG-164).
+  const [notFound, setNotFound] = useState(false);
 
   const [values, setValues] = useState({
     employee_id: null,
@@ -86,14 +93,18 @@ export default function UserDetails() {
         setValues((prev) => ({
           ...prev,
           name: data.name || '',
-          email: data.email || '',
+          email: emailFieldValue(data.email, data.pending_email),
           phone_number: data.phone_number || '',
           role_id: data.role_id != null ? String(data.role_id) : '',
           status: data.status || ''
         }));
         setPendingEmail(data.pending_email || null);
+        setSignInEmail(data.email || '');
       })
-      .catch((err) => console.error('Failed to fetch user', err))
+      .catch((err) => {
+        if ([403, 404].includes(err?.response?.status)) setNotFound(true);
+        else console.error('Failed to fetch user', err);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -196,6 +207,12 @@ export default function UserDetails() {
 
       // A paid seat stays inactive until its invoice is paid.
       const invoiceId = res?.data?.invoice_id;
+      // Paying it needs "Pay Invoice", as Pay Now on Invoices does (BUG-202).
+      if (paidSeat && invoiceId && !hasPermission('Pay Invoice')) {
+        toast.info(SEAT_INVOICE_WAITING('User'));
+        navigate('/users');
+        return;
+      }
       if (paidSeat && invoiceId) {
         const invoiceRes = await fetchInvoiceDetails(invoiceId);
         if (invoiceRes?.status) {
@@ -291,10 +308,12 @@ export default function UserDetails() {
 
       toast.success('User updated successfully');
       setShowPasswordFields(false);
-      // A new email isn't applied until it's confirmed, so show the one that
-      // is still in effect alongside the pending one.
-      setValues((prev) => ({ ...prev, email: updated?.email ?? prev.email, new_password: '', confirm_password: '' }));
+      // A new email isn't applied until it's confirmed: the field shows the
+      // pending one and the notice the one still in effect (BUG-203).
+      const current = updated?.email ?? signInEmail;
+      setValues((prev) => ({ ...prev, email: emailFieldValue(current, updated?.pending_email), new_password: '', confirm_password: '' }));
       setPendingEmail(updated?.pending_email || null);
+      setSignInEmail(current);
     } catch (error) {
       applySaveError(error, 'Failed to update user');
     } finally {
@@ -305,6 +324,11 @@ export default function UserDetails() {
   const roleOptions = roles.map((role) => ({ label: role.name, value: String(role.id) }));
   const pageTitle = isCreate ? 'Add User' : 'User Details';
   const formLoading = isCreate ? employeesQuery.isLoading : loading;
+
+  // Say so rather than show an empty form with Update, as for clients and leads (BUG-030).
+  if (notFound) {
+    return <ErrorPage status={404} title="User Not Found" message="The user you are looking for does not exist or you do not have permission to view it." />;
+  }
 
   return (
     <div className="page-content">
@@ -397,7 +421,12 @@ export default function UserDetails() {
                                 <PendingEmailNotice
                                   userId={id}
                                   pendingEmail={pendingEmail}
-                                  onChange={setPendingEmail}
+                                  currentEmail={signInEmail}
+                                  onChange={(value) => {
+                                    setPendingEmail(value);
+                                    // Cancelled: back to the email still in use.
+                                    if (!value) setValues((prev) => ({ ...prev, email: signInEmail }));
+                                  }}
                                   canManage={canUpdate}
                                 />
                               )}

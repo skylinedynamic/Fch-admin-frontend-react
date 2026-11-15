@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getLender, createLender, updateLender, getLenderProductCategories } from '../../modules/lender/services';
-import { Lender } from '../../modules/lender/types';
+import { getLender, createLender, updateLender, getLenderProductCategories, checkLenderDuplicates } from '../../modules/lender/services';
+import { Lender, LenderDuplicates } from '../../modules/lender/types';
+import { lenderOptionLabel } from '../../modules/lender/displayName';
+import { cityOptions, countryOptions, stateOptions, type NameOption } from '../../modules/location/options';
 import PageHeader from '../common/PageHeader';
 import FormLoader from '../../components/Loader/FormLoader';
 import { formatPhoneNumber, parseDate } from '../../utils/formatters';
@@ -45,17 +47,44 @@ export default function LenderForm() {
         submission_email: '',
         submission_portal_link: '',
         internal_notes: '',
-        last_verified_date: ''
+        last_verified_date: '',
+        // Location, all optional.
+        country: '',
+        state: '',
+        city: '',
+        address: ''
     };
 
     const [formData, setFormData] = useState<Lender>(initialFormState);
     const [errors, setErrors] = useState<any>({});
+
+    // Lenders that already have the name / legal name typed: a warning, not an
+    // error - names may repeat; the Lender Code tells lenders apart.
+    const [duplicates, setDuplicates] = useState<LenderDuplicates>({ name: [], legal_name: [] });
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
         setFormData((prev: any) => ({ ...prev, [name]: value }));
         if (errors[name]) {
             setErrors((prev: any) => ({ ...prev, [name]: null }));
+        }
+        // The warning was about the old value; it is checked again on leaving the field.
+        if (name === 'name' || name === 'legal_name') {
+            setDuplicates((prev) => ({ ...prev, [name]: [] }));
+        }
+    };
+
+    const checkDuplicates = async (field: 'name' | 'legal_name') => {
+        const value = String(formData[field] ?? '').trim();
+        if (!value) {
+            setDuplicates((prev) => ({ ...prev, [field]: [] }));
+            return;
+        }
+        try {
+            const found = await checkLenderDuplicates({ [field]: value, ...(isEditMode ? { ignore_id: Number(id) } : {}) });
+            setDuplicates((prev) => ({ ...prev, [field]: found[field] }));
+        } catch {
+            // Only a warning: saving does not depend on it.
         }
     };
 
@@ -100,6 +129,8 @@ export default function LenderForm() {
         try {
             // Clean up empty strings to undefined to not fail numeric validation
             const payload: any = { ...formData };
+            // Made by the system and never changed: not sent back.
+            delete payload.lender_code;
             Object.keys(payload).forEach(key => {
                 if (payload[key] === '') {
                     payload[key] = null;
@@ -133,7 +164,68 @@ export default function LenderForm() {
         }
     };
 
-    const renderInput = (name: keyof Lender, label: string, type = 'text', placeholder = '', col = 'col-md-6', required = false) => {
+    /**
+     * "Name already used by LND-43012" - one short line naming the lender(s)
+     * by Lender Code. A warning only: names may repeat, saving still works.
+     */
+    const duplicateWarning = (field: 'name' | 'legal_name') => {
+        const found = duplicates[field];
+        if (found.length === 0) return null;
+
+        const codes = found.map((d) => d.lender_code || lenderOptionLabel(d));
+
+        return (
+            <div className="form-text text-warning d-flex align-items-center gap-1" role="status" data-testid={`duplicate-warning-${field}`}>
+                <i className="ri-error-warning-line"></i>
+                <span>
+                    {field === 'name' ? 'Name' : 'Legal name'} already used by{' '}
+                    {codes.map((code, i) => (
+                        <React.Fragment key={code}>
+                            {i > 0 && ', '}
+                            <strong>{code}</strong>
+                        </React.Fragment>
+                    ))}
+                </span>
+            </div>
+        );
+    };
+
+    // Country / State / City: a new country clears state and city, a new state clears city.
+    const changeLocation = (field: 'country' | 'state' | 'city', value: string | null) => {
+        const cleared = field === 'country' ? { state: '', city: '' } : field === 'state' ? { city: '' } : {};
+        setFormData((prev: any) => ({ ...prev, [field]: value ?? '', ...cleared }));
+        if (errors[field]) {
+            setErrors((prev: any) => ({ ...prev, [field]: null }));
+        }
+    };
+
+    // Two rows of two: Country | State, then City | Address. A state needs its
+    // country, a city its state: until then the select looks like the others
+    // (a disabled one drew half grey with a broken border) and says, in the
+    // box and in its list, what to pick first.
+    const renderLocationSelect = (field: 'country' | 'state' | 'city', label: string, placeholder: string, options: NameOption[], pickFirst?: string) => (
+        <div className="mb-4 col-md-6">
+            <label htmlFor={`lender_${field}`} className="form-label text-dark fw-medium mb-2">{label}</label>
+            <Dropdown
+                inputId={`lender_${field}`}
+                value={formData[field] || null}
+                options={options}
+                optionLabel="label"
+                optionValue="value"
+                onChange={(e) => changeLocation(field, e.value)}
+                placeholder={options.length === 0 && pickFirst ? pickFirst : placeholder}
+                emptyMessage={pickFirst ?? 'No results found'}
+                filter
+                showClear
+                className={`w-100 rounded-3 slim-dropdown ${errors[field] ? 'p-invalid' : ''}`}
+                appendTo="self"
+            />
+            {errors[field] && <div className="invalid-feedback d-block">{errors[field]}</div>}
+        </div>
+    );
+
+    // Lender Name and Legal Name: each is checked for possible duplicates on leaving it.
+    const renderInput = (name: 'name' | 'legal_name', label: string, type = 'text', placeholder = '', col = 'col-md-6', required = false) => {
         return (
             <div className={`mb-4 ${col}`}>
                 <label className="form-label text-dark fw-medium mb-2">
@@ -145,9 +237,11 @@ export default function LenderForm() {
                     className={`form-control rounded-3 py-2 ${errors[name] ? 'is-invalid' : ''}`}
                     value={formData[name] as string || ''}
                     onChange={handleChange}
+                    onBlur={() => checkDuplicates(name)}
                     placeholder={placeholder}
                 />
                 {errors[name] && <div className="invalid-feedback">{errors[name]}</div>}
+                {duplicateWarning(name)}
             </div>
         );
     };
@@ -207,7 +301,7 @@ export default function LenderForm() {
                                             {renderInput('name', 'Lender Name', 'text', 'Enter lender name', 'col-md-6', true)}
                                             {renderInput('legal_name', 'Legal Name', 'text', 'Enter legal name', 'col-md-6', true)}
 
-                                            <div className="mb-4 col-md-4 taxonomy-field">
+                                            <div className="mb-4 col-md-4 taxonomy-field lender-categories-field">
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <label className="form-label text-dark fw-medium mb-0">Product Categories <span className="text-danger">*</span></label>
                                                     <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowCategoryModal(true)}>Add New</button>
@@ -221,7 +315,7 @@ export default function LenderForm() {
                                                     optionLabel="label"
                                                     optionValue="value"
                                                     placeholder="Select product categories"
-                                                    className={`w-100 ${errors.product_categories ? 'p-invalid' : ''}`}
+                                                    className={`w-100 rounded-3 ${errors.product_categories ? 'p-invalid' : ''}`}
                                                     panelClassName="taxonomy-field-panel"
                                                     appendTo="self"
                                                     filter
@@ -267,6 +361,29 @@ export default function LenderForm() {
                                                     appendTo="self"
                                                 />
                                                 {errors.status && <div className="invalid-feedback d-block">{errors.status}</div>}
+                                            </div>
+                                        </div>
+
+                                        {/* All optional. Countries, states and cities come from the API
+                                            (common/locations); each list follows the one picked before it. */}
+                                        <h5 className="mb-3 mt-4 border-bottom pb-2">Location</h5>
+                                        <div className="row">
+                                            {renderLocationSelect('country', 'Country', 'Select country', countryOptions())}
+                                            {renderLocationSelect('state', 'State', 'Select state', stateOptions(formData.country), 'Select a country first')}
+                                            {renderLocationSelect('city', 'City', 'Select city', cityOptions(formData.country, formData.state), 'Select a state first')}
+                                            <div className="mb-4 col-md-6">
+                                                <label htmlFor="lender_address" className="form-label text-dark fw-medium mb-2">Address</label>
+                                                <input
+                                                    id="lender_address"
+                                                    type="text"
+                                                    name="address"
+                                                    maxLength={500}
+                                                    className={`form-control rounded-3 py-2 ${errors.address ? 'is-invalid' : ''}`}
+                                                    value={formData.address || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter street address"
+                                                />
+                                                {errors.address && <div className="invalid-feedback">{errors.address}</div>}
                                             </div>
                                         </div>
 

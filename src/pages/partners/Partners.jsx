@@ -567,6 +567,9 @@ export default function Partners() {
                                             onSort={onSort}
                                             selection={selectedPartners}
                                             onSelectionChange={(e) => setSelectedPartners(e.value)}
+                                            // The host company is listed but never archived or deleted
+                                            // from here, so its row cannot be ticked (BUG-205).
+                                            isDataSelectable={(e) => !e.data?.is_host}
                                             dataKey="id"
                                             onRowClick={(e) => {
                                                 const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||

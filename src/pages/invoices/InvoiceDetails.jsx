@@ -4,6 +4,7 @@ import PageHeader from '../common/PageHeader';
 import { fetchInvoiceDetails, downloadInvoice, sendInvoice } from '../../modules/invoice/services';
 import { toast } from 'react-toastify';
 import { INVOICE_STATUS_COLORS, STATUS_PAID, STATUS_PROCESSING } from '../../config/invoiceConfig';
+import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth';
 import { useConfigStore } from '../../store/config';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
@@ -25,6 +26,8 @@ const base64ToBlob = (base64, mimeType) => {
 export default function InvoiceDetails() {
     const { id } = useParams();
     const user = useAuthStore((state) => state.user);
+    // Pay Now only for a partner user holding "Pay Invoice" - the API refuses anyone else (BUG-202).
+    const { hasPermission } = usePermissions();
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -156,6 +159,10 @@ export default function InvoiceDetails() {
                                                     {invoice.payment_date && (
                                                         <p className="mb-2 text-muted">Paid Date: <span className="fw-medium text-body">{invoice.payment_date}</span></p>
                                                     )}
+                                                    {/* Who paid it - for a partner's invoice, often one of its staff (BUG-202). */}
+                                                    {invoice.paid_by_name && (
+                                                        <p className="mb-2 text-muted">Paid By: <span className="fw-medium text-body">{invoice.paid_by_name}</span></p>
+                                                    )}
                                                     {invoice.enrollment_type && (
                                                         <p className="mb-2 text-muted">Enrollment Type: <span className="fw-medium text-body">{invoice.enrollment_type}</span></p>
                                                     )}
@@ -222,7 +229,7 @@ export default function InvoiceDetails() {
                                                 </table>
                                             </div>
                                             <div className="mt-4 d-flex justify-content-end gap-2">
-                                                {invoice.status !== STATUS_PAID && invoice.status !== STATUS_PROCESSING && user?.is_host == 0 && invoice.entity_type?.includes(ENTITY_TYPE_PARTNER) && (
+                                                {invoice.status !== STATUS_PAID && invoice.status !== STATUS_PROCESSING && user?.is_host == 0 && invoice.entity_type?.includes(ENTITY_TYPE_PARTNER) && hasPermission('Pay Invoice') && (
                                                     <button className="btn btn-primary" onClick={() => setShowPaymentModal(true)}>
                                                         <i className="ri-secure-payment-line align-middle me-1"></i> Pay Now
                                                     </button>

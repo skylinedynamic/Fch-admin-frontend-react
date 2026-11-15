@@ -6,6 +6,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { useFundingRequests, useUpdateFundingRequestStatus } from '../../../modules/application';
+import { usePartnerOptions, partnerOptionLabel } from '../../../modules/partner';
 import type { PaginatedApiResponse } from '../../../modules/application/types';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
@@ -37,9 +38,12 @@ export default function FundingSequence() {
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [selectedAppStatus, setSelectedAppStatus] = useState<string>('');
     const [selectedFundingSequenceId, setSelectedFundingSequenceId] = useState<string>('');
+    const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('');
     const [filters, setFilters] = useState<any>({});
 
-    // Removed modal state
+    // The host's Partner dropdown: every partner (a partner sees only its own rows).
+    const { data: partnerOptions = [] } = usePartnerOptions(isHost);
+    const partners = partnerOptions.map((p) => ({ label: partnerOptionLabel(p), value: p.id }));
 
     // Applied Filters
     const [appliedFilters, setAppliedFilters] = useState<{
@@ -47,16 +51,18 @@ export default function FundingSequence() {
         status: string;
         application_status: string;
         funding_sequence_id: string;
+        partner_id: number | '';
         filters: any;
     }>({
         search: '',
         status: '',
         application_status: '',
         funding_sequence_id: '',
+        partner_id: '',
         filters: {}
     });
 
-    // API Query
+    // API Query. The column filters (PARTNER NAME) were never sent before.
     const queryParams = {
         page,
         per_page: perPage,
@@ -64,6 +70,8 @@ export default function FundingSequence() {
         status: appliedFilters.status,
         application_status: appliedFilters.application_status,
         funding_sequence_id: appliedFilters.funding_sequence_id,
+        partner_id: appliedFilters.partner_id || undefined,
+        filters: appliedFilters.filters,
         sort_field: sortField,
         sort_order: sortOrder,
     };
@@ -75,11 +83,15 @@ export default function FundingSequence() {
     const fundingTypes = (apiResponse as (PaginatedApiResponse<any> & { funding_types?: { id: number; name: string }[] }) | undefined)?.funding_types || [];
     const loading = isLoading || isFetching;
 
+    // The column filters, empty.
+    const emptyFilters = () => ({
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    });
+
     const initFilters = () => {
-        const initial = {
-            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-        };
+        const initial = emptyFilters();
         setFilters(initial);
         setAppliedFilters(prev => ({ ...prev, filters: initial }));
     };
@@ -99,6 +111,7 @@ export default function FundingSequence() {
             status: selectedStatus,
             application_status: selectedAppStatus,
             funding_sequence_id: selectedFundingSequenceId,
+            partner_id: selectedPartnerId,
             filters: filters
         }));
         setPage(1);
@@ -109,13 +122,16 @@ export default function FundingSequence() {
         setSelectedStatus('');
         setSelectedAppStatus('');
         setSelectedFundingSequenceId('');
-        initFilters();
+        setSelectedPartnerId('');
+        const initial = emptyFilters();
+        setFilters(initial);
         setAppliedFilters({
             search: '',
             status: '',
             application_status: '',
             funding_sequence_id: '',
-            filters: {}
+            partner_id: '',
+            filters: initial
         });
         setPage(1);
     };
@@ -190,7 +206,8 @@ export default function FundingSequence() {
                             <div className="card-body">
                                 <form className="table-filter mb-1" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
                                     <div className="row g-3 mb-2">
-                                        <div className="col-xxl-4 col-sm-12">
+                                        {/* The host's row has a Partner dropdown too, so the search box gives it room. */}
+                                        <div className={isHost ? 'col-xxl-2 col-sm-12' : 'col-xxl-4 col-sm-12'}>
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -246,6 +263,21 @@ export default function FundingSequence() {
                                                 />
                                             </div>
                                         </div>
+                                        {isHost && (
+                                            <div className="col-xxl-2 col-sm-6">
+                                                <Dropdown
+                                                    value={selectedPartnerId}
+                                                    options={[{ label: 'All Partners', value: '' }, ...partners]}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    onChange={(e) => setSelectedPartnerId(e.value)}
+                                                    filter
+                                                    filterBy="label"
+                                                    placeholder="All Partners"
+                                                    className="w-100 bg-light border-light"
+                                                />
+                                            </div>
+                                        )}
                                         <div className="col-xxl-2 col-sm-6">
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-warning flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleApplyFilters}>
@@ -290,7 +322,7 @@ export default function FundingSequence() {
                                         >
                                             <Column field="borrower_name" header="Borrower Name" body={(r) => `${r.borrower?.first_name || ''} ${r.borrower?.last_name || ''}`} sortable style={{ minWidth: '160px' }} />
                                             {isHost && (
-                                                <Column field="partner_name" header="Partner Name" body={(r) => r.partner?.full_name || '-'} sortable style={{ minWidth: '160px' }} />
+                                                <Column field="partner_name" header="Partner Name" body={(r) => r.partner?.full_name || '-'} sortable filter filterPlaceholder="Search partner" style={{ minWidth: '160px' }} />
                                             )}
                                             <Column field="funding_sequence_id" header="Funding Sequence" body={(r) => r.funding_sequence?.name || '-'} sortable style={{ minWidth: '160px' }} />
                                             <Column field="funding_type" header="Funding Type" sortable style={{ minWidth: '150px' }} />

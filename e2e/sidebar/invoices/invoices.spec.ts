@@ -22,6 +22,39 @@ test.describe('Invoices list', () => {
     return api
   }
 
+  // BUG-206: View Details said "Payment Method: Stripe" and showed a Card Holder for an invoice paid by Bank Transfer.
+  test('View Details shows the method the invoice was really paid with', async ({ page }) => {
+    const api = await openList(page)
+    api.add({
+      method: 'GET', match: /\/common\/invoices\/1002$/,
+      body: ok({ ...INVOICES[1], payment_amount: 1200, payment_method: 'Bank Transfer', payment_reference: 'QA-TEST-REF-0320', is_card_payment: false, billed_to: { name: 'Johnathan Smithfield' } }),
+    })
+
+    await page.locator('tr', { hasText: 'INV-1002' }).getByTitle('View Details').click()
+
+    const details = page.locator('.modal.show').getByRole('heading', { name: /Payment Details/ }).locator('..')
+    await expect(details).toContainText('Payment Method: Bank Transfer')
+    await expect(details).toContainText('Reference: QA-TEST-REF-0320')
+    await expect(details).toContainText('Paid By: Johnathan Smithfield')
+    await expect(details).not.toContainText('Card Holder')
+    await expect(details).not.toContainText('Stripe')
+  })
+
+  // BUG-202: View Details named the party billed (the partner owner) as the payer of an invoice its staff user paid.
+  test('View Details names the user who paid the invoice', async ({ page }) => {
+    const api = await openList(page)
+    api.add({
+      method: 'GET', match: /\/common\/invoices\/1002$/,
+      body: ok({ ...INVOICES[1], payment_amount: 1200, payment_method: 'Cash', payment_reference: 'QA-TEST-REF-1112', is_card_payment: false, paid_by_name: 'Sam Staff', billed_to: { name: 'Johnathan Smithfield' } }),
+    })
+
+    await page.locator('tr', { hasText: 'INV-1002' }).getByTitle('View Details').click()
+
+    const details = page.locator('.modal.show').getByRole('heading', { name: /Payment Details/ }).locator('..')
+    await expect(details).toContainText('Paid By: Sam Staff')
+    await expect(details).not.toContainText('Johnathan Smithfield')
+  })
+
   test('lists invoices', async ({ page }) => {
     await openList(page)
     await expect(page.getByText('INV-1002')).toBeVisible()
@@ -93,6 +126,12 @@ test.describe('Invoice details', () => {
     await expect(page.getByRole('button', { name: /download pdf/i })).toBeVisible()
     return api
   }
+
+  // BUG-202: who paid it - for a partner's invoice, often one of its staff.
+  test('a paid invoice says who paid it', async ({ page }) => {
+    await open(page, undefined, { ...INVOICES[0], status: 'Paid', payment_date: '11 Nov, 2026', paid_by_name: 'Sam Staff' })
+    await expect(page.getByText('Paid By: Sam Staff')).toBeVisible()
+  })
 
   test('shows the invoice total', async ({ page }) => {
     await open(page)

@@ -103,3 +103,66 @@ describe('Employee › Create account at the seat limit', () => {
     expectNotShown('User Limit Reached')
   })
 })
+
+/**
+ * BUG-202: paying the bought seat's invoice needs "Pay Invoice", as Pay Now on
+ * Invoices does. Without it the employee and login are still created and the
+ * invoice waits for someone who holds the permission.
+ */
+describe('Employee › paying for a bought seat', () => {
+  beforeEach(reset)
+  afterEach(reset)
+
+  async function buySeatAndSave(permissions: string[]) {
+    useAuthStore.setState({
+      token: 't',
+      user: { id: 1, is_host: 0, entity_type: 'Partner', permissions: ['view employees', 'create employees', ...permissions] } as never,
+      userSubscription: { is_free_trail: false, user_seats: 3 } as never,
+    })
+    mockApi({ count: 3, seat_limit: 3, per_user_price: 49 })
+    let invoiceFetched = false
+    server.use(
+      http.post('*/common/employees', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { employee: { id: 77 }, invoice_id: 88, user: { id: 51 } } })
+      ),
+      http.get('*/common/invoices/88', () => {
+        invoiceFetched = true
+        return HttpResponse.json({ status: true, message: 'ok', data: { id: 88, invoice_id: 'INV-88', status: 'Unpaid', payment_amount: 49 } })
+      }),
+      http.all('*', () => HttpResponse.json({ status: true, data: [] }))
+    )
+    renderWithProviders(
+      <Routes>
+        <Route path="/employees/add" element={<EmployeeDetails />} />
+        <Route path="/employees" element={<div>Employees list page</div>} />
+        <Route path="/employee-details/:id" element={<div>Employee page</div>} />
+      </Routes>,
+      { route: '/employees/add' }
+    )
+
+    await tickCreateAccount()
+    await userEvent.click(await screen.findByRole('button', { name: /proceed/i, hidden: true }))
+    await userEvent.click(await screen.findByRole('button', { name: /^save$/i, hidden: true }))
+
+    return { invoiceFetched: () => invoiceFetched }
+  }
+
+  it("opens the seat invoice's payment for someone holding Pay Invoice", async () => {
+    const { invoiceFetched } = await buySeatAndSave(['Pay Invoice'])
+
+    await waitFor(() => expect(invoiceFetched()).toBe(true))
+    expect(screen.queryByText('Employees list page')).not.toBeInTheDocument()
+  })
+
+  it('without Pay Invoice, says the seat invoice is waiting and opens the new employee', async () => {
+    const { toast } = await import('react-toastify')
+    const info = vi.spyOn(toast, 'info')
+    const { invoiceFetched } = await buySeatAndSave([])
+
+    expect(await screen.findByText('Employee page')).toBeInTheDocument()
+    expect(invoiceFetched()).toBe(false)
+    expect(info).toHaveBeenCalledWith(
+      'Employee created. Its seat invoice is still unpaid - someone with the Pay Invoice permission can pay it from Invoices.'
+    )
+  })
+})
