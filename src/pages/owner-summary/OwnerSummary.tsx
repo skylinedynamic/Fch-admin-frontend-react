@@ -6,6 +6,7 @@ import {
     OWNER_SUMMARY_ENVIRONMENT_OPTIONS,
     OWNER_SUMMARY_PERIOD,
     OWNER_SUMMARY_PERIOD_OPTIONS,
+    OWNER_SUMMARY_TITLE,
     type OwnerSummaryEnvironment,
     type OwnerSummaryPeriodKey,
 } from '../../config/ownerSummary';
@@ -81,8 +82,7 @@ export default function OwnerSummary() {
                     <div className="os-header">
                         <div>
                             <div className="os-legend" style={{ gap: 10 }}>
-                                <h1 className="os-title">Business Insights</h1>
-                                <span className="os-tag os-tag--owner">FCH owner only</span>
+                                <h1 className="os-title">{OWNER_SUMMARY_TITLE}</h1>
                             </div>
                             <p className="os-subtitle">Four Corner Funding · business summary</p>
                         </div>

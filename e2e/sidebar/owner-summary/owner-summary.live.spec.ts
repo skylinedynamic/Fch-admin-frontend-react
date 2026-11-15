@@ -2,13 +2,13 @@ import { test, expect, openFromSidebar, pageHeading } from '../../support/live/f
 
 // Read-only: the host opens the summary like a user and every section renders
 // from the real API (the fixture fails the test on any 5xx or page error).
-test.describe('Sidebar › Owner Summary (live)', () => {
+test.describe('Sidebar › Business Insights (live)', () => {
   test.beforeEach(async ({ page }) => {
-    await openFromSidebar(page, 'Owner Summary', /\/owner-summary$/)
+    await openFromSidebar(page, 'Business Insights', /\/owner-summary$/)
   })
 
   test('shows the headline numbers and every section', async ({ page }) => {
-    await expect(pageHeading(page, 'Owner Summary')).toBeVisible()
+    await expect(pageHeading(page, 'Business Insights')).toBeVisible()
 
     const kpis = page.getByTestId('owner-kpis')
     for (const title of ['Net Earnings', 'Funded Volume', 'Funded Deals', 'Lead-To-Funded']) {

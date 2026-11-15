@@ -5,6 +5,9 @@
 
 export const OWNER_SUMMARY_ROUTE = '/owner-summary';
 
+/** The screen's name, in the sidebar and as its heading. The route keeps its original path. */
+export const OWNER_SUMMARY_TITLE = 'Business Insights';
+
 /** Host staff holding this see the host's whole book (fch-api CommissionViewer::MANAGE_PERMISSION). */
 export const COMMISSION_MANAGE_PERMISSION = 'update commission';
 

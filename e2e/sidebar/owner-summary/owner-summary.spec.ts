@@ -5,7 +5,7 @@ import { ownerSummaryFixture } from '../../../tests/mocks/ownerSummary'
 // The host partner's own login, with the screens the summary links to.
 const HOST_OWNER = { ...HOST_USER, entity_type: 'Partner', permissions: ['view commission', 'view invoices', 'view payments'] }
 
-test.describe('Sidebar › Owner Summary', () => {
+test.describe('Sidebar › Business Insights', () => {
   test('report settings: the owner turns the weekly report on for two addresses', async ({ page }) => {
     await seedSession(page, HOST_OWNER)
     const api = await mockApi(page, [
@@ -76,7 +76,7 @@ test.describe('Sidebar › Owner Summary', () => {
     const api = await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
     await page.goto('/')
-    await page.locator('#navbar-nav').getByRole('link', { name: 'Owner Summary' }).click()
+    await page.locator('#navbar-nav').getByRole('link', { name: 'Business Insights' }).click()
     await expect(page).toHaveURL(/\/owner-summary$/)
 
     const call = await expectCall(api, 'GET', '/common/owner-summary')
@@ -248,7 +248,7 @@ test.describe('Sidebar › Owner Summary', () => {
 
     await page.goto('/owner-summary')
     await expect(page).toHaveURL(/\/$/)
-    await expect(page.locator('#navbar-nav').getByRole('link', { name: 'Owner Summary' })).toHaveCount(0)
+    await expect(page.locator('#navbar-nav').getByRole('link', { name: 'Business Insights' })).toHaveCount(0)
     expect(api.find('GET', '/common/owner-summary')).toHaveLength(0)
   })
 

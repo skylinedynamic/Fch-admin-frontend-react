@@ -2,9 +2,9 @@ import { test, expect, openFromSidebar } from '../../support/live/fixtures'
 
 // Real API and database: saves the settings back exactly as it found them, so
 // it is safe to repeat. Sends nothing - email only goes out from the Sunday command.
-test.describe('Sidebar › Owner Summary › Report settings (live)', () => {
+test.describe('Sidebar › Business Insights › Report settings (live)', () => {
   test('saved settings come back from the API', async ({ page }) => {
-    await openFromSidebar(page, 'Owner Summary', /\/owner-summary$/)
+    await openFromSidebar(page, 'Business Insights', /\/owner-summary$/)
     await page.getByRole('button', { name: 'Report settings' }).click()
 
     const dialog = page.getByRole('dialog', { name: 'Report settings' })

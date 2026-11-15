@@ -34,7 +34,7 @@ const perm = (...any: string[]): Guard => ({ kind: 'permission', any })
 export const ROUTES: RouteCheck[] = [
   { name: 'Dashboard', path: '/', guard: { kind: 'none' }, api: { method: 'GET', path: '/common/dashboard' } },
   { name: 'Profile', path: '/profile', guard: { kind: 'none' } },
-  { name: 'Owner summary', path: '/owner-summary', guard: { kind: 'hostOwner' }, api: { method: 'GET', path: '/common/owner-summary' } },
+  { name: 'Business insights', path: '/owner-summary', guard: { kind: 'hostOwner' }, api: { method: 'GET', path: '/common/owner-summary' } },
   { name: 'Notifications', path: '/notifications', guard: { kind: 'none' }, api: { method: 'GET', path: '/common/notifications' } },
 
   { name: 'Reminders', path: '/reminders', guard: perm('view reminders'), api: { method: 'POST', path: '/common/reminders/fetch-reminders', body: { page: 1, per_page: 5 } } },

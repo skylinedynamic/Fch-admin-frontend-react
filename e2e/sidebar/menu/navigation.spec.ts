@@ -33,7 +33,7 @@ const subItems = async (page: Page, parent: string) => {
 
 // The host's menu, exactly as the product shows it.
 const HOST_MENU = [
-  'Dashboard', 'Owner Summary', 'Partners', 'Leads', 'Clients', 'Intake & Review', 'Capital Access', 'Lenders', 'Funding Sequence',
+  'Dashboard', 'Business Insights', 'Partners', 'Leads', 'Clients', 'Intake & Review', 'Capital Access', 'Lenders', 'Funding Sequence',
   'Credit Builder', 'Commissions', 'Invoices', 'Payments', 'Subscriptions', 'Upcoming Billings', 'Appointments',
   'Task & Reminders', 'Notification', 'Resources', 'Employees', 'Users', 'Payment Method', 'Plan & Fee',
   'Roles & Permissions', 'CMS', 'Embedded Form', 'Settings',
@@ -41,7 +41,7 @@ const HOST_MENU = [
 
 // Where each top-level entry (without a submenu) must take the host.
 const HOST_LINKS: Record<string, string> = {
-  Dashboard: '/', 'Owner Summary': '/owner-summary', Partners: '/partners', Leads: '/leads', Clients: '/clients', 'Capital Access': '/capital-access',
+  Dashboard: '/', 'Business Insights': '/owner-summary', Partners: '/partners', Leads: '/leads', Clients: '/clients', 'Capital Access': '/capital-access',
   Lenders: '/lenders', 'Funding Sequence': '/funding', Commissions: '/commissions', Invoices: '/invoices',
   Payments: '/payments', Subscriptions: '/subscriptions', 'Upcoming Billings': '/billing', Appointments: '/appointments',
   'Task & Reminders': '/reminders', Notification: '/notifications', Resources: '/resources', Employees: '/employees',

@@ -7,7 +7,7 @@ import faviconImg from "../../../assets/images/Favicon.png";
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER, APP_CONFIG } from "../../config/appConfig";
 import BrandLogo from "./BrandLogo";
 import { NOTIFICATIONS_ROUTE } from "../../config/notifications";
-import { OWNER_SUMMARY_ROUTE } from "../../config/ownerSummary";
+import { OWNER_SUMMARY_ROUTE, OWNER_SUMMARY_TITLE } from "../../config/ownerSummary";
 import { useIsHostOwner } from "../../lib/auth/useIsHostOwner";
 import { useUnreadNotificationCount, formatUnreadCount } from "../../modules/notifications";
 
@@ -23,7 +23,7 @@ const menuItems = [
   {
     to: OWNER_SUMMARY_ROUTE,
     icon: "ri-line-chart-line",
-    label: "Owner Summary",
+    label: OWNER_SUMMARY_TITLE,
     permission: "",
     isHostOwnerOnly: true,
   },

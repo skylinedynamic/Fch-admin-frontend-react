@@ -30,6 +30,12 @@ const renderPage = async () => {
 }
 
 describe('Owner Summary page', () => {
+  it('is titled Business Insights, the same name as its sidebar item', async () => {
+    await renderPage()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Business Insights' })).toBeInTheDocument()
+  })
+
   it('shows the seven headline numbers, split between host and partners', async () => {
     await renderPage()
     const card = (key: string) => within(screen.getByTestId(`owner-kpi-${key}`))
