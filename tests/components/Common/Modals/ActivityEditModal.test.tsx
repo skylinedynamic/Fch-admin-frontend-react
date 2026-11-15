@@ -76,7 +76,7 @@ describe('ActivityEditModal "Want to Assign"', () => {
         return HttpResponse.json({ status: true, data: STAFF })
       }),
       http.post('*/common/activity-logs/77', async ({ request }) => {
-        sent = await request.formData()
+        sent = await readMultipart(request)
         return HttpResponse.json({ status: true, message: 'Activity updated', data: TASK_ACTIVITY })
       })
     )

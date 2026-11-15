@@ -110,10 +110,14 @@ export default function FundingApplicationDetails() {
 
     // Sync the status with fetched data. (The commission is read straight from
     // the application by the Closed (Completed) modal and summary.)
+    // Only when the saved status / note itself changes: a reload for anything
+    // else (a lender assigned, say) keeps the status picked in the dropdown.
     useEffect(() => {
         if (app?.status) setStatus(app.status);
+    }, [app?.id, app?.status]);
+    useEffect(() => {
         if (app?.status_note) setStatusNote(app.status_note);
-    }, [app]);
+    }, [app?.id, app?.status_note]);
 
     useEffect(() => {
         if (error || (!isLoading && !apiResponse)) {
@@ -806,6 +810,11 @@ export default function FundingApplicationDetails() {
                                     </nav>
                                 </div>
                                 <div className="page-actions page-actions-wrap d-flex align-items-center flex-wrap gap-2 mt-2 mt-lg-0">
+                                    {app.borrower_id && (
+                                        <Link to={`/clients/${app.borrower_id}`} className="btn btn-primary waves-effect">
+                                            <i className="ri-user-line align-middle me-1"></i> Go to Client
+                                        </Link>
+                                    )}
                                     {/* The host reads every application's trail, a partner its own (the API decides). */}
                                     <Link to={`/intake-review/funding-application/${id}/audit-history`} className="btn btn-primary w-lg waves-effect">
                                         <i className="ri-history-line align-middle me-1"></i> Audit Trail

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPartnerFormDataPayload, defaultInstallmentMonths, mapPartnerBackendErrors, partnerOptionLabel } from '../../../src/modules/partner/logic'
+import { buildPartnerFormDataPayload, defaultInstallmentMonths, mapPartnerBackendErrors, partnerOptionLabel, partnerPortalBaseHost } from '../../../src/modules/partner/logic'
 
 describe('mapPartnerBackendErrors', () => {
   it('keeps each field\'s message, whether the API sends a string or a list', () => {
@@ -84,5 +84,38 @@ describe('buildPartnerFormDataPayload - clearing optional fields', () => {
 
     const edit = buildPartnerFormDataPayload({ ...editForm, company_name: '' }, 83)
     expect(edit.has('company_name')).toBe(false)
+  })
+})
+
+// BUG-203: the form keeps the login's email state beside the field - read-only,
+// never sent back. The field itself carries the pending email while one waits.
+describe('buildPartnerFormDataPayload - sign-in email state', () => {
+  it('sends the field email but none of the login state kept beside it', () => {
+    const payload = buildPartnerFormDataPayload(
+      { full_name: 'Acme Owner', email: 'new@example.test', pending_email: 'new@example.test', signin_email: 'old@example.test', login_user_id: 41 },
+      83
+    )
+
+    expect(payload.get('email')).toBe('new@example.test')
+    expect(payload.has('pending_email')).toBe(false)
+    expect(payload.has('signin_email')).toBe(false)
+    expect(payload.has('login_user_id')).toBe(false)
+  })
+})
+
+describe('partnerPortalBaseHost', () => {
+  it.each([
+    ['https://fourcornerfunding.com/', 'fourcornerfunding.com'],
+    ['http://localhost:3000/', 'localhost:3000'],
+    ['https://fourcornerfunding.com/blog', 'fourcornerfunding.com'],
+    ['fourcornerfunding.com', 'fourcornerfunding.com'],
+    ['localhost:3000', 'localhost:3000'],
+    ['  https://fourcornerfunding.com  ', 'fourcornerfunding.com'],
+  ])('reads the host from %s', (websiteUrl, host) => {
+    expect(partnerPortalBaseHost(websiteUrl, 'portal.test')).toBe(host)
+  })
+
+  it.each([[''], ['   ']])('falls back to the current host when the website url is %j', (websiteUrl) => {
+    expect(partnerPortalBaseHost(websiteUrl, 'portal.test')).toBe('portal.test')
   })
 })

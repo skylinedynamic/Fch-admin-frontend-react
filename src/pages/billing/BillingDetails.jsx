@@ -165,7 +165,8 @@ export default function BillingDetails() {
                                 <div className="card-header border-bottom border-primary border-opacity-25 p-4">
                                     <div className="d-flex align-items-center">
                                         <div className="flex-shrink-0 avatar-sm">
-                                            <div className={`avatar-title bg-${typeColor} bg-opacity-10 text-${typeColor} rounded fs-24`}>
+                                            {/* Same light tile for every subscriber type, as on Payment and Invoice details. */}
+                                            <div className="avatar-title bg-gray-subtle bg-opacity-10 text-primary rounded fs-24">
                                                 <i className={entity_type === ENTITY_TYPE_PARTNER ? 'ri-building-2-line' : 'ri-user-3-line'}></i>
                                             </div>
                                         </div>

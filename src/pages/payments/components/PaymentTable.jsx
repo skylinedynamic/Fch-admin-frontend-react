@@ -152,6 +152,8 @@ export default function PaymentTable({
                     header="Name"
                     body={nameBodyTemplate}
                     sortable
+                    // The API sorts 'name' by the payer name this column shows (BUG-179).
+                    sortField="name"
                     filter
                     filterField="borrower_name"
                     showFilterMatchModes

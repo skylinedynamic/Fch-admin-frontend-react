@@ -6,6 +6,8 @@ type Props = {
   /** The login the pending change belongs to. */
   userId?: string | number | null;
   pendingEmail?: string | null;
+  /** The email still used to sign in. The field shows the pending one meanwhile. */
+  currentEmail?: string | null;
   /** Called with the pending email after a resend, or null after a cancel. */
   onChange: (pendingEmail: string | null) => void;
   /** Hide the actions for someone who can view but not edit the record. */
@@ -29,7 +31,7 @@ const LABEL_GAP = 12;
  * where the label ends (so the label stays visible), is at most two lines
  * tall, and takes no space of its own, so the form layout doesn't shift.
  */
-export default function PendingEmailNotice({ userId, pendingEmail, onChange, canManage = true }: Props) {
+export default function PendingEmailNotice({ userId, pendingEmail, currentEmail, onChange, canManage = true }: Props) {
   const [busy, setBusy] = useState<'resend' | 'cancel' | null>(null);
   const [labelWidth, setLabelWidth] = useState(0);
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -78,7 +80,10 @@ export default function PendingEmailNotice({ userId, pendingEmail, onChange, can
     }
   };
 
-  const message = `Waiting for confirmation from ${pendingEmail}. The sign-in email changes once the link sent there is clicked.`;
+  // The field below shows the pending email (BUG-203), so name the one still in use.
+  const message = currentEmail
+    ? `Waiting for confirmation from ${pendingEmail}. Sign-in stays ${currentEmail} until the link sent there is clicked.`
+    : `Waiting for confirmation from ${pendingEmail}. The sign-in email changes once the link sent there is clicked.`;
 
   return (
     <div ref={anchorRef} style={{ position: 'relative', height: 0 }}>
@@ -105,8 +110,12 @@ export default function PendingEmailNotice({ userId, pendingEmail, onChange, can
         >
           {/* Inline, so the second line wraps back under the icon. */}
           <i className="ri-mail-send-line me-1" style={{ fontSize: 13, lineHeight: 1, verticalAlign: '-2px' }}></i>
-          Waiting for confirmation from <strong>{pendingEmail}</strong>. The sign-in email changes once the link
-          sent there is clicked.
+          Waiting for confirmation from <strong>{pendingEmail}</strong>.{' '}
+          {currentEmail ? (
+            <>Sign-in stays <strong>{currentEmail}</strong> until the link sent there is clicked.</>
+          ) : (
+            <>The sign-in email changes once the link sent there is clicked.</>
+          )}
         </span>
 
         {canManage && (

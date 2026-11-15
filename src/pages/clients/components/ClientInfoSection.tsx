@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo } from 'react';
 import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
+import { emailFieldValue } from '../../../modules/account';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
@@ -22,6 +23,7 @@ import type { Client, BorrowerPlan, RevealableClientField } from '../../../modul
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
+import { dateOfBirthError } from '../../../utils/dateOfBirth';
 import { dateOfBirthBounds } from '../../../utils/dates';
 import { locationData } from '../../../modules/location';
 import { getCountryPhoneInfo } from '../../../config/locations';
@@ -149,6 +151,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         fetchPartnerBorrowerFee();
     }, [isUserHost, clientId, isFetching, wasFreeTrial]);
 
+
     const enrollmentOptions = React.useMemo(() => {
         const plans = borrowerPlans;
         const options = plans.map((plan: BorrowerPlan) => ({
@@ -197,6 +200,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // 3. Sync Fetch to Local State - Use ref to prevent infinite loops
     const hasSyncedData = React.useRef(false);
+    // The email still used to sign in; the field shows the pending one meanwhile (BUG-203).
+    const [signInEmail, setSignInEmail] = useState<string>('');
     // Which copy of the client this form shows: from the load, then from each
     // save's response - not from a background refetch, which could carry
     // another user's change the form does not show (R2 BUG-065).
@@ -262,6 +267,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             if (apiData.payable_amount && (!apiData.enrollment_payment || apiData.enrollment_payment === '')) {
                 apiData.enrollment_payment = apiData.payable_amount;
             }
+
+            setSignInEmail(apiData.email || '');
+            apiData.email = emailFieldValue(apiData.email, apiData.pending_email);
 
             setFormData(prev => ({ ...prev, ...apiData }));
 
@@ -543,14 +551,17 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         toast.success("Client personal details updated successfully");
 
                         // With a login, a new email isn't applied until it's
-                        // confirmed; show the one still in effect alongside the
-                        // pending one (this form only syncs from the API once).
+                        // confirmed: the field shows the pending one and the
+                        // notice the one in effect (BUG-203). This form only
+                        // syncs from the API once.
                         const saved = (data as any)?.data;
                         if (saved?.client_info_version) {
                             clientInfoVersion.current = saved.client_info_version;
                         }
                         if (saved) {
-                            setFormData(prev => ({ ...prev, email: saved.email ?? prev.email, pending_email: saved.pending_email ?? null }));
+                            const current = saved.email ?? signInEmail;
+                            setSignInEmail(current);
+                            setFormData(prev => ({ ...prev, email: emailFieldValue(current, saved.pending_email), pending_email: saved.pending_email ?? null }));
                         }
                         if (onSaveSuccess) onSaveSuccess();
                         resolve();
@@ -785,7 +796,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <PendingEmailNotice
                                 userId={formData.user_id}
                                 pendingEmail={formData.pending_email}
-                                onChange={(value) => setFormData(prev => ({ ...prev, pending_email: value }))}
+                                currentEmail={signInEmail}
+                                // Cancelled: back to the email still in use.
+                                onChange={(value) => setFormData(prev => ({ ...prev, pending_email: value, ...(value ? {} : { email: signInEmail }) }))}
                             />
                         )}
                         <input
@@ -926,18 +939,22 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                     handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
                                 }}
                                 dateFormat="dd M, yy"
-                                // 18 to 120 years old, as the API checks (BUG-005).
+                                // Up to 120 years back (BUG-005) and every year up to today;
+                                // an under-18 pick gets the minimum-age message below, as
+                                // the API answers. An empty field opens 18 years back.
                                 minDate={dobBounds.minDate}
-                                maxDate={dobBounds.maxDate}
+                                maxDate={new Date()}
                                 viewDate={formData.date_of_birth ? undefined : dobBounds.maxDate}
                                 placeholder="Select date"
                                 showIcon
-                                className="w-100"
+                                className={`w-100 ${errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth)) ? 'is-invalid' : ''}`}
                                 appendTo="self"
                                 readOnlyInput
                             />
                         </div>
-                        {errors.date_of_birth && <div className="text-danger mt-1 small">{errors.date_of_birth}</div>}
+                        {(errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth))) && (
+                            <div className="text-danger mt-1 small">{errors.date_of_birth || dateOfBirthError(parseDate(formData.date_of_birth))}</div>
+                        )}
                     </div>
                 </div>
                 <div className="col-lg-6">

@@ -257,6 +257,8 @@ export default function LendersList() {
                                             responsiveLayout="scroll"
                                         >
                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+                                            {/* Made by the system when the lender is added; names may repeat, this never does. */}
+                                            <Column field="lender_code" header="Lender Code" sortable style={{ minWidth: '120px' }} body={(rowData) => rowData.lender_code || '-'} className="text-nowrap" />
                                             <Column field="name" header="Lender Name" sortable style={{ minWidth: '180px' }} className="fw-medium text-dark" />
                                             <Column field="legal_name" header="Legal Name" sortable style={{ minWidth: '150px' }} />
                                             <Column field="product_categories" header="Product Categories" style={{ minWidth: '150px' }} body={(rowData) => {

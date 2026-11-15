@@ -216,3 +216,47 @@ test.describe('Settings - email configuration', () => {
     await expect(page.getByText('Failed to save configuration.')).toBeVisible()
   })
 })
+
+test.describe('MicroBilt Config - client secret', () => {
+  // The API's mask (8 dots) and what the field shows instead (16 dots).
+  const MASK = '••••••••'
+  const SHOWN = '•'.repeat(16)
+  const CONFIG = {
+    microbilt_mode: 'production', microbilt_base_url_production: 'https://api.microbilt.test',
+    microbilt_client_id_production: 'client-id', microbilt_client_secret_production: MASK,
+    microbilt_base_url_sandbox: '', microbilt_client_id_sandbox: '', microbilt_client_secret_sandbox: '',
+  }
+
+  async function openMicroBilt(page: Page) {
+    const api = await open(page, { permissions: [ROUTE, 'update microbilt settings'] }, [
+      { method: 'POST', match: /\/common\/app-configurations$/, body: ok(CONFIG) },
+    ])
+    await section(page, 'MicroBilt Config').click()
+    await expect(page.locator('input[name="client_id_production"]')).toHaveValue('client-id')
+    return api
+  }
+  const secret = (page: Page) => page.locator('input[name="client_secret_production"]')
+  const save = (page: Page) => page.getByRole('button', { name: /save configuration/i })
+
+  // The API sends only a mask; the field shows 16 dots, so a saved
+  // secret looks saved. Left alone, the API's mask goes back and the API keeps it.
+  test('a saved secret shows as 16 dots and is kept when left alone', async ({ page }) => {
+    const api = await openMicroBilt(page)
+    await expect(secret(page)).toHaveAttribute('type', 'password')
+    await expect(secret(page)).toHaveValue(SHOWN)
+
+    api.add({ method: 'POST', match: /\/common\/app-configurations\/save$/, body: ok(null) })
+    await save(page).click()
+    const call = await expectCall(api, 'POST', '/common/app-configurations/save')
+    expect(call.json).toMatchObject({ microbilt_client_secret_production: MASK })
+  })
+
+  test('clearing the saved secret asks for one and saves nothing', async ({ page }) => {
+    const api = await openMicroBilt(page)
+    await secret(page).fill('')
+    await save(page).click()
+
+    await expect(page.getByText('Client Secret is required.')).toBeVisible()
+    expect(api.find('POST', '/common/app-configurations/save')).toHaveLength(0)
+  })
+})

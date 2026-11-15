@@ -48,6 +48,8 @@ export const mapPartnerBackendErrors = (backendErrors: Record<string, any>): Rec
         'enrollment.remaining_balance':         'installment_remaining_balance',
         // The create endpoint validates the zip as zip_code; the form field is postal_code.
         'zip_code':                             'postal_code',
+        // The API takes the agent as assign_to; the form field is agent.
+        'assign_to':                            'agent',
     };
 
     Object.entries(backendErrors).forEach(([field, errorMsg]) => {
@@ -109,7 +111,7 @@ export const buildPartnerFormDataPayload = (
         'other_city',
         'borrower_domain',
         // Read-only login state, shown with the email field — never sent back.
-        'pending_email', 'login_user_id',
+        'pending_email', 'login_user_id', 'signin_email',
     ];
 
     // Append top-level (non-enrollment) fields
@@ -119,7 +121,8 @@ export const buildPartnerFormDataPayload = (
         if (skipAlways.includes(key)) return;
 
         if (id) {
-            const updateSkipFields = ['partner_type', 'invoice'];
+            // Status and agent are saved by the Status & Agent tab's own endpoint.
+            const updateSkipFields = ['partner_type', 'invoice', 'status', 'agent'];
             if (!wasFreeTrial) {
                 updateSkipFields.push('is_free_trail', 'free_trail_end_date');
             }
@@ -204,3 +207,12 @@ export const partnerOptionLabel = (partner: PartnerOption): string => {
     if (partner.full_name && partner.company_name) return `${partner.company_name} (${partner.full_name})`;
     return partner.company_name || partner.full_name || `Partner #${partner.id}`;
 };
+
+/**
+ * The host after a partner's subdomain. The API saves the domain as
+ * <subdomain>.<BASE_WEBSITE>, so this is the website's host, not the portal's.
+ */
+export const partnerPortalBaseHost = (
+    websiteUrl: string | undefined = import.meta.env.VITE_WEBSITE_URL,
+    currentHost: string = window.location.host
+): string => websiteUrl?.trim().replace(/^https?:\/\//, '').split('/')[0] || currentHost;

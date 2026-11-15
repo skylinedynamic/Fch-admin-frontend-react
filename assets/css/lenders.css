@@ -50,3 +50,17 @@
     padding: .25rem .5rem;
     font-size: .875rem;
 }
+
+/* Product Categories on Add/Edit Lender: its placeholder reads like the form's
+   other selects (ISO Status) - the shared tag-picker style draws it lighter
+   and smaller, which looked disabled. */
+.taxonomy-field.lender-categories-field .p-multiselect .p-multiselect-label.p-placeholder {
+    color: #6c757d;
+    font-size: .875rem;
+}
+
+/* ...and its border: the theme's select border, as ISO Status (the shared
+   picker's lighter #e9ebec also made it look disabled). */
+.taxonomy-field.lender-categories-field .p-multiselect {
+    border-color: #ced4da;
+}

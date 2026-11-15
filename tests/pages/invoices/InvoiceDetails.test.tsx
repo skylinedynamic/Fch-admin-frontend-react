@@ -31,7 +31,7 @@ const reseller = {
   country: 'United States',
 }
 
-const BORROWER_FEE = { ...INVOICE, type: 'Borrower Fee', displayable_payment_amount: '$800.00', billed_to: reseller }
+const BORROWER_FEE = { ...INVOICE, type: 'Client Activation Fee', displayable_payment_amount: '$800.00', billed_to: reseller }
 
 const mount = (user: TestUser = { permissions: ['view invoices'] }, invoice: Record<string, unknown> = INVOICE) => {
   signIn(user)
@@ -84,7 +84,7 @@ describe('InvoiceDetails', () => {
     mount({ permissions: ['view invoices'] }, BORROWER_FEE)
 
     await billedToSection()
-    expect(screen.getByText('Borrower Fee')).toBeInTheDocument()
+    expect(screen.getByText('Client Activation Fee')).toBeInTheDocument()
     expect(screen.queryByText(/Enrollment Type/)).not.toBeInTheDocument()
   })
 
@@ -132,14 +132,23 @@ describe('InvoiceDetails', () => {
     expect(screen.queryByRole('button', { name: /pay now/i })).not.toBeInTheDocument()
   })
 
-  it('offers Pay Now to a partner for their own unpaid invoice', async () => {
-    mount({ permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Partner' })
+  it('offers Pay Now to a partner user holding Pay Invoice, for their own unpaid invoice', async () => {
+    mount({ permissions: ['view invoices', 'Pay Invoice'], is_host: 0, partner_id: 5, entity_type: 'Partner' })
 
     expect(await screen.findByRole('button', { name: /pay now/i })).toBeInTheDocument()
   })
 
+  // BUG-202: staff saw Pay Now, but the API refused them. Without "Pay
+  // Invoice" the button is not offered at all.
+  it('does not offer Pay Now to a partner user without Pay Invoice', async () => {
+    mount({ permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Employee' })
+
+    await screen.findByText('Total Amount')
+    expect(screen.queryByRole('button', { name: /pay now/i })).not.toBeInTheDocument()
+  })
+
   it.each(['Paid', 'Processing'])('does not offer Pay Now for a %s invoice', async (status) => {
-    mount({ permissions: ['view invoices'], is_host: 0, partner_id: 5, entity_type: 'Partner' }, { ...INVOICE, status })
+    mount({ permissions: ['view invoices', 'Pay Invoice'], is_host: 0, partner_id: 5, entity_type: 'Partner' }, { ...INVOICE, status })
 
     await screen.findByText('Total Amount')
     expect(screen.queryByRole('button', { name: /pay now/i })).not.toBeInTheDocument()
@@ -189,5 +198,22 @@ describe('InvoiceDetails', () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Error loading invoice details'))
     expect(await screen.findByText('Invoice Not Found')).toBeInTheDocument()
+  })
+})
+
+// BUG-202: who paid the invoice - for a partner's invoice, often one of its staff.
+describe('InvoiceDetails - who paid', () => {
+  it('shows who paid a paid invoice', async () => {
+    mount(undefined, { ...INVOICE, status: 'Paid', payment_date: '11 Nov, 2026', paid_by_name: 'Sam Staff' })
+
+    expect(await screen.findByText('Sam Staff')).toBeInTheDocument()
+    expect(screen.getByText('Sam Staff').parentElement).toHaveTextContent('Paid By: Sam Staff')
+  })
+
+  it('leaves Paid By out when nobody is recorded', async () => {
+    mount(undefined, { ...INVOICE, status: 'Paid', payment_date: '11 Nov, 2026', paid_by_name: null })
+
+    await screen.findAllByText(/Paid Date/)
+    expect(screen.queryByText(/Paid By/)).not.toBeInTheDocument()
   })
 })

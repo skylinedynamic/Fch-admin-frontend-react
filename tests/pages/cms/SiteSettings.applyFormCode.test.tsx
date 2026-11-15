@@ -34,6 +34,17 @@ describe('SiteSettings - Apply page form code', () => {
     expect(screen.getByText(/copy embed html/i)).toBeInTheDocument()
   })
 
+  // SCRUM-435 S435-BUG-03: the help promised a default form for an empty field,
+  // but with no valid code /apply shows no form at all.
+  it('says that without a code the Apply page shows no form', async () => {
+    mount()
+
+    await waitFor(() => expect(field()).toBeInTheDocument())
+    expect(screen.getByText(/the apply page shows no application form/i)).toBeInTheDocument()
+    expect(screen.getByText(/regenerating the form's key has the same effect/i)).toBeInTheDocument()
+    expect(screen.queryByText(/leave empty for the default/i)).not.toBeInTheDocument()
+  })
+
   it('sends the pasted code with the settings', async () => {
     mount()
     const save = api('post', '/admin/cms/site-settings', { status: true, message: 'Saved', data: {} })

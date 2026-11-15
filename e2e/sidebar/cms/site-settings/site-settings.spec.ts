@@ -57,6 +57,16 @@ test.describe('Site settings', () => {
     await expect(page.locator('input[name="email"]')).toHaveValue('hello@fcf.test')
   })
 
+  // SCRUM-435 S435-BUG-03: the help promised a default form for an empty field.
+  test('the Apply Page Form Code help says an empty field means no form', async ({ page }) => {
+    await open(page)
+    const help = page.locator('.form-text', { hasText: 'Copy Embed HTML' })
+
+    await expect(help).toBeVisible()
+    await expect(help).toContainText('If this is empty, the Apply page shows no application form')
+    await expect(help).not.toContainText('default')
+  })
+
   test('saving posts the edited values', async ({ page }) => {
     const api = await open(page)
     api.add({ method: 'POST', match: `${CMS}/site-settings`, body: ok(SETTINGS, 'Site settings updated successfully') })
@@ -84,22 +94,37 @@ test.describe('Site settings', () => {
   })
 
   // BUG-022: the reCAPTCHA secret used to load in full into a plain-text input.
-  // The API reports it only as set (a mask); the field stays blank and saving
-  // it blank keeps the stored secret.
-  test('a saved reCAPTCHA secret is never shown and is saved blank', async ({ page }) => {
+  // The API reports it only as set (a mask). The field shows 16 dots, so a
+  // saved secret looks saved; left alone, the API's mask goes back and is kept.
+  test('a saved reCAPTCHA secret shows as 16 dots and is kept when left alone', async ({ page }) => {
     await seedSession(page, { permissions: ['view site settings', 'update site settings'] })
     const api = await mockApi(page, [{ method: 'GET', match: `${CMS}/site-settings`, body: ok({ ...SETTINGS, recaptcha_site_key: 'site-key-public', recaptcha_secret_key: '••••••••' }) }])
     await page.goto('/cms/site-settings')
     const secret = page.locator('input[name="recaptcha_secret_key"]')
     await expect(page.locator('input[name="recaptcha_site_key"]')).toHaveValue('site-key-public')
     await expect(secret).toHaveAttribute('type', 'password')
-    await expect(secret).toHaveValue('')
-    await expect(secret).toHaveAttribute('placeholder', 'Saved - leave blank to keep')
+    await expect(secret).toHaveValue('•'.repeat(16))
 
     api.add({ method: 'POST', match: `${CMS}/site-settings`, body: ok(SETTINGS, 'Site settings updated successfully') })
     await page.locator('button[form="site-settings-form"]').click()
     const call = await expectCall(api, 'POST', `${CMS}/site-settings`)
-    expect(call.json).toMatchObject({ recaptcha_secret_key: '' })
+    expect(call.json).toMatchObject({ recaptcha_secret_key: '••••••••' })
+    expect(call.json).not.toHaveProperty('remove_recaptcha_secret_key')
+  })
+
+  // A blank secret means "keep" to the API, so clearing the field asks for removal.
+  test('clearing the saved reCAPTCHA secret removes it', async ({ page }) => {
+    await seedSession(page, { permissions: ['view site settings', 'update site settings'] })
+    const api = await mockApi(page, [{ method: 'GET', match: `${CMS}/site-settings`, body: ok({ ...SETTINGS, recaptcha_site_key: '', recaptcha_secret_key: '••••••••' }) }])
+    await page.goto('/cms/site-settings')
+    const secret = page.locator('input[name="recaptcha_secret_key"]')
+    await expect(secret).toHaveValue('•'.repeat(16))
+    await secret.fill('')
+
+    api.add({ method: 'POST', match: `${CMS}/site-settings`, body: ok(SETTINGS, 'Site settings updated successfully') })
+    await page.locator('button[form="site-settings-form"]').click()
+    const call = await expectCall(api, 'POST', `${CMS}/site-settings`)
+    expect(call.json).toMatchObject({ recaptcha_secret_key: '', remove_recaptcha_secret_key: '1' })
   })
 
   test('the save button is hidden for view-only users', async ({ page }) => {

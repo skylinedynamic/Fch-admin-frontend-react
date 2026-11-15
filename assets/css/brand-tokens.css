@@ -421,6 +421,13 @@ header#page-topbar {
   background: var(--brand-sidebar-bg) !important;
 }
 
+/* Site name shown in place of a sidebar logo that failed to load (BrandLogo.tsx).
+   It sat in the logo link's primary colour - #405189 on navy, about 2.2:1
+   (BUG-170) - so it takes the text colour worked out for the sidebar instead. */
+.app-menu .navbar-brand-box .brand-logo-text {
+  color: var(--brand-on-sidebar);
+}
+
 /* The menu's own edge follows the menu colour instead of the theme's fixed grey,
    which otherwise draws a pale line down the side of a dark sidebar (and a dark
    one down a light sidebar). */

@@ -25,3 +25,73 @@
  .p-column-filter-constraint{
     padding-bottom: 0!important;
  }
+
+/* -------------------------------------------------------------------------
+   Column filter popup (match mode, value, Clear / Apply) on every table.
+   Uses the theme primary (--vz-primary, set by the tenant branding) instead
+   of a PrimeReact theme colour (saga-blue / lara-light-indigo).
+   ------------------------------------------------------------------------- */
+.p-column-filter-overlay {
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.p-column-filter-overlay .p-column-filter-buttonbar .p-button {
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.2;
+    padding: 0.35rem 0.85rem;
+    background: var(--vz-primary);
+    border: 1px solid var(--vz-primary);
+    color: var(--brand-on-primary, #fff);
+}
+
+.p-column-filter-overlay .p-column-filter-buttonbar .p-button:enabled:hover {
+    background: var(--vz-primary);
+    border-color: var(--vz-primary);
+    color: var(--brand-on-primary, #fff);
+    opacity: 0.9;
+}
+
+.p-column-filter-overlay .p-column-filter-buttonbar .p-button.p-button-outlined {
+    background: transparent;
+    color: var(--vz-primary);
+    border-color: var(--vz-primary);
+}
+
+.p-column-filter-overlay .p-column-filter-buttonbar .p-button.p-button-outlined:enabled:hover {
+    background: rgba(var(--vz-primary-rgb), 0.08);
+    color: var(--vz-primary);
+    border-color: var(--vz-primary);
+    opacity: 1;
+}
+
+.p-column-filter-overlay .p-column-filter-buttonbar .p-button:focus {
+    box-shadow: none !important;
+}
+
+/* Match mode and value: one width and height, and no colour change or ring on
+   hover / focus (the border stays as it is). */
+.p-column-filter-overlay .p-column-filter-matchmode-dropdown,
+.p-column-filter-overlay input.p-column-filter {
+    width: 100%;
+    height: 36px !important;
+}
+
+.p-column-filter-overlay .p-column-filter-matchmode-dropdown {
+    align-items: center;
+}
+
+.p-column-filter-overlay .p-column-filter-matchmode-dropdown .p-dropdown-label {
+    height: auto !important;
+}
+
+.p-column-filter-overlay .p-column-filter-matchmode-dropdown:not(.p-disabled):hover,
+.p-column-filter-overlay .p-column-filter-matchmode-dropdown:not(.p-disabled).p-focus,
+.p-column-filter-overlay input.p-column-filter:enabled:hover,
+.p-column-filter-overlay input.p-column-filter:enabled:focus {
+    border-color: var(--vz-input-border-custom, #ced4da) !important;
+    box-shadow: none !important;
+    outline: none;
+}

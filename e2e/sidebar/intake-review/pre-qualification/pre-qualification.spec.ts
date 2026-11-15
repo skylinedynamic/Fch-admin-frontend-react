@@ -99,3 +99,38 @@ test.describe('Pre-qualification details - status update', () => {
     await expect(page.getByText('Failed to load application details').first()).toBeVisible()
   })
 })
+
+test.describe('Pre-qualification details › Go to Client', () => {
+  const DETAIL = { id: 301, borrower_id: 7, first_name: 'Pia', last_name: 'Prequal', business_name: 'Prequal Co', status: 'Pending' }
+  const link = (page: Page) => page.getByRole('link', { name: 'Go to Client' })
+
+  async function open(page: Page, permissions: string[], detail: Record<string, unknown> = DETAIL) {
+    await seedSession(page, { permissions })
+    await mockApi(page, [{ method: 'GET', match: `${RA}/pre-qualification/301`, body: ok(detail) }])
+    await page.goto('/intake-review/pre-qualification/301')
+    await expect(page.getByRole('heading', { name: 'Application Details' })).toBeVisible()
+  }
+
+  test('opens the client of this application', async ({ page }) => {
+    await open(page, ['view pre qualification', 'view clients'])
+    await link(page).click()
+    await expect(page).toHaveURL(/\/clients\/7$/)
+  })
+
+  test('shows whatever the viewer\'s permissions', async ({ page }) => {
+    await open(page, ['view pre qualification'])
+    await expect(link(page)).toHaveAttribute('href', '/clients/7')
+  })
+
+  test('is hidden when the application has no client', async ({ page }) => {
+    await open(page, ['view pre qualification', 'view clients'], { ...DETAIL, borrower_id: null })
+    await expect(link(page)).toHaveCount(0)
+  })
+
+  test('the header buttons fit a phone', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await open(page, ['view pre qualification', 'view clients'])
+    await expect(link(page)).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  })
+})

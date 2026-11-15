@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, ModalBody } from 'reactstrap';
 import { Dropdown } from 'primereact/dropdown';
 import { formatCurrency } from '../../../utils/helper';
 import { filterLenders } from './lenderFilter';
-import { lenderDisplayName } from '../../../modules/lender/displayName';
+import { LENDER_PAGE_SIZES, paginate } from './lenderPagination';
+import { lenderDisplayName, lenderOptionLabel, lenderOptionParts } from '../../../modules/lender/displayName';
+import LenderOption from './LenderOption';
 import '../../../../assets/css/funding-requests.css';
 
 import type { MatchedLender } from '../../../modules/application/types';
@@ -57,7 +59,8 @@ export default function LenderInformationCard({
     // Applied as they change - typing, or picking a category or lender.
     const [lenderSearch, setLenderSearch] = useState('');
     const [lenderCategoryFilter, setLenderCategoryFilter] = useState('');
-    const [lenderNameFilter, setLenderNameFilter] = useState('');
+    // The lender picked: its id - two lenders may share a name and a legal name.
+    const [lenderIdFilter, setLenderIdFilter] = useState<number | ''>('');
 
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [lenderToAssign, setLenderToAssign] = useState<MatchedLender | null>(null);
@@ -68,21 +71,62 @@ export default function LenderInformationCard({
     // From the lenders matched: one funding type for a funding request, the
     // Preferred + Additional ones for a loan application.
     const uniqueCategories = Array.from(new Set(lenders.map((l) => l.product_category).filter(Boolean))).map(cat => ({ label: cat, value: cat })).sort(byLabel);
-    // The lender list follows the chosen category.
-    const uniqueLenderNames = Array.from(new Set(
-        lenders.filter((l) => !lenderCategoryFilter || l.product_category === lenderCategoryFilter).map((l) => lenderDisplayName(l)).filter(Boolean)
-    )).map(name => ({ label: name, value: name })).sort(byLabel);
+    // The lender list follows the chosen category: each lender once (it can
+    // match several funding types). `label` ("Lender Name - Lender Code") is
+    // what the search matches; the list shows the name and code apart.
+    type LenderOptionItem = { label: string; value: number | ''; name?: string; code?: string | null };
+    const lenderOptions: LenderOptionItem[] = Array.from(new Map(
+        lenders
+            .filter((l) => !lenderCategoryFilter || l.product_category === lenderCategoryFilter)
+            .map((l) => [l.id, { label: lenderOptionLabel(l), value: l.id, ...lenderOptionParts(l) }] as const)
+    ).values()).filter((o) => o.label).sort(byLabel);
+    const lenderItem = (option: LenderOptionItem, inline = false) =>
+        option?.name ? <LenderOption name={option.name} code={option.code} inline={inline} /> : option?.label;
 
     const filteredLenders = filterLenders(lenders, {
         search: lenderSearch,
         category: lenderCategoryFilter,
-        lenderName: lenderNameFilter,
+        lenderId: lenderIdFilter,
     });
+
+    // The table shows one page of the filtered lenders.
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(LENDER_PAGE_SIZES[0]);
+    const shown = paginate(filteredLenders, page, perPage);
+    const pageNumbers = Array.from({ length: shown.pageCount }, (_, i) => i + 1);
+
+    // Page 2 can hold far fewer rows than page 1, so the table shrinks under
+    // the reader; after they change page or page size, bring the whole card -
+    // title, rows and pager - back into view.
+    const cardElement = useRef<HTMLDivElement | null>(null);
+    const setCardRef = (el: HTMLDivElement | null) => {
+        cardElement.current = el;
+        if (typeof cardRef === 'function') cardRef(el);
+        else if (cardRef) (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    };
+    const [pagerMoves, setPagerMoves] = useState(0);
+    useEffect(() => {
+        if (pagerMoves > 0) cardElement.current?.scrollIntoView?.({ block: 'nearest' });
+    }, [pagerMoves]);
+    const goToPage = (n: number) => {
+        setPage(n);
+        setPagerMoves((m) => m + 1);
+    };
+
+    // A new search or filter starts again from page 1.
+    const filterChanged = <T,>(set: (value: T) => void) => (value: T) => {
+        set(value);
+        setPage(1);
+    };
+    const changeSearch = filterChanged(setLenderSearch);
+    const changeCategory = filterChanged(setLenderCategoryFilter);
+    const changeLender = filterChanged(setLenderIdFilter);
 
     const clearFilters = () => {
         setLenderSearch('');
         setLenderCategoryFilter('');
-        setLenderNameFilter('');
+        setLenderIdFilter('');
+        setPage(1);
     };
 
     // The dialog keeps its button while it fades out after an assignment, when
@@ -133,7 +177,12 @@ export default function LenderInformationCard({
                         <div className="flex-grow-1 min-w-0">
                             <h5 className="fs-17 fw-bold mb-1 text-dark">{lenderDisplayName(assigned)}</h5>
                             <div className="d-flex flex-wrap align-items-center gap-3 text-muted fs-13">
+                                {assigned.lender_code && <span className="badge bg-light text-dark border fs-12 fw-medium" title="Lender Code">{assigned.lender_code}</span>}
                                 <span className="badge bg-primary-subtle text-primary fs-12 fw-medium">{assigned.product_category}</span>
+                                {/* Made Inactive after the lender was fixed: still the lender the deal went to (S434-BUG-05). */}
+                                {assigned.is_active === false && (
+                                    <span className="badge bg-secondary-subtle text-secondary fs-12 fw-medium">Inactive</span>
+                                )}
                                 {assigned.phone && <span><i className="ri-phone-line me-1"></i>{assigned.phone}</span>}
                                 {assigned.email && <span><i className="ri-mail-line me-1"></i>{assigned.email}</span>}
                             </div>
@@ -184,7 +233,7 @@ export default function LenderInformationCard({
 
     return (
         <>
-            <div ref={cardRef} className="card shadow-sm border-0 mb-4 rounded-3">
+            <div ref={setCardRef} className="card shadow-sm border-0 mb-4 rounded-3">
                 <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-2 d-block">
                     <div className="d-flex align-items-center justify-content-between mb-3 border-bottom">
                         <h5 className="card-title mb-0 fs-16 fw-bold text-dark">Lender Information</h5>
@@ -206,21 +255,35 @@ export default function LenderInformationCard({
                         <div className="row g-3 mb-3 align-items-end">
                             <div className="col-md-3">
                                 <div className="search-box">
-                                    <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." value={lenderSearch} onChange={(e) => setLenderSearch(e.target.value)} />
+                                    <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." value={lenderSearch} onChange={(e) => changeSearch(e.target.value)} />
                                     <i className="ri-search-line search-icon"></i>
                                 </div>
                             </div>
                             <div className="col-md-3">
                                 <Dropdown value={lenderCategoryFilter} options={[{ label: 'All Categories', value: '' }, ...uniqueCategories]} optionLabel="label" optionValue="value" onChange={(e) => {
-                                    setLenderCategoryFilter(e.value);
+                                    changeCategory(e.value);
                                     // A lender not in the new category would show nothing.
-                                    if (e.value && lenderNameFilter && !lenders.some((l) => lenderDisplayName(l) === lenderNameFilter && l.product_category === e.value)) {
-                                        setLenderNameFilter('');
+                                    if (e.value && lenderIdFilter !== '' && !lenders.some((l) => l.id === lenderIdFilter && l.product_category === e.value)) {
+                                        setLenderIdFilter('');
                                     }
                                 }} placeholder="All Categories" className="w-100" />
                             </div>
                             <div className="col-md-3">
-                                <Dropdown value={lenderNameFilter} options={[{ label: 'All Lenders', value: '' }, ...uniqueLenderNames]} optionLabel="label" optionValue="value" onChange={(e) => setLenderNameFilter(e.value)} placeholder="All Lenders" className="w-100" />
+                                <Dropdown
+                                    value={lenderIdFilter}
+                                    options={[{ label: 'All Lenders', value: '' }, ...lenderOptions]}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    onChange={(e) => changeLender(e.value)}
+                                    filter
+                                    filterBy="label"
+                                    placeholder="All Lenders"
+                                    className="w-100"
+                                    itemTemplate={(option: LenderOptionItem) => lenderItem(option)}
+                                    // The value is always "All Lenders" or a listed lender: a
+                                    // category that leaves the picked one out resets it.
+                                    valueTemplate={(option: LenderOptionItem) => lenderItem(option, true)}
+                                />
                             </div>
                             <div className="col-md-3">
                                 <div className="d-flex gap-2">
@@ -239,6 +302,7 @@ export default function LenderInformationCard({
                         <table className="table align-middle mb-0 fr-style-310c95f3">
                             <thead>
                                 <tr className="fr-style-c2cbac2">
+                                    <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-lender-code-col" style={{ background: '#f8fafc', fontSize: 13 }}>Lender Code</th>
                                     <th rowSpan={2} className="px-2 py-3 align-middle text-center fr-style-4ff6cdc1">
                                         <div className="text-dark fw-bold fr-style-3f3c752c">Lender Name</div>
                                         <div className="text-muted fr-style-3f58a42e">Contact Info</div>
@@ -247,7 +311,7 @@ export default function LenderInformationCard({
                                     <th className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Match Analysis</th>
                                     <th colSpan={4} className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Requirements Match</th>
                                     <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-1b4a0199">Match</th>
-                                    <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-705890ee">Actions</th>
+                                    <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-705890ee fr-actions-col">Actions</th>
                                 </tr>
                                 <tr className="fr-style-123ff9de">
                                     <th className="px-1 py-2 text-center fr-style-6fe1846d">Matches</th>
@@ -259,23 +323,29 @@ export default function LenderInformationCard({
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredLenders.length > 0 ? (
-                                    filteredLenders.map((lender, idx) => {
+                                {shown.rows.length > 0 ? (
+                                    shown.rows.map((lender, idx) => {
                                         const radius = 16;
                                         const circumference = 2 * Math.PI * radius;
                                         const strokeDashoffset = circumference - (lender.score / 100) * circumference;
 
                                         const isAssigned = assignedLenderIds.includes(lender.id);
+                                        // The list's first lender, not the first of each page.
+                                        const pulses = highlightFirstRow && shown.page === 1 && idx === 0;
 
                                         return (
                                             <tr
                                                 key={lender.id || idx}
-                                                className={highlightFirstRow && idx === 0 ? 'row-pulse-animation' : ''}
+                                                className={pulses ? 'row-pulse-animation' : ''}
                                                 style={{ borderBottom: '1px solid #e2e8f0', background: isAssigned ? '#f1f5f9' : '#fff' }}
-                                                onMouseEnter={e => !isAssigned && (e.currentTarget.style.background = highlightFirstRow && idx === 0 ? '' : '#f8fafc')}
-                                                onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = highlightFirstRow && idx === 0 ? '' : '#fff')}
+                                                onMouseEnter={e => !isAssigned && (e.currentTarget.style.background = pulses ? '' : '#f8fafc')}
+                                                onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = pulses ? '' : '#fff')}
                                             >
 
+                                                {/* Lender Code */}
+                                                <td className="px-2 py-3 text-center fw-medium text-dark fr-lender-code-col">
+                                                    {lender.lender_code || '-'}
+                                                </td>
                                                 {/* Lender Name */}
                                                 <td className="px-2 py-3 text-center fr-style-73d7d324">
                                                     <div className="fw-bold text-dark fr-style-747e3e7d">{lenderDisplayName(lender) || 'Lender Name'}</div>
@@ -332,7 +402,7 @@ export default function LenderInformationCard({
                                                     </div>
                                                 </td>
                                                 {/* Actions */}
-                                                <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                <td className="px-2 py-3 text-center fr-style-73d7d324 fr-actions-col">
                                                     {isAssigned ? (
                                                         <span className="badge bg-success-subtle text-success fs-12 px-2 py-1">
                                                             <i className="ri-check-line me-1"></i> Assigned
@@ -356,7 +426,7 @@ export default function LenderInformationCard({
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan={9} className="text-center py-4 text-muted fs-14">
+                                        <td colSpan={10} className="text-center py-4 text-muted fs-14">
                                             <i className="ri-search-line fs-24 d-block mb-2"></i>
                                             {onlyAssigned ? 'The assigned lender is not among the lenders matched for this application.' : lenders.length > 0 ? 'No lenders match these filters.' : emptyText}
                                         </td>
@@ -370,20 +440,52 @@ export default function LenderInformationCard({
                 <div className="card-footer bg-white border-top p-3">
                     <div className="d-flex align-items-center justify-content-between">
                         <div className="text-muted fs-13">
-                            Showing <span className="fw-semibold text-dark">{filteredLenders.length > 0 ? 1 : 0}</span> to <span className="fw-semibold text-dark">{filteredLenders.length}</span> of <span className="fw-semibold text-dark">{lenders.length}</span> lenders
+                            Showing <span className="fw-semibold text-dark">{shown.from}</span> to <span className="fw-semibold text-dark">{shown.to}</span> of <span className="fw-semibold text-dark">{shown.total}</span> lenders
                         </div>
                         <div className="d-flex align-items-center gap-3">
                             <ul className="pagination pagination-sm mb-0">
-                                <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-double-line"></i></a></li>
-                                <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-s-line"></i></a></li>
-                                <li className="page-item active"><a className="page-link rounded bg-dark border-dark text-white fw-medium" href="#!">1</a></li>
-                                <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-s-line"></i></a></li>
-                                <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-double-line"></i></a></li>
+                                {[
+                                    { label: 'First page', icon: 'ri-arrow-left-double-line', to: 1, off: shown.page === 1 },
+                                    { label: 'Previous page', icon: 'ri-arrow-left-s-line', to: shown.page - 1, off: shown.page === 1 },
+                                ].map(({ label, icon, to, off }) => (
+                                    <li key={label} className={`page-item${off ? ' disabled' : ''}`}>
+                                        <button type="button" className={`page-link border-0 ${off ? 'text-muted' : 'text-dark'}`} aria-label={label} disabled={off} onClick={() => goToPage(to)}><i className={icon}></i></button>
+                                    </li>
+                                ))}
+                                {pageNumbers.map((n) => (
+                                    <li key={n} className={`page-item${n === shown.page ? ' active' : ''}`}>
+                                        <button
+                                            type="button"
+                                            className={n === shown.page ? 'page-link rounded bg-dark border-dark text-white fw-medium' : 'page-link border-0 text-dark'}
+                                            aria-label={`Page ${n}`}
+                                            aria-current={n === shown.page ? 'page' : undefined}
+                                            onClick={() => goToPage(n)}
+                                        >
+                                            {n}
+                                        </button>
+                                    </li>
+                                ))}
+                                {[
+                                    { label: 'Next page', icon: 'ri-arrow-right-s-line', to: shown.page + 1, off: shown.page === shown.pageCount },
+                                    { label: 'Last page', icon: 'ri-arrow-right-double-line', to: shown.pageCount, off: shown.page === shown.pageCount },
+                                ].map(({ label, icon, to, off }) => (
+                                    <li key={label} className={`page-item${off ? ' disabled' : ''}`}>
+                                        <button type="button" className={`page-link border-0 ${off ? 'text-muted' : 'text-dark'}`} aria-label={label} disabled={off} onClick={() => goToPage(to)}><i className={icon}></i></button>
+                                    </li>
+                                ))}
                             </ul>
-                            <select className="form-select form-select-sm border-light bg-light fw-medium text-dark fr-style-5dc02308">
-                                <option value="10">10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
+                            <select
+                                className="form-select form-select-sm border-light bg-light fw-medium text-dark fr-style-5dc02308"
+                                aria-label="Lenders per page"
+                                value={perPage}
+                                onChange={(e) => {
+                                    setPerPage(Number(e.target.value));
+                                    goToPage(1);
+                                }}
+                            >
+                                {LENDER_PAGE_SIZES.map((size) => (
+                                    <option key={size} value={size}>{size}</option>
+                                ))}
                             </select>
                         </div>
                     </div>

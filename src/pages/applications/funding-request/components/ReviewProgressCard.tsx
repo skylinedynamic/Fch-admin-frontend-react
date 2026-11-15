@@ -199,6 +199,19 @@ export default function ReviewProgressCard({
                     </div>
                 </div>
 
+                {/* Why it was declined: saved with the rejection, shown to the
+                    client - and to staff here (BUG-159). */}
+                {isRejected && rejectReason && (
+                    <section className="px-4 pb-4" aria-label="Rejection reason">
+                        <p className="fs-12 fw-semibold text-muted mb-2 text-uppercase">
+                            <i className="ri-chat-3-line me-1" aria-hidden="true"></i> Rejection Reason
+                        </p>
+                        <div className="border border-danger-subtle bg-danger-subtle rounded-3 p-3 text-dark fs-13 text-break">
+                            {rejectReason}
+                        </div>
+                    </section>
+                )}
+
                 <hr className="my-0 border-light" />
 
                 {/* Status Guideline */}

@@ -16,6 +16,20 @@ export const MODULE_OPENAI = 'openai';
  * into an input: a blank secret on save keeps the stored one.
  */
 export const SETTINGS_SECRET_MASK = '••••••••';
+
+/**
+ * What a saved secret's field shows: 16 dots, so it reads as a full secret
+ * rather than a short 8-character one. Only the field shows it - the API knows
+ * its own 8-dot mask, so secretForSave() turns it back before saving.
+ */
+export const SECRET_DISPLAY_MASK = '•'.repeat(16);
+
+/** A secret field's value as the API expects it: the shown dots go back as the API's mask (keep). */
+export const secretForSave = (value: string | null | undefined): string =>
+    value === SECRET_DISPLAY_MASK ? SETTINGS_SECRET_MASK : (value ?? '');
+
+/** Sent by CMS Site Settings to delete the saved reCAPTCHA secret (fch-api SiteSettingsService::REMOVE_RECAPTCHA_SECRET). */
+export const REMOVE_RECAPTCHA_SECRET_FIELD = 'remove_recaptcha_secret_key';
 export const SAVED_SECRET_PLACEHOLDER = 'Saved - leave blank to keep';
 
 export const ENTITY_TYPE_LEAD = 'Lead';

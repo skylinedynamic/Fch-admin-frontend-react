@@ -180,6 +180,19 @@ export const fetchFundingTypes = async (): Promise<string[]> => {
   return data.data ?? []
 }
 
+export interface FundingSequenceOption {
+  id: number
+  name: string
+}
+
+/** The funding sequences offered for a funding type (the application's Preferred Funding Type). */
+export const fetchFundingSequenceOptions = async (fundingType: string): Promise<FundingSequenceOption[]> => {
+  const { data } = await apiClient.get<{ data: FundingSequenceOption[] }>('/common/funding-sequences', {
+    params: { funding_type: fundingType },
+  })
+  return data.data ?? []
+}
+
 export const fetchFundingRequest = async (fundingRequestId?: number | string | null, fundingApplicationId?: number | string | null): Promise<FundingRequestData> => {
   const params = lookupParams(fundingRequestId, fundingApplicationId)
   return loadStep<FundingRequestResponse>('/common/funding-application/funding-request', params)

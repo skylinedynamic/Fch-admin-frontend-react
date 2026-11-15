@@ -1,6 +1,8 @@
 /** One row of the API's `matched_lenders` (LenderMatchService). */
 export interface MatchedLender {
     id: number;
+    /** Lender Code ("LND-4821"), shown in its own column and in the Lender filter. */
+    lender_code?: string | null;
     name: string;
     /** Null for a lender added before the legal name was required. */
     legal_name?: string | null;
@@ -8,6 +10,8 @@ export interface MatchedLender {
     display_name?: string | null;
     phone?: string | null;
     email?: string | null;
+    /** False only for a fixed, assigned lender made Inactive since (SCRUM-434 S434-BUG-05). */
+    is_active?: boolean;
     product_category: string;
     requirements: {
         min_fico: number | null;
@@ -69,6 +73,8 @@ export interface FundingApplication {
     id: number;
     application_number?: string;
     full_name: string;
+    /** Whose client this is; sent on the host's Intake & Review list only. */
+    partner_name?: string | null;
     /** The company on this application (one person can apply for several). */
     business_name: string | null;
     industry_type: string;
@@ -86,6 +92,8 @@ export interface ApplicationQueryParams {
     search: string;
     status: string;
     funding_type?: string;
+    /** The host's Partner dropdown. */
+    partner_id?: number;
     start_date: string | null;
     end_date: string | null;
     filters: any;
@@ -298,7 +306,7 @@ export interface ValidationIssue {
 
 export interface PreQualificationApplicationDetails {
     id: number;
-    borrower_id: number;
+    borrower_id: number | null;
     validation_status?: string | null;
     validation_summary?: string | null;
     validation_issues?: ValidationIssue[] | null;
@@ -378,7 +386,7 @@ export interface FundingApplicationDetails {
     id: number;
     application_number: string;
     partner_id: number;
-    borrower_id: number;
+    borrower_id: number | null;
     // The request the edit form opens on, its status, and whether the
     // application's lifecycle key still allows an edit.
     funding_request_id?: number | null;

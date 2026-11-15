@@ -50,12 +50,13 @@ describe('LenderInformationCard', () => {
     await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'line credit')
     expect(screen.queryByText('Fundbox Financing')).not.toBeInTheDocument()
     expect(screen.getByText('LendingClub')).toBeInTheDocument()
-    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 2 lenders')
+    // "of" counts the lenders the filters leave - the table pages through those.
+    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 1 lenders')
 
     await userEvent.clear(screen.getByPlaceholderText('Search lenders...'))
     await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'term load')
     expect(screen.getByText('No lenders match these filters.')).toBeInTheDocument()
-    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 0 to 0 of 2 lenders')
+    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 0 to 0 of 0 lenders')
 
     await userEvent.click(screen.getByRole('button', { name: /clear/i }))
     expect(screen.getByText('Fundbox Financing')).toBeInTheDocument()
@@ -87,7 +88,29 @@ describe('LenderInformationCard', () => {
     await pick('All Categories', 'Business Line of Credit')
     expect(table().queryByText('Fundbox Financing')).not.toBeInTheDocument()
     expect(table().getByText('LendingClub')).toBeInTheDocument()
-    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 2 lenders')
+    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 1 lenders')
+  })
+
+  it('keeps the chosen lender when its own category is picked', async () => {
+    renderWithProviders(<LenderInformationCard lenders={lenders} assignedLenderIds={[]} subjectLabel="funding application" onAssign={vi.fn()} />)
+    const pick = async (placeholder: string, option: string) => {
+      const dropdown = screen.getAllByText(placeholder).map((el) => el.closest('.p-dropdown')).find(Boolean) as HTMLElement
+      await userEvent.click(dropdown)
+      const item = await waitFor(() => {
+        const found = Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent?.trim() === option)
+        if (!found) throw new Error(`no "${option}" option`)
+        return found as HTMLElement
+      })
+      await userEvent.click(item)
+    }
+    const table = () => within(screen.getByRole('table'))
+
+    await pick('All Lenders', 'LendingClub')
+    await pick('All Categories', 'Business Line of Credit')
+
+    expect(table().getByText('LendingClub')).toBeInTheDocument()
+    expect(screen.getByText(/Showing/)).toHaveTextContent('Showing 1 to 1 of 1 lenders')
+    expect(document.querySelector('.p-dropdown-label')?.closest('.col-md-3')?.parentElement?.textContent).toContain('LendingClub')
   })
 
   it('keeps the search when Filters or Enter is pressed - filtering is already live', async () => {
@@ -220,6 +243,140 @@ describe('LenderInformationCard', () => {
     expect(screen.getAllByRole('row')[2]).toHaveClass('row-pulse-animation')
   })
 
+  /**
+   * Defect (found 2026-11-11, funding application 115 / funding request 76):
+   * the footer said 10 per page with page 1 of 1, but the table listed all 12
+   * matched lenders - the pagination was static markup (links to "#!"), so
+   * nothing paged and there was no page 2.
+   */
+  describe('pagination', () => {
+    const twelve = Array.from({ length: 12 }, (_, i) =>
+      lender({ id: i + 1, name: `Lender ${String(i + 1).padStart(2, '0')}`, phone: null, email: null })
+    )
+    const bodyRows = () => within(screen.getByRole('table')).getAllByRole('row').slice(2)
+    const showing = () => screen.getByText(/Showing/)
+    const nav = (label: string) => screen.getByRole('button', { name: label })
+    const mount = (props: Partial<React.ComponentProps<typeof LenderInformationCard>> = {}) =>
+      renderWithProviders(<LenderInformationCard lenders={twelve} assignedLenderIds={[]} subjectLabel="funding application" onAssign={vi.fn()} {...props} />)
+
+    it('shows ten lenders on page 1 and the other two on page 2', async () => {
+      mount()
+
+      expect(bodyRows()).toHaveLength(10)
+      expect(showing()).toHaveTextContent('Showing 1 to 10 of 12 lenders')
+      expect(screen.getByText('Lender 10')).toBeInTheDocument()
+      expect(screen.queryByText('Lender 11')).not.toBeInTheDocument()
+
+      await userEvent.click(nav('Page 2'))
+
+      expect(bodyRows()).toHaveLength(2)
+      expect(showing()).toHaveTextContent('Showing 11 to 12 of 12 lenders')
+      expect(screen.getByText('Lender 11')).toBeInTheDocument()
+      expect(screen.getByText('Lender 12')).toBeInTheDocument()
+      expect(screen.queryByText('Lender 01')).not.toBeInTheDocument()
+    })
+
+    it('moves with next, previous, last and first, each off at its end', async () => {
+      mount()
+
+      expect(nav('First page')).toBeDisabled()
+      expect(nav('Previous page')).toBeDisabled()
+
+      await userEvent.click(nav('Next page'))
+      expect(showing()).toHaveTextContent('Showing 11 to 12 of 12 lenders')
+      expect(nav('Next page')).toBeDisabled()
+      expect(nav('Last page')).toBeDisabled()
+
+      await userEvent.click(nav('Previous page'))
+      expect(showing()).toHaveTextContent('Showing 1 to 10 of 12 lenders')
+
+      await userEvent.click(nav('Last page'))
+      expect(showing()).toHaveTextContent('Showing 11 to 12 of 12 lenders')
+
+      await userEvent.click(nav('First page'))
+      expect(showing()).toHaveTextContent('Showing 1 to 10 of 12 lenders')
+      expect(nav('Page 1')).toHaveAttribute('aria-current', 'page')
+    })
+
+    it('shows them all on one page at 25 per page', async () => {
+      mount()
+      await userEvent.click(nav('Page 2'))
+
+      await userEvent.selectOptions(screen.getByRole('combobox', { name: /lenders per page/i }), '25')
+
+      expect(bodyRows()).toHaveLength(12)
+      expect(showing()).toHaveTextContent('Showing 1 to 12 of 12 lenders')
+      expect(screen.queryByRole('button', { name: 'Page 2' })).not.toBeInTheDocument()
+    })
+
+    it('goes back to page 1 when the search changes', async () => {
+      mount()
+      await userEvent.click(nav('Page 2'))
+
+      // Lender 01 is on page 1; from page 2 the search must show page 1.
+      await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'Lender 01')
+
+      expect(showing()).toHaveTextContent('Showing 1 to 1 of 1 lenders')
+      expect(screen.getByText('Lender 01')).toBeInTheDocument()
+    })
+
+    /**
+     * Defect (found 2026-11-11): page 2 holds 2 lenders where page 1 held 10,
+     * so the table shrank and the page below moved up under the reader. After
+     * a page change the whole card - title, rows and pager - is brought into view.
+     */
+    it('brings the whole Lender Information card into view when the page or page size changes, not on first load', async () => {
+      const scrolled = vi.fn(function (this: Element) { return this })
+      const original = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = scrolled
+      try {
+        mount()
+        expect(scrolled).not.toHaveBeenCalled()
+
+        await userEvent.click(nav('Page 2'))
+        expect(scrolled).toHaveBeenCalledTimes(1)
+        expect(scrolled).toHaveBeenLastCalledWith({ block: 'nearest' })
+        const target = scrolled.mock.results[0].value as HTMLElement
+        expect(target).toHaveClass('card')
+        expect(target).toContainElement(screen.getByText('Lender Information'))
+        expect(target).toContainElement(screen.getByText(/Showing/))
+
+        await userEvent.selectOptions(screen.getByRole('combobox', { name: /lenders per page/i }), '25')
+        expect(scrolled).toHaveBeenCalledTimes(2)
+      } finally {
+        Element.prototype.scrollIntoView = original
+      }
+    })
+
+    // Assign is visible at first glance: the Actions column stays at the
+    // table's right edge however wide the table is (lenderTableLayout.test.ts).
+    it('pins the Actions column - its header and every Assign cell', () => {
+      mount()
+
+      const header = screen.getByRole('columnheader', { name: 'Actions' })
+      expect(header).toHaveClass('fr-actions-col')
+      for (const row of bodyRows()) {
+        const assign = within(row).getByRole('button', { name: /assign/i })
+        expect(assign.closest('td')).toHaveClass('fr-actions-col')
+      }
+    })
+
+    it('pulses only the first lender of the list, not the first of page 2', async () => {
+      mount({ highlightFirstRow: true })
+      expect(bodyRows()[0]).toHaveClass('row-pulse-animation')
+
+      await userEvent.click(nav('Page 2'))
+
+      expect(bodyRows()[0]).not.toHaveClass('row-pulse-animation')
+    })
+
+    it('does not navigate the browser (no "#!" links)', () => {
+      const { container } = mount()
+
+      expect(container.querySelectorAll('a[href="#!"]')).toHaveLength(0)
+    })
+  })
+
   describe('once the lender is fixed', () => {
     it('shows just the assigned lender as a card - no table, no search', () => {
       renderWithProviders(
@@ -236,6 +393,24 @@ describe('LenderInformationCard', () => {
       expect(screen.getAllByText('Meets requirement')).toHaveLength(3)
       expect(screen.getByText('Below requirement')).toBeInTheDocument()
       expect(screen.getByText(/can't be changed now that this application is "Funded"/)).toBeInTheDocument()
+    })
+
+    // SCRUM-434 S434-BUG-05: a fixed lender made Inactive since (app 90's R2
+    // Lender A) is still shown - the API lists it, marked is_active: false.
+    it('shows a fixed lender made Inactive since, marked Inactive', () => {
+      renderWithProviders(
+        <LenderInformationCard lenders={[lender({ id: 24, name: 'R2 Lender A', is_active: false })]} assignedLenderIds={[24]} subjectLabel="funding application" onAssign={vi.fn()} canAssign={false} onlyAssigned />
+      )
+
+      expect(screen.getByText('R2 Lender A')).toBeInTheDocument()
+      expect(screen.getByText('Inactive')).toBeInTheDocument()
+      expect(screen.queryByText('The assigned lender is not among the lenders matched for this application.')).not.toBeInTheDocument()
+    })
+
+    it('does not mark an Active assigned lender', () => {
+      renderWithProviders(<LenderInformationCard lenders={[lender({ id: 1, is_active: true })]} assignedLenderIds={[1]} subjectLabel="funding application" onAssign={vi.fn()} canAssign={false} onlyAssigned />)
+
+      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
     })
 
     it('shows N/A for requirements the lender does not set, and leaves out missing contacts', () => {
@@ -272,19 +447,101 @@ describe('LenderInformationCard - lenders that share a name', () => {
     expect(within(dialog).getAllByText('Kabbage - Kabbage Funding LLC').length).toBeGreaterThan(0)
   })
 
-  it('offers each lender once in the Lender filter, by its display name', async () => {
-    renderWithProviders(<LenderInformationCard lenders={kabbage} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+  /**
+   * 2026-11-11: every lender dropdown names a lender "Lender Name - Lender Code";
+   * two lenders may now share a name and a legal name, never a Lender Code.
+   */
+  const coded = [
+    lender({ id: 5, lender_code: 'LND-1111', name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }),
+    lender({ id: 6, lender_code: 'LND-2222', name: 'Kabbage', legal_name: 'Kabbage Funding LLC', display_name: 'Kabbage - Kabbage Funding LLC' }),
+    lender({ id: 7, lender_code: 'LND-3333', name: 'Kabbage', legal_name: 'Kabbage Inc.', display_name: 'Kabbage - Kabbage Inc.' }),
+  ]
 
+  const openLenderFilter = async () => {
     const lenderFilter = Array.from(document.querySelectorAll('.p-dropdown')).find((el) => el.textContent?.includes('All Lenders')) as HTMLElement
     await userEvent.click(lenderFilter)
-    const option = await waitFor(() => {
-      const found = Array.from(document.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent?.trim() === 'Kabbage - Kabbage Inc.')
-      if (!found) throw new Error('no option')
-      return found as HTMLElement
+    return waitFor(() => {
+      const items = Array.from(document.querySelectorAll('.p-dropdown-panel .p-dropdown-item')) as HTMLElement[]
+      if (items.length === 0) throw new Error('no options')
+      return items
     })
-    await userEvent.click(option)
+  }
 
-    await waitFor(() => expect(screen.queryByText('Kabbage - Kabbage Funding LLC')).not.toBeInTheDocument())
+  /** Each option's name and Lender Code, read apart (design A: name left, code right). */
+  const optionParts = (items: HTMLElement[]) =>
+    items.map((el) => [el.querySelector('.lender-option-name')?.textContent ?? el.textContent?.trim(), el.querySelector('.lender-option-code')?.textContent ?? null])
+
+  it('offers each lender once in the Lender filter, its name with its Lender Code apart', async () => {
+    renderWithProviders(<LenderInformationCard lenders={coded} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    expect(optionParts(await openLenderFilter())).toEqual([
+      ['All Lenders', null],
+      ['Kabbage', 'LND-1111'],
+      ['Kabbage', 'LND-2222'],
+      ['Kabbage', 'LND-3333'],
+    ])
+  })
+
+  it('finds a lender in the Lender filter by its name or its code', async () => {
+    renderWithProviders(<LenderInformationCard lenders={coded} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+    await openLenderFilter()
+
+    await userEvent.type(document.querySelector('.p-dropdown-panel .p-dropdown-filter') as HTMLElement, 'lnd-2222')
+
+    await waitFor(() => {
+      const left = Array.from(document.querySelectorAll('.p-dropdown-panel .p-dropdown-item')) as HTMLElement[]
+      expect(optionParts(left)).toEqual([['Kabbage', 'LND-2222']])
+    })
+  })
+
+  it('shows the picked lender with its code in the box', async () => {
+    const { container } = renderWithProviders(<LenderInformationCard lenders={coded} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    await userEvent.click((await openLenderFilter()).find((el) => el.querySelector('.lender-option-code')?.textContent === 'LND-2222') as HTMLElement)
+
+    const shown = await waitFor(() => {
+      const value = container.querySelector('.p-dropdown-label .lender-option-inline')
+      if (!value) throw new Error('no picked lender shown')
+      return value as HTMLElement
+    })
+    expect(shown.querySelector('.lender-option-name')).toHaveTextContent('Kabbage')
+    expect(shown.querySelector('.lender-option-code')).toHaveTextContent('LND-2222')
+  })
+
+  it('filters to the one lender picked, even when another has the same name and legal name', async () => {
+    renderWithProviders(<LenderInformationCard lenders={coded} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    await userEvent.click((await openLenderFilter()).find((el) => el.querySelector('.lender-option-code')?.textContent === 'LND-3333') as HTMLElement)
+
+    const table = within(screen.getByRole('table'))
+    await waitFor(() => expect(table.getAllByRole('row').slice(2)).toHaveLength(1))
+    expect(table.getByText('LND-3333')).toBeInTheDocument()
+    expect(table.queryByText('LND-1111')).not.toBeInTheDocument()
+  })
+
+  it('shows each lender\'s Lender Code in its own column, and finds a lender by it', async () => {
+    renderWithProviders(<LenderInformationCard lenders={coded} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    expect(screen.getByRole('columnheader', { name: 'Lender Code' })).toBeInTheDocument()
+    expect(within(rowFor('LND-2222')).getByText('Kabbage - Kabbage Funding LLC')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByPlaceholderText('Search lenders...'), 'lnd-3333')
+    expect(within(screen.getByRole('table')).getAllByRole('row').slice(2)).toHaveLength(1)
+    expect(screen.getByText('LND-3333')).toBeInTheDocument()
+  })
+
+  it('shows a dash for a lender without a Lender Code', () => {
+    renderWithProviders(<LenderInformationCard lenders={kabbage} assignedLenderIds={[]} subjectLabel="funding request" onAssign={vi.fn()} />)
+
+    const cells = within(rowFor('Kabbage - Kabbage Inc.')).getAllByRole('cell')
+    expect(cells[0].textContent?.trim()).toBe('-')
+    expect(within(screen.getByRole('table')).getAllByRole('columnheader')[0]).toHaveTextContent('Lender Code')
+  })
+
+  it('shows the assigned lender\'s Lender Code on its card once it is fixed', () => {
+    renderWithProviders(<LenderInformationCard lenders={coded} assignedLenderIds={[6]} subjectLabel="funding request" onAssign={vi.fn()} canAssign={false} onlyAssigned />)
+
+    expect(screen.getByText('LND-2222')).toBeInTheDocument()
   })
 
   it('names the assigned lender with its legal name once it is fixed', () => {
