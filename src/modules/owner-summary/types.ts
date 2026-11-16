@@ -86,7 +86,7 @@ export interface OwnerReceivables {
     failed: AmountAndInvoices;
 }
 
-/** Booked on deals funded in the period - commission records, not cash received. */
+/** Commission on deals closed (Closed - Completed) in the period. */
 export interface OwnerCommissions {
     host_share_booked: number;
     partner_share: number;

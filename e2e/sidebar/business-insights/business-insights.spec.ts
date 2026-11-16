@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test'
 import { mockApi, ok, seedSession, expectCall, HOST_USER } from '../../support/helpers'
 import { ownerSummaryFixture } from '../../../tests/mocks/ownerSummary'
 
-// The host partner's own login, with the screens the summary links to.
-const HOST_OWNER = { ...HOST_USER, entity_type: 'Partner', permissions: ['view commission', 'view invoices', 'view payments'] }
+// The host partner's own login, with the screens the summary links to. For now
+// Business Insights is open to one login only (OWNER_SUMMARY_ALLOWED_EMAILS).
+const HOST_OWNER = { ...HOST_USER, email: 'developer@fch.com', entity_type: 'Partner', permissions: ['view commission', 'view invoices', 'view payments'] }
 
 test.describe('Sidebar › Business Insights', () => {
   test('report settings: the owner turns the weekly report on for two addresses', async ({ page }) => {
@@ -14,7 +15,7 @@ test.describe('Sidebar › Business Insights', () => {
       { method: 'PUT', match: '/owner-summary/report-settings', body: (req) => ({ status: true, message: 'Report settings saved', data: req.postDataJSON() }) },
     ])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('button', { name: 'Report settings' }).click()
 
@@ -39,7 +40,7 @@ test.describe('Sidebar › Business Insights', () => {
       { method: 'PUT', match: '/owner-summary/report-settings', status: 422, body: { message: 'Enter a valid email address.', errors: { 'recipients.0': ['Enter a valid email address.'] } } },
     ])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('button', { name: 'Report settings' }).click()
     const dialog = page.getByRole('dialog', { name: 'Report settings' })
@@ -57,7 +58,7 @@ test.describe('Sidebar › Business Insights', () => {
     ])
 
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('button', { name: 'Report settings' }).click()
 
@@ -71,13 +72,71 @@ test.describe('Sidebar › Business Insights', () => {
     await expect(field).toHaveCSS('height', '37.5px')
   })
 
+  test('a recipient field keeps its plain border while focused - no focus ring or colour', async ({ page }) => {
+    await seedSession(page, HOST_OWNER)
+    await mockApi(page, [
+      { method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) },
+      { method: 'GET', match: '/owner-summary/report-settings', body: ok({ enabled: true, recipients: ['owner@example.test'] }) },
+    ])
+
+    await page.goto('/business-insights')
+    await page.getByRole('button', { name: 'Report settings' }).click()
+    const field = page.getByRole('dialog', { name: 'Report settings' }).getByRole('textbox', { name: 'Recipient 1' })
+    await expect(field).toBeVisible()
+    const unfocused = await field.evaluate((el) => getComputedStyle(el).borderColor)
+
+    await field.click()
+    await expect(field).toBeFocused()
+    await expect(field).toHaveCSS('box-shadow', 'none')
+    await expect(field).toHaveCSS('border-color', unfocused)
+
+    // Reached from the keyboard too (focus-visible).
+    await page.getByRole('dialog', { name: 'Report settings' }).getByRole('button', { name: '+ Add recipient' }).focus()
+    await page.keyboard.press('Shift+Tab')
+    await page.keyboard.press('Shift+Tab')
+    await expect(field).toBeFocused()
+    await expect(field).toHaveCSS('box-shadow', 'none')
+    await expect(field).toHaveCSS('border-color', unfocused)
+  })
+
+  test('stalled deals sort with the app dropdown, not the browser select', async ({ page }) => {
+    const deal = ownerSummaryFixture.stalled_deals[0]
+    await seedSession(page, HOST_OWNER)
+    await mockApi(page, [{
+      method: 'GET', match: '/common/owner-summary', body: ok({
+        ...ownerSummaryFixture,
+        stalled_deals: [
+          { ...deal, id: 1, application_number: 'FUND-LONG', days_in_status: 60, requested_amount: 1000 },
+          { ...deal, id: 2, application_number: 'FUND-BIG', days_in_status: 20, requested_amount: 90000 },
+        ],
+      }),
+    }])
+
+    await page.goto('/business-insights')
+    const card = page.getByTestId('owner-stalled')
+    await expect(card.locator('select')).toHaveCount(0)
+    const trigger = card.getByRole('button', { name: /sort by/i })
+    await expect(trigger).toHaveCSS('height', '37.5px')
+    await expect(trigger).toHaveCSS('border-radius', '4px')
+    await expect(card.getByRole('row').nth(1)).toContainText('FUND-LONG')
+
+    await trigger.click()
+    const list = card.getByRole('listbox', { name: 'Sort by' })
+    await expect(list).toBeVisible()
+    await list.getByRole('option', { name: 'Amount (largest)' }).click()
+
+    await expect(list).toBeHidden()
+    await expect(trigger).toContainText('Amount (largest)')
+    await expect(card.getByRole('row').nth(1)).toContainText('FUND-BIG')
+  })
+
   test('the host owner opens it from the sidebar and reads this month', async ({ page }) => {
     await seedSession(page, HOST_OWNER)
     const api = await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
     await page.goto('/')
     await page.locator('#navbar-nav').getByRole('link', { name: 'Business Insights' }).click()
-    await expect(page).toHaveURL(/\/owner-summary$/)
+    await expect(page).toHaveURL(/\/business-insights$/)
 
     const call = await expectCall(api, 'GET', '/common/owner-summary')
     expect(call.path).toContain('period=this_month')
@@ -104,7 +163,7 @@ test.describe('Sidebar › Business Insights', () => {
     await seedSession(page, HOST_OWNER)
     const api = await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('group', { name: 'Period' }).getByRole('button', { name: 'This week' }).click()
 
@@ -115,7 +174,7 @@ test.describe('Sidebar › Business Insights', () => {
     await seedSession(page, HOST_OWNER)
     const api = await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('group', { name: 'Period' }).getByRole('button', { name: 'Custom' }).click()
 
@@ -140,7 +199,7 @@ test.describe('Sidebar › Business Insights', () => {
       { method: 'GET', match: 'period=custom', status: 422, body: { message: 'The end date cannot be before the start date.', errors: { to: ['The end date cannot be before the start date.'] } } },
     ])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('group', { name: 'Period' }).getByRole('button', { name: 'Custom' }).click()
     await page.getByRole('button', { name: 'Apply' }).click()
@@ -155,7 +214,7 @@ test.describe('Sidebar › Business Insights', () => {
     await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('group', { name: 'Period' }).getByRole('button', { name: 'Custom' }).click()
 
@@ -178,7 +237,7 @@ test.describe('Sidebar › Business Insights', () => {
     })
 
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     const skeleton = page.getByTestId('owner-skeleton')
     await expect(skeleton).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
@@ -204,7 +263,7 @@ test.describe('Sidebar › Business Insights', () => {
     await seedSession(page, HOST_OWNER)
     const api = await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     const payments = page.getByRole('group', { name: 'Payments' })
 
@@ -220,7 +279,7 @@ test.describe('Sidebar › Business Insights', () => {
     await seedSession(page, HOST_OWNER)
     await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-cash')).toBeVisible()
 
     const kpis = await page.getByTestId('owner-kpis').boundingBox()
@@ -236,17 +295,27 @@ test.describe('Sidebar › Business Insights', () => {
     await seedSession(page, HOST_OWNER)
     await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await page.getByTestId('owner-attention').getByRole('link', { name: 'Review commission payouts due' }).click()
 
     await expect(page).toHaveURL(/\/commissions$/)
+  })
+
+  test('any other host owner login neither sees it nor reaches it', async ({ page }) => {
+    await seedSession(page, { ...HOST_OWNER, email: 'owner@example.test' })
+    const api = await mockApi(page)
+
+    await page.goto('/business-insights')
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.locator('#navbar-nav').getByRole('link', { name: 'Business Insights' })).toHaveCount(0)
+    expect(api.find('GET', '/common/owner-summary')).toHaveLength(0)
   })
 
   test('host staff who do not manage commissions neither see it nor reach it', async ({ page }) => {
     await seedSession(page, { ...HOST_USER, entity_type: 'Employee', permissions: ['view commission'] })
     const api = await mockApi(page)
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page).toHaveURL(/\/$/)
     await expect(page.locator('#navbar-nav').getByRole('link', { name: 'Business Insights' })).toHaveCount(0)
     expect(api.find('GET', '/common/owner-summary')).toHaveLength(0)
@@ -257,7 +326,7 @@ test.describe('Sidebar › Business Insights', () => {
     await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-stalled')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
 
@@ -272,7 +341,7 @@ test.describe('Sidebar › Business Insights', () => {
     await seedSession(page, HOST_OWNER)
     await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', status: 403, body: { message: 'This action is unauthorized.' } }])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
 
     await expect(page.getByText('Only the FCH owner can see this summary.')).toBeVisible()
   })
@@ -296,7 +365,7 @@ test.describe('Sidebar › Business Insights', () => {
       })
     })
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('group', { name: 'Payments' }).getByRole('button', { name: 'All Payment' }).click()
 
@@ -322,7 +391,7 @@ test.describe('Sidebar › Business Insights', () => {
     await seedSession(page, HOST_OWNER)
     await mockApi(page, [{ method: 'GET', match: '/common/owner-summary', body: ok(ownerSummaryFixture) }])
 
-    await page.goto('/owner-summary')
+    await page.goto('/business-insights')
     await expect(page.getByTestId('owner-kpis')).toBeVisible()
     await page.getByRole('button', { name: 'Export PDF' }).click()
 

@@ -14,7 +14,7 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
-import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute, HostOwnerRoute } from './lib/auth';
+import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute, OwnerSummaryRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -29,6 +29,7 @@ import CreditAccountForm from './pages/credit-builder/credit-accounts/components
 import CapitalAccessList from './pages/capital-access/CapitalAccessList.tsx';
 import CapitalAccessForm from './pages/capital-access/components/CapitalAccessForm.tsx';
 import OwnerSummary from './pages/owner-summary/OwnerSummary.tsx';
+import { OWNER_SUMMARY_ROUTE } from './config/ownerSummary';
 import VerificationCenter from './pages/credit-builder/verifications/VerificationCenter.jsx';
 import BorrowerVerificationRequests from './pages/credit-builder/verifications/BorrowerVerificationRequests.jsx';
 import Appointments from './pages/appointments/Appointments.jsx';
@@ -281,9 +282,10 @@ export default function App() {
 
             <Route path="profile" element={<Profile />} />
 
-            {/* The host owner's business summary - the API checks it again. */}
-            <Route element={<HostOwnerRoute />}>
-              <Route path="owner-summary" element={<OwnerSummary />} />
+            {/* Business Insights, the host owner's business summary - for now one
+                login only; the API checks it again. */}
+            <Route element={<OwnerSummaryRoute />}>
+              <Route path={OWNER_SUMMARY_ROUTE} element={<OwnerSummary />} />
             </Route>
 
 

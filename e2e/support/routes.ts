@@ -18,8 +18,8 @@ export type Guard =
   | { kind: 'partnerHost' }
   /** NonHostPartnerRoute: a non-host partner account with a first payment date. */
   | { kind: 'nonHostPartner' }
-  /** HostOwnerRoute: is_host AND (the partner account itself OR "update commission") - fch-api CommissionViewer::HOST_OWNER. */
-  | { kind: 'hostOwner' }
+  /** OwnerSummaryRoute: for now the developer@fch.com login only, whatever its role. */
+  | { kind: 'ownerSummary' }
 
 export type RouteCheck = {
   name: string
@@ -34,7 +34,7 @@ const perm = (...any: string[]): Guard => ({ kind: 'permission', any })
 export const ROUTES: RouteCheck[] = [
   { name: 'Dashboard', path: '/', guard: { kind: 'none' }, api: { method: 'GET', path: '/common/dashboard' } },
   { name: 'Profile', path: '/profile', guard: { kind: 'none' } },
-  { name: 'Business insights', path: '/owner-summary', guard: { kind: 'hostOwner' }, api: { method: 'GET', path: '/common/owner-summary' } },
+  { name: 'Business insights', path: '/business-insights', guard: { kind: 'ownerSummary' }, api: { method: 'GET', path: '/common/owner-summary' } },
   { name: 'Notifications', path: '/notifications', guard: { kind: 'none' }, api: { method: 'GET', path: '/common/notifications' } },
 
   { name: 'Reminders', path: '/reminders', guard: perm('view reminders'), api: { method: 'POST', path: '/common/reminders/fetch-reminders', body: { page: 1, per_page: 5 } } },
@@ -95,6 +95,7 @@ export const ROUTES: RouteCheck[] = [
 
 /** The part of the persisted auth store the guards read. */
 export type SessionUser = {
+  email?: string
   is_host?: boolean | number
   entity_type?: string
   first_payment_date?: string | null
@@ -143,8 +144,9 @@ export function expectedOutcome(route: RouteCheck, user: SessionUser, sub: Sessi
       return expectedOutcome({ ...route, guard: { kind: 'permission', any: route.guard.any } }, user, sub)
     case 'partnerHost':
       return host && partnerAccount ? 'allowed' : 'home'
-    case 'hostOwner':
-      return host && (partnerAccount || (user.permissions || []).includes('update commission')) ? 'allowed' : 'home'
+    case 'ownerSummary':
+      // For now Business Insights is open to the developer@fch.com login only, whatever its role.
+      return String(user.email ?? '').trim().toLowerCase() === 'developer@fch.com' ? 'allowed' : 'home'
     case 'nonHostPartner':
       return !host && partnerAccount && Boolean(user.first_payment_date) ? 'allowed' : 'home'
     case 'permission': {

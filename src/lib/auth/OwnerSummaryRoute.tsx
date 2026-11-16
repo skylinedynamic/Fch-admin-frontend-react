@@ -1,11 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { useIsHostOwner } from './useIsHostOwner'
+import { useCanViewOwnerSummary } from './useCanViewOwnerSummary'
 
-/** Route guard for the host owner's screens (see useIsHostOwner); anyone else goes to the dashboard. */
-export default function HostOwnerRoute() {
-    const isHostOwner = useIsHostOwner()
+/** Route guard for Business Insights (see useCanViewOwnerSummary); anyone else goes to the dashboard. */
+export default function OwnerSummaryRoute() {
+    const canView = useCanViewOwnerSummary()
 
-    if (!isHostOwner) {
+    if (!canView) {
         return <Navigate to="/" replace />
     }
 

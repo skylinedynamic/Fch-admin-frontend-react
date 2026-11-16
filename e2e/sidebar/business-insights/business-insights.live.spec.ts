@@ -1,10 +1,28 @@
-import { test, expect, openFromSidebar, pageHeading } from '../../support/live/fixtures'
+import { test, expect, openFromSidebar, pageHeading, sidebarLink } from '../../support/live/fixtures'
+import { INSIGHTS_AUTH_STATE_PATH, INSIGHTS_EMAIL, INSIGHTS_PASSWORD } from '../../support/live/env'
 
-// Read-only: the host opens the summary like a user and every section renders
-// from the real API (the fixture fails the test on any 5xx or page error).
+// Business Insights is offered to one login for now (developer@fch.com). The
+// usual live host is another account, so the panel neither offers nor opens it.
+// (The API does not check the email for now.)
+test.describe('Sidebar › Business Insights (live, another account)', () => {
+  test('is not offered and the route sends it home', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('#navbar-nav')).toBeVisible()
+    await expect(sidebarLink(page, 'Business Insights')).toHaveCount(0)
+
+    await page.goto('/business-insights')
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/')
+  })
+})
+
+// Read-only: the allowed login opens the summary like a user and every section
+// renders from the real API (the fixture fails the test on any 5xx or page error).
 test.describe('Sidebar › Business Insights (live)', () => {
+  test.use({ storageState: INSIGHTS_AUTH_STATE_PATH })
+  test.skip(!INSIGHTS_EMAIL || !INSIGHTS_PASSWORD, 'Set E2E_INSIGHTS_EMAIL and E2E_INSIGHTS_PASSWORD in .env.e2e')
+
   test.beforeEach(async ({ page }) => {
-    await openFromSidebar(page, 'Business Insights', /\/owner-summary$/)
+    await openFromSidebar(page, 'Business Insights', /\/business-insights$/)
   })
 
   test('shows the headline numbers and every section', async ({ page }) => {
@@ -24,6 +42,8 @@ test.describe('Sidebar › Business Insights (live)', () => {
     for (const section of ['owner-attention', 'owner-cash', 'owner-commissions', 'owner-owed', 'owner-pipeline', 'owner-sources', 'owner-chart-funded', 'owner-chart-cash', 'owner-network', 'owner-top-partners', 'owner-stalled']) {
       await expect(page.getByTestId(section)).toBeVisible()
     }
+    // A deal closes once the lender pays, so the commission card says closed, not "not cash".
+    await expect(page.getByTestId('owner-commissions').getByText('Commission on deals closed this period')).toBeVisible()
   })
 
   test('another period loads without an error', async ({ page }) => {

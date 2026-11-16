@@ -3,9 +3,15 @@ import { Link } from 'react-router-dom';
 import type { StalledDeal } from '../../../modules/owner-summary';
 import { OWNER_SUMMARY_LINKS, STALLED_AFTER_DAYS } from '../../../config/ownerSummary';
 import { compactMoney, count, money } from './format';
+import SelectMenu, { type SelectMenuOption } from './SelectMenu';
 
 const SORT = { IDLE: 'idle', AMOUNT: 'amount' } as const;
 type Sort = typeof SORT[keyof typeof SORT];
+
+const SORT_OPTIONS: SelectMenuOption<Sort>[] = [
+    { value: SORT.IDLE, label: 'Days idle (longest)' },
+    { value: SORT.AMOUNT, label: 'Amount (largest)' },
+];
 
 /** A month idle is late; anything past STALLED_AFTER_DAYS is already stalled. */
 const LONG_IDLE_DAYS = 30;
@@ -36,13 +42,7 @@ export default function StalledDealsCard({ deals, total, totalRequested }: Stall
                     <p className="os-card-sub">Open applications with no status change in the last {STALLED_AFTER_DAYS} days</p>
                 </div>
                 {deals.length > 1 && (
-                    <label className="os-legend" style={{ fontSize: 13, color: 'var(--os-muted)' }}>
-                        Sort by
-                        <select className="os-field" style={{ width: 180 }} value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-                            <option value={SORT.IDLE}>Days idle (longest)</option>
-                            <option value={SORT.AMOUNT}>Amount (largest)</option>
-                        </select>
-                    </label>
+                    <SelectMenu label="Sort by" value={sort} options={SORT_OPTIONS} onChange={setSort} />
                 )}
             </div>
             {deals.length === 0 ? (

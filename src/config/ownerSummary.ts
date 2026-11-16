@@ -3,13 +3,17 @@
  * OwnerSummaryPeriod / OwnerSummaryService constants - change them there first.
  */
 
-export const OWNER_SUMMARY_ROUTE = '/owner-summary';
+export const OWNER_SUMMARY_ROUTE = '/business-insights';
 
-/** The screen's name, in the sidebar and as its heading. The route keeps its original path. */
+/** The screen's name, in the sidebar and as its heading. */
 export const OWNER_SUMMARY_TITLE = 'Business Insights';
 
-/** Host staff holding this see the host's whole book (fch-api CommissionViewer::MANAGE_PERMISSION). */
-export const COMMISSION_MANAGE_PERMISSION = 'update commission';
+/**
+ * For now Business Insights (menu and route) is open to these logins only,
+ * whatever their role - hard-coded on purpose until the screen opens up.
+ * The API does not check the email for now. Lower case.
+ */
+export const OWNER_SUMMARY_ALLOWED_EMAILS: readonly string[] = ['developer@fch.com'];
 
 export const OWNER_SUMMARY_PERIOD = {
     THIS_WEEK: 'this_week',

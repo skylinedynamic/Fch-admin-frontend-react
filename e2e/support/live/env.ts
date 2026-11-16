@@ -10,5 +10,12 @@ export const HOST_PASSWORD = process.env.E2E_HOST_PASSWORD || ''
 // Saved by auth.setup.ts and reused by every live spec.
 export const AUTH_STATE_PATH = 'e2e/.auth/host.json'
 
+// The one login Business Insights is open to for now (local fch_dev: developer@fch.com).
+export const INSIGHTS_EMAIL = process.env.E2E_INSIGHTS_EMAIL || ''
+export const INSIGHTS_PASSWORD = process.env.E2E_INSIGHTS_PASSWORD || ''
+
+// Saved by insights.auth.setup.ts and used by the Business Insights live specs.
+export const INSIGHTS_AUTH_STATE_PATH = 'e2e/.auth/insights.json'
+
 // Local Passport token issuance and the un-pooled PHP dev server are slow.
 export const SLOW_TIMEOUT = 30_000

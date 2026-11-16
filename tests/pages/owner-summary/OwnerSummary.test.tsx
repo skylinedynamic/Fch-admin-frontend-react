@@ -433,7 +433,8 @@ describe('Owner Summary page', () => {
     const commissions = within(screen.getByTestId('owner-commissions'))
     expect(commissions.getByText(/FCH share booked/i)).toBeInTheDocument()
     expect(commissions.getByText('$11,000')).toBeInTheDocument()
-    expect(commissions.getByText(/not cash until the lender pays/i)).toBeInTheDocument()
+    expect(commissions.getByText('Commission on deals closed this period')).toBeInTheDocument()
+    expect(commissions.queryByText(/not cash until the lender pays/i)).not.toBeInTheDocument()
   })
 
   it('splits what is owed by how late it is', async () => {
@@ -490,9 +491,60 @@ describe('Owner Summary page', () => {
 
     expect(within(firstRow()).getByText('FUND-LONG')).toBeInTheDocument()
 
-    await userEvent.selectOptions(card.getByLabelText('Sort by'), 'amount')
+    // A custom dropdown, not the browser's own select.
+    expect(card.queryByRole('combobox')).not.toBeInTheDocument()
+    const trigger = card.getByRole('button', { name: /sort by/i })
+    expect(trigger).toHaveTextContent('Days idle (longest)')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
+    await userEvent.click(trigger)
+    const list = card.getByRole('listbox', { name: 'Sort by' })
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(within(list).getByRole('option', { name: 'Days idle (longest)' })).toHaveAttribute('aria-selected', 'true')
+    await userEvent.click(within(list).getByRole('option', { name: 'Amount (largest)' }))
+
+    expect(card.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(trigger).toHaveTextContent('Amount (largest)')
     expect(within(firstRow()).getByText('FUND-BIG')).toBeInTheDocument()
+  })
+
+  it('the stalled deals sort works from the keyboard and closes on Escape or a click outside', async () => {
+    const deal = ownerSummaryFixture.stalled_deals[0]
+    server.use(
+      http.get('*/common/owner-summary', () =>
+        HttpResponse.json(ownerSummaryResponse({
+          ...ownerSummaryFixture,
+          stalled_deals: [
+            { ...deal, id: 1, application_number: 'FUND-LONG', days_in_status: 60, requested_amount: 1000 },
+            { ...deal, id: 2, application_number: 'FUND-BIG', days_in_status: 20, requested_amount: 90000 },
+          ],
+        }))
+      )
+    )
+    await renderPage()
+    const card = within(screen.getByTestId('owner-stalled'))
+    const trigger = card.getByRole('button', { name: /sort by/i })
+
+    trigger.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(card.getByRole('option', { name: 'Days idle (longest)' })).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(card.getByRole('option', { name: 'Amount (largest)' })).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    expect(card.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(trigger).toHaveTextContent('Amount (largest)')
+    expect(trigger).toHaveFocus()
+    expect(within(card.getAllByRole('row')[1]).getByText('FUND-BIG')).toBeInTheDocument()
+
+    await userEvent.click(trigger)
+    await userEvent.keyboard('{Escape}')
+    expect(card.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+
+    await userEvent.click(trigger)
+    await userEvent.click(document.body)
+    expect(card.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(trigger).toHaveTextContent('Amount (largest)')
   })
 
   it('shows lead sources by their recorded name, with an unset source called out', async () => {
