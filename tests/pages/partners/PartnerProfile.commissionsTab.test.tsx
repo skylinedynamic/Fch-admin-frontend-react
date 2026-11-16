@@ -20,7 +20,7 @@ import PartnerProfile from '../../../src/pages/partners/PartnerProfile'
  * clients' funding applications have been funded. The funding application's
  * split opens at the tier for that deal (fch-api PUT /admin/partners/{id}/commission).
  */
-type Tier = { id?: number; min_count: number; max_count: number | null; percentage: number }
+type Tier = { id?: number; min_count: number; max_count: number | null; commission_type?: 'percentage' | 'flat'; percentage: number | null; amount?: number | null }
 
 const ONE_RATE: Tier[] = [{ id: 1, min_count: 0, max_count: null, percentage: 25 }]
 
@@ -93,8 +93,8 @@ describe('PartnerProfile - Commissions tab', () => {
     await userEvent.click(saveButton())
 
     await waitFor(() => expect(sent.bodies).toEqual([{ tiers: [
-      { min_count: 0, max_count: 10, percentage: 25 },
-      { min_count: 11, max_count: null, percentage: 30 },
+      { min_count: 0, max_count: 10, commission_type: 'percentage', percentage: 25 },
+      { min_count: 11, max_count: null, commission_type: 'percentage', percentage: 30 },
     ] }]))
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Partner commission updated successfully.'))
   })
@@ -198,7 +198,7 @@ describe('PartnerProfile - Commissions tab', () => {
     await userEvent.clear(rate(1))
     await userEvent.click(saveButton())
 
-    await waitFor(() => expect(sent.bodies).toEqual([{ tiers: [{ min_count: 0, max_count: null, percentage: null }] }]))
+    await waitFor(() => expect(sent.bodies).toEqual([{ tiers: [{ min_count: 0, max_count: null, commission_type: 'percentage', percentage: null }] }]))
     expect(await screen.findByText('Enter the commission (%) for this tier.')).toBeInTheDocument()
     expect(rate(1)).toHaveClass('is-invalid')
   })
@@ -268,5 +268,125 @@ describe('PartnerProfile - Commissions tab', () => {
     await waitFor(() => expect(details.calls).toBe(1))
     await waitFor(() => expect(screen.getAllByRole('tab').length).toBeGreaterThan(0))
     expect(screen.queryByRole('tab', { name: 'Commissions' })).not.toBeInTheDocument()
+  })
+
+  // Each tier has its own commission type, picked in the row's dropdown.
+  describe('commission type per tier', () => {
+    const typeOf = (n: number) => screen.getByRole('button', { name: `Tier ${n} commission type` })
+    const amount = (n: number) => screen.getByLabelText(`Tier ${n} commission ($)`)
+    const pick = async (n: number, label: string) => {
+      await userEvent.click(typeOf(n))
+      await userEvent.click(screen.getByRole('button', { name: label }))
+    }
+    const MIXED = {
+      commission_tiers: [
+        { id: 1, min_count: 0, max_count: 10, commission_type: 'flat', percentage: null, amount: 500 },
+        { id: 2, min_count: 11, max_count: null, commission_type: 'percentage', percentage: 15, amount: null },
+      ],
+      funded_deal_count: 0,
+    }
+
+    it("shows each tier's type and value", async () => {
+      signIn({ is_host: 1, permissions: MANAGER })
+      allowBackgroundCalls()
+      api('get', '/admin/partners-details/21', partner(MIXED))
+
+      await openTab()
+
+      await waitFor(() => expect(amount(1)).toHaveValue(500))
+      expect(typeOf(1)).toHaveTextContent('Flat Amount')
+      expect(typeOf(2)).toHaveTextContent('Percentage')
+      expect(rate(2)).toHaveValue(15)
+      expect(saveButton()).toBeDisabled()
+    })
+
+    it('saves a tier switched to a flat amount, each tier with its own type', async () => {
+      signIn({ is_host: 1, permissions: MANAGER })
+      allowBackgroundCalls()
+      api('get', '/admin/partners-details/21', partner())
+      const sent = api('put', '/admin/partners/21/commission', saved([
+        { id: 1, min_count: 0, max_count: 10, commission_type: 'flat', percentage: null, amount: 500 },
+        { id: 2, min_count: 11, max_count: null, commission_type: 'percentage', percentage: 30, amount: null },
+      ]))
+
+      await openTab()
+      await waitFor(() => expect(rate(1)).toHaveValue(25))
+      await pick(1, 'Flat Amount')
+      expect(screen.queryByLabelText('Tier 1 commission (%)')).not.toBeInTheDocument()
+      expect(saveButton()).toBeEnabled()
+      await userEvent.type(amount(1), '500')
+      await userEvent.type(screen.getByLabelText('Tier 1 to'), '10')
+      await userEvent.click(screen.getByRole('button', { name: /add tier/i }))
+      await userEvent.type(rate(2), '30')
+      await userEvent.click(saveButton())
+
+      await waitFor(() => expect(sent.bodies).toEqual([{ tiers: [
+        { min_count: 0, max_count: 10, commission_type: 'flat', amount: 500 },
+        { min_count: 11, max_count: null, commission_type: 'percentage', percentage: 30 },
+      ] }]))
+      await waitFor(() => expect(screen.getByText('Current: 2 tiers')).toBeInTheDocument())
+    })
+
+    it("previews a flat tier's split on a $10,000 success fee", async () => {
+      signIn({ is_host: 1, permissions: MANAGER })
+      allowBackgroundCalls()
+      api('get', '/admin/partners-details/21', partner({
+        commission_tiers: [{ id: 1, min_count: 0, max_count: null, commission_type: 'flat', percentage: null, amount: 500 }],
+      }))
+
+      await openTab()
+
+      await waitFor(() => expect(amount(1)).toHaveValue(500))
+      expect(screen.getByText('Current: $500')).toBeInTheDocument()
+      expect(screen.getByTestId('commission-split-partner')).toHaveTextContent('5%')
+      expect(screen.getByTestId('preview-partner-payout')).toHaveTextContent('$500')
+      expect(screen.getByTestId('preview-admin-payout')).toHaveTextContent('$9,500')
+    })
+
+    it('switching a tier back to its saved type is not a change', async () => {
+      signIn({ is_host: 1, permissions: MANAGER })
+      allowBackgroundCalls()
+      api('get', '/admin/partners-details/21', partner())
+
+      await openTab()
+      await waitFor(() => expect(rate(1)).toHaveValue(25))
+      await pick(1, 'Flat Amount')
+      await pick(1, 'Percentage')
+
+      expect(rate(1)).toHaveValue(25)
+      expect(saveButton()).toBeDisabled()
+    })
+
+    it("shows the API's error under the amount it is about", async () => {
+      signIn({ is_host: 1, permissions: MANAGER })
+      allowBackgroundCalls()
+      api('get', '/admin/partners-details/21', partner(MIXED))
+      const sent = api('put', '/admin/partners/21/commission', invalid({
+        'tiers.0.amount': 'Enter the commission amount ($) for this tier.',
+      }), 422)
+
+      await openTab()
+      await waitFor(() => expect(amount(1)).toHaveValue(500))
+      await userEvent.clear(amount(1))
+      await userEvent.click(saveButton())
+
+      await waitFor(() => expect(sent.bodies).toEqual([{ tiers: [
+        { min_count: 0, max_count: 10, commission_type: 'flat', amount: null },
+        { min_count: 11, max_count: null, commission_type: 'percentage', percentage: 15 },
+      ] }]))
+      expect(await screen.findByText('Enter the commission amount ($) for this tier.')).toBeInTheDocument()
+      expect(amount(1)).toHaveClass('is-invalid')
+    })
+
+    it('is read-only without the update commission permission', async () => {
+      signIn({ is_host: 1, permissions: ['view partners', 'update partners', 'view commission'] })
+      allowBackgroundCalls()
+      api('get', '/admin/partners-details/21', partner(MIXED))
+
+      await openTab()
+
+      await waitFor(() => expect(amount(1)).toHaveValue(500))
+      expect(typeOf(1)).toBeDisabled()
+    })
   })
 })

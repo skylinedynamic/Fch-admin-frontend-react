@@ -3,6 +3,7 @@ import { getActivityLogs, downloadActivityAttachment, updateActivityLog, deleteA
 import { VISIBILITY_BADGE_STYLES } from '../../../modules/activity-log/constants';
 import { downloadBlob } from '../../../utils/fileDownload';
 import { sanitizeHtml } from '../../../utils/sanitizeHtml';
+import { textLineBreaks } from '../../../utils/textLineBreaks';
 import { useStickyBelowSubheader } from '../../../hooks/useStickyBelowSubheader';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import '../StatisticsCardSkeleton.css';
@@ -766,7 +767,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
                                                                     {hasDescription && (
                                                                         <div
                                                                             className="text-muted mb-2 fs-13"
-                                                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity.description) }}
+                                                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(textLineBreaks(activity.description)) }}
                                                                         />
                                                                     )}
 

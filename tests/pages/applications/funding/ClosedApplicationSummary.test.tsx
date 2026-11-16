@@ -124,3 +124,36 @@ describe('ClosedApplicationSummary - header', () => {
     expect(screen.getByText('Completed', { selector: '.badge' })).toHaveClass('bg-success')
   })
 })
+
+// A commission from the partner's Flat Amount tier: the split is a fixed $,
+// so no "% of success fee" is shown for it.
+describe('ClosedApplicationSummary - a flat partner commission', () => {
+  const flat = {
+    ...(closed as object),
+    total_commission: '10.00',
+    admin_commission: '94.00',
+    partner_commission: '6.00',
+    partner_commission_type: 'flat',
+    total_commission_amount: '25000.00',
+    admin_commission_amount: '23500.00',
+    partner_commission_amount: '1500.00',
+  } as never
+
+  it('shows the host the split in $, with no % of the success fee', () => {
+    renderWithProviders(<ClosedApplicationSummary app={flat} viewer="host" partnerApplication requestedAmount={250000} />)
+
+    expect(row('Success Fee')).toHaveTextContent('10%')
+    expect(row('Admin Commission')).toHaveTextContent('$23,500.00')
+    expect(row('Partner Commission')).toHaveTextContent('Flat amount')
+    expect(row('Partner Commission')).toHaveTextContent('$1,500.00')
+    expect(screen.queryByText(/of success fee/)).not.toBeInTheDocument()
+  })
+
+  it('tells the partner it is a flat amount', () => {
+    renderWithProviders(<ClosedApplicationSummary app={flat} viewer="partner" partnerApplication requestedAmount={250000} />)
+
+    expect(screen.getByText('$1,500.00')).toBeInTheDocument()
+    expect(screen.getByText('A flat amount on this funded application.')).toBeInTheDocument()
+    expect(screen.queryByText(/of the success fee/)).not.toBeInTheDocument()
+  })
+})

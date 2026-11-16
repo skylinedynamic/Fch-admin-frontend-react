@@ -1,4 +1,5 @@
 import React from 'react';
+import { PARTNER_COMMISSION_TYPE } from '../../../../config/partnerCommission';
 import type { FundingApplicationDetails } from '../../../../modules/application/types';
 
 type Props = {
@@ -89,6 +90,9 @@ export default function ClosedApplicationSummary({ app, viewer, partnerApplicati
         </div>
     );
 
+    // From the partner's Flat Amount tier: a fixed $, so no "% of success fee".
+    const flatPartnerShare = app.partner_commission_type === PARTNER_COMMISSION_TYPE.FLAT;
+
     if (viewer === 'partner') {
         const partnerAmount = amount(app.partner_commission_amount);
         const partnerRate = amount(app.partner_commission);
@@ -104,7 +108,9 @@ export default function ClosedApplicationSummary({ app, viewer, partnerApplicati
                                 <div className="text-muted fs-13">Your commission</div>
                                 <div className="fs-22 fw-bold text-success">{money(partnerAmount)}</div>
                                 <div className="text-muted fs-13">
-                                    {rate(partnerRate)} of the success fee on this funded application.
+                                    {flatPartnerShare
+                                        ? 'A flat amount on this funded application.'
+                                        : `${rate(partnerRate)} of the success fee on this funded application.`}
                                 </div>
                             </div>
                             {app.payment_status && (
@@ -125,9 +131,19 @@ export default function ClosedApplicationSummary({ app, viewer, partnerApplicati
     const rows: Array<{ label: React.ReactNode; value: string; strong?: boolean }> = hasCommission
         ? [
             { label: <>Success Fee <span className="badge bg-success-subtle text-success ms-1">{rate(successFeeRate)}</span></>, value: money(amount(app.total_commission_amount)), strong: true },
-            { label: <>Admin Commission <span className="badge bg-light text-dark ms-1">{rate(app.admin_commission)} of success fee</span></>, value: money(amount(app.admin_commission_amount)) },
+            {
+                label: flatPartnerShare
+                    ? <>Admin Commission</>
+                    : <>Admin Commission <span className="badge bg-light text-dark ms-1">{rate(app.admin_commission)} of success fee</span></>,
+                value: money(amount(app.admin_commission_amount)),
+            },
             ...(partnerApplication
-                ? [{ label: <>Partner Commission <span className="badge bg-light text-dark ms-1">{rate(app.partner_commission)} of success fee</span></>, value: money(amount(app.partner_commission_amount)) }]
+                ? [{
+                    label: flatPartnerShare
+                        ? <>Partner Commission <span className="badge bg-light text-dark ms-1">Flat amount</span></>
+                        : <>Partner Commission <span className="badge bg-light text-dark ms-1">{rate(app.partner_commission)} of success fee</span></>,
+                    value: money(amount(app.partner_commission_amount)),
+                }]
                 : []),
         ]
         : [];

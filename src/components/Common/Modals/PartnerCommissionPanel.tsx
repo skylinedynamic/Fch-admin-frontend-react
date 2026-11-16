@@ -1,30 +1,40 @@
 import type { PartnerCommissionSetup } from '../../../modules/application/types'
 import { tierForPosition, tierRangeLabel } from '../../../modules/partner/tiers'
+import { PARTNER_COMMISSION_TYPE } from '../../../config/partnerCommission'
 
 interface PartnerCommissionPanelProps {
   setup: PartnerCommissionSetup
 }
 
-const formatRate = (value: number | string | null) => `${+Number(value ?? 0).toFixed(2)}%`
+const formatRate = (value: number | string | null | undefined) => `${+Number(value ?? 0).toFixed(2)}%`
 
-const SET_MANUALLY = 'Set the Partner Commission Rate manually below.'
+/** "$500", or "$1,250.50" when there are cents. */
+const formatAmount = (value: number | string | null | undefined) => {
+  const n = Number(value ?? 0)
+  const digits = Number.isInteger(n) ? 0 : 2
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: digits, maximumFractionDigits: digits })
+}
+
+// The split can't be typed: with no tier for the deal the partner gets none.
+const ADMIN_KEEPS_IT = 'so the admin keeps the whole success fee.'
 
 /**
  * The Closed (Completed) modal's Partner Commission strip: the partner's rate
  * for this deal - the Funding tier (Partner profile › Commissions) its number
- * falls in, where the Partner Commission Rate opens - or "Not set", asking
- * for the rate to be set manually.
+ * falls in, which sets the Partner Commission Rate - or "Not set", when the
+ * admin keeps the whole success fee. A Flat Amount tier shows its $.
  */
 export default function PartnerCommissionPanel({ setup }: PartnerCommissionPanelProps) {
   const { tiers, deal_position: position } = setup
   const index = tierForPosition(tiers, position)
   const tier = index >= 0 ? tiers[index] : null
+  const flat = tier?.commission_type === PARTNER_COMMISSION_TYPE.FLAT
 
   const detail = tiers.length === 0
-    ? `No commission is set for this partner. ${SET_MANUALLY}`
+    ? `No commission is set for this partner, ${ADMIN_KEEPS_IT}`
     : tier
       ? `Deal #${position} · ${tierRangeLabel(tier)} deals tier`
-      : `No commission is set for deal #${position} (past the last tier). ${SET_MANUALLY}`
+      : `No commission is set for deal #${position} (past the last tier), ${ADMIN_KEEPS_IT}`
 
   return (
     <section className={`fam-partner ${tier ? '' : 'fam-partner--unset'}`} aria-labelledby="fam-partner-title">
@@ -35,8 +45,8 @@ export default function PartnerCommissionPanel({ setup }: PartnerCommissionPanel
       </div>
       {tier ? (
         <div className="fam-partner__rate" data-testid="partner-commission-rate">
-          <b>{formatRate(tier.percentage)}</b>
-          <small>of success fee</small>
+          <b>{flat ? formatAmount(tier.amount) : formatRate(tier.percentage)}</b>
+          <small>{flat ? 'flat per deal' : 'of success fee'}</small>
         </div>
       ) : (
         <span className="fam-partner__status">Not set</span>

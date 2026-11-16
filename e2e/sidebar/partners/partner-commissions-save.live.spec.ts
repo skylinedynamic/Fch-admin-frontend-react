@@ -16,7 +16,10 @@ test.describe('Partners › profile › Commissions (live)', () => {
     test.skip(!!partner?.is_host, 'first partner is the host, which has no commission')
     await page.getByRole('tab', { name: 'Commissions' }).click()
 
-    const rate = page.getByLabel('Tier 1 commission (%)')
+    // Tier 1 is a % or a flat $, whichever its Type says (Partner profile › Commissions).
+    await expect(page.getByLabel(/^Tier 1 commission \((%|\$)\)$/)).toBeVisible()
+    const percent = page.getByLabel('Tier 1 commission (%)')
+    const rate = (await percent.count()) > 0 ? percent : page.getByLabel('Tier 1 commission ($)')
     const original = await rate.inputValue()
     // The commission is required and can't be cleared from the screen, so a
     // partner without one couldn't be put back as it was.

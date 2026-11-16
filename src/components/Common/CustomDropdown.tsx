@@ -18,6 +18,8 @@ interface CustomDropdownProps {
     renderOption?: (option: Option) => React.ReactNode
     /** Id of the toggle button, so a <label htmlFor> names it. */
     id?: string
+    /** Accessible name of the toggle button when no <label> names it (e.g. in a table cell). */
+    ariaLabel?: string
 }
 
 export default function CustomDropdown({
@@ -32,7 +34,8 @@ export default function CustomDropdown({
     className = '',
     style,
     renderOption,
-    id
+    id,
+    ariaLabel
 }: CustomDropdownProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
@@ -88,6 +91,7 @@ export default function CustomDropdown({
         <div className={`dropdown ${className} ${isOpen ? 'is-open' : ''}`} ref={dropdownRef}>
             <button
                 id={id}
+                aria-label={ariaLabel}
                 className={`form-select text-start d-flex justify-content-between align-items-center ${isOpen ? 'show' : ''} ${className} ${className.includes('is-invalid') ? 'is-invalid' : ''}`}
                 type="button"
                 onClick={() => !disabled && setIsOpen(!isOpen)}

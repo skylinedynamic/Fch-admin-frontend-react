@@ -28,3 +28,25 @@ export const PARTNER_COMMISSION_FORM_ID = 'partner-commission-form';
 
 /** The success fee the Commissions tab's summary splits, as an example. */
 export const PARTNER_COMMISSION_EXAMPLE_FEE = 10000;
+
+/**
+ * How a tier is paid - each tier has its own type (fch-api
+ * PartnerCommissionTier::TYPE_*): a share (%) of the success fee, or a flat
+ * amount ($) per deal.
+ */
+export const PARTNER_COMMISSION_TYPE = {
+  PERCENTAGE: 'percentage',
+  FLAT: 'flat',
+} as const;
+
+export type PartnerCommissionType = (typeof PARTNER_COMMISSION_TYPE)[keyof typeof PARTNER_COMMISSION_TYPE];
+
+/** A tier's Type dropdown. */
+export const PARTNER_COMMISSION_TYPE_OPTIONS: ReadonlyArray<{ value: PartnerCommissionType; label: string }> = [
+  { value: PARTNER_COMMISSION_TYPE.PERCENTAGE, label: 'Percentage' },
+  { value: PARTNER_COMMISSION_TYPE.FLAT, label: 'Flat Amount' },
+];
+
+/** The range of a flat amount the API accepts (fch-api PartnerCommissionTier::AMOUNT_MIN/MAX). */
+export const PARTNER_COMMISSION_AMOUNT_MIN = 0;
+export const PARTNER_COMMISSION_AMOUNT_MAX = 99999999.99;

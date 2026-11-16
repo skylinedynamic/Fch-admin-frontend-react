@@ -957,9 +957,10 @@ export default function FundingApplicationDetails() {
                                                                 type="button"
                                                                 className="btn btn-primary"
                                                                 onClick={handleUpdateClick}
-                                                                disabled={updateMutation.isPending}
                                                             >
-                                                                {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                                                                {/* Only opens the confirm / Closed (Completed) modal, which
+                                                                    shows its own loading state while it saves. */}
+                                                                Update Status
                                                             </button>
                                                         </div>
                                                     )}

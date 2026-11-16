@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { toast } from 'react-toastify'
 import { useUpdatePartnerCommission } from '../../../modules/partner'
 import type { PartnerCommission, PartnerCommissionTier } from '../../../modules/partner/types'
-import { tierCountValue, tierForPosition, tierRangeLabel } from '../../../modules/partner/tiers'
-import CommissionTierTable, { type TierRow } from './CommissionTierTable'
+import { flatCommissionRate, tierCountValue, tierForPosition, tierRangeLabel } from '../../../modules/partner/tiers'
+import CommissionTierTable, { tierRowType, tierValueField, type TierRow } from './CommissionTierTable'
 import {
   PARTNER_COMMISSION_EXAMPLE_FEE,
   PARTNER_COMMISSION_FORM_ID,
   PARTNER_COMMISSION_MAX,
   PARTNER_COMMISSION_MIN,
+  PARTNER_COMMISSION_TYPE,
 } from '../../../config/partnerCommission'
 import '../../../../assets/css/partner-commission.css'
 
@@ -20,7 +21,7 @@ export interface PartnerCommissionFormState {
 
 interface PartnerCommissionTabProps {
   partnerId: number | string
-  /** The partner's saved Funding tiers (empty when none are set). */
+  /** The partner's saved Funding tiers (empty when none are set), each with its commission type. */
   tiers: PartnerCommissionTier[] | null | undefined
   /** How many of the partner's clients' funding applications are funded: the next deal is one more. */
   fundedDealCount: number | null | undefined
@@ -34,41 +35,49 @@ interface PartnerCommissionTabProps {
 
 type ApiError = { response?: { data?: { message?: string; errors?: Record<string, string | string[]> } } }
 
-const BLANK_TIER: TierRow = { min_count: 0, max_count: '', percentage: '' }
+const BLANK_TIER: TierRow = { min_count: 0, max_count: '', commission_type: PARTNER_COMMISSION_TYPE.PERCENTAGE, percentage: '', amount: '' }
 
 const toRows = (tiers: PartnerCommissionTier[] | null | undefined): TierRow[] =>
   tiers && tiers.length
     ? tiers.map((tier) => ({
         min_count: tier.min_count ?? '',
         max_count: tier.max_count ?? '',
+        commission_type: tier.commission_type ?? PARTNER_COMMISSION_TYPE.PERCENTAGE,
         percentage: tier.percentage ?? '',
+        amount: tier.amount ?? '',
       }))
     : [{ ...BLANK_TIER }]
 
-/** What decides "changed": the values as typed, with numbers compared as numbers. */
+const isBlank = (value: TierRow['percentage'] | undefined) => value === '' || value === null || value === undefined
+
+const valueKey = (value: TierRow['percentage'] | undefined) => (isBlank(value) ? '' : String(Number(value)))
+
+/** What decides "changed": each tier's range, type and the value it shows, numbers compared as numbers. */
 const fingerprint = (rows: TierRow[]) =>
   JSON.stringify(rows.map((row) => [
     String(row.min_count ?? ''),
     String(row.max_count ?? ''),
-    row.percentage === '' || row.percentage === null || row.percentage === undefined ? '' : String(Number(row.percentage)),
+    tierRowType(row),
+    valueKey(row[tierValueField(row)]),
   ]))
 
-const isBlank = (value: TierRow['percentage']) => value === '' || value === null || value === undefined
-
 const formatRate = (value: number) => `${+value.toFixed(2)}%`
-const formatMoney = (value: number) =>
-  value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+const formatMoney = (value: number, fractionDigits = 0) =>
+  value.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })
+/** "$500", or "$750.50" when there are cents. */
+const formatAmount = (value: number) => formatMoney(value, Number.isInteger(value) ? 0 : 2)
 
 const firstMessage = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)
 
 /**
- * Partner profile › Commissions: the partner's Funding commission tiers - its
- * share (%) of the success fee by how many of its clients' funding
- * applications have been funded (0-10, 11-20, 21 and up). The tiers on the
- * left; on the right a donut of the split the partner's next deal gets, with a
- * Partner / Admin legend (% and $ on an example fee). A funding application's
- * split opens at the tier for that deal. Saved by the page header's Save
- * Commission button, which submits this form.
+ * Partner profile › Commissions: the partner's Funding commission tiers by how
+ * many of its clients' funding applications have been funded (0-10, 11-20, 21
+ * and up). Each tier has its own Type: Percentage (a share of the success fee)
+ * or Flat Amount (a fixed $ per deal). The tiers on the left; on the right a
+ * donut of the split the partner's next deal gets, with a Partner / Admin
+ * legend (% and $ on an example fee). A funding application's split opens at
+ * the tier for that deal. Saved by the page header's Save Commission button,
+ * which submits this form.
  */
 export default function PartnerCommissionTab({ partnerId, tiers, fundedDealCount, canEdit, onSaved, onStateChange }: PartnerCommissionTabProps) {
   const savedRows = useMemo(() => toRows(tiers), [tiers])
@@ -87,7 +96,13 @@ export default function PartnerCommissionTab({ partnerId, tiers, fundedDealCount
   const funded = fundedDealCount ?? 0
   const nextDeal = funded + 1
   const nextTier = tierForPosition(rows, nextDeal)
-  const nextRate = nextTier >= 0 && !isBlank(rows[nextTier].percentage) ? Number(rows[nextTier].percentage) : NaN
+  const nextRow = nextTier >= 0 ? rows[nextTier] : null
+  const nextValue = nextRow ? nextRow[tierValueField(nextRow)] : null
+  const nextNumber = isBlank(nextValue) ? NaN : Number(nextValue)
+  // A flat amount is shown as its share of the example fee, as the split would take it.
+  const nextRate = nextRow && tierRowType(nextRow) === PARTNER_COMMISSION_TYPE.FLAT
+    ? flatCommissionRate(nextNumber, PARTNER_COMMISSION_EXAMPLE_FEE, PARTNER_COMMISSION_MAX)
+    : nextNumber
   const partnerShare = Number.isFinite(nextRate) && nextRate >= PARTNER_COMMISSION_MIN && nextRate <= PARTNER_COMMISSION_MAX ? nextRate : 0
   const adminShare = 100 - partnerShare
 
@@ -105,13 +120,19 @@ export default function PartnerCommissionTab({ partnerId, tiers, fundedDealCount
     if (!canEdit || !dirty) return
     setErrors({})
 
-    // The commission is required: every tier is sent, a blank rate as null for
-    // the API to refuse under its field. The first tier always starts at 0.
-    const payload = rows.map((row, index) => ({
-      min_count: index === 0 ? 0 : tierCountValue(row.min_count),
-      max_count: tierCountValue(row.max_count),
-      percentage: isBlank(row.percentage) ? null : Number(row.percentage),
-    }))
+    // The commission is required: every tier is sent with its type and that
+    // type's value, a blank one as null for the API to refuse under its field.
+    // The first tier always starts at 0.
+    const payload = rows.map((row, index) => {
+      const field = tierValueField(row)
+      const value = row[field]
+      return {
+        min_count: index === 0 ? 0 : tierCountValue(row.min_count),
+        max_count: tierCountValue(row.max_count),
+        commission_type: tierRowType(row),
+        [field]: isBlank(value) ? null : Number(value),
+      }
+    })
 
     save.mutate(
       { id: partnerId, payload: { tiers: payload } },
@@ -138,10 +159,13 @@ export default function PartnerCommissionTab({ partnerId, tiers, fundedDealCount
     )
   }
 
+  const savedSingle = savedCount === 1 && tiers?.[0].min_count === 0 && tiers?.[0].max_count === null ? tiers[0] : null
+  const singleFlat = savedSingle?.commission_type === PARTNER_COMMISSION_TYPE.FLAT
+  const singleValue = savedSingle ? (singleFlat ? savedSingle.amount : savedSingle.percentage) : null
   const savedSummary = savedCount === 0
     ? null
-    : savedCount === 1 && tiers?.[0].min_count === 0 && tiers?.[0].max_count === null && tiers?.[0].percentage !== null
-      ? formatRate(Number(tiers[0].percentage))
+    : singleValue !== null && singleValue !== undefined
+      ? singleFlat ? formatAmount(Number(singleValue)) : formatRate(Number(singleValue))
       : `${savedCount} tiers`
 
   return (
@@ -160,7 +184,8 @@ export default function PartnerCommissionTab({ partnerId, tiers, fundedDealCount
           )}
         </div>
         <p className="pcm__sub">
-          The partner&apos;s share of the success fee, by how many of its clients&apos; funding applications have been funded.
+          What the partner earns per deal - a share of the success fee or a flat amount - by how many of its
+          clients&apos; funding applications have been funded.
         </p>
 
         <CommissionTierTable
@@ -175,8 +200,9 @@ export default function PartnerCommissionTab({ partnerId, tiers, fundedDealCount
         />
 
         <p className="pcm__help" id="partner-commission-help">
-          {PARTNER_COMMISSION_MIN}–{PARTNER_COMMISSION_MAX}% per tier, required for every tier. A closed funding
-          application&apos;s split starts at the tier for that deal and can still be changed there.
+          Percentage: {PARTNER_COMMISSION_MIN}–{PARTNER_COMMISSION_MAX}% of the success fee. Flat Amount: a fixed $ per deal.
+          A closed funding application&apos;s split starts at the tier for that deal (a flat amount as its share of the
+          success fee, the admin keeping at least 1%) and can still be changed there.
         </p>
         {!canEdit && (
           <p className="pcm__readonly">

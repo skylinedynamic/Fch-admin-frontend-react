@@ -6,8 +6,89 @@
   --ct-muted: var(--vz-secondary-color, #878a99);
 }
 
+/* Narrow screens: the table keeps its width and scrolls sideways. */
 .ct__table {
-  min-width: 460px;
+  min-width: 600px;
+}
+
+/* Wider screens: the table always fits its card (fixed column shares), so the
+   Type dropdown's menu can open below its row outside the scroll box. */
+@media (min-width: 768px) {
+  .ct__scroll {
+    overflow: visible;
+  }
+
+  .ct__table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  /* With the 52px remove column these leave room on a ~400px card. */
+  .ct__table th:nth-child(1),
+  .ct__table th:nth-child(2) {
+    width: 17%;
+  }
+
+  .ct__table th:nth-child(3) {
+    width: 27%;
+  }
+
+  .ct__table th:nth-child(4) {
+    width: 25%;
+  }
+
+  /* Beats the base `.ct__table td` min-width further down. */
+  .ct .ct__table td {
+    min-width: 0;
+  }
+}
+
+/* The Type dropdown: a plain field like the others, its menu without a filled
+   selected row - the choice is marked by the theme colour only. */
+.ct__type .form-select {
+  height: 37.5px;
+  border-radius: 4px;
+  background-color: var(--vz-input-bg, #fff);
+  color: var(--vz-body-color, #212529);
+  overflow: hidden;
+}
+
+.ct__type .form-select > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ct__type .dropdown-menu {
+  min-width: 160px !important;
+  border-radius: 4px !important;
+  border: 1px solid var(--vz-border-color, #e9ebec) !important;
+}
+
+.ct__type .list-group-item {
+  background: transparent;
+  color: var(--vz-body-color, #212529);
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+.ct__type .list-group-item:hover,
+.ct__type .list-group-item:focus {
+  background: rgba(var(--ct-primary-rgb), .06);
+  color: var(--vz-body-color, #212529);
+}
+
+.ct__type .list-group-item.active {
+  background: transparent;
+  border-color: transparent;
+  color: rgb(var(--ct-primary-rgb));
+  font-weight: 600;
+}
+
+.ct__table .input-group > .input-group-text:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .ct__table th {
@@ -40,9 +121,10 @@
   border-bottom-left-radius: 0;
 }
 
+/* Room for the remove button (32px) and the cell's padding. */
 .ct__table td.ct__actions,
 .ct__table th.ct__actions {
-  width: 1%;
+  width: 52px;
   min-width: 0;
 }
 

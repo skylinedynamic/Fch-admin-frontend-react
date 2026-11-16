@@ -41,3 +41,13 @@ export const tierRangeLabel = (row: TierRange): string => {
 
 /** A count as the API takes it: a whole number, or null when blank. */
 export const tierCountValue = toCount
+
+/**
+ * Commission type Flat Amount: a flat $ for the deal as the partner's share
+ * (%) of its success fee ($), to the hundredth and at most `max` (the admin
+ * keeps at least 1%). 0 while there is no success fee to share.
+ */
+export const flatCommissionRate = (amount: number, successFeeAmount: number, max = 100): number => {
+  if (!Number.isFinite(amount) || !Number.isFinite(successFeeAmount) || successFeeAmount <= 0 || amount <= 0) return 0
+  return Math.min(max, +((amount / successFeeAmount) * 100).toFixed(2))
+}

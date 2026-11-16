@@ -3,8 +3,9 @@ import { mockApi, ok, failure, seedSession, expectCall } from '../../support/hel
 
 /**
  * Partner profile › Commissions: the host sets a partner's Funding commission
- * tiers - its share (%) of the success fee by how many of its clients'
- * funding applications have been funded - with PUT /admin/partners/{id}/commission.
+ * tiers by how many of its clients' funding applications have been funded -
+ * each tier a share (%) of the success fee or a flat amount ($) per deal,
+ * picked in its Type dropdown - with PUT /admin/partners/{id}/commission.
  * The funding application's split opens at the tier for that deal.
  */
 
@@ -55,10 +56,53 @@ test.describe('Partner profile - Commissions tab', () => {
 
     const call = await expectCall(api, 'PUT', '/admin/partners/5/commission')
     expect(call.json).toEqual({ tiers: [
-      { min_count: 0, max_count: 10, percentage: 20 },
-      { min_count: 11, max_count: null, percentage: 35 },
+      { min_count: 0, max_count: 10, commission_type: 'percentage', percentage: 20 },
+      { min_count: 11, max_count: null, commission_type: 'percentage', percentage: 35 },
     ] })
     await expect(page.getByText('Partner commission updated successfully.')).toBeVisible()
+  })
+
+  test('a tier is switched to a flat amount in its Type dropdown and saved', async ({ page }) => {
+    await seedSession(page, { permissions: MANAGER })
+    const api = await mockApi(page, [
+      { method: 'GET', match: '/admin/partners-details/5', body: ok(PARTNER) },
+      {
+        method: 'PUT',
+        match: '/admin/partners/5/commission',
+        body: ok({
+          id: 5,
+          commission_tiers: [
+            { id: 1, min_count: 0, max_count: 10, commission_type: 'percentage', percentage: 20, amount: null },
+            { id: 2, min_count: 11, max_count: null, commission_type: 'flat', percentage: null, amount: 750 },
+          ],
+          funded_deal_count: 10,
+        }, 'Partner commission updated successfully.'),
+      },
+    ])
+    await page.goto('/partners/5')
+    await page.getByRole('tab', { name: 'Commissions' }).click()
+
+    await expect(page.getByRole('button', { name: 'Tier 1 commission type' })).toHaveText('Percentage')
+    await page.getByLabel('Tier 1 to').fill('10')
+    await page.getByRole('button', { name: /add tier/i }).click()
+    await page.getByRole('button', { name: 'Tier 2 commission type' }).click()
+    await page.getByRole('button', { name: 'Flat Amount', exact: true }).click()
+    await expect(page.getByLabel('Tier 2 commission (%)')).toHaveCount(0)
+    await page.getByLabel('Tier 2 commission ($)').fill('750')
+
+    // Deal #11 is in the flat tier: $750 of a $10,000 success fee is 7.5%.
+    await expect(page.getByTestId('commission-split-partner')).toHaveText('7.5%')
+    await expect(page.getByTestId('preview-partner-payout')).toHaveText('$750')
+
+    await page.getByRole('button', { name: /save commission/i }).click()
+
+    const call = await expectCall(api, 'PUT', '/admin/partners/5/commission')
+    expect(call.json).toEqual({ tiers: [
+      { min_count: 0, max_count: 10, commission_type: 'percentage', percentage: 20 },
+      { min_count: 11, max_count: null, commission_type: 'flat', amount: 750 },
+    ] })
+    await expect(page.getByText('Partner commission updated successfully.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Tier 2 commission type' })).toHaveText('Flat Amount')
   })
 
   test('a refused tier shows the API error under that tier', async ({ page }) => {
@@ -92,6 +136,7 @@ test.describe('Partner profile - Commissions tab', () => {
     await page.getByRole('tab', { name: 'Commissions' }).click()
 
     await expect(page.getByLabel('Tier 1 commission (%)')).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Tier 1 commission type' })).toBeDisabled()
     await expect(page.getByRole('button', { name: /add tier/i })).toHaveCount(0)
     await expect(page.getByRole('button', { name: /save commission/i })).toHaveCount(0)
   })

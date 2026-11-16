@@ -30,7 +30,7 @@ describe('PartnerCommissionPanel', () => {
     const panel = screen.getByRole('region', { name: 'Partner Commission' })
     expect(within(panel).getByText('Not set')).toBeInTheDocument()
     expect(within(panel).getByTestId('partner-commission-deal')).toHaveTextContent(
-      'No commission is set for this partner. Set the Partner Commission Rate manually below.'
+      'No commission is set for this partner, so the admin keeps the whole success fee.'
     )
     expect(within(panel).queryByTestId('partner-commission-rate')).not.toBeInTheDocument()
   })
@@ -39,8 +39,30 @@ describe('PartnerCommissionPanel', () => {
     render(<PartnerCommissionPanel setup={{ tiers: [{ min_count: 0, max_count: 5, percentage: 10 }], deal_position: 9, funded_deal_count: 8 }} />)
 
     expect(screen.getByTestId('partner-commission-deal')).toHaveTextContent(
-      'No commission is set for deal #9 (past the last tier). Set the Partner Commission Rate manually below.'
+      'No commission is set for deal #9 (past the last tier), so the admin keeps the whole success fee.'
     )
     expect(screen.getByText('Not set')).toBeInTheDocument()
+  })
+})
+
+// A Flat Amount tier is a fixed $ for the deal.
+describe('PartnerCommissionPanel - Flat Amount tier', () => {
+  const MIXED = [
+    { id: 1, min_count: 0, max_count: 10, commission_type: 'percentage' as const, percentage: 10, amount: null },
+    { id: 2, min_count: 11, max_count: null, commission_type: 'flat' as const, percentage: null, amount: 1250.5 },
+  ]
+
+  it("shows this deal's flat amount", () => {
+    render(<PartnerCommissionPanel setup={{ tiers: MIXED, deal_position: 12, funded_deal_count: 11 }} />)
+
+    const panel = screen.getByRole('region', { name: 'Partner Commission' })
+    expect(within(panel).getByTestId('partner-commission-rate')).toHaveTextContent('$1,250.50flat per deal')
+    expect(within(panel).getByTestId('partner-commission-deal')).toHaveTextContent('Deal #12 · 11+ deals tier')
+  })
+
+  it("shows a percentage tier's rate when the deal falls there", () => {
+    render(<PartnerCommissionPanel setup={{ tiers: MIXED, deal_position: 3, funded_deal_count: 2 }} />)
+
+    expect(screen.getByTestId('partner-commission-rate')).toHaveTextContent('10%of success fee')
   })
 })

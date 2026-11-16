@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextTierRow, tierForPosition, tierRangeLabel } from '../../../src/modules/partner/tiers'
+import { flatCommissionRate, nextTierRow, tierForPosition, tierRangeLabel } from '../../../src/modules/partner/tiers'
 
 describe('nextTierRow', () => {
   it('starts the new tier right after the last one ends', () => {
@@ -46,5 +46,23 @@ describe('tierRangeLabel', () => {
     expect(tierRangeLabel({ min_count: 0, max_count: 10 })).toBe('0–10')
     expect(tierRangeLabel({ min_count: 21, max_count: '' })).toBe('21+')
     expect(tierRangeLabel({ min_count: 21, max_count: null })).toBe('21+')
+  })
+})
+
+// Partner profile › Commissions, Flat Amount: a flat $ per deal is the
+// partner's share of that deal's success fee, as the split's %.
+describe('flatCommissionRate', () => {
+  it("is the flat amount's share of the success fee, to the hundredth", () => {
+    expect(flatCommissionRate(500, 2500)).toBe(20)
+    expect(flatCommissionRate(1000, 3000)).toBe(33.33)
+  })
+
+  it('stops at the cap: the admin keeps at least 1% of the success fee', () => {
+    expect(flatCommissionRate(5000, 2500, 99)).toBe(99)
+  })
+
+  it('is 0 when there is no success fee to share yet', () => {
+    expect(flatCommissionRate(500, 0)).toBe(0)
+    expect(flatCommissionRate(500, Number.NaN)).toBe(0)
   })
 })

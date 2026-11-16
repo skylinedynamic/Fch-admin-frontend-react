@@ -133,6 +133,21 @@
     box-shadow: none;
 }
 
+/* The admin / partner split: set by the partner's commission, never typed.
+   Disabled alone it still looked like a white, typeable field. Plain text in
+   a grey box: the ordinary cursor, no caret - a click passes through. */
+.fam-input .form-control.fam-rate--readonly,
+.fam-input .form-control.fam-rate--readonly:disabled {
+    background-color: var(--fam-light);
+    color: var(--fam-muted);
+    cursor: default;
+    caret-color: transparent;
+    pointer-events: none;
+    user-select: none;
+    opacity: 1;
+    box-shadow: none;
+}
+
 .fam-divider {
     margin: 14px 0;
     border: 0;
@@ -321,6 +336,25 @@
     background: var(--fam-success);
     color: #fff;
     filter: brightness(.95);
+}
+
+/* While saving both buttons are disabled. Bootstrap's `.btn:disabled` turns a
+   button with no variant transparent - the green Confirm vanished and only
+   "Processing..." was left - so they keep their own look, a little faded. */
+.fam-footer .fam-btn-confirm:disabled,
+.fam-footer .fam-btn-confirm.disabled {
+    background-color: var(--fam-success);
+    border-color: transparent;
+    color: #fff;
+    opacity: .75;
+}
+
+.fam-footer .fam-btn-cancel:disabled,
+.fam-footer .fam-btn-cancel.disabled {
+    background-color: #fff;
+    border-color: var(--fam-line);
+    color: var(--fam-ink);
+    opacity: .65;
 }
 
 /* Phone: one column, full-width buttons */

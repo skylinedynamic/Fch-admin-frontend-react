@@ -128,9 +128,9 @@ describe('partner services', () => {
 })
 
 describe('updatePartnerCommission', () => {
-  it("sends the partner's Funding tiers and returns them with the funded-deal count", async () => {
+  it("sends the partner's Funding tiers, each with its commission type, and returns them with the funded-deal count", async () => {
     const bodies: unknown[] = []
-    const data = { id: 21, commission_tiers: [{ id: 1, min_count: 0, max_count: null, percentage: 25 }], funded_deal_count: 4 }
+    const data = { id: 21, commission_tiers: [{ id: 1, min_count: 0, max_count: null, commission_type: 'percentage', percentage: 25, amount: null }], funded_deal_count: 4 }
     server.use(
       http.put('*/admin/partners/21/commission', async ({ request }) => {
         bodies.push(await request.json())
@@ -138,7 +138,10 @@ describe('updatePartnerCommission', () => {
       })
     )
 
-    const payload = { tiers: [{ min_count: 0, max_count: null, percentage: 25 }] }
+    const payload = { tiers: [
+      { min_count: 0, max_count: 10, commission_type: 'flat' as const, amount: 500 },
+      { min_count: 11, max_count: null, commission_type: 'percentage' as const, percentage: 25 },
+    ] }
     await expect(updatePartnerCommission(21, payload)).resolves.toEqual({ status: true, message: 'ok', data })
     expect(bodies).toEqual([payload])
   })

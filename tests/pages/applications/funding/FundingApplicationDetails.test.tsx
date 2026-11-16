@@ -11,12 +11,14 @@ import { PARTNER_TYPES } from '../../../../src/config/partnerTypeOptions'
 const detail = vi.hoisted(() => ({ application: {} as Record<string, unknown> }))
 // Shared spies, so a test can see what the page saved and in which order.
 const mutations = vi.hoisted(() => ({ updateStatus: vi.fn(), saveCommission: vi.fn(), assignLender: vi.fn() }))
+// Whether a save is in flight, as the hooks report it.
+const pending = vi.hoisted(() => ({ updateStatus: false, saveCommission: false }))
 
 vi.mock('../../../../src/modules/application/queries', async (original) => ({
   ...(await original<typeof import('../../../../src/modules/application/queries')>()),
   useFundingApplicationDetails: () => ({ data: { data: detail.application }, isLoading: false, error: null }),
-  useUpdateFundingApplicationStatus: () => ({ mutate: mutations.updateStatus, isPending: false }),
-  useSaveFundingApplicationCommission: () => ({ mutate: vi.fn(), mutateAsync: mutations.saveCommission, isPending: false }),
+  useUpdateFundingApplicationStatus: () => ({ mutate: mutations.updateStatus, isPending: pending.updateStatus }),
+  useSaveFundingApplicationCommission: () => ({ mutate: vi.fn(), mutateAsync: mutations.saveCommission, isPending: pending.saveCommission }),
   useAssignLenderToFundingApplication: () => ({ mutateAsync: mutations.assignLender, isPending: false }),
 }))
 
@@ -594,6 +596,8 @@ describe('FundingApplicationDetails — closing with a commission', () => {
   beforeEach(() => {
     mutations.updateStatus.mockReset()
     mutations.saveCommission.mockReset()
+    pending.updateStatus = false
+    pending.saveCommission = false
     detail.application = { ...closable }
     useAuthStore.setState({ user: hostWithRights as never })
   })
@@ -640,6 +644,19 @@ describe('FundingApplicationDetails — closing with a commission', () => {
 
     await waitFor(() => expect(mutations.updateStatus).toHaveBeenCalled())
     expect(mutations.saveCommission).toHaveBeenCalledWith({ funding_application_id: 80, total_commission: 10, admin_commission: 70, partner_commission: 30 })
+  })
+
+  // Every status change is saved from a modal, which shows its own loading
+  // state (Confirm & Update: "Processing..."). The card's Update Status button
+  // only opens it, so it never shows one.
+  it.each(['saveCommission', 'updateStatus'] as const)('the Update Status button shows no loading state while the modal saves (%s)', (step) => {
+    pending[step] = true
+    renderWithProviders(<FundingApplicationDetails />)
+
+    const button = screen.getByRole('button', { name: 'Update Status' })
+    expect(button).toBeEnabled()
+    expect(button.querySelector('.spinner-border')).toBeNull()
+    expect(screen.queryByRole('button', { name: /updating/i })).not.toBeInTheDocument()
   })
 
   it('closes without saving a commission when none is entered', async () => {
