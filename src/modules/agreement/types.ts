@@ -71,4 +71,6 @@ export interface AgreementPlanField {
   label: string
   group: string
   sample: string
+  /** True for the partner's commission table (fch-api AgreementCommissionFields): `sample` is markup. */
+  html?: boolean
 }

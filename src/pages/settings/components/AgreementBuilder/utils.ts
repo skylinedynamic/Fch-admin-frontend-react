@@ -1,5 +1,6 @@
 import { AGREEMENT_MERGE_FIELDS, type AgreementMergeField } from '../../../../config/agreementMergeFields';
 import { measureLineBoxes, planPages } from './pagination';
+import { sanitizeHtml } from '../../../../utils/sanitizeHtml';
 
 /**
  * Letterhead and signing line, shared by the builder's canvas and the saved
@@ -700,8 +701,13 @@ export const withMergeSamples = (
 ): string => {
   // Plan & Fee values (in `fields`) carry their real price as the sample.
   const samples = new Map(fields.map((f) => [f.key, real[f.key]?.trim() ? escapeHtml(real[f.key].trim()) : escapeHtml(f.sample)]));
-  const filled = html.replace(/\{\{\s*([a-z0-9_.]+)\s*\}\}/g, (token, key: string) =>
-    samples.has(key) ? `<span class="ab4-merge-sample" title="{{${key}}}">${samples.get(key)}</span>` : token);
+  // An html value (the partner's commission table) is markup from the API:
+  // shown as it is (no field marking around it), with anything that could run script removed.
+  const htmlKeys = new Map(fields.filter((f) => f.html).map((f) => [f.key, sanitizeHtml(f.sample)]));
+  const filled = html.replace(/\{\{\s*([a-z0-9_.]+)\s*\}\}/g, (token, key: string) => {
+    if (htmlKeys.has(key)) return `<div class="ab4-merge-sample-block" title="{{${key}}}">${htmlKeys.get(key)}</div>`;
+    return samples.has(key) ? `<span class="ab4-merge-sample" title="{{${key}}}">${samples.get(key)}</span>` : token;
+  });
   return filled === html ? html : filled.replace('</head>', `${MERGE_SAMPLE_CSS}</head>`);
 };
 

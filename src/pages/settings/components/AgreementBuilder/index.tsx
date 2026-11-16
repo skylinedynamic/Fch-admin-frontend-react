@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 import { useAgreement, useAgreementMergeFields, useAgreementPreviewValues, useSaveAgreement } from '../../../../modules/agreement';
@@ -58,7 +58,6 @@ const AgreementBuilder: React.FC = () => {
     const [fmOpen, setFmOpen] = useState<boolean>(false);
     const [fmTargetBlockId, setFmTargetBlockId] = useState<string | null>(null);
 
-    const previewRef = useRef<HTMLIFrameElement>(null);
 
     // Settings and Partner profile › Configuration both leave the builder a narrow
     // column that cuts the A4 page off, so agreements are edited full screen.
@@ -515,18 +514,10 @@ const AgreementBuilder: React.FC = () => {
                                     <div className="text-muted fs-12">
                                         {blocks.length} {blocks.length === 1 ? 'Block' : 'Blocks'}
                                     </div>
-                                    <button
-                                        className="btn btn-sm btn-primary d-flex align-items-center gap-1 waves-effect"
-                                        onClick={() => previewRef.current?.contentWindow?.print()}
-                                        title="Download as PDF"
-                                    >
-                                        <i className="ri-download-2-line fs-14"></i>
-                                        <span>Download PDF</span>
-                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <iframe ref={previewRef} className="ab4-preview-frame" srcDoc={previewHtml} title="Preview" frameBorder="0" />
+                        <iframe className="ab4-preview-frame" srcDoc={previewHtml} title="Preview" frameBorder="0" />
                     </div>
                 )}
             </div>

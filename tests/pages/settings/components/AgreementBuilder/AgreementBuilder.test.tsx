@@ -5,6 +5,7 @@ import { fireEvent, renderWithProviders, screen, waitFor, within } from '../../.
 import { server } from '../../../../mocks/server'
 import AgreementBuilder from '../../../../../src/pages/settings/components/AgreementBuilder'
 import { ConfigPartnerProvider } from '../../../../../src/modules/settings/configPartner'
+import { AGREEMENT_COMMISSION_TABLE_FIELD_KEY, AGREEMENT_COMMISSION_TABLE_INTRO } from '../../../../../src/config/agreementMergeFields'
 
 vi.mock('react-toastify', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 // The dashboard (agreement list, settings) is not what is under test here:
@@ -20,7 +21,7 @@ vi.mock('../../../../../src/pages/settings/components/AgreementBuilder/Agreement
 
 /** The agreement type each builder asked for Plan & Fee dynamic values, and what it got back. */
 let mergeFieldsAskedFor: string[] = []
-let planFields: Record<string, string>[] = []
+let planFields: Record<string, string | boolean>[] = []
 
 const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partner' | 'borrower' = 'partner') => {
   mergeFieldsAskedFor = []
@@ -57,6 +58,17 @@ describe('AgreementBuilder calendar', () => {
 
     const frame = await screen.findByTitle('Preview')
     expect(frame.getAttribute('srcdoc')).toContain('data-app-calendar')
+  })
+
+  it('the preview has no Download PDF button', async () => {
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
+    await screen.findByTitle('Preview')
+
+    const bar = within(document.querySelector('.ab4-preview-bar') as HTMLElement)
+    expect(bar.queryByRole('button', { name: /Download/ })).toBeNull()
+    expect(bar.getByText('Agreement Preview')).toBeInTheDocument()
   })
 
   it('saves the agreement itself, without the preview calendar script', async () => {
@@ -443,6 +455,67 @@ describe('AgreementBuilder Plan & Fee dynamic values', () => {
 
     expect(await popover().findByText('Plan & Fee: User seats')).toBeInTheDocument()
     expect(mergeFieldsAskedFor).toEqual(['partner'])
+    planFields = []
+  })
+
+  // fch-api AgreementCommissionFields: each partner sees their own tiers when they sign.
+  it("the partner agreement takes the partner's commission table and previews it as a table", async () => {
+    planFields = [{
+      key: AGREEMENT_COMMISSION_TABLE_FIELD_KEY, label: "Partner's commission tiers", group: 'Signer', html: true,
+      sample: '<table class="ab-commission-table"><tbody><tr><td>0</td><td>10</td><td>$1,500</td></tr><tr><td>11</td><td>and up</td><td>27.5%</td></tr></tbody></table>',
+    }]
+    await openBuilder(undefined, 'partner')
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
+    await screen.findByText('Empty Agreement')
+    window.getSelection()?.removeAllRanges()
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+    fireEvent.click(await popover().findByRole('menuitem', { name: /Partner's commission tiers/ }))
+    await waitFor(() => expect(document.querySelector(`.ab4-doc .ab4-merge-chip[data-merge="${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}"]`)).not.toBeNull())
+    fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
+
+    await waitFor(() => expect(screen.getByTitle('Preview').getAttribute('srcdoc')).toContain('<table class="ab-commission-table">'))
+    const preview = screen.getByTitle('Preview').getAttribute('srcdoc')!
+    expect(preview).toContain('<td>27.5%</td>')
+    expect(preview).not.toContain('&lt;table')
+    planFields = []
+  })
+
+  it('the commission table goes in with a title and a short description the host can edit', async () => {
+    planFields = [{ key: AGREEMENT_COMMISSION_TABLE_FIELD_KEY, label: "Partner's commission tiers", group: 'Signer', html: true, sample: '<table><tbody><tr><td>0</td></tr></tbody></table>' }]
+    await openBuilder(undefined, 'partner')
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
+    await screen.findByText('Empty Agreement')
+    window.getSelection()?.removeAllRanges()
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+    fireEvent.click(await popover().findByRole('menuitem', { name: /Partner's commission tiers/ }))
+
+    const editor = await waitFor(() => {
+      const chip = document.querySelector(`.ab4-doc .ab4-merge-chip[data-merge="${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}"]`)
+      expect(chip).not.toBeNull()
+      return chip!.closest('.ab4-editor') as HTMLElement
+    })
+    // Plain text in the block's editor - not part of the chip - so the host can change it.
+    expect(editor.getAttribute('contenteditable')).toBe('true')
+    expect(within(editor).getByText(AGREEMENT_COMMISSION_TABLE_INTRO.title).closest('.ab4-merge-chip')).toBeNull()
+    expect(within(editor).getByText(AGREEMENT_COMMISSION_TABLE_INTRO.description).closest('.ab4-merge-chip')).toBeNull()
+
+    let saved: Record<string, string> | null = null
+    server.use(http.post('*/common/agreement-templates/save', async ({ request }) => {
+      saved = (await request.json()) as Record<string, string>
+      return HttpResponse.json({ status: true, message: 'Saved' })
+    }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    await waitFor(() => expect(saved).not.toBeNull())
+    const html = saved!.template_html
+    expect(html).toContain(AGREEMENT_COMMISSION_TABLE_INTRO.title)
+    expect(html).toContain(AGREEMENT_COMMISSION_TABLE_INTRO.description)
+    // Alone in its paragraph, so the server's table takes the paragraph's place.
+    expect(html).toContain(`<p>{{${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}}}</p>`)
+    expect(html.indexOf(AGREEMENT_COMMISSION_TABLE_INTRO.title)).toBeLessThan(html.indexOf('{{signer.commission_table}}'))
     planFields = []
   })
 })

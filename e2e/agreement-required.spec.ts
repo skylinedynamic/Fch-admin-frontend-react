@@ -182,4 +182,42 @@ test.describe('A partner the host requires to sign while they use the portal', (
     await expect(page.getByTitle('Agreement Content')).toBeVisible()
     expect(refreshed).toBe(1)
   })
+
+  // fch-api fills {{signer.commission_table}} with this partner's own tiers (AgreementCommissionFields).
+  test('sees their own commission tiers as a table in the agreement', async ({ page }) => {
+    const partnerUser = { ...HOST_ADMIN, id: 77, name: 'Pat Partner', is_host: 0, partner_id: 21, permissions: ['view clients'] }
+    await page.addInitScript(
+      ([u]) => {
+        window.localStorage.setItem('auth', JSON.stringify({ state: { token: 'e2e-fake-token', user: u, rememberMe: true }, version: 0 }))
+        document.cookie = 'auth_session_active=true; path=/'
+      },
+      [partnerUser]
+    )
+    let required = false
+    const table = '<table class="ab-commission-table" style="width:100%;border-collapse:collapse"><thead><tr><th>From (funded deals)</th><th>To</th><th>Commission</th></tr></thead>'
+      + '<tbody><tr><td>0</td><td>10</td><td>$1,500</td></tr><tr><td>11</td><td>and up</td><td>27.5%</td></tr></tbody></table>'
+    await page.route(`${API_ORIGIN}/**`, (route) => ok(route, []))
+    await page.route(`${API_ORIGIN}/common/partner-theme`, (route) => ok(route, { ...THEME, branding: THEME, status_flags: COMPLETE }))
+    await page.route(`${API_ORIGIN}/common/user-details`, (route) =>
+      ok(route, { user: { ...partnerUser, is_agreement_signed: false, is_refresh: required } })
+    )
+    await page.route(`${API_ORIGIN}/common/refresh-user`, (route) => ok(route, { ...partnerUser, is_agreement_signed: false }))
+    await page.route(`${API_ORIGIN}/common/agreement-sign/check`, (route) =>
+      ok(route, required
+        ? { needs_sign: true, template: { id: 5, slug: 'partner', version_id: 1, version: 1, template_html: `<p>5.1 Commission.</p>${table}` } }
+        : { needs_sign: false })
+    )
+
+    await page.goto('/dashboard')
+    required = true
+    await page.evaluate(() => {
+      window.history.pushState({}, '', '/clients')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    const agreement = page.frameLocator('iframe[title="Agreement Content"]')
+    await expect(agreement.locator('table.ab-commission-table')).toBeVisible()
+    await expect(agreement.getByRole('cell', { name: '$1,500' })).toBeVisible()
+    await expect(agreement.getByRole('cell', { name: '27.5%' })).toBeVisible()
+  })
 })

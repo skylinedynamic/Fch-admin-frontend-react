@@ -11,8 +11,12 @@ import { mockApi, ok, seedSession } from '../../support/helpers'
 type Saved = { template_html: string; template_json: string } | null
 
 // Plan & Fee dynamic values as the API lists them per agreement type (fch-api AgreementPlanFields).
-const PLAN_FIELDS: Record<'partner' | 'borrower', { key: string; label: string; group: string; sample: string }[]> = {
+// The partner agreement also offers the signing partner's commission tiers as a table (fch-api AgreementCommissionFields).
+const COMMISSION_TABLE_SAMPLE = '<table class="ab-commission-table"><thead><tr><th>From (funded deals)</th><th>To</th><th>Commission</th></tr></thead>'
+  + '<tbody><tr><td>0</td><td>10</td><td>$1,500</td></tr><tr><td>11</td><td>and up</td><td>27.5%</td></tr></tbody></table>'
+const PLAN_FIELDS: Record<'partner' | 'borrower', { key: string; label: string; group: string; sample: string; html?: boolean }[]> = {
   partner: [
+    { key: 'signer.commission_table', label: "Partner's commission tiers", group: 'Signer', sample: COMMISSION_TABLE_SAMPLE, html: true },
     { key: 'plan.partner_enrollment.certified_partner.one_time_payment.total_amount', label: 'Certified Partner · One Time Payment: Total amount', group: 'Plan & Fee: Partner enrollment', sample: '$4,997.00' },
     { key: 'plan.user_seat.certified_partner.monthly.total_amount', label: 'Certified Partner · Monthly: Monthly seat fee', group: 'Plan & Fee: User seats', sample: '$49.00' },
     { key: 'plan.user_seat.certified_partner.monthly.free_seats', label: 'Certified Partner · Monthly: Free seats', group: 'Plan & Fee: User seats', sample: '3' },
@@ -176,6 +180,60 @@ test.describe('Settings - Agreement Builder', () => {
     await page.getByRole('button', { name: 'Save Template' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(saved()!.template_html).toContain('{{plan.user_seat.certified_partner.monthly.total_amount}}')
+  })
+
+  test("inserts the partner's commission table, previews it as a table and saves it as its field", async ({ page }) => {
+    const { saved } = await openBuilder(page)
+    await page.getByRole('button', { name: 'Clear All' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Clear everything' }).click()
+    await expect(page.getByText('Empty Agreement')).toBeVisible()
+
+    await page.locator('.ab4-props > .ab4-dynamic-values').getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    await page.locator('.ab4-insert-popover').getByRole('menuitem', { name: /Partner's commission tiers/ }).click()
+    await expect(page.locator('.ab4-doc .ab4-merge-chip', { hasText: "Partner's commission tiers" })).toBeVisible()
+
+    // It goes in with a title and a short description, as text the host can edit.
+    const editor = page.locator('.ab4-doc .ab4-editor').filter({ has: page.locator('.ab4-merge-chip') })
+    const title = editor.getByText('Commission Structure', { exact: true })
+    await expect(title).toBeVisible()
+    await expect(editor.getByText(/Partner earns the commission shown below/)).toBeVisible()
+    await title.click()
+    await page.keyboard.press('End')
+    await page.keyboard.type(' (Addendum A)')
+    await expect(editor.getByText('Commission Structure (Addendum A)')).toBeVisible()
+
+    await page.locator('.ab4-toolbar').getByRole('button', { name: 'Preview' }).click()
+    const preview = page.frameLocator('iframe[title="Preview"]')
+    const table = preview.locator('table.ab-commission-table')
+    await expect(table).toBeVisible()
+    await expect(table.getByRole('cell', { name: '27.5%' })).toBeVisible()
+    await expect(table.getByRole('cell', { name: 'and up' })).toBeVisible()
+    await expect(preview.getByText('Commission Structure (Addendum A)')).toBeVisible()
+    // No dotted field outline around the table.
+    const outline = await table.evaluate((el) => getComputedStyle(el.parentElement!).outlineStyle)
+    expect(outline).toBe('none')
+
+    await page.getByRole('button', { name: 'Save Template' }).click()
+    await expect.poll(saved).not.toBeNull()
+    expect(saved()!.template_html).toContain('Commission Structure (Addendum A)')
+    expect(saved()!.template_html).toContain('<p>{{signer.commission_table}}</p>')
+    expect(saved()!.template_html).not.toContain('ab-commission-table')
+  })
+
+  test("the borrower agreement does not offer the partner's commission table", async ({ page }) => {
+    await openBuilder(page, 'borrower')
+    await page.locator('.ab4-props > .ab4-dynamic-values').getByRole('button', { name: /Insert Dynamic Value/ }).click()
+
+    await expect(page.locator('.ab4-insert-popover').getByRole('menuitem', { name: "Signer's name" })).toBeVisible()
+    await expect(page.locator('.ab4-insert-popover').getByRole('menuitem', { name: /Partner's commission tiers/ })).toHaveCount(0)
+  })
+
+  test('the preview has no Download PDF button', async ({ page }) => {
+    await openBuilder(page)
+    await page.locator('.ab4-toolbar').getByRole('button', { name: 'Preview' }).click()
+
+    await expect(page.locator('iframe[title="Preview"]')).toBeVisible()
+    await expect(page.locator('.ab4-preview-bar').getByRole('button', { name: /Download/ })).toHaveCount(0)
   })
 
   test('says so when the search matches nothing', async ({ page }) => {

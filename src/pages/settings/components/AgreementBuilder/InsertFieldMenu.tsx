@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { mergeFieldToken, type AgreementMergeField } from '../../../../config/agreementMergeFields';
-import { createMergeChip } from './mergeChips';
+import { mergeFieldSnippet, mergeFieldToken, type AgreementMergeField } from '../../../../config/agreementMergeFields';
+import { createMergeChip, decorateMergeFields } from './mergeChips';
 import { MergeFieldsContext } from './mergeFieldsContext';
 
 interface InsertFieldMenuProps {
@@ -58,8 +58,19 @@ const insertAtCursor = (key: string): boolean => {
     if (!editor) return false;
 
     range.deleteContents();
-    const node = createMergeChip(key);
-    range.insertNode(node);
+    const snippet = mergeFieldSnippet(key);
+    let node: Node = createMergeChip(key);
+    if (snippet) {
+        // The field's title and description as text, then its chip.
+        const holder = document.createElement('div');
+        holder.innerHTML = decorateMergeFields(snippet);
+        const fragment = document.createDocumentFragment();
+        while (holder.firstChild) fragment.appendChild(holder.firstChild);
+        node = fragment.lastChild ?? node;
+        range.insertNode(fragment);
+    } else {
+        range.insertNode(node);
+    }
     range.setStartAfter(node);
     range.collapse(true);
     selection.removeAllRanges();
@@ -134,8 +145,9 @@ export const InsertFieldMenu: React.FC<InsertFieldMenuProps> = ({ content, onApp
             editorRange.current = null;
         }
         if (!insertAtCursor(key)) {
-            if (onAppend) onAppend(content + mergeFieldToken(key));
-            else onAddNew(mergeFieldToken(key));
+            const text = mergeFieldSnippet(key) ?? mergeFieldToken(key);
+            if (onAppend) onAppend(content + text);
+            else onAddNew(text);
         }
         close();
     };
