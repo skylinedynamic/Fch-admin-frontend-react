@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 // API Services
 import { useCalendlyAvailableTimes, useCalendlyEventTypes, useCalendlyStatus } from '../../../modules/calendly/queries';
-import { bookCalendlyAppointment } from '../../../modules/calendly/services';
+import { bookCalendlyAppointment, fetchCalendlyAvailableTimes } from '../../../modules/calendly/services';
 import { queryKeys } from '../../../lib/query';
 import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
 import { availabilityCheckPayload } from '../../../modules/appointment/availability';
@@ -166,6 +166,47 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const calendlyCheckError = calendlyTimesError
         ? calendlyTimesError?.response?.data?.message || 'Calendly availability could not be checked'
         : '';
+    // Calendly's hours that day (first open start to the last one's end), to say *why* a time overlaps:
+    // inside them it is already booked (in Calendly or FCH); outside them Calendly is closed.
+    const calendlyHours = calendlyOpenTimes.length
+        ? {
+            from: calendlyOpenTimes[0].local_time.slice(11, 16),
+            to: timeAfter(calendlyOpenTimes[calendlyOpenTimes.length - 1].local_time.slice(11, 16), calendlyMinutes),
+        }
+        : null;
+    const calendlyOverlapBooked = Boolean(calendlyOverlap && calendlyHours && formData.timeStart
+        && formData.timeStart >= calendlyHours.from && formData.timeStart < calendlyHours.to);
+    // No open time that day: the next day (within a week) that has some, to pick from instead.
+    const [calendlyNextOpen, setCalendlyNextOpen] = useState(null);
+    useEffect(() => {
+        setCalendlyNextOpen(null);
+        if (!calendlyChecked || calendlyOpenTimes.length > 0 || !calendlyTimesPayload) return;
+        let active = true;
+        (async () => {
+            const [y, m, d] = formData.date.split('-').map(Number);
+            for (let i = 1; i <= 7 && active; i++) {
+                const next = new Date(y, m - 1, d + i);
+                const date = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+                try {
+                    const slots = await fetchCalendlyAvailableTimes({ ...calendlyTimesPayload, date });
+                    if (active && slots.length) {
+                        setCalendlyNextOpen({ date, slots });
+                        return;
+                    }
+                } catch {
+                    return;
+                }
+            }
+        })();
+        return () => { active = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [calendlyChecked, calendlyOpenTimes.length, formData.date, calendlyEventType?.uri, calendlyAttendee, formData.location]);
+    // Picks an open Calendly time (on that day): start, and the end Calendly books.
+    const pickCalendlyTime = (date, slot) => {
+        const value = slot.local_time.slice(11, 16);
+        setFormData(p => ({ ...p, date, timeStart: value, timeEnd: timeAfter(value, calendlyMinutes) }));
+    };
+    const timeLabel = (value) => TIME_SLOTS.find(slot => slot.value === value)?.label || tConvert(value);
     // Calendly sets the meeting's length (its event type's): the end follows the start.
     useEffect(() => {
         if (inCalendly && formData.timeStart) {
@@ -1125,13 +1166,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             }}
                                                             className="flex-grow-1" placeholder="Start" appendTo="self" />
                                                         <span className="text-muted fw-bold">to</span>
-                                                        <Dropdown value={formData.timeEnd}
-                                                            options={endSlotsAfter(TIME_SLOTS, formData.timeStart)}
-                                                            onChange={(e) => {
-                                                                setFormData(p => ({ ...p, timeEnd: e.value }));
-                                                            }}
-                                                            disabled={inCalendly}
-                                                            className={`flex-grow-1 ${formErrors.duration_minutes ? 'p-invalid' : ''}`} placeholder="End" appendTo="self" />
+                                                        {inCalendly ? (
+                                                            // Calendly sets the length: the end is shown, not picked.
+                                                            <input type="text" readOnly aria-label="End"
+                                                                className="form-control flex-grow-1 calendly-end-time"
+                                                                style={{ minWidth: 0, flex: '1 1 0' }}
+                                                                value={timeLabel(formData.timeEnd)} />
+                                                        ) : (
+                                                            <Dropdown value={formData.timeEnd}
+                                                                options={endSlotsAfter(TIME_SLOTS, formData.timeStart)}
+                                                                onChange={(e) => {
+                                                                    setFormData(p => ({ ...p, timeEnd: e.value }));
+                                                                }}
+                                                                className={`flex-grow-1 ${formErrors.duration_minutes ? 'p-invalid' : ''}`} placeholder="End" appendTo="self" />
+                                                        )}
                                                     </div>
                                                     {inCalendly && !timeSlotError && calendlyEventType && (
                                                         <div className="text-muted fs-11 mt-1">Calendly books {calendlyMinutes} min ({calendlyEventType.name}).</div>
@@ -1185,22 +1233,36 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             <span className="badge bg-danger text-white fs-10 px-2 py-1">NOT AVAILABLE</span>
                                                         </div>
                                                         <span className="fs-12 text-muted d-block mt-1">
-                                                            Your selected <span className="fw-bold">{tConvert(formData.timeStart)} - {tConvert(formData.timeEnd)}</span> on <span className="fw-bold">{formData.date}</span> overlaps in Calendly - it is booked or outside the Calendly hours.
-                                                            {calendlyOpenTimes.length === 0 && <> Calendly has <span className="fw-bold">no open times</span> on this day - pick another day.</>}
+                                                            Your selected <span className="fw-bold">{tConvert(formData.timeStart)} - {tConvert(formData.timeEnd)}</span> on <span className="fw-bold">{formData.date}</span>{' '}
+                                                            {calendlyOverlapBooked
+                                                                ? <>is <span className="fw-bold">already booked</span> - another meeting (in Calendly or FCH) is at that time.</>
+                                                                : calendlyHours
+                                                                    ? <>is <span className="fw-bold">outside Calendly&apos;s hours</span> that day (<span className="fw-bold">{tConvert(calendlyHours.from)} - {tConvert(calendlyHours.to)}</span>).</>
+                                                                    : <>has <span className="fw-bold">no open time in Calendly</span> - Calendly&apos;s hours are over or it is closed that day.</>}
                                                         </span>
                                                         {calendlyOpenTimes.length > 0 && (
                                                             <div className="mt-2">
                                                                 <span className="fs-12 text-muted d-block mb-1">Open times on {formData.date}:</span>
                                                                 <div className="d-flex flex-wrap gap-1">
-                                                                    {calendlyOpenTimes.map(slot => {
-                                                                        const value = slot.local_time.slice(11, 16);
-                                                                        return (
-                                                                            <button key={slot.start_time} type="button" className="btn btn-sm btn-outline-primary py-0 px-2 fs-11"
-                                                                                onClick={() => setFormData(p => ({ ...p, timeStart: value, timeEnd: timeAfter(value, calendlyMinutes) }))}>
-                                                                                {slot.label}
-                                                                            </button>
-                                                                        );
-                                                                    })}
+                                                                    {calendlyOpenTimes.map(slot => (
+                                                                        <button key={slot.start_time} type="button" className="btn btn-sm btn-outline-primary py-0 px-2 fs-11"
+                                                                            onClick={() => pickCalendlyTime(formData.date, slot)}>
+                                                                            {slot.label}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {calendlyOpenTimes.length === 0 && calendlyNextOpen && (
+                                                            <div className="mt-2 calendly-next-open">
+                                                                <span className="fs-12 text-muted d-block mb-1">Next open day - <span className="fw-bold">{calendlyNextOpen.date}</span>:</span>
+                                                                <div className="d-flex flex-wrap gap-1">
+                                                                    {calendlyNextOpen.slots.map(slot => (
+                                                                        <button key={slot.start_time} type="button" className="btn btn-sm btn-outline-primary py-0 px-2 fs-11"
+                                                                            onClick={() => pickCalendlyTime(calendlyNextOpen.date, slot)}>
+                                                                            {slot.label}
+                                                                        </button>
+                                                                    ))}
                                                                 </div>
                                                             </div>
                                                         )}

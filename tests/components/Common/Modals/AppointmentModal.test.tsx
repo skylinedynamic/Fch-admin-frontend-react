@@ -477,7 +477,8 @@ describe('AppointmentModal - booking in Calendly from Add Appointment', () => {
       return found
     })
     expect(alert).toHaveTextContent('Calendly Overlap')
-    expect(alert).toHaveTextContent('9:00 AM - 9:30 AM on 2999-06-15 overlaps in Calendly')
+    // Calendly is open 10:00 - 10:30 that day: 9:00 is outside its hours.
+    expect(alert).toHaveTextContent("9:00 AM - 9:30 AM on 2999-06-15 is outside Calendly's hours that day (10:00 AM - 10:30 AM)")
     expect(within(alert).getByRole('button', { name: '10:00 AM' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /confirm appointment/i })).toBeDisabled()
 
@@ -490,28 +491,66 @@ describe('AppointmentModal - booking in Calendly from Add Appointment', () => {
     expect(book!.bodies[0].start_time).toBe('2999-06-15 10:00:00')
   })
 
-  it('a day with no open times in Calendly says so', async () => {
-    const { user } = await add({})
-    api('post', '/common/calendly/available-times', { status: true, data: [] })
+  // Within Calendly's hours but not offered: another meeting is there - no duplicate is booked.
+  it('a time inside Calendly hours that is taken says it is already booked', async () => {
+    const { user, book } = await add({})
+    const EIGHT_THIRTY = { start_time: '2999-06-15T13:30:00Z', local_time: '2999-06-15 08:30:00', label: '8:30 AM' }
+    api('post', '/common/calendly/available-times', { status: true, data: [EIGHT_THIRTY, TEN] })
 
     await pickJane(user)
     await user.click(await screen.findByLabelText(/sync with calendly/i))
 
-    expect(await screen.findByText(/no open times/i)).toBeInTheDocument()
+    const alert = await waitFor(() => {
+      const found = document.querySelector('.calendly-overlap') as HTMLElement | null
+      if (!found) throw new Error('no overlap alert')
+      return found
+    })
+    expect(alert).toHaveTextContent('9:00 AM - 9:30 AM on 2999-06-15 is already booked')
     expect(screen.getByRole('button', { name: /confirm appointment/i })).toBeDisabled()
+    expect(book!.calls).toBe(0)
   })
 
-  it("the end time follows the Calendly event type's length and cannot be changed", async () => {
+  it('a day with no open times in Calendly offers the next open day, and picking one moves the date', async () => {
+    const { user, book } = await add({})
+    const NEXT_DAY = { start_time: '2999-06-16T14:00:00Z', local_time: '2999-06-16 09:30:00', label: '9:30 AM' }
+    server.use(http.post('*/common/calendly/available-times', async ({ request }) => {
+      const body = (await request.json()) as { date: string }
+      return HttpResponse.json({ status: true, data: body.date === '2999-06-16' ? [NEXT_DAY] : [] })
+    }))
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+
+    expect(await screen.findByText(/no open time in calendly/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /confirm appointment/i })).toBeDisabled()
+    const next = await waitFor(() => {
+      const found = document.querySelector('.calendly-next-open') as HTMLElement | null
+      if (!found) throw new Error('no next open day')
+      return found
+    })
+    expect(next).toHaveTextContent('Next open day - 2999-06-16')
+
+    await user.click(within(next).getByRole('button', { name: '9:30 AM' }))
+    await waitFor(() => expect(document.querySelector('.calendly-overlap')).not.toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+
+    await waitFor(() => expect(book!.calls).toBe(1))
+    expect(book!.bodies[0].start_time).toBe('2999-06-16 09:30:00')
+  })
+
+  it("the end time follows the Calendly event type's length and is shown, not picked", async () => {
     const { user } = await add({})
     api('get', '/common/calendly/event-types', { status: true, data: [{ ...EVENT_TYPE, name: 'Long call', duration: 60 }] })
 
     await user.click(await screen.findByLabelText(/sync with calendly/i))
 
     expect(await screen.findByText('Calendly books 60 min (Long call).')).toBeInTheDocument()
-    const [start, end] = Array.from(document.querySelectorAll('.time-slot-container .p-dropdown'))
-    expect(end).toHaveClass('p-disabled')
-    const startTime = start.querySelector('.p-dropdown-label')?.textContent
-    await waitFor(() => expect(end.querySelector('.p-dropdown-label')?.textContent).not.toBe(startTime))
+    // A plain read-only field, not a greyed-out dropdown.
+    const end = screen.getByLabelText('End') as HTMLInputElement
+    expect(end).toHaveAttribute('readonly')
+    expect(document.querySelectorAll('.time-slot-container .p-dropdown')).toHaveLength(1)
+    await waitFor(() => expect(end.value).toBe('10:00 AM'))
   })
 
   // Everyone books into their own Calendly, so everyone picks who they invite.

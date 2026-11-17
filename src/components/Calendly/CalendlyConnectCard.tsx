@@ -7,6 +7,7 @@ import { useCalendlyStatus } from '../../modules/calendly/queries'
 import { connectCalendly, disconnectCalendly, syncCalendly } from '../../modules/calendly/services'
 import { settingsPath } from '../../config/settingsSections'
 import ConfirmationModal from '../Common/Modals/ConfirmationModal'
+import calendlyLogo from '../../../assets/images/integrations/calendly.svg'
 
 type Props = {
   /** Calendly meetings were brought in - reload the calendar. */
@@ -116,7 +117,7 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
     <div className="card mb-3 calendly-card">
       <div className="card-body">
         <div className="d-flex align-items-center mb-2">
-          <i className="ri-calendar-event-line fs-18 me-2 text-primary" aria-hidden="true"></i>
+          <img src={calendlyLogo} alt="" width={20} height={20} className="me-2 flex-shrink-0" aria-hidden="true" />
           <h6 className="mb-0 flex-grow-1">Calendly</h6>
           {connected && <span className="badge bg-success-subtle text-success">Connected</span>}
           {!connected && status.needs_reconnect && <span className="badge bg-warning-subtle text-warning">Expired</span>}

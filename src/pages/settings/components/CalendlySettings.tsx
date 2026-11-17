@@ -7,6 +7,7 @@ import { useCalendlySettings } from '../../../modules/calendly/queries'
 import { saveCalendlySettings } from '../../../modules/calendly/services'
 import type { CalendlySettingsData } from '../../../modules/calendly/types'
 import { useConfigPartnerId } from '../../../modules/settings/configPartner'
+import calendlyLogo from '../../../../assets/images/integrations/calendly.svg'
 
 type ApiError = { response?: { data?: { message?: string; errors?: Record<string, string[] | string> } } }
 
@@ -109,8 +110,8 @@ export default function CalendlySettings() {
     <div className="card">
       <div className="card-header d-flex align-items-center gap-3 bg-white border-bottom py-3">
         <div className="avatar-sm flex-shrink-0">
-          <div className="avatar-title bg-primary-subtle text-primary rounded fs-20">
-            <i className="ri-calendar-event-line"></i>
+          <div className="avatar-title bg-primary-subtle rounded">
+            <img src={calendlyLogo} alt="" width={22} height={22} aria-hidden="true" />
           </div>
         </div>
         <div className="flex-grow-1">
