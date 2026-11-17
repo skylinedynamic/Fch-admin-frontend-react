@@ -109,7 +109,8 @@ describe('Owner Summary page', () => {
 
     expect(screen.getByText(/This month \(1 – 30 Nov 2026\)/)).toBeInTheDocument()
     expect(screen.getByText(/compared with 1 – 31 Oct 2026/)).toBeInTheDocument()
-    expect(screen.getByText('FCH owner only')).toBeInTheDocument()
+    // No "FCH owner only" badge beside the title (removed with the Business Insights rename).
+    expect(screen.queryByText('FCH owner only')).not.toBeInTheDocument()
   })
 
   describe('loading', () => {
