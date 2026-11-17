@@ -646,6 +646,34 @@ describe('FundingApplicationDetails — closing with a commission', () => {
     expect(mutations.saveCommission).toHaveBeenCalledWith({ funding_application_id: 80, total_commission: 10, admin_commission: 70, partner_commission: 30 })
   })
 
+  describe('a partner with no commission set', () => {
+    const unset = { ...closable, partner_id: 7, partner_default_commission: null, partner_commission_setup: { tiers: [], deal_position: 1, funded_deal_count: 0 } }
+
+    it("links to the partner's Commissions tab", async () => {
+      detail.application = { ...unset }
+      renderWithProviders(<FundingApplicationDetails />)
+
+      await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
+      await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
+
+      const panel = await screen.findByRole('region', { name: 'Partner Commission' })
+      expect(within(panel).getByRole('link', { name: /set partner commissions/i })).toHaveAttribute('href', '/partners/7?tab=commissions')
+    })
+
+    it('has no link without the "update commission" permission', async () => {
+      detail.application = { ...unset }
+      useAuthStore.setState({ user: { ...hostWithRights, permissions: ['update funding application', 'view commission'] } as never })
+      renderWithProviders(<FundingApplicationDetails />)
+
+      await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
+      await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
+
+      const panel = await screen.findByRole('region', { name: 'Partner Commission' })
+      expect(within(panel).getByText('Not set')).toBeInTheDocument()
+      expect(within(panel).queryByRole('link', { name: /set partner commissions/i })).not.toBeInTheDocument()
+    })
+  })
+
   // Every status change is saved from a modal, which shows its own loading
   // state (Confirm & Update: "Processing..."). The card's Update Status button
   // only opens it, so it never shows one.

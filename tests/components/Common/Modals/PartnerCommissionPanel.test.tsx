@@ -45,6 +45,39 @@ describe('PartnerCommissionPanel', () => {
   })
 })
 
+// With no tier for the deal, a link to Partner profile › Commissions to set one.
+describe('PartnerCommissionPanel - Set partner commissions link', () => {
+  const HREF = '/partners/5?tab=commissions'
+
+  it("links to the partner's Commissions tab, in a new tab, when none is set", () => {
+    render(<PartnerCommissionPanel setup={{ tiers: [], deal_position: 1, funded_deal_count: 0 }} setCommissionHref={HREF} />)
+
+    const link = within(screen.getByRole('region', { name: 'Partner Commission' })).getByRole('link', { name: /set partner commissions/i })
+    expect(link).toHaveAttribute('href', HREF)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('links there too when this deal is past the last tier', () => {
+    render(<PartnerCommissionPanel setup={{ tiers: [{ min_count: 0, max_count: 5, percentage: 10 }], deal_position: 9, funded_deal_count: 8 }} setCommissionHref={HREF} />)
+
+    expect(screen.getByRole('link', { name: /set partner commissions/i })).toHaveAttribute('href', HREF)
+  })
+
+  it('has no link when a tier applies', () => {
+    render(<PartnerCommissionPanel setup={{ tiers: TIERS, deal_position: 3, funded_deal_count: 2 }} setCommissionHref={HREF} />)
+
+    expect(screen.queryByRole('link', { name: /set partner commissions/i })).not.toBeInTheDocument()
+  })
+
+  it('has no link when the user may not set commissions (no href)', () => {
+    render(<PartnerCommissionPanel setup={{ tiers: [], deal_position: 1, funded_deal_count: 0 }} />)
+
+    expect(screen.getByText('Not set')).toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+})
+
 // A Flat Amount tier is a fixed $ for the deal.
 describe('PartnerCommissionPanel - Flat Amount tier', () => {
   const MIXED = [

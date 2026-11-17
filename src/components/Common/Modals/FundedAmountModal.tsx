@@ -35,6 +35,8 @@ interface FundedAmountModalProps {
     defaultPartnerCommissionRate?: number | null;
     /** The partner's tiers and this deal's number, for the Partner Commission section (partner clients only). */
     partnerCommissionSetup?: PartnerCommissionSetup | null;
+    /** Partner profile › Commissions, linked from the section when no tier is set (users who may set one). */
+    setPartnerCommissionHref?: string | null;
     /** Total Requested Amount, shown beside the funded amount as on the page's card. */
     requestedAmount?: number;
     /** The application belongs to a partner: the success fee is split admin / partner. */
@@ -73,6 +75,7 @@ export default function FundedAmountModal({
     partnerCommissionRate = 0,
     defaultPartnerCommissionRate = null,
     partnerCommissionSetup = null,
+    setPartnerCommissionHref = null,
     requestedAmount = 0,
     showPartnerCommission = false,
     canEditCommission = false,
@@ -310,7 +313,7 @@ export default function FundedAmountModal({
                         <hr className="fam-divider" />
 
                         {/* The partner's own commission tiers, set or not */}
-                        {showPartnerCommission && partnerCommissionSetup && <PartnerCommissionPanel setup={partnerCommissionSetup} />}
+                        {showPartnerCommission && partnerCommissionSetup && <PartnerCommissionPanel setup={partnerCommissionSetup} setCommissionHref={setPartnerCommissionHref} />}
 
                         {/* Commission details */}
                         <div className={showPartnerCommission ? 'fam-panel' : ''}>

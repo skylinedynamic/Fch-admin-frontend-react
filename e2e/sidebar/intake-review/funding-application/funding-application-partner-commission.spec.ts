@@ -46,6 +46,7 @@ test.describe('Funding application › Closed (Completed) › Partner Commission
     const panel = modal.getByRole('region', { name: 'Partner Commission' })
     await expect(panel.getByTestId('partner-commission-rate')).toHaveText('20%of success fee')
     await expect(panel.getByTestId('partner-commission-deal')).toHaveText('Deal #12 · 11+ deals tier')
+    await expect(panel.getByRole('link', { name: /set partner commissions/i })).toHaveCount(0)
 
     await modal.getByLabel('Success Fee (%)').fill('10')
     await expect(modal.getByLabel('Partner Commission Rate')).toHaveValue('20')
@@ -95,6 +96,11 @@ test.describe('Funding application › Closed (Completed) › Partner Commission
     await expect(panel.getByTestId('partner-commission-deal')).toHaveText(
       'No commission is set for this partner, so the admin keeps the whole success fee.'
     )
+
+    // A link to set them: the partner's profile › Commissions, in a new tab.
+    const link = panel.getByRole('link', { name: /set partner commissions/i })
+    await expect(link).toHaveAttribute('href', '/partners/5?tab=commissions')
+    await expect(link).toHaveAttribute('target', '_blank')
 
     // Read-only: Admin 100% / Partner 0%, nothing to type.
     await modal.getByLabel('Success Fee (%)').fill('10')

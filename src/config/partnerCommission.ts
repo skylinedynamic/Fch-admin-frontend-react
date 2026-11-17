@@ -9,6 +9,9 @@
 /** The partner profile tab id. */
 export const PARTNER_COMMISSION_TAB = 'commissions';
 
+/** Partner profile › Commissions, for a link that opens a partner on the tab. */
+export const partnerCommissionPath = (partnerId: number | string) => `/partners/${partnerId}?tab=${PARTNER_COMMISSION_TAB}`;
+
 /** Seeing commission settings (as on the funding application's Commission card). */
 export const COMMISSION_VIEW_PERMISSION = 'view commission';
 

@@ -447,6 +447,24 @@
     color: var(--fam-text);
 }
 
+/* Not set: a link to Partner profile › Commissions (opens in a new tab). */
+.fam-partner__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--fam-primary);
+    text-decoration: none;
+}
+
+.fam-partner__link:hover,
+.fam-partner__link:focus-visible {
+    color: var(--fam-primary);
+    text-decoration: underline;
+}
+
 .fam-partner__rate {
     display: flex;
     flex-direction: column;

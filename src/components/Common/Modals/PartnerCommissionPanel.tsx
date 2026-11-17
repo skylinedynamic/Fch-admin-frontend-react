@@ -4,6 +4,12 @@ import { PARTNER_COMMISSION_TYPE } from '../../../config/partnerCommission'
 
 interface PartnerCommissionPanelProps {
   setup: PartnerCommissionSetup
+  /**
+   * Partner profile › Commissions, linked when no tier applies to this deal -
+   * only for a user who may set commissions. Opens in a new tab, so the
+   * modal's funded amount isn't lost.
+   */
+  setCommissionHref?: string | null
 }
 
 const formatRate = (value: number | string | null | undefined) => `${+Number(value ?? 0).toFixed(2)}%`
@@ -24,7 +30,7 @@ const ADMIN_KEEPS_IT = 'so the admin keeps the whole success fee.'
  * falls in, which sets the Partner Commission Rate - or "Not set", when the
  * admin keeps the whole success fee. A Flat Amount tier shows its $.
  */
-export default function PartnerCommissionPanel({ setup }: PartnerCommissionPanelProps) {
+export default function PartnerCommissionPanel({ setup, setCommissionHref = null }: PartnerCommissionPanelProps) {
   const { tiers, deal_position: position } = setup
   const index = tierForPosition(tiers, position)
   const tier = index >= 0 ? tiers[index] : null
@@ -42,6 +48,11 @@ export default function PartnerCommissionPanel({ setup }: PartnerCommissionPanel
       <div className="fam-partner__text">
         <h6 className="fam-partner__title" id="fam-partner-title">Partner Commission</h6>
         <p className="fam-partner__detail" data-testid="partner-commission-deal">{detail}</p>
+        {!tier && setCommissionHref && (
+          <a className="fam-partner__link" href={setCommissionHref} target="_blank" rel="noopener noreferrer">
+            Set partner commissions <i className="ri-external-link-line" aria-hidden="true"></i>
+          </a>
+        )}
       </div>
       {tier ? (
         <div className="fam-partner__rate" data-testid="partner-commission-rate">

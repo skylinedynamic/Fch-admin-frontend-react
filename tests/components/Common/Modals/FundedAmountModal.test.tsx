@@ -426,6 +426,15 @@ describe('FundedAmountModal - commission ranges', () => {
       expect(within(screen.getByRole('region', { name: 'Partner Commission' })).getByText('Not set')).toBeInTheDocument()
     })
 
+    it('links to set partner commissions when none is set', () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={{ ...setup, tiers: [] }} setPartnerCommissionHref="/partners/5?tab=commissions" />
+      )
+
+      const panel = screen.getByRole('region', { name: 'Partner Commission' })
+      expect(within(panel).getByRole('link', { name: /set partner commissions/i })).toHaveAttribute('href', '/partners/5?tab=commissions')
+    })
+
     it('is not shown for a host client, which has no partner split', () => {
       renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission partnerCommissionSetup={null} />)
 
