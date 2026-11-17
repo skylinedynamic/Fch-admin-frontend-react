@@ -5161,7 +5161,7 @@
   color: #64748b;
 }
 .ab4-templates__saved { position: relative; display: flex; }
-.ab4-templates__saved .ab4-templates__card { width: 100%; padding-right: 44px; }
+.ab4-templates__saved .ab4-templates__card { width: 100%; padding-right: 76px; }
 .ab4-templates__card:disabled { cursor: progress; opacity: .7; }
 .ab4-templates__delete {
   position: absolute;
@@ -5182,3 +5182,85 @@
 .ab4-templates__delete:hover,
 .ab4-templates__delete:focus-visible { background: #fef2f2; color: #dc2626; outline: none; }
 .ab4-save-as-template-btn { display: inline-flex; align-items: center; }
+
+/* ── Editing a saved template: Rename beside Delete, the inline rename form, and new / replace in Save as Template ── */
+.ab4-templates__rename {
+  position: absolute;
+  top: 8px;
+  right: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 15px;
+  cursor: pointer;
+}
+.ab4-templates__rename:hover,
+.ab4-templates__rename:focus-visible { background: rgba(var(--vz-primary-rgb, 42, 95, 193), .1); color: var(--vz-primary, #2a5fc1); outline: none; }
+.ab4-templates__rename-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(var(--vz-primary-rgb, 42, 95, 193), .55);
+  border-radius: 4px;
+  background: #fff;
+}
+.ab4-templates__rename-form .form-control { height: 37.5px; border-radius: 4px; font-size: 13px; }
+.ab4-templates__rename-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.ab4-templates__rename-actions .btn { border-radius: 4px; font-weight: 600; }
+.ab4-save-template__modes { display: grid; gap: 8px; margin-bottom: 14px; }
+.ab4-save-template__mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+.ab4-save-template__mode:has(input:checked) { border-color: rgba(var(--vz-primary-rgb, 42, 95, 193), .55); background: rgba(var(--vz-primary-rgb, 42, 95, 193), .05); }
+.ab4-save-template__mode input { margin-top: 3px; }
+.ab4-save-template__mode.is-disabled { cursor: not-allowed; opacity: .6; }
+.ab4-save-template__hint { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; color: #64748b; }
+/* Template to replace: the app's PrimeReact dropdown, its list inside the dialog. */
+.ab4-save-template .p-dropdown { position: relative; display: flex; align-items: center; width: 100%; height: 37.5px; border: 1px solid #ced4da; border-radius: 4px; background: #fff; }
+.ab4-save-template .p-dropdown:not(.p-disabled):hover,
+.ab4-save-template .p-dropdown.p-focus { border-color: rgba(var(--vz-primary-rgb, 42, 95, 193), .55); box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb, 42, 95, 193), .12); }
+.ab4-save-template .p-dropdown.p-invalid { border-color: var(--vz-danger, #dc2626); }
+.ab4-save-template .p-dropdown-label { flex: 1; min-width: 0; padding: 0 12px; font-size: 13px; line-height: 35.5px; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab4-save-template .p-dropdown-label.p-placeholder { color: #94a3b8; }
+.ab4-save-template .p-dropdown-trigger { width: 36px; color: #64748b; }
+.ab4-save-template .p-dropdown-panel { left: 0 !important; top: calc(100% + 4px) !important; width: 100%; min-width: 100%; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; box-shadow: 0 12px 28px -12px rgba(15, 23, 42, .3); overflow: hidden; }
+.ab4-save-template .p-dropdown-items { margin: 0; padding: 4px; list-style: none; }
+.ab4-save-template .p-dropdown-item { padding: 8px 10px; border-radius: 4px; font-size: 13px; color: #334155; cursor: pointer; }
+.ab4-save-template .p-dropdown-item:not(.p-highlight):hover { background: #f1f5f9; }
+.ab4-save-template .p-dropdown-item.p-highlight { background: rgba(var(--vz-primary-rgb, 42, 95, 193), .1); color: var(--vz-primary, #2a5fc1); font-weight: 600; }
+
+/* The editor pages blocks exactly as the page planner plans them (pagination.ts,
+   shared with the preview and signing): the gap between two blocks is the larger
+   of their margins, and a page's first block has no top margin. The insert line
+   between blocks was a flex box, which stops margins collapsing, so both margins
+   showed and a page's text ran into its bottom padding. */
+.ab4-iz { display: block; }
+.ab4-page-first > div > .ab4-block { margin-top: 0; }
+
+/* A block that runs over pages is shown in slices. They clip with clip-path,
+   not overflow: the top and bottom edges stay exact (the text above and below a
+   slice stays hidden), while the sides and - on the first slice - the space
+   above stay open, so the block's toolbar (top: -14px) is not cut off. */
+.ab4-block-clip-window { overflow: visible; clip-path: inset(0 -40px 0 -40px); }
+.ab4-block-clip-window--head { clip-path: inset(-32px -40px 0 -40px); }
+/* clip-path makes a slice its own stacking context, so its toolbar's z-index (30)
+   only counts inside it: lift the first slice while its block is hovered or
+   selected, as a whole block's toolbar sits above the gaps' hover areas (10). */
+.ab4-block-clip-window--head:has(.ab4-block:hover),
+.ab4-block-clip-window--head:has(.ab4-block--sel) { z-index: 30; }

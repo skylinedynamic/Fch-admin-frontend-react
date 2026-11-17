@@ -98,3 +98,9 @@ export interface SaveAgreementAsTemplatePayload {
 
 /** The longest template name the API accepts (fch-api AgreementSavedTemplate::NAME_MAX). */
 export const SAVED_AGREEMENT_TEMPLATE_NAME_MAX = 100
+
+/** Editing a saved template: a new name, the agreement now on the page, or both. Its type never changes. */
+export interface UpdateSavedAgreementTemplatePayload {
+  name?: string
+  template_json?: string
+}

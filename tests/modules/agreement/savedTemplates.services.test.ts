@@ -6,6 +6,7 @@ import {
   fetchSavedAgreementTemplate,
   saveAgreementAsTemplate,
   deleteSavedAgreementTemplate,
+  updateSavedAgreementTemplate,
 } from '../../../src/modules/agreement/services'
 
 /**
@@ -82,5 +83,20 @@ describe('deleteSavedAgreementTemplate', () => {
 
     await deleteSavedAgreementTemplate(4)
     expect(deleted).toBe(true)
+  })
+})
+
+describe('updateSavedAgreementTemplate', () => {
+  it('PUTs a new name and/or the agreement, with partner_id for another partner', async () => {
+    let body: Record<string, unknown> | null = null
+    server.use(http.put('*/common/agreement-templates/saved/4', async ({ request }) => {
+      body = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({ status: true, message: 'Template updated', data: { ...TEMPLATE, name: 'Long form' } })
+    }))
+
+    const res = await updateSavedAgreementTemplate(4, { name: 'Long form' }, 7)
+
+    expect(body).toEqual({ name: 'Long form', partner_id: 7 })
+    expect(res.data?.name).toBe('Long form')
   })
 })

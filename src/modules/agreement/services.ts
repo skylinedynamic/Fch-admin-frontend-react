@@ -11,6 +11,7 @@ import {
   SetAgreementRequiredPayload,
   SavedAgreementTemplate,
   SaveAgreementAsTemplatePayload,
+  UpdateSavedAgreementTemplatePayload,
 } from './types'
 
 /**
@@ -201,5 +202,15 @@ export async function saveAgreementAsTemplate(
 /** Delete a saved template. */
 export async function deleteSavedAgreementTemplate(id: number, partnerId?: number): Promise<ApiResponse<null>> {
   const res = await apiClient.delete(`/common/agreement-templates/saved/${id}`, { params: forPartner(partnerId) })
+  return res.data
+}
+
+/** Rename a saved template, replace its agreement (Save as Template › Replace), or both. */
+export async function updateSavedAgreementTemplate(
+  id: number,
+  payload: UpdateSavedAgreementTemplatePayload,
+  partnerId?: number
+): Promise<ApiResponse<SavedAgreementTemplate>> {
+  const res = await apiClient.put(`/common/agreement-templates/saved/${id}`, { ...payload, ...forPartner(partnerId) })
   return res.data
 }

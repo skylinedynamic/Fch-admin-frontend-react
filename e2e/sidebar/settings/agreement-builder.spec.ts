@@ -27,13 +27,17 @@ const PLAN_FIELDS: Record<'partner' | 'borrower', { key: string; label: string; 
   ],
 }
 
-async function openBuilder(page: Page, type: 'partner' | 'borrower' = 'partner'): Promise<{ saved: () => Saved }> {
+/**
+ * Opens the builder on the partner or borrower agreement - its built-in starter,
+ * or `savedJson` (a saved agreement's template_json) when given.
+ */
+async function openBuilder(page: Page, type: 'partner' | 'borrower' = 'partner', savedJson?: string): Promise<{ saved: () => Saved }> {
   await page.setViewportSize({ width: 1600, height: 900 })
   await seedSession(page, { permissions: ['update payment settings', 'update partner agreement settings', 'update borrower agreement settings'] })
   let saved: Saved = null
   await mockApi(page, [
     { method: 'GET', match: '/common/agreement-templates', body: ok([{ id: 8, slug: 'partner', is_active: true }, { id: 9, slug: 'borrower', is_active: true }]) },
-    { method: 'POST', match: '/common/agreement-templates/show', body: ok(null) },
+    { method: 'POST', match: '/common/agreement-templates/show', body: ok(savedJson ? { id: 8, slug: type, template_json: savedJson } : null) },
     { method: 'POST', match: /\/common\/app-configurations$/, body: ok({ agreement_signing_enabled: '1' }) },
     // Templates › Your templates: none saved (not the agreement list above, whose path it shares).
     { method: 'GET', match: '/common/agreement-templates/saved', body: ok([]) },
@@ -51,7 +55,9 @@ async function openBuilder(page: Page, type: 'partner' | 'borrower' = 'partner')
   await page.locator('.settings-page-wrapper span.fw-medium').getByText('Agreement Builder', { exact: true }).click()
   await page.getByRole('button', { name: /Edit Agreement/ }).nth(type === 'partner' ? 0 : 1).click()
   await expect(page.getByRole('dialog', { name: type === 'partner' ? 'Partner agreement' : 'Borrower agreement' })).toBeVisible()
-  await expect(page.getByText(type === 'partner' ? 'MASTER PARTNER AGREEMENT' : 'BUSINESS CREDIT BUILDER & FUNDING PROGRAM', { exact: true })).toBeVisible()
+  if (!savedJson) {
+    await expect(page.getByText(type === 'partner' ? 'MASTER PARTNER AGREEMENT' : 'BUSINESS CREDIT BUILDER & FUNDING PROGRAM', { exact: true })).toBeVisible()
+  }
   return { saved: () => saved }
 }
 
@@ -401,5 +407,147 @@ test.describe('Settings - Agreement Builder', () => {
 
     await expect(picker).toHaveCount(0)
     await expect(page.getByText('MASTER PARTNER AGREEMENT', { exact: true })).toBeVisible()
+  })
+  test('renames a saved template in Templates and replaces it from Save as Template', async ({ page }) => {
+    await openBuilder(page)
+    // fch-api /common/agreement-templates/saved with one saved template, kept in memory.
+    const store = [{ id: 1, slug: 'partner', name: 'Master, short form', template_json: '{"blocks":[],"pagePad":80,"docBg":"#ffffff"}', created_at: '2026-11-17T10:00:00Z' }]
+    const puts: Record<string, string>[] = []
+    await page.route(/\/common\/agreement-templates\/saved(\?.*)?$/, async (route) =>
+      route.fulfill({ json: ok(store.map(({ template_json: _json, ...t }) => t)) }))
+    await page.route(/\/common\/agreement-templates\/saved\/\d+(\?.*)?$/, async (route) => {
+      if (route.request().method() === 'PUT') {
+        const body = route.request().postDataJSON() as Record<string, string>
+        puts.push(body)
+        Object.assign(store[0], body)
+        return route.fulfill({ json: ok({ ...store[0], template_json: undefined }, 'Template updated') })
+      }
+      return route.fulfill({ json: ok(store[0]) })
+    })
+    const toolbar = page.locator('.ab4-toolbar')
+
+    // Rename it in Templates.
+    await toolbar.getByRole('button', { name: 'Templates' }).click()
+    const picker = page.getByRole('dialog', { name: 'Start from a template' })
+    await picker.getByRole('button', { name: 'Rename template Master, short form' }).click()
+    const name = picker.getByLabel('Template name')
+    await expect(name).toBeFocused()
+    await name.fill('Master, two pages')
+    await name.press('Enter')
+    await expect(picker.getByRole('button', { name: /^Master, two pages/ })).toBeVisible()
+    expect(puts[0]).toEqual({ name: 'Master, two pages' })
+    await picker.getByRole('button', { name: 'Close' }).click()
+
+    // Replace its content with the agreement on the page; it keeps its new name.
+    await toolbar.getByRole('button', { name: 'Save as Template' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Save as template' })
+    await dialog.getByRole('radio', { name: /Replace an existing template/ }).check()
+    // The app's own dropdown: its list opens inside the dialog.
+    // (PrimeReact keeps a 1px select for screen readers inside .p-hidden-accessible.)
+    await expect(dialog.locator(':not(.p-hidden-accessible) > select')).toHaveCount(0)
+    await dialog.locator('.p-dropdown', { hasText: 'Choose a template' }).click()
+    await dialog.locator('.p-dropdown-panel .p-dropdown-item', { hasText: 'Master, two pages' }).click()
+    await expect(dialog.locator('.p-dropdown')).toContainText('Master, two pages')
+    await dialog.getByRole('button', { name: 'Replace Template' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(Object.keys(puts[1])).toEqual(['template_json'])
+    expect(puts[1].template_json).toContain('MASTER PARTNER AGREEMENT')
+  })
+  // Defect: the editor drew blocks taller than the page planner planned them
+  // (margins didn't collapse across the insert lines, and a page's first block
+  // kept its top margin), so text ran into the bottom padding and was clipped.
+  test("keeps every page's bottom padding clear in the editor", async ({ page }) => {
+    await openBuilder(page)
+    const pages = page.locator('.ab4-pages-container .ab4-doc')
+    await expect.poll(() => pages.count()).toBeGreaterThan(2)
+    // Wait until the pages stop moving (pagination settles in a few passes).
+    let before = ''
+    await expect.poll(async () => {
+      const now = String(await pages.count()) + ':' + JSON.stringify(await pages.first().boundingBox())
+      const settled = now === before
+      before = now
+      await page.waitForTimeout(400)
+      return settled
+    }).toBe(true)
+
+    const report = await pages.evaluateAll((docs) => docs.map((doc, i) => {
+      const d = doc as HTMLElement
+      const box = d.getBoundingClientRect()
+      const scale = box.height / d.offsetHeight
+      const padBot = parseFloat(getComputedStyle(d).paddingBottom)
+      const kids = Array.from(d.children).filter((c) => !c.classList.contains('ab4-iz')) as HTMLElement[]
+      const last = kids[kids.length - 1]
+      const firstBlock = kids[0]?.querySelector(':scope > div > .ab4-block') as HTMLElement | null
+      return {
+        page: i + 1,
+        clearAtBottom: last ? Math.round((box.bottom - last.getBoundingClientRect().bottom) / scale) : padBot,
+        padBot,
+        firstMarginTop: firstBlock ? getComputedStyle(firstBlock).marginTop : '0px',
+      }
+    }))
+
+    for (const p of report) {
+      expect(p.clearAtBottom, `page ${p.page} keeps its bottom padding`).toBeGreaterThanOrEqual(p.padBot - 1)
+      expect(p.firstMarginTop, `page ${p.page}'s first block has no top margin`).toBe('0px')
+    }
+  })
+  // An agreement pasted in as one long text block runs over several pages.
+  const LONG_BLOCK_JSON = JSON.stringify({
+    blocks: [{
+      id: 'long-1', type: 'text', paletteType: 'text', fontSize: 14, lineHeight: 1.7, marginTop: 0, marginBottom: 8,
+      content: '<p><b>Funding Provider Partner Agreement</b></p>' + Array.from({ length: 60 }, (_, n) =>
+        `<p>Clause ${n + 1}. The Funding Provider agrees to review each Qualified Application within the agreed service levels and to report its decision through the platform.</p>`).join(''),
+    }],
+    pagePad: 80,
+    docBg: '#ffffff',
+  })
+
+  // Defect: a block that runs over pages sits in clip windows that cut off
+  // anything outside them - its toolbar (above the block) showed as a sliver.
+  test("shows the toolbar of a block that runs over several pages", async ({ page }) => {
+    await openBuilder(page, 'partner', LONG_BLOCK_JSON)
+    const head = page.locator('.ab4-block-clip-window').first()
+    await expect(head).toBeVisible()
+    await page.getByText('Funding Provider Partner Agreement').first().click()
+
+    const ctrl = head.locator('.ab4-ctrl').first()
+    await expect(ctrl).toBeVisible()
+    const box = (await ctrl.boundingBox())!
+    // The whole toolbar can be seen and clicked: the point at its top edge is the toolbar itself.
+    const hit = await page.evaluate(({ x, y }) => {
+      const el = document.elementFromPoint(x, y)
+      return !!el?.closest('.ab4-ctrl')
+    }, { x: box.x + box.width / 2, y: box.y + 2 })
+    expect(hit).toBe(true)
+    await expect(ctrl.getByRole('button', { name: /delete/i }).first()).toBeVisible()
+  })
+
+  // Defect: the + menu near the bottom of a page opened downwards, where the
+  // page cut it off, so most blocks (Page Break among them) couldn't be picked.
+  test('the + menu near the bottom of a page opens where it fits, and adds a page break there', async ({ page }) => {
+    const { saved } = await openBuilder(page)
+    const firstPage = page.locator('.ab4-pages-container .ab4-doc').first()
+    // Let pagination settle, then take the last gap on page 1.
+    await page.waitForTimeout(1500)
+    const gaps = firstPage.locator(':scope > .ab4-iz')
+    const lastGap = gaps.last()
+    // A gap has no height of its own: bring it to the middle of the window.
+    await lastGap.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    await page.waitForTimeout(200)
+    const gapBox = (await lastGap.boundingBox())!
+    await page.mouse.move(gapBox.x + gapBox.width / 2, gapBox.y)
+    await lastGap.locator('.ab4-iz-btn').click()
+
+    const picker = lastGap.locator('.ab4-iz-picker')
+    await expect(picker).toBeVisible()
+    const pageBox = (await firstPage.boundingBox())!
+    const pickerBox = (await picker.boundingBox())!
+    expect(pickerBox.y).toBeGreaterThanOrEqual(pageBox.y)
+    expect(pickerBox.y + pickerBox.height).toBeLessThanOrEqual(pageBox.y + pageBox.height)
+
+    await picker.getByRole('button', { name: 'Page Break' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
+    await expect.poll(saved).not.toBeNull()
+    expect(blockTypes(saved())).toContain('page-break')
   })
 })

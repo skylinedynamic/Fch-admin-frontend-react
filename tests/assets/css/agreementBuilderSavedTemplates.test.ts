@@ -54,13 +54,45 @@ describe('agreement-builder.css - Your templates', () => {
     expect(rule).toMatch(/border-radius\s*:\s*4px/)
   })
 
-  it('stretches a saved card to its cell, leaving room for the delete button', () => {
+  it('stretches a saved card to its cell, leaving room for the rename and delete buttons', () => {
     const rule = ruleFor('.ab4-templates__saved .ab4-templates__card')
     expect(rule).toMatch(/width\s*:\s*100%/)
-    expect(rule).toMatch(/padding-right\s*:\s*44px/)
+    expect(rule).toMatch(/padding-right\s*:\s*76px/)
   })
 
   it('turns the delete button red on hover', () => {
     expect(ruleFor('.ab4-templates__delete:hover')).toMatch(/color\s*:\s*#dc2626/)
+  })
+})
+
+describe('agreement-builder.css - editing a saved template', () => {
+  it("puts Rename beside Delete in the card's corner, with room left in the card", () => {
+    const rule = ruleFor('.ab4-templates__rename')
+    expect(rule).toMatch(/position\s*:\s*absolute/)
+    expect(rule).toMatch(/top\s*:\s*8px/)
+    expect(rule).toMatch(/right\s*:\s*40px/)
+    expect(ruleFor('.ab4-templates__saved .ab4-templates__card')).toMatch(/padding-right\s*:\s*76px/)
+  })
+
+  it('gives the rename form a 37.5px field with 4px corners', () => {
+    const rule = ruleFor('.ab4-templates__rename-form .form-control')
+    expect(rule).toMatch(/height\s*:\s*37\.5px/)
+    expect(rule).toMatch(/border-radius\s*:\s*4px/)
+  })
+
+  it('stacks the new / replace choice in the save dialog', () => {
+    const rule = ruleFor('.ab4-save-template__modes')
+    expect(rule).toMatch(/display\s*:\s*grid/)
+  })
+
+  it("styles the replace dropdown like the builder's fields: 37.5px, 4px corners, a full-width panel", () => {
+    const field = ruleFor('.ab4-save-template .p-dropdown')
+    expect(field).toMatch(/height\s*:\s*37\.5px/)
+    expect(field).toMatch(/border-radius\s*:\s*4px/)
+    expect(field).toMatch(/width\s*:\s*100%/)
+    const panel = ruleFor('.ab4-save-template .p-dropdown-panel')
+    expect(panel).toMatch(/border-radius\s*:\s*4px/)
+    expect(panel).toMatch(/width\s*:\s*100%/)
+    expect(ruleFor('.ab4-save-template .p-dropdown-item.p-highlight')).toMatch(/color\s*:\s*var\(--vz-primary/)
   })
 })

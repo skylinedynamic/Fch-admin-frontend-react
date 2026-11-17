@@ -2,11 +2,14 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 import {
+    SAVED_AGREEMENT_TEMPLATE_NAME_MAX,
     useDeleteSavedAgreementTemplate,
     useLoadSavedAgreementTemplate,
     useSavedAgreementTemplates,
+    useUpdateSavedAgreementTemplate,
     type SavedAgreementTemplate,
 } from '../../../../modules/agreement';
+import { fieldErrorFrom } from './SaveAsTemplateDialog';
 import { STARTER_TEMPLATES, type AgreementAudience, type StarterTemplate } from './starterTemplates';
 import type { AgreementTemplate } from './types';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -37,7 +40,8 @@ const parseSaved = (json: string | undefined): AgreementTemplate => {
  * "Start from a template": replaces the agreement with a starting point
  * (undoable). The partner's own saved templates (Save as Template) come first,
  * then the built-in ones. The partner agreement offers partner templates, the
- * borrower agreement borrower templates.
+ * borrower agreement borrower templates. A saved template can be renamed in
+ * place, or deleted.
  */
 export const StarterTemplatesDialog: React.FC<StarterTemplatesDialogProps> = ({ audience, onPick, onPickSaved, onClose }) => {
     const titleId = useId();
@@ -49,12 +53,16 @@ export const StarterTemplatesDialog: React.FC<StarterTemplatesDialogProps> = ({ 
     const deleteMutation = useDeleteSavedAgreementTemplate();
     const [deleting, setDeleting] = useState<SavedAgreementTemplate | null>(null);
     const [loadingId, setLoadingId] = useState<number | null>(null);
-    // The delete confirmation handles its own Escape; this dialog stays open under it.
-    const deletingRef = useRef(deleting);
-    deletingRef.current = deleting;
+    const updateMutation = useUpdateSavedAgreementTemplate();
+    const [renaming, setRenaming] = useState<{ id: number; name: string } | null>(null);
+    const [renameError, setRenameError] = useState<string | null>(null);
+    const renameErrorId = useId();
+    // The delete confirmation and a rename handle their own Escape; this dialog stays open.
+    const busyRef = useRef(false);
+    busyRef.current = !!deleting || !!renaming;
 
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !deletingRef.current) onClose(); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busyRef.current) onClose(); };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [onClose]);
@@ -69,6 +77,25 @@ export const StarterTemplatesDialog: React.FC<StarterTemplatesDialogProps> = ({ 
             toast.error('Failed to open the template');
         } finally {
             setLoadingId(null);
+        }
+    };
+
+    const startRename = (template: SavedAgreementTemplate) => { setRenaming({ id: template.id, name: template.name }); setRenameError(null); };
+    const cancelRename = () => { setRenaming(null); setRenameError(null); };
+
+    const submitRename = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!renaming || updateMutation.isPending) return;
+        const name = renaming.name.trim();
+        if (!name) return;
+        try {
+            await updateMutation.mutateAsync({ id: renaming.id, slug: audience, name });
+            toast.success('Template renamed');
+            cancelRename();
+        } catch (err) {
+            const reason = fieldErrorFrom(err);
+            if (reason) setRenameError(reason);
+            else toast.error('Failed to rename the template');
         }
     };
 
@@ -107,7 +134,30 @@ export const StarterTemplatesDialog: React.FC<StarterTemplatesDialogProps> = ({ 
                         <p className="ab4-templates__empty">No saved templates yet. Use <strong>Save as Template</strong> to keep this agreement as one.</p>
                     ) : (
                         <div className="ab4-templates__grid">
-                            {saved.map((template) => (
+                            {saved.map((template) => renaming?.id === template.id ? (
+                                <form key={template.id} className="ab4-templates__rename-form" onSubmit={submitRename} noValidate>
+                                    <input
+                                        type="text"
+                                        className={`form-control ${renameError ? 'is-invalid' : ''}`}
+                                        aria-label="Template name"
+                                        value={renaming.name}
+                                        maxLength={SAVED_AGREEMENT_TEMPLATE_NAME_MAX}
+                                        aria-invalid={renameError ? 'true' : 'false'}
+                                        aria-describedby={renameError ? renameErrorId : undefined}
+                                        autoFocus
+                                        onChange={(e) => { setRenaming({ id: template.id, name: e.target.value }); setRenameError(null); }}
+                                        onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelRename(); } }}
+                                    />
+                                    {renameError && <div id={renameErrorId} className="invalid-feedback d-block">{renameError}</div>}
+                                    <div className="ab4-templates__rename-actions">
+                                        <button type="button" className="btn btn-sm btn-light" onClick={cancelRename} disabled={updateMutation.isPending}>Cancel</button>
+                                        <button type="submit" className="btn btn-sm btn-primary" aria-label="Save name" disabled={!renaming.name.trim() || updateMutation.isPending}>
+                                            {updateMutation.isPending && <span className="spinner-border spinner-border-sm me-1" aria-hidden="true" />}
+                                            Save
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
                                 <div key={template.id} className="ab4-templates__saved">
                                     <button
                                         type="button"
@@ -123,6 +173,15 @@ export const StarterTemplatesDialog: React.FC<StarterTemplatesDialogProps> = ({ 
                                         </span>
                                         <span className="ab4-templates__name">{template.name}</span>
                                         <span className="ab4-templates__desc">{savedOn(template.created_at)}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="ab4-templates__rename"
+                                        aria-label={`Rename template ${template.name}`}
+                                        title="Rename template"
+                                        onClick={() => startRename(template)}
+                                    >
+                                        <i className="ri-pencil-line" aria-hidden="true" />
                                     </button>
                                     <button
                                         type="button"

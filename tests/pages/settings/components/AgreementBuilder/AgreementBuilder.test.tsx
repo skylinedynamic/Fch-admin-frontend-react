@@ -791,3 +791,113 @@ describe('AgreementBuilder save as template', () => {
     expect(await within(picker).findByText(/No saved templates yet/)).toBeInTheDocument()
   })
 })
+
+/**
+ * Editing a saved template: Save as Template can replace one with the agreement
+ * on the page (keeping its name), and Templates renames one in place.
+ */
+describe('AgreementBuilder editing a saved template', () => {
+  const SAVED = { id: 4, slug: 'borrower', name: 'Our short form', created_at: '2026-11-17T10:00:00Z', updated_at: '2026-11-17T10:00:00Z' }
+  const saveDialog = () => screen.getByRole('dialog', { name: 'Save as template' })
+  const picker = () => screen.getByRole('dialog', { name: 'Start from a template' })
+
+  it('replaces a saved template with the agreement on the page, keeping its name', async () => {
+    const { toast } = await import('react-toastify')
+    let body: Record<string, string> | null = null
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [SAVED] })),
+      http.put('*/common/agreement-templates/saved/4', async ({ request }) => {
+        body = (await request.json()) as Record<string, string>
+        return HttpResponse.json({ status: true, message: 'Template updated', data: SAVED })
+      }),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+    fireEvent.click(within(saveDialog()).getByRole('radio', { name: /Replace an existing template/ }))
+    // No name to type: the template keeps its own.
+    expect(within(saveDialog()).queryByLabelText(/Template name/)).not.toBeInTheDocument()
+    const replace = within(saveDialog()).getByRole('button', { name: 'Replace Template' })
+    expect(replace).toBeDisabled()
+    // The app's own dropdown, not the browser's select list; its panel opens inside the dialog.
+    // (PrimeReact keeps a hidden select for screen readers only.)
+    expect(Array.from(saveDialog().querySelectorAll('select')).filter((el) => !el.closest('.p-hidden-accessible'))).toHaveLength(0)
+    const which = saveDialog().querySelector('.p-dropdown') as HTMLElement
+    expect(which.querySelector('.p-dropdown-label')).toHaveTextContent('Choose a template')
+    expect(within(saveDialog()).getByText(/Template to replace/)).toBeInTheDocument()
+    fireEvent.click(which)
+    const option = await waitFor(() => {
+      const found = Array.from(saveDialog().querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent?.trim() === 'Our short form')
+      expect(found).toBeTruthy()
+      return found as HTMLElement
+    })
+    fireEvent.click(option)
+    expect(which.querySelector('.p-dropdown-label')).toHaveTextContent('Our short form')
+    fireEvent.click(replace)
+
+    await waitFor(() => expect(body).not.toBeNull())
+    expect(Object.keys(body!)).toEqual(['template_json'])
+    expect(body!.template_json).toContain('BUSINESS CREDIT BUILDER')
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Save as template' })).not.toBeInTheDocument())
+    expect(toast.success).toHaveBeenCalledWith('Template updated')
+  })
+
+  it('offers no replace when nothing has been saved yet', async () => {
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+
+    const replace = within(saveDialog()).getByRole('radio', { name: /Replace an existing template/ })
+    expect(await within(saveDialog()).findByText(/No saved templates to replace yet/)).toBeInTheDocument()
+    expect(replace).toBeDisabled()
+    expect(within(saveDialog()).getByRole('radio', { name: /Save as a new template/ })).toBeChecked()
+  })
+
+  it('renames a saved template in Templates', async () => {
+    let list = [SAVED]
+    let body: Record<string, string> | null = null
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: list })),
+      http.put('*/common/agreement-templates/saved/4', async ({ request }) => {
+        body = (await request.json()) as Record<string, string>
+        list = [{ ...SAVED, name: body.name }]
+        return HttpResponse.json({ status: true, message: 'Template updated', data: list[0] })
+      }),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+    fireEvent.click(await within(picker()).findByRole('button', { name: 'Rename template Our short form' }))
+    const name = within(picker()).getByLabelText('Template name')
+    expect(name).toHaveValue('Our short form')
+    fireEvent.change(name, { target: { value: 'Our long form' } })
+    fireEvent.click(within(picker()).getByRole('button', { name: 'Save name' }))
+
+    await waitFor(() => expect(body).toEqual({ name: 'Our long form' }))
+    expect(await within(picker()).findByRole('button', { name: /^Our long form/ })).toBeInTheDocument()
+    expect(within(picker()).queryByLabelText('Template name')).not.toBeInTheDocument()
+  })
+
+  it('shows why a new name was refused under it, and Escape leaves the name as it was', async () => {
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [SAVED] })),
+      http.put('*/common/agreement-templates/saved/4', () =>
+        HttpResponse.json({ message: 'The given data was invalid.', errors: { name: ['You already have a template with this name.'] } }, { status: 422 })),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+    fireEvent.click(await within(picker()).findByRole('button', { name: 'Rename template Our short form' }))
+    const name = within(picker()).getByLabelText('Template name')
+    fireEvent.change(name, { target: { value: 'Taken name' } })
+    fireEvent.submit(name)
+
+    expect(await within(picker()).findByText('You already have a template with this name.')).toBeInTheDocument()
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+
+    fireEvent.keyDown(name, { key: 'Escape' })
+    expect(within(picker()).queryByLabelText('Template name')).not.toBeInTheDocument()
+    // Escape only ends the rename: the Templates dialog stays open.
+    expect(within(picker()).getByRole('button', { name: /^Our short form/ })).toBeInTheDocument()
+  })
+})

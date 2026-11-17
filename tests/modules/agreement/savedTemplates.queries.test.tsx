@@ -8,6 +8,7 @@ import {
   useSavedAgreementTemplates,
   useSaveAgreementAsTemplate,
   useDeleteSavedAgreementTemplate,
+  useUpdateSavedAgreementTemplate,
 } from '../../../src/modules/agreement/queries'
 import { queryKeys } from '../../../src/lib/query/queryKeys'
 import { ConfigPartnerProvider } from '../../../src/modules/settings/configPartner'
@@ -78,6 +79,19 @@ describe('useDeleteSavedAgreementTemplate', () => {
 
     const { result } = renderHook(() => useDeleteSavedAgreementTemplate(), { wrapper })
     await act(() => result.current.mutateAsync({ id: 5, slug: 'borrower' }))
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.agreement.savedTemplates('borrower') })
+  })
+})
+
+describe('useUpdateSavedAgreementTemplate', () => {
+  it("refreshes the agreement type's saved templates", async () => {
+    server.use(http.put('*/common/agreement-templates/saved/5', () => HttpResponse.json({ status: true, data: { id: 5, slug: 'borrower', name: 'New' } })))
+    const { queryClient, wrapper } = wrap()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+
+    const { result } = renderHook(() => useUpdateSavedAgreementTemplate(), { wrapper })
+    await act(() => result.current.mutateAsync({ id: 5, slug: 'borrower', name: 'New' }))
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.agreement.savedTemplates('borrower') })
   })
