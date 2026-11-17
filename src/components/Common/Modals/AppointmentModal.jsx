@@ -111,30 +111,41 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     const [originalData, setOriginalData] = useState(null);
 
-    // Sync with Calendly: a new appointment, when the company Calendly is
-    // connected, may be booked there - at one of Calendly's open times
-    // instead of a free time slot.
+    // Sync with Calendly: a new appointment, when the partner's Calendly is
+    // connected, is also booked there - at the date and time picked here, in
+    // the Calendly account's active event type (picked by FCH, never asked).
     const queryClient = useQueryClient();
     const { data: calendlyStatus } = useCalendlyStatus();
     // Your own Calendly (your partner's, or a borrower's own), when connected.
     const canBookInCalendly = isNewEvent && Boolean(calendlyStatus?.connected && calendlyStatus?.can_book);
     const [bookInCalendly, setBookInCalendly] = useState(false);
     const inCalendly = canBookInCalendly && bookInCalendly && !viewMode;
-    const [calendlyEventTypeUri, setCalendlyEventTypeUri] = useState('');
-    const [calendlySlot, setCalendlySlot] = useState('');
     // Which of the event type's places (Zoom, phone call, in person, ...), and where -
     // for a phone call the number to call - when that place asks the invitee.
     const [calendlyLocationKind, setCalendlyLocationKind] = useState('');
     const [calendlyLocation, setCalendlyLocation] = useState('');
     const { data: calendlyEventTypes = [], isLoading: loadingEventTypes } = useCalendlyEventTypes(inCalendly);
-    const calendlyEventType = calendlyEventTypes.find(type => type.uri === calendlyEventTypeUri) || calendlyEventTypes[0];
+    // The Calendly account's active event type - it sets the meeting's length and place.
+    const calendlyEventType = calendlyEventTypes[0];
+    const calendlyMinutes = calendlyEventType?.duration || 30;
     const calendlyLocationOptions = calendlyEventType?.location_options || [];
     const calendlyLocationChoice = calendlyLocationOptions.find(option => option.kind === calendlyLocationKind) || calendlyLocationOptions[0];
     const calendlyLocationKindInUse = calendlyLocationChoice?.kind || calendlyEventType?.location_kind;
-    const calendlyAsksLocation = calendlyLocationChoice ? Boolean(calendlyLocationChoice.asks_invitee) : Boolean(calendlyEventType?.asks_invitee_location);
+    const calendlyAsksInvitee = calendlyLocationChoice ? Boolean(calendlyLocationChoice.asks_invitee) : Boolean(calendlyEventType?.asks_invitee_location);
+    // A phone call to the invitee uses their number from FCH; it is asked for only
+    // when the API says FCH has none (or it is not a phone number).
+    const [askCalendlyPhone, setAskCalendlyPhone] = useState(false);
+    const calendlyAsksLocation = calendlyAsksInvitee && (calendlyLocationKindInUse !== 'outbound_call' || askCalendlyPhone);
     const calendlyLocationLabel = calendlyLocationKindInUse === 'outbound_call' ? 'Phone number to call' : 'Where to meet';
-    // The person invited: always picked; the open times come before, then leave out their FCH meetings.
+    // The person invited: always picked.
     const calendlyAttendee = formData.assigned_for;
+    // A place belongs to its event type.
+    useEffect(() => setCalendlyLocationKind(''), [calendlyEventType?.uri]);
+    // Someone else may have a number in FCH: ask again only if the API says so.
+    useEffect(() => setAskCalendlyPhone(false), [calendlyAttendee]);
+
+    // Live overlap check while synced: Calendly's open times that day (already
+    // without the person's FCH meetings) - the picked start must be one of them.
     const calendlyTimesPayload = inCalendly && calendlyEventType && formData.date
         ? {
             event_type_uri: calendlyEventType.uri,
@@ -143,16 +154,24 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             ...(calendlyAttendee ? { assigned_for: Number(calendlyAttendee) } : {}),
         }
         : null;
-    // A place belongs to its event type.
-    useEffect(() => setCalendlyLocationKind(''), [calendlyEventType?.uri]);
-    const { data: calendlySlots = [], isFetching: loadingCalendlySlots, error: calendlySlotsError } = useCalendlyAvailableTimes(calendlyTimesPayload);
-    // Why Calendly could not be asked (e.g. the connection expired) - not "no open times".
-    const calendlySlotsErrorMessage = calendlySlotsError
-        ? calendlySlotsError?.response?.data?.message || 'Calendly open times could not be loaded'
+    const {
+        data: calendlyOpenTimes = [],
+        isFetching: checkingCalendly,
+        error: calendlyTimesError,
+    } = useCalendlyAvailableTimes(calendlyTimesPayload);
+    const calendlyPickedLocal = formData.date && formData.timeStart ? `${formData.date} ${formData.timeStart}:00` : '';
+    const calendlyChecked = Boolean(calendlyTimesPayload) && !checkingCalendly && !calendlyTimesError;
+    const calendlyOverlap = calendlyChecked && Boolean(calendlyPickedLocal)
+        && !calendlyOpenTimes.some(slot => slot.local_time === calendlyPickedLocal);
+    const calendlyCheckError = calendlyTimesError
+        ? calendlyTimesError?.response?.data?.message || 'Calendly availability could not be checked'
         : '';
-
-    // A chosen time belongs to its event type, day and attendee.
-    useEffect(() => setCalendlySlot(''), [calendlyEventType?.uri, formData.date, calendlyAttendee, inCalendly]);
+    // Calendly sets the meeting's length (its event type's): the end follows the start.
+    useEffect(() => {
+        if (inCalendly && formData.timeStart) {
+            setFormData(p => ({ ...p, timeEnd: timeAfter(p.timeStart, calendlyMinutes) }));
+        }
+    }, [inCalendly, formData.timeStart, calendlyMinutes]);
 
     // Start times still ahead on the chosen day (BUG-078); an appointment being
     // edited keeps its own time in the list.
@@ -366,9 +385,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setConflictError(null);
             setIsMeetingWithChecked(false);
             setBookInCalendly(false);
-            setCalendlyEventTypeUri('');
-            setCalendlySlot('');
             setCalendlyLocation('');
+            setAskCalendlyPhone(false);
             // The browser's own day, at 09:00 or the next time still ahead (BUG-078).
             const start = defaultStart(TIME_SLOTS, dateStr || localDateString());
             setFormData({
@@ -523,17 +541,22 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }
     };
 
-    /** Books the chosen Calendly open time; Calendly sends both people its invitation. */
+    /**
+     * Books the picked date and start time in Calendly (its event type sets the
+     * length); Calendly sends both people its invitation. A time not open in
+     * Calendly is refused by the API with that day's open times.
+     */
     const submitToCalendly = async () => {
         if (!formData.subject.trim()) {
             setFormErrors({ subject: 'Appointment title is required' });
             return;
         }
-        if (!calendlyEventType || !calendlySlot || (calendlyAsksLocation && !calendlyLocation.trim())) return;
+        if (!calendlyEventType || !formData.date || !formData.timeStart || (calendlyAsksLocation && !calendlyLocation.trim())) return;
 
         const payload = {
             event_type_uri: calendlyEventType.uri,
-            start_time: calendlySlot,
+            // Local wall time in the chosen zone; the API reads it in `timezone`.
+            start_time: `${formData.date} ${formData.timeStart}:00`,
             timezone: formData.location,
             subject: formData.subject.trim(),
             meeting_type: formData.category,
@@ -557,11 +580,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         } catch (error) {
             if (error.response?.data?.errors) {
                 setFormErrors(error.response.data.errors);
+                // No usable number in FCH for a phone call: ask for it here.
+                if (error.response.data.errors.location) setAskCalendlyPhone(true);
             } else {
                 toast.error(error.response?.data?.message || 'Calendly could not book this meeting');
             }
-            // The slot may have just been taken: ask Calendly again.
-            queryClient.invalidateQueries({ queryKey: [...queryKeys.calendly.all, 'available-times'] });
         } finally {
             setIsSubmitting(false);
         }
@@ -1090,8 +1113,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         {formErrors.appointment_date && <div className="text-danger mt-1" style={{ fontSize: '10px' }}>{formErrors.appointment_date}</div>}
                                                     </div>
                                                 </div>
-                                                {/* Booked in Calendly, the time is one of its open times (below). */}
-                                                {!inCalendly && (
+                                                {/* Synced with Calendly too: the same date and start; Calendly's event type sets the length. */}
                                                 <div className="col-md-6 col-12 mb-3 px-2">
                                                     <label className="form-label fs-13 fw-semibold">Time Slot <span className="text-danger">*</span></label>
                                                     <div className="d-flex align-items-center gap-2 time-slot-container">
@@ -1108,11 +1130,14 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             onChange={(e) => {
                                                                 setFormData(p => ({ ...p, timeEnd: e.value }));
                                                             }}
+                                                            disabled={inCalendly}
                                                             className={`flex-grow-1 ${formErrors.duration_minutes ? 'p-invalid' : ''}`} placeholder="End" appendTo="self" />
                                                     </div>
+                                                    {inCalendly && !timeSlotError && calendlyEventType && (
+                                                        <div className="text-muted fs-11 mt-1">Calendly books {calendlyMinutes} min ({calendlyEventType.name}).</div>
+                                                    )}
                                                     {timeSlotError && <div className="text-danger fs-11 mt-1">{timeSlotError}</div>}
                                                 </div>
-                                                )}
                                             </div>
                                         </div>
 
@@ -1148,6 +1173,51 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Synced with Calendly: the picked time overlaps (not open in Calendly, or taken in FCH). */}
+                                        {inCalendly && calendlyOverlap && (
+                                            <div className="col-12 px-2 mb-3 calendly-overlap">
+                                                <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-start mb-0 py-2" role="alert">
+                                                    <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
+                                                    <div className="flex-grow-1">
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <strong className="text-danger fs-13 text-uppercase">Calendly Overlap</strong>
+                                                            <span className="badge bg-danger text-white fs-10 px-2 py-1">NOT AVAILABLE</span>
+                                                        </div>
+                                                        <span className="fs-12 text-muted d-block mt-1">
+                                                            Your selected <span className="fw-bold">{tConvert(formData.timeStart)} - {tConvert(formData.timeEnd)}</span> on <span className="fw-bold">{formData.date}</span> overlaps in Calendly - it is booked or outside the Calendly hours.
+                                                            {calendlyOpenTimes.length === 0 && <> Calendly has <span className="fw-bold">no open times</span> on this day - pick another day.</>}
+                                                        </span>
+                                                        {calendlyOpenTimes.length > 0 && (
+                                                            <div className="mt-2">
+                                                                <span className="fs-12 text-muted d-block mb-1">Open times on {formData.date}:</span>
+                                                                <div className="d-flex flex-wrap gap-1">
+                                                                    {calendlyOpenTimes.map(slot => {
+                                                                        const value = slot.local_time.slice(11, 16);
+                                                                        return (
+                                                                            <button key={slot.start_time} type="button" className="btn btn-sm btn-outline-primary py-0 px-2 fs-11"
+                                                                                onClick={() => setFormData(p => ({ ...p, timeStart: value, timeEnd: timeAfter(value, calendlyMinutes) }))}>
+                                                                                {slot.label}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {inCalendly && calendlyCheckError && (
+                                            <div className="col-12 px-2 mb-3">
+                                                <div className="text-danger fs-12" role="alert">{calendlyCheckError}</div>
+                                            </div>
+                                        )}
+                                        {inCalendly && checkingCalendly && (
+                                            <div className="col-12 px-2 mb-3">
+                                                <Skeleton width="100%" height="40px" className="rounded-2" />
+                                            </div>
+                                        )}
 
                                         {/* Skeleton Loader for Availability Check */}
                                         {isCheckingAvailability && !inCalendly && (
@@ -1186,47 +1256,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                     </label>
                                                 </div>
                                                 <div className="text-muted fs-11 mt-1">
-                                                    Booked at one of Calendly's open times; Calendly sends both people the invitation.
+                                                    Also booked in Calendly at this date and time; Calendly sends both people the invitation.
                                                 </div>
                                             </div>
                                         )}
 
                                         {inCalendly && (
                                             <>
-                                                <div className="col-md-6 col-12 mb-3 calendly-event-type">
-                                                    <label className="form-label fs-13 fw-semibold">Calendly event type <span className="text-danger">*</span></label>
-                                                    <Dropdown
-                                                        value={calendlyEventType?.uri || null}
-                                                        options={calendlyEventTypes.map(type => ({ label: `${type.name} (${type.duration} min)`, value: type.uri }))}
-                                                        onChange={(e) => setCalendlyEventTypeUri(e.value)}
-                                                        placeholder={loadingEventTypes ? 'Loading Calendly…' : 'Select an event type'}
-                                                        disabled={loadingEventTypes || calendlyEventTypes.length === 0}
-                                                        className="w-100" appendTo="self" />
-                                                    {!loadingEventTypes && calendlyEventTypes.length === 0 && (
-                                                        <div className="text-danger fs-11 mt-1" role="alert">The Calendly account has no event types - create one in Calendly first.</div>
-                                                    )}
-                                                </div>
-
-                                                <div className="col-md-6 col-12 mb-3 calendly-open-time">
-                                                    <label className="form-label fs-13 fw-semibold">Open times <span className="text-danger">*</span></label>
-                                                    <Dropdown
-                                                        value={calendlySlot || null}
-                                                        options={calendlySlots.map(slot => ({ label: slot.label, value: slot.start_time }))}
-                                                        onChange={(e) => setCalendlySlot(e.value)}
-                                                        placeholder={calendlyTimesPayload && loadingCalendlySlots ? 'Checking Calendly…' : 'Select an open time'}
-                                                        disabled={!calendlyTimesPayload || loadingCalendlySlots || Boolean(calendlySlotsErrorMessage) || calendlySlots.length === 0}
-                                                        className={`w-100 ${timeSlotError ? 'p-invalid' : ''}`} appendTo="self" />
-                                                    {calendlyEventType && !calendlyTimesPayload && (
-                                                        <div className="text-muted fs-11 mt-1">Choose who the meeting is with and a date to see Calendly's open times.</div>
-                                                    )}
-                                                    {calendlyTimesPayload && !loadingCalendlySlots && calendlySlotsErrorMessage && (
-                                                        <div className="text-danger fs-11 mt-1" role="alert">{calendlySlotsErrorMessage}</div>
-                                                    )}
-                                                    {calendlyTimesPayload && !loadingCalendlySlots && !calendlySlotsErrorMessage && calendlySlots.length === 0 && (
-                                                        <div className="text-muted fs-11 mt-1">No open times on this day - try another day.</div>
-                                                    )}
-                                                    {timeSlotError && <div className="text-danger fs-11 mt-1">{timeSlotError}</div>}
-                                                </div>
+                                                {!loadingEventTypes && calendlyEventTypes.length === 0 && (
+                                                    <div className="col-12 mb-3">
+                                                        <div className="text-danger fs-12" role="alert">
+                                                            The Calendly account has no event type switched on - turn one on in Calendly first.
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {/* Several places offered (Calendly's "All options"): which one. */}
                                                 {calendlyLocationOptions.length > 1 && (
@@ -1264,7 +1307,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         {((isNewEvent && hasPermission('create appointments')) || (!isNewEvent && hasPermission('update appointments'))) && (
                                             <button type="submit" className="btn btn-primary"
                                                 disabled={isSubmitting || (inCalendly
-                                                    ? (!calendlySlot || (calendlyAsksLocation && !calendlyLocation.trim()))
+                                                    ? (loadingEventTypes || !calendlyEventType || checkingCalendly || calendlyOverlap || (calendlyAsksLocation && !calendlyLocation.trim()))
                                                     : (isCheckingAvailability || isConflictVisible))}>
                                                 {isSubmitting ? (
                                                     <>

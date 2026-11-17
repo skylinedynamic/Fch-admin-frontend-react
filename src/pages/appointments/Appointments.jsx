@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 
@@ -42,27 +42,10 @@ export default function Appointments() {
     const [loading, setLoading] = useState(true);
     const [upcomingEvents, setUpcomingEvents] = useState([]);
 
-    const [searchParams, setSearchParams] = useSearchParams();
-
     // Fetch Appointments
     useEffect(() => {
         loadAppointments();
     }, []);
-
-    // Back from connecting Calendly: say how it went, then drop the flag from the URL.
-    useEffect(() => {
-        const result = searchParams.get('calendly');
-        if (!result) return;
-        if (result === 'connected') {
-            toast.success('Calendly connected');
-            loadAppointments();
-        } else {
-            toast.error('Calendly could not be connected');
-        }
-        const next = new URLSearchParams(searchParams);
-        next.delete('calendly');
-        setSearchParams(next, { replace: true });
-    }, [searchParams]);
 
     // Sync formData description updates back to Summernote if it changes externally (e.g. reset)
     // Be careful not to cause loops. Usually optional if one-way binding is sufficient.

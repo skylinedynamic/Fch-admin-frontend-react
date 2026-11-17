@@ -1,13 +1,17 @@
 /**
- * Your own Calendly, as /common/calendly/status reports it: your partner's
- * (shared by its team), or a borrower's own.
+ * Your partner's Calendly (the host's, a WLP's or a certified partner's), as
+ * /common/calendly/status reports it.
  */
 export interface CalendlyStatus {
+  /** The partner's Calendly app keys are saved (Settings > Calendly); false = Calendly is off. */
+  configured?: boolean
   connected: boolean
   needs_reconnect?: boolean
-  /** May connect, sync and disconnect it (anyone with their own Calendly). */
+  /** The host, WLP or certified partner account itself: may connect and disconnect it. */
   can_manage: boolean
-  /** Books *for* someone - the person they pick. */
+  /** The account and its staff: may sync it (never a borrower). */
+  can_sync?: boolean
+  /** The team books *for* someone it picks; a borrower is the invitee themselves. */
   is_host?: boolean
   /** Connected: may book into it. */
   can_book: boolean
@@ -17,21 +21,43 @@ export interface CalendlyStatus {
   connected_by?: string | null
   webhooks_active?: boolean
   last_synced_at?: string | null
-  /** The Connect popup: the saved Calendly OAuth app (never its secrets). */
-  client_id?: string | null
-  has_client_secret?: boolean
-  has_webhook_signing_key?: boolean
-  /** What to enter on the Calendly OAuth app. */
-  redirect_uri?: string
-  webhook_url?: string | null
-  scopes?: string[]
 }
 
-/** Your own Calendly OAuth app keys; a blank secret keeps the stored one. */
-export interface CalendlyConnectPayload {
+/**
+ * Settings > Calendly for one partner, as /common/calendly/settings returns it:
+ * its own Calendly OAuth app keys in full (only to that partner's own account
+ * or the host account) and its connection.
+ */
+export interface CalendlySettingsData {
+  partner_id: number
+  client_id: string | null
+  client_secret: string | null
+  webhook_signing_key: string | null
+  has_client_secret?: boolean
+  has_webhook_signing_key?: boolean
+  /** Client ID and Client Secret are saved. */
+  configured: boolean
+  connected: boolean
+  needs_reconnect?: boolean
+  name?: string | null
+  email?: string | null
+  connected_by?: string | null
+  webhooks_active?: boolean
+  last_synced_at?: string | null
+  /** To enter as the Redirect URI on the partner's Calendly OAuth app. */
+  redirect_uri: string
+  /** To tick on the partner's Calendly OAuth app. */
+  scopes: string[]
+}
+
+export interface CalendlySettingsPayload {
+  /** The host account configuring another partner; omitted for your own. */
+  partner_id?: number
   client_id: string
-  client_secret: string
-  webhook_signing_key: string
+  /** Blank keeps the saved one. */
+  client_secret?: string
+  /** Blank keeps the saved one (FCH makes one on connecting when none is saved). */
+  webhook_signing_key?: string
 }
 
 export interface CalendlyEventType {

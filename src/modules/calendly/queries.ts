@@ -1,12 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
-import { fetchCalendlyAvailableTimes, fetchCalendlyEventTypes, fetchCalendlyStatus } from './services'
+import { fetchCalendlyAvailableTimes, fetchCalendlyEventTypes, fetchCalendlySettings, fetchCalendlyStatus } from './services'
 import type { CalendlyAvailableTimesPayload } from './types'
 
 export const useCalendlyStatus = () =>
   useQuery({
     queryKey: queryKeys.calendly.status(),
     queryFn: fetchCalendlyStatus,
+  })
+
+/** Settings > Calendly: your partner's, or (the host) the partner named. */
+export const useCalendlySettings = (partnerId?: number) =>
+  useQuery({
+    queryKey: queryKeys.calendly.settings(partnerId),
+    queryFn: () => fetchCalendlySettings(partnerId),
+    retry: false,
   })
 
 export const useCalendlyEventTypes = (enabled = true) =>

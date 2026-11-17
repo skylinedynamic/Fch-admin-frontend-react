@@ -23,7 +23,7 @@ export const PARTNER_CONFIGURATION_PERMISSION = 'manage partner configuration';
 /** The partner profile tab id. */
 export const PARTNER_CONFIGURATION_TAB = 'configuration';
 
-export type PartnerConfigurationSectionId = 'email_configuration' | typeof SMS_CONFIGURATION_SECTION | 'branding' | 'agreement' | 'payment';
+export type PartnerConfigurationSectionId = 'email_configuration' | typeof SMS_CONFIGURATION_SECTION | 'branding' | 'agreement' | 'payment' | 'calendly';
 
 export type PartnerConfigurationSection = { id: PartnerConfigurationSectionId; label: string; description: string };
 
@@ -32,6 +32,7 @@ const SMS: PartnerConfigurationSection = { id: SMS_CONFIGURATION_SECTION, label:
 const BRANDING: PartnerConfigurationSection = { id: 'branding', label: 'Branding', description: 'Name, logos and colours' };
 const PAYMENT: PartnerConfigurationSection = { id: 'payment', label: 'Payment Integration', description: 'Payment providers offered to clients' };
 const AGREEMENT: PartnerConfigurationSection = { id: 'agreement', label: 'Agreement', description: 'The agreement its borrowers sign' };
+const CALENDLY: PartnerConfigurationSection = { id: 'calendly', label: 'Calendly', description: 'Calendly app keys and account' };
 
 /**
  * The sections a partner has, as on its own Settings page: a white-label
@@ -43,14 +44,20 @@ const AGREEMENT: PartnerConfigurationSection = { id: 'agreement', label: 'Agreem
  * lacks the area's settings permission (for Email and SMS the API refuses too;
  * Agreement's and Payment's are checked here only - the agreement endpoints
  * check `manage partner configuration`). Branding needs nothing more.
+ *
+ * Calendly (every partner keeps its own Calendly app keys) is there when
+ * `canCalendly` - the viewer is the host account itself, which the Calendly
+ * endpoints require (not host staff).
  */
 export const partnerConfigurationSections = (
     partner: { partner_type?: string | null },
     hasPermission: (name: string) => boolean,
+    canCalendly = false,
 ): PartnerConfigurationSection[] => {
     const ownSettings = [
         ...(hasPermission(AGREEMENT_SETTINGS_PERMISSION) ? [AGREEMENT] : []),
         ...(hasPermission(PAYMENT_SETTINGS_PERMISSION) ? [PAYMENT] : []),
+        ...(canCalendly ? [CALENDLY] : []),
     ];
 
     if (partner.partner_type !== PARTNER_TYPES.WHITE_LABEL) {

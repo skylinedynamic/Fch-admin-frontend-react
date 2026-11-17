@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { queryKeys } from '../../lib/query'
 import { useCalendlyStatus } from '../../modules/calendly/queries'
 import { connectCalendly, disconnectCalendly, syncCalendly } from '../../modules/calendly/services'
-import type { CalendlyConnectPayload } from '../../modules/calendly/types'
-import CalendlyConnectModal from './CalendlyConnectModal'
+import { settingsPath } from '../../config/settingsSections'
 import ConfirmationModal from '../Common/Modals/ConfirmationModal'
 
 type Props = {
@@ -15,54 +15,53 @@ type Props = {
   redirect?: (url: string) => void
 }
 
-type ApiError = { response?: { status?: number; data?: { message?: string; errors?: Record<string, string | string[]> } } }
-
-const errorMessage = (error: unknown, fallback: string) => (error as ApiError)?.response?.data?.message || fallback
+const errorMessage = (error: unknown, fallback: string) =>
+  (error as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback
 
 /**
- * Your own Calendly on the Appointments page - your partner's (shared by its
- * team): whether it is connected; connecting it with your own Calendly OAuth
- * app (the Connect popup), syncing and disconnecting it. Booking into it is
- * the "Sync with Calendly" tick in Add Appointment.
+ * The partner's Calendly account on the Appointments page. The host, WLP or
+ * certified partner account itself connects, reconnects and disconnects it
+ * here (Calendly's sign-in, through the app keys saved in Settings > Calendly);
+ * it and its staff sync it. Booking into it is the "Sync with Calendly" tick
+ * in Add Appointment. Calendly sends the browser back here after sign-in.
  */
 export default function CalendlyConnectCard({ onSynced, redirect = (url) => window.location.assign(url) }: Props) {
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { data: status } = useCalendlyStatus()
   const refreshStatus = () => queryClient.invalidateQueries({ queryKey: queryKeys.calendly.all })
-  const [showConnect, setShowConnect] = useState(false)
-  const [keyErrors, setKeyErrors] = useState<Partial<Record<keyof CalendlyConnectPayload, string>>>({})
-  // Saved: the browser is on its way to Calendly - keep the popup busy until it leaves.
+  // On the way to Calendly's sign-in: the button stays busy until the browser leaves.
   const [redirecting, setRedirecting] = useState(false)
   const [askDisconnect, setAskDisconnect] = useState(false)
 
+  // Back from Calendly's sign-in: say how it went, then drop the flag from the URL.
+  useEffect(() => {
+    const result = searchParams.get('calendly')
+    if (!result) return
+    if (result === 'connected') {
+      toast.success('Calendly connected')
+      refreshStatus()
+      onSynced()
+    } else {
+      toast.error('Calendly could not be connected')
+    }
+    const next = new URLSearchParams(searchParams)
+    next.delete('calendly')
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
   const connect = useMutation({
-    mutationFn: connectCalendly,
+    mutationFn: () => connectCalendly(),
     onSuccess: (url) => {
       setRedirecting(true)
       redirect(url)
     },
-    onError: (error) => {
-      const fieldErrors = (error as ApiError)?.response?.data?.errors
-      if (fieldErrors) {
-        setKeyErrors(Object.fromEntries(Object.entries(fieldErrors).map(([field, value]) => [field, [].concat(value as never)[0]])))
-      } else {
-        toast.error(errorMessage(error, 'Could not start connecting Calendly'))
-      }
-    },
-  })
-
-  const sync = useMutation({
-    mutationFn: syncCalendly,
-    onSuccess: (count) => {
-      toast.success(`${count} Calendly meeting(s) synced`)
-      refreshStatus()
-      onSynced()
-    },
-    onError: (error) => toast.error(errorMessage(error, 'Calendly sync failed')),
+    onError: (error) => toast.error(errorMessage(error, 'Could not start connecting Calendly')),
   })
 
   const disconnect = useMutation({
-    mutationFn: disconnectCalendly,
+    mutationFn: () => disconnectCalendly(),
     onSuccess: () => {
       toast.success('Calendly disconnected')
       setAskDisconnect(false)
@@ -71,11 +70,21 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
     onError: (error) => toast.error(errorMessage(error, 'Could not disconnect Calendly')),
   })
 
+  const sync = useMutation({
+    mutationFn: () => syncCalendly(),
+    onSuccess: (count) => {
+      toast.success(`${count} Calendly meeting(s) synced`)
+      refreshStatus()
+      onSynced()
+    },
+    onError: (error) => toast.error(errorMessage(error, 'Calendly sync failed')),
+  })
+
   // Opening (or reloading) the page brings in meetings booked or missed in
   // Calendly since the last sync - once, quietly, and only when connected.
   const autoSynced = useRef(false)
   const autoSync = useMutation({
-    mutationFn: syncCalendly,
+    mutationFn: () => syncCalendly(),
     onSuccess: () => {
       refreshStatus()
       onSynced()
@@ -85,24 +94,23 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
   })
 
   const connected = Boolean(status?.connected)
+  const configured = status?.configured !== false
+  // The host, WLP or certified partner account itself: connects and disconnects here.
   const canManage = Boolean(status?.can_manage)
+  // The account and its staff.
+  const canSync = Boolean(status?.can_sync)
+  const connecting = connect.isPending || redirecting
 
   useEffect(() => {
-    if (connected && canManage && !autoSynced.current) {
+    if (connected && canSync && !autoSynced.current) {
       autoSynced.current = true
       autoSync.mutate()
     }
-  }, [connected, canManage, autoSync])
+  }, [connected, canSync, autoSync])
 
   if (!status || (!canManage && !connected)) {
     return null
   }
-
-  const openConnect = () => {
-    setKeyErrors({})
-    setShowConnect(true)
-  }
-
 
   return (
     <div className="card mb-3 calendly-card">
@@ -112,6 +120,7 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
           <h6 className="mb-0 flex-grow-1">Calendly</h6>
           {connected && <span className="badge bg-success-subtle text-success">Connected</span>}
           {!connected && status.needs_reconnect && <span className="badge bg-warning-subtle text-warning">Expired</span>}
+          {!connected && !configured && <span className="badge bg-secondary-subtle text-secondary">Not set up</span>}
         </div>
 
         {connected && (
@@ -121,60 +130,69 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
           </p>
         )}
 
-        {connected && canManage && status.webhooks_active === false && (
+        {connected && canSync && status.webhooks_active === false && (
           <p className="text-warning fs-12 mb-2">
             Webhooks are not active - new Calendly bookings appear after a sync (hourly, or Sync now).
           </p>
         )}
 
-        {connected && canManage && status.last_synced_at && (
+        {connected && canSync && status.last_synced_at && (
           <p className="text-muted fs-12 mb-2">Last synced {new Date(status.last_synced_at).toLocaleString()}</p>
         )}
 
-        {!connected && canManage && (
+        {!connected && canManage && !configured && (
           <>
             <p className="text-muted fs-12 mb-2">
-              Connect your own Calendly to see its meetings here and book into it.
+              Add your Calendly app keys (Client ID and Client Secret) in Settings first, then connect here.
             </p>
-            <button type="button" className="btn btn-primary w-100" onClick={openConnect}>
-              {status.needs_reconnect ? 'Reconnect Calendly' : 'Connect Calendly'}
+            <Link to={settingsPath('calendly')} className="btn btn-soft-primary w-100">
+              Add keys in Settings
+            </Link>
+          </>
+        )}
+
+        {!connected && canManage && configured && (
+          <>
+            <p className="text-muted fs-12 mb-2">
+              Sign in to your Calendly to see its meetings here and book into it. Your clients book with it too.
+            </p>
+            <button type="button" className="btn btn-primary w-100" disabled={connecting} onClick={() => connect.mutate()}>
+              {connecting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                  Connecting…
+                </>
+              ) : status.needs_reconnect ? 'Reconnect Calendly' : 'Connect Calendly'}
             </button>
           </>
         )}
 
-        {connected && canManage && (
+        {connected && (canSync || canManage) && (
           <div className="d-flex gap-2">
-            <button type="button" className="btn btn-soft-secondary btn-sm flex-fill" disabled={sync.isPending} onClick={() => sync.mutate()}>
-              {sync.isPending || autoSync.isPending ? 'Syncing…' : 'Sync now'}
-            </button>
-            <button type="button" className="btn btn-soft-danger btn-sm flex-fill" disabled={disconnect.isPending} onClick={() => setAskDisconnect(true)}>
-              Disconnect
-            </button>
+            {canSync && (
+              <button type="button" className="btn btn-soft-secondary btn-sm flex-grow-1" disabled={sync.isPending} onClick={() => sync.mutate()}>
+                {sync.isPending || autoSync.isPending ? 'Syncing…' : 'Sync now'}
+              </button>
+            )}
+            {canManage && (
+              <button type="button" className="btn btn-soft-danger btn-sm" disabled={disconnect.isPending} onClick={() => setAskDisconnect(true)}>
+                Disconnect
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      <ConfirmationModal
-        show={askDisconnect}
-        onHide={() => setAskDisconnect(false)}
-        onConfirm={() => disconnect.mutate()}
-        loading={disconnect.isPending}
-        title="Disconnect Calendly?"
-        message="Your Calendly stops syncing and booking. Meetings already brought in stay on the calendar; your saved keys stay for reconnecting."
-        confirmText="Yes, disconnect"
-        variant="danger"
-      />
-
-      {showConnect && (
-        <CalendlyConnectModal
-          status={status}
-          saving={connect.isPending || redirecting}
-          errors={keyErrors}
-          onClose={() => setShowConnect(false)}
-          onSubmit={(keys) => {
-            setKeyErrors({})
-            connect.mutate(keys)
-          }}
+      {canManage && (
+        <ConfirmationModal
+          show={askDisconnect}
+          onHide={() => setAskDisconnect(false)}
+          onConfirm={() => disconnect.mutate()}
+          loading={disconnect.isPending}
+          title="Disconnect Calendly?"
+          message="Calendly stops syncing and booking for your team and your clients. Meetings already brought in stay on the calendar. Your app keys stay saved in Settings."
+          confirmText="Yes, disconnect"
+          variant="danger"
         />
       )}
     </div>

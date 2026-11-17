@@ -29,6 +29,7 @@ export const queryKeys = {
   calendly: {
     all: ['calendly'] as const,
     status: () => [...queryKeys.calendly.all, 'status'] as const,
+    settings: (partnerId?: number) => [...queryKeys.calendly.all, 'settings', partnerId ?? 'own'] as const,
     eventTypes: () => [...queryKeys.calendly.all, 'event-types'] as const,
     availableTimes: (payload: object) => [...queryKeys.calendly.all, 'available-times', payload] as const,
   },

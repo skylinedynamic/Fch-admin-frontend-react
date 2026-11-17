@@ -128,21 +128,6 @@ describe('Appointments - Calendly', () => {
     expect(screen.queryByText('Calendly', { selector: '.calendly-badge' })).not.toBeInTheDocument()
   })
 
-  it('confirms Calendly was connected when coming back from Calendly', async () => {
-    signIn({ permissions: ['view appointments'] })
-    allowBackgroundCalls()
-    api('post', LIST, { status: true, data: [] })
-    renderPage(<Appointments />, { path: '/appointments', route: '/appointments?calendly=connected' })
-
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Calendly connected'))
-  })
-
-  it('reports a failed Calendly connection when coming back from Calendly', async () => {
-    signIn({ permissions: ['view appointments'] })
-    allowBackgroundCalls()
-    api('post', LIST, { status: true, data: [] })
-    renderPage(<Appointments />, { path: '/appointments', route: '/appointments?calendly=error' })
-
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Calendly could not be connected'))
-  })
+  // Calendly sends the account back to Settings > Calendly, which says how it went
+  // (tests/pages/settings/CalendlySettings.test.tsx).
 })

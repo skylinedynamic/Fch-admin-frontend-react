@@ -20,6 +20,7 @@ const SECTIONS: Record<string, { slug: string; title: string }> = {
     credit_profile: { slug: 'credit-profile', title: 'Credit Profile' },
     score_calculation: { slug: 'score-calculation', title: 'Score Calculation' },
     openai: { slug: 'openai-configuration', title: 'OpenAI Configuration' },
+    calendly: { slug: 'calendly', title: 'Calendly' },
 };
 
 /** The path a section lives at. */
