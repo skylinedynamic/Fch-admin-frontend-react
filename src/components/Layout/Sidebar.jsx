@@ -7,6 +7,8 @@ import faviconImg from "../../../assets/images/Favicon.png";
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER, APP_CONFIG } from "../../config/appConfig";
 import BrandLogo from "./BrandLogo";
 import { NOTIFICATIONS_ROUTE } from "../../config/notifications";
+import { OWNER_SUMMARY_ROUTE, OWNER_SUMMARY_TITLE } from "../../config/ownerSummary";
+import { useCanViewOwnerSummary } from "../../lib/auth/useCanViewOwnerSummary";
 import { useUnreadNotificationCount, formatUnreadCount } from "../../modules/notifications";
 
 // Menu item configuration with required permissions
@@ -17,6 +19,13 @@ const menuItems = [
     label: "Dashboard",
     permission: "",
     exact: true,
+  },
+  {
+    to: OWNER_SUMMARY_ROUTE,
+    icon: "ri-line-chart-line",
+    label: OWNER_SUMMARY_TITLE,
+    permission: "",
+    ownerSummaryOnly: true,
   },
   {
     to: "/partners",
@@ -339,6 +348,7 @@ export default function Sidebar() {
   const currentUser = useAuthStore((state) => state.user);
   const userSubscription = useAuthStore((state) => state.userSubscription);
   const isHost = currentUser?.is_host == 1;
+  const canViewOwnerSummary = useCanViewOwnerSummary();
 
   const isFreeTrial = !!userSubscription?.is_free_trail;
   const trialEndDate = userSubscription?.free_trail_end_date;
@@ -417,6 +427,11 @@ export default function Sidebar() {
         return false;
       }
 
+      // Business Insights: for now the allowed emails only (see useCanViewOwnerSummary)
+      if (item.ownerSummaryOnly && !canViewOwnerSummary) {
+        return false;
+      }
+
       // 6. Generic rule: Check isPartnerOnly flag
       if (item.isPartnerOnly && currentUser?.entity_type !== ENTITY_TYPE_PARTNER) {
         return false;
@@ -455,7 +470,7 @@ export default function Sidebar() {
         return checkVisibility(item) ? item : null;
       })
       .filter((item) => item !== null);
-  }, [menuItems, hasPermission, isHost, currentUser]);
+  }, [menuItems, hasPermission, isHost, canViewOwnerSummary, currentUser]);
 
   return (
     <div className={menuClass}>

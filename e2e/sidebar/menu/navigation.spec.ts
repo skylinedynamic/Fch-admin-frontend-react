@@ -31,7 +31,8 @@ const subItems = async (page: Page, parent: string) => {
   return (await item.locator('.sidebar-submenu-wrapper .nav-link').allTextContents()).map((label) => label.trim())
 }
 
-// The host's menu, exactly as the product shows it.
+// The host's menu, exactly as the product shows it. Business Insights is not
+// in it: for now only one login sees that (see "Sidebar - Business Insights").
 const HOST_MENU = [
   'Dashboard', 'Partners', 'Leads', 'Clients', 'Intake & Review', 'Capital Access', 'Lenders', 'Funding Sequence',
   'Credit Builder', 'Commissions', 'Invoices', 'Payments', 'Subscriptions', 'Upcoming Billings', 'Appointments',
@@ -140,6 +141,20 @@ test.describe('Sidebar - every host entry opens its screen', () => {
     await page.goto('/')
     await page.locator('#navbar-nav > li.nav-item > a.menu-link', { has: page.locator('span', { hasText: /^Settings$/ }) }).click()
     await expect(page.locator('.settings-page-title')).toBeVisible()
+    await expect(page.getByText(/Access Denied|Page Not Found/i)).toHaveCount(0)
+  })
+})
+
+test.describe('Sidebar - Business Insights', () => {
+  test('only the developer@fch.com host login is offered it, right after Dashboard, and it opens', async ({ page }) => {
+    const profile = PERSONA_PROFILES.host
+    await seedSession(page, { ...profile.user, email: 'developer@fch.com', permissions: [...profile.user.permissions] })
+    await mockApi(page)
+    await page.goto('/profile')
+
+    expect((await topLevel(page)).slice(0, 2)).toEqual(['Dashboard', 'Business Insights'])
+    await page.locator('#navbar-nav > li.nav-item > a.menu-link', { has: page.locator('span', { hasText: /^Business Insights$/ }) }).click()
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/business-insights')
     await expect(page.getByText(/Access Denied|Page Not Found/i)).toHaveCount(0)
   })
 })

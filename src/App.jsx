@@ -14,7 +14,7 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
-import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute } from './lib/auth';
+import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute, OwnerSummaryRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -28,6 +28,8 @@ import CreditAccountsList from './pages/credit-builder/credit-accounts/CreditAcc
 import CreditAccountForm from './pages/credit-builder/credit-accounts/components/CreditAccountForm.jsx';
 import CapitalAccessList from './pages/capital-access/CapitalAccessList.tsx';
 import CapitalAccessForm from './pages/capital-access/components/CapitalAccessForm.tsx';
+import OwnerSummary from './pages/owner-summary/OwnerSummary.tsx';
+import { OWNER_SUMMARY_ROUTE } from './config/ownerSummary';
 import VerificationCenter from './pages/credit-builder/verifications/VerificationCenter.jsx';
 import BorrowerVerificationRequests from './pages/credit-builder/verifications/BorrowerVerificationRequests.jsx';
 import Appointments from './pages/appointments/Appointments.jsx';
@@ -279,6 +281,12 @@ export default function App() {
             </Route>
 
             <Route path="profile" element={<Profile />} />
+
+            {/* Business Insights, the host owner's business summary - for now one
+                login only; the API checks it again. */}
+            <Route element={<OwnerSummaryRoute />}>
+              <Route path={OWNER_SUMMARY_ROUTE} element={<OwnerSummary />} />
+            </Route>
 
 
             {/* Credit Builder Menu Routes - Host Only, and each behind the
