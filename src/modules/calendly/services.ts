@@ -3,6 +3,7 @@ import type { CreateAppointmentResponse } from '../appointment/types'
 import type {
   CalendlyAvailableTimesPayload,
   CalendlyBookingPayload,
+  CalendlyConnectPayload,
   CalendlyEventType,
   CalendlySlot,
   CalendlyStatus,
@@ -13,9 +14,12 @@ export const fetchCalendlyStatus = async (): Promise<CalendlyStatus> => {
   return data.data
 }
 
-/** The Calendly page the host signs in on to connect the account. */
-export const fetchCalendlyConnectUrl = async (): Promise<string> => {
-  const { data } = await apiClient.get('/common/calendly/connect-url')
+/**
+ * The Connect popup: saves your own Calendly OAuth app keys (a blank secret
+ * keeps the stored one) and returns the Calendly sign-in page to go to.
+ */
+export const connectCalendly = async (keys: CalendlyConnectPayload): Promise<string> => {
+  const { data } = await apiClient.post('/common/calendly/connect', keys)
   return data.data.url
 }
 

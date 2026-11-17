@@ -356,3 +356,293 @@ describe('AppointmentModal - an appointment that ends after midnight (R2 BUG-024
     expect(toast.error).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * Booking into the company Calendly from "Add Appointment": when Calendly is
+ * connected, a "Sync with Calendly" tick swaps the time slot for Calendly's
+ * open times and books through Calendly - replacing the separate
+ * "Book via Calendly" form.
+ */
+describe('AppointmentModal - booking in Calendly from Add Appointment', () => {
+  type CreateHandle = { create: (date?: string) => void }
+  const NewAppointmentModal = AppointmentModalJsx as unknown as ComponentType<{ ref: Ref<CreateHandle>; onSuccess: () => void }>
+
+  const EVENT_TYPE = { uri: 'https://api.calendly.com/event_types/ET1', name: '30 Minute Meeting', duration: 30 }
+  const SLOT = { start_time: '2999-06-15T15:00:00Z', local_time: '2999-06-15 10:00:00', label: '10:00 AM' }
+  const JANE = { id: 5, name: 'Jane Borrower (Borrower)', entity_type: 'Borrower', entity_id: 12 }
+  const LIMIT_REACHED = "Calendly's booking limit has been reached for today"
+
+  const calendly = (status: Record<string, unknown>) => {
+    api('get', '/common/calendly/status', { status: true, data: { connected: true, can_manage: true, can_book: true, is_host: true, ...status } })
+    api('get', '/common/calendly/event-types', { status: true, data: [EVENT_TYPE] })
+    api('post', '/common/appointments/fetch-selectable-users', { status: true, data: [JANE] })
+    const times = api('post', '/common/calendly/available-times', { status: true, data: [SLOT] })
+    const book = api('post', '/common/calendly/book', { status: true, message: 'Meeting booked in Calendly.', data: { id: 9 } })
+    const create = api('post', '/common/appointments', { status: true, message: 'Appointment created' })
+    return { times, book, create }
+  }
+
+  const add = async (status: Record<string, unknown> | null, { isHost = 1 } = {}) => {
+    signIn({ id: 1, is_host: isHost, permissions: ['create appointments'] })
+    allowBackgroundCalls()
+    const calls = status ? calendly(status) : null
+    const onSuccess = vi.fn()
+    const ref = createRef<CreateHandle>()
+    renderWithProviders(<NewAppointmentModal ref={ref} onSuccess={onSuccess} />)
+    act(() => ref.current!.create('2999-06-15'))
+    await screen.findByRole('button', { name: /confirm appointment/i })
+    return { ...calls, onSuccess, user: userEvent.setup() }
+  }
+
+  // As the other PrimeReact dropdown tests: open the dropdown, click the panel item.
+  const pick = async (user: ReturnType<typeof userEvent.setup>, dropdown: HTMLElement, label: string) => {
+    await user.click(dropdown)
+    const item = await waitFor(() => {
+      const found = Array.from(dropdown.querySelectorAll('.p-dropdown-item')).find((el) => el.textContent?.trim() === label)
+      if (!found) throw new Error(`no "${label}" option`)
+      return found as HTMLElement
+    })
+    await user.click(item)
+  }
+  const dropdownWith = async (placeholder: string) =>
+    (await screen.findAllByText(placeholder)).map((el) => el.closest('.p-dropdown')).find(Boolean) as HTMLElement
+  const pickJane = async (user: ReturnType<typeof userEvent.setup>) => pick(user, await dropdownWith('Select Users'), JANE.name)
+  const pickOpenTime = async (user: ReturnType<typeof userEvent.setup>, label = SLOT.label) =>
+    pick(user, await dropdownWith('Select an open time'), label)
+  const eventTypeDropdown = () => document.querySelector('.calendly-event-type .p-dropdown') as HTMLElement
+
+  it('offers no "Sync with Calendly" when Calendly is not connected', async () => {
+    await add(null)
+
+    expect(screen.queryByLabelText(/sync with calendly/i)).not.toBeInTheDocument()
+  })
+
+  it('offers no "Sync with Calendly" when Calendly is not set up on the server', async () => {
+    const { user } = await add({ configured: false, connected: false, can_book: false })
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+
+    expect(screen.queryByLabelText(/sync with calendly/i)).not.toBeInTheDocument()
+    expect(document.querySelector('.time-slot-container')).toBeInTheDocument()
+  })
+
+  it('offers "Sync with Calendly" when Calendly is connected, unticked', async () => {
+    await add({})
+
+    expect(await screen.findByLabelText(/sync with calendly/i)).not.toBeChecked()
+  })
+
+  it('ticked, shows Calendly open times instead of the time slot and books the chosen one in Calendly', async () => {
+    const { user, times, book, create, onSuccess } = await add({})
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+
+    expect(document.querySelector('.time-slot-container')).not.toBeInTheDocument()
+    await pickOpenTime(user)
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+
+    await waitFor(() => expect(book!.calls).toBe(1))
+    expect(times!.bodies[times!.bodies.length - 1]).toMatchObject({ event_type_uri: EVENT_TYPE.uri, date: '2999-06-15', assigned_for: JANE.id })
+    expect(book!.bodies[0]).toMatchObject({
+      event_type_uri: EVENT_TYPE.uri,
+      start_time: SLOT.start_time,
+      assigned_for: JANE.id,
+      subject: 'Funding review',
+      meeting_type: 'Business Review',
+    })
+    expect(book!.bodies[0].timezone).toBeTruthy()
+    expect(create!.calls).toBe(0)
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+    expect(toast.success).toHaveBeenCalledWith('Meeting booked in Calendly.')
+  })
+
+  it('cannot be confirmed until an open time is chosen', async () => {
+    const { user } = await add({})
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+    await screen.findAllByText('Select an open time')
+
+    expect(screen.getByRole('button', { name: /confirm appointment/i })).toBeDisabled()
+  })
+
+  // Everyone books into their own Calendly, so everyone picks who they invite
+  // (was: someone booking with the company Calendly's owner was the invitee).
+  it('a partner team member books into their own Calendly and picks who they invite', async () => {
+    const { user, book } = await add({ is_host: true, can_manage: true }, { isHost: 0 })
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Talk to Jane')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+    await pickOpenTime(user)
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+
+    await waitFor(() => expect(book!.calls).toBe(1))
+    expect(book!.bodies[0]).toMatchObject({ assigned_for: JANE.id })
+  })
+
+  it('without picking who it is with, says so instead of booking', async () => {
+    const { user, book } = await add({})
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+    await pickOpenTime(user)
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+
+    expect(await screen.findByText('Choose who the meeting is with')).toBeInTheDocument()
+    expect(book!.calls).toBe(0)
+  })
+
+  it('shows Calendly refusing the booking', async () => {
+    const { user, onSuccess } = await add({})
+    api('post', '/common/calendly/book', { status: false, message: LIMIT_REACHED }, 429)
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+    await pickOpenTime(user)
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(LIMIT_REACHED))
+    expect(onSuccess).not.toHaveBeenCalled()
+  })
+
+  it('says so when the day has no open times', async () => {
+    const { user } = await add({})
+    api('post', '/common/calendly/available-times', { status: true, data: [] })
+
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+
+    expect(await screen.findByText(/no open times/i)).toBeInTheDocument()
+  })
+
+  it('shows why open times could not be loaded instead of "no open times"', async () => {
+    const { user } = await add({})
+    api('post', '/common/calendly/available-times', { status: false, message: 'The Calendly connection has expired. An administrator needs to connect Calendly again.' }, 422)
+
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+
+    expect(await screen.findByText(/connection has expired/i)).toBeInTheDocument()
+    expect(screen.queryByText(/no open times/i)).not.toBeInTheDocument()
+  })
+
+  it('a phone-call event type asks for the number to call and books with it', async () => {
+    const { user, book } = await add({})
+    api('get', '/common/calendly/event-types', { status: true, data: [{ ...EVENT_TYPE, location_kind: 'outbound_call', asks_invitee_location: true }] })
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+    await pickOpenTime(user)
+
+    // Calendly refuses a phone-call booking without the number.
+    expect(screen.getByRole('button', { name: /confirm appointment/i })).toBeDisabled()
+    await user.type(screen.getByLabelText(/phone number to call/i), '+1 312 555 0100')
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+
+    await waitFor(() => expect(book!.calls).toBe(1))
+    expect(book!.bodies[0]).toMatchObject({ location: '+1 312 555 0100' })
+  })
+
+  it('an event type with its own place asks for no location', async () => {
+    const { user, book } = await add({})
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+    await pickOpenTime(user)
+
+    expect(screen.queryByLabelText(/phone number to call/i)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+    await waitFor(() => expect(book!.calls).toBe(1))
+    expect(book!.bodies[0]).not.toHaveProperty('location')
+  })
+
+  it('says so when the Calendly account has no event types, with the event type dropdown disabled', async () => {
+    const { user } = await add({})
+    api('get', '/common/calendly/event-types', { status: true, data: [] })
+
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+
+    expect(await screen.findByText(/no event types/i)).toBeInTheDocument()
+    expect(eventTypeDropdown()).toHaveClass('p-disabled')
+  })
+
+  // The open times come as soon as an event type and a date are chosen - not
+  // only once the person is picked (the dropdown looked broken until then).
+  it('loads the open times before who it is with is picked', async () => {
+    const { user, times } = await add({})
+
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+
+    await waitFor(() => expect(times!.calls).toBeGreaterThan(0))
+    expect(times!.bodies[0]).toMatchObject({ event_type_uri: EVENT_TYPE.uri, date: '2999-06-15' })
+    expect(times!.bodies[0]).not.toHaveProperty('assigned_for')
+    await pickOpenTime(user)
+  })
+
+  it('an event type offering several places asks which, and books the one picked', async () => {
+    const { user, book } = await add({})
+    api('get', '/common/calendly/event-types', { status: true, data: [{
+      ...EVENT_TYPE,
+      location_kind: 'zoom_conference',
+      asks_invitee_location: false,
+      location_options: [
+        { kind: 'zoom_conference', label: 'Zoom', asks_invitee: false },
+        { kind: 'outbound_call', label: 'Phone call (we call you)', asks_invitee: true },
+      ],
+    }] })
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+    await pickOpenTime(user)
+    expect(screen.queryByLabelText(/phone number to call/i)).not.toBeInTheDocument()
+    await pick(user, await dropdownWith('Zoom'), 'Phone call (we call you)')
+    await user.type(screen.getByLabelText(/phone number to call/i), '+1 312 555 0100')
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+
+    await waitFor(() => expect(book!.calls).toBe(1))
+    expect(book!.bodies[0]).toMatchObject({ location_kind: 'outbound_call', location: '+1 312 555 0100' })
+  })
+
+  it('"Sync with Calendly" comes after the description', async () => {
+    await add({})
+
+    const description = screen.getByText('Description')
+    const tick = await screen.findByLabelText(/sync with calendly/i)
+
+    expect(description.compareDocumentPosition(tick) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('the event type is a dropdown, the only one chosen already', async () => {
+    const { user } = await add({})
+
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+
+    await waitFor(() => expect(eventTypeDropdown()?.querySelector('.p-dropdown-label')?.textContent).toBe('30 Minute Meeting (30 min)'))
+  })
+
+  it('with several event types, the one picked from the dropdown is asked about and booked', async () => {
+    const { user, times, book } = await add({})
+    const SECOND = { uri: 'https://api.calendly.com/event_types/ET2', name: 'Intro Call', duration: 15 }
+    api('get', '/common/calendly/event-types', { status: true, data: [EVENT_TYPE, SECOND] })
+
+    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
+    await pickJane(user)
+    await user.click(await screen.findByLabelText(/sync with calendly/i))
+    await waitFor(() => expect(eventTypeDropdown()).toBeTruthy())
+    await pick(user, eventTypeDropdown(), 'Intro Call (15 min)')
+    await pickOpenTime(user)
+    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+
+    await waitFor(() => expect(book!.calls).toBe(1))
+    expect(times!.bodies[times!.bodies.length - 1]).toMatchObject({ event_type_uri: SECOND.uri })
+    expect(book!.bodies[0]).toMatchObject({ event_type_uri: SECOND.uri })
+  })
+})

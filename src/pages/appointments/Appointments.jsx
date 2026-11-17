@@ -21,8 +21,6 @@ import { fetchAppointments, updateAppointment } from '../../modules/appointment/
 // Components
 import AppointmentModal from '../../components/Common/Modals/AppointmentModal';
 import CalendlyConnectCard from '../../components/Calendly/CalendlyConnectCard';
-import CalendlyBookingModal from '../../components/Calendly/CalendlyBookingModal';
-import { useCalendlyStatus } from '../../modules/calendly/queries';
 
 // Custom CSS
 import "../../../assets/css/appointments.css";
@@ -44,9 +42,6 @@ export default function Appointments() {
     const [loading, setLoading] = useState(true);
     const [upcomingEvents, setUpcomingEvents] = useState([]);
 
-    // Calendly - the company account
-    const { data: calendlyStatus } = useCalendlyStatus();
-    const [calendlyBookingOpen, setCalendlyBookingOpen] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Fetch Appointments
@@ -244,7 +239,7 @@ export default function Appointments() {
                                     <div id="external-events">{/* External events would go here */}</div>
                                 </div>
                             </div>
-                            <CalendlyConnectCard onBook={() => setCalendlyBookingOpen(true)} onSynced={loadAppointments} />
+                            <CalendlyConnectCard onSynced={loadAppointments} />
                             <div>
                                 <h5 className="mb-1">All Appointments</h5>
                                 <p className="text-muted">Don't miss scheduled appointments</p>
@@ -462,12 +457,6 @@ export default function Appointments() {
                 </div>
             </div>
             <AppointmentModal ref={appointmentModalRef} onSuccess={loadAppointments} />
-            <CalendlyBookingModal
-                show={calendlyBookingOpen}
-                isHost={Boolean(calendlyStatus?.is_host)}
-                onClose={() => setCalendlyBookingOpen(false)}
-                onBooked={loadAppointments}
-            />
         </div>
     );
 }

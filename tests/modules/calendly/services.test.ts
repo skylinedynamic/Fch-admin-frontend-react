@@ -5,7 +5,7 @@ import {
   bookCalendlyAppointment,
   disconnectCalendly,
   fetchCalendlyAvailableTimes,
-  fetchCalendlyConnectUrl,
+  connectCalendly,
   fetchCalendlyEventTypes,
   fetchCalendlyStatus,
   syncCalendly,
@@ -21,10 +21,15 @@ describe('calendly services', () => {
     await expect(fetchCalendlyStatus()).resolves.toEqual({ connected: true, can_manage: true })
   })
 
-  it('fetchCalendlyConnectUrl returns the Calendly authorize link', async () => {
-    server.use(http.get('*/common/calendly/connect-url', () => HttpResponse.json({ status: true, data: { url: 'https://auth.calendly.com/oauth/authorize?x=1' } })))
+  it('connectCalendly sends your own app keys and returns the Calendly sign-in link', async () => {
+    let body: unknown
+    server.use(http.post('*/common/calendly/connect', async ({ request }) => {
+      body = await request.json()
+      return HttpResponse.json({ status: true, data: { url: 'https://auth.calendly.com/oauth/authorize?x=1' } })
+    }))
 
-    await expect(fetchCalendlyConnectUrl()).resolves.toBe('https://auth.calendly.com/oauth/authorize?x=1')
+    await expect(connectCalendly({ client_id: 'id', client_secret: 's', webhook_signing_key: 'k' })).resolves.toBe('https://auth.calendly.com/oauth/authorize?x=1')
+    expect(body).toEqual({ client_id: 'id', client_secret: 's', webhook_signing_key: 'k' })
   })
 
   it('disconnectCalendly DELETEs the connection', async () => {
