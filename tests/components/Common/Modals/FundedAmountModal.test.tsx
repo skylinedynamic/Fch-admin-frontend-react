@@ -89,32 +89,72 @@ describe('FundedAmountModal', () => {
     expect(onConfirm).toHaveBeenCalledWith('20000', { successFee: '10', adminRate: '100', partnerRate: '0' })
   })
 
-  it('splits a partner application admin / partner, each rate filling in the other', async () => {
+  it("starts a partner application with no saved split at the partner's own commission (Partner profile › Commissions)", async () => {
     const onConfirm = vi.fn()
-    renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} canEditCommission showPartnerCommission />)
+    renderWithProviders(
+      <FundedAmountModal {...base} initialAmount="20000" onConfirm={onConfirm} canEditCommission showPartnerCommission defaultPartnerCommissionRate={30} />
+    )
 
-    // No success fee yet: nothing to split, both rates blank.
-    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(null)
+    // Still locked and blank until there is a success fee.
     expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(null)
 
     await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
-    // A success fee and no split saved yet: the default split, 100 / 0 (S434-BUG-06).
-    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(100)
-    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(0)
-    await userEvent.clear(screen.getByLabelText('Admin Commission Rate'))
-    await userEvent.type(screen.getByLabelText('Admin Commission Rate'), '10')
 
-    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(90)
-    expect(row('Total Commission')).toHaveTextContent('$2,500.00')
-    expect(row('Admin Commission')).toHaveTextContent('$250.00')
-    expect(row('Partner Commission')).toHaveTextContent('$2,250.00')
-
-    await userEvent.clear(screen.getByLabelText('Partner Commission Rate'))
-    await userEvent.type(screen.getByLabelText('Partner Commission Rate'), '75')
-    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(25)
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(70)
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
+    expect(row('Admin Commission')).toHaveTextContent('$1,400.00')
+    expect(row('Partner Commission')).toHaveTextContent('$600.00')
 
     await userEvent.click(confirm())
-    expect(onConfirm).toHaveBeenCalledWith('25000', { successFee: '10', adminRate: '25', partnerRate: '75' })
+    expect(onConfirm).toHaveBeenCalledWith('20000', { successFee: '10', adminRate: '70', partnerRate: '30' })
+  })
+
+  it("shows the partner's commission, not a split saved before - the split can't be changed", async () => {
+    renderWithProviders(
+      <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission adminCommissionRate={60} partnerCommissionRate={40} defaultPartnerCommissionRate={30} />
+    )
+
+    await userEvent.type(screen.getByLabelText('Success Fee (%)'), '5')
+
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(70)
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
+  })
+
+  it("ignores a partner commission on a host client - the admin takes the whole fee", async () => {
+    const onConfirm = vi.fn()
+    renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} canEditCommission defaultPartnerCommissionRate={30} />)
+
+    await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+
+    expect(screen.queryByLabelText('Partner Commission Rate')).not.toBeInTheDocument()
+    expect(row('Admin Commission')).toHaveTextContent('$2,500.00')
+  })
+
+  // The admin / partner split comes from the partner's commission (its tier
+  // for this deal, else none): read-only, never typed.
+  it('shows the admin / partner rates read-only', async () => {
+    const onConfirm = vi.fn()
+    renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} canEditCommission showPartnerCommission />)
+
+    await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(100)
+    expect(screen.getByLabelText('Admin Commission Rate')).toBeDisabled()
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(0)
+    expect(screen.getByLabelText('Partner Commission Rate')).toBeDisabled()
+    // Read-only, and styled so: can't be clicked into or tabbed to.
+    for (const label of ['Admin Commission Rate', 'Partner Commission Rate']) {
+      const input = screen.getByLabelText(label)
+      expect(input).toHaveAttribute('readonly')
+      expect(input).toHaveAttribute('tabindex', '-1')
+      expect(input).toHaveClass('fam-rate--readonly')
+    }
+    // The Success Fee stays an ordinary field.
+    expect(screen.getByLabelText('Success Fee (%)')).not.toHaveClass('fam-rate--readonly')
+    expect(screen.getByLabelText('Success Fee (%)')).not.toHaveAttribute('readonly')
+
+    await userEvent.click(confirm())
+    expect(onConfirm).toHaveBeenCalledWith('25000', { successFee: '10', adminRate: '100', partnerRate: '0' })
   })
 
   it('locks the admin / partner rates until a success fee is set, and resets them when it is cleared', async () => {
@@ -131,15 +171,11 @@ describe('FundedAmountModal', () => {
     expect(screen.getByText('Set the success fee to split it between admin and partner.')).toBeInTheDocument()
 
     await userEvent.type(fee, '10')
-    expect(admin).toBeEnabled()
-    expect(partner).toBeEnabled()
-    // Opened at the default split, 100 / 0 (S434-BUG-06).
+    // Still read-only: the split is the partner's commission, 100 / 0 with none.
+    expect(admin).toBeDisabled()
+    expect(partner).toBeDisabled()
     expect(admin).toHaveValue(100)
     expect(partner).toHaveValue(0)
-
-    await userEvent.clear(partner)
-    await userEvent.type(partner, '30')
-    expect(admin).toHaveValue(70)
 
     // Fee cleared: back to blank, locked.
     await userEvent.clear(fee)
@@ -174,32 +210,25 @@ describe('FundedAmountModal', () => {
     expect(row('Total Commission')).toHaveTextContent('$2,500.00')
     expect(row('Admin Commission')).toHaveTextContent('$2,500.00')
     expect(row('Partner Commission')).toHaveTextContent('$0.00')
-
-    await userEvent.clear(screen.getByLabelText('Admin Commission Rate'))
-    await userEvent.type(screen.getByLabelText('Admin Commission Rate'), '40')
-
-    expect(row('Admin Commission')).toHaveTextContent('$1,000.00')
-    expect(row('Partner Commission')).toHaveTextContent('$1,500.00')
   })
 
-  it('starts from the saved split once a success fee is set', async () => {
+  it('does not take a saved split: with no partner commission the admin keeps it all', async () => {
     renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission adminCommissionRate={70} partnerCommissionRate={30} />)
 
     expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(null)
-    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(null)
 
     await userEvent.type(screen.getByLabelText('Success Fee (%)'), '5')
 
-    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(70)
-    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(100)
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(0)
   })
 
-  it('opens with the saved split when a success fee is already saved', () => {
+  it('opens read-only at the split when a success fee is already saved', () => {
     renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission successFeeRate={10} adminCommissionRate={60} partnerCommissionRate={40} />)
 
-    expect(screen.getByLabelText('Admin Commission Rate')).toBeEnabled()
-    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(60)
-    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(40)
+    expect(screen.getByLabelText('Admin Commission Rate')).toBeDisabled()
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(100)
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(0)
   })
 
   it('for a host client asks only the success fee, all of it to the admin', async () => {
@@ -212,79 +241,6 @@ describe('FundedAmountModal', () => {
     await userEvent.type(screen.getByLabelText('Success Fee (%)'), '4')
 
     expect(row('Admin Commission')).toHaveTextContent('$1,000.00')
-  })
-
-  /**
-   * Defect: clearing a rate set the other to 100%, so clearing both left one at
-   * 100% (Admin blank, Partner 100%) and the summary showed a split nobody set.
-   * Clearing a rate clears the split: both blank, out of the summary.
-   */
-  it('clears both rates when one is cleared', async () => {
-    renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission successFeeRate={10} adminCommissionRate={9} partnerCommissionRate={91} />)
-    const admin = screen.getByLabelText('Admin Commission Rate')
-    const partner = screen.getByLabelText('Partner Commission Rate')
-    const summaryLine = (label: string) => screen.queryByText(label, { exact: false, selector: '[data-row] > span' })
-
-    await userEvent.clear(partner)
-
-    expect(admin).toHaveValue(null)
-    expect(partner).toHaveValue(null)
-    expect(summaryLine('Admin Commission')).not.toBeInTheDocument()
-    expect(summaryLine('Partner Commission')).not.toBeInTheDocument()
-
-    await userEvent.type(partner, '30')
-    await userEvent.clear(admin)
-
-    expect(admin).toHaveValue(null)
-    expect(partner).toHaveValue(null)
-  })
-
-  it('refuses an admin rate below 1%', async () => {
-    const onConfirm = vi.fn()
-    renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} canEditCommission showPartnerCommission successFeeRate={10} adminCommissionRate={50} partnerCommissionRate={50} />)
-
-    await userEvent.clear(screen.getByLabelText('Partner Commission Rate'))
-    await userEvent.type(screen.getByLabelText('Partner Commission Rate'), '100')
-    await userEvent.click(confirm())
-
-    expect(screen.getByText('Admin commission rate must be at least 1%.')).toBeInTheDocument()
-    expect(onConfirm).not.toHaveBeenCalled()
-  })
-
-  /**
-   * Defect: with a success fee set and the split left blank, Confirm & Update
-   * only gave one general message, and the two empty boxes were not marked.
-   * Both rates are required once there is a success fee: each empty box is
-   * marked with its own error. (They now open at 100 / 0 - S434-BUG-06 - so
-   * here the user empties them.)
-   */
-  it('requires both rates, each with its own error, once a success fee is set', async () => {
-    const onConfirm = vi.fn()
-    renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} canEditCommission showPartnerCommission />)
-    const admin = screen.getByLabelText(/Admin Commission Rate/)
-    const partner = screen.getByLabelText(/Partner Commission Rate/)
-
-    await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
-    // Clearing one rate clears the split: both empty.
-    await userEvent.clear(admin)
-    await userEvent.click(confirm())
-
-    expect(screen.getByText('Admin commission rate is required.')).toBeInTheDocument()
-    expect(screen.getByText('Partner commission rate is required.')).toBeInTheDocument()
-    expect(admin).toHaveClass('is-invalid')
-    expect(partner).toHaveClass('is-invalid')
-    expect(onConfirm).not.toHaveBeenCalled()
-
-    // Typing a rate fills in the other and clears both errors.
-    await userEvent.type(admin, '40')
-
-    expect(screen.queryByText('Admin commission rate is required.')).not.toBeInTheDocument()
-    expect(screen.queryByText('Partner commission rate is required.')).not.toBeInTheDocument()
-    expect(admin).not.toHaveClass('is-invalid')
-    expect(partner).not.toHaveClass('is-invalid')
-
-    await userEvent.click(confirm())
-    expect(onConfirm).toHaveBeenCalledWith('25000', { successFee: '10', adminRate: '40', partnerRate: '60' })
   })
 
   /**
@@ -320,22 +276,7 @@ describe('FundedAmountModal', () => {
     expect(onConfirm).toHaveBeenCalledWith('25000', null)
   })
 
-  it('drops the rate errors when the success fee is cleared', async () => {
-    renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission />)
-    const fee = screen.getByLabelText('Success Fee (%)')
-
-    await userEvent.type(fee, '10')
-    await userEvent.clear(screen.getByLabelText('Admin Commission Rate'))
-    await userEvent.click(confirm())
-    expect(screen.getByText('Admin commission rate is required.')).toBeInTheDocument()
-
-    await userEvent.clear(fee)
-
-    expect(screen.queryByText('Admin commission rate is required.')).not.toBeInTheDocument()
-    expect(screen.queryByText('Partner commission rate is required.')).not.toBeInTheDocument()
-  })
-
-  it('refuses a split that does not add up to 100%', async () => {
+  it('sends the split it shows, not a saved one', async () => {
     const onConfirm = vi.fn()
     renderWithProviders(
       <FundedAmountModal {...base} onConfirm={onConfirm} canEditCommission showPartnerCommission successFeeRate={10} adminCommissionRate={40} partnerCommissionRate={50} />
@@ -343,8 +284,8 @@ describe('FundedAmountModal', () => {
 
     await userEvent.click(confirm())
 
-    expect(screen.getByText('Admin and partner commission rates must add up to 100%.')).toBeInTheDocument()
-    expect(onConfirm).not.toHaveBeenCalled()
+    expect(screen.queryByText('Admin and partner commission rates must add up to 100%.')).not.toBeInTheDocument()
+    expect(onConfirm).toHaveBeenCalledWith('25000', { successFee: '10', adminRate: '100', partnerRate: '0' })
   })
 
   it('ignores a rate above 100', async () => {
@@ -388,7 +329,11 @@ describe('FundedAmountModal', () => {
     expect(onHide).toHaveBeenCalledTimes(1)
 
     rerender(<FundedAmountModal {...base} onHide={onHide} onConfirm={vi.fn()} loading />)
-    expect(screen.getByRole('button', { name: /processing/i })).toBeDisabled()
+    // The same Confirm button, saying Processing... with a spinner - not just text.
+    const processing = screen.getByRole('button', { name: /processing/i })
+    expect(processing).toBeDisabled()
+    expect(processing).toHaveClass('btn', 'fam-btn-confirm')
+    expect(processing.querySelector('.spinner-border')).not.toBeNull()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
   })
 
@@ -458,5 +403,154 @@ describe('FundedAmountModal - commission ranges', () => {
     expect(fee).toHaveAttribute('step', '0.01')
     expect(screen.getByLabelText('Admin Commission Rate')).toHaveAttribute('min', '0')
     expect(screen.getByLabelText('Partner Commission Rate')).toHaveAttribute('min', '0')
+  })
+
+  describe('Partner Commission section', () => {
+    const setup = { tiers: [{ id: 1, min_count: 0, max_count: null, percentage: 30 }], deal_position: 3, funded_deal_count: 2 }
+
+    it("shows a partner client's commission tiers", () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={setup} defaultPartnerCommissionRate={30} />
+      )
+
+      const panel = screen.getByRole('region', { name: 'Partner Commission' })
+      expect(within(panel).getByTestId('partner-commission-rate')).toHaveTextContent('30%')
+      expect(within(panel).getByTestId('partner-commission-deal')).toHaveTextContent('Deal #3 · 0+ deals tier')
+    })
+
+    it('shows it, saying "Not set", when the partner has none', () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={{ ...setup, tiers: [] }} />
+      )
+
+      expect(within(screen.getByRole('region', { name: 'Partner Commission' })).getByText('Not set')).toBeInTheDocument()
+    })
+
+    it('links to set partner commissions when none is set', () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={{ ...setup, tiers: [] }} setPartnerCommissionHref="/partners/5?tab=commissions" />
+      )
+
+      const panel = screen.getByRole('region', { name: 'Partner Commission' })
+      expect(within(panel).getByRole('link', { name: /set partner commissions/i })).toHaveAttribute('href', '/partners/5?tab=commissions')
+    })
+
+    it('is not shown for a host client, which has no partner split', () => {
+      renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission partnerCommissionSetup={null} />)
+
+      expect(screen.queryByRole('region', { name: 'Partner Commission' })).not.toBeInTheDocument()
+    })
+  })
+})
+
+// Partner profile › Commissions: when the deal falls in one of the partner's
+// tiers the admin / partner split comes from it and can't be changed here
+// (fch-api sets it from the tier on save).
+describe("FundedAmountModal - the split from the partner's tier", () => {
+  const setupWith = (tier: Record<string, unknown>) => ({
+    tiers: [{ id: 1, min_count: 0, max_count: null, ...tier }],
+    deal_position: 1,
+    funded_deal_count: 0,
+  })
+  const percentTier = setupWith({ commission_type: 'percentage', percentage: 30, amount: null })
+  const flatTier = (amount: number) => setupWith({ commission_type: 'flat', percentage: null, amount })
+
+  describe('a Percentage tier', () => {
+    it('shows its split read-only', async () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} initialAmount="20000" onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={percentTier} defaultPartnerCommissionRate={30} />
+      )
+
+      await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+
+      expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
+      expect(screen.getByLabelText('Partner Commission Rate')).toBeDisabled()
+      expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(70)
+      expect(screen.getByLabelText('Admin Commission Rate')).toBeDisabled()
+      expect(screen.getByText("Set by the partner's commission tier for this deal.")).toBeInTheDocument()
+    })
+
+    it('wins over a split saved before', async () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission adminCommissionRate={60} partnerCommissionRate={40} partnerCommissionSetup={percentTier} defaultPartnerCommissionRate={30} />
+      )
+
+      await userEvent.type(screen.getByLabelText('Success Fee (%)'), '5')
+
+      expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
+    })
+  })
+
+  describe('a Flat Amount tier', () => {
+    it('shows the split in $ only, no % rates, and pays exactly the flat amount', async () => {
+      const onConfirm = vi.fn()
+      renderWithProviders(
+        <FundedAmountModal {...base} initialAmount="250000" requestedAmount={250000} onConfirm={onConfirm} canEditCommission showPartnerCommission partnerCommissionSetup={flatTier(500)} />
+      )
+
+      // $250,000 x 12% = $30,000: $500 of it is the partner's - not a rounded 1.67% ($501).
+      await userEvent.type(screen.getByLabelText('Success Fee (%)'), '12')
+
+      expect(screen.queryByLabelText('Partner Commission Rate')).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Admin Commission Rate')).not.toBeInTheDocument()
+      expect(row('Partner Commission')).toHaveTextContent('$500.00')
+      expect(row('Partner Commission')).toHaveTextContent('Flat amount')
+      expect(row('Admin Commission')).toHaveTextContent('$29,500.00')
+      expect(screen.queryByText(/of success fee/)).not.toBeInTheDocument()
+
+      await userEvent.click(confirm())
+      // The rates still go along; the API sets the exact amount from the tier.
+      expect(onConfirm).toHaveBeenCalledWith('250000', { successFee: '12', adminRate: '98.33', partnerRate: '1.67' })
+    })
+
+    it('follows the funded amount', async () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} initialAmount="20000" onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={flatTier(500)} />
+      )
+      await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+      expect(row('Admin Commission')).toHaveTextContent('$1,500.00')
+
+      await userEvent.clear(fundedInput())
+      await userEvent.type(fundedInput(), '50000')
+
+      expect(row('Partner Commission')).toHaveTextContent('$500.00')
+      expect(row('Admin Commission')).toHaveTextContent('$4,500.00')
+    })
+
+    it('leaves the admin at least 1% when the flat amount is more than the fee', async () => {
+      const onConfirm = vi.fn()
+      renderWithProviders(
+        <FundedAmountModal {...base} initialAmount="20000" onConfirm={onConfirm} canEditCommission showPartnerCommission partnerCommissionSetup={flatTier(5000)} />
+      )
+
+      await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+
+      expect(row('Partner Commission')).toHaveTextContent('$1,980.00')
+      expect(row('Admin Commission')).toHaveTextContent('$20.00')
+      await userEvent.click(confirm())
+      expect(onConfirm).toHaveBeenCalledWith('20000', { successFee: '10', adminRate: '1', partnerRate: '99' })
+    })
+
+    it('wins over a split saved before', async () => {
+      renderWithProviders(
+        <FundedAmountModal {...base} initialAmount="20000" onConfirm={vi.fn()} canEditCommission showPartnerCommission adminCommissionRate={60} partnerCommissionRate={40} partnerCommissionSetup={flatTier(500)} />
+      )
+
+      await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+
+      expect(row('Partner Commission')).toHaveTextContent('$500.00')
+    })
+  })
+
+  it('with no tier for the deal the admin keeps it all, read-only', async () => {
+    renderWithProviders(
+      <FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission showPartnerCommission partnerCommissionSetup={{ tiers: [], deal_position: 1, funded_deal_count: 0 }} />
+    )
+
+    await userEvent.type(screen.getByLabelText('Success Fee (%)'), '10')
+
+    expect(screen.getByLabelText('Partner Commission Rate')).toBeDisabled()
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(0)
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(100)
   })
 })

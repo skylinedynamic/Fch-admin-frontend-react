@@ -15,6 +15,8 @@ Several features or tasks on the same date means several files with the same dat
 | File | Title |
 |---|---|
 | [2026-11-15-funding-request-save-sends-loaded-values.md](2026-11-15-funding-request-save-sends-loaded-values.md) | Funding Request step: a save right after the load sends the loaded values (CI flake) |
+| [2026-11-15-commission-tiers.md](2026-11-15-commission-tiers.md) | Partner commission tiers — Funding, % by funded-deal count (Partner › Commissions) |
+| [2026-11-15-closed-summary-card-look.md](2026-11-15-closed-summary-card-look.md) | Funding Completed card — subtle success header edged on every side, light shadow, light inner borders |
 
 ### 2026-11-11
 

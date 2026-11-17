@@ -28,6 +28,7 @@ import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar
 import { useAuthStore } from '../../../store/auth/authStore';
 import { LastStatusNote, StatusNoteVisibility } from './components/StatusNoteVisibility';
 import { usePermissions } from '../../../lib/auth/usePermissions';
+import { COMMISSION_MANAGE_PERMISSION, COMMISSION_VIEW_PERMISSION, partnerCommissionPath } from '../../../config/partnerCommission';
 
 type StepType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -90,6 +91,8 @@ export default function FundingApplicationDetails() {
 
     const app = (apiResponse?.data || apiResponse || {}) as FundingApplicationDetailsType;
     const showPartnerCommission = app?.partner_id !== authPartnerId;
+    // As the Commission Details card: admin view with "update commission".
+    const canEditClosingCommission = !isPartner && hasPermission(COMMISSION_VIEW_PERMISSION) && hasPermission(COMMISSION_MANAGE_PERMISSION);
     const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
     // Editable whenever the application is in one of the API's editable
@@ -974,9 +977,10 @@ export default function FundingApplicationDetails() {
                                                                 type="button"
                                                                 className="btn btn-primary"
                                                                 onClick={handleUpdateClick}
-                                                                disabled={updateMutation.isPending}
                                                             >
-                                                                {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                                                                {/* Only opens the confirm / Closed (Completed) modal, which
+                                                                    shows its own loading state while it saves. */}
+                                                                Update Status
                                                             </button>
                                                         </div>
                                                     )}
@@ -1129,11 +1133,14 @@ export default function FundingApplicationDetails() {
                 successFeeRate={parseFloat(app.total_commission?.toString() || '0')}
                 adminCommissionRate={parseFloat(app.admin_commission?.toString() || '0')}
                 partnerCommissionRate={parseFloat(app.partner_commission?.toString() || '0')}
+                defaultPartnerCommissionRate={app.partner_default_commission != null ? Number(app.partner_default_commission) : null}
+                partnerCommissionSetup={app.partner_commission_setup ?? null}
                 showPartnerCommission={showPartnerCommission}
                 isCommissionSet={isCommissionSet}
                 requestedAmount={requestedAmountValue}
-                // As the Commission Details card: admin view with "update commission".
-                canEditCommission={!isPartner && hasPermission('view commission') && hasPermission('update commission')}
+                canEditCommission={canEditClosingCommission}
+                // Not set: a link to Partner profile › Commissions, for whoever may set it.
+                setPartnerCommissionHref={canEditClosingCommission && app.partner_id ? partnerCommissionPath(app.partner_id) : null}
                 commissionErrors={closingCommissionErrors}
             />
 

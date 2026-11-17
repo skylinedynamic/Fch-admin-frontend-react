@@ -1,3 +1,5 @@
+import type { PartnerCommissionTier } from '../partner/types';
+import type { PartnerCommissionType } from '../../config/partnerCommission';
 /** One row of the API's `matched_lenders` (LenderMatchService). */
 export interface MatchedLender {
     id: number;
@@ -473,6 +475,12 @@ export interface FundingApplicationDetails {
     total_commission?: string | number | null;
     admin_commission?: string | number | null;
     partner_commission?: string | number | null;
+    /** How the partner's share was set: from a Flat Amount tier (a fixed $), a Percentage tier, or null (typed). */
+    partner_commission_type?: PartnerCommissionType | null;
+    /** The partner's commission (%) for this deal - its tier (Partner profile › Commissions); null when unset or a host client. */
+    partner_default_commission?: number | null;
+    /** The Closed (Completed) modal's Partner Commission section; null for a host client. */
+    partner_commission_setup?: PartnerCommissionSetup | null;
     total_commission_amount?: string | number | null;
     admin_commission_amount?: string | number | null;
     partner_commission_amount?: string | number | null;
@@ -497,3 +505,13 @@ export interface Certificate {
     pdf_generation_timestamp: string;
 }
 
+
+/**
+ * A partner's Funding commission tiers (empty when none is set) and this
+ * application's number among the partner's funded deals.
+ */
+export interface PartnerCommissionSetup {
+    tiers: PartnerCommissionTier[];
+    deal_position: number;
+    funded_deal_count: number;
+}

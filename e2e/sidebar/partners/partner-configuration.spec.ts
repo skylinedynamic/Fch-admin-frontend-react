@@ -158,7 +158,7 @@ test.describe('Partner profile - Configuration', () => {
     const viewport = page.viewportSize()!
     expect(await editor.boundingBox()).toMatchObject({ x: 0, y: 0, width: viewport.width, height: viewport.height })
 
-    await editor.getByRole('button', { name: 'Save Template' }).click()
+    await editor.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(() => api.find('POST', '/common/agreement-templates/save/7').at(-1)?.json).toMatchObject({
       slug: 'borrower', partner_id: 5,
     })

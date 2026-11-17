@@ -3,6 +3,7 @@ import { getActivityLogs, downloadActivityAttachment, updateActivityLog, deleteA
 import { VISIBILITY_BADGE_STYLES } from '../../../modules/activity-log/constants';
 import { downloadBlob } from '../../../utils/fileDownload';
 import { sanitizeHtml } from '../../../utils/sanitizeHtml';
+import { textLineBreaks } from '../../../utils/textLineBreaks';
 import { useStickyBelowSubheader } from '../../../hooks/useStickyBelowSubheader';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import '../StatisticsCardSkeleton.css';
@@ -13,7 +14,7 @@ import {
     ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER,
     TYPE_EMAIL, TYPE_ACTIVITY, LOG_TYPE_EMAIL_UPDATE, LOG_TYPE_EMAIL_SENT,
     LOG_TYPE_ACTIVITY, LOG_TYPE_INVOICE_CREATE, LOG_TYPE_DOCUMENT_UPLOAD, LOG_TYPE_CHECKLIST_UPDATE,
-    LOG_TYPE_PARTNER_CREATE, LOG_TYPE_PARTNER_UPDATE, LOG_TYPE_PARTNER_CONTACT_UPDATE, LOG_TYPE_PARTNER_CONFIGURATION_UPDATE, LOG_TYPE_PARTNER_DELETE, LOG_TYPE_PARTNER_PAYMENT,
+    LOG_TYPE_PARTNER_CREATE, LOG_TYPE_PARTNER_UPDATE, LOG_TYPE_PARTNER_CONTACT_UPDATE, LOG_TYPE_PARTNER_CONFIGURATION_UPDATE, LOG_TYPE_PARTNER_COMMISSION_UPDATE, LOG_TYPE_PARTNER_DELETE, LOG_TYPE_PARTNER_PAYMENT,
     LOG_TYPE_BORROWER_CREATE, LOG_TYPE_BORROWER_UPDATE, LOG_TYPE_BORROWER_CONTACT_UPDATE, LOG_TYPE_BORROWER_PAYMENT, LOG_TYPE_BUSINESS_UPDATE,
     LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE,
     LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
@@ -512,7 +513,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
             LOG_TYPE_INVOICE_CREATE,
             LOG_TYPE_DOCUMENT_UPLOAD,
             LOG_TYPE_CHECKLIST_UPDATE,
-            LOG_TYPE_PARTNER_CONTACT_UPDATE, LOG_TYPE_PARTNER_CONFIGURATION_UPDATE, LOG_TYPE_FUNDING_REQUEST_CREATE,
+            LOG_TYPE_PARTNER_CONTACT_UPDATE, LOG_TYPE_PARTNER_CONFIGURATION_UPDATE, LOG_TYPE_PARTNER_COMMISSION_UPDATE, LOG_TYPE_FUNDING_REQUEST_CREATE,
             LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE, LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE,
             LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
             LOG_TYPE_TASK_VERIFICATION,
@@ -766,7 +767,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
                                                                     {hasDescription && (
                                                                         <div
                                                                             className="text-muted mb-2 fs-13"
-                                                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity.description) }}
+                                                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(textLineBreaks(activity.description)) }}
                                                                         />
                                                                     )}
 

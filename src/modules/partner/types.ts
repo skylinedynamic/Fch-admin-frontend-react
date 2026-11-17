@@ -1,3 +1,4 @@
+import type { PartnerCommissionType } from '../../config/partnerCommission';
 export type Partner = {
   id: number | string
   name: string
@@ -26,4 +27,37 @@ export interface PartnerOption {
   id: number;
   full_name: string;
   company_name: string | null;
+}
+
+/**
+ * One Funding commission tier of a partner: for its clients' funded deals
+ * min_count..max_count (inclusive; null max = "and up") the partner gets
+ * `percentage` of the success fee or a flat `amount` per deal - whichever the
+ * tier's commission_type says (missing = percentage); the other is null.
+ */
+export interface PartnerCommissionTier {
+  id?: number;
+  min_count: number | null;
+  max_count: number | null;
+  commission_type?: PartnerCommissionType;
+  percentage?: number | null;
+  amount?: number | null;
+}
+
+/** PUT /admin/partners/{id}/commission: the partner's Funding tiers (at least one), each with its type. */
+export interface PartnerCommissionPayload {
+  tiers: PartnerCommissionTier[];
+}
+
+/** The partner's tiers, and how many of its clients' funding applications are funded. */
+export interface PartnerCommission {
+  id: number;
+  commission_tiers: PartnerCommissionTier[];
+  funded_deal_count: number;
+}
+
+export interface PartnerCommissionResponse {
+  status: boolean;
+  message: string;
+  data: PartnerCommission;
 }

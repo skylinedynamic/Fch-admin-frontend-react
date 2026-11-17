@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
-import { useAgreement, useAgreementPreviewValues, useSaveAgreement } from '../../../../modules/agreement';
+import { useAgreement, useAgreementMergeFields, useAgreementPreviewValues, useSaveAgreement } from '../../../../modules/agreement';
+import { AGREEMENT_MERGE_FIELDS } from '../../../../config/agreementMergeFields';
+import { MergeFieldsContext } from './mergeFieldsContext';
+import { registerMergeFieldLabels } from './mergeChips';
 import { useConfigPartner } from '../../../../modules/settings/configPartner';
 import { useAuthStore } from '../../../../store/auth/authStore';
 
@@ -29,6 +32,7 @@ import { FILE_MANAGER_FOLDERS } from '../../../../modules/filemanager/config';
 import { useBuilderHistory } from './useBuilderHistory';
 import { ConfirmDialog } from './ConfirmDialog';
 import { StarterTemplatesDialog } from './StarterTemplatesDialog';
+import { SaveAsTemplateDialog } from './SaveAsTemplateDialog';
 import { defaultTemplateFor } from './starterTemplates';
 import { MergeFieldsHint } from './MergeFieldsHint';
 
@@ -58,7 +62,6 @@ const AgreementBuilder: React.FC = () => {
     const [fmOpen, setFmOpen] = useState<boolean>(false);
     const [fmTargetBlockId, setFmTargetBlockId] = useState<string | null>(null);
 
-    const previewRef = useRef<HTMLIFrameElement>(null);
 
     // Settings and Partner profile › Configuration both leave the builder a narrow
     // column that cuts the A4 page off, so agreements are edited full screen.
@@ -98,6 +101,7 @@ const AgreementBuilder: React.FC = () => {
     const [savedThisSession, setSavedThisSession] = useState(false);
     const [confirming, setConfirming] = useState<'clear' | 'close' | null>(null);
     const [pickingTemplate, setPickingTemplate] = useState(false);
+    const [savingAsTemplate, setSavingAsTemplate] = useState(false);
     const [dragging, setDragging] = useState(false);
     // A palette item held over the empty page: the whole page takes the drop.
     const [emptyDrop, setEmptyDrop] = useState(false);
@@ -194,6 +198,16 @@ const AgreementBuilder: React.FC = () => {
         setSelectedId(newBlock.id);
     };
 
+    // "Insert Dynamic Value" with no text block to take it: a new text block holding it,
+    // placed as the palette would place one.
+    const onAddDynamicValue = (token: string) => {
+        const arr = [...blocks];
+        const newBlock = { ...makeBlock('text'), content: token };
+        arr.splice(paletteInsertIndex(), 0, newBlock);
+        setBlocks(arr);
+        setSelectedId(newBlock.id);
+    };
+
     // The palette adds below the selected top-level block, or at the end.
     const paletteInsertIndex = () => {
         const selectedIndex = blocks.findIndex(b => b.id === selectedId);
@@ -243,8 +257,16 @@ const AgreementBuilder: React.FC = () => {
     // The preview opens the app's own calendar in the date fields; the
     // agreement is saved as it is (handleSave uses `html`).
     // The company fields show the owner's real details; signer fields show examples.
+    // The fixed fields plus this agreement's Plan & Fee values (all plans for the
+    // partner agreement, Borrower Enrollment for the borrower one).
+    const { data: planFields } = useAgreementMergeFields(editingType, !!editingType);
+    const mergeFields = useMemo(() => {
+        const all = [...AGREEMENT_MERGE_FIELDS, ...(planFields ?? [])];
+        registerMergeFieldLabels(all);
+        return all;
+    }, [planFields]);
     const { data: previewValues } = useAgreementPreviewValues(view === 'preview');
-    const previewHtml = useMemo(() => withAppCalendar(withMergeSamples(html, previewValues)), [html, previewValues]);
+    const previewHtml = useMemo(() => withAppCalendar(withMergeSamples(html, previewValues, mergeFields)), [html, previewValues, mergeFields]);
 
     const handleEdit = (type: 'partner' | 'borrower') => {
         setEditingType(type);
@@ -349,9 +371,12 @@ const AgreementBuilder: React.FC = () => {
                         <i className="ri-layout-masonry-line me-1" aria-hidden="true" />Templates
                     </button>
                     <button className="btn btn-sm btn-outline-danger" onClick={() => setConfirming('clear')} disabled={blocks.length === 0}>Clear All</button>
+                    <button type="button" className="btn btn-sm btn-outline-primary ab4-save-as-template-btn" onClick={() => setSavingAsTemplate(true)} disabled={blocks.length === 0}>
+                        <i className="ri-bookmark-line me-1" aria-hidden="true" />Save as Template
+                    </button>
                     <button className={`btn btn-sm ${saved ? 'btn-success' : 'btn-primary'} ab4-save-btn`} onClick={handleSave} disabled={saveMutation.isPending}>
                         {saveMutation.isPending ? <span className="spinner-border spinner-border-sm me-1" aria-hidden="true" /> : <i className={`${saved ? 'ri-check-line' : 'ri-save-3-line'} me-1`} />}
-                        Save Template
+                        Save Agreement
                     </button>
                 </div>
             </div>
@@ -361,6 +386,14 @@ const AgreementBuilder: React.FC = () => {
                     audience={editingType ?? 'partner'}
                     onClose={() => setPickingTemplate(false)}
                     onPick={(template) => { setBlocks(template.blocks()); setSelectedId(null); setPickingTemplate(false); }}
+                    onPickSaved={(template) => { applySnapshot(template); setSelectedId(null); setPickingTemplate(false); }}
+                />
+            )}
+            {savingAsTemplate && (
+                <SaveAsTemplateDialog
+                    audience={editingType ?? 'partner'}
+                    templateJson={JSON.stringify({ blocks, pagePad, docBg })}
+                    onClose={() => setSavingAsTemplate(false)}
                 />
             )}
             {confirming === 'clear' && (
@@ -480,6 +513,7 @@ const AgreementBuilder: React.FC = () => {
                             setPagePad={setPagePad}
                             docBg={docBg}
                             setDocBg={setDocBg}
+                            onAddDynamicValue={onAddDynamicValue}
                         />
                     </>
                 ) : (
@@ -498,26 +532,20 @@ const AgreementBuilder: React.FC = () => {
                                     <div className="text-muted fs-12">
                                         {blocks.length} {blocks.length === 1 ? 'Block' : 'Blocks'}
                                     </div>
-                                    <button
-                                        className="btn btn-sm btn-primary d-flex align-items-center gap-1 waves-effect"
-                                        onClick={() => previewRef.current?.contentWindow?.print()}
-                                        title="Download as PDF"
-                                    >
-                                        <i className="ri-download-2-line fs-14"></i>
-                                        <span>Download PDF</span>
-                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <iframe ref={previewRef} className="ab4-preview-frame" srcDoc={previewHtml} title="Preview" frameBorder="0" />
+                        <iframe className="ab4-preview-frame" srcDoc={previewHtml} title="Preview" frameBorder="0" />
                     </div>
                 )}
             </div>
         </div>
     );
 
+    const editorWithFields = <MergeFieldsContext.Provider value={mergeFields}>{editor}</MergeFieldsContext.Provider>;
+
     if (!fullScreen) {
-        return editor;
+        return editorWithFields;
     }
 
     // Portalled to <body> so no ancestor's width, padding or overflow can clip it;
@@ -529,7 +557,7 @@ const AgreementBuilder: React.FC = () => {
             aria-modal="true"
             aria-label={configPartner ? `${configPartnerName}'s ${editingType} agreement` : agreementName}
         >
-            {editor}
+            {editorWithFields}
         </div>,
         document.body
     );

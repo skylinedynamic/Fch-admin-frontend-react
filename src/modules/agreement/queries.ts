@@ -10,8 +10,14 @@ import {
   fetchAgreementPreviewValues,
   setAgreementRequired,
   fetchAgreementRequirement,
+  fetchAgreementMergeFields,
+  fetchSavedAgreementTemplates,
+  fetchSavedAgreementTemplate,
+  saveAgreementAsTemplate,
+  deleteSavedAgreementTemplate,
+  updateSavedAgreementTemplate,
 } from './services'
-import type { AgreementSlug, AgreementRequirementStatus, ApiResponse } from './types'
+import type { AgreementSlug, AgreementRequirementStatus, ApiResponse, SaveAgreementAsTemplatePayload, UpdateSavedAgreementTemplatePayload } from './types'
 
 /**
  * The cache key an agreement query is held under: the user's own templates,
@@ -113,5 +119,61 @@ export const useAgreementPreviewValues = (enabled = true) => {
     queryFn: () => fetchAgreementPreviewValues(partnerId),
     enabled,
     staleTime: 1000 * 60 * 5,
+  })
+}
+
+/** The Plan & Fee dynamic values the builder offers for this agreement type. */
+export const useAgreementMergeFields = (type: AgreementSlug | null, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.agreement.mergeFields(type ?? ''),
+    queryFn: () => fetchAgreementMergeFields(type as AgreementSlug),
+    enabled: enabled && !!type,
+    staleTime: 1000 * 60 * 5,
+  })
+
+/** The saved templates of one agreement type (Templates dialog), fetched while it is open. */
+export const useSavedAgreementTemplates = (slug: AgreementSlug, enabled = true) => {
+  const partnerId = useConfigPartnerId()
+  return useQuery({
+    queryKey: forPartnerKey(queryKeys.agreement.savedTemplates(slug), partnerId),
+    queryFn: () => fetchSavedAgreementTemplates(slug, partnerId),
+    enabled: !!slug && enabled,
+  })
+}
+
+/** One saved template's blocks, fetched when it is picked. */
+export const useLoadSavedAgreementTemplate = () => {
+  const partnerId = useConfigPartnerId()
+  return useMutation({ mutationFn: (id: number) => fetchSavedAgreementTemplate(id, partnerId) })
+}
+
+/** Save as Template; the agreement type's list is refreshed. */
+export const useSaveAgreementAsTemplate = () => {
+  const qc = useQueryClient()
+  const partnerId = useConfigPartnerId()
+  return useMutation({
+    mutationFn: (payload: SaveAgreementAsTemplatePayload) => saveAgreementAsTemplate(payload, partnerId),
+    onSuccess: (_res, { slug }) => qc.invalidateQueries({ queryKey: queryKeys.agreement.savedTemplates(slug) }),
+  })
+}
+
+/** Delete a saved template; the agreement type's list is refreshed. */
+export const useDeleteSavedAgreementTemplate = () => {
+  const qc = useQueryClient()
+  const partnerId = useConfigPartnerId()
+  return useMutation({
+    mutationFn: ({ id }: { id: number; slug: AgreementSlug }) => deleteSavedAgreementTemplate(id, partnerId),
+    onSuccess: (_res, { slug }) => qc.invalidateQueries({ queryKey: queryKeys.agreement.savedTemplates(slug) }),
+  })
+}
+
+/** Rename a saved template or replace its agreement; the agreement type's list is refreshed. */
+export const useUpdateSavedAgreementTemplate = () => {
+  const qc = useQueryClient()
+  const partnerId = useConfigPartnerId()
+  return useMutation({
+    mutationFn: ({ id, slug: _slug, ...payload }: UpdateSavedAgreementTemplatePayload & { id: number; slug: AgreementSlug }) =>
+      updateSavedAgreementTemplate(id, payload, partnerId),
+    onSuccess: (_res, { slug }) => qc.invalidateQueries({ queryKey: queryKeys.agreement.savedTemplates(slug) }),
   })
 }

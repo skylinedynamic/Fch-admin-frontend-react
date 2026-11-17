@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PARTNER_COMMISSION_TYPE } from '../../config/partnerCommission';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../common/PageHeader';
 import { useCommission } from '../../modules/commission/queries';
@@ -59,9 +60,12 @@ export default function CommissionDetails() {
     const viewer = resolveCommissionViewer(commission?.viewer, user);
     // Host staff follow their own payout here; only the host's side pays (the API says can_pay).
     const showsPayout = viewer === COMMISSION_VIEWER.HOST_OWNER || viewer === COMMISSION_VIEWER.HOST_STAFF;
+    // From the partner's Flat Amount tier: a fixed $, so no % for the partner
+    // or admin share (the admin keeps the rest of the success fee).
+    const flatPartnerShare = commission?.partner_commission_type === PARTNER_COMMISSION_TYPE.FLAT;
     const commissionCard = !commission ? null : {
         [COMMISSION_VIEWER.HOST_OWNER]: { title: 'Total Commission', amount: commission.total_commission_amount, rate: commission.total_commission },
-        [COMMISSION_VIEWER.PARTNER_OWNER]: { title: 'Your Commission', amount: commission.partner_commission_amount, rate: commission.partner_commission },
+        [COMMISSION_VIEWER.PARTNER_OWNER]: { title: 'Your Commission', amount: commission.partner_commission_amount, rate: flatPartnerShare ? null : commission.partner_commission, flat: flatPartnerShare },
         [COMMISSION_VIEWER.HOST_STAFF]: { title: 'My Commission', amount: commission.payout?.amount, rate: commission.payout?.payout_type === PAYOUT_TYPE_COMMISSION ? commission.payout?.rate : null },
         [COMMISSION_VIEWER.PARTNER_STAFF]: null,
     }[viewer];
@@ -139,7 +143,7 @@ export default function CommissionDetails() {
                                 value={formatCurrency(commissionCard.amount ?? 0, commission.currency_symbol, commission.conversion_rate, 0)}
                                 icon="ri-wallet-line"
                                 color="success"
-                                subValue={commissionCard.rate != null ? `${commissionCard.rate}% Rate` : undefined}
+                                subValue={'flat' in commissionCard && commissionCard.flat ? 'Flat amount' : commissionCard.rate != null ? `${commissionCard.rate}% Rate` : undefined}
                             />
                         </div>
                     )}
@@ -305,7 +309,7 @@ export default function CommissionDetails() {
                                             <thead className="table-light text-muted">
                                                 <tr>
                                                     <th scope="col">Type</th>
-                                                    <th scope="col" className="text-end">Percentage</th>
+                                                    <th scope="col" className="text-end">Rate</th>
                                                     <th scope="col" className="text-end">Amount</th>
                                                     <th scope="col" className="text-end"></th>
                                                 </tr>
@@ -333,7 +337,7 @@ export default function CommissionDetails() {
                                                             <span className="fw-medium">Admin Commission</span>
                                                         </div>
                                                     </td>
-                                                    <td className="text-end">{commission.admin_commission}%</td>
+                                                    <td className="text-end">{flatPartnerShare ? '—' : `${commission.admin_commission}%`}</td>
                                                     <td className="text-end fw-bold text-success">{formatCurrency(commission.admin_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
                                                     <td></td>
                                                 </tr>
@@ -352,7 +356,7 @@ export default function CommissionDetails() {
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="text-end">{commission.partner_commission}%</td>
+                                                        <td className="text-end">{flatPartnerShare ? 'Flat amount' : `${commission.partner_commission}%`}</td>
                                                         <td className="text-end fw-bold text-info">{formatCurrency(commission.partner_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
                                                         <td></td>
                                                     </tr>

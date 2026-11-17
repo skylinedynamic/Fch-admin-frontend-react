@@ -11,12 +11,14 @@ import { PARTNER_TYPES } from '../../../../src/config/partnerTypeOptions'
 const detail = vi.hoisted(() => ({ application: {} as Record<string, unknown> }))
 // Shared spies, so a test can see what the page saved and in which order.
 const mutations = vi.hoisted(() => ({ updateStatus: vi.fn(), saveCommission: vi.fn(), assignLender: vi.fn() }))
+// Whether a save is in flight, as the hooks report it.
+const pending = vi.hoisted(() => ({ updateStatus: false, saveCommission: false }))
 
 vi.mock('../../../../src/modules/application/queries', async (original) => ({
   ...(await original<typeof import('../../../../src/modules/application/queries')>()),
   useFundingApplicationDetails: () => ({ data: { data: detail.application }, isLoading: false, error: null }),
-  useUpdateFundingApplicationStatus: () => ({ mutate: mutations.updateStatus, isPending: false }),
-  useSaveFundingApplicationCommission: () => ({ mutate: vi.fn(), mutateAsync: mutations.saveCommission, isPending: false }),
+  useUpdateFundingApplicationStatus: () => ({ mutate: mutations.updateStatus, isPending: pending.updateStatus }),
+  useSaveFundingApplicationCommission: () => ({ mutate: vi.fn(), mutateAsync: mutations.saveCommission, isPending: pending.saveCommission }),
   useAssignLenderToFundingApplication: () => ({ mutateAsync: mutations.assignLender, isPending: false }),
 }))
 
@@ -597,6 +599,8 @@ describe('FundingApplicationDetails — closing with a commission', () => {
   beforeEach(() => {
     mutations.updateStatus.mockReset()
     mutations.saveCommission.mockReset()
+    pending.updateStatus = false
+    pending.saveCommission = false
     detail.application = { ...closable }
     useAuthStore.setState({ user: hostWithRights as never })
   })
@@ -616,6 +620,74 @@ describe('FundingApplicationDetails — closing with a commission', () => {
     expect(mutations.saveCommission).toHaveBeenCalledWith({ funding_application_id: 80, total_commission: 10, admin_commission: 10 })
     expect(mutations.saveCommission.mock.invocationCallOrder[0]).toBeLessThan(mutations.updateStatus.mock.invocationCallOrder[0])
     expect(mutations.updateStatus.mock.calls[0][0]).toMatchObject({ funding_application_id: 80, status: FUNDING_APPLICATION_STATUS.CLOSED, funded_amount: '25000' })
+  })
+
+  it("splits a partner client's success fee at the partner's own commission (Partner profile › Commissions)", async () => {
+    mutations.saveCommission.mockResolvedValue({})
+    detail.application = {
+      ...closable,
+      partner_id: 7,
+      partner_default_commission: 30,
+      partner_commission_setup: { tiers: [{ id: 1, min_count: 0, max_count: null, percentage: 30 }], deal_position: 4, funded_deal_count: 3 },
+    }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
+    await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
+    await userEvent.type(await screen.findByLabelText('Success Fee (%)'), '10')
+
+    // The partner's commission tiers, and the one this deal falls in.
+    expect(screen.getByTestId('partner-commission-rate')).toHaveTextContent('30%')
+    expect(screen.getByTestId('partner-commission-deal')).toHaveTextContent('Deal #4 · 0+ deals tier')
+
+    expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(30)
+    expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(70)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm & Update' }))
+
+    await waitFor(() => expect(mutations.updateStatus).toHaveBeenCalled())
+    expect(mutations.saveCommission).toHaveBeenCalledWith({ funding_application_id: 80, total_commission: 10, admin_commission: 70, partner_commission: 30 })
+  })
+
+  describe('a partner with no commission set', () => {
+    const unset = { ...closable, partner_id: 7, partner_default_commission: null, partner_commission_setup: { tiers: [], deal_position: 1, funded_deal_count: 0 } }
+
+    it("links to the partner's Commissions tab", async () => {
+      detail.application = { ...unset }
+      renderWithProviders(<FundingApplicationDetails />)
+
+      await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
+      await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
+
+      const panel = await screen.findByRole('region', { name: 'Partner Commission' })
+      expect(within(panel).getByRole('link', { name: /set partner commissions/i })).toHaveAttribute('href', '/partners/7?tab=commissions')
+    })
+
+    it('has no link without the "update commission" permission', async () => {
+      detail.application = { ...unset }
+      useAuthStore.setState({ user: { ...hostWithRights, permissions: ['update funding application', 'view commission'] } as never })
+      renderWithProviders(<FundingApplicationDetails />)
+
+      await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
+      await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
+
+      const panel = await screen.findByRole('region', { name: 'Partner Commission' })
+      expect(within(panel).getByText('Not set')).toBeInTheDocument()
+      expect(within(panel).queryByRole('link', { name: /set partner commissions/i })).not.toBeInTheDocument()
+    })
+  })
+
+  // Every status change is saved from a modal, which shows its own loading
+  // state (Confirm & Update: "Processing..."). The card's Update Status button
+  // only opens it, so it never shows one.
+  it.each(['saveCommission', 'updateStatus'] as const)('the Update Status button shows no loading state while the modal saves (%s)', (step) => {
+    pending[step] = true
+    renderWithProviders(<FundingApplicationDetails />)
+
+    const button = screen.getByRole('button', { name: 'Update Status' })
+    expect(button).toBeEnabled()
+    expect(button.querySelector('.spinner-border')).toBeNull()
+    expect(screen.queryByRole('button', { name: /updating/i })).not.toBeInTheDocument()
   })
 
   it('closes without saving a commission when none is entered', async () => {

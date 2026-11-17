@@ -7,10 +7,42 @@
 export interface AgreementMergeField {
   key: string
   label: string
-  group: 'Signer' | 'Your company' | 'Other'
+  /** 'Signer', 'Your company', 'Other', or a Plan & Fee group from the API. */
+  group: string
   /** Shown in the builder's preview in place of the field. */
   sample: string
+  /**
+   * The value is markup, not text - the partner's commission table
+   * (fch-api AgreementCommissionFields). The preview shows it sanitized.
+   */
+  html?: boolean
 }
+
+/** The signing partner's commission tiers as a table - partner agreement only, listed by the API. */
+export const AGREEMENT_COMMISSION_TABLE_FIELD_KEY = 'signer.commission_table'
+
+/**
+ * Inserted above the commission table as ordinary text, so the host can edit
+ * or remove it; the table itself is filled per partner when they sign.
+ */
+export const AGREEMENT_COMMISSION_TABLE_INTRO = {
+  title: 'Commission Structure',
+  description: 'For each funded deal, Partner earns the commission shown below for the tier that matches its number of funded deals.',
+}
+
+/**
+ * Text that goes in with a field, around its token: the commission table gets
+ * its title and description, then the token alone in its own paragraph (the
+ * server's table takes that paragraph's place). Other fields go in on their own.
+ */
+const escapeText = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+export const mergeFieldSnippet = (key: string): string | null =>
+  key === AGREEMENT_COMMISSION_TABLE_FIELD_KEY
+    ? `<p><strong>${escapeText(AGREEMENT_COMMISSION_TABLE_INTRO.title)}</strong></p>`
+      + `<p>${escapeText(AGREEMENT_COMMISSION_TABLE_INTRO.description)}</p>`
+      + `<p>${mergeFieldToken(key)}</p>`
+    : null
 
 export const AGREEMENT_MERGE_FIELDS: AgreementMergeField[] = [
   { key: 'signer.name', label: "Signer's name", group: 'Signer', sample: 'Jane Doe' },

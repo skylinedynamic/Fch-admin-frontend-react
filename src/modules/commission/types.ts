@@ -1,3 +1,4 @@
+import type { PartnerCommissionType } from '../../config/partnerCommission';
 import type { PaymentEnvironment } from '../../config/paymentEnvironment';
 
 // Common fields shared between list and detail
@@ -43,6 +44,8 @@ interface CommissionBase {
     total_commission?: string;
     admin_commission?: string;
     partner_commission?: string;
+    /** How the partner's share was set: from a Flat Amount tier (a fixed $), a Percentage tier, or null. */
+    partner_commission_type?: PartnerCommissionType | null;
     total_commission_amount?: string;
     admin_commission_amount?: string;
     partner_commission_amount?: string;

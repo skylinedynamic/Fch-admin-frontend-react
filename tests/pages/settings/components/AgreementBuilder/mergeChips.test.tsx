@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import {
   createMergeChip,
   decorateMergeFields,
+  registerMergeFieldLabels,
   undecorateMergeFields,
 } from '../../../../../src/pages/settings/components/AgreementBuilder/mergeChips'
 // @ts-ignore - BlockComponents is untyped JSX-in-TSX
@@ -25,6 +26,29 @@ describe('merge field chips', () => {
       ['owner.company_name', 'Your company name', 'false'],
       ['signer.name', "Signer's name", 'false'],
     ])
+  })
+
+  // Plan & Fee keys come from the API and may hold digits (an "11-month" plan).
+  it('shows a Plan & Fee value as a chip labelled from the list the builder loaded', () => {
+    registerMergeFieldLabels([{
+      key: 'plan.partner_enrollment.white_label_partner_wl.payment_plan_11_month_plan.total_amount',
+      label: 'White-Label Partner (WL) · Payment Plan (11-month plan): Total amount',
+      group: 'Plan & Fee: Partner enrollment', sample: '$7,696.70',
+    }])
+    const div = document.createElement('div')
+    div.innerHTML = decorateMergeFields('Fee {{plan.partner_enrollment.white_label_partner_wl.payment_plan_11_month_plan.total_amount}}')
+
+    const chip = div.querySelector('.ab4-merge-chip')
+    expect(chip?.getAttribute('data-merge')).toBe('plan.partner_enrollment.white_label_partner_wl.payment_plan_11_month_plan.total_amount')
+    expect(chip?.textContent).toBe('White-Label Partner (WL) · Payment Plan (11-month plan): Total amount')
+  })
+
+  // Not loaded yet, or the plan was switched off: still a chip, so it is not typed over.
+  it('shows a Plan & Fee value it has no label for as a plain Plan & Fee chip', () => {
+    const div = document.createElement('div')
+    div.innerHTML = decorateMergeFields('{{plan.borrower_enrollment.old_plan.total_amount}}')
+
+    expect(div.querySelector('.ab4-merge-chip')?.textContent).toBe('Plan & Fee value')
   })
 
   it('leaves unknown fields as typed', () => {

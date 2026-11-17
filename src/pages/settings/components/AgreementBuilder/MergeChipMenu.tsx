@@ -1,6 +1,6 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AGREEMENT_MERGE_FIELDS } from '../../../../config/agreementMergeFields';
+import { MergeFieldsContext } from './mergeFieldsContext';
 
 interface MergeChipMenuProps {
     /** The clicked chip; the menu opens under it. */
@@ -20,7 +20,8 @@ export const MergeChipMenu: React.FC<MergeChipMenuProps> = ({ chip, onPick, onRe
     const menuRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState({ top: 0, left: 0 });
     const current = chip.getAttribute('data-merge');
-    const groups = Array.from(new Set(AGREEMENT_MERGE_FIELDS.map((f) => f.group)));
+    const fields = useContext(MergeFieldsContext);
+    const groups = Array.from(new Set(fields.map((f) => f.group)));
 
     useLayoutEffect(() => {
         const rect = chip.getBoundingClientRect();
@@ -50,7 +51,7 @@ export const MergeChipMenu: React.FC<MergeChipMenuProps> = ({ chip, onPick, onRe
             {groups.map((group) => (
                 <div key={group} className="ab4-chip-menu__group">
                     <div className="ab4-chip-menu__group-title">{group}</div>
-                    {AGREEMENT_MERGE_FIELDS.filter((f) => f.group === group).map((f) => (
+                    {fields.filter((f) => f.group === group).map((f) => (
                         <button key={f.key} type="button" role="menuitemradio" aria-checked={f.key === current}
                             className={`ab4-chip-menu__item ${f.key === current ? 'is-current' : ''}`}
                             onClick={() => onPick(f.key)}>
