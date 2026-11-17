@@ -5115,3 +5115,14 @@
 .ab4-iz:focus-within,
 .ab4-iz.ab4-iz--active { height: 0; }
 .ab4-iz-line { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); }
+
+/* The transform above makes the line its own stacking context, so the + button's
+   z-index no longer lifted it over the gap's hover area (.ab4-iz::after): the +
+   showed but the hover area took the click. The line stacks above that area and
+   lets clicks beside the button through; the button and its picker take them. */
+.ab4-iz-line { z-index: 2; pointer-events: none; }
+.ab4-iz-btn,
+.ab4-iz-picker { pointer-events: auto; }
+/* Every gap stacks at z-index 10, so the ones further down painted over the open
+   block picker and took its clicks: the open gap rises above them. */
+.ab4-iz.ab4-iz--active { z-index: 11; }

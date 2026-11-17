@@ -315,4 +315,38 @@ test.describe('Settings - Agreement Builder', () => {
     await expect(page.getByRole('dialog', { name: 'Partner agreement' })).toHaveCount(0)
     await expect(page.getByText('Partner Agreement Paper')).toBeVisible()
   })
+  test('adds a section between two blocks from the + between them', async ({ page }) => {
+    const { saved } = await openBuilder(page)
+    const intro = page.locator('.ab4-block', { hasText: 'This Master Partner Agreement' }).first()
+
+    // Once the pages have laid themselves out (the blocks stop moving).
+    await expect.poll(async () => {
+      const before = (await intro.boundingBox())!.y
+      await page.waitForTimeout(150)
+      return (await intro.boundingBox())!.y === before
+    }).toBe(true)
+
+    // The gap under the intro paragraph, above THE COMPANY.
+    const box = (await intro.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height + 2)
+    const plus = page.locator('.ab4-iz--active .ab4-iz-btn')
+    await expect(plus).toBeVisible()
+    await plus.click()
+
+    const picker = page.locator('.ab4-iz-picker')
+    await expect(picker).toBeVisible()
+    const heading = picker.getByRole('button', { name: 'Heading' })
+    await expect(heading).toBeInViewport()
+    await heading.click()
+
+    await page.getByRole('button', { name: 'Save Template' }).click()
+    await expect.poll(saved).not.toBeNull()
+    const blocks = JSON.parse(saved()!.template_json).blocks as { type: string; paletteType?: string; content?: string }[]
+    const introIdx = blocks.findIndex((b) => b.content?.includes('This Master Partner Agreement'))
+    // Right after the intro, before THE COMPANY.
+    expect(introIdx).toBeGreaterThanOrEqual(0)
+    // A Heading is a preset text block.
+    expect(blocks[introIdx + 1].paletteType).toBe('heading')
+    expect(blocks[introIdx + 2].content).toContain('THE COMPANY')
+  })
 })
