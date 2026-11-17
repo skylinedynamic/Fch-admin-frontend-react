@@ -204,6 +204,23 @@ test.describe('SEO settings', () => {
     await expect(page).toHaveURL(/\/cms\/seo-settings$/)
   })
 
+  // R3-BUG-015: the SEO title counts its characters and stops at 120.
+  test('the SEO title counts its characters and stops at 120', async ({ page }) => {
+    await seedSession(page, { permissions: PERMS })
+    const api = await mockApi(page, [{ method: 'POST', match: new RegExp(`${CMS}/seo-settings$`), body: paginated(SEO) }])
+    api.add({ method: 'POST', match: `${CMS}/seo-settings/store`, body: ok({ id: 3 }) })
+    await page.goto('/cms/seo-settings/create')
+    const title = page.getByPlaceholder('SEO optimized title')
+    await title.fill('')
+    const qaTitle = 'About Four Corner Funding | Fintech Funding Platform QA-TEST R3 long title check '.padEnd(125, 'x')
+    await title.pressSequentially(qaTitle)
+    await expect(title).toHaveValue(qaTitle.slice(0, 120))
+    await expect(page.getByTestId('meta-title-count')).toHaveText('120 / 120')
+    await page.locator('button[form="seo-form"]').click()
+    const call = await expectCall(api, 'POST', `${CMS}/seo-settings/store`)
+    expect(String(call.json.meta_title)).toHaveLength(120)
+  })
+
   test('the create route is blocked without the update permission', async ({ page }) => {
     await seedSession(page, { permissions: ['view seo settings'] })
     await mockApi(page)

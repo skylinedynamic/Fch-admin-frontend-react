@@ -25,6 +25,7 @@ import { AgreementBuilderLoader } from '../../../../components/Loader/AgreementL
 import { withAppCalendar } from '../../../../utils/agreementCalendar';
 import { FileManagerModal } from '../../../../components/FileManagerModal/FileManagerModal';
 import type { FileSystemItem } from '../../../../modules/filemanager/types';
+import { FILE_MANAGER_FOLDERS } from '../../../../modules/filemanager/config';
 import { useBuilderHistory } from './useBuilderHistory';
 import { ConfirmDialog } from './ConfirmDialog';
 import { StarterTemplatesDialog } from './StarterTemplatesDialog';
@@ -33,7 +34,9 @@ import { MergeFieldsHint } from './MergeFieldsHint';
 
 const AgreementBuilder: React.FC = () => {
     const { user } = useAuthStore();
-    const partnerId = user?.partner_id || user?.entity_id || 0;
+    // The partner whose folder the logo picker opens. None: the picker stays shut
+    // (it used to fall back to partner 1's folder).
+    const partnerId = user?.partner_id || null;
     const [screen, setScreen] = useState<'dashboard' | 'builder'>('dashboard');
     const [editingType, setEditingType] = useState<'partner' | 'borrower' | null>(null);
     const [agreementId, setAgreementId] = useState<number | null>(null);
@@ -220,6 +223,7 @@ const AgreementBuilder: React.FC = () => {
     };
 
     const openFmForBlock = (blockId: string) => {
+        if (!partnerId) return;
         setFmTargetBlockId(blockId);
         setFmOpen(true);
     };
@@ -292,9 +296,10 @@ const AgreementBuilder: React.FC = () => {
                 toggle={() => setFmOpen(!fmOpen)}
                 selectionMode
                 section="Agreements"
-                initialPath="/"
-                entityType="agreements"
-                entityId={(partnerId || 1) as any}
+                // The partner's own folder (its logo and branding are there too),
+                // at its base: nothing is created inside it (R3-BUG-002).
+                entityType={FILE_MANAGER_FOLDERS.PARTNERS}
+                entityId={partnerId ?? undefined}
                 getAll={false}
                 onSelectFiles={handleFmSelect}
             />

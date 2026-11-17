@@ -186,3 +186,13 @@ export const DEFAULT_BORROWER_CURRENCY = 'USD';
  * refuses anything outside it (fch-api config borrower.date_of_birth).
  */
 export const BORROWER_AGE = { MIN: 18, MAX: 120 } as const;
+
+/** Who sees a funding application's status note (R3-BUG-016). */
+export const STATUS_NOTE_VISIBILITY_TEXT = {
+    visibleLabel: 'Visible to client',
+    internalHint: 'Off: only your team sees this note. The client sees the status change only.',
+    visibleHint: "On: the client sees this note in their application's Activity.",
+    lastNoteLabel: 'Last note',
+    visibleBadge: 'Visible to client',
+    internalBadge: 'Internal',
+} as const;

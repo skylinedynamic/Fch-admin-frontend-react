@@ -1,4 +1,5 @@
 import type { Lead } from './types';
+import { isMaskedValue, unformatSSN } from '../../utils/borrowerFormatters';
 
 /**
  * The lead details a conversion can't go ahead without - the ones the
@@ -86,4 +87,22 @@ export const DEFAULT_LEAD_COUNTRY = 'United States';
  */
 export function leadCountryFor(country: string | null | undefined): string {
     return country && country.trim() !== '' ? country : DEFAULT_LEAD_COUNTRY;
+}
+
+/**
+ * The SSN and EIN a lead's contact-info save sends (R3-BUG-004). Both arrive
+ * masked: one still masked was neither revealed nor retyped, so it is no
+ * change and is left out - the API keeps the number on file. The SSN goes as
+ * its nine digits, and a cleared one as null, which removes it; the EIN goes as
+ * written (the API keeps its digits).
+ */
+export function leadSensitiveNumbers(form: { ssn?: string | null; business_ein?: string | null }): { ssn?: string | null; business_ein?: string } {
+  const numbers: { ssn?: string | null; business_ein?: string } = {};
+  if (!isMaskedValue(form.ssn)) {
+    numbers.ssn = form.ssn ? unformatSSN(form.ssn) : null;
+  }
+  if (!isMaskedValue(form.business_ein)) {
+    numbers.business_ein = form.business_ein ?? '';
+  }
+  return numbers;
 }

@@ -17,6 +17,7 @@ export interface Lead {
   phone_number: string;
   email: string;
   legal_business_name: string;
+  /** Masked by the API (**-***4321); revealLeadField() gives it in full (R3-BUG-004). */
   business_ein: string;
   state_file_number: string;
   duns_number: string;
@@ -29,6 +30,7 @@ export interface Lead {
   entity_type: string;
   industry_type: string;
   business_start_date: string;
+  /** Masked by the API (***-**-6789); revealLeadField() gives it in full (R3-BUG-004). */
   ssn: string | null;
   requirement_details: string;
   partner_id?: number | string;
@@ -50,3 +52,6 @@ export interface LeadOnBehalfOf {
   id: number;
   company_name: string | null;
 }
+
+/** The numbers a lead's details carry masked, which revealLeadField() gives in full (R3-BUG-004). */
+export type RevealableLeadField = 'ssn' | 'business_ein';

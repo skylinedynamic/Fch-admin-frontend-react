@@ -37,4 +37,5 @@ export const maxUploadSizeFor = (fileName: string): number => {
  */
 export const FILE_MANAGER_FOLDERS = {
   PARTNER_DOCUMENTS: 'partner-documents',
+  PARTNERS: 'partners',
 } as const

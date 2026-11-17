@@ -234,6 +234,28 @@ describe('Funding application › Step 4: Funding Request › Additional Funding
     expect(posted.preferred_funding_type).toBe('Term Loan')
   })
 
+  it('sends the loaded values from a save the wizard took before the load', async () => {
+    // The wizard calls whichever save the step last registered; one taken
+    // before the load (or between the load rendering and the step re-registering)
+    // must still send what is on screen, not the empty form (CI flake, R3).
+    let posted: any = null
+    serve(apiFunding, (body) => (posted = body))
+    let firstSave: (() => Promise<boolean>) | null = null
+    const { container } = render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter>
+          <Harness onSaveReady={(fn) => (firstSave ??= fn)} opened={{ fundingRequestId: 7 }} />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+
+    await waitFor(() => expect(chipsOf(container, 'additional_funding_types')).toHaveLength(2))
+    expect(await firstSave!()).toBe(true)
+
+    expect(posted.additional_funding_types).toEqual(['SBA Financing', 'Business Line of Credit'])
+    expect(posted.preferred_funding_type).toBe('Term Loan')
+  })
+
   it('sends none when none were chosen', async () => {
     let posted: any = null
     serve({ ...apiFunding, additional_funding_types: [] }, (body) => (posted = body))

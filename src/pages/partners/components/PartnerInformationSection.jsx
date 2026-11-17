@@ -33,6 +33,9 @@ export default function PartnerInformationSection({
     wasFreeTrial = false
 }) {
     const [showFileManager, setShowFileManager] = useState(false);
+    // The file manager opens only a partner that exists (R3-BUG-002): a new
+    // one's picture is added once it is saved, in its own folder.
+    const canPickPicture = !!partnerId;
     const [previewUrl, setPreviewUrl] = useState(null);
     const [showInstallmentModal, setShowInstallmentModal] = useState(false);
     const domainManuallyEditedRef = useRef(false);
@@ -184,6 +187,7 @@ export default function PartnerInformationSection({
                                 type="button"
                                 className="btn p-0 border-0 rounded-circle profile-photo-edit avatar-xs"
                                 onClick={() => setShowFileManager(true)}
+                                disabled={!canPickPicture}
                                 title="Upload profile image"
                             >
                                 <span className="avatar-title rounded-circle bg-light text-body material-shadow">
@@ -193,14 +197,18 @@ export default function PartnerInformationSection({
                         </div>
                     </div>
 
-                    <FileManagerModal
-                        isOpen={showFileManager}
-                        toggle={() => setShowFileManager(!showFileManager)}
-                        selectionMode={true}
-                        onSelectFiles={handleFileSelection}
-                        entityType="partners"
-                        entityId={partnerId || formData?.id || formData?.entity_id}
-                    />
+                    {canPickPicture ? (
+                        <FileManagerModal
+                            isOpen={showFileManager}
+                            toggle={() => setShowFileManager(!showFileManager)}
+                            selectionMode={true}
+                            onSelectFiles={handleFileSelection}
+                            entityType="partners"
+                            entityId={partnerId}
+                        />
+                    ) : (
+                        <p className="text-center text-muted small mb-2">Save the partner first, then add a picture.</p>
+                    )}
                     {window.location.pathname === '/partners/create' && (
                         <input
                             type="hidden"

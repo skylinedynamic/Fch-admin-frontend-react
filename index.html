@@ -10,11 +10,11 @@
        the packaged defaults, served if that call fails and wherever SSI is off.
        It has to sit before the include, and both before the branding script
        below, which then updates these tags instead of adding a second set.
-       The packaged favicon stays outside the block (Vite fingerprints its path);
-       the API adds a partner favicon only when there is one, after this one,
-       and the later icon is the one the tab shows. -->
-  <link rel="icon" href="/assets/images/Favicon.png" />
+       The packaged favicon is in the block too, at its fixed public/ path: the
+       API's fragment always names an icon (the partner's, else this one), so a
+       partner's served HTML carries only its own (R3-BUG-040). -->
   <!--# block name="portal_meta_default" -->
+  <link rel="icon" href="/favicon.png" />
   <title>Four Corner Funding | Partner Portal</title>
   <meta name="description" content="Sign in to the Four Corner Funding partner portal to manage your borrowers and their funding." />
   <meta property="og:type" content="website" />

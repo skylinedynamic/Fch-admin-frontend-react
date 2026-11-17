@@ -26,8 +26,12 @@ export default function PersonalInfoSection({
     onOpenFileManager, // Now used for parent if needed, but we'll use local state
     profileImage,
     employeeId,
+    isEditMode = false,
     emailNotice = null
 }) {
+    // The file manager opens only an employee that exists (R3-BUG-002): a new
+    // one's picture is added once it is saved, in its own folder.
+    const canPickPicture = isEditMode && !!employeeId;
     const [showFileManager, setShowFileManager] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
 
@@ -133,6 +137,7 @@ export default function PersonalInfoSection({
                                 type="button"
                                 className="btn p-0 border-0 rounded-circle profile-photo-edit avatar-xs"
                                 onClick={() => setShowFileManager(true)}
+                                disabled={!canPickPicture}
                                 title="Select profile image"
                             >
                                 <span className="avatar-title rounded-circle bg-light text-body material-shadow">
@@ -142,14 +147,18 @@ export default function PersonalInfoSection({
                         </div>
                     </div>
 
-                    <FileManagerModal
-                        isOpen={showFileManager}
-                        toggle={() => setShowFileManager(!showFileManager)}
-                        selectionMode={true}
-                        onSelectFiles={handleFileSelection}
-                        entityType="employees"
-                        entityId={employeeId || employee?.id || employee?.employee_code}
-                    />
+                    {canPickPicture ? (
+                        <FileManagerModal
+                            isOpen={showFileManager}
+                            toggle={() => setShowFileManager(!showFileManager)}
+                            selectionMode={true}
+                            onSelectFiles={handleFileSelection}
+                            entityType="employees"
+                            entityId={employeeId}
+                        />
+                    ) : (
+                        <p className="text-center text-muted small mb-2">Save the employee first, then add a picture.</p>
+                    )}
 
                     <div className="text-center mb-3">
                         <span className="badge bg-light text-muted border text-wrap lh-base px-3 py-2" style={{ whiteSpace: 'normal' }}>

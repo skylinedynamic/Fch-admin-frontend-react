@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_LEAD_COUNTRY, LEAD_CONVERT_REQUIRED_FIELDS, isMissingConvertInfo, isLeadTypeLocked, leadCountryFor, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../../src/modules/leads/logic'
+import { DEFAULT_LEAD_COUNTRY, LEAD_CONVERT_REQUIRED_FIELDS, isMissingConvertInfo, isLeadTypeLocked, leadSensitiveNumbers, leadCountryFor, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../../src/modules/leads/logic'
 
 const complete = {
   contact_person: 'Awlad Leo',
@@ -110,5 +110,25 @@ describe('leadCountryFor', () => {
     expect(leadCountryFor(null)).toBe(DEFAULT_LEAD_COUNTRY)
     expect(leadCountryFor('')).toBe(DEFAULT_LEAD_COUNTRY)
     expect(leadCountryFor(undefined)).toBe('United States')
+  })
+})
+
+/**
+ * R3-BUG-004: the lead's SSN and EIN arrive masked. A number still masked was
+ * neither revealed nor retyped, so it is no change and is left out - the API
+ * keeps the one on file. A cleared SSN is sent as null, which removes it.
+ */
+describe('leadSensitiveNumbers', () => {
+  it('leaves out a number still masked', () => {
+    expect(leadSensitiveNumbers({ ssn: '***-**-6789', business_ein: '**-***4321' })).toEqual({})
+  })
+
+  it('sends a number revealed or typed in: the SSN as its digits, the EIN as written', () => {
+    expect(leadSensitiveNumbers({ ssn: '123-45-6789', business_ein: '98-7654321' }))
+      .toEqual({ ssn: '123456789', business_ein: '98-7654321' })
+  })
+
+  it('sends a cleared SSN as null, so the one on file is removed', () => {
+    expect(leadSensitiveNumbers({ ssn: '', business_ein: '' })).toEqual({ ssn: null, business_ein: '' })
   })
 })

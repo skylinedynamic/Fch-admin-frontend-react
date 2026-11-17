@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Lead } from './types';
+import type { Lead, RevealableLeadField } from './types';
 
 export const fetchLeads = async (payload: any = {}) => {
   const response = await apiClient.post('/common/leads/fetch-leads', payload);
@@ -24,6 +24,15 @@ export const updateLeadDetails = async (id: string | number, payload: Partial<Le
 export const updateLeadContactInfo = async (id: string | number, payload: Partial<Lead>): Promise<any> => {
   const response = await apiClient.post(`/common/leads/${id}/contact-info`, payload);
   return response.data;
+};
+
+/**
+ * A lead's SSN or EIN in full - the lead's details carry both masked
+ * (R3-BUG-004). Each call is logged on the lead by the API.
+ */
+export const revealLeadField = async (id: string | number, field: RevealableLeadField): Promise<string | null> => {
+  const { data } = await apiClient.post(`/common/leads/${id}/reveal`, { field });
+  return data?.data?.value ?? null;
 };
 
 /**

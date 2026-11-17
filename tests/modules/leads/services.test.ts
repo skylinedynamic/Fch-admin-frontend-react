@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
 import * as leadServices from '../../../src/modules/leads/services'
-import { fetchLeads, getLead, convertLead, deleteLeads } from '../../../src/modules/leads/services'
+import { fetchLeads, getLead, convertLead, deleteLeads, revealLeadField } from '../../../src/modules/leads/services'
 
 afterEach(() => server.resetHandlers())
 
@@ -64,5 +64,23 @@ describe('leads services', () => {
       data: { deleted: 3 },
     })
     expect(receivedBody).toEqual({ ids: [4, 5, 6] })
+  })
+
+  // R3-BUG-004: a lead's SSN and EIN arrive masked; the full number is one logged call.
+  it('revealLeadField posts the field and returns the number in full', async () => {
+    let body: unknown = null
+    server.use(
+      http.post('*/common/leads/:id/reveal', async ({ request, params }) => {
+        body = { id: params.id, ...(await request.json() as object) }
+        return HttpResponse.json({ status: true, data: { field: 'ssn', value: '123456789' } })
+      })
+    )
+    await expect(revealLeadField(7, 'ssn')).resolves.toBe('123456789')
+    expect(body).toEqual({ id: '7', field: 'ssn' })
+  })
+
+  it('revealLeadField gives null when no number is on file', async () => {
+    server.use(http.post('*/common/leads/:id/reveal', () => HttpResponse.json({ status: true, data: { field: 'business_ein', value: null } })))
+    await expect(revealLeadField(7, 'business_ein')).resolves.toBeNull()
   })
 })

@@ -3,7 +3,8 @@ import { Link, useParams, useNavigate, useSearchParams, useLocation, Navigate } 
 import { toast } from 'react-toastify';
 import PageHeader from '../common/PageHeader';
 import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead } from '../../modules/leads/services';
-import { isMissingConvertInfo, isLeadTypeLocked, leadCountryFor, leadOwnerOptions, leadTeamPartnerId, showsLeadType } from '../../modules/leads/logic';
+import { isMissingConvertInfo, isLeadTypeLocked, leadCountryFor, leadOwnerOptions, leadSensitiveNumbers, leadTeamPartnerId, showsLeadType } from '../../modules/leads/logic';
+import { useRevealLeadField } from '../../modules/leads/queries';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -23,8 +24,8 @@ import {
 } from '../../config/leadOptions';
 import { locationData } from '../../config';
 import { formatPhoneNumber, formatZipCode, formatBusinessEIN, displayEIN } from '../../utils/formatters';
-import { formatSSN, unformatSSN } from '../../utils/borrowerFormatters';
-import SsnInput from '../../components/Common/SsnInput';
+import { formatSSN, maskSSN, maskEIN, isMaskedValue } from '../../utils/borrowerFormatters';
+import RevealableInput from '../../components/Common/RevealableInput';
 import { useSummernote } from '../../hooks/useSummernote';
 import { Calendar } from 'primereact/calendar';
 
@@ -37,6 +38,9 @@ import ErrorPage from '../Utility/ErrorPage';
 
 export default function LeadDetails() {
     const { id } = useParams();
+    // The SSN and EIN arrive masked (R3-BUG-004); the eye button fetches one in full, logged by the API.
+    const revealLead = useRevealLeadField();
+    const revealField = (field) => () => revealLead.mutateAsync({ id, field });
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { hasPermission } = usePermissions();
@@ -200,7 +204,6 @@ export default function LeadDetails() {
                     phone_number: formData.phone_number,
                     email: formData.email,
                     legal_business_name: formData.legal_business_name,
-                    business_ein: formData.business_ein,
                     state_file_number: formData.state_file_number,
                     duns_number: formData.duns_number,
                     business_address: formData.business_address,
@@ -215,8 +218,9 @@ export default function LeadDetails() {
                     industry_type: formData.industry_type,
                     industry_type_note: formData.industry_type_note,
                     business_start_date: formData.business_start_date ? normalizeDate(formData.business_start_date) : '',
-                    // The nine digits; blank clears the SSN on file.
-                    ssn: formData.ssn ? unformatSSN(formData.ssn) : null,
+                    // SSN and EIN: left out while still masked, so the numbers on file stay;
+                    // the SSN as its nine digits, blank clearing it (R3-BUG-004).
+                    ...leadSensitiveNumbers(formData),
                     employees: formData.employees
                 };
             }
@@ -488,8 +492,9 @@ export default function LeadDetails() {
                         state: finalState,
                         city: cityValue,
                         legal_business_name: data.company_name,
-                        ssn: data.ssn ? formatSSN(data.ssn) : '',
-                        business_ein: displayEIN(data.business_ein),
+                        // Masked as the API sends them (R3-BUG-004); a number in full is written out.
+                        ssn: isMaskedValue(data.ssn) ? data.ssn : (data.ssn ? formatSSN(data.ssn) : ''),
+                        business_ein: isMaskedValue(data.business_ein) ? data.business_ein : displayEIN(data.business_ein),
                         other_city: otherCityValue,
                         business_start_date: data.business_start_date ? normalizeDate(data.business_start_date) : ''
                     }));
@@ -787,16 +792,19 @@ export default function LeadDetails() {
                                                             </div>
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">Business EIN</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        inputMode="numeric"
-                                                                        maxLength={10}
-                                                                        className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
-                                                                        name="business_ein"
+                                                                    <label htmlFor="business_ein" className="form-label">Business EIN</label>
+                                                                    {/* Masked as the API sends it; the eye fetches it in full to see or edit (R3-BUG-004). */}
+                                                                    <RevealableInput
+                                                                        id="business_ein"
+                                                                        name="EIN"
                                                                         value={formData.business_ein || ''}
-                                                                        onChange={handleInputChange}
+                                                                        onChange={(ein) => handleInputChange({ target: { name: 'business_ein', value: ein } })}
+                                                                        onReveal={revealField('business_ein')}
+                                                                        format={(ein) => formatBusinessEIN(ein) || ''}
+                                                                        mask={maskEIN}
                                                                         placeholder="XX-XXXXXXX"
+                                                                        maxLength={10}
+                                                                        invalid={!!errors.business_ein}
                                                                     />
                                                                     {errors.business_ein && <div className="invalid-feedback d-block">{errors.business_ein}</div>}
                                                                 </div>
@@ -1010,11 +1018,17 @@ export default function LeadDetails() {
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label htmlFor="ssn" className="form-label">Social Security Number</label>
-                                                                    {/* The one SSN field: masked at rest, edited on a click, in full on the eye button. */}
-                                                                    <SsnInput
+                                                                    {/* Masked as the API sends it; the eye fetches it in full to see or edit (R3-BUG-004). */}
+                                                                    <RevealableInput
                                                                         id="ssn"
+                                                                        name="SSN"
                                                                         value={formData.ssn || ''}
                                                                         onChange={(ssn) => handleInputChange({ target: { name: 'ssn', value: ssn } })}
+                                                                        onReveal={revealField('ssn')}
+                                                                        format={formatSSN}
+                                                                        mask={maskSSN}
+                                                                        placeholder="XXX-XX-XXXX"
+                                                                        maxLength={11}
                                                                         invalid={!!errors.ssn}
                                                                     />
                                                                     {errors.ssn && <div className="invalid-feedback d-block">{errors.ssn}</div>}

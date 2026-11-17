@@ -260,3 +260,24 @@ test.describe('MicroBilt Config - client secret', () => {
     expect(api.find('POST', '/common/app-configurations/save')).toHaveLength(0)
   })
 })
+
+// R3-BUG-002: the agreement logo picker opened a folder of its own (agreements/{id},
+// agreements/1 for a user with no partner), which the API now refuses. It opens the
+// partner's own folder, at its base.
+test.describe('Agreement Builder logo picker', () => {
+  test("opens the partner's own folder at its base", async ({ page }) => {
+    const api = await open(page, { permissions: ['update borrower agreement settings'], is_host: 0, partner_id: 42, entity_type: 'Partner', entity_id: 42 }, [
+      { method: 'POST', match: '/common/agreement-templates/show', body: ok(null) },
+      { method: 'POST', match: '/filemanager/list', body: ok([]) },
+      { method: 'POST', match: '/filemanager/tree', body: ok([]) },
+    ])
+
+    await section(page, 'Agreement Builder').click()
+    await page.getByRole('button', { name: 'Edit Agreement' }).first().click()
+    await expect(page.getByRole('button', { name: 'Save Template' })).toBeVisible()
+    await page.getByRole('button', { name: 'Add your logo' }).first().click()
+
+    const call = await expectCall(api, 'POST', '/filemanager/list')
+    expect(call.json).toMatchObject({ entity_type: 'partners', entity_id: 42, path: '/' })
+  })
+})
