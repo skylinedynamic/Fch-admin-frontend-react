@@ -62,6 +62,17 @@ export const PREVIEW_CSS = `${LAYOUT_CSS}
   .p-text tr > :first-child:nth-last-child(2) { width: 30%; }
   .p-text tr > :first-child:nth-last-child(3) { width: 30%; }
   .p-text th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
+  .p-text h1, .p-text h2, .p-text h3, .p-text h4 { margin: 4px 0 2px; font-family: inherit; font-weight: 700; line-height: 1.3; color: inherit; }
+  .p-text h1 { font-size: 1.6em; }
+  .p-text h2 { font-size: 1.35em; }
+  .p-text h3 { font-size: 1.15em; }
+  .p-text h4 { font-size: 1em; }
+  .p-text blockquote { margin: 4px 0; padding: 2px 0 2px 12px; border-left: 3px solid #cbd5e1; color: #475569; }
+  .p-text hr { border: 0; border-top: 1px solid #cbd5e1; margin: 8px 0; }
+  .p-text code { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 0.9em; background: #f1f5f9; padding: 0 3px; border-radius: 3px; }
+  .p-text pre { margin: 4px 0; padding: 8px 10px; background: #f1f5f9; border-radius: 4px; font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 0.9em; white-space: pre-wrap; overflow-wrap: break-word; }
+  .p-text a { color: #2563eb; text-decoration: underline; }
+  .p-text table.ab-plain-table th, .p-text table.ab-plain-table td { border: none; background: none; padding: 0 9px 0 0; width: auto; }
   .p-field         { margin-bottom: 0px; display: flex; flex-direction: column; gap: 4px; }
   .p-input-wrap    { position: relative; width: 100%; display: flex; align-items: flex-end; gap: 8px; }
   .p-label         { font-size: var(--fs, 15px); font-weight: var(--fw, 500); color: #1e293b; margin: 0; white-space: nowrap; font-family: var(--ff, inherit); }

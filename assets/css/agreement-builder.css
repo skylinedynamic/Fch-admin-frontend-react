@@ -4486,6 +4486,68 @@
   outline-offset: -2px;
 }
 
+/* ── Pasted structure in text blocks (canvas; the saved page has the same in PREVIEW_CSS) ── */
+.ab4-editor h1,
+.ab4-editor h2,
+.ab4-editor h3,
+.ab4-editor h4 {
+  margin: 4px 0 2px;
+  font-family: inherit;
+  font-weight: 700;
+  line-height: 1.3;
+  color: inherit;
+}
+
+.ab4-editor h1 { font-size: 1.6em; }
+.ab4-editor h2 { font-size: 1.35em; }
+.ab4-editor h3 { font-size: 1.15em; }
+.ab4-editor h4 { font-size: 1em; }
+
+.ab4-editor blockquote {
+  margin: 4px 0;
+  padding: 2px 0 2px 12px;
+  border-left: 3px solid #cbd5e1;
+  color: #475569;
+}
+
+.ab4-editor hr {
+  border: 0;
+  border-top: 1px solid #cbd5e1;
+  margin: 8px 0;
+}
+
+.ab4-editor code {
+  font-family: "DejaVu Sans Mono", Consolas, monospace;
+  font-size: 0.9em;
+  background: #f1f5f9;
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+.ab4-editor pre {
+  margin: 4px 0;
+  padding: 8px 10px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-family: "DejaVu Sans Mono", Consolas, monospace;
+  font-size: 0.9em;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.ab4-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* A table pasted from Word without borders (e.g. side-by-side signature blocks). */
+.ab4-editor table.ab-plain-table th,
+.ab4-editor table.ab-plain-table td {
+  border: 1px dashed #e2e8f0;
+  background: none;
+  padding: 0 9px 0 0;
+}
+
 /* ── Table controls (block properties) ── */
 .ab4-table-controls {
   margin-top: 14px;

@@ -200,6 +200,16 @@ describe('tables', () => {
   })
 })
 
+describe('pasted structure', () => {
+  // Pasted headings, quotes, lines, code and links look the same on the saved page and in its PDF.
+  it.each(['.p-text h1', '.p-text h2', '.p-text h3', '.p-text h4', '.p-text blockquote', '.p-text hr', '.p-text code', '.p-text pre', '.p-text a', '.p-text table.ab-plain-table'])(
+    'styles %s on the saved page',
+    (selector) => {
+      expect(PREVIEW_CSS).toContain(selector)
+    },
+  )
+})
+
 describe('signature block', () => {
   const block = { ...makeBlock('signature'), id: 'b7', fieldLabel: 'Client signature', fieldRequired: true }
 
