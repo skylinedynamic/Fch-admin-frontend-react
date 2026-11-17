@@ -9,6 +9,8 @@ import {
   AgreementRequirement,
   AgreementRequirementStatus,
   SetAgreementRequiredPayload,
+  SavedAgreementTemplate,
+  SaveAgreementAsTemplatePayload,
 } from './types'
 
 /**
@@ -172,4 +174,32 @@ export async function fetchAgreementPreviewValues(partnerId?: number): Promise<A
 export async function fetchAgreementMergeFields(type: AgreementSlug): Promise<AgreementPlanField[]> {
   const res = await apiClient.post('/common/agreement-templates/merge-fields', { type })
   return res.data?.data ?? []
+}
+
+/** The saved templates of one agreement type, newest first (Templates dialog). */
+export async function fetchSavedAgreementTemplates(slug: AgreementSlug, partnerId?: number): Promise<SavedAgreementTemplate[]> {
+  const res = await apiClient.get('/common/agreement-templates/saved', { params: { slug, ...forPartner(partnerId) } })
+  // Anything but a list would break the Templates dialog: none, then.
+  return Array.isArray(res.data?.data) ? res.data.data : []
+}
+
+/** One saved template, with its blocks. */
+export async function fetchSavedAgreementTemplate(id: number, partnerId?: number): Promise<SavedAgreementTemplate> {
+  const res = await apiClient.get(`/common/agreement-templates/saved/${id}`, { params: forPartner(partnerId) })
+  return res.data?.data
+}
+
+/** Agreement Builder › Save as Template: keep the agreement being edited under a name. */
+export async function saveAgreementAsTemplate(
+  payload: SaveAgreementAsTemplatePayload,
+  partnerId?: number
+): Promise<ApiResponse<SavedAgreementTemplate>> {
+  const res = await apiClient.post('/common/agreement-templates/saved', { ...payload, ...forPartner(partnerId) })
+  return res.data
+}
+
+/** Delete a saved template. */
+export async function deleteSavedAgreementTemplate(id: number, partnerId?: number): Promise<ApiResponse<null>> {
+  const res = await apiClient.delete(`/common/agreement-templates/saved/${id}`, { params: forPartner(partnerId) })
+  return res.data
 }

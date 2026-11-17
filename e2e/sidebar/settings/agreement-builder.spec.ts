@@ -35,12 +35,15 @@ async function openBuilder(page: Page, type: 'partner' | 'borrower' = 'partner')
     { method: 'GET', match: '/common/agreement-templates', body: ok([{ id: 8, slug: 'partner', is_active: true }, { id: 9, slug: 'borrower', is_active: true }]) },
     { method: 'POST', match: '/common/agreement-templates/show', body: ok(null) },
     { method: 'POST', match: /\/common\/app-configurations$/, body: ok({ agreement_signing_enabled: '1' }) },
+    // Templates › Your templates: none saved (not the agreement list above, whose path it shares).
+    { method: 'GET', match: '/common/agreement-templates/saved', body: ok([]) },
   ])
   await page.route('**/common/agreement-templates/merge-fields**', async (route) => {
     const { type } = route.request().postDataJSON() as { type: 'partner' | 'borrower' }
     await route.fulfill({ json: ok(PLAN_FIELDS[type] ?? []) })
   })
-  await page.route('**/common/agreement-templates/save**', async (route) => {
+  // /save and /save/{id} only: a `save**` glob also caught /saved (Save as Template).
+  await page.route(/\/common\/agreement-templates\/save(\/\d+)?$/, async (route) => {
     saved = route.request().postDataJSON()
     await route.fulfill({ json: ok({ id: 8 }, 'Saved') })
   })
@@ -87,7 +90,7 @@ test.describe('Settings - Agreement Builder', () => {
     await page.getByRole('menuitem', { name: "Signer's name" }).click()
 
     await expect(title.locator('.ab4-merge-chip', { hasText: "Signer's name" })).toBeVisible()
-    await page.getByRole('button', { name: 'Save Template' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(saved()!.template_html).toContain('MASTER PARTNER AGREEMENT for {{signer.name}}')
     expect(saved()!.template_html).not.toContain('ab4-merge-chip')
@@ -116,7 +119,7 @@ test.describe('Settings - Agreement Builder', () => {
     const titleNow = await center(page, title)
     await drag(page, divider, { x: titleNow.x, y: titleNow.box.y + 3 })
 
-    await page.getByRole('button', { name: 'Save Template' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(blockTypes(saved()).slice(0, 4)).toEqual(['divider', 'text', 'header', 'text'])
   })
@@ -125,12 +128,13 @@ test.describe('Settings - Agreement Builder', () => {
     const { saved } = await openBuilder(page, 'borrower')
 
     await page.getByRole('button', { name: 'Templates' }).click()
+
     const picker = page.getByRole('dialog', { name: 'Start from a template' })
     await expect(picker.getByRole('button', { name: /Master partner agreement/ })).toHaveCount(0)
     await picker.getByRole('button', { name: /Terms acknowledgement/ }).click()
     await expect(page.getByText('TERMS ACKNOWLEDGEMENT')).toBeVisible()
 
-    await page.getByRole('button', { name: 'Save Template' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(saved()!.template_html).toContain('I, {{signer.name}}, on behalf of {{signer.business_name}}')
     expect(saved()!.template_html).not.toContain('BUSINESS CREDIT BUILDER')
@@ -152,7 +156,7 @@ test.describe('Settings - Agreement Builder', () => {
 
     await expect(page.locator('.ab4-block')).toHaveCount(1)
     await expect(page.locator('.ab4-doc .ab4-merge-chip', { hasText: "Signer's business name" })).toBeVisible()
-    await page.getByRole('button', { name: 'Save Template' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(blockTypes(saved())).toEqual(['text'])
     expect(saved()!.template_html).toContain('{{signer.business_name}}')
@@ -177,7 +181,7 @@ test.describe('Settings - Agreement Builder', () => {
     await expect(popover).toHaveCount(0)
 
     await expect(page.locator('.ab4-doc .ab4-merge-chip', { hasText: 'Certified Partner · Monthly: Monthly seat fee' })).toBeVisible()
-    await page.getByRole('button', { name: 'Save Template' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(saved()!.template_html).toContain('{{plan.user_seat.certified_partner.monthly.total_amount}}')
   })
@@ -213,7 +217,7 @@ test.describe('Settings - Agreement Builder', () => {
     const outline = await table.evaluate((el) => getComputedStyle(el.parentElement!).outlineStyle)
     expect(outline).toBe('none')
 
-    await page.getByRole('button', { name: 'Save Template' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(saved()!.template_html).toContain('Commission Structure (Addendum A)')
     expect(saved()!.template_html).toContain('<p>{{signer.commission_table}}</p>')
@@ -288,7 +292,7 @@ test.describe('Settings - Agreement Builder', () => {
     await drag(page, tile, { x: doc.x, y: doc.box.y + 120 })
 
     await expect(page.locator('.ab4-block')).toHaveCount(1)
-    await page.getByRole('button', { name: 'Save Template' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(blockTypes(saved())).toEqual(['text'])
   })
@@ -339,7 +343,7 @@ test.describe('Settings - Agreement Builder', () => {
     await expect(heading).toBeInViewport()
     await heading.click()
 
-    await page.getByRole('button', { name: 'Save Template' }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     const blocks = JSON.parse(saved()!.template_json).blocks as { type: string; paletteType?: string; content?: string }[]
     const introIdx = blocks.findIndex((b) => b.content?.includes('This Master Partner Agreement'))
@@ -348,5 +352,54 @@ test.describe('Settings - Agreement Builder', () => {
     // A Heading is a preset text block.
     expect(blocks[introIdx + 1].paletteType).toBe('heading')
     expect(blocks[introIdx + 2].content).toContain('THE COMPANY')
+  })
+  test('saves the agreement as a named template and starts from it later in Templates', async ({ page }) => {
+    await openBuilder(page)
+    // fch-api /common/agreement-templates/saved, kept in memory.
+    const store: { id: number; slug: string; name: string; template_json: string; created_at: string }[] = []
+    let posted: Record<string, string> | null = null
+    await page.route(/\/common\/agreement-templates\/saved(\?.*)?$/, async (route) => {
+      if (route.request().method() === 'POST') {
+        posted = route.request().postDataJSON()
+        store.unshift({ id: store.length + 1, ...posted!, created_at: '2026-11-17T10:00:00Z' } as never)
+        return route.fulfill({ json: ok({ ...store[0], template_json: undefined }, 'Template saved') })
+      }
+      const slug = new URL(route.request().url()).searchParams.get('slug')
+      return route.fulfill({ json: ok(store.filter((t) => t.slug === slug).map(({ template_json: _json, ...t }) => t)) })
+    })
+    await page.route(/\/common\/agreement-templates\/saved\/\d+(\?.*)?$/, async (route) => {
+      const id = Number(new URL(route.request().url()).pathname.split('/').pop())
+      return route.fulfill({ json: ok(store.find((t) => t.id === id)) })
+    })
+
+    const toolbar = page.locator('.ab4-toolbar')
+    await expect(toolbar.getByRole('button', { name: 'Save Agreement' })).toBeVisible()
+    await expect(toolbar.getByRole('button', { name: 'Save Template', exact: true })).toHaveCount(0)
+
+    // Save as Template: a name, then Save Template.
+    await toolbar.getByRole('button', { name: 'Save as Template' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Save as template' })
+    await expect(dialog.getByLabel(/Template name/)).toBeFocused()
+    await dialog.getByLabel(/Template name/).fill('Master, short form')
+    await dialog.getByRole('button', { name: 'Save Template' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(posted!.slug).toBe('partner')
+    expect(posted!.name).toBe('Master, short form')
+    expect(posted!.template_json).toContain('MASTER PARTNER AGREEMENT')
+
+    // Start from a different template, then come back to the saved one.
+    await toolbar.getByRole('button', { name: 'Templates' }).click()
+    let picker = page.getByRole('dialog', { name: 'Start from a template' })
+    await picker.getByRole('region', { name: 'Default templates' }).getByRole('button', { name: /Blank page/ }).click()
+    await expect(page.getByText('Empty Agreement')).toBeVisible()
+
+    await toolbar.getByRole('button', { name: 'Templates' }).click()
+    picker = page.getByRole('dialog', { name: 'Start from a template' })
+    const yours = picker.getByRole('region', { name: 'Your templates' })
+    await expect(picker.getByRole('region', { name: 'Default templates' }).getByRole('button', { name: /Master partner agreement/ })).toBeVisible()
+    await yours.getByRole('button', { name: /^Master, short form/ }).click()
+
+    await expect(picker).toHaveCount(0)
+    await expect(page.getByText('MASTER PARTNER AGREEMENT', { exact: true })).toBeVisible()
   })
 })

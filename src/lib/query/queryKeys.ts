@@ -71,6 +71,7 @@ export const queryKeys = {
     previewValues: () => [...queryKeys.agreement.all, 'preview-values'] as const,
     mergeFields: (type: string) => [...queryKeys.agreement.all, 'merge-fields', type] as const,
     requirement: (userId: number) => [...queryKeys.agreement.all, 'requirement', userId] as const,
+    savedTemplates: (slug: string) => [...queryKeys.agreement.all, 'saved-templates', slug] as const,
   },
   notifications: {
     all: ['notifications'] as const,

@@ -27,6 +27,8 @@ const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partn
   mergeFieldsAskedFor = []
   server.use(
     http.post('*/common/agreement-templates/show', () => HttpResponse.json({ status: true, data: null })),
+    // Templates lists the partner's saved templates beside the built-in ones: none here.
+    http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [] })),
     http.post('*/common/agreement-templates/merge-fields', async ({ request }) => {
       const body = (await request.json()) as { type: string }
       mergeFieldsAskedFor.push(body.type)
@@ -35,7 +37,7 @@ const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partn
   )
   const view = renderWithProviders(ui)
   fireEvent.click(screen.getByRole('button', { name: `Edit ${type} agreement` }))
-  await screen.findByText('Save Template')
+  await screen.findByText('Save Agreement')
   return view
 }
 
@@ -81,7 +83,7 @@ describe('AgreementBuilder calendar', () => {
     )
     await openBuilder()
 
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
 
     await waitFor(() => expect(saved).not.toBeNull())
     expect(saved!.template_html).toContain('agreement-form')
@@ -98,7 +100,7 @@ describe('AgreementBuilder full-screen editor', () => {
 
     const editor = screen.getByRole('dialog', { name: 'Partner agreement' })
     expect(container).not.toContainElement(editor)
-    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Template' }))
+    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Agreement' }))
   })
 
   it("edits a partner's agreement full screen, naming the partner, outside the cramped profile column", async () => {
@@ -110,7 +112,7 @@ describe('AgreementBuilder full-screen editor', () => {
     expect(editor).toHaveAttribute('aria-modal', 'true')
     expect(editor).toHaveClass('ab4-fullscreen')
     expect(container).not.toContainElement(editor)
-    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Template' }))
+    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Agreement' }))
     expect(editor).toHaveTextContent('Acme Lending')
     expect(document.body.style.overflow).toBe('hidden')
   })
@@ -166,7 +168,7 @@ describe('AgreementBuilder merge fields', () => {
     )
     await openBuilder(<AgreementBuilder />, 'borrower')
 
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
 
     await waitFor(() => expect(saved).not.toBeNull())
     expect(saved!.template_html).toContain('{{signer.name}}')
@@ -238,7 +240,7 @@ describe('AgreementBuilder safety nets', () => {
     confirmClear()
     expect(await screen.findByText('Unsaved changes')).toBeInTheDocument()
 
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
     expect(await screen.findByText('All changes saved')).toBeInTheDocument()
   })
 
@@ -250,7 +252,7 @@ describe('AgreementBuilder safety nets', () => {
     fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
     const ask = screen.getByRole('alertdialog', { name: 'Discard unsaved changes?' })
     fireEvent.click(within(ask).getByRole('button', { name: 'Keep editing' }))
-    expect(toolbar().getByRole('button', { name: 'Save Template' })).toBeInTheDocument()
+    expect(toolbar().getByRole('button', { name: 'Save Agreement' })).toBeInTheDocument()
 
     fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
     fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Discard unsaved changes?' })).getByRole('button', { name: 'Discard changes' }))
@@ -277,7 +279,7 @@ describe('AgreementBuilder placing blocks', () => {
         return HttpResponse.json({ status: true, message: 'Saved' })
       }),
     )
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
     await waitFor(() => expect(saved).not.toBeNull())
     return (JSON.parse(saved!.template_json).blocks as { type: string; content?: string }[]).map((b) => b.type)
   }
@@ -508,7 +510,7 @@ describe('AgreementBuilder Plan & Fee dynamic values', () => {
       saved = (await request.json()) as Record<string, string>
       return HttpResponse.json({ status: true, message: 'Saved' })
     }))
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
     await waitFor(() => expect(saved).not.toBeNull())
     const html = saved!.template_html
     expect(html).toContain(AGREEMENT_COMMISSION_TABLE_INTRO.title)
@@ -529,7 +531,7 @@ describe('AgreementBuilder starter templates', () => {
         return HttpResponse.json({ status: true, message: 'Saved' })
       }),
     )
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
     await waitFor(() => expect(saved).not.toBeNull())
     return saved!.template_html
   }
@@ -641,5 +643,151 @@ describe('AgreementBuilder loading the saved agreement', () => {
 
     expect(firstShown).not.toBeNull()
     expect(firstShown!.isConnected).toBe(true)
+  })
+})
+
+/**
+ * Save as Template: the agreement being edited is kept under a name, and
+ * Templates offers it beside the built-in templates. Save Agreement saves the
+ * agreement itself, as before.
+ */
+describe('AgreementBuilder save as template', () => {
+  const SAVED = { id: 4, slug: 'borrower', name: 'Our short form', created_at: '2026-11-17T10:00:00Z', updated_at: '2026-11-17T10:00:00Z' }
+  const SAVED_JSON = JSON.stringify({
+    blocks: [{ id: 'saved-1', type: 'text', paletteType: 'text', content: 'OUR SHORT FORM TERMS' }],
+    pagePad: 64,
+    docBg: '#fdfcf7',
+  })
+
+  const dialog = () => screen.getByRole('dialog', { name: 'Save as template' })
+
+  it('has Save Agreement and Save as Template, and no Save Template', async () => {
+    await openBuilder()
+
+    expect(toolbar().getByRole('button', { name: 'Save Agreement' })).toBeInTheDocument()
+    expect(toolbar().getByRole('button', { name: 'Save as Template' })).toBeInTheDocument()
+    expect(toolbar().queryByRole('button', { name: 'Save Template' })).not.toBeInTheDocument()
+  })
+
+  it('saves the agreement on the page as a named template', async () => {
+    const { toast } = await import('react-toastify')
+    let body: Record<string, string> | null = null
+    server.use(http.post('*/common/agreement-templates/saved', async ({ request }) => {
+      body = (await request.json()) as Record<string, string>
+      return HttpResponse.json({ status: true, message: 'Template saved', data: { ...SAVED, slug: 'partner' } })
+    }))
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+    const save = within(dialog()).getByRole('button', { name: 'Save Template' })
+    // Nothing to save under until a name is typed.
+    expect(save).toBeDisabled()
+    fireEvent.change(within(dialog()).getByLabelText(/Template name/), { target: { value: '  Our short form ' } })
+    fireEvent.click(save)
+
+    await waitFor(() => expect(body).not.toBeNull())
+    expect(body!.slug).toBe('partner')
+    expect(body!.name).toBe('Our short form')
+    const json = JSON.parse(body!.template_json)
+    expect(JSON.stringify(json.blocks)).toContain('MASTER PARTNER AGREEMENT')
+    expect(json.pagePad).toBe(80)
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Save as template' })).not.toBeInTheDocument())
+    expect(toast.success).toHaveBeenCalledWith('Template saved')
+  })
+
+  it('shows why a name was refused under the field, and stays open', async () => {
+    server.use(http.post('*/common/agreement-templates/saved', () =>
+      HttpResponse.json({ message: 'The given data was invalid.', errors: { name: ['You already have a template with this name.'] } }, { status: 422 })))
+    await openBuilder(<AgreementBuilder />, 'borrower')
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+    const name = within(dialog()).getByLabelText(/Template name/)
+    fireEvent.change(name, { target: { value: 'Our short form' } })
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Save Template' }))
+
+    expect(await within(dialog()).findByText('You already have a template with this name.')).toBeInTheDocument()
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+    // Typing again clears it.
+    fireEvent.change(name, { target: { value: 'Our shorter form' } })
+    expect(within(dialog()).queryByText('You already have a template with this name.')).not.toBeInTheDocument()
+  })
+
+  it('Cancel closes without saving', async () => {
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Save as template' })).not.toBeInTheDocument()
+  })
+
+  it('lists saved templates in Templates, with the built-in ones', async () => {
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    // After openBuilder, whose empty list it would otherwise override.
+    server.use(http.get('*/common/agreement-templates/saved', ({ request }) =>
+      HttpResponse.json({ status: true, data: new URL(request.url).searchParams.get('slug') === 'borrower' ? [SAVED] : [] })))
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+
+    const picker = screen.getByRole('dialog', { name: 'Start from a template' })
+    const saved = within(picker).getByRole('region', { name: 'Your templates' })
+    expect(await within(saved).findByRole('button', { name: /^Our short form/ })).toBeInTheDocument()
+    const builtIn = within(picker).getByRole('region', { name: 'Default templates' })
+    expect(within(builtIn).getByRole('button', { name: /Client enrollment agreement/ })).toBeInTheDocument()
+    expect(within(builtIn).getByRole('button', { name: /Blank page/ })).toBeInTheDocument()
+  })
+
+  it('says so when nothing has been saved as a template yet', async () => {
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+
+    const saved = within(screen.getByRole('dialog', { name: 'Start from a template' })).getByRole('region', { name: 'Your templates' })
+    expect(await within(saved).findByText(/No saved templates yet/)).toBeInTheDocument()
+  })
+
+  it('replaces the agreement with a saved template, which can be undone', async () => {
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    await screen.findByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [SAVED] })),
+      http.get('*/common/agreement-templates/saved/4', () => HttpResponse.json({ status: true, data: { ...SAVED, template_json: SAVED_JSON } })),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+    const picker = screen.getByRole('dialog', { name: 'Start from a template' })
+    fireEvent.click(await within(picker).findByRole('button', { name: /^Our short form/ }))
+
+    expect(await screen.findByText('OUR SHORT FORM TERMS')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Start from a template' })).not.toBeInTheDocument()
+    expect(screen.queryByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')).not.toBeInTheDocument()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Undo' }))
+    expect(await screen.findByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')).toBeInTheDocument()
+  })
+
+  it('deletes a saved template after asking', async () => {
+    let list = [SAVED]
+    let deleted = false
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: list })),
+      http.delete('*/common/agreement-templates/saved/4', () => {
+        deleted = true
+        list = []
+        return HttpResponse.json({ status: true, data: null })
+      }),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+    const picker = screen.getByRole('dialog', { name: 'Start from a template' })
+    fireEvent.click(await within(picker).findByRole('button', { name: 'Delete template Our short form' }))
+
+    const confirm = screen.getByRole('alertdialog')
+    expect(confirm).toHaveTextContent('Our short form')
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete template' }))
+
+    await waitFor(() => expect(deleted).toBe(true))
+    expect(await within(picker).findByText(/No saved templates yet/)).toBeInTheDocument()
   })
 })

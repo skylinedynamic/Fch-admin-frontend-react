@@ -140,7 +140,7 @@ describe('PartnerConfigurationSection', () => {
 
     await user.click(screen.getByRole('button', { name: /Edit Agreement/ }))
     await waitFor(() => expect(agreementShows).toEqual([{ slug: 'borrower', partner_id: 42 }]))
-    await user.click(await screen.findByRole('button', { name: 'Save Template' }))
+    await user.click(await screen.findByRole('button', { name: 'Save Agreement' }))
 
     await waitFor(() => expect(agreementWrites).toHaveLength(2))
     expect(agreementWrites[1]).toMatchObject({ url: 'save/7', body: { slug: 'borrower', partner_id: 42 } })
@@ -155,7 +155,7 @@ describe('PartnerConfigurationSection', () => {
 
     const editor = await screen.findByRole('dialog', { name: "Acme Lending's borrower agreement" })
     expect(container).not.toContainElement(editor)
-    expect(editor).toContainElement(await screen.findByRole('button', { name: 'Save Template' }))
+    expect(editor).toContainElement(await screen.findByRole('button', { name: 'Save Agreement' }))
 
     await user.click(screen.getByRole('button', { name: 'Close editor' }))
 

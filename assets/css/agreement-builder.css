@@ -5126,3 +5126,59 @@
 /* Every gap stacks at z-index 10, so the ones further down painted over the open
    block picker and took its clicks: the open gap rises above them. */
 .ab4-iz.ab4-iz--active { z-index: 11; }
+
+/* ── Save as Template dialog ── */
+.ab4-save-template {
+  width: 100%;
+  max-width: 440px;
+  padding: 22px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, .35);
+  animation: ab4-pop .16s ease-out;
+}
+.ab4-save-template__label { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+.ab4-save-template .form-control { height: 37.5px; border-radius: 4px; font-size: 13px; }
+.ab4-save-template__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.ab4-save-template__actions .btn { font-weight: 600; border-radius: 4px; }
+
+/* ── Templates dialog: "Your templates" (saved) above the default templates ── */
+.ab4-templates__section-title {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.ab4-templates__section + .ab4-templates__section { margin-top: 20px; }
+.ab4-templates__empty {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: #64748b;
+}
+.ab4-templates__saved { position: relative; display: flex; }
+.ab4-templates__saved .ab4-templates__card { width: 100%; padding-right: 44px; }
+.ab4-templates__card:disabled { cursor: progress; opacity: .7; }
+.ab4-templates__delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 15px;
+  cursor: pointer;
+}
+.ab4-templates__delete:hover,
+.ab4-templates__delete:focus-visible { background: #fef2f2; color: #dc2626; outline: none; }
+.ab4-save-as-template-btn { display: inline-flex; align-items: center; }

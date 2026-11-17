@@ -31,6 +31,7 @@ import type { FileSystemItem } from '../../../../modules/filemanager/types';
 import { useBuilderHistory } from './useBuilderHistory';
 import { ConfirmDialog } from './ConfirmDialog';
 import { StarterTemplatesDialog } from './StarterTemplatesDialog';
+import { SaveAsTemplateDialog } from './SaveAsTemplateDialog';
 import { defaultTemplateFor } from './starterTemplates';
 import { MergeFieldsHint } from './MergeFieldsHint';
 
@@ -97,6 +98,7 @@ const AgreementBuilder: React.FC = () => {
     const [savedThisSession, setSavedThisSession] = useState(false);
     const [confirming, setConfirming] = useState<'clear' | 'close' | null>(null);
     const [pickingTemplate, setPickingTemplate] = useState(false);
+    const [savingAsTemplate, setSavingAsTemplate] = useState(false);
     const [dragging, setDragging] = useState(false);
     // A palette item held over the empty page: the whole page takes the drop.
     const [emptyDrop, setEmptyDrop] = useState(false);
@@ -364,9 +366,12 @@ const AgreementBuilder: React.FC = () => {
                         <i className="ri-layout-masonry-line me-1" aria-hidden="true" />Templates
                     </button>
                     <button className="btn btn-sm btn-outline-danger" onClick={() => setConfirming('clear')} disabled={blocks.length === 0}>Clear All</button>
+                    <button type="button" className="btn btn-sm btn-outline-primary ab4-save-as-template-btn" onClick={() => setSavingAsTemplate(true)} disabled={blocks.length === 0}>
+                        <i className="ri-bookmark-line me-1" aria-hidden="true" />Save as Template
+                    </button>
                     <button className={`btn btn-sm ${saved ? 'btn-success' : 'btn-primary'} ab4-save-btn`} onClick={handleSave} disabled={saveMutation.isPending}>
                         {saveMutation.isPending ? <span className="spinner-border spinner-border-sm me-1" aria-hidden="true" /> : <i className={`${saved ? 'ri-check-line' : 'ri-save-3-line'} me-1`} />}
-                        Save Template
+                        Save Agreement
                     </button>
                 </div>
             </div>
@@ -376,6 +381,14 @@ const AgreementBuilder: React.FC = () => {
                     audience={editingType ?? 'partner'}
                     onClose={() => setPickingTemplate(false)}
                     onPick={(template) => { setBlocks(template.blocks()); setSelectedId(null); setPickingTemplate(false); }}
+                    onPickSaved={(template) => { applySnapshot(template); setSelectedId(null); setPickingTemplate(false); }}
+                />
+            )}
+            {savingAsTemplate && (
+                <SaveAsTemplateDialog
+                    audience={editingType ?? 'partner'}
+                    templateJson={JSON.stringify({ blocks, pagePad, docBg })}
+                    onClose={() => setSavingAsTemplate(false)}
                 />
             )}
             {confirming === 'clear' && (
