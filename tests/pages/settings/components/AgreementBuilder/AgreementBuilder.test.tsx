@@ -6,7 +6,7 @@ import { server } from '../../../../mocks/server'
 import AgreementBuilder from '../../../../../src/pages/settings/components/AgreementBuilder'
 import { ConfigPartnerProvider } from '../../../../../src/modules/settings/configPartner'
 import { useAuthStore } from '../../../../../src/store/auth'
-import { AGREEMENT_COMMISSION_TABLE_FIELD_KEY, AGREEMENT_COMMISSION_TABLE_INTRO } from '../../../../../src/config/agreementMergeFields'
+import { AGREEMENT_COMMISSION_TABLE_FIELD_KEY, AGREEMENT_COMMISSION_TABLE_INTRO, AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY, AGREEMENT_ENROLLMENT_TABLE_INTRO } from '../../../../../src/config/agreementMergeFields'
 
 vi.mock('react-toastify', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 // The dashboard (agreement list, settings) is not what is under test here:
@@ -22,7 +22,7 @@ vi.mock('../../../../../src/pages/settings/components/AgreementBuilder/Agreement
 
 /** The agreement type each builder asked for Plan & Fee dynamic values, and what it got back. */
 let mergeFieldsAskedFor: string[] = []
-let planFields: Record<string, string | boolean>[] = []
+let planFields: Record<string, unknown>[] = []
 
 const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partner' | 'borrower' = 'partner') => {
   mergeFieldsAskedFor = []
@@ -52,6 +52,12 @@ const toolbar = () => within(document.querySelector('.ab4-toolbar') as HTMLEleme
 
 /** The Insert Dynamic Value popover (portalled to the page, outside the panel). */
 const popover = () => within(document.querySelector('.ab4-insert-popover') as HTMLElement)
+
+/** A group of the Insert Dynamic Value menu, opened in its modal. */
+const openValueGroup = (group: string) => {
+  fireEvent.click(popover().getByRole('button', { name: group }))
+  return within(screen.getByRole('dialog', { name: group }))
+}
 
 describe('AgreementBuilder calendar', () => {
   it('the preview opens the app calendar in the agreement date fields', async () => {
@@ -429,7 +435,7 @@ describe('AgreementBuilder placing blocks', () => {
 
     fireEvent.click(panel.getByRole('button', { name: /Insert Dynamic Value/ }))
     // The list opens in a popover over the page, outside the panel.
-    fireEvent.click(popover().getByRole('menuitem', { name: "Signer's name" }))
+    fireEvent.click(openValueGroup('Signer').getByRole('menuitem', { name: "Signer's name" }))
 
     expect(await savedTypes()).toEqual(['text'])
     expect(document.querySelector('.ab4-doc .ab4-merge-chip[data-merge="signer.name"]')).not.toBeNull()
@@ -445,7 +451,8 @@ describe('AgreementBuilder Plan & Fee dynamic values', () => {
 
     fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
 
-    expect(await popover().findByRole('menuitem', { name: /Installment: Total amount/ })).toBeInTheDocument()
+    fireEvent.click(await popover().findByRole('button', { name: 'Plan & Fee: Borrower enrollment' }))
+    expect(within(screen.getByRole('dialog', { name: 'Plan & Fee: Borrower enrollment' })).getByRole('menuitem', { name: /Installment: Total amount/ })).toBeInTheDocument()
     expect(mergeFieldsAskedFor).toEqual(['borrower'])
     planFields = []
   })
@@ -474,7 +481,8 @@ describe('AgreementBuilder Plan & Fee dynamic values', () => {
     window.getSelection()?.removeAllRanges()
 
     fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
-    fireEvent.click(await popover().findByRole('menuitem', { name: /Partner's commission tiers/ }))
+    fireEvent.click(await popover().findByRole('button', { name: 'Signer' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Signer' })).getByRole('menuitem', { name: /Partner's commission tiers/ }))
     await waitFor(() => expect(document.querySelector(`.ab4-doc .ab4-merge-chip[data-merge="${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}"]`)).not.toBeNull())
     fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
 
@@ -494,7 +502,8 @@ describe('AgreementBuilder Plan & Fee dynamic values', () => {
     window.getSelection()?.removeAllRanges()
 
     fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
-    fireEvent.click(await popover().findByRole('menuitem', { name: /Partner's commission tiers/ }))
+    fireEvent.click(await popover().findByRole('button', { name: 'Signer' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Signer' })).getByRole('menuitem', { name: /Partner's commission tiers/ }))
 
     const editor = await waitFor(() => {
       const chip = document.querySelector(`.ab4-doc .ab4-merge-chip[data-merge="${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}"]`)
@@ -519,6 +528,42 @@ describe('AgreementBuilder Plan & Fee dynamic values', () => {
     // Alone in its paragraph, so the server's table takes the paragraph's place.
     expect(html).toContain(`<p>{{${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}}}</p>`)
     expect(html.indexOf(AGREEMENT_COMMISSION_TABLE_INTRO.title)).toBeLessThan(html.indexOf('{{signer.commission_table}}'))
+    planFields = []
+  })
+})
+
+// fch-api AgreementEnrollmentFields: one table of the signer's own enrollment, its rows by enrollment type.
+describe('AgreementBuilder enrollment table', () => {
+  const panel = () => within(document.querySelector('.ab4-props') as HTMLElement)
+
+  it('goes in with a title and a short description the host can edit, the table alone in its paragraph', async () => {
+    planFields = [{
+      key: AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY, label: 'Enrollment Details', group: 'Signer: Enrollment', html: true,
+      variants: [{ type: 'Installment', rows: ['Enrollment type', 'Total enrollment amount'] }, { type: 'One Time Payment', rows: ['Enrollment type'] }],
+      sample: '<table class="ab-enrollment-table"><tbody><tr><td>Total enrollment amount</td><td>$6,000.00</td></tr></tbody></table>',
+    }]
+    await openBuilder(undefined, 'partner')
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
+    await screen.findByText('Empty Agreement')
+    window.getSelection()?.removeAllRanges()
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+    fireEvent.click(await popover().findByRole('button', { name: 'Signer: Enrollment' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Signer: Enrollment' })).getByRole('button', { name: 'Add Enrollment Details' }))
+
+    await waitFor(() => expect(document.querySelector(`.ab4-doc .ab4-merge-chip[data-merge="${AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY}"]`)).not.toBeNull())
+    let saved: Record<string, string> | null = null
+    server.use(http.post('*/common/agreement-templates/save', async ({ request }) => {
+      saved = (await request.json()) as Record<string, string>
+      return HttpResponse.json({ status: true, message: 'Saved' })
+    }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
+    await waitFor(() => expect(saved).not.toBeNull())
+    const html = saved!.template_html
+    expect(html).toContain(AGREEMENT_ENROLLMENT_TABLE_INTRO.title)
+    expect(html).toContain(AGREEMENT_ENROLLMENT_TABLE_INTRO.description)
+    expect(html).toContain(`<p>{{${AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY}}}</p>`)
     planFields = []
   })
 })

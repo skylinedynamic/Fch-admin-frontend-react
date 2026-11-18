@@ -16,6 +16,20 @@ export interface AgreementMergeField {
    * (fch-api AgreementCommissionFields). The preview shows it sanitized.
    */
   html?: boolean
+  /**
+   * A table whose rows depend on the signer's enrollment type (fch-api
+   * AgreementEnrollmentFields): the rows each type shows, so the builder can say.
+   */
+  variants?: { type: string; rows: string[] }[]
+}
+
+/** The signer's own enrollment as a table - its rows by their enrollment type, listed by the API. */
+export const AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY = 'signer.enrollment_table'
+
+/** Inserted above the enrollment table as ordinary text, so the host can edit or remove it. */
+export const AGREEMENT_ENROLLMENT_TABLE_INTRO = {
+  title: 'Enrollment Details',
+  description: 'Your enrollment, as set when you enrolled. The amounts shown depend on your enrollment type.',
 }
 
 /** The signing partner's commission tiers as a table - partner agreement only, listed by the API. */
@@ -31,18 +45,26 @@ export const AGREEMENT_COMMISSION_TABLE_INTRO = {
 }
 
 /**
- * Text that goes in with a field, around its token: the commission table gets
- * its title and description, then the token alone in its own paragraph (the
- * server's table takes that paragraph's place). Other fields go in on their own.
+ * Text that goes in with a field, around its token: a table (commission,
+ * enrollment) gets its title and description, then the token alone in its own
+ * paragraph (the server's table takes that paragraph's place). Other fields go
+ * in on their own.
  */
 const escapeText = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-export const mergeFieldSnippet = (key: string): string | null =>
-  key === AGREEMENT_COMMISSION_TABLE_FIELD_KEY
-    ? `<p><strong>${escapeText(AGREEMENT_COMMISSION_TABLE_INTRO.title)}</strong></p>`
-      + `<p>${escapeText(AGREEMENT_COMMISSION_TABLE_INTRO.description)}</p>`
+const TABLE_INTROS: Record<string, { title: string; description: string }> = {
+  [AGREEMENT_COMMISSION_TABLE_FIELD_KEY]: AGREEMENT_COMMISSION_TABLE_INTRO,
+  [AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY]: AGREEMENT_ENROLLMENT_TABLE_INTRO,
+}
+
+export const mergeFieldSnippet = (key: string): string | null => {
+  const intro = TABLE_INTROS[key]
+  return intro
+    ? `<p><strong>${escapeText(intro.title)}</strong></p>`
+      + `<p>${escapeText(intro.description)}</p>`
       + `<p>${mergeFieldToken(key)}</p>`
     : null
+}
 
 export const AGREEMENT_MERGE_FIELDS: AgreementMergeField[] = [
   { key: 'signer.name', label: "Signer's name", group: 'Signer', sample: 'Jane Doe' },
