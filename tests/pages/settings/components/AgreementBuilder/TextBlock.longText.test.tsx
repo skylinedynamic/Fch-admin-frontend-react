@@ -10,7 +10,7 @@ vi.mock('react-toastify', () => ({ toast: { warn: vi.fn(), success: vi.fn(), err
 /**
  * A text block takes any amount of text: what does not fit its page flows on
  * to the next one (pagination.ts), so typing or pasting is never refused.
- * Pasted text keeps its structure (bold, lists, paragraphs) but not the source's fonts and colours.
+ * Pasted text keeps the look it had in its source (pastedText.ts).
  */
 const execCommand = vi.fn(() => true)
 document.execCommand = execCommand as unknown as typeof document.execCommand
@@ -61,7 +61,7 @@ describe('TextBlock with long text', () => {
     cleanup()
   })
 
-  it('pastes text copied from a chat or document with its bold, lists and paragraphs, but not its styles', () => {
+  it('pastes text copied from a chat or document with its look: fonts, colours, bold, lists and paragraphs', () => {
     const { onUpdate, editor, cleanup } = renderOnPage(300)
     const range = document.createRange()
     range.selectNodeContents(editor)
@@ -74,8 +74,11 @@ describe('TextBlock with long text', () => {
       clipboardData: { getData: (type: string) => (type === 'text/html' ? html : ': clause one'), types: ['text/html', 'text/plain'] },
     })
 
-    expect(onUpdate).toHaveBeenLastCalledWith({ content: 'Loan terms: clause one\n\nClause <strong>two</strong>\n\n<ul><li>one</li></ul>' })
-    expect(editor.querySelector('[style]')).toBeNull()
+    expect(onUpdate).toHaveBeenLastCalledWith({
+      content: 'Loan terms<p style="font-family:Calibri;color:red;margin-top:0;margin-bottom:0.75em">: clause one</p>'
+        + '<p style="margin-top:0;margin-bottom:0.75em">Clause <strong>two</strong></p><ul><li>one</li></ul>',
+    })
+    expect((editor.querySelector('p') as HTMLElement).style.fontFamily).toBe('Calibri')
     cleanup()
   })
 
@@ -86,7 +89,8 @@ describe('TextBlock with long text', () => {
       clipboardData: { getData: (type: string) => (type === 'text/plain' ? '\n## Fees\r\nNo **hidden** fees.' : ''), types: ['text/plain'] },
     })
 
-    expect(onUpdate).toHaveBeenLastCalledWith({ content: 'Loan terms<strong>Fees</strong>\nNo <strong>hidden</strong> fees.' })
+    // A heading on its own line, not bold text run on to "Loan terms".
+    expect(onUpdate).toHaveBeenLastCalledWith({ content: 'Loan terms<h2>Fees</h2><p style="margin-top:0;margin-bottom:0.75em">No <strong>hidden</strong> fees.</p>' })
     cleanup()
   })
 })

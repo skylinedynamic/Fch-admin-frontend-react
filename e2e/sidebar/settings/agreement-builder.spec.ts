@@ -523,6 +523,99 @@ test.describe('Settings - Agreement Builder', () => {
       expect(p.firstMarginTop, `page ${p.page}'s first block has no top margin`).toBe('0px')
     }
   })
+  // Text pasted from ChatGPT or Claude keeps its look - fonts, sizes, headings,
+  // links, quotes, lines, code - but not a dark-mode page's theme: the dark
+  // background and the white text that would vanish on the white page.
+  test('pastes a dark-mode chat answer with its fonts and structure, without the dark theme', async ({ page }) => {
+    const { saved } = await openBuilder(page, 'partner', JSON.stringify({
+      blocks: [{ id: 'p-1', type: 'text', paletteType: 'text', fontSize: 14, lineHeight: 1.6, marginTop: 0, marginBottom: 8, content: 'Intro.' }],
+      pagePad: 80,
+      docBg: '#ffffff',
+    }))
+    const editor = page.locator('.ab4-doc .ab4-editor', { hasText: 'Intro.' }).first()
+    await editor.click()
+    await page.keyboard.press('End')
+
+    const html = '<div style="background-color:#212121;color:#ececec">'
+      + '<h2 style="color:#ffffff;font-family:Söhne;font-size:24px;margin:16px 0 8px">2. Fees</h2>'
+      + '<p style="color:#ececec;margin:0 0 12px">See <a href="https://example.com/terms" style="color:#7ab7ff">the terms</a> and <del>old</del> <code>code</code>.</p>'
+      + '<blockquote><p>Quoted clause.</p></blockquote><hr><p>After.</p></div>'
+    await editor.evaluate((el, pasted) => {
+      const data = new DataTransfer()
+      data.setData('text/html', pasted)
+      data.setData('text/plain', 'plain fallback')
+      el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+    }, html)
+
+    const heading = editor.locator('h2', { hasText: '2. Fees' })
+    await expect(heading).toBeVisible()
+    await expect(editor.locator('a[href="https://example.com/terms"]')).toHaveText('the terms')
+    await expect(editor.locator('s', { hasText: 'old' })).toBeVisible()
+    await expect(editor.locator('code', { hasText: 'code' })).toBeVisible()
+    await expect(editor.locator('blockquote', { hasText: 'Quoted clause.' })).toBeVisible()
+    await expect(editor.locator('hr')).toHaveCount(1)
+    // The source's font and size stay; its white text and dark page do not.
+    const look = await heading.evaluate((h) => {
+      const style = getComputedStyle(h)
+      return { family: style.fontFamily, size: style.fontSize, color: style.color }
+    })
+    expect(look.family).toContain('Söhne')
+    expect(look.size).toBe('24px')
+    expect(look.color).not.toBe('rgb(255, 255, 255)')
+    await expect(editor.locator('[style*="#212121"], [style*="33, 33, 33"]')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
+    await expect.poll(saved).not.toBeNull()
+    expect(saved()!.template_html).toContain('<h2 style="font-family:Söhne;font-size:24px;margin:16px 0 8px">2. Fees</h2>')
+    expect(saved()!.template_html).toContain('<a href="https://example.com/terms" target="_blank" rel="noopener noreferrer" style="color:#7ab7ff">the terms</a>')
+    expect(saved()!.template_html).toContain('<blockquote>')
+    expect(saved()!.template_html).not.toContain('#212121')
+    expect(saved()!.template_html).not.toContain('color:#ffffff')
+  })
+
+  // A contract copied from Microsoft Word: its Title, headings, bold clause
+  // labels, spacing and border-less signature table come through as in Word.
+  test('pastes a Word document with its title, headings, bold labels and border-less signature table', async ({ page }) => {
+    const { saved } = await openBuilder(page, 'partner', JSON.stringify({
+      blocks: [{ id: 'w-1', type: 'text', paletteType: 'text', fontSize: 14, lineHeight: 1.6, marginTop: 0, marginBottom: 8, content: 'Start.' }],
+      pagePad: 80,
+      docBg: '#ffffff',
+    }))
+    const editor = page.locator('.ab4-doc .ab4-editor', { hasText: 'Start.' }).first()
+    await editor.click()
+    await page.keyboard.press('End')
+
+    const html = "<html xmlns:w=\"urn:schemas-microsoft-com:office:word\"><body><!--StartFragment-->"
+      + "<div style='mso-element:para-border-div;border:none;border-bottom:solid #4F81BD 1.0pt'><p class=MsoTitle>PARTNER AGREEMENT<o:p></o:p></p></div>"
+      + "<h1>1. Purpose<o:p></o:p></h1>"
+      + "<p class=MsoNormal><b style='mso-bidi-font-weight:normal'>1.1. Purpose. </b>Company operates a platform.<o:p></o:p></p>"
+      + "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0>\n <tr>\n  <td style='padding:0in 5.4pt'><p class=MsoNormal><b>COMPANY</b><o:p></o:p></p><p class=MsoNormal>Signature: ____<o:p></o:p></p></td>"
+      + "<td style='padding:0in 5.4pt'><p class=MsoNormal><b>PARTNER</b><o:p></o:p></p><p class=MsoNormal>Signature: ____<o:p></o:p></p></td>\n </tr>\n</table>"
+      + '<!--EndFragment--></body></html>'
+    await editor.evaluate((el, pasted) => {
+      const data = new DataTransfer()
+      data.setData('text/html', pasted)
+      data.setData('text/plain', 'plain fallback')
+      el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+    }, html)
+
+    await expect(editor.locator('h1', { hasText: 'PARTNER AGREEMENT' })).toBeVisible()
+    await expect(editor.locator('h2', { hasText: '1. Purpose' })).toBeVisible()
+    await expect(editor.locator('strong', { hasText: '1.1. Purpose.' })).toBeVisible()
+    await expect(editor).toContainText('1.1. Purpose. Company operates a platform.')
+    const table = editor.locator('table.ab-plain-table')
+    await expect(table).toBeVisible()
+    // Drawn without the borders a data table gets.
+    expect(await table.locator('td').first().evaluate((td) => getComputedStyle(td).borderTopStyle)).not.toBe('solid')
+
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
+    await expect.poll(saved).not.toBeNull()
+    // The line under the title is Word's own border, kept as it was.
+    expect(saved()!.template_html).toContain('<div style="border:none;border-bottom:solid #4F81BD 1.0pt"><h1>PARTNER AGREEMENT</h1></div>')
+    expect(saved()!.template_html).toContain('<strong>1.1. Purpose.</strong> Company operates a platform.')
+    expect(saved()!.template_html).toContain('<table class="ab-plain-table">')
+  })
+
   // An agreement pasted in as one long text block runs over several pages.
   const LONG_BLOCK_JSON = JSON.stringify({
     blocks: [{
