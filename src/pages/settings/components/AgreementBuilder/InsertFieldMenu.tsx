@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { mergeFieldSnippet, mergeFieldToken, type AgreementMergeField } from '../../../../config/agreementMergeFields';
+import { mergeFieldSnippet, mergeFieldToken } from '../../../../config/agreementMergeFields';
 import { createMergeChip, decorateMergeFields } from './mergeChips';
 import { MergeFieldsContext } from './mergeFieldsContext';
+import { GroupModal, ValueRows, groupIcon } from './DynamicValueGroups';
 
 interface InsertFieldMenuProps {
     /** The selected text block's content, for when no text is being edited. */
@@ -15,35 +16,6 @@ interface InsertFieldMenuProps {
 
 const POPOVER_WIDTH = 360;
 const VIEWPORT_MARGIN = 12;
-
-/** An icon for each group; every Plan & Fee group shares the price tag. */
-const groupIcon = (group: string): string => {
-    if (group === 'Signer') return 'ri-user-3-line';
-    if (group === 'Your company') return 'ri-building-2-line';
-    if (group.startsWith('Plan & Fee')) return 'ri-price-tag-3-line';
-    return 'ri-calendar-event-line';
-};
-
-/** Plan & Fee values carry a real price; the rest are only examples while a template is built. */
-const showsValue = (field: AgreementMergeField) => field.key.startsWith('plan.');
-
-/**
- * A Plan & Fee label is "<plan>: <field>" ("Certified Partner · One Time Payment:
- * Total amount"). Shown as the plan's name heading short rows, it never wraps
- * into the price; other labels stay whole.
- */
-const splitLabel = (field: AgreementMergeField): { plan: string | null; name: string } => {
-    const at = showsValue(field) ? field.label.lastIndexOf(': ') : -1;
-    return at > 0 ? { plan: field.label.slice(0, at), name: field.label.slice(at + 2) } : { plan: null, name: field.label };
-};
-
-/** A group's rows in order, with a heading wherever the plan changes. */
-const withPlanHeadings = (fields: AgreementMergeField[]) =>
-    fields.map((field, i) => {
-        const { plan, name } = splitLabel(field);
-        const previous = i > 0 ? splitLabel(fields[i - 1]).plan : null;
-        return { field, name, heading: plan && plan !== previous ? plan : null };
-    });
 
 /**
  * Puts the field, as a chip, at the cursor of the text being edited, firing
@@ -79,32 +51,23 @@ const insertAtCursor = (key: string): boolean => {
     return true;
 };
 
-/** The label with the searched text marked. */
-const Highlighted: React.FC<{ text: string; needle: string }> = ({ text, needle }) => {
-    const at = needle ? text.toLowerCase().indexOf(needle) : -1;
-    if (at < 0) return <>{text}</>;
-    return (
-        <>
-            {text.slice(0, at)}
-            <mark>{text.slice(at, at + needle.length)}</mark>
-            {text.slice(at + needle.length)}
-        </>
-    );
-};
-
 /**
  * "Insert Dynamic Value": merge fields such as {{signer.name}} that the server
  * fills when the agreement is signed (see config/agreementMergeFields, and the
- * Plan & Fee values from the API). The list opens in a popover over the page,
- * with a search box, arrow-key and Enter picking, and closes on a click
- * outside or Escape. A value goes at the cursor in the text being edited, else
- * at the end of the selected text block, else in a new text block.
+ * Plan & Fee and signer values from the API). It opens a drawer over the page
+ * listing the groups (Signer, Your company, each Plan & Fee group ...); a group
+ * opens in a modal with its values. Typing a search lists the matching values
+ * straight away. Arrow keys and Enter work in both, Escape closes the modal
+ * first, and a click outside closes the drawer. A value goes at the cursor in
+ * the text being edited, else at the end of the selected text block, else in a
+ * new text block.
  */
 export const InsertFieldMenu: React.FC<InsertFieldMenuProps> = ({ content, onAppend, onAddNew }) => {
     const fields = useContext(MergeFieldsContext);
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [active, setActive] = useState(0);
+    const [openGroup, setOpenGroup] = useState<string | null>(null);
     const [position, setPosition] = useState({ top: 0, left: 0, height: 480 });
     const toggleRef = useRef<HTMLButtonElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
@@ -116,15 +79,18 @@ export const InsertFieldMenu: React.FC<InsertFieldMenuProps> = ({ content, onApp
 
     // Matches the value's name, its group or its key, ignoring case.
     const needle = query.trim().toLowerCase();
+    const searching = needle !== '';
     const matching = useMemo(
-        () => (needle ? fields.filter((f) => `${f.label} ${f.group} ${f.key}`.toLowerCase().includes(needle)) : fields),
-        [fields, needle],
+        () => (searching ? fields.filter((f) => `${f.label} ${f.group} ${f.key}`.toLowerCase().includes(needle)) : fields),
+        [fields, needle, searching],
     );
+    const allGroups = useMemo(() => Array.from(new Set(fields.map((f) => f.group))), [fields]);
     const groups = Array.from(new Set(matching.map((f) => f.group)));
     // In the order shown, so the arrow keys follow the list on screen.
     const ordered = groups.flatMap((group) => matching.filter((f) => f.group === group));
+    const inGroup = (group: string) => fields.filter((f) => f.group === group);
 
-    const close = () => setOpen(false);
+    const close = () => { setOpenGroup(null); setOpen(false); };
 
     const toggle = () => {
         if (!open) {
@@ -134,7 +100,8 @@ export const InsertFieldMenu: React.FC<InsertFieldMenuProps> = ({ content, onApp
             const inEditor = (node instanceof Element ? node : node?.parentElement)?.closest('.ab4-editor');
             editorRange.current = range && inEditor ? range.cloneRange() : null;
         }
-        setOpen(!open);
+        if (open) close();
+        else setOpen(true);
     };
 
     const insert = (key: string) => {
@@ -152,11 +119,18 @@ export const InsertFieldMenu: React.FC<InsertFieldMenuProps> = ({ content, onApp
         close();
     };
 
+    // Back from a group to the list of groups, with the cursor in the search box.
+    const closeGroup = () => {
+        setOpenGroup(null);
+        searchRef.current?.focus();
+    };
+
     // A fresh search each time it opens, with the cursor in the box.
     useEffect(() => {
         if (open) {
             setQuery('');
             setActive(0);
+            setOpenGroup(null);
             searchRef.current?.focus();
         }
     }, [open]);
@@ -187,38 +161,51 @@ export const InsertFieldMenu: React.FC<InsertFieldMenuProps> = ({ content, onApp
         };
     }, [open]);
 
-    // A click anywhere outside the button and the popover closes it.
+    // A click outside the button, the drawer and an open group closes it all;
+    // Escape closes an open group first, then the drawer.
     useEffect(() => {
         if (!open) return;
         const onDown = (e: MouseEvent) => {
             const target = e.target as Node;
             if (popoverRef.current?.contains(target) || toggleRef.current?.contains(target)) return;
+            if (target instanceof Element && target.closest('.ab4-insert-group-backdrop')) return;
             close();
         };
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            if (openGroup) closeGroup();
+            else close();
+        };
         document.addEventListener('mousedown', onDown);
         document.addEventListener('keydown', onKey);
         return () => {
             document.removeEventListener('mousedown', onDown);
             document.removeEventListener('keydown', onKey);
         };
-    }, [open]);
+    }, [open, openGroup]);
 
     // The active row stays in view as the arrow keys move.
     useEffect(() => {
         listRef.current?.querySelector('.is-active')?.scrollIntoView?.({ block: 'nearest' });
     }, [active]);
 
+    // From the search box: the arrow keys walk the groups (or, while searching,
+    // the matching values) and Enter opens the group (or inserts the value).
     const onSearchKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        const count = searching ? ordered.length : allGroups.length;
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setActive((i) => Math.min(i + 1, ordered.length - 1));
+            setActive((i) => Math.min(i + 1, count - 1));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setActive((i) => Math.max(i - 1, 0));
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            if (ordered[active]) insert(ordered[active].key);
+            if (searching) {
+                if (ordered[active]) insert(ordered[active].key);
+            } else if (allGroups[active]) {
+                setOpenGroup(allGroups[active]);
+            }
         }
     };
 
@@ -228,7 +215,7 @@ export const InsertFieldMenu: React.FC<InsertFieldMenuProps> = ({ content, onApp
                 ref={toggleRef}
                 type="button"
                 className={`ab4-insert-field__toggle ${open ? 'is-open' : ''}`}
-                aria-haspopup="menu"
+                aria-haspopup="dialog"
                 aria-expanded={open}
                 // Keep the cursor in the text being edited.
                 onMouseDown={(e) => e.preventDefault()}
@@ -269,57 +256,67 @@ export const InsertFieldMenu: React.FC<InsertFieldMenuProps> = ({ content, onApp
                         />
                         <span className="ab4-insert-popover__count" aria-hidden="true">{matching.length}</span>
                     </div>
-                    <div ref={listRef} role="menu" aria-label="Dynamic values" className="ab4-insert-popover__list">
-                        {groups.length === 0 && (
-                            <div className="ab4-insert-popover__empty">
-                                <i className="ri-search-eye-line" aria-hidden="true" />
-                                <span>No dynamic values match "{query.trim()}".</span>
-                            </div>
-                        )}
-                        {groups.map((group) => (
-                            <div key={group} className="ab4-insert-popover__group">
-                                <div className="ab4-insert-popover__group-title">
-                                    <i className={groupIcon(group)} aria-hidden="true" />
-                                    <span>{group}</span>
-                                    <span className="ab4-insert-popover__group-count">{matching.filter((f) => f.group === group).length}</span>
+                    {searching ? (
+                        <div ref={listRef} role="menu" aria-label="Dynamic values" className="ab4-insert-popover__list">
+                            {groups.length === 0 && (
+                                <div className="ab4-insert-popover__empty">
+                                    <i className="ri-search-eye-line" aria-hidden="true" />
+                                    <span>No dynamic values match "{query.trim()}".</span>
                                 </div>
-                                {withPlanHeadings(matching.filter((f) => f.group === group)).map(({ field: f, name, heading }) => {
-                                    const index = ordered.indexOf(f);
-                                    return (
-                                        <React.Fragment key={f.key}>
-                                            {heading && (
-                                                <div className="ab4-insert-popover__plan" role="presentation">
-                                                    <i className="ri-stack-line" aria-hidden="true" />
-                                                    <span><Highlighted text={heading} needle={needle} /></span>
-                                                </div>
-                                            )}
-                                            <button
-                                                type="button"
-                                                role="menuitem"
-                                                aria-label={f.label}
-                                                title={mergeFieldToken(f.key)}
-                                                className={`ab4-insert-popover__item ${splitLabel(f).plan ? 'ab4-insert-popover__item--plan' : ''} ${index === active ? 'is-active' : ''}`}
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onMouseEnter={() => setActive(index)}
-                                                onClick={() => insert(f.key)}
-                                            >
-                                                <span className="ab4-insert-popover__label"><Highlighted text={name} needle={needle} /></span>
-                                                {showsValue(f) && <span className="ab4-insert-popover__value">{f.sample}</span>}
-                                                <i className="ri-corner-down-left-line ab4-insert-popover__enter" aria-hidden="true" />
-                                            </button>
-                                        </React.Fragment>
-                                    );
-                                })}
-                            </div>
-                        ))}
-                    </div>
+                            )}
+                            {groups.map((group) => {
+                                const rows = matching.filter((f) => f.group === group);
+                                const offset = ordered.indexOf(rows[0]);
+                                return (
+                                    <div key={group} className="ab4-insert-popover__group">
+                                        <div className="ab4-insert-popover__group-title">
+                                            <i className={groupIcon(group)} aria-hidden="true" />
+                                            <span>{group}</span>
+                                            <span className="ab4-insert-popover__group-count">{rows.length}</span>
+                                        </div>
+                                        <ValueRows
+                                            fields={rows}
+                                            needle={needle}
+                                            active={active - offset}
+                                            onActive={(index) => setActive(offset + index)}
+                                            onPick={insert}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div ref={listRef} role="list" aria-label="Dynamic value groups" className="ab4-insert-popover__list ab4-insert-popover__groups">
+                            {allGroups.map((group, index) => (
+                                <div role="listitem" key={group}>
+                                    <button
+                                        type="button"
+                                        aria-label={group}
+                                        aria-haspopup="dialog"
+                                        className={`ab4-insert-popover__group-btn ${index === active ? 'is-active' : ''}`}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onMouseEnter={() => setActive(index)}
+                                        onClick={() => setOpenGroup(group)}
+                                    >
+                                        <span className="ab4-insert-popover__group-icon" aria-hidden="true"><i className={groupIcon(group)} /></span>
+                                        <span className="ab4-insert-popover__group-name">{group}</span>
+                                        <span className="ab4-insert-popover__group-count">{inGroup(group).length}</span>
+                                        <i className="ri-arrow-right-s-line ab4-insert-popover__group-chevron" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <div className="ab4-insert-popover__footer" aria-hidden="true">
                         <span><kbd>↑</kbd><kbd>↓</kbd> to move</span>
-                        <span><kbd>Enter</kbd> to insert</span>
+                        <span><kbd>Enter</kbd> to {searching ? 'insert' : 'open'}</span>
                         <span><kbd>Esc</kbd> to close</span>
                     </div>
                 </div>,
                 document.body,
+            )}
+            {open && openGroup && (
+                <GroupModal group={openGroup} fields={inGroup(openGroup)} onPick={insert} onClose={closeGroup} />
             )}
         </div>
     );

@@ -5264,3 +5264,137 @@
    selected, as a whole block's toolbar sits above the gaps' hover areas (10). */
 .ab4-block-clip-window--head:has(.ab4-block:hover),
 .ab4-block-clip-window--head:has(.ab4-block--sel) { z-index: 30; }
+
+/* ── Insert Dynamic Value: the drawer lists groups; a group opens in a modal ── */
+.ab4-insert-popover__groups { padding: 6px 8px; }
+.ab4-insert-popover__group-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+}
+.ab4-insert-popover__group-btn:hover,
+.ab4-insert-popover__group-btn.is-active,
+.ab4-insert-popover__group-btn:focus-visible { background: rgba(var(--vz-primary-rgb, 42, 95, 193), .07); outline: none; }
+.ab4-insert-popover__group-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background: rgba(var(--vz-primary-rgb, 42, 95, 193), .1);
+  color: var(--vz-primary, #2a5fc1);
+  font-size: 15px;
+}
+.ab4-insert-popover__group-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab4-insert-popover__group-btn .ab4-insert-popover__group-count { margin-left: auto; }
+.ab4-insert-popover__group-chevron { color: #94a3b8; font-size: 16px; }
+
+.ab4-insert-group-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, .45);
+  backdrop-filter: blur(2px);
+  animation: ab4-fade .12s ease-out;
+}
+.ab4-insert-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 64px);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, .35);
+  animation: ab4-pop .16s ease-out;
+  overflow: hidden;
+}
+.ab4-insert-group__head { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #eef2f7; }
+.ab4-insert-group__heading { flex: 1; min-width: 0; }
+.ab4-insert-group__title { margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; }
+.ab4-insert-group__sub { margin-top: 2px; font-size: 12px; color: #64748b; }
+.ab4-insert-group__list { padding: 6px 0 10px; overflow-y: auto; }
+.ab4-insert-group__list .ab4-insert-popover__item:focus-visible,
+.ab4-insert-group__list .ab4-insert-popover__item:hover { background: rgba(var(--vz-primary-rgb, 42, 95, 193), .07); outline: none; }
+
+/* A Plan & Fee group's warning: its values follow the current Plan & Fee until the agreement is signed. */
+.ab4-insert-group__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 18px 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--vz-warning-rgb, 247, 184, 75), .45);
+  border-radius: 4px;
+  background: rgba(var(--vz-warning-rgb, 247, 184, 75), .12);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6b4a0d;
+}
+.ab4-insert-group__warning i { flex-shrink: 0; margin-top: 1px; font-size: 16px; color: var(--vz-warning, #f7b84b); }
+.ab4-insert-group__warning strong { display: block; font-weight: 600; color: #5a3d06; }
+.ab4-insert-group__warning p { margin: 2px 0 0; }
+
+/* A field's own menu: its current value, the groups (its own marked), Remove. */
+.ab4-chip-menu__current {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px 6px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: #f8fafc;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+}
+.ab4-chip-menu__current i { color: var(--vz-primary, #2a5fc1); }
+.ab4-chip-menu__group-btn { min-height: 40px; }
+.ab4-chip-menu__group-btn.is-current { background: rgba(var(--vz-primary-rgb, 42, 95, 193), .06); }
+.ab4-chip-menu__group-btn.is-current .ab4-insert-popover__group-chevron { color: var(--vz-primary, #2a5fc1); }
+.ab4-insert-popover__item.is-current { background: rgba(var(--vz-primary-rgb, 42, 95, 193), .06); }
+.ab4-insert-popover__check { margin-left: auto; font-size: 15px; color: var(--vz-primary, #2a5fc1); }
+
+/* How the enrollment table works: the rows each enrollment type shows. */
+.ab4-insert-group__info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 18px 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--vz-primary-rgb, 42, 95, 193), .25);
+  border-radius: 4px;
+  background: rgba(var(--vz-primary-rgb, 42, 95, 193), .06);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #334155;
+}
+.ab4-insert-group__info i { flex-shrink: 0; margin-top: 1px; font-size: 16px; color: var(--vz-primary, #2a5fc1); }
+.ab4-insert-group__info > div > strong { display: block; font-weight: 600; color: #0f172a; }
+.ab4-insert-group__info p { margin: 2px 0 4px; }
+.ab4-insert-group__info ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+
+/* The enrollment table in its group: the rows per type in the warning box, then Add. */
+.ab4-insert-group__variants p { margin: 2px 0 4px; }
+.ab4-insert-group__variants ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.ab4-insert-group__actions { display: flex; justify-content: flex-end; padding: 12px 18px 16px; }
+.ab4-insert-group__add { display: inline-flex; align-items: center; border-radius: 4px; font-weight: 600; }
+/* The warning's title is a block; a type's name in the list stays inline with its rows. */
+.ab4-insert-group__variants li strong { display: inline; }

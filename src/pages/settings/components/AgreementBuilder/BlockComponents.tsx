@@ -51,6 +51,8 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
     const ref = useRef<HTMLDivElement>(null);
     const lastValidHtml = useRef<string>(block.content || '');
     const [menuChip, setMenuChip] = useState<HTMLElement | null>(null);
+    // Which chip it is, counted in the text: still found if the text is redrawn.
+    const menuChipIndex = useRef(-1);
     
     // Merge fields show as chips here and are saved bare ({{signer.name}}) - see mergeChips.
     useEffect(() => {
@@ -175,13 +177,24 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
     // A click on a blue field opens MergeChipMenu, to choose what fills it.
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const chip = (e.target as Element).closest?.('.ab4-merge-chip') as HTMLElement | null;
-        if (chip && ref.current?.contains(chip)) setMenuChip(chip);
+        if (chip && ref.current?.contains(chip)) {
+            menuChipIndex.current = Array.from(ref.current.querySelectorAll('.ab4-merge-chip')).indexOf(chip);
+            setMenuChip(chip);
+        }
     };
 
+    // The text may be redrawn while the menu is open (a group's modal takes the
+    // focus, and leaving the text rewrites it): then the chip is the one at the
+    // same place, not the element the menu was opened from.
     const remapChip = (key: string | null) => {
         if (!menuChip) return;
-        if (key) menuChip.replaceWith(createMergeChip(key));
-        else menuChip.remove();
+        const target = menuChip.isConnected
+            ? menuChip
+            : (ref.current?.querySelectorAll<HTMLElement>('.ab4-merge-chip')[menuChipIndex.current] ?? null);
+        if (target) {
+            if (key) target.replaceWith(createMergeChip(key));
+            else target.remove();
+        }
         setMenuChip(null);
         handleInput();
     };

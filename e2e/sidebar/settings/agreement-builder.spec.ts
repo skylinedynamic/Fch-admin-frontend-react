@@ -14,8 +14,30 @@ type Saved = { template_html: string; template_json: string } | null
 // The partner agreement also offers the signing partner's commission tiers as a table (fch-api AgreementCommissionFields).
 const COMMISSION_TABLE_SAMPLE = '<table class="ab-commission-table"><thead><tr><th>From (funded deals)</th><th>To</th><th>Commission</th></tr></thead>'
   + '<tbody><tr><td>0</td><td>10</td><td>$1,500</td></tr><tr><td>11</td><td>and up</td><td>27.5%</td></tr></tbody></table>'
-const PLAN_FIELDS: Record<'partner' | 'borrower', { key: string; label: string; group: string; sample: string; html?: boolean }[]> = {
+// The signer's own enrollment as one table (fch-api AgreementEnrollmentFields), its rows by enrollment type.
+const ENROLLMENT = 'Signer: Enrollment'
+// The preview's example, as the API sends it: a captioned table for each enrollment type.
+const ENROLLMENT_SAMPLE = '<p class="ab-enrollment-example">Example: Installment</p>'
+  + '<table class="ab-enrollment-table"><thead><tr><th>Item</th><th>Amount</th></tr></thead>'
+  + '<tbody><tr><td>Enrollment type</td><td>Installment</td></tr><tr><td>Total enrollment amount</td><td>$6,000.00</td></tr><tr><td>Down payment</td><td>$500.00</td></tr></tbody></table>'
+  + '<p class="ab-enrollment-example">Example: One Time Payment</p>'
+  + '<table class="ab-enrollment-table"><thead><tr><th>Item</th><th>Amount</th></tr></thead>'
+  + '<tbody><tr><td>Enrollment type</td><td>One Time Payment</td></tr><tr><td>Total enrollment amount</td><td>$4,997.00</td></tr></tbody></table>'
+const enrollmentField = (installment: string[], oneTime: string[]) => ({
+  key: 'signer.enrollment_table', label: 'Enrollment Details', group: ENROLLMENT, sample: ENROLLMENT_SAMPLE, html: true,
+  variants: [{ type: 'Installment', rows: installment }, { type: 'One Time Payment', rows: oneTime }],
+})
+const PARTNER_ENROLLMENT_FIELDS = [enrollmentField(
+  ['Enrollment type', 'Total enrollment amount', 'Down payment', 'Subscription amount', 'Monthly subscription', 'Installment months', 'Platform fee', 'Per user seat fee', 'Free seat count', 'Client activation fee'],
+  ['Enrollment type', 'Total enrollment amount', 'Platform fee', 'Per user seat fee', 'Free seat count', 'Client activation fee'],
+)]
+const BORROWER_ENROLLMENT_FIELDS = [enrollmentField(
+  ['Enrollment type', 'Total enrollment amount', 'Down payment', 'Subscription amount', 'Monthly subscription', 'Installment months'],
+  ['Enrollment type', 'Total enrollment amount'],
+)]
+const PLAN_FIELDS: Record<'partner' | 'borrower', { key: string; label: string; group: string; sample: string; html?: boolean; variants?: { type: string; rows: string[] }[] }[]> = {
   partner: [
+    ...PARTNER_ENROLLMENT_FIELDS,
     { key: 'signer.commission_table', label: "Partner's commission tiers", group: 'Signer', sample: COMMISSION_TABLE_SAMPLE, html: true },
     { key: 'plan.partner_enrollment.certified_partner.one_time_payment.total_amount', label: 'Certified Partner · One Time Payment: Total amount', group: 'Plan & Fee: Partner enrollment', sample: '$4,997.00' },
     { key: 'plan.user_seat.certified_partner.monthly.total_amount', label: 'Certified Partner · Monthly: Monthly seat fee', group: 'Plan & Fee: User seats', sample: '$49.00' },
@@ -23,6 +45,7 @@ const PLAN_FIELDS: Record<'partner' | 'borrower', { key: string; label: string; 
     { key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount', group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00' },
   ],
   borrower: [
+    ...BORROWER_ENROLLMENT_FIELDS,
     { key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount', group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00' },
   ],
 }
@@ -61,6 +84,14 @@ async function openBuilder(page: Page, type: 'partner' | 'borrower' = 'partner',
   return { saved: () => saved }
 }
 
+/** Insert Dynamic Value lists groups: opens one (a modal) and returns it. */
+async function openValueGroup(page: Page, group: string) {
+  await page.locator('.ab4-insert-popover').getByRole('button', { name: group, exact: true }).click()
+  const modal = page.getByRole('dialog', { name: group })
+  await expect(modal).toBeVisible()
+  return modal
+}
+
 const blockTypes = (saved: Saved) => (JSON.parse(saved!.template_json).blocks as { type: string }[]).map((b) => b.type)
 
 /** A pointer drag in small steps, as a person drags (one jump does not start an HTML drag reliably). */
@@ -93,7 +124,7 @@ test.describe('Settings - Agreement Builder', () => {
     await page.keyboard.type(' for ')
 
     await page.getByRole('button', { name: /Insert Dynamic Value/ }).click()
-    await page.getByRole('menuitem', { name: "Signer's name" }).click()
+    await (await openValueGroup(page, 'Signer')).getByRole('menuitem', { name: "Signer's name" }).click()
 
     await expect(title.locator('.ab4-merge-chip', { hasText: "Signer's name" })).toBeVisible()
     await page.getByRole('button', { name: 'Save Agreement' }).click()
@@ -158,7 +189,7 @@ test.describe('Settings - Agreement Builder', () => {
     await expect(section).toBeVisible()
     await expect(page.locator('.ab4-props').locator(':scope > *').first()).toHaveClass(/ab4-dynamic-values/)
     await section.getByRole('button', { name: /Insert Dynamic Value/ }).click()
-    await page.locator('.ab4-insert-popover').getByRole('menuitem', { name: "Signer's business name" }).click()
+    await (await openValueGroup(page, 'Signer')).getByRole('menuitem', { name: "Signer's business name" }).click()
 
     await expect(page.locator('.ab4-block')).toHaveCount(1)
     await expect(page.locator('.ab4-doc .ab4-merge-chip', { hasText: "Signer's business name" })).toBeVisible()
@@ -199,7 +230,7 @@ test.describe('Settings - Agreement Builder', () => {
     await expect(page.getByText('Empty Agreement')).toBeVisible()
 
     await page.locator('.ab4-props > .ab4-dynamic-values').getByRole('button', { name: /Insert Dynamic Value/ }).click()
-    await page.locator('.ab4-insert-popover').getByRole('menuitem', { name: /Partner's commission tiers/ }).click()
+    await (await openValueGroup(page, 'Signer')).getByRole('menuitem', { name: /Partner's commission tiers/ }).click()
     await expect(page.locator('.ab4-doc .ab4-merge-chip', { hasText: "Partner's commission tiers" })).toBeVisible()
 
     // It goes in with a title and a short description, as text the host can edit.
@@ -234,8 +265,9 @@ test.describe('Settings - Agreement Builder', () => {
     await openBuilder(page, 'borrower')
     await page.locator('.ab4-props > .ab4-dynamic-values').getByRole('button', { name: /Insert Dynamic Value/ }).click()
 
-    await expect(page.locator('.ab4-insert-popover').getByRole('menuitem', { name: "Signer's name" })).toBeVisible()
-    await expect(page.locator('.ab4-insert-popover').getByRole('menuitem', { name: /Partner's commission tiers/ })).toHaveCount(0)
+    const signer = await openValueGroup(page, 'Signer')
+    await expect(signer.getByRole('menuitem', { name: "Signer's name" })).toBeVisible()
+    await expect(signer.getByRole('menuitem', { name: /Partner's commission tiers/ })).toHaveCount(0)
   })
 
   test('the preview has no Download PDF button', async ({ page }) => {
@@ -281,9 +313,9 @@ test.describe('Settings - Agreement Builder', () => {
     await section.getByRole('button', { name: /Insert Dynamic Value/ }).click()
 
     const popover = page.locator('.ab4-insert-popover')
-    await expect(popover.getByText('Plan & Fee: Borrower enrollment')).toBeVisible()
-    await expect(popover.getByText('Plan & Fee: User seats')).toHaveCount(0)
-    await expect(popover.getByText('Plan & Fee: Partner enrollment')).toHaveCount(0)
+    await expect(popover.getByRole('button', { name: 'Plan & Fee: Borrower enrollment' })).toBeVisible()
+    await expect(popover.getByRole('button', { name: 'Plan & Fee: User seats' })).toHaveCount(0)
+    await expect(popover.getByRole('button', { name: 'Plan & Fee: Partner enrollment' })).toHaveCount(0)
   })
 
   test('drops a palette block anywhere on an empty page', async ({ page }) => {
@@ -549,5 +581,112 @@ test.describe('Settings - Agreement Builder', () => {
     await page.getByRole('button', { name: 'Save Agreement' }).click()
     await expect.poll(saved).not.toBeNull()
     expect(blockTypes(saved())).toContain('page-break')
+  })
+  test("inserts the partner's enrollment table with its title, explains what each type shows, and previews an example", async ({ page }) => {
+    const { saved } = await openBuilder(page)
+    await page.getByRole('button', { name: 'Clear All' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Clear everything' }).click()
+
+    await page.locator('.ab4-props > .ab4-dynamic-values').getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    const group = await openValueGroup(page, ENROLLMENT)
+    await expect(group.getByRole('menuitem')).toHaveCount(0)
+    await expect(group.getByRole('note')).toHaveClass(/ab4-insert-group__warning/)
+    // How it works, and the rows each enrollment type shows.
+    const info = group.getByRole('note')
+    await expect(info).toContainText("Shows a table of the signer's own enrollment, filled in when they sign.")
+    await expect(info.getByRole('listitem').filter({ hasText: 'Installment' })).toContainText('Down payment')
+    await expect(info.getByRole('listitem').filter({ hasText: 'One Time Payment' })).not.toContainText('Down payment')
+    await expect(info.getByRole('listitem').filter({ hasText: 'Installment:' })).toContainText('Installment months')
+    await expect(info.getByRole('listitem').filter({ hasText: 'One Time Payment' })).toContainText('Free seat count')
+    await group.getByRole('button', { name: 'Add Enrollment Details' }).click()
+
+    // The title, as text the host can edit (the chip beside it carries the same name).
+    await expect(page.locator('.ab4-doc strong', { hasText: 'Enrollment Details' })).toBeVisible()
+    await expect(page.locator('.ab4-doc .ab4-merge-chip', { hasText: 'Enrollment Details' })).toBeVisible()
+    await page.getByRole('button', { name: 'Preview' }).click()
+    // The preview shows an example table for each enrollment type, each captioned.
+    const preview = page.frameLocator('.ab4-preview-frame')
+    await expect(preview.locator('table.ab-enrollment-table')).toHaveCount(2)
+    await expect(preview.getByText('Example: Installment')).toBeVisible()
+    await expect(preview.getByText('Example: One Time Payment')).toBeVisible()
+    await expect(preview.locator('table.ab-enrollment-table').first()).toContainText('$6,000.00')
+    await expect(preview.locator('table.ab-enrollment-table').last()).toContainText('$4,997.00')
+    await expect(preview.locator('table.ab-enrollment-table').last()).not.toContainText('Down payment')
+    await page.getByRole('button', { name: 'Editor', exact: true }).click()
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
+    await expect.poll(saved).not.toBeNull()
+    expect(saved()!.template_html).toContain('<p>{{signer.enrollment_table}}</p>')
+  })
+
+  test("the borrower agreement's enrollment table shows only the borrower's rows", async ({ page }) => {
+    await openBuilder(page, 'borrower')
+
+    await page.locator('.ab4-props > .ab4-dynamic-values').getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    const info = (await openValueGroup(page, ENROLLMENT)).getByRole('note')
+    await expect(info).toContainText('Monthly subscription')
+    await expect(info).toContainText('Installment months')
+    await expect(info).not.toContainText('Per user seat fee')
+    await expect(info).not.toContainText('Platform fee')
+    await expect(info).not.toContainText('Client activation fee')
+  })
+  test('Insert Dynamic Value lists the groups, and a group opens in a modal with its values', async ({ page }) => {
+    await openBuilder(page)
+    await page.locator('.ab4-props > .ab4-dynamic-values').getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    const popover = page.locator('.ab4-insert-popover')
+
+    // Only groups, no values, until something is searched.
+    await expect(popover.getByRole('list', { name: 'Dynamic value groups' })).toBeVisible()
+    await expect(popover.getByRole('menuitem')).toHaveCount(0)
+    await expect(popover.getByRole('button', { name: 'Signer', exact: true })).toBeVisible()
+    await expect(popover.getByRole('button', { name: ENROLLMENT })).toBeVisible()
+    await expect(popover.getByRole('button', { name: 'Plan & Fee: User seats' })).toBeVisible()
+
+    const modal = await openValueGroup(page, 'Plan & Fee: User seats')
+    await expect(modal.getByRole('menuitem', { name: /Monthly seat fee/ })).toBeVisible()
+    // A Plan & Fee group warns that its values follow the current Plan & Fee until signed.
+    await expect(modal.getByRole('note')).toContainText('These values come from your current Plan & Fee.')
+    await expect(modal.getByRole('note')).toContainText('A signed agreement keeps the values it was signed with.')
+    // The modal sits over the drawer and the page.
+    const modalBox = (await modal.boundingBox())!
+    const hit = await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.ab4-insert-group'),
+      { x: modalBox.x + modalBox.width / 2, y: modalBox.y + 20 })
+    expect(hit).toBe(true)
+
+    // Escape goes back to the groups; the drawer stays open.
+    await page.keyboard.press('Escape')
+    await expect(modal).toHaveCount(0)
+    await expect(popover).toBeVisible()
+  })
+  test("a field's own menu lists the groups, swaps its value from a group, and removes it", async ({ page }) => {
+    const { saved } = await openBuilder(page)
+    await page.getByRole('button', { name: 'Clear All' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Clear everything' }).click()
+    const section = page.locator('.ab4-props > .ab4-dynamic-values')
+    await section.getByRole('button', { name: /Insert Dynamic Value/ }).click()
+    await (await openValueGroup(page, 'Signer')).getByRole('menuitem', { name: "Signer's name" }).click()
+
+    await page.locator('.ab4-doc .ab4-merge-chip', { hasText: "Signer's name" }).click()
+    const menu = page.getByRole('menu', { name: 'Fill this field with' })
+    await expect(menu).toBeVisible()
+    // The groups, not every value; the field's own group marked; and Remove.
+    await expect(menu.getByRole('menuitemradio')).toHaveCount(0)
+    await expect(menu.getByRole('menuitem', { name: 'Signer', exact: true })).toHaveClass(/is-current/)
+    await expect(menu.getByRole('menuitem', { name: 'Remove field' })).toBeVisible()
+
+    await menu.getByRole('menuitem', { name: 'Your company', exact: true }).click()
+    const group = page.getByRole('dialog', { name: 'Your company' })
+    await group.getByRole('menuitemradio', { name: 'Your company email' }).click()
+    await expect(group).toHaveCount(0)
+    await expect(menu).toHaveCount(0)
+    const chip = page.locator('.ab4-doc .ab4-merge-chip', { hasText: 'Your company email' })
+    await expect(chip).toBeVisible()
+
+    await page.getByRole('button', { name: 'Save Agreement' }).click()
+    await expect.poll(saved).not.toBeNull()
+    expect(saved()!.template_html).toContain('{{owner.email}}')
+
+    await chip.click()
+    await page.getByRole('menu', { name: 'Fill this field with' }).getByRole('menuitem', { name: 'Remove field' }).click()
+    await expect(page.locator('.ab4-doc .ab4-merge-chip')).toHaveCount(0)
   })
 })
