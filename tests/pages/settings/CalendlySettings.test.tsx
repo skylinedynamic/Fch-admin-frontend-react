@@ -25,8 +25,8 @@ const settings = (data: Record<string, unknown> = {}) => ({
   data: {
     partner_id: 2,
     client_id: 'CLIENT-ID',
-    client_secret: 'CLIENT-SECRET',
-    webhook_signing_key: 'SIGNING-KEY',
+    has_client_secret: true,
+    has_webhook_signing_key: true,
     configured: true,
     connected: false,
     needs_reconnect: false,
@@ -85,16 +85,58 @@ describe('Settings menu - Calendly', () => {
 })
 
 describe('CalendlySettings', () => {
-  it('shows the saved Client ID, Client Secret and Webhook Signing Key in full', async () => {
+  it('shows the Client ID, and a saved secret only as a stand-in - as OpenAI Configuration', async () => {
     api('get', SETTINGS, settings())
 
     renderWithProviders(<CalendlySettings />)
 
-    expect(await screen.findByLabelText(/client id/i)).toHaveValue('CLIENT-ID')
-    expect(screen.getByLabelText(/client secret/i)).toHaveValue('CLIENT-SECRET')
-    expect(screen.getByLabelText(/webhook signing key/i)).toHaveValue('SIGNING-KEY')
-    expect(screen.getByLabelText(/client secret/i)).toHaveAttribute('type', 'text')
+    expect(await screen.findByLabelText(/^client id/i)).toHaveValue('CLIENT-ID')
+    const secret = screen.getByLabelText(/client secret/i)
+    const key = screen.getByLabelText(/webhook signing key/i)
+    // A stand-in, not the secret (the API never sends it): dots only.
+    expect((secret as HTMLInputElement).value).toMatch(/^•+$/)
+    expect((key as HTMLInputElement).value).toMatch(/^•+$/)
+    expect(secret).toHaveAttribute('type', 'password')
+    expect(key).toHaveAttribute('type', 'password')
+    expect(secret).toHaveAttribute('autocomplete', 'new-password')
+    expect(screen.getByText(/A Client Secret is already stored, encrypted, on the server/)).toBeInTheDocument()
+    // Nothing changed yet: nothing to save.
+    expect(screen.getByRole('button', { name: /save keys/i })).toBeDisabled()
     expect(screen.getByText('https://api.example.test/api/v1/calendly/callback')).toBeInTheDocument()
+  })
+
+  it('masks the Client ID until the eye button shows it - as the Agent IDs on OpenAI Configuration', async () => {
+    const user = userEvent.setup()
+    api('get', SETTINGS, settings())
+
+    renderWithProviders(<CalendlySettings />)
+
+    const clientId = await screen.findByLabelText(/^client id/i)
+    expect(clientId).toHaveAttribute('type', 'password')
+    await user.click(screen.getByRole('button', { name: 'Show Client ID' }))
+    expect(clientId).toHaveAttribute('type', 'text')
+    expect(clientId).toHaveValue('CLIENT-ID')
+    await user.click(screen.getByRole('button', { name: 'Hide Client ID' }))
+    expect(clientId).toHaveAttribute('type', 'password')
+  })
+
+  it('a blank secret keeps the saved one', async () => {
+    const user = userEvent.setup()
+    api('get', SETTINGS, settings())
+    let body: Record<string, unknown> | null = null
+    server.use(http.post('*/common/calendly/settings', async ({ request }) => {
+      body = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json(settings({ client_id: 'OTHER-ID' }))
+    }))
+
+    renderWithProviders(<CalendlySettings />)
+
+    const clientId = await screen.findByLabelText(/^client id/i)
+    await user.clear(clientId)
+    await user.type(clientId, 'OTHER-ID')
+    await user.click(screen.getByRole('button', { name: /save keys/i }))
+
+    await waitFor(() => expect(body).toEqual({ client_id: 'OTHER-ID', client_secret: '', webhook_signing_key: '' }))
   })
 
   it('saves changed keys', async () => {
@@ -103,21 +145,21 @@ describe('CalendlySettings', () => {
     let body: Record<string, unknown> | null = null
     server.use(http.post('*/common/calendly/settings', async ({ request }) => {
       body = (await request.json()) as Record<string, unknown>
-      return HttpResponse.json(settings({ client_secret: 'NEW-SECRET', webhook_signing_key: 'NEW-KEY' }))
+      return HttpResponse.json(settings())
     }))
 
     renderWithProviders(<CalendlySettings />)
 
     const secret = await screen.findByLabelText(/client secret/i)
-    await user.clear(secret)
     await user.type(secret, 'NEW-SECRET')
     const key = screen.getByLabelText(/webhook signing key/i)
-    await user.clear(key)
     await user.type(key, 'NEW-KEY')
     await user.click(screen.getByRole('button', { name: /save keys/i }))
 
     await waitFor(() => expect(body).toEqual({ client_id: 'CLIENT-ID', client_secret: 'NEW-SECRET', webhook_signing_key: 'NEW-KEY' }))
     expect(toast.success).toHaveBeenCalledWith('Calendly settings saved')
+    // Saved: the stand-in again - the new secret is not kept on the page.
+    await waitFor(() => expect((secret as HTMLInputElement).value).toMatch(/^•+$/))
   })
 
   it('the host configures a partner: every call names that partner', async () => {
@@ -139,7 +181,7 @@ describe('CalendlySettings', () => {
       </ConfigPartnerProvider>,
     )
 
-    const clientId = await screen.findByLabelText(/client id/i)
+    const clientId = await screen.findByLabelText(/^client id/i)
     expect(asked).toBe('9')
     await user.clear(clientId)
     await user.type(clientId, 'PARTNER-APP')
@@ -150,7 +192,7 @@ describe('CalendlySettings', () => {
 
   it('shows the API\'s message for a refused field', async () => {
     const user = userEvent.setup()
-    api('get', SETTINGS, settings({ client_id: null, client_secret: null, configured: false }))
+    api('get', SETTINGS, settings({ client_id: null, has_client_secret: false, has_webhook_signing_key: false, configured: false }))
     server.use(http.post('*/common/calendly/settings', () => HttpResponse.json(
       { status: false, message: 'Enter the Client Secret of your Calendly OAuth app.', errors: { client_secret: ['Enter the Client Secret of your Calendly OAuth app.'] } },
       { status: 422 },
@@ -158,7 +200,10 @@ describe('CalendlySettings', () => {
 
     renderWithProviders(<CalendlySettings />)
 
-    await user.type(await screen.findByLabelText(/client id/i), 'CLIENT-ID')
+    await user.type(await screen.findByLabelText(/^client id/i), 'CLIENT-ID')
+    // No secret saved yet: one must be entered before Save is on.
+    expect(screen.getByRole('button', { name: /save keys/i })).toBeDisabled()
+    await user.type(screen.getByLabelText(/client secret/i), 'SECRET')
     await user.click(screen.getByRole('button', { name: /save keys/i }))
 
     expect(await screen.findByText('Enter the Client Secret of your Calendly OAuth app.')).toBeInTheDocument()
@@ -169,7 +214,7 @@ describe('CalendlySettings', () => {
 
     renderWithProviders(<CalendlySettings />)
 
-    expect(await screen.findByLabelText(/client id/i)).toBeInTheDocument()
+    expect(await screen.findByLabelText(/^client id/i)).toBeInTheDocument()
     expect(screen.getByText('Connected')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /connect calendly/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /disconnect/i })).not.toBeInTheDocument()

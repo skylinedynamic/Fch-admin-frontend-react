@@ -24,15 +24,15 @@ export interface CalendlyStatus {
 }
 
 /**
- * Settings > Calendly for one partner, as /common/calendly/settings returns it:
- * its own Calendly OAuth app keys in full (only to that partner's own account
- * or the host account) and its connection.
+ * Settings > Calendly for one partner, as /common/calendly/settings returns it
+ * (only to that partner's own account or the host account): its Client ID,
+ * whether a Client Secret and a Webhook Signing Key are saved - never the
+ * secrets themselves (write-only: a new value replaces one, blank keeps it) -
+ * and its connection.
  */
 export interface CalendlySettingsData {
   partner_id: number
   client_id: string | null
-  client_secret: string | null
-  webhook_signing_key: string | null
   has_client_secret?: boolean
   has_webhook_signing_key?: boolean
   /** Client ID and Client Secret are saved. */

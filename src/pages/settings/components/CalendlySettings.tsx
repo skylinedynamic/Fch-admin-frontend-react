@@ -23,11 +23,20 @@ const fieldErrors = (error: unknown): Record<string, string> =>
 
 type Keys = { client_id: string; client_secret: string; webhook_signing_key: string }
 
+// The secrets are write-only, as on OpenAI Configuration: never sent back, so a
+// saved one shows as this stand-in. Left as it is, it keeps the saved one; typed
+// over, it is replaced. A real secret never contains this character.
+const MASK_CHAR = '•'
+const STORED_MASK = MASK_CHAR.repeat(48)
+
 const keysOf = (settings?: CalendlySettingsData): Keys => ({
   client_id: settings?.client_id ?? '',
-  client_secret: settings?.client_secret ?? '',
-  webhook_signing_key: settings?.webhook_signing_key ?? '',
+  client_secret: settings?.has_client_secret ? STORED_MASK : '',
+  webhook_signing_key: settings?.has_webhook_signing_key ? STORED_MASK : '',
 })
+
+/** What is sent for a secret: nothing (keep the saved one) while it still holds the stand-in. */
+const typed = (value: string) => (value === STORED_MASK ? '' : value.trim())
 
 const copy = async (text: string) => {
   try {
@@ -40,9 +49,11 @@ const copy = async (text: string) => {
 
 /**
  * Settings > Calendly - a partner's own Calendly OAuth app keys (Client ID,
- * Client Secret, Webhook Signing Key), shown in full and editable at any time
- * by that partner's own account (host, WLP or certified) or by the host
- * account (Partners > partner > Configuration, through ConfigPartnerProvider).
+ * Client Secret, Webhook Signing Key), editable at any time by that partner's
+ * own account (host, WLP or certified) or by the host account (Partners >
+ * partner > Configuration, through ConfigPartnerProvider). The Client Secret
+ * and Signing Key are never shown again once saved - only that they are, by
+ * their last characters - and their fields are masked.
  * Only the keys live here: the Calendly account is connected, synced and
  * disconnected on the Appointments page.
  */
@@ -53,6 +64,8 @@ export default function CalendlySettings() {
 
   const [keys, setKeys] = useState<Keys>(keysOf())
   const [errors, setErrors] = useState<Record<string, string>>({})
+  // The Client ID is masked until the eye button is pressed.
+  const [showClientId, setShowClientId] = useState(false)
 
   // The saved keys fill the form whenever they (re)load.
   useEffect(() => {
@@ -64,11 +77,14 @@ export default function CalendlySettings() {
       saveCalendlySettings({
         ...(partnerId ? { partner_id: partnerId } : {}),
         client_id: keys.client_id.trim(),
-        client_secret: keys.client_secret.trim(),
-        webhook_signing_key: keys.webhook_signing_key.trim(),
+        client_secret: typed(keys.client_secret),
+        webhook_signing_key: typed(keys.webhook_signing_key),
       }),
     onSuccess: (saved) => {
       setErrors({})
+      // The secrets just typed leave the page at once (the reply may equal what was loaded,
+      // so the reload alone would not clear them).
+      setKeys(keysOf(saved))
       queryClient.setQueryData(queryKeys.calendly.settings(partnerId), saved)
       queryClient.invalidateQueries({ queryKey: queryKeys.calendly.all })
       toast.success('Calendly settings saved')
@@ -81,28 +97,92 @@ export default function CalendlySettings() {
 
   const connected = Boolean(settings?.connected)
   const saved = keysOf(settings)
+  const hasSecret = Boolean(settings?.has_client_secret)
   const dirty =
     keys.client_id !== saved.client_id ||
-    keys.client_secret !== saved.client_secret ||
-    keys.webhook_signing_key !== saved.webhook_signing_key
-  const set = (field: keyof Keys) => (event: React.ChangeEvent<HTMLInputElement>) =>
-    setKeys((current) => ({ ...current, [field]: event.target.value }))
+    typed(keys.client_secret) !== '' ||
+    typed(keys.webhook_signing_key) !== ''
+  const set = (field: keyof Keys) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target
+    setKeys((current) => ({
+      ...current,
+      // Editing the stand-in replaces it rather than typing onto it: what is left once
+      // its characters are dropped is exactly what was typed or pasted.
+      [field]: current[field] === STORED_MASK && value !== STORED_MASK ? value.split(MASK_CHAR).join('') : value,
+    }))
+  }
 
-  const field = (id: keyof Keys, label: string, help: string, required = false) => (
+  // The Client ID, as OpenAI Configuration's Agent IDs: not a secret (Calendly puts it in
+  // its sign-in link), but masked on screen by default - the eye button shows it.
+  const clientIdField = () => (
+    <div className="mb-3">
+      <label htmlFor="calendly-client_id" className="form-label fs-13 fw-semibold">
+        Client ID <span className="text-danger">*</span>
+      </label>
+      <div className="input-group">
+        <span className={`input-group-text ${errors.client_id ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+          <i className="ri-apps-2-line" aria-hidden="true" />
+        </span>
+        <input
+          id="calendly-client_id"
+          type={showClientId ? 'text' : 'password'}
+          className={`form-control font-monospace ${errors.client_id ? 'is-invalid' : ''}`}
+          value={keys.client_id}
+          onChange={set('client_id')}
+          placeholder="Your Client ID"
+          autoComplete="new-password"
+          spellCheck={false}
+        />
+        <button
+          type="button"
+          className="input-group-text bg-white text-muted"
+          onClick={() => setShowClientId((shown) => !shown)}
+          aria-label={`${showClientId ? 'Hide' : 'Show'} Client ID`}
+          title={showClientId ? 'Hide Client ID' : 'Show Client ID'}
+        >
+          <i className={showClientId ? 'ri-eye-off-line' : 'ri-eye-line'} aria-hidden="true" />
+        </button>
+      </div>
+      {errors.client_id ? (
+        <div className="text-danger fs-12 mt-1">{errors.client_id}</div>
+      ) : (
+        <div className="form-text fs-12">Your Calendly OAuth app&apos;s Client ID.</div>
+      )}
+    </div>
+  )
+
+  // A secret, as OpenAI Configuration's API key: masked, the saved one never sent to the
+  // browser - a stand-in shows it is there.
+  const secretField = (id: 'client_secret' | 'webhook_signing_key', label: string, isSaved: boolean, help: string, required = false) => (
     <div className="mb-3">
       <label htmlFor={`calendly-${id}`} className="form-label fs-13 fw-semibold">
-        {label} {required && <span className="text-danger">*</span>}
+        {label} {required && !isSaved && <span className="text-danger">*</span>}
       </label>
-      <input
-        id={`calendly-${id}`}
-        type="text"
-        className={`form-control font-monospace ${errors[id] ? 'is-invalid' : ''}`}
-        value={keys[id]}
-        onChange={set(id)}
-        autoComplete="off"
-        spellCheck={false}
-      />
-      {errors[id] ? <div className="invalid-feedback">{errors[id]}</div> : <div className="form-text fs-12">{help}</div>}
+      <div className="input-group">
+        <span className={`input-group-text ${errors[id] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`}>
+          <i className="ri-key-2-line" aria-hidden="true" />
+        </span>
+        <input
+          id={`calendly-${id}`}
+          type="password"
+          className={`form-control font-monospace ${errors[id] ? 'is-invalid' : ''}`}
+          value={keys[id]}
+          onChange={set(id)}
+          placeholder={`Your ${label}`}
+          // Not offered to the browser's password manager, nor filled from it.
+          autoComplete="new-password"
+          spellCheck={false}
+        />
+      </div>
+      {errors[id] ? (
+        <div className="text-danger fs-12 mt-1">{errors[id]}</div>
+      ) : (
+        <div className="form-text fs-12">
+          {isSaved
+            ? `A ${label} is already stored, encrypted, on the server - it is never sent back to the browser, so this shows a placeholder rather than the ${label} itself. Leave it as is to keep it, or type over it to replace it.`
+            : help}
+        </div>
+      )}
     </div>
   )
 
@@ -147,12 +227,19 @@ export default function CalendlySettings() {
                 save.mutate()
               }}
             >
-              {field('client_id', 'Client ID', 'Your Calendly OAuth app\'s Client ID.', true)}
-              {field('client_secret', 'Client Secret', 'Your Calendly OAuth app\'s Client Secret.', true)}
-              {field(
+              {clientIdField()}
+              {secretField(
+                'client_secret',
+                'Client Secret',
+                hasSecret,
+                'Your Calendly OAuth app\'s Client Secret. Stored encrypted on the server and never sent back to the browser.',
+                true,
+              )}
+              {secretField(
                 'webhook_signing_key',
                 'Webhook Signing Key',
-                'Calendly signs its webhooks with it. Leave it empty and FCH makes one when connecting.',
+                Boolean(settings.has_webhook_signing_key),
+                'Calendly signs its webhooks with it. Leave it empty and FCH makes one when connecting. Stored encrypted.',
               )}
 
               <div className="bg-light rounded-3 p-3 mb-3 fs-13">
@@ -183,7 +270,11 @@ export default function CalendlySettings() {
                 </p>
               )}
 
-              <button type="submit" className="btn btn-primary" disabled={save.isPending || !dirty || !keys.client_id.trim()}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={save.isPending || !dirty || !keys.client_id.trim() || (!hasSecret && !typed(keys.client_secret))}
+              >
                 {save.isPending ? 'Saving…' : 'Save keys'}
               </button>
             </form>
