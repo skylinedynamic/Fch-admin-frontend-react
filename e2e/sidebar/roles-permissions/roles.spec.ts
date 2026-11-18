@@ -9,8 +9,8 @@ const PERMS = [
 ]
 
 const ROLES = [
-  { id: 1, name: 'Super Admin', description: 'Everything', code: 'super-admin', is_static: true, permissions: ['view users'], users_count: 2 },
-  { id: 2, name: 'Agent', description: 'Front desk', code: 'agent', is_static: false, permissions: ['view clients', 'view users'], users_count: 5 },
+  { id: 1, name: 'Super Admin', description: 'Everything', code: 'super-admin', is_static: true, is_editable: false, permissions: ['view users'], users_count: 2 },
+  { id: 2, name: 'Agent', description: 'Front desk', code: 'agent', is_static: false, is_editable: true, permissions: ['view clients', 'view users'], users_count: 5 },
 ]
 
 const PERMS_REQUIRED = ['view roles & permissions']
@@ -153,6 +153,18 @@ test.describe('Create role', () => {
     await expect(page.getByText('Select at least one permission.')).toBeVisible()
     await expect(page).toHaveURL(/\/roles-permissions\/create/)
   })
+
+  test('the reserved Developer name is refused under the field, with no toast', async ({ page }) => {
+    const api = await openCreate(page)
+    const reserved = 'Developer is a reserved role name. Please choose another name.'
+    api.add({ method: 'POST', match: /\/common\/roles$/, status: 422, body: failure('Invalid', { name: [reserved] }) })
+    await page.getByPlaceholder('Enter a role name').fill('Developer')
+    await page.locator('#adminAccessToggle').check()
+    await page.getByRole('button', { name: /save/i }).click()
+    await expect(page.getByText(reserved)).toBeVisible()
+    await expect(page.locator('.Toastify__toast')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/roles-permissions\/create/)
+  })
 })
 
 test.describe('Edit role', () => {
@@ -212,5 +224,30 @@ test.describe('A static (system) role', () => {
     await expect(page.locator('input[id^="perm-"]:checked')).toHaveCount(4)
     await expect(page.locator('input[id^="perm-"]:enabled')).toHaveCount(0)
     await expect(page.getByRole('button', { name: /update/i })).toHaveCount(0)
+  })
+
+  // A Developer may change Admin's permissions (the API marks it is_editable); its name stays.
+  test('a Developer edits the Admin role: Edit Role, name locked, permissions saved', async ({ page }) => {
+    await seedSession(page, { permissions: PERMS_REQUIRED })
+    const api = await mockApi(page, [
+      { method: 'GET', match: '/common/roles', body: ok([{ ...ROLES[0], is_editable: true }, ROLES[1]]) },
+      { method: 'POST', match: '/common/permissions', body: ok(PERMS) },
+      { method: 'GET', match: '/common/roles/1', body: ok({ id: 1, name: 'Super Admin', description: 'Everything', is_static: true, is_editable: true, permission: { 1: 'view users' }, users: [] }) },
+      { method: 'PUT', match: '/common/roles/1', body: ok({ id: 1 }) },
+    ])
+    await page.goto('/roles-permissions')
+    const card = page.locator('.role-summary-card').nth(0)
+    await card.getByRole('button', { name: /edit role/i }).click()
+
+    await expect(page).toHaveURL(/\/roles-permissions\/edit\/1$/)
+    await expect(page.getByPlaceholder('Enter a role name')).toHaveValue('Super Admin')
+    await expect(page.getByPlaceholder('Enter a role name')).toBeDisabled()
+    await expect(page.getByText('This is a system role. Its name and permissions cannot be changed.')).toHaveCount(0)
+    await page.locator('input[id^="perm-clients-"]').first().check()
+    await page.getByRole('button', { name: /update/i }).click()
+
+    const call = await expectCall(api, 'PUT', '/common/roles/1')
+    expect(call.json.name).toBe('Super Admin')
+    expect(call.json.permission_ids).toEqual(expect.arrayContaining([1, 3]))
   })
 })

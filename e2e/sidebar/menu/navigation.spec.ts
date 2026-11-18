@@ -3,6 +3,7 @@ import { mockApi, seedSession } from '../../support/helpers'
 import { PERSONA_PROFILES, type PersonaProfileKey } from '../../fixtures/personaProfiles'
 import { landingPath } from '../../support/navigation'
 import { ROUTES, expectedOutcome } from '../../support/routes'
+import { OWNER_SUMMARY_PERMISSION } from '../../../src/config/ownerSummary'
 
 /**
  * The sidebar: which modules each persona is offered, and that every entry
@@ -31,7 +32,8 @@ const subItems = async (page: Page, parent: string) => {
   return (await item.locator('.sidebar-submenu-wrapper .nav-link').allTextContents()).map((label) => label.trim())
 }
 
-// The host's menu, exactly as the product shows it.
+// The host's menu, exactly as the product shows it. Business Insights is not
+// in it: for now only one login sees that (see "Sidebar - Business Insights").
 const HOST_MENU = [
   'Dashboard', 'Partners', 'Leads', 'Clients', 'Intake & Review', 'Capital Access', 'Lenders', 'Funding Sequence',
   'Credit Builder', 'Commissions', 'Invoices', 'Payments', 'Subscriptions', 'Upcoming Billings', 'Appointments',
@@ -140,6 +142,20 @@ test.describe('Sidebar - every host entry opens its screen', () => {
     await page.goto('/')
     await page.locator('#navbar-nav > li.nav-item > a.menu-link', { has: page.locator('span', { hasText: /^Settings$/ }) }).click()
     await expect(page.locator('.settings-page-title')).toBeVisible()
+    await expect(page.getByText(/Access Denied|Page Not Found/i)).toHaveCount(0)
+  })
+})
+
+test.describe('Sidebar - Business Insights', () => {
+  test('a login holding view business insights is offered it, right after Dashboard, and it opens', async ({ page }) => {
+    const profile = PERSONA_PROFILES.host
+    await seedSession(page, { ...profile.user, permissions: [...profile.user.permissions, OWNER_SUMMARY_PERMISSION.VIEW] })
+    await mockApi(page)
+    await page.goto('/profile')
+
+    expect((await topLevel(page)).slice(0, 2)).toEqual(['Dashboard', 'Business Insights'])
+    await page.locator('#navbar-nav > li.nav-item > a.menu-link', { has: page.locator('span', { hasText: /^Business Insights$/ }) }).click()
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/business-insights')
     await expect(page.getByText(/Access Denied|Page Not Found/i)).toHaveCount(0)
   })
 })

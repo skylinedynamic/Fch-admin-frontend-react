@@ -1,5 +1,6 @@
-import { AGREEMENT_MERGE_FIELDS } from '../../../../config/agreementMergeFields';
+import { AGREEMENT_MERGE_FIELDS, type AgreementMergeField } from '../../../../config/agreementMergeFields';
 import { measureLineBoxes, planPages } from './pagination';
+import { sanitizeHtml } from '../../../../utils/sanitizeHtml';
 
 /**
  * Letterhead and signing line, shared by the builder's canvas and the saved
@@ -61,6 +62,17 @@ export const PREVIEW_CSS = `${LAYOUT_CSS}
   .p-text tr > :first-child:nth-last-child(2) { width: 30%; }
   .p-text tr > :first-child:nth-last-child(3) { width: 30%; }
   .p-text th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
+  .p-text h1, .p-text h2, .p-text h3, .p-text h4 { margin: 4px 0 2px; font-family: inherit; font-weight: 700; line-height: 1.3; color: inherit; }
+  .p-text h1 { font-size: 1.6em; }
+  .p-text h2 { font-size: 1.35em; }
+  .p-text h3 { font-size: 1.15em; }
+  .p-text h4 { font-size: 1em; }
+  .p-text blockquote { margin: 4px 0; padding: 2px 0 2px 12px; border-left: 3px solid #cbd5e1; color: #475569; }
+  .p-text hr { border: 0; border-top: 1px solid #cbd5e1; margin: 8px 0; }
+  .p-text code { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 0.9em; background: #f1f5f9; padding: 0 3px; border-radius: 3px; }
+  .p-text pre { margin: 4px 0; padding: 8px 10px; background: #f1f5f9; border-radius: 4px; font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 0.9em; white-space: pre-wrap; overflow-wrap: break-word; }
+  .p-text a { color: #2563eb; text-decoration: underline; }
+  .p-text table.ab-plain-table th, .p-text table.ab-plain-table td { border: none; background: none; padding: 0 9px 0 0; width: auto; }
   .p-field         { margin-bottom: 0px; display: flex; flex-direction: column; gap: 4px; }
   .p-input-wrap    { position: relative; width: 100%; display: flex; align-items: flex-end; gap: 8px; }
   .p-label         { font-size: var(--fs, 15px); font-weight: var(--fw, 500); color: #1e293b; margin: 0; white-space: nowrap; font-family: var(--ff, inherit); }
@@ -693,10 +705,20 @@ const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
  * has none while a template is built. Only the preview: the saved template
  * keeps the fields, which the server fills for each signer.
  */
-export const withMergeSamples = (html: string, real: Record<string, string> = {}): string => {
-  const samples = new Map(AGREEMENT_MERGE_FIELDS.map((f) => [f.key, real[f.key]?.trim() ? escapeHtml(real[f.key].trim()) : f.sample]));
-  const filled = html.replace(/\{\{\s*([a-z_.]+)\s*\}\}/g, (token, key: string) =>
-    samples.has(key) ? `<span class="ab4-merge-sample" title="{{${key}}}">${samples.get(key)}</span>` : token);
+export const withMergeSamples = (
+  html: string,
+  real: Record<string, string> = {},
+  fields: AgreementMergeField[] = AGREEMENT_MERGE_FIELDS,
+): string => {
+  // Plan & Fee values (in `fields`) carry their real price as the sample.
+  const samples = new Map(fields.map((f) => [f.key, real[f.key]?.trim() ? escapeHtml(real[f.key].trim()) : escapeHtml(f.sample)]));
+  // An html value (the partner's commission table) is markup from the API:
+  // shown as it is (no field marking around it), with anything that could run script removed.
+  const htmlKeys = new Map(fields.filter((f) => f.html).map((f) => [f.key, sanitizeHtml(f.sample)]));
+  const filled = html.replace(/\{\{\s*([a-z0-9_.]+)\s*\}\}/g, (token, key: string) => {
+    if (htmlKeys.has(key)) return `<div class="ab4-merge-sample-block" title="{{${key}}}">${htmlKeys.get(key)}</div>`;
+    return samples.has(key) ? `<span class="ab4-merge-sample" title="{{${key}}}">${samples.get(key)}</span>` : token;
+  });
   return filled === html ? html : filled.replace('</head>', `${MERGE_SAMPLE_CSS}</head>`);
 };
 

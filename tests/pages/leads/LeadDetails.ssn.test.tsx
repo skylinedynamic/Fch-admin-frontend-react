@@ -16,11 +16,16 @@ import LeadDetails from '../../../src/pages/leads/LeadDetails'
  * Lead -> Contact Info: the Social Security Number is the full number, as on a
  * client's profile (Client -> Profile). It used to be "SSN Last 4". The field
  * only writes it as XXX-XX-XXXX; whether it is valid is the API's call.
+ *
+ * R3-BUG-004: the API sent the full SSN on every read of the lead. It now
+ * sends it masked (***-**-6789), as for a client; the eye button fetches it in
+ * full through POST leads/{id}/reveal (logged), and a save leaves out an SSN
+ * still masked so the one on file stays.
  */
 const LEAD = {
   id: 7, company_name: 'Lead Co', contact_person: 'Lee Lead', email: 'lee@example.test',
   phone_number: '(555) 234-5678', lead_type: 'Borrower', status: 'New', country: 'United States',
-  ssn: '123456789' as string | null,
+  ssn: '***-**-6789' as string | null,
 }
 
 const mount = (lead = LEAD) => {
@@ -35,16 +40,31 @@ const ssnField = () => screen.findByLabelText('Social Security Number') as Promi
 beforeEach(() => vi.clearAllMocks())
 
 describe('LeadDetails - Social Security Number', () => {
-  it('shows the full SSN on file masked, in full on the eye button, where "SSN Last 4" used to be', async () => {
+  it('shows the SSN masked as the API sends it, and in full only through the logged reveal', async () => {
     const user = userEvent.setup()
     mount()
+    const reveal = api('post', '/common/leads/7/reveal', { status: true, data: { field: 'ssn', value: '123456789' } })
 
     const ssn = await ssnField()
     await waitFor(() => expect(ssn).toHaveValue('***-**-6789'))
     expect(screen.queryByText('SSN Last 4')).not.toBeInTheDocument()
+    expect(reveal.calls).toBe(0)
 
     await user.click(screen.getByRole('button', { name: /show ssn/i }))
-    expect(ssn).toHaveValue('123-45-6789')
+    await waitFor(() => expect(ssn).toHaveValue('123-45-6789'))
+    expect(reveal.bodies[0]).toEqual({ field: 'ssn' })
+  })
+
+  it('leaves out an SSN still masked, so the one on file stays', async () => {
+    const user = userEvent.setup()
+    mount()
+    const save = api('post', '/common/leads/7/contact-info', { status: true, data: LEAD })
+
+    await waitFor(async () => expect(await ssnField()).toHaveValue('***-**-6789'))
+    await user.click(screen.getByRole('button', { name: /update/i }))
+
+    await waitFor(() => expect(save.calls).toBe(1))
+    expect(save.bodies[0]).not.toHaveProperty('ssn')
   })
 
   it('writes the number as it is typed and sends the nine digits', async () => {
@@ -64,9 +84,14 @@ describe('LeadDetails - Social Security Number', () => {
   it('sends a cleared SSN as empty, so the one on file is removed', async () => {
     const user = userEvent.setup()
     mount()
+    api('post', '/common/leads/7/reveal', { status: true, data: { field: 'ssn', value: '123456789' } })
     const save = api('post', '/common/leads/7/contact-info', { status: true, data: LEAD })
 
-    await user.clear(await ssnField())
+    const ssn = await ssnField()
+    await waitFor(() => expect(ssn).toHaveValue('***-**-6789'))
+    await user.click(screen.getByRole('button', { name: /show ssn/i }))
+    await waitFor(() => expect(ssn).toHaveValue('123-45-6789'))
+    await user.clear(ssn)
     await user.click(screen.getByRole('button', { name: /update/i }))
 
     await waitFor(() => expect(save.calls).toBe(1))

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -37,15 +37,22 @@ describe('index.html link-preview tags', () => {
     expect(doc.querySelector('meta[property="og:description"]')?.getAttribute('content')).toBeTruthy()
     expect(doc.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe('summary')
     expect(doc.querySelectorAll('link[rel~="icon"]')).toHaveLength(1)
-    expect(doc.querySelector('link[rel~="icon"]')?.getAttribute('href')).toBe('/assets/images/Favicon.png')
+    expect(doc.querySelector('link[rel~="icon"]')?.getAttribute('href')).toBe('/favicon.png')
   })
 
-  it('declares the packaged favicon ahead of the include, so a partner favicon from the API follows and wins', () => {
-    const icon = html.search(/<link rel="icon" href="\/assets\/images\/Favicon\.png" \/>/)
+  // R3-BUG-040: the packaged icon sat outside the stub, so a partner's served
+  // HTML carried the host's icon ahead of its own. Inside the stub, the API's
+  // fragment (which always names an icon) replaces it.
+  it('keeps the packaged favicon inside the stub, so a partner portal serves only its own', () => {
+    const stub = html.slice(html.indexOf(BLOCK_START), html.indexOf(BLOCK_END))
+    const outside = html.slice(0, html.indexOf(BLOCK_START)) + html.slice(html.indexOf(BLOCK_END))
 
-    expect(icon).toBeGreaterThan(-1)
-    expect(icon).toBeLessThan(html.indexOf(BLOCK_START))
-    expect(html.slice(html.indexOf(BLOCK_START), html.indexOf(BLOCK_END))).not.toMatch(/rel="icon"/)
+    expect(stub).toContain('<link rel="icon" href="/favicon.png" />')
+    expect(outside).not.toMatch(/rel="icon"/)
+  })
+
+  it('ships the packaged favicon at the fixed path the API names when there is no upload', () => {
+    expect(existsSync(resolve(__dirname, '../public/favicon.png'))).toBe(true)
   })
 
   it('keeps every tag the API replaces inside the stub, so none is doubled', () => {

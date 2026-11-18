@@ -61,3 +61,46 @@ export interface AgreementRequirementStatus extends AgreementRequirement {
 
 /** Merge field => the value signing fills it with, e.g. { 'owner.company_name': 'Acme Lending' }. */
 export type AgreementPreviewValues = Record<string, string>
+
+/**
+ * A Plan & Fee dynamic value the builder offers for an agreement type
+ * (fch-api AgreementPlanFields): `sample` is the price signing fills it with.
+ */
+export interface AgreementPlanField {
+  key: string
+  label: string
+  group: string
+  sample: string
+  /** True for the partner's commission table (fch-api AgreementCommissionFields): `sample` is markup. */
+  html?: boolean
+}
+
+/**
+ * Agreement Builder › Save as Template (fch-api AgreementSavedTemplate): an
+ * agreement a partner kept under a name, to start from later. The list leaves
+ * `template_json` out; the one template picked carries it.
+ */
+export interface SavedAgreementTemplate {
+  id: number
+  slug: AgreementSlug
+  name: string
+  template_json?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface SaveAgreementAsTemplatePayload {
+  slug: AgreementSlug
+  name: string
+  /** The builder's { blocks, pagePad, docBg }, as Save Agreement sends it. */
+  template_json: string
+}
+
+/** The longest template name the API accepts (fch-api AgreementSavedTemplate::NAME_MAX). */
+export const SAVED_AGREEMENT_TEMPLATE_NAME_MAX = 100
+
+/** Editing a saved template: a new name, the agreement now on the page, or both. Its type never changes. */
+export interface UpdateSavedAgreementTemplatePayload {
+  name?: string
+  template_json?: string
+}

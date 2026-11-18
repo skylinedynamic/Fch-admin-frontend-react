@@ -55,6 +55,33 @@ test.describe('Commission details', () => {
     await expect(page.getByText('Total Commission', { exact: true }).first()).toBeVisible()
   })
 
+  // A partner share from a Flat Amount tier is a fixed $, never a rounded %.
+  const flat = {
+    partner_commission_type: 'flat',
+    total_commission: 12, total_commission_amount: 30000,
+    admin_commission: 98.33, admin_commission_amount: 29500,
+    partner_commission: 1.67, partner_commission_amount: 500,
+    payout: payout({ payout_type: 'Flat Amount', rate: null, base_amount: 30000, amount: 500 }),
+  }
+
+  test('a host sees a flat partner commission as a flat amount, with no %', async ({ page }) => {
+    await open(page, ok(commission(flat)))
+    const breakdown = page.locator('.card', { has: page.getByText('Commission Breakdown') })
+    await expect(breakdown.locator('tr', { hasText: 'Partner Commission' })).toContainText('Flat amount')
+    await expect(breakdown.locator('tr', { hasText: 'Partner Commission' })).toContainText('$500')
+    await expect(breakdown.locator('tr', { hasText: 'Admin Commission' })).toContainText('$29,500')
+    await expect(page.getByText(/1\.67%|98\.33%/)).toHaveCount(0)
+    await expect(page.getByText(/% of Total Commission/)).toHaveCount(0)
+  })
+
+  test('a partner sees its flat commission as a flat amount, not a % rate', async ({ page }) => {
+    await open(page, ok(commission(flat)), { permissions: ['view commission'], is_host: false, partner_id: 5 })
+    const card = page.locator('.card', { has: page.getByText('Your Commission') })
+    await expect(card).toContainText('$500')
+    await expect(card).toContainText('Flat amount')
+    await expect(card).not.toContainText('% Rate')
+  })
+
   test('a partner sees only their own commission and no breakdown or payout', async ({ page }) => {
     await open(page, ok(commission()), { permissions: ['view commission'], is_host: false, partner_id: 5 })
     await expect(page.getByText('Your Commission')).toBeVisible()

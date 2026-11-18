@@ -18,13 +18,28 @@ interface PropertyPanelProps {
     setPagePad: (val: number) => void;
     docBg: string;
     setDocBg: (val: string) => void;
+    /** "Insert Dynamic Value" with no text block to put it in: adds it in a new text block. */
+    onAddDynamicValue: (token: string) => void;
 }
 
 export const PropertyPanel: React.FC<PropertyPanelProps> = ({
-    selected, u, setBlocks, selectedId, pagePad, setPagePad, docBg, setDocBg
+    selected, u, setBlocks, selectedId, pagePad, setPagePad, docBg, setDocBg, onAddDynamicValue
 }) => {
+    // Text and header blocks take a dynamic value in their own text.
+    const textSelected = selected?.type === 'text' || selected?.type === 'header';
+
     return (
         <div className="ab4-props">
+            {/* Always here, so an empty page can take one too (in a new text block). */}
+            <div className="ab4-dynamic-values">
+                <div className="ab4-dynamic-values__title"><i className="ri-flashlight-line" />Dynamic Values</div>
+                <InsertFieldMenu
+                    content={textSelected ? selected?.content || '' : ''}
+                    onAppend={textSelected ? (content) => u({ content }) : undefined}
+                    onAddNew={onAddDynamicValue}
+                />
+                <p className="ab4-dynamic-values__hint">Filled in automatically when the agreement is signed.</p>
+            </div>
             <div className="ab4-props-title">{selected ? 'Block Properties' : 'Document Settings'}</div>
             {selected ? (
                 <div className="ab4-props-content">
@@ -86,9 +101,6 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                                 <TableControls content={selected.content || ''} onChange={(content) => u({ content })} />
                             )}
 
-                            {(selected.type === 'text' || selected.type === 'header') && (
-                                <InsertFieldMenu content={selected.content || ''} onAppend={(content) => u({ content })} />
-                            )}
                         </div>
                     )}
 

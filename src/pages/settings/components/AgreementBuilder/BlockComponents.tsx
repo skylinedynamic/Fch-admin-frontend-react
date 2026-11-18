@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useContext, useId } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useContext, useId } from 'react';
 import Flatpickr from 'react-flatpickr';
 import { yearDropdownPlugin } from '../../../../utils/flatpickrPlugins';
 import { toast } from 'react-toastify';
@@ -8,6 +8,7 @@ import { measureLineBoxes, planPages, type PageItem } from './pagination';
 import { AgreementBlock } from './types';
 import { createMergeChip, decorateMergeFields, undecorateMergeFields } from './mergeChips';
 import { MergeChipMenu } from './MergeChipMenu';
+import { MergeFieldsContext } from './mergeFieldsContext';
 import { pastedToHtml } from './pastedText';
 import { sanitizeHtml } from '../../../../utils/sanitizeHtml';
 
@@ -50,6 +51,8 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
     const ref = useRef<HTMLDivElement>(null);
     const lastValidHtml = useRef<string>(block.content || '');
     const [menuChip, setMenuChip] = useState<HTMLElement | null>(null);
+    // Which chip it is, counted in the text: still found if the text is redrawn.
+    const menuChipIndex = useRef(-1);
     
     // Merge fields show as chips here and are saved bare ({{signer.name}}) - see mergeChips.
     useEffect(() => {
@@ -59,7 +62,16 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
         }
     }, []);
 
-    // Content changed from outside the editor (e.g. a field added from the Insert field menu).
+    // The Plan & Fee values arrive from the API after the page is drawn: relabel
+    // their chips then (not while the text is being typed in).
+    const mergeFields = useContext(MergeFieldsContext);
+    useEffect(() => {
+        if (!ref.current || document.activeElement === ref.current) return;
+        ref.current.innerHTML = decorateMergeFields(block.content || '');
+        lastValidHtml.current = ref.current.innerHTML;
+    }, [mergeFields]);
+
+    // Content changed from outside the editor (e.g. a field added from the Insert Dynamic Value menu).
     useEffect(() => {
         if (!ref.current || document.activeElement === ref.current) return;
         if (undecorateMergeFields(ref.current.innerHTML) !== (block.content || '')) {
@@ -165,13 +177,24 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred, readOnly, isO
     // A click on a blue field opens MergeChipMenu, to choose what fills it.
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const chip = (e.target as Element).closest?.('.ab4-merge-chip') as HTMLElement | null;
-        if (chip && ref.current?.contains(chip)) setMenuChip(chip);
+        if (chip && ref.current?.contains(chip)) {
+            menuChipIndex.current = Array.from(ref.current.querySelectorAll('.ab4-merge-chip')).indexOf(chip);
+            setMenuChip(chip);
+        }
     };
 
+    // The text may be redrawn while the menu is open (a group's modal takes the
+    // focus, and leaving the text rewrites it): then the chip is the one at the
+    // same place, not the element the menu was opened from.
     const remapChip = (key: string | null) => {
         if (!menuChip) return;
-        if (key) menuChip.replaceWith(createMergeChip(key));
-        else menuChip.remove();
+        const target = menuChip.isConnected
+            ? menuChip
+            : (ref.current?.querySelectorAll<HTMLElement>('.ab4-merge-chip')[menuChipIndex.current] ?? null);
+        if (target) {
+            if (key) target.replaceWith(createMergeChip(key));
+            else target.remove();
+        }
         setMenuChip(null);
         handleInput();
     };
@@ -252,14 +275,24 @@ export function InsertZone({ onInsert, onMoveHere }: InsertZoneProps) {
         document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
     }, []);
 
+    const pickerRef = useRef<HTMLDivElement>(null);
     const toggleOpen = () => {
-        if (!open && ref.current) {
-            const rect = ref.current.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            setOpenUp(spaceBelow < 300);
-        }
+        if (!open) setOpenUp(false);
         setOpen(!open);
     };
+
+    // The page (an A4 sheet) cuts off what runs past its edge, as does the
+    // window: once open, the menu goes to the side with room for it.
+    useLayoutEffect(() => {
+        if (!open || !ref.current || !pickerRef.current) return;
+        const zone = ref.current.getBoundingClientRect();
+        const pageEl = ref.current.closest('.ab4-doc');
+        const page = pageEl ? pageEl.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+        const needed = pickerRef.current.getBoundingClientRect().height + 8;
+        const below = Math.min(page.bottom, window.innerHeight) - zone.bottom;
+        const above = zone.top - Math.max(page.top, 0);
+        setOpenUp(below < needed && above > below);
+    }, [open]);
 
     const isActive = hover || open;
     return (
@@ -269,7 +302,8 @@ export function InsertZone({ onInsert, onMoveHere }: InsertZoneProps) {
                 <div className="ab4-iz-line">
                     <button type="button" className="ab4-iz-btn" onClick={toggleOpen}><i className={open ? 'ri-close-line' : 'ri-add-line'} /></button>
                     {open && (
-                        <div 
+                        <div
+                            ref={pickerRef}
                             className="ab4-iz-picker"
                             style={openUp ? {
                                 top: 'auto',
@@ -687,9 +721,14 @@ export function BlockList({
             const rectH = blockEl.getBoundingClientRect().height;
             const unscale = rectH > 0 ? blockH / rectH : 1;
             const boxes = measureLineBoxes(blockEl);
+            // A page's first block draws no top margin (.ab4-page-first); plan with its own,
+            // in case it lands mid-page this time.
+            const marginTop = blockEl.closest('.ab4-page-first')
+                ? parseFloat(cs.getPropertyValue('--mt')) || 0
+                : parseFloat(cs.marginTop) || 0;
             return {
                 height: blockH,
-                marginTop: parseFloat(cs.marginTop) || 0,
+                marginTop,
                 marginBottom: parseFloat(cs.marginBottom) || 0,
                 boxes: boxes && boxes.map((b) => ({ top: b.top * unscale, bottom: b.bottom * unscale })),
                 keepWithNext: keepsWithNext(block),
@@ -817,6 +856,8 @@ export function BlockList({
             }}>
                 {pages.map((pageEntries, pIdx) => {
                     const firstBlockIdx = pageEntries[0]?.blockIdx ?? blocks.length;
+                    // The page's first block starts at the top padding, as the planner (and the preview) lays it out.
+                    const firstContentEntry = pageEntries.findIndex((e) => blocks[e.blockIdx] && blocks[e.blockIdx].type !== 'page-break');
                     const isManual = isManualPageBreak(pIdx);
                     const pbBlock = isManual ? blocks[pages[pIdx - 1][pages[pIdx - 1].length - 1].blockIdx] : null;
 
@@ -880,11 +921,11 @@ export function BlockList({
                                     return (
                                         <React.Fragment key={`${block.id}-p${pIdx}-e${eIdx}`}>
                                             <div
-                                                className={entry.isSplit ? "ab4-block-clip-window" : "ab4-block-normal-window"}
+                                                className={`${entry.isSplit ? 'ab4-block-clip-window' : 'ab4-block-normal-window'}${entry.isSplit && entry.clipTop === 0 ? ' ab4-block-clip-window--head' : ''}${eIdx === firstContentEntry ? ' ab4-page-first' : ''}`}
                                                 data-slice-of={entry.isSplit ? block.id : undefined}
+                                                // Clipped by CSS (clip-path on .ab4-block-clip-window), which leaves room for the block's toolbar.
                                                 style={entry.isSplit ? {
                                                     height: `${entry.clipHeight}px`,
-                                                    overflow: 'hidden',
                                                     position: 'relative',
                                                     width: '100%',
                                                 } : {

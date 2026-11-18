@@ -26,7 +26,9 @@ import ClosedApplicationSummary from './components/ClosedApplicationSummary';
 import DownloadPdfModal from './DownloadPdfModal';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { LastStatusNote, StatusNoteVisibility } from './components/StatusNoteVisibility';
 import { usePermissions } from '../../../lib/auth/usePermissions';
+import { COMMISSION_MANAGE_PERMISSION, COMMISSION_VIEW_PERMISSION, partnerCommissionPath } from '../../../config/partnerCommission';
 
 type StepType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -56,7 +58,10 @@ export default function FundingApplicationDetails() {
 
     // Status update state
     const [status, setStatus] = useState<string>('');
+    // Starts empty for each change: the last note is shown above the box,
+    // so it is never re-sent by accident (R3-BUG-016).
     const [status_note, setStatusNote] = useState<string>('');
+    const [noteVisibleToClient, setNoteVisibleToClient] = useState<boolean>(false);
     const [notesError, setNotesError] = useState<string>('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showFundedModal, setShowFundedModal] = useState(false);
@@ -86,6 +91,8 @@ export default function FundingApplicationDetails() {
 
     const app = (apiResponse?.data || apiResponse || {}) as FundingApplicationDetailsType;
     const showPartnerCommission = app?.partner_id !== authPartnerId;
+    // As the Commission Details card: admin view with "update commission".
+    const canEditClosingCommission = !isPartner && hasPermission(COMMISSION_VIEW_PERMISSION) && hasPermission(COMMISSION_MANAGE_PERMISSION);
     const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
     const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
     // Editable whenever the application is in one of the API's editable
@@ -115,9 +122,6 @@ export default function FundingApplicationDetails() {
     useEffect(() => {
         if (app?.status) setStatus(app.status);
     }, [app?.id, app?.status]);
-    useEffect(() => {
-        if (app?.status_note) setStatusNote(app.status_note);
-    }, [app?.id, app?.status_note]);
 
     useEffect(() => {
         if (error || (!isLoading && !apiResponse)) {
@@ -186,7 +190,7 @@ export default function FundingApplicationDetails() {
         }
         // Nothing to update - as the funding request page says. (Also what is
         // left after a status that needs a lender was picked and set back.)
-        if (status === app?.status && status_note.trim() === (app?.status_note || '').trim()) {
+        if (status === app?.status && status_note.trim() === '') {
             toast.info('Status is unchanged.');
             return;
         }
@@ -204,6 +208,12 @@ export default function FundingApplicationDetails() {
         }
     };
 
+    const resetStatusNote = () => {
+        setStatusNote('');
+        setNoteVisibleToClient(false);
+        setNotesError('');
+    };
+
     const handleConfirmUpdate = () => {
         if (!app.id) return;
         // With the status this page shows: a double-click or a stale page is
@@ -211,12 +221,13 @@ export default function FundingApplicationDetails() {
         updateMutation.mutate(withExpectedStatus({
             funding_application_id: app.id,
             status: status,
-            status_note: status_note
+            status_note: status_note,
+            status_note_visible_to_client: noteVisibleToClient
         }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowConfirmModal(false);
-                setNotesError('');
+                resetStatusNote();
                 window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
@@ -273,12 +284,13 @@ export default function FundingApplicationDetails() {
             funding_application_id: app.id,
             status: status,
             status_note: status_note,
+            status_note_visible_to_client: noteVisibleToClient,
             funded_amount: amount
         }, app.status), {
             onSuccess: () => {
                 toast.success('Status updated successfully');
                 setShowFundedModal(false);
-                setNotesError('');
+                resetStatusNote();
                 window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
@@ -911,7 +923,7 @@ export default function FundingApplicationDetails() {
                                                     <div className="mb-3">
                                                         <label className="form-label text-muted">Status Notes</label>
                                                         <div className="p-3 bg-light rounded text-muted">
-                                                            {status_note || 'No notes available'}
+                                                            {app?.status_note || 'No notes available'}
                                                         </div>
                                                     </div>
                                                 </>
@@ -931,6 +943,9 @@ export default function FundingApplicationDetails() {
                                                             disabled={!hasPermission("update funding application") || isClosed}
                                                         />
                                                     </div>
+                                                    {app?.status_note && (
+                                                        <LastStatusNote note={app.status_note} visibleToClient={!!app.status_note_visible_to_client} />
+                                                    )}
                                                     <div className="mb-3">
                                                         <label htmlFor="status-notes" className="form-label text-muted">Status Notes</label>
                                                         <textarea
@@ -950,6 +965,11 @@ export default function FundingApplicationDetails() {
                                                         <div className="form-text text-end">
                                                             {status_note.length.toLocaleString('en-US')} / {FUNDING_APPLICATION_STATUS_NOTE_MAX.toLocaleString('en-US')}
                                                         </div>
+                                                        <StatusNoteVisibility
+                                                            checked={noteVisibleToClient}
+                                                            onChange={setNoteVisibleToClient}
+                                                            disabled={!hasPermission("update funding application") || isClosed}
+                                                        />
                                                     </div>
                                                     {hasPermission("update funding application") && !isClosed && (
                                                         <div className="d-grid">
@@ -957,9 +977,10 @@ export default function FundingApplicationDetails() {
                                                                 type="button"
                                                                 className="btn btn-primary"
                                                                 onClick={handleUpdateClick}
-                                                                disabled={updateMutation.isPending}
                                                             >
-                                                                {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                                                                {/* Only opens the confirm / Closed (Completed) modal, which
+                                                                    shows its own loading state while it saves. */}
+                                                                Update Status
                                                             </button>
                                                         </div>
                                                     )}
@@ -1112,11 +1133,14 @@ export default function FundingApplicationDetails() {
                 successFeeRate={parseFloat(app.total_commission?.toString() || '0')}
                 adminCommissionRate={parseFloat(app.admin_commission?.toString() || '0')}
                 partnerCommissionRate={parseFloat(app.partner_commission?.toString() || '0')}
+                defaultPartnerCommissionRate={app.partner_default_commission != null ? Number(app.partner_default_commission) : null}
+                partnerCommissionSetup={app.partner_commission_setup ?? null}
                 showPartnerCommission={showPartnerCommission}
                 isCommissionSet={isCommissionSet}
                 requestedAmount={requestedAmountValue}
-                // As the Commission Details card: admin view with "update commission".
-                canEditCommission={!isPartner && hasPermission('view commission') && hasPermission('update commission')}
+                canEditCommission={canEditClosingCommission}
+                // Not set: a link to Partner profile › Commissions, for whoever may set it.
+                setPartnerCommissionHref={canEditClosingCommission && app.partner_id ? partnerCommissionPath(app.partner_id) : null}
                 commissionErrors={closingCommissionErrors}
             />
 

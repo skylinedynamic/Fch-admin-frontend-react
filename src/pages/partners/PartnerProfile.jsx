@@ -22,6 +22,8 @@ import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
 import { PARTNER_CONFIGURATION_TAB, canManagePartnerConfiguration } from '../../config/partnerConfiguration';
 import { useAuthStore } from '../../store/auth/authStore';
 import PartnerConfigurationSection from './components/PartnerConfigurationSection';
+import PartnerCommissionTab from './components/PartnerCommissionTab';
+import { PARTNER_COMMISSION_TAB, PARTNER_COMMISSION_FORM_ID, COMMISSION_VIEW_PERMISSION, COMMISSION_MANAGE_PERMISSION } from '../../config/partnerCommission';
 import ErrorPage from '../Utility/ErrorPage';
 import { FILE_MANAGER_CONFIG } from '../../modules/filemanager/config';
 import { emailFieldValue } from '../../modules/account';
@@ -474,6 +476,25 @@ export default function PartnerProfile() {
         setFormData(prev => ({ ...prev, agreement_required: required }));
     }, []);
 
+    // The Commissions tab saved the tiers itself: keep them, nothing to reload.
+    const handleCommissionSaved = useCallback((saved) => {
+        setFormData(prev => ({
+            ...prev,
+            commission_tiers: saved.commission_tiers,
+            funded_deal_count: saved.funded_deal_count,
+        }));
+    }, []);
+
+    // Partner profile › Commissions: the host's team sets a partner's share of
+    // the success fee. Not on the host's own profile - the admin keeps it all.
+    const canViewCommission = Boolean(id)
+        && Number(authUser?.is_host) === 1
+        && Number(formData.is_host) === 0
+        && hasPermission(COMMISSION_VIEW_PERMISSION);
+    const canEditCommission = canViewCommission && hasPermission(COMMISSION_MANAGE_PERMISSION);
+    // The tab reports whether its rate changed / is saving, for the header's Save button.
+    const [commissionForm, setCommissionForm] = useState({ dirty: false, saving: false });
+
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
         if (formData.agent && users.length > 0) {
@@ -790,7 +811,7 @@ export default function PartnerProfile() {
                     </Link>
 
                     {/* Generic Partner Save Button */}
-                    {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig', PARTNER_CONFIGURATION_TAB].includes(activeTab) && (
+                    {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig', PARTNER_CONFIGURATION_TAB, PARTNER_COMMISSION_TAB].includes(activeTab) && (
                         ((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
                             <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
                                 {isSaving ? (
@@ -805,6 +826,27 @@ export default function PartnerProfile() {
                                 )}
                             </button>
                         )
+                    )}
+
+                    {/* Commissions tab: submits its form (PartnerCommissionTab) */}
+                    {activeTab === PARTNER_COMMISSION_TAB && canEditCommission && (
+                        <button
+                            type="submit"
+                            form={PARTNER_COMMISSION_FORM_ID}
+                            className="btn btn-primary w-lg waves-effect"
+                            disabled={!commissionForm.dirty || commissionForm.saving}
+                        >
+                            {commissionForm.saving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-save-3-line align-middle me-1"></i> Save Commission
+                                </>
+                            )}
+                        </button>
                     )}
 
                     {/* Specific Tenant Config Save Button */}
@@ -938,6 +980,18 @@ export default function PartnerProfile() {
                                             </a>
                                         </li>
                                     )}
+                                    {canViewCommission && (
+                                        <li className="nav-item">
+                                            <a
+                                                className={`nav-link ${activeTab === PARTNER_COMMISSION_TAB ? 'active' : ''}`}
+                                                onClick={() => setActiveTab(PARTNER_COMMISSION_TAB)}
+                                                role="tab"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                Commissions
+                                            </a>
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                             <div className="card-body p-4">
@@ -955,6 +1009,15 @@ export default function PartnerProfile() {
                                             phone_number: formData.phone_number,
                                             status: formData.status,
                                         }}
+                                    />
+                                ) : activeTab === PARTNER_COMMISSION_TAB && canViewCommission ? (
+                                    <PartnerCommissionTab
+                                        partnerId={id}
+                                        tiers={formData.commission_tiers}
+                                        fundedDealCount={formData.funded_deal_count}
+                                        canEdit={canEditCommission}
+                                        onSaved={handleCommissionSaved}
+                                        onStateChange={setCommissionForm}
                                     />
                                 ) : (
                                     <PartnerForm

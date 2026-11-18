@@ -120,7 +120,8 @@ test.describe('Resources page - opening a resource', () => {
     await open(page)
     await item(page, 'EIN Checklist').click()
     await expect(page.locator('.modal.show')).toBeVisible()
-    await expect(page.locator('.modal.show').getByText('Download')).toBeVisible()
+    // The button: the preview's own note also says "Click Download…" (R3-BUG-003).
+    await expect(page.locator('.modal.show').getByRole('button', { name: 'Download' })).toBeVisible()
   })
 
   test('a training video opens in the preview instead of leaving the app', async ({ page }) => {
@@ -129,6 +130,34 @@ test.describe('Resources page - opening a resource', () => {
     await expect(page.locator('.modal.show')).toBeVisible()
     await expect(page).toHaveURL(/\/resources$/)
   })
+})
+
+// R3-BUG-003: resource files are private, so file_url is a signed link that the
+// API refuses to have framed by the portal - the preview was blank. It now reads
+// the file through the API and shows a local blob: link, for host and partners.
+test.describe('Resources page - file preview', () => {
+  const SIGNED = 'https://api.example.test/private-files/resources/ein.pdf?expires=1&signature=abc'
+  const signedData = { ...GROUPED, legal_registration: [{ ...GROUPED.legal_registration[1], file_url: SIGNED }] }
+
+  async function preview(page: Page, user: Record<string, unknown>) {
+    await open(page, user, signedData)
+    const downloads: string[] = []
+    await page.route(/\/common\/resources\/download\/\d+$/, (route) => {
+      downloads.push(route.request().url())
+      return route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-1.4\n%%EOF' })
+    })
+    await item(page, 'EIN Checklist').click()
+    return downloads
+  }
+
+  for (const [who, user] of [['the host', HOST_ALL], ['a partner', PARTNER]] as const) {
+    test(`shows ${who} the PDF from the API, not the signed link`, async ({ page }) => {
+      const downloads = await preview(page, user)
+      const frame = page.locator('.modal.show iframe[title="EIN Checklist"]')
+      await expect(frame).toHaveAttribute('src', /^blob:/)
+      expect(downloads.at(-1)).toMatch(/\/common\/resources\/download\/102$/)
+    })
+  }
 })
 
 test.describe('Resources page - host controls', () => {

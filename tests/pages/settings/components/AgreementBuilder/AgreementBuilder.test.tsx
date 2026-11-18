@@ -1,10 +1,12 @@
 import type { ReactElement } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { fireEvent, renderWithProviders, screen, waitFor, within } from '../../../../test-utils'
 import { server } from '../../../../mocks/server'
 import AgreementBuilder from '../../../../../src/pages/settings/components/AgreementBuilder'
 import { ConfigPartnerProvider } from '../../../../../src/modules/settings/configPartner'
+import { useAuthStore } from '../../../../../src/store/auth'
+import { AGREEMENT_COMMISSION_TABLE_FIELD_KEY, AGREEMENT_COMMISSION_TABLE_INTRO, AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY, AGREEMENT_ENROLLMENT_TABLE_INTRO } from '../../../../../src/config/agreementMergeFields'
 
 vi.mock('react-toastify', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 // The dashboard (agreement list, settings) is not what is under test here:
@@ -18,13 +20,25 @@ vi.mock('../../../../../src/pages/settings/components/AgreementBuilder/Agreement
   ),
 }))
 
+/** The agreement type each builder asked for Plan & Fee dynamic values, and what it got back. */
+let mergeFieldsAskedFor: string[] = []
+let planFields: Record<string, unknown>[] = []
+
 const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partner' | 'borrower' = 'partner') => {
+  mergeFieldsAskedFor = []
   server.use(
     http.post('*/common/agreement-templates/show', () => HttpResponse.json({ status: true, data: null })),
+    // Templates lists the partner's saved templates beside the built-in ones: none here.
+    http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [] })),
+    http.post('*/common/agreement-templates/merge-fields', async ({ request }) => {
+      const body = (await request.json()) as { type: string }
+      mergeFieldsAskedFor.push(body.type)
+      return HttpResponse.json({ status: true, data: planFields })
+    }),
   )
   const view = renderWithProviders(ui)
   fireEvent.click(screen.getByRole('button', { name: `Edit ${type} agreement` }))
-  await screen.findByText('Save Template')
+  await screen.findByText('Save Agreement')
   return view
 }
 
@@ -36,6 +50,15 @@ const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partn
  */
 const toolbar = () => within(document.querySelector('.ab4-toolbar') as HTMLElement)
 
+/** The Insert Dynamic Value popover (portalled to the page, outside the panel). */
+const popover = () => within(document.querySelector('.ab4-insert-popover') as HTMLElement)
+
+/** A group of the Insert Dynamic Value menu, opened in its modal. */
+const openValueGroup = (group: string) => {
+  fireEvent.click(popover().getByRole('button', { name: group }))
+  return within(screen.getByRole('dialog', { name: group }))
+}
+
 describe('AgreementBuilder calendar', () => {
   it('the preview opens the app calendar in the agreement date fields', async () => {
     await openBuilder()
@@ -44,6 +67,17 @@ describe('AgreementBuilder calendar', () => {
 
     const frame = await screen.findByTitle('Preview')
     expect(frame.getAttribute('srcdoc')).toContain('data-app-calendar')
+  })
+
+  it('the preview has no Download PDF button', async () => {
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
+    await screen.findByTitle('Preview')
+
+    const bar = within(document.querySelector('.ab4-preview-bar') as HTMLElement)
+    expect(bar.queryByRole('button', { name: /Download/ })).toBeNull()
+    expect(bar.getByText('Agreement Preview')).toBeInTheDocument()
   })
 
   it('saves the agreement itself, without the preview calendar script', async () => {
@@ -56,7 +90,7 @@ describe('AgreementBuilder calendar', () => {
     )
     await openBuilder()
 
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
 
     await waitFor(() => expect(saved).not.toBeNull())
     expect(saved!.template_html).toContain('agreement-form')
@@ -73,7 +107,7 @@ describe('AgreementBuilder full-screen editor', () => {
 
     const editor = screen.getByRole('dialog', { name: 'Partner agreement' })
     expect(container).not.toContainElement(editor)
-    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Template' }))
+    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Agreement' }))
   })
 
   it("edits a partner's agreement full screen, naming the partner, outside the cramped profile column", async () => {
@@ -85,7 +119,7 @@ describe('AgreementBuilder full-screen editor', () => {
     expect(editor).toHaveAttribute('aria-modal', 'true')
     expect(editor).toHaveClass('ab4-fullscreen')
     expect(container).not.toContainElement(editor)
-    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Template' }))
+    expect(editor).toContainElement(toolbar().getByRole('button', { name: 'Save Agreement' }))
     expect(editor).toHaveTextContent('Acme Lending')
     expect(document.body.style.overflow).toBe('hidden')
   })
@@ -141,7 +175,7 @@ describe('AgreementBuilder merge fields', () => {
     )
     await openBuilder(<AgreementBuilder />, 'borrower')
 
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
 
     await waitFor(() => expect(saved).not.toBeNull())
     expect(saved!.template_html).toContain('{{signer.name}}')
@@ -213,7 +247,7 @@ describe('AgreementBuilder safety nets', () => {
     confirmClear()
     expect(await screen.findByText('Unsaved changes')).toBeInTheDocument()
 
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
     expect(await screen.findByText('All changes saved')).toBeInTheDocument()
   })
 
@@ -225,7 +259,7 @@ describe('AgreementBuilder safety nets', () => {
     fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
     const ask = screen.getByRole('alertdialog', { name: 'Discard unsaved changes?' })
     fireEvent.click(within(ask).getByRole('button', { name: 'Keep editing' }))
-    expect(toolbar().getByRole('button', { name: 'Save Template' })).toBeInTheDocument()
+    expect(toolbar().getByRole('button', { name: 'Save Agreement' })).toBeInTheDocument()
 
     fireEvent.click(toolbar().getByRole('button', { name: 'Close editor' }))
     fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Discard unsaved changes?' })).getByRole('button', { name: 'Discard changes' }))
@@ -252,7 +286,7 @@ describe('AgreementBuilder placing blocks', () => {
         return HttpResponse.json({ status: true, message: 'Saved' })
       }),
     )
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
     await waitFor(() => expect(saved).not.toBeNull())
     return (JSON.parse(saved!.template_json).blocks as { type: string; content?: string }[]).map((b) => b.type)
   }
@@ -389,6 +423,149 @@ describe('AgreementBuilder placing blocks', () => {
     expect(await savedTypes()).toEqual(['text'])
     expect(document.querySelector('.ab4-doc--drop')).toBeNull()
   })
+
+  // An empty page has no text block to take a dynamic value, so picking one adds it in a new text block.
+  it('adds a dynamic value to an empty page in a new text block', async () => {
+    await openBuilder()
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
+    await screen.findByText('Empty Agreement')
+    window.getSelection()?.removeAllRanges()
+    const panel = within(document.querySelector('.ab4-props') as HTMLElement)
+
+    fireEvent.click(panel.getByRole('button', { name: /Insert Dynamic Value/ }))
+    // The list opens in a popover over the page, outside the panel.
+    fireEvent.click(openValueGroup('Signer').getByRole('menuitem', { name: "Signer's name" }))
+
+    expect(await savedTypes()).toEqual(['text'])
+    expect(document.querySelector('.ab4-doc .ab4-merge-chip[data-merge="signer.name"]')).not.toBeNull()
+  })
+})
+
+describe('AgreementBuilder Plan & Fee dynamic values', () => {
+  const panel = () => within(document.querySelector('.ab4-props') as HTMLElement)
+
+  it('the borrower agreement asks for its own values and lists them', async () => {
+    planFields = [{ key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount', group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00' }]
+    await openBuilder(undefined, 'borrower')
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+
+    fireEvent.click(await popover().findByRole('button', { name: 'Plan & Fee: Borrower enrollment' }))
+    expect(within(screen.getByRole('dialog', { name: 'Plan & Fee: Borrower enrollment' })).getByRole('menuitem', { name: /Installment: Total amount/ })).toBeInTheDocument()
+    expect(mergeFieldsAskedFor).toEqual(['borrower'])
+    planFields = []
+  })
+
+  it('the partner agreement asks for the partner values', async () => {
+    planFields = [{ key: 'plan.user_seat.certified_partner.monthly.total_amount', label: 'Certified Partner · Monthly: Monthly seat fee', group: 'Plan & Fee: User seats', sample: '$49.00' }]
+    await openBuilder(undefined, 'partner')
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+
+    expect(await popover().findByText('Plan & Fee: User seats')).toBeInTheDocument()
+    expect(mergeFieldsAskedFor).toEqual(['partner'])
+    planFields = []
+  })
+
+  // fch-api AgreementCommissionFields: each partner sees their own tiers when they sign.
+  it("the partner agreement takes the partner's commission table and previews it as a table", async () => {
+    planFields = [{
+      key: AGREEMENT_COMMISSION_TABLE_FIELD_KEY, label: "Partner's commission tiers", group: 'Signer', html: true,
+      sample: '<table class="ab-commission-table"><tbody><tr><td>0</td><td>10</td><td>$1,500</td></tr><tr><td>11</td><td>and up</td><td>27.5%</td></tr></tbody></table>',
+    }]
+    await openBuilder(undefined, 'partner')
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
+    await screen.findByText('Empty Agreement')
+    window.getSelection()?.removeAllRanges()
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+    fireEvent.click(await popover().findByRole('button', { name: 'Signer' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Signer' })).getByRole('menuitem', { name: /Partner's commission tiers/ }))
+    await waitFor(() => expect(document.querySelector(`.ab4-doc .ab4-merge-chip[data-merge="${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}"]`)).not.toBeNull())
+    fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
+
+    await waitFor(() => expect(screen.getByTitle('Preview').getAttribute('srcdoc')).toContain('<table class="ab-commission-table">'))
+    const preview = screen.getByTitle('Preview').getAttribute('srcdoc')!
+    expect(preview).toContain('<td>27.5%</td>')
+    expect(preview).not.toContain('&lt;table')
+    planFields = []
+  })
+
+  it('the commission table goes in with a title and a short description the host can edit', async () => {
+    planFields = [{ key: AGREEMENT_COMMISSION_TABLE_FIELD_KEY, label: "Partner's commission tiers", group: 'Signer', html: true, sample: '<table><tbody><tr><td>0</td></tr></tbody></table>' }]
+    await openBuilder(undefined, 'partner')
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
+    await screen.findByText('Empty Agreement')
+    window.getSelection()?.removeAllRanges()
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+    fireEvent.click(await popover().findByRole('button', { name: 'Signer' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Signer' })).getByRole('menuitem', { name: /Partner's commission tiers/ }))
+
+    const editor = await waitFor(() => {
+      const chip = document.querySelector(`.ab4-doc .ab4-merge-chip[data-merge="${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}"]`)
+      expect(chip).not.toBeNull()
+      return chip!.closest('.ab4-editor') as HTMLElement
+    })
+    // Plain text in the block's editor - not part of the chip - so the host can change it.
+    expect(editor.getAttribute('contenteditable')).toBe('true')
+    expect(within(editor).getByText(AGREEMENT_COMMISSION_TABLE_INTRO.title).closest('.ab4-merge-chip')).toBeNull()
+    expect(within(editor).getByText(AGREEMENT_COMMISSION_TABLE_INTRO.description).closest('.ab4-merge-chip')).toBeNull()
+
+    let saved: Record<string, string> | null = null
+    server.use(http.post('*/common/agreement-templates/save', async ({ request }) => {
+      saved = (await request.json()) as Record<string, string>
+      return HttpResponse.json({ status: true, message: 'Saved' })
+    }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
+    await waitFor(() => expect(saved).not.toBeNull())
+    const html = saved!.template_html
+    expect(html).toContain(AGREEMENT_COMMISSION_TABLE_INTRO.title)
+    expect(html).toContain(AGREEMENT_COMMISSION_TABLE_INTRO.description)
+    // Alone in its paragraph, so the server's table takes the paragraph's place.
+    expect(html).toContain(`<p>{{${AGREEMENT_COMMISSION_TABLE_FIELD_KEY}}}</p>`)
+    expect(html.indexOf(AGREEMENT_COMMISSION_TABLE_INTRO.title)).toBeLessThan(html.indexOf('{{signer.commission_table}}'))
+    planFields = []
+  })
+})
+
+// fch-api AgreementEnrollmentFields: one table of the signer's own enrollment, its rows by enrollment type.
+describe('AgreementBuilder enrollment table', () => {
+  const panel = () => within(document.querySelector('.ab4-props') as HTMLElement)
+
+  it('goes in with a title and a short description the host can edit, the table alone in its paragraph', async () => {
+    planFields = [{
+      key: AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY, label: 'Enrollment Details', group: 'Signer: Enrollment', html: true,
+      variants: [{ type: 'Installment', rows: ['Enrollment type', 'Total enrollment amount'] }, { type: 'One Time Payment', rows: ['Enrollment type'] }],
+      sample: '<table class="ab-enrollment-table"><tbody><tr><td>Total enrollment amount</td><td>$6,000.00</td></tr></tbody></table>',
+    }]
+    await openBuilder(undefined, 'partner')
+    fireEvent.click(toolbar().getByRole('button', { name: 'Clear All' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'Clear the whole agreement?' })).getByRole('button', { name: 'Clear everything' }))
+    await screen.findByText('Empty Agreement')
+    window.getSelection()?.removeAllRanges()
+
+    fireEvent.click(panel().getByRole('button', { name: /Insert Dynamic Value/ }))
+    fireEvent.click(await popover().findByRole('button', { name: 'Signer: Enrollment' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Signer: Enrollment' })).getByRole('button', { name: 'Add Enrollment Details' }))
+
+    await waitFor(() => expect(document.querySelector(`.ab4-doc .ab4-merge-chip[data-merge="${AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY}"]`)).not.toBeNull())
+    let saved: Record<string, string> | null = null
+    server.use(http.post('*/common/agreement-templates/save', async ({ request }) => {
+      saved = (await request.json()) as Record<string, string>
+      return HttpResponse.json({ status: true, message: 'Saved' })
+    }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
+    await waitFor(() => expect(saved).not.toBeNull())
+    const html = saved!.template_html
+    expect(html).toContain(AGREEMENT_ENROLLMENT_TABLE_INTRO.title)
+    expect(html).toContain(AGREEMENT_ENROLLMENT_TABLE_INTRO.description)
+    expect(html).toContain(`<p>{{${AGREEMENT_ENROLLMENT_TABLE_FIELD_KEY}}}</p>`)
+    planFields = []
+  })
 })
 
 describe('AgreementBuilder starter templates', () => {
@@ -400,7 +577,7 @@ describe('AgreementBuilder starter templates', () => {
         return HttpResponse.json({ status: true, message: 'Saved' })
       }),
     )
-    fireEvent.click(toolbar().getByRole('button', { name: 'Save Template' }))
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save Agreement' }))
     await waitFor(() => expect(saved).not.toBeNull())
     return saved!.template_html
   }
@@ -512,5 +689,303 @@ describe('AgreementBuilder loading the saved agreement', () => {
 
     expect(firstShown).not.toBeNull()
     expect(firstShown!.isConnected).toBe(true)
+  })
+})
+
+// R3-BUG-002: the logo picker opened a folder of its own, agreements/{id} -
+// agreements/1 when the user had no partner. It now opens the partner's own
+// folder (where its logo and branding already are), at its base: nothing is
+// created inside it on the picker's behalf.
+describe('AgreementBuilder logo picker', () => {
+  const listed = () => {
+    const bodies: Record<string, unknown>[] = []
+    server.use(
+      http.post('*/filemanager/list', async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json({ status: true, data: [] })
+      }),
+      http.post('*/filemanager/tree', () => HttpResponse.json({ status: true, data: [] })),
+    )
+    return bodies
+  }
+
+  afterEach(() => useAuthStore.setState({ user: null } as never))
+
+  it("opens the partner's own folder at its base", async () => {
+    useAuthStore.setState({ user: { id: 9, partner_id: 42, entity_id: 42 } } as never)
+    const bodies = listed()
+    await openBuilder()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add your logo' })[0])
+
+    await waitFor(() => expect(bodies.length).toBeGreaterThan(0))
+    expect(bodies[0]).toMatchObject({ entity_type: 'partners', entity_id: 42, path: '/' })
+  })
+
+  it('opens no folder for a user with no partner', async () => {
+    useAuthStore.setState({ user: { id: 9, partner_id: null, entity_id: null } } as never)
+    const bodies = listed()
+    await openBuilder()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add your logo' })[0])
+
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(bodies).toEqual([])
+  })
+})
+
+/**
+ * Save as Template: the agreement being edited is kept under a name, and
+ * Templates offers it beside the built-in templates. Save Agreement saves the
+ * agreement itself, as before.
+ */
+describe('AgreementBuilder save as template', () => {
+  const SAVED = { id: 4, slug: 'borrower', name: 'Our short form', created_at: '2026-11-17T10:00:00Z', updated_at: '2026-11-17T10:00:00Z' }
+  const SAVED_JSON = JSON.stringify({
+    blocks: [{ id: 'saved-1', type: 'text', paletteType: 'text', content: 'OUR SHORT FORM TERMS' }],
+    pagePad: 64,
+    docBg: '#fdfcf7',
+  })
+
+  const dialog = () => screen.getByRole('dialog', { name: 'Save as template' })
+
+  it('has Save Agreement and Save as Template, and no Save Template', async () => {
+    await openBuilder()
+
+    expect(toolbar().getByRole('button', { name: 'Save Agreement' })).toBeInTheDocument()
+    expect(toolbar().getByRole('button', { name: 'Save as Template' })).toBeInTheDocument()
+    expect(toolbar().queryByRole('button', { name: 'Save Template' })).not.toBeInTheDocument()
+  })
+
+  it('saves the agreement on the page as a named template', async () => {
+    const { toast } = await import('react-toastify')
+    let body: Record<string, string> | null = null
+    server.use(http.post('*/common/agreement-templates/saved', async ({ request }) => {
+      body = (await request.json()) as Record<string, string>
+      return HttpResponse.json({ status: true, message: 'Template saved', data: { ...SAVED, slug: 'partner' } })
+    }))
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+    const save = within(dialog()).getByRole('button', { name: 'Save Template' })
+    // Nothing to save under until a name is typed.
+    expect(save).toBeDisabled()
+    fireEvent.change(within(dialog()).getByLabelText(/Template name/), { target: { value: '  Our short form ' } })
+    fireEvent.click(save)
+
+    await waitFor(() => expect(body).not.toBeNull())
+    expect(body!.slug).toBe('partner')
+    expect(body!.name).toBe('Our short form')
+    const json = JSON.parse(body!.template_json)
+    expect(JSON.stringify(json.blocks)).toContain('MASTER PARTNER AGREEMENT')
+    expect(json.pagePad).toBe(80)
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Save as template' })).not.toBeInTheDocument())
+    expect(toast.success).toHaveBeenCalledWith('Template saved')
+  })
+
+  it('shows why a name was refused under the field, and stays open', async () => {
+    server.use(http.post('*/common/agreement-templates/saved', () =>
+      HttpResponse.json({ message: 'The given data was invalid.', errors: { name: ['You already have a template with this name.'] } }, { status: 422 })))
+    await openBuilder(<AgreementBuilder />, 'borrower')
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+    const name = within(dialog()).getByLabelText(/Template name/)
+    fireEvent.change(name, { target: { value: 'Our short form' } })
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Save Template' }))
+
+    expect(await within(dialog()).findByText('You already have a template with this name.')).toBeInTheDocument()
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+    // Typing again clears it.
+    fireEvent.change(name, { target: { value: 'Our shorter form' } })
+    expect(within(dialog()).queryByText('You already have a template with this name.')).not.toBeInTheDocument()
+  })
+
+  it('Cancel closes without saving', async () => {
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Save as template' })).not.toBeInTheDocument()
+  })
+
+  it('lists saved templates in Templates, with the built-in ones', async () => {
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    // After openBuilder, whose empty list it would otherwise override.
+    server.use(http.get('*/common/agreement-templates/saved', ({ request }) =>
+      HttpResponse.json({ status: true, data: new URL(request.url).searchParams.get('slug') === 'borrower' ? [SAVED] : [] })))
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+
+    const picker = screen.getByRole('dialog', { name: 'Start from a template' })
+    const saved = within(picker).getByRole('region', { name: 'Your templates' })
+    expect(await within(saved).findByRole('button', { name: /^Our short form/ })).toBeInTheDocument()
+    const builtIn = within(picker).getByRole('region', { name: 'Default templates' })
+    expect(within(builtIn).getByRole('button', { name: /Client enrollment agreement/ })).toBeInTheDocument()
+    expect(within(builtIn).getByRole('button', { name: /Blank page/ })).toBeInTheDocument()
+  })
+
+  it('says so when nothing has been saved as a template yet', async () => {
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+
+    const saved = within(screen.getByRole('dialog', { name: 'Start from a template' })).getByRole('region', { name: 'Your templates' })
+    expect(await within(saved).findByText(/No saved templates yet/)).toBeInTheDocument()
+  })
+
+  it('replaces the agreement with a saved template, which can be undone', async () => {
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    await screen.findByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [SAVED] })),
+      http.get('*/common/agreement-templates/saved/4', () => HttpResponse.json({ status: true, data: { ...SAVED, template_json: SAVED_JSON } })),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+    const picker = screen.getByRole('dialog', { name: 'Start from a template' })
+    fireEvent.click(await within(picker).findByRole('button', { name: /^Our short form/ }))
+
+    expect(await screen.findByText('OUR SHORT FORM TERMS')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Start from a template' })).not.toBeInTheDocument()
+    expect(screen.queryByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')).not.toBeInTheDocument()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Undo' }))
+    expect(await screen.findByText('BUSINESS CREDIT BUILDER & FUNDING PROGRAM')).toBeInTheDocument()
+  })
+
+  it('deletes a saved template after asking', async () => {
+    let list = [SAVED]
+    let deleted = false
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: list })),
+      http.delete('*/common/agreement-templates/saved/4', () => {
+        deleted = true
+        list = []
+        return HttpResponse.json({ status: true, data: null })
+      }),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+    const picker = screen.getByRole('dialog', { name: 'Start from a template' })
+    fireEvent.click(await within(picker).findByRole('button', { name: 'Delete template Our short form' }))
+
+    const confirm = screen.getByRole('alertdialog')
+    expect(confirm).toHaveTextContent('Our short form')
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete template' }))
+
+    await waitFor(() => expect(deleted).toBe(true))
+    expect(await within(picker).findByText(/No saved templates yet/)).toBeInTheDocument()
+  })
+})
+
+/**
+ * Editing a saved template: Save as Template can replace one with the agreement
+ * on the page (keeping its name), and Templates renames one in place.
+ */
+describe('AgreementBuilder editing a saved template', () => {
+  const SAVED = { id: 4, slug: 'borrower', name: 'Our short form', created_at: '2026-11-17T10:00:00Z', updated_at: '2026-11-17T10:00:00Z' }
+  const saveDialog = () => screen.getByRole('dialog', { name: 'Save as template' })
+  const picker = () => screen.getByRole('dialog', { name: 'Start from a template' })
+
+  it('replaces a saved template with the agreement on the page, keeping its name', async () => {
+    const { toast } = await import('react-toastify')
+    let body: Record<string, string> | null = null
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [SAVED] })),
+      http.put('*/common/agreement-templates/saved/4', async ({ request }) => {
+        body = (await request.json()) as Record<string, string>
+        return HttpResponse.json({ status: true, message: 'Template updated', data: SAVED })
+      }),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+    fireEvent.click(within(saveDialog()).getByRole('radio', { name: /Replace an existing template/ }))
+    // No name to type: the template keeps its own.
+    expect(within(saveDialog()).queryByLabelText(/Template name/)).not.toBeInTheDocument()
+    const replace = within(saveDialog()).getByRole('button', { name: 'Replace Template' })
+    expect(replace).toBeDisabled()
+    // The app's own dropdown, not the browser's select list; its panel opens inside the dialog.
+    // (PrimeReact keeps a hidden select for screen readers only.)
+    expect(Array.from(saveDialog().querySelectorAll('select')).filter((el) => !el.closest('.p-hidden-accessible'))).toHaveLength(0)
+    const which = saveDialog().querySelector('.p-dropdown') as HTMLElement
+    expect(which.querySelector('.p-dropdown-label')).toHaveTextContent('Choose a template')
+    expect(within(saveDialog()).getByText(/Template to replace/)).toBeInTheDocument()
+    fireEvent.click(which)
+    const option = await waitFor(() => {
+      const found = Array.from(saveDialog().querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent?.trim() === 'Our short form')
+      expect(found).toBeTruthy()
+      return found as HTMLElement
+    })
+    fireEvent.click(option)
+    expect(which.querySelector('.p-dropdown-label')).toHaveTextContent('Our short form')
+    fireEvent.click(replace)
+
+    await waitFor(() => expect(body).not.toBeNull())
+    expect(Object.keys(body!)).toEqual(['template_json'])
+    expect(body!.template_json).toContain('BUSINESS CREDIT BUILDER')
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Save as template' })).not.toBeInTheDocument())
+    expect(toast.success).toHaveBeenCalledWith('Template updated')
+  })
+
+  it('offers no replace when nothing has been saved yet', async () => {
+    await openBuilder()
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Save as Template' }))
+
+    const replace = within(saveDialog()).getByRole('radio', { name: /Replace an existing template/ })
+    expect(await within(saveDialog()).findByText(/No saved templates to replace yet/)).toBeInTheDocument()
+    expect(replace).toBeDisabled()
+    expect(within(saveDialog()).getByRole('radio', { name: /Save as a new template/ })).toBeChecked()
+  })
+
+  it('renames a saved template in Templates', async () => {
+    let list = [SAVED]
+    let body: Record<string, string> | null = null
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: list })),
+      http.put('*/common/agreement-templates/saved/4', async ({ request }) => {
+        body = (await request.json()) as Record<string, string>
+        list = [{ ...SAVED, name: body.name }]
+        return HttpResponse.json({ status: true, message: 'Template updated', data: list[0] })
+      }),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+    fireEvent.click(await within(picker()).findByRole('button', { name: 'Rename template Our short form' }))
+    const name = within(picker()).getByLabelText('Template name')
+    expect(name).toHaveValue('Our short form')
+    fireEvent.change(name, { target: { value: 'Our long form' } })
+    fireEvent.click(within(picker()).getByRole('button', { name: 'Save name' }))
+
+    await waitFor(() => expect(body).toEqual({ name: 'Our long form' }))
+    expect(await within(picker()).findByRole('button', { name: /^Our long form/ })).toBeInTheDocument()
+    expect(within(picker()).queryByLabelText('Template name')).not.toBeInTheDocument()
+  })
+
+  it('shows why a new name was refused under it, and Escape leaves the name as it was', async () => {
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    server.use(
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [SAVED] })),
+      http.put('*/common/agreement-templates/saved/4', () =>
+        HttpResponse.json({ message: 'The given data was invalid.', errors: { name: ['You already have a template with this name.'] } }, { status: 422 })),
+    )
+
+    fireEvent.click(toolbar().getByRole('button', { name: 'Templates' }))
+    fireEvent.click(await within(picker()).findByRole('button', { name: 'Rename template Our short form' }))
+    const name = within(picker()).getByLabelText('Template name')
+    fireEvent.change(name, { target: { value: 'Taken name' } })
+    fireEvent.submit(name)
+
+    expect(await within(picker()).findByText('You already have a template with this name.')).toBeInTheDocument()
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+
+    fireEvent.keyDown(name, { key: 'Escape' })
+    expect(within(picker()).queryByLabelText('Template name')).not.toBeInTheDocument()
+    // Escape only ends the rename: the Templates dialog stays open.
+    expect(within(picker()).getByRole('button', { name: /^Our short form/ })).toBeInTheDocument()
   })
 })

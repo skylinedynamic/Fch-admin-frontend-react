@@ -14,6 +14,7 @@ import {
   setAgreementRequired,
   fetchAgreementRequirement,
   fetchAgreementPreviewValues,
+  fetchAgreementMergeFields,
 } from '../../../src/modules/agreement/services'
 
 afterEach(() => server.resetHandlers())
@@ -292,6 +293,27 @@ describe('fetchAgreementPreviewValues', () => {
 
     expect(body).toEqual({ partner_id: 7 })
     expect(result).toEqual({ 'owner.company_name': 'Acme Lending', today: '10/30/2026' })
+  })
+})
+
+describe('fetchAgreementMergeFields', () => {
+  it('POSTs the agreement type and resolves with its Plan & Fee dynamic values', async () => {
+    let body: unknown = null
+    const field = {
+      key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount',
+      group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00',
+    }
+    server.use(
+      http.post('*/common/agreement-templates/merge-fields', async ({ request }) => {
+        body = await request.json().catch(() => null)
+        return HttpResponse.json({ status: true, message: 'ok', data: [field] })
+      })
+    )
+
+    const result = await fetchAgreementMergeFields('borrower')
+
+    expect(body).toEqual({ type: 'borrower' })
+    expect(result).toEqual([field])
   })
 })
 

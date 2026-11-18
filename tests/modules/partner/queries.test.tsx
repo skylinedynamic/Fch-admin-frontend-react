@@ -8,6 +8,7 @@ import {
   useUpdatePartner,
   useDeletePartner,
   useSubscriptionStats,
+  useUpdatePartnerCommission,
 } from '../../../src/modules/partner/queries'
 import { expectIdle, runMutation, runQuery, stub } from '../queryHarness'
 
@@ -115,5 +116,16 @@ describe('useSubscriptionStats', () => {
 
     expect(seen.bodies[0]).toEqual({ per_page: 1 })
     expect(result.current.isSuccess).toBe(true)
+  })
+})
+
+describe('useUpdatePartnerCommission', () => {
+  it('saves the tiers and refreshes the partner', async () => {
+    const seen = stub('put', '/admin/partners/21/commission', { status: true, message: 'ok', data: { id: 21, commission_tiers: [], funded_deal_count: 0 } })
+
+    const { invalidated } = await runMutation(() => useUpdatePartnerCommission(), { id: 21, payload: { tiers: [] } })
+
+    expect(seen.bodies).toEqual([{ tiers: [] }])
+    expect(invalidated).toContainEqual(queryKeys.partner.detail(21))
   })
 })

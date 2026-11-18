@@ -3,16 +3,18 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { clearAuth } from './auth'
 import { logout } from './authApi'
+import { parseDateOnly, startOfToday } from '../../utils/helper'
 
 /**
- * Check if the free trial end date (UTC date string, e.g. "2026-06-30") has passed.
- * We treat the end date as end-of-day UTC (23:59:59.999Z) so the user has access
- * through the full calendar day the admin set, regardless of their local timezone.
- * Date.now() is always UTC milliseconds — no clock-format confusion.
+ * Whether the free trial's end date ("2026-06-30") has passed. The end date is
+ * still a trial day, on the user's own calendar - the same rule as the API
+ * (Partner::freeTrialExpired, which uses the X-Timezone the portal sends), the
+ * menu lock (subscriptionUtils) and the Partners list (R3-BUG-026). It used to
+ * run to 23:59 UTC, ending the trial hours early or late by timezone.
  */
 function isTrialEndDateExpired(trialEndDate: string): boolean {
-  const endOfDayUtc = new Date(trialEndDate + 'T23:59:59.999Z').getTime()
-  return Date.now() > endOfDayUtc
+  const end = parseDateOnly(trialEndDate)
+  return !!end && startOfToday() > end
 }
 
 export default function ProtectedRoute() {

@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Partner, PartnerOption, TenantConfig } from './types';
+import type { Partner, PartnerCommissionPayload, PartnerCommissionResponse, PartnerOption, TenantConfig } from './types';
 
 /** The Partners table: paginated, filtered and sorted. */
 export const fetchPartners = async (payload: any = {}) => {
@@ -39,6 +39,15 @@ export const updatePartner = async (id: string | number, payload: Partial<Partne
     return data;
   }
 }
+
+/** Partner profile › Commissions: the partner's Funding tiers - its share (%) of the success fee by funded-deal count. */
+export const updatePartnerCommission = async (
+  id: string | number,
+  payload: PartnerCommissionPayload
+): Promise<PartnerCommissionResponse> => {
+  const { data } = await apiClient.put(`/admin/partners/${id}/commission`, payload);
+  return data;
+};
 
 /** The Status & Agent tab: the partner's status and its agent (email/phone may be null). */
 export interface PartnerStatusAgent {

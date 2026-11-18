@@ -200,6 +200,16 @@ describe('tables', () => {
   })
 })
 
+describe('pasted structure', () => {
+  // Pasted headings, quotes, lines, code and links look the same on the saved page and in its PDF.
+  it.each(['.p-text h1', '.p-text h2', '.p-text h3', '.p-text h4', '.p-text blockquote', '.p-text hr', '.p-text code', '.p-text pre', '.p-text a', '.p-text table.ab-plain-table'])(
+    'styles %s on the saved page',
+    (selector) => {
+      expect(PREVIEW_CSS).toContain(selector)
+    },
+  )
+})
+
 describe('signature block', () => {
   const block = { ...makeBlock('signature'), id: 'b7', fieldLabel: 'Client signature', fieldRequired: true }
 
@@ -248,7 +258,53 @@ describe('merge fields in the preview', () => {
     expect(html).toContain('title="{{signer.name}}">Jane Doe</span>')
   })
 
+  it('shows the Plan & Fee price the builder loaded for a Plan & Fee value', () => {
+    const fields = [{ key: 'plan.borrower_enrollment.installment.total_amount', label: 'Installment: Total amount', group: 'Plan & Fee: Borrower enrollment', sample: '$3,000.00' }]
+    const html = withMergeSamples('<html><head></head><body><p>{{plan.borrower_enrollment.installment.total_amount}}</p></body></html>', {}, fields)
+
+    expect(html).toContain('title="{{plan.borrower_enrollment.installment.total_amount}}">$3,000.00</span>')
+  })
+
   it('escapes the real details', () => {
     expect(withMergeSamples(page, { 'owner.company_name': 'A&B <Lending>' })).toContain('>A&amp;B &lt;Lending&gt;</span>')
+  })
+
+  describe("the partner's commission table (an html value)", () => {
+    const commission = {
+      key: 'signer.commission_table', label: "Partner's commission tiers", group: 'Signer', html: true,
+      sample: '<table class="ab-commission-table"><tbody><tr><td>0</td><td>10</td><td>$1,500</td></tr></tbody></table>',
+    }
+    const doc = (body: string) => `<html><head></head><body>${body}</body></html>`
+
+    it('shows the example table, not its markup as text', () => {
+      const html = withMergeSamples(doc('<p>{{signer.commission_table}}</p>'), {}, [commission])
+
+      expect(html).toContain('<table class="ab-commission-table">')
+      expect(html).toContain('<td>$1,500</td>')
+      expect(html).not.toContain('&lt;table')
+      expect(html).toContain('title="{{signer.commission_table}}"')
+    })
+
+    it('shows the table as it is, without a dotted outline around it', () => {
+      const html = withMergeSamples(doc('<p>{{signer.commission_table}}</p>'), {}, [commission])
+
+      expect(html).not.toMatch(/outline/)
+    })
+
+    it('drops anything that could run script from the table', () => {
+      const html = withMergeSamples(doc('<p>{{signer.commission_table}}</p>'), {}, [
+        { ...commission, sample: '<table><tbody><tr><td onclick="alert(1)">x</td></tr></tbody></table><script>alert(1)</script>' },
+      ])
+
+      expect(html).toContain('<td>x</td>')
+      expect(html).not.toContain('onclick')
+      expect(html).not.toContain('<script>alert')
+    })
+
+    it('still escapes an ordinary value', () => {
+      const plain = { key: 'signer.name', label: 'Name', group: 'Signer', sample: '<b>Jane</b>' }
+
+      expect(withMergeSamples(doc('<p>{{signer.name}}</p>'), {}, [plain])).toContain('&lt;b&gt;Jane&lt;/b&gt;')
+    })
   })
 })

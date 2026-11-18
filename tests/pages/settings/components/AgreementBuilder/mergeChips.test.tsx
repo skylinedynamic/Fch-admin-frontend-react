@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import {
   createMergeChip,
   decorateMergeFields,
+  registerMergeFieldLabels,
   undecorateMergeFields,
 } from '../../../../../src/pages/settings/components/AgreementBuilder/mergeChips'
 // @ts-ignore - BlockComponents is untyped JSX-in-TSX
@@ -25,6 +26,29 @@ describe('merge field chips', () => {
       ['owner.company_name', 'Your company name', 'false'],
       ['signer.name', "Signer's name", 'false'],
     ])
+  })
+
+  // Plan & Fee keys come from the API and may hold digits (an "11-month" plan).
+  it('shows a Plan & Fee value as a chip labelled from the list the builder loaded', () => {
+    registerMergeFieldLabels([{
+      key: 'plan.partner_enrollment.white_label_partner_wl.payment_plan_11_month_plan.total_amount',
+      label: 'White-Label Partner (WL) · Payment Plan (11-month plan): Total amount',
+      group: 'Plan & Fee: Partner enrollment', sample: '$7,696.70',
+    }])
+    const div = document.createElement('div')
+    div.innerHTML = decorateMergeFields('Fee {{plan.partner_enrollment.white_label_partner_wl.payment_plan_11_month_plan.total_amount}}')
+
+    const chip = div.querySelector('.ab4-merge-chip')
+    expect(chip?.getAttribute('data-merge')).toBe('plan.partner_enrollment.white_label_partner_wl.payment_plan_11_month_plan.total_amount')
+    expect(chip?.textContent).toBe('White-Label Partner (WL) · Payment Plan (11-month plan): Total amount')
+  })
+
+  // Not loaded yet, or the plan was switched off: still a chip, so it is not typed over.
+  it('shows a Plan & Fee value it has no label for as a plain Plan & Fee chip', () => {
+    const div = document.createElement('div')
+    div.innerHTML = decorateMergeFields('{{plan.borrower_enrollment.old_plan.total_amount}}')
+
+    expect(div.querySelector('.ab4-merge-chip')?.textContent).toBe('Plan & Fee value')
   })
 
   it('leaves unknown fields as typed', () => {
@@ -73,25 +97,59 @@ describe('mapping a merge chip to another value', () => {
     const chip = container.querySelector('.ab4-merge-chip') as HTMLElement
     return { onUpdate, chip }
   }
+  const menu = () => screen.getByRole('menu', { name: 'Fill this field with' })
 
-  it('opens a menu of the values a field can be filled with when it is clicked', () => {
+  // As Insert Dynamic Value: the groups first, a group's values in a modal.
+  it('opens a menu of the groups when the field is clicked, its own group marked, and a Remove button', () => {
     const { chip } = renderBlock()
 
     fireEvent.click(chip)
 
-    const menu = screen.getByRole('menu', { name: 'Fill this field with' })
-    expect(within(menu).getByRole('menuitemradio', { name: /Signer's name/ })).toHaveAttribute('aria-checked', 'true')
-    expect(within(menu).getByRole('menuitemradio', { name: /Your company name/ })).toHaveAttribute('aria-checked', 'false')
+    expect(within(menu()).getByText("Signer's name")).toBeInTheDocument()
+    const groups = within(menu()).getAllByRole('menuitem').filter((el) => el.getAttribute('aria-haspopup') === 'dialog')
+    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Signer', 'Your company', 'Other'])
+    expect(within(menu()).getByRole('menuitem', { name: 'Signer' })).toHaveClass('is-current')
+    expect(within(menu()).getByRole('menuitem', { name: 'Your company' })).not.toHaveClass('is-current')
+    expect(within(menu()).queryAllByRole('menuitemradio')).toHaveLength(0)
+    expect(within(menu()).getByRole('menuitem', { name: 'Remove field' })).toBeInTheDocument()
   })
 
-  it('fills the field with the value picked', () => {
+  it("opens a group's values in a modal, the field's value checked", () => {
+    const { chip } = renderBlock()
+
+    fireEvent.click(chip)
+    fireEvent.click(within(menu()).getByRole('menuitem', { name: 'Signer' }))
+
+    const modal = screen.getByRole('dialog', { name: 'Signer' })
+    expect(within(modal).getByRole('menuitemradio', { name: /Signer's name/ })).toHaveAttribute('aria-checked', 'true')
+    expect(within(modal).getByRole('menuitemradio', { name: /Signer's email/ })).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('fills the field with the value picked in the group, and closes', () => {
     const { onUpdate, chip } = renderBlock()
 
     fireEvent.click(chip)
-    fireEvent.click(screen.getByRole('menuitemradio', { name: /Signer's email/ }))
+    fireEvent.click(within(menu()).getByRole('menuitem', { name: 'Your company' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Your company' })).getByRole('menuitemradio', { name: /Your company email/ }))
 
-    expect(onUpdate).toHaveBeenLastCalledWith({ content: 'Signed by {{signer.email}} today' })
+    expect(onUpdate).toHaveBeenLastCalledWith({ content: 'Signed by {{owner.email}} today' })
     expect(screen.queryByRole('menu')).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  // Defect: the group's modal takes the focus, the text loses it and rewrites
+  // its HTML - the chip the menu was opened from was no longer on the page, so
+  // the value picked changed nothing.
+  it('fills the field even when the text was redrawn while the group was open', () => {
+    const { onUpdate, chip } = renderBlock()
+    const editor = chip.closest('.ab4-editor') as HTMLElement
+
+    fireEvent.click(chip)
+    fireEvent.click(within(menu()).getByRole('menuitem', { name: 'Your company' }))
+    editor.innerHTML = editor.innerHTML
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Your company' })).getByRole('menuitemradio', { name: /Your company email/ }))
+
+    expect(onUpdate).toHaveBeenLastCalledWith({ content: 'Signed by {{owner.email}} today' })
   })
 
   it('removes the field', () => {
@@ -103,14 +161,29 @@ describe('mapping a merge chip to another value', () => {
     expect(onUpdate).toHaveBeenLastCalledWith({ content: 'Signed by  today' })
   })
 
-  it('closes on Escape without changing anything', () => {
+  it('Escape closes the group first, then the menu, without changing anything', () => {
     const { onUpdate, chip } = renderBlock()
 
     fireEvent.click(chip)
+    fireEvent.click(within(menu()).getByRole('menuitem', { name: 'Signer' }))
     fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Signer' })).toBeNull()
+    expect(menu()).toBeInTheDocument()
 
+    fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
     expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it("a click in the group's modal does not close the menu behind it", () => {
+    const { chip } = renderBlock()
+
+    fireEvent.click(chip)
+    fireEvent.click(within(menu()).getByRole('menuitem', { name: 'Signer' }))
+    fireEvent.mouseDown(screen.getByRole('dialog', { name: 'Signer' }))
+
+    expect(screen.getByRole('dialog', { name: 'Signer' })).toBeInTheDocument()
+    expect(menu()).toBeInTheDocument()
   })
 })
 
