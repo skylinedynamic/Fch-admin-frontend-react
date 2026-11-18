@@ -21,6 +21,7 @@ import { fetchAppointments, updateAppointment } from '../../modules/appointment/
 // Components
 import AppointmentModal from '../../components/Common/Modals/AppointmentModal';
 import CalendlyConnectCard from '../../components/Calendly/CalendlyConnectCard';
+import { calendarSyncDates } from '../../modules/calendly/syncDates';
 
 // Custom CSS
 import "../../../assets/css/appointments.css";
@@ -222,7 +223,11 @@ export default function Appointments() {
                                     <div id="external-events">{/* External events would go here */}</div>
                                 </div>
                             </div>
-                            <CalendlyConnectCard onSynced={loadAppointments} />
+                            <CalendlyConnectCard
+                                onSynced={loadAppointments}
+                                // Sync now covers the Month / Week / Day the calendar shows.
+                                getSyncDates={() => calendarSyncDates(calendarRef.current?.getApi?.())}
+                            />
                             <div>
                                 <h5 className="mb-1">All Appointments</h5>
                                 <p className="text-muted">Don't miss scheduled appointments</p>

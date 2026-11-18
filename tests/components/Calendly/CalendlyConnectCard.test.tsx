@@ -7,7 +7,7 @@ import { server } from '../../mocks/server'
 vi.mock('bootstrap/js/dist/modal', () => import('../../mocks/fakeBootstrapModal'))
 vi.mock('react-toastify', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-toastify')>()
-  return { ...actual, toast: Object.assign(vi.fn(), { info: vi.fn(), success: vi.fn(), error: vi.fn(), warn: vi.fn() }) }
+  return { ...actual, toast: Object.assign(vi.fn(), { info: vi.fn(), success: vi.fn(), error: vi.fn(), warn: vi.fn(), warning: vi.fn() }) }
 })
 
 import { toast } from 'react-toastify'
@@ -129,16 +129,65 @@ describe('CalendlyConnectCard', () => {
     const user = userEvent.setup()
     const onSynced = vi.fn()
     api('get', STATUS, status({ connected: true, can_sync: true, can_book: true, name: 'FCH Team', webhooks_active: true }))
-    const sync = api('post', '/common/calendly/sync', { status: true, data: { synced: 3 } })
+    const sync = api('post', '/common/calendly/sync', {
+      status: true,
+      data: { direction: 'push', from: '2026-11-01', to: '2026-11-30', synced: 3, pulled: 0, pushed: 3, failed: 0, errors: [] },
+    })
 
-    renderWithProviders(<CalendlyConnectCard onSynced={onSynced} />)
+    renderWithProviders(
+      <CalendlyConnectCard
+        onSynced={onSynced}
+        getSyncDates={() => ({ from: '2026-11-01', to: '2026-11-30', label: 'Nov 1 – Nov 30, 2026', view: 'Month view' })}
+      />,
+    )
 
     // The automatic sync on opening the page goes first.
     await waitFor(() => expect(sync.calls).toBe(1))
+
+    // Sync now asks which way first: one of pull, push, two-way - nothing synced yet.
     await user.click(await screen.findByRole('button', { name: /sync now/i }))
+    const dialog = await screen.findByRole('dialog', { name: /sync with calendly/i })
+    expect(sync.calls).toBe(1)
+    expect(within(dialog).getByText('Nov 1 – Nov 30, 2026')).toBeInTheDocument()
+    expect(within(dialog).getByText('Month view')).toBeInTheDocument()
+    expect(within(dialog).getByRole('radio', { name: /pull from calendly/i })).toBeChecked()
+    // The partner's team syncs its own Calendly: every way is open.
+    expect(within(dialog).getByRole('radio', { name: /push to calendly/i })).toBeEnabled()
+
+    await user.click(within(dialog).getByRole('radio', { name: /push to calendly/i }))
+    expect(within(dialog).getByRole('radio', { name: /pull from calendly/i })).not.toBeChecked()
+    await user.click(within(dialog).getByRole('button', { name: /^sync$/i }))
+
     await waitFor(() => expect(sync.calls).toBe(2))
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('3 Calendly meeting(s) synced'))
+    expect(sync.bodies[1]).toMatchObject({ direction: 'push', from: '2026-11-01', to: '2026-11-30' })
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Calendly synced: 3 sent to Calendly'))
     expect(onSynced).toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /sync with calendly/i })).not.toBeInTheDocument())
+  })
+
+  it('says which meeting Calendly refused when syncing', async () => {
+    const user = userEvent.setup()
+    api('get', STATUS, status({ connected: true, can_sync: true, can_book: true, name: 'FCH Team', webhooks_active: true }))
+    api('post', '/common/calendly/sync', {
+      status: true,
+      data: {
+        direction: 'both', from: '2026-11-01', to: '2026-11-30', synced: 2, pulled: 1, pushed: 1, failed: 1,
+        errors: [{ appointment_id: 9, subject: 'Funding review', message: 'Calendly could not complete this request.' }],
+      },
+    })
+
+    renderWithProviders(<CalendlyConnectCard onSynced={vi.fn()} />)
+
+    await user.click(await screen.findByRole('button', { name: /sync now/i }))
+    const dialog = await screen.findByRole('dialog', { name: /sync with calendly/i })
+    // No calendar to read: the current month.
+    expect(within(dialog).getByText('This month')).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('radio', { name: /two-way sync/i }))
+    await user.click(within(dialog).getByRole('button', { name: /^sync$/i }))
+
+    await waitFor(() => expect(toast.warning).toHaveBeenCalledWith(
+      '1 brought in from Calendly · 1 sent to Calendly. 1 not sent to Calendly - "Funding review": Calendly could not complete this request.',
+    ))
   })
 
   it('warns when webhooks are not active', async () => {

@@ -4,14 +4,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { queryKeys } from '../../lib/query'
 import { useCalendlyStatus } from '../../modules/calendly/queries'
-import { connectCalendly, disconnectCalendly, syncCalendly } from '../../modules/calendly/services'
+import { connectCalendly, disconnectCalendly, syncCalendly, syncCalendlyDirected } from '../../modules/calendly/services'
+import type { CalendlySyncDates, CalendlySyncDirection } from '../../modules/calendly/types'
 import { settingsPath } from '../../config/settingsSections'
 import ConfirmationModal from '../Common/Modals/ConfirmationModal'
+import CalendlySyncModal, { syncSummary } from './CalendlySyncModal'
 import calendlyLogo from '../../../assets/images/integrations/calendly.svg'
 
 type Props = {
   /** Calendly meetings were brought in - reload the calendar. */
   onSynced: () => void
+  /** The dates the calendar shows (Month / Week / Day), read when Sync now opens; none = this month. */
+  getSyncDates?: () => CalendlySyncDates | null
   /** Sends the browser to Calendly's sign-in (replaceable in tests). */
   redirect?: (url: string) => void
 }
@@ -26,7 +30,7 @@ const errorMessage = (error: unknown, fallback: string) =>
  * it and its staff sync it. Booking into it is the "Sync with Calendly" tick
  * in Add Appointment. Calendly sends the browser back here after sign-in.
  */
-export default function CalendlyConnectCard({ onSynced, redirect = (url) => window.location.assign(url) }: Props) {
+export default function CalendlyConnectCard({ onSynced, getSyncDates, redirect = (url) => window.location.assign(url) }: Props) {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: status } = useCalendlyStatus()
@@ -74,10 +78,24 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
     onError: (error) => toast.error(errorMessage(error, 'Could not disconnect Calendly')),
   })
 
+  // Sync now: the way and the dates are picked in the modal.
+  const [syncDates, setSyncDates] = useState<CalendlySyncDates | null>(null)
+  const [askSync, setAskSync] = useState(false)
+  const openSync = () => {
+    setSyncDates(getSyncDates?.() ?? null)
+    setAskSync(true)
+  }
+
   const sync = useMutation({
-    mutationFn: () => syncCalendly(),
-    onSuccess: (count) => {
-      toast.success(`${count} Calendly meeting(s) synced`)
+    mutationFn: (direction: CalendlySyncDirection) => syncCalendlyDirected(direction, syncDates),
+    onSuccess: (result) => {
+      setAskSync(false)
+      if (result.failed > 0) {
+        const first = result.errors[0]
+        toast.warning(`${syncSummary(result)}. ${result.failed} not sent to Calendly${first ? ` - ${first.subject ? `"${first.subject}": ` : ''}${first.message}` : ''}`)
+      } else {
+        toast.success(`Calendly synced: ${syncSummary(result)}`)
+      }
       refreshStatus()
       onSynced()
     },
@@ -177,7 +195,7 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
         {connected && (canSync || canManage) && (
           <div className="d-flex gap-2">
             {canSync && (
-              <button type="button" className="btn btn-soft-secondary btn-sm flex-grow-1" disabled={sync.isPending} onClick={() => sync.mutate()}>
+              <button type="button" className="btn btn-soft-secondary btn-sm flex-grow-1" disabled={sync.isPending} onClick={openSync}>
                 {sync.isPending || autoSync.isPending ? 'Syncing…' : 'Sync now'}
               </button>
             )}
@@ -189,6 +207,16 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
           </div>
         )}
       </div>
+
+      {canSync && (
+        <CalendlySyncModal
+          show={askSync}
+          onClose={() => setAskSync(false)}
+          onSubmit={(direction) => sync.mutate(direction)}
+          loading={sync.isPending}
+          dates={syncDates}
+        />
+      )}
 
       {canManage && (
         <ConfirmationModal

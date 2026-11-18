@@ -110,3 +110,31 @@ export interface CalendlyLocationOption {
   /** The invitee says where - for a phone call we make, their number. */
   asks_invitee: boolean
 }
+
+/** Sync now, the way picked: Calendly into FCH, FCH into Calendly, or both. */
+export type CalendlySyncDirection = 'pull' | 'push' | 'both'
+
+/** The dates the calendar shows (inclusive, YYYY-MM-DD in the viewer's zone), and how to say them. */
+export interface CalendlySyncDates {
+  from: string
+  to: string
+  /** e.g. "Nov 1 – Nov 30, 2026" */
+  label: string
+  /** e.g. "Month view" */
+  view?: string
+}
+
+export interface CalendlySyncResult {
+  direction: CalendlySyncDirection
+  from: string
+  to: string
+  /** Total brought in or sent. */
+  synced: number
+  /** Meetings brought in from Calendly, or brought up to date. */
+  pulled: number
+  /** Meetings put into a Calendly (the caller's, or the other person's own). */
+  pushed: number
+  /** Meetings Calendly refused. */
+  failed: number
+  errors: { appointment_id: number; subject: string | null; message: string }[]
+}

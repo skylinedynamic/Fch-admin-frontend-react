@@ -8,6 +8,9 @@ import type {
   CalendlySettingsPayload,
   CalendlySlot,
   CalendlyStatus,
+  CalendlySyncDates,
+  CalendlySyncDirection,
+  CalendlySyncResult,
 } from './types'
 
 /** `{ partner_id }` when the host configures another partner; nothing for your own. */
@@ -43,6 +46,21 @@ export const disconnectCalendly = async (partnerId?: number): Promise<void> => {
 export const syncCalendly = async (partnerId?: number): Promise<number> => {
   const { data } = await apiClient.post('/common/calendly/sync', forPartner(partnerId))
   return data.data?.synced ?? 0
+}
+
+/**
+ * Sync now, the way picked - pull (Calendly into FCH, and meetings set with
+ * you into your Calendly), push (the meetings you set into Calendly - yours
+ * and the other person's own) or both - for the dates the calendar shows
+ * (none = this month).
+ */
+export const syncCalendlyDirected = async (direction: CalendlySyncDirection, dates?: CalendlySyncDates | null): Promise<CalendlySyncResult> => {
+  const { data } = await apiClient.post('/common/calendly/sync', {
+    direction,
+    ...(dates ? { from: dates.from, to: dates.to } : {}),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  })
+  return data.data
 }
 
 export const fetchCalendlyEventTypes = async (): Promise<CalendlyEventType[]> => {
