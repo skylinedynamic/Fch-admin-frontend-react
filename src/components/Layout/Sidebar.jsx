@@ -427,7 +427,7 @@ export default function Sidebar() {
         return false;
       }
 
-      // Business Insights: for now the allowed emails only (see useCanViewOwnerSummary)
+      // Business Insights: the developer-only "view business insights" permission (see useCanViewOwnerSummary)
       if (item.ownerSummaryOnly && !canViewOwnerSummary) {
         return false;
       }

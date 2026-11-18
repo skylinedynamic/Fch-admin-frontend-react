@@ -9,11 +9,19 @@ export const OWNER_SUMMARY_ROUTE = '/business-insights';
 export const OWNER_SUMMARY_TITLE = 'Business Insights';
 
 /**
- * For now Business Insights (menu and route) is open to these logins only,
- * whatever their role - hard-coded on purpose until the screen opens up.
- * The API does not check the email for now. Lower case.
+ * The Business Insights permission group - fch-api App\Enums\Permission
+ * (ViewBusinessInsights, ExportBusinessInsights, ManageBusinessInsightsReport).
+ * Developer-only: fch-api gives them to the reserved Developer role alone and
+ * checks each one on its endpoint.
+ *   VIEW           the menu item, the route and the numbers
+ *   EXPORT         the Export PDF menu
+ *   MANAGE_REPORT  the Report settings button (who gets the weekly report)
  */
-export const OWNER_SUMMARY_ALLOWED_EMAILS: readonly string[] = ['developer@fch.com'];
+export const OWNER_SUMMARY_PERMISSION = {
+    VIEW: 'view business insights',
+    EXPORT: 'export business insights',
+    MANAGE_REPORT: 'manage business insights report',
+} as const;
 
 export const OWNER_SUMMARY_PERIOD = {
     THIS_WEEK: 'this_week',
@@ -107,10 +115,9 @@ export const OWNER_SUMMARY_LINKS = {
     CLIENTS: '/clients',
 } as const;
 
-/** fch-api OwnerSummaryService::STALLED_AFTER_DAYS and UNPAID_AGE_DAYS, for the labels. */
+/** fch-api OwnerSummaryService::STALLED_AFTER_DAYS and UNPAID_AGE_DAYS, for the labels. Free trials ending = ending in the period. */
 export const STALLED_AFTER_DAYS = 14;
 export const UNPAID_AGE_DAYS = 30;
-export const TRIAL_ENDING_DAYS = 14;
 
 /** Business Insights › Export PDF - fch-api OwnerSummaryExportPdf::TYPES. */
 export const OWNER_SUMMARY_EXPORT_TYPE = {

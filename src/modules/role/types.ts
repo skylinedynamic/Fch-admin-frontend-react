@@ -6,6 +6,8 @@ export type Role = {
   description?: string
   code: string,
   is_static: boolean,
+  /** For the signed-in viewer (fch-api Role::isEditableBy): a Developer may change Admin, no one the Developer role. */
+  is_editable: boolean,
   permissions: string[]
   users_count?: number
 }
@@ -51,6 +53,11 @@ export type RoleDetail = {
   // Optional permission IDs when backend provides an id->name map
   permission_ids?: number[]
   users: RoleDetailUser[]
-  /** A system role (Admin, Developer): read-only - the API refuses any change (R2 BUG-011). */
+  /** A system role (Admin, Developer): its name is fixed (R2 BUG-011). */
   is_static: boolean
+  /**
+   * Whether the viewer may change it (fch-api Role::isEditableBy): a static role
+   * only a Developer, and the Developer role no one. Read-only when false.
+   */
+  is_editable: boolean
 }

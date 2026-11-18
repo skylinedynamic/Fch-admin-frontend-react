@@ -10,6 +10,12 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-11-18
+
+| File | Title |
+|---|---|
+| [2026-11-18-business-insights-developer-permissions.md](2026-11-18-business-insights-developer-permissions.md) | Business Insights by developer-only permission; reserved Developer role name |
+
 ### 2026-11-15
 
 | File | Title |

@@ -6,6 +6,7 @@ import { server } from '../../mocks/server'
 import { ownerSummaryResponse } from '../../mocks/ownerSummary'
 import OwnerSummary from '../../../src/pages/owner-summary/OwnerSummary'
 import { useAuthStore } from '../../../src/store/auth'
+import { OWNER_SUMMARY_PERMISSION } from '../../../src/config/ownerSummary'
 
 // Business Insights › Export PDF: a menu with the summary report and the
 // details report, each downloaded from the API for the period and payments
@@ -29,7 +30,7 @@ beforeEach(() => {
   exports = []
   download.downloadBlob.mockReset()
   vi.mocked(toast.error).mockReset()
-  useAuthStore.setState({ token: 't', user: { id: 1, name: 'Olive Owner', is_host: 1, entity_type: 'Partner', permissions: [] } } as never)
+  useAuthStore.setState({ token: 't', user: { id: 1, name: 'Olive Owner', is_host: 1, entity_type: 'Partner', permissions: [OWNER_SUMMARY_PERMISSION.VIEW, OWNER_SUMMARY_PERMISSION.EXPORT] } } as never)
   server.use(
     http.get('*/common/owner-summary', () => HttpResponse.json(ownerSummaryResponse())),
     http.get('*/common/owner-summary/export', ({ request }) => {

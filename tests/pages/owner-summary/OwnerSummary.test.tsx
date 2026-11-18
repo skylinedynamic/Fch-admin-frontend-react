@@ -59,14 +59,14 @@ describe('Owner Summary page', () => {
     expect(row('deals', 'Partners').getByText('1')).toBeInTheDocument()
 
     expect(card('partners').getByText('2', { selector: '.os-kpi__value' })).toBeInTheDocument()
-    expect(row('partners', 'Active').getByText('1')).toBeInTheDocument()
+    expect(row('partners', 'Active now').getByText('1')).toBeInTheDocument()
 
     expect(card('clients').getByText('40')).toBeInTheDocument()
     // FCH's own clients and other partners' clients, which add up to the total.
     expect(row('clients', 'FCH').getByText('15')).toBeInTheDocument()
     expect(row('clients', 'Partners').getByText('25')).toBeInTheDocument()
     // Archived clients are left out of active and new as well, so neither can exceed the total.
-    expect(card('clients').getByText('35 active · 8 new this period')).toBeInTheDocument()
+    expect(card('clients').getByText('35 active now · 8 new this period')).toBeInTheDocument()
 
     expect(card('leads').getByText('3')).toBeInTheDocument()
     expect(row('leads', 'FCH').getByText('1')).toBeInTheDocument()
@@ -404,8 +404,20 @@ describe('Owner Summary page', () => {
     expect(attention.getByRole('link', { name: /commission payouts due/i })).toHaveAttribute('href', '/commissions')
     expect(attention.getByRole('link', { name: /stalled deals/i })).toHaveAttribute('href', '/intake-review/funding-application')
     expect(attention.getByText('1 failed · 0 disputed this period')).toBeInTheDocument()
-    expect(attention.getByText('$4,000 owed to partners and staff')).toBeInTheDocument()
-    expect(attention.getByText('1 partner · 0 clients within 14 days')).toBeInTheDocument()
+    expect(attention.getByText('$4,000 owed to partners and staff on deals funded this period')).toBeInTheDocument()
+    expect(attention.getByText('1 partner · 0 clients with a trial ending this period')).toBeInTheDocument()
+  })
+
+  // Everything follows the period picked; what cannot (suspended partners,
+  // stalled deals, open applications, partner/client totals) says "as of now".
+  it('says which cards follow the period and which are as of now', async () => {
+    await renderPage()
+
+    expect(within(screen.getByTestId('owner-attention')).getByText('What came in this period and still waits · suspended partners and stalled deals as of now')).toBeInTheDocument()
+    expect(screen.getByText('Invoices raised this period, still unpaid')).toBeInTheDocument()
+    expect(screen.getByText('Where every open funding application stands, as of now')).toBeInTheDocument()
+    expect(screen.getByText(/Open applications with no status change in the last 14 days, as of now/)).toBeInTheDocument()
+    expect(screen.queryByText(/right now|whatever period is selected/i)).not.toBeInTheDocument()
   })
 
   it('greys out an item with nothing waiting', async () => {
@@ -593,7 +605,7 @@ describe('Owner Summary page', () => {
     const network = within(screen.getByTestId('owner-network'))
     expect(network.getByText('White-label')).toBeInTheDocument()
     expect(network.getByText('1 of 2')).toBeInTheDocument()
-    expect(network.getByText('1 · 1 end within 14 days')).toBeInTheDocument()
+    expect(network.getByText('1 · 1 end this period')).toBeInTheDocument()
 
     const partners = within(screen.getByTestId('owner-top-partners'))
     expect(partners.getByText('Partner One')).toBeInTheDocument()

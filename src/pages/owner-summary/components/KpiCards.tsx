@@ -60,7 +60,7 @@ function kpis(k: OwnerSummaryKpis): Kpi[] {
             label: 'Partners',
             value: k.partners.total.toLocaleString(),
             rows: [
-                { label: 'Active', value: k.partners.active.toLocaleString() },
+                { label: 'Active now', value: k.partners.active.toLocaleString() },
                 { label: 'New this period', value: k.partners.new.toLocaleString() },
             ],
         },
@@ -68,7 +68,7 @@ function kpis(k: OwnerSummaryKpis): Kpi[] {
             key: 'clients',
             label: 'Clients',
             value: k.clients.total.toLocaleString(),
-            note: `${k.clients.active.toLocaleString()} active · ${k.clients.new.toLocaleString()} new this period`,
+            note: `${k.clients.active.toLocaleString()} active now · ${k.clients.new.toLocaleString()} new this period`,
             rows: hostAndPartners(k.clients.host.toLocaleString(), k.clients.partners.toLocaleString()),
         },
         {

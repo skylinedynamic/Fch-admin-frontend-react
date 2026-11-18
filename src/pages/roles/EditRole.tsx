@@ -62,8 +62,11 @@ export default function EditRole() {
   const [errors, setErrors] = useState<{ name?: string; description?: string; permission_ids?: string }>({})
   const [detailError, setDetailError] = useState<string | null>(null)
   const [detail, setDetail] = useState<RoleDetail | null>(null)
-  // A static (system) role is shown, never changed (R2 BUG-011).
-  const readOnly = !!detail?.is_static
+  // Read-only unless the API says the viewer may change it (R2 BUG-011): a
+  // Developer may change a static role's permissions (Admin), no one the
+  // Developer role. A static role's name stays fixed either way.
+  const readOnly = !!detail && !detail.is_editable
+  const nameLocked = readOnly || !!detail?.is_static
   const hasFetchedDetailRef = React.useRef<boolean>(false)
 
   const { data: groupedPerms, isLoading: permsLoading, isError: permsError } = useGroupedPermissions({ fresh: true })
@@ -295,7 +298,7 @@ export default function EditRole() {
                 <fieldset className="role-form" disabled={readOnly}>
                   <div className="mb-4">
                     <label className="form-label">Role name <span className="text-danger">*</span></label>
-                    <input type="text" className={`form-control${errors.name ? ' is-invalid' : ''}`} placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
+                    <input type="text" className={`form-control${errors.name ? ' is-invalid' : ''}`} placeholder="Enter a role name" value={roleName} disabled={nameLocked} onChange={(e) => setRoleName(e.target.value)} />
                     {errors.name && <div className="text-danger mt-1 small">{errors.name}</div>}
                   </div>
 

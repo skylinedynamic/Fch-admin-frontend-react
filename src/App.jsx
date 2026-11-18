@@ -282,8 +282,8 @@ export default function App() {
 
             <Route path="profile" element={<Profile />} />
 
-            {/* Business Insights, the host owner's business summary - for now one
-                login only; the API checks it again. */}
+            {/* Business Insights, the host's business summary - for whoever holds the
+                developer-only "view business insights" permission; the API checks it again. */}
             <Route element={<OwnerSummaryRoute />}>
               <Route path={OWNER_SUMMARY_ROUTE} element={<OwnerSummary />} />
             </Route>

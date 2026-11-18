@@ -6,6 +6,8 @@ import { renderWithProviders, screen, waitFor, within } from '../../test-utils'
 import { server } from '../../mocks/server'
 import { ownerSummaryResponse } from '../../mocks/ownerSummary'
 import OwnerSummary from '../../../src/pages/owner-summary/OwnerSummary'
+import { useAuthStore } from '../../../src/store/auth'
+import { OWNER_SUMMARY_PERMISSION } from '../../../src/config/ownerSummary'
 
 vi.mock('react-toastify', () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }) }))
 
@@ -18,6 +20,8 @@ const settingsAre = (enabled: boolean, recipients: string[]) =>
 
 beforeEach(() => {
   saved = []
+  // Report settings shows to whoever may manage the weekly report.
+  useAuthStore.setState({ user: { id: 1, name: 'Dev Eloper', is_host: 1, entity_type: 'Employee', permissions: [OWNER_SUMMARY_PERMISSION.VIEW, OWNER_SUMMARY_PERMISSION.MANAGE_REPORT] } } as never)
   server.use(
     http.get('*/common/owner-summary', () => HttpResponse.json(ownerSummaryResponse())),
     http.put(URL, async ({ request }) => {

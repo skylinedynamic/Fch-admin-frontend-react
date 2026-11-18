@@ -8,7 +8,7 @@ export default function Definitions({ timezone }: { timezone: string }) {
             <p>
                 Funded = Closed (Completed), dated by its funded date. Net Earnings = all succeeded payments received on invoices
                 Four Corner bills (partner enrollment, platform fees, user seats, borrower fees, its own clients' enrollment), in the payments
-                mode chosen above, commission payouts not taken off. The weekly report always uses Production. Owed to us = Four Corner invoices that are unpaid or whose payment failed. Funding
+                mode chosen above, commission payouts not taken off. The weekly report always uses Production. Owed to us = Four Corner invoices raised in the period that are still unpaid or whose payment failed. Every figure follows the period chosen, except suspended partners, stalled deals, open applications and the partner and client totals, which are as of now. Funding
                 commissions are amounts booked on funded deals, not money received. Lead sources are the source chosen on each lead;
                 embedded-form applications and pre-qualification requests are counted separately. Stalled = open with no status change
                 for {STALLED_AFTER_DAYS} days or more (status history is kept from 3 Nov 2026, so stage counts and days idle before then are incomplete). FCH and Partners split deals and leads by who they belong to.

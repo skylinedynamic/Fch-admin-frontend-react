@@ -2,6 +2,13 @@
 import { apiClient } from '../../lib/http/apiClient'
 import type { ApiModulePermissions, GroupedPermissionsObject, CreateRolePayload, RoleDetail, Role } from './types'
 
+/**
+ * The API's is_editable for the viewer (a Developer may change Admin, no one
+ * the Developer role); an older response without it: editable unless static.
+ */
+const editableFrom = (raw: unknown, isStatic: boolean): boolean =>
+  typeof raw === 'boolean' ? raw : (typeof raw === 'number' ? raw === 1 : !isStatic)
+
 // Fetch permissions grouped by module via POST with { is_groupby: true }
 export const fetchGroupedPermissions = async (): Promise<ApiModulePermissions[]> => {
   const res = await apiClient.post('/common/permissions', { is_groupby: true })
@@ -64,6 +71,7 @@ export const fetchRoles = async (): Promise<Role[]> => {
       description: r.description,
       code: String(r.code ?? ''),
       is_static: isStatic,
+      is_editable: editableFrom(r.is_editable, isStatic),
       permissions: perms,
       users_count: Number(r.users_count ?? r.usersCount ?? 0),
     } as Role
@@ -102,6 +110,7 @@ export const fetchRoleDetail = async (id: number | string): Promise<RoleDetail> 
     permission: permissionArray,
     users: Array.isArray(data.users) ? data.users : [],
     is_static: Boolean(data.is_static),
+    is_editable: editableFrom(data.is_editable, Boolean(data.is_static)),
   }
   if (permissionIds.length) {
     normalized.permission_ids = permissionIds

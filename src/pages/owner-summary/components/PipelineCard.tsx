@@ -29,7 +29,7 @@ export default function PipelineCard({ data }: { data: OwnerPipeline }) {
                 <h2 className="os-card-title">Open Applications</h2>
                 <span style={{ fontSize: 13, color: 'var(--os-muted)' }}>{data.open.count} open · {compactMoney(data.open.requested)} requested</span>
             </div>
-            <p className="os-card-sub">Where every open funding application stands now</p>
+            <p className="os-card-sub">Where every open funding application stands, as of now</p>
 
             <div className="os-gap" style={{ gap: 14, marginTop: 18 }} role="table" aria-label="Open Applications by stage">
                 {data.groups.map((group) => (

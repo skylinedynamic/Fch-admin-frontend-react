@@ -39,7 +39,7 @@ export default function StalledDealsCard({ deals, total, totalRequested }: Stall
                         <h2 className="os-card-title">Stalled Deals</h2>
                         <span className="os-tag os-tag--warn">{count(total, 'deal', 'deals')} · {compactMoney(totalRequested)} requested</span>
                     </div>
-                    <p className="os-card-sub">Open applications with no status change in the last {STALLED_AFTER_DAYS} days</p>
+                    <p className="os-card-sub">Open applications with no status change in the last {STALLED_AFTER_DAYS} days, as of now</p>
                 </div>
                 {deals.length > 1 && (
                     <SelectMenu label="Sort by" value={sort} options={SORT_OPTIONS} onChange={setSort} />

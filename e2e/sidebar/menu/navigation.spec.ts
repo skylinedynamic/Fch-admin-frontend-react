@@ -3,6 +3,7 @@ import { mockApi, seedSession } from '../../support/helpers'
 import { PERSONA_PROFILES, type PersonaProfileKey } from '../../fixtures/personaProfiles'
 import { landingPath } from '../../support/navigation'
 import { ROUTES, expectedOutcome } from '../../support/routes'
+import { OWNER_SUMMARY_PERMISSION } from '../../../src/config/ownerSummary'
 
 /**
  * The sidebar: which modules each persona is offered, and that every entry
@@ -146,9 +147,9 @@ test.describe('Sidebar - every host entry opens its screen', () => {
 })
 
 test.describe('Sidebar - Business Insights', () => {
-  test('only the developer@fch.com host login is offered it, right after Dashboard, and it opens', async ({ page }) => {
+  test('a login holding view business insights is offered it, right after Dashboard, and it opens', async ({ page }) => {
     const profile = PERSONA_PROFILES.host
-    await seedSession(page, { ...profile.user, email: 'developer@fch.com', permissions: [...profile.user.permissions] })
+    await seedSession(page, { ...profile.user, permissions: [...profile.user.permissions, OWNER_SUMMARY_PERMISSION.VIEW] })
     await mockApi(page)
     await page.goto('/profile')
 

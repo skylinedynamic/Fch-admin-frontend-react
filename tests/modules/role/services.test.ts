@@ -104,9 +104,25 @@ describe('fetchRoles normalization', () => {
       )
     )
     await expect(fetchRoles()).resolves.toEqual([
-      { id: 1, name: 'Admin', description: undefined, code: 'admin', is_static: true, permissions: ['manage-users', 'edit-roles'], users_count: 0 },
-      { id: 2, name: 'Viewer', description: undefined, code: 'viewer', is_static: false, permissions: ['view-only'], users_count: 4 },
+      { id: 1, name: 'Admin', description: undefined, code: 'admin', is_static: true, is_editable: false, permissions: ['manage-users', 'edit-roles'], users_count: 0 },
+      { id: 2, name: 'Viewer', description: undefined, code: 'viewer', is_static: false, is_editable: true, permissions: ['view-only'], users_count: 4 },
     ])
+  })
+
+  // A Developer may change a static role (Admin) but never the Developer role: the API says so per role.
+  it('passes on is_editable from the API, falling back to "not static" when it is missing', async () => {
+    server.use(
+      http.get('*/common/roles', () =>
+        HttpResponse.json({
+          data: [
+            { id: 1, name: 'Admin', code: 'admin', is_static: true, is_editable: true, permissions: [] },
+            { id: 2, name: 'Developer', code: 'developer', is_static: true, is_editable: false, permissions: [] },
+            { id: 3, name: 'Sales', code: 'sales', is_static: false, permissions: [] },
+          ],
+        })
+      )
+    )
+    expect((await fetchRoles()).map((r) => r.is_editable)).toEqual([true, false, true])
   })
 
   it('handles a bare array response body (no data wrapper) and a missing/malformed list by returning []', async () => {
@@ -137,6 +153,7 @@ describe('fetchRoleDetail normalization', () => {
       permission: ['manage-users', 'edit-roles'],
       users: [],
       is_static: false,
+      is_editable: true,
       permission_ids: [5, 9],
     })
   })
@@ -149,6 +166,23 @@ describe('fetchRoleDetail normalization', () => {
       )
     )
     expect((await fetchRoleDetail(1)).is_static).toBe(true)
+  })
+
+  it('passes on is_editable, falling back to "not static" when it is missing', async () => {
+    server.use(
+      http.get('*/common/roles/:id', () =>
+        HttpResponse.json({ data: { id: 1, name: 'Admin', is_static: true, is_editable: true, permission: [], users: [] } })
+      )
+    )
+    expect((await fetchRoleDetail(1)).is_editable).toBe(true)
+
+    server.resetHandlers()
+    server.use(
+      http.get('*/common/roles/:id', () =>
+        HttpResponse.json({ data: { id: 1, name: 'Admin', is_static: true, permission: [], users: [] } })
+      )
+    )
+    expect((await fetchRoleDetail(1)).is_editable).toBe(false)
   })
 
   it('leaves permission_ids undefined when permission is already an array', async () => {

@@ -53,7 +53,7 @@ describe('useRoles', () => {
     const { result } = await runQuery(() => useRoles())
 
     expect(result.current.data).toEqual([
-      { id: 2, name: 'Agent', description: undefined, code: '7', is_static: true, permissions: ['view clients'], users_count: 4 },
+      { id: 2, name: 'Agent', description: undefined, code: '7', is_static: true, is_editable: false, permissions: ['view clients'], users_count: 4 },
     ])
   })
 })

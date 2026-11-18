@@ -2,7 +2,7 @@ import type { OwnerReceivables } from '../../../modules/owner-summary';
 import { UNPAID_AGE_DAYS } from '../../../config/ownerSummary';
 import { compactMoney, count, money, percent } from './format';
 
-/** Open invoices owed to the host right now, split by how late they are. */
+/** Invoices raised in the period still owed to the host, split by how late they are. */
 export default function OwedCard({ data }: { data: OwnerReceivables }) {
     const parts = [
         { label: `Unpaid over ${UNPAID_AGE_DAYS} days`, color: 'var(--os-red)', ...data.unpaid_over_30_days },
@@ -16,7 +16,7 @@ export default function OwedCard({ data }: { data: OwnerReceivables }) {
         <div className="os-card os-gap" data-testid="owner-owed">
             <div>
                 <h2 className="os-card-title">Owed To Four Corner</h2>
-                <p className="os-card-sub">Open invoices right now</p>
+                <p className="os-card-sub">Invoices raised this period, still unpaid</p>
             </div>
             <div className="os-big">
                 <span className="os-big__value">{compactMoney(amount)}</span>

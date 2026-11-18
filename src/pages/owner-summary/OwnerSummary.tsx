@@ -6,6 +6,7 @@ import {
     OWNER_SUMMARY_ENVIRONMENT_OPTIONS,
     OWNER_SUMMARY_PERIOD,
     OWNER_SUMMARY_PERIOD_OPTIONS,
+    OWNER_SUMMARY_PERMISSION,
     OWNER_SUMMARY_TITLE,
     type OwnerSummaryEnvironment,
     type OwnerSummaryPeriodKey,
@@ -27,6 +28,7 @@ import ReportSettingsModal from './components/ReportSettingsModal';
 import ExportPdfMenu from './components/ExportPdfMenu';
 import OwnerSummarySkeleton from './components/OwnerSummarySkeleton';
 import { dateRange, daysInRange, firstMessage } from './components/format';
+import { usePermissions } from '../../lib/auth/usePermissions';
 import './ownerSummary.css';
 
 const HTTP_FORBIDDEN = 403;
@@ -50,6 +52,9 @@ export default function OwnerSummary() {
     const [environment, setEnvironment] = useState<OwnerSummaryEnvironment>(OWNER_SUMMARY_ENVIRONMENT.PRODUCTION);
     const [reportSettingsOpen, setReportSettingsOpen] = useState(false);
     const { data: response, isLoading, isFetching, error } = useOwnerSummary({ ...requested, environment });
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission(OWNER_SUMMARY_PERMISSION.EXPORT);
+    const canManageReport = hasPermission(OWNER_SUMMARY_PERMISSION.MANAGE_REPORT);
 
     const forbidden = isAxiosError(error) && error.response?.status === HTTP_FORBIDDEN;
     const rangeErrors = rangeErrorsFrom(error);
@@ -102,15 +107,17 @@ export default function OwnerSummary() {
                                     </button>
                                 ))}
                             </div>
-                            <button type="button" className="os-btn" onClick={() => setReportSettingsOpen(true)}>
-                                <i className="ri-mail-line" aria-hidden="true"></i>
-                                Report settings
-                            </button>
-                            <ExportPdfMenu params={{ ...requested, environment }} disabled={!data} />
+                            {canManageReport && (
+                                <button type="button" className="os-btn" onClick={() => setReportSettingsOpen(true)}>
+                                    <i className="ri-mail-line" aria-hidden="true"></i>
+                                    Report settings
+                                </button>
+                            )}
+                            {canExport && <ExportPdfMenu params={{ ...requested, environment }} disabled={!data} />}
                         </div>
                     </div>
 
-                    <ReportSettingsModal visible={reportSettingsOpen} onHide={() => setReportSettingsOpen(false)} />
+                    {canManageReport && <ReportSettingsModal visible={reportSettingsOpen} onHide={() => setReportSettingsOpen(false)} />}
 
                     {selected === OWNER_SUMMARY_PERIOD.CUSTOM && (
                         <CustomRangePanel errors={rangeErrors ?? {}} busy={isFetching} onApply={applyRange} />

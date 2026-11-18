@@ -1,10 +1,16 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, ok, seedSession, expectCall, HOST_USER } from '../../support/helpers'
 import { ownerSummaryFixture } from '../../../tests/mocks/ownerSummary'
+import { OWNER_SUMMARY_PERMISSION } from '../../../src/config/ownerSummary'
 
-// The host partner's own login, with the screens the summary links to. For now
-// Business Insights is open to one login only (OWNER_SUMMARY_ALLOWED_EMAILS).
-const HOST_OWNER = { ...HOST_USER, email: 'developer@fch.com', entity_type: 'Partner', permissions: ['view commission', 'view invoices', 'view payments'] }
+// A Developer login: the three developer-only Business Insights permissions,
+// plus the screens the summary links to.
+const HOST_OWNER = {
+  ...HOST_USER,
+  email: 'dev@example.test',
+  entity_type: 'Employee',
+  permissions: ['view commission', 'view invoices', 'view payments', ...Object.values(OWNER_SUMMARY_PERMISSION)],
+}
 
 test.describe('Sidebar › Business Insights', () => {
   test('report settings: the owner turns the weekly report on for two addresses', async ({ page }) => {
@@ -90,9 +96,9 @@ test.describe('Sidebar › Business Insights', () => {
     await expect(field).toHaveCSS('box-shadow', 'none')
     await expect(field).toHaveCSS('border-color', unfocused)
 
-    // Reached from the keyboard too (focus-visible).
+    // Reached from the keyboard too (focus-visible). One recipient has no
+    // Remove button, so the field is one step back from "+ Add recipient".
     await page.getByRole('dialog', { name: 'Report settings' }).getByRole('button', { name: '+ Add recipient' }).focus()
-    await page.keyboard.press('Shift+Tab')
     await page.keyboard.press('Shift+Tab')
     await expect(field).toBeFocused()
     await expect(field).toHaveCSS('box-shadow', 'none')
@@ -154,7 +160,8 @@ test.describe('Sidebar › Business Insights', () => {
     const clients = page.getByTestId('owner-kpi-clients')
     await expect(clients.locator('.os-kpi__row').filter({ hasText: 'FCH' }).getByText('15')).toBeVisible()
     await expect(clients.locator('.os-kpi__row').filter({ hasText: 'Partners' }).getByText('25')).toBeVisible()
-    await expect(clients.getByText('35 active · 8 new this period')).toBeVisible()
+    // Active is as of now (no history kept); new follows the period.
+    await expect(clients.getByText('35 active now · 8 new this period')).toBeVisible()
     await expect(page.getByTestId('owner-attention').getByRole('link', { name: 'Review failed invoices' })).toBeVisible()
     await expect(page.getByTestId('owner-stalled').getByText('FUND-000044')).toBeVisible()
   })
@@ -301,8 +308,8 @@ test.describe('Sidebar › Business Insights', () => {
     await expect(page).toHaveURL(/\/commissions$/)
   })
 
-  test('any other host owner login neither sees it nor reaches it', async ({ page }) => {
-    await seedSession(page, { ...HOST_OWNER, email: 'owner@example.test' })
+  test('the host owner login without the Business Insights permissions neither sees it nor reaches it', async ({ page }) => {
+    await seedSession(page, { ...HOST_USER, email: 'owner@example.test', entity_type: 'Partner', permissions: ['update commission', 'view commission'] })
     const api = await mockApi(page)
 
     await page.goto('/business-insights')

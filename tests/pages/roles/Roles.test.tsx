@@ -15,8 +15,8 @@ import CreateRole from '../../../src/pages/roles/CreateRole'
 import EditRole from '../../../src/pages/roles/EditRole'
 
 const ROLES = [
-  { id: 1, name: 'Super Admin', description: 'Everything', code: 'super-admin', is_static: true, permissions: ['view users'], users_count: 2 },
-  { id: 2, name: 'Agent', description: 'Front desk', code: 'agent', is_static: false, permissions: ['view clients', 'view users'], users_count: 5 },
+  { id: 1, name: 'Super Admin', description: 'Everything', code: 'super-admin', is_static: true, is_editable: false, permissions: ['view users'], users_count: 2 },
+  { id: 2, name: 'Agent', description: 'Front desk', code: 'agent', is_static: false, is_editable: true, permissions: ['view clients', 'view users'], users_count: 5 },
 ]
 const PERMISSIONS = [
   { module: 'users', permissions: [{ id: 1, name: 'view users' }, { id: 2, name: 'create users' }] },
@@ -84,6 +84,24 @@ describe('RolesPermissions', () => {
     await user.click(within(card(container, 'Super Admin')).getByRole('button', { name: /view role/i }))
 
     expect(await screen.findByTestId('landing')).toHaveTextContent('navigated:/roles-permissions/edit/1')
+  })
+
+  // A Developer may change a static role (Admin) - the API says is_editable - but still not delete it.
+  it('a static role the viewer may edit offers Edit Role, still without Delete', async () => {
+    const { container } = mount([{ ...ROLES[0], is_editable: true }, ROLES[1]])
+    await screen.findByRole('heading', { name: 'Agent' })
+
+    expect(within(card(container, 'Super Admin')).getByRole('button', { name: /edit role/i })).toBeInTheDocument()
+    expect(within(card(container, 'Super Admin')).queryByRole('button', { name: /view role/i })).toBeNull()
+    expect(card(container, 'Super Admin').querySelector('.btn-outline-danger')).toBeNull()
+  })
+
+  // The Developer role: static and not editable, even for a Developer.
+  it('a static role the API marks not editable still offers View Role', async () => {
+    mount([{ ...ROLES[0], is_editable: false }, ROLES[1]])
+    await screen.findByRole('heading', { name: 'Agent' })
+
+    expect(within(card(document.body, 'Super Admin')).getByRole('button', { name: /view role/i })).toBeInTheDocument()
   })
 
   it('links to the create page', async () => {
@@ -171,6 +189,36 @@ describe('CreateRole', () => {
 
     expect(await screen.findByText('The role name is required.')).toBeInTheDocument()
     expect(create.bodies[0]).toMatchObject({ name: '' })
+    expect(input).toHaveClass('is-invalid')
+    expect(screen.queryByTestId('landing')).not.toBeInTheDocument()
+  })
+
+  /** fch-api lists the Business Insights group first (for a Developer); the form keeps the API's order. */
+  it('shows the permission groups in the order the API sends them, Business Insights first', async () => {
+    api('post', '/common/permissions', {
+      status: true,
+      data: [{ module: 'business insights', permissions: [{ id: 90, name: 'view business insights' }] }, ...PERMISSIONS],
+    })
+    const { container } = renderPage(<CreateRole />, { path: '/roles-permissions/create' })
+    await screen.findByText('View Business Insights')
+
+    const titles = Array.from(container.querySelectorAll('.perm-card h6.card-title')).map((el) => el.textContent?.trim())
+    expect(titles).toEqual(['Business Insights', 'Users', 'Clients'])
+  })
+
+  /** The Developer role is reserved: fch-api refuses the name (any case) with a 422 on errors.name. */
+  it('shows the API "Developer is a reserved role name" under Role name and stays on the page', async () => {
+    const user = userEvent.setup()
+    mount()
+    const reserved = 'Developer is a reserved role name. Please choose another name.'
+    const create = api('post', '/common/roles', invalid({ name: reserved }), 422)
+    const input = await screen.findByPlaceholderText('Enter a role name')
+
+    await user.type(input, 'developer')
+    await user.click(screen.getByRole('button', { name: /save/i }))
+
+    expect(await screen.findByText(reserved)).toBeInTheDocument()
+    expect(create.bodies[0]).toMatchObject({ name: 'developer' })
     expect(input).toHaveClass('is-invalid')
     expect(screen.queryByTestId('landing')).not.toBeInTheDocument()
   })
@@ -362,6 +410,45 @@ describe('EditRole', () => {
       mountStatic()
 
       expect(await screen.findByRole('heading', { name: 'View Role' })).toBeInTheDocument()
+    })
+  })
+
+  /**
+   * A Developer may change a static role's permissions (Admin): the API sends
+   * is_editable. Its name stays fixed (the API keeps it), so only the name is locked.
+   */
+  describe('a static role the viewer may edit (a Developer on Admin)', () => {
+    const mountEditableStatic = () => {
+      api('post', '/common/permissions', { status: true, data: PERMISSIONS })
+      api('get', '/common/roles/1', { status: true, data: { id: 1, name: 'Admin', description: 'Everything', is_static: true, is_editable: true, permission: { 1: 'view users' }, users: [] } })
+      const update = api('put', '/common/roles/1', { status: true, message: 'Role updated successfully.' })
+      return { ...renderPage(<EditRole />, { path: '/roles-permissions/edit/:id', route: '/roles-permissions/edit/1' }), update }
+    }
+
+    it('keeps the name locked but the permissions and Update enabled, with no read-only notice', async () => {
+      const { container } = mountEditableStatic()
+      await waitFor(() => expect(screen.getByPlaceholderText('Enter a role name')).toHaveValue('Admin'))
+      await waitFor(() => expect(container.querySelectorAll('input[id^="perm-"]:checked')).toHaveLength(1))
+
+      expect(screen.getByPlaceholderText('Enter a role name')).toBeDisabled()
+      expect(screen.getByPlaceholderText('Enter role description')).toBeEnabled()
+      container.querySelectorAll('input[id^="perm-"]').forEach((input) => expect(input).toBeEnabled())
+      expect(screen.getByRole('button', { name: /update/i })).toBeEnabled()
+      expect(screen.queryByText(/This is a system role/)).toBeNull()
+      expect(screen.getByRole('heading', { name: 'Edit Roles & Permissions' })).toBeInTheDocument()
+    })
+
+    it('saves the changed permissions', async () => {
+      const user = userEvent.setup()
+      const { container, update } = mountEditableStatic()
+      await waitFor(() => expect(container.querySelectorAll('input[id^="perm-"]:checked')).toHaveLength(1))
+
+      await user.click(container.querySelector('input[id^="perm-clients-"]')!)
+      await user.click(screen.getByRole('button', { name: /update/i }))
+
+      await waitFor(() => expect(update.bodies).toHaveLength(1))
+      expect(update.bodies[0]).toMatchObject({ name: 'Admin' })
+      expect((update.bodies[0] as { permission_ids: number[] }).permission_ids).toEqual(expect.arrayContaining([1, 3]))
     })
   })
 

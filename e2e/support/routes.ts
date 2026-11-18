@@ -6,6 +6,8 @@
  * Keep it in step with src/App.jsx - a route added there without an entry
  * here is simply not checked.
  */
+import { OWNER_SUMMARY_PERMISSION } from '../../src/config/ownerSummary'
+
 export type Guard =
   | { kind: 'none' }
   /** PermissionRoute: any one of the permissions is enough. */
@@ -18,7 +20,7 @@ export type Guard =
   | { kind: 'partnerHost' }
   /** NonHostPartnerRoute: a non-host partner account with a first payment date. */
   | { kind: 'nonHostPartner' }
-  /** OwnerSummaryRoute: for now the developer@fch.com login only, whatever its role. */
+  /** OwnerSummaryRoute: the "view business insights" permission. */
   | { kind: 'ownerSummary' }
 
 export type RouteCheck = {
@@ -145,8 +147,9 @@ export function expectedOutcome(route: RouteCheck, user: SessionUser, sub: Sessi
     case 'partnerHost':
       return host && partnerAccount ? 'allowed' : 'home'
     case 'ownerSummary':
-      // For now Business Insights is open to the developer@fch.com login only, whatever its role.
-      return String(user.email ?? '').trim().toLowerCase() === 'developer@fch.com' ? 'allowed' : 'home'
+      // Business Insights: whoever holds "view business insights" (a Developer, or host
+      // staff a Developer gave it to), whatever the email.
+      return (user.permissions || []).includes(OWNER_SUMMARY_PERMISSION.VIEW) ? 'allowed' : 'home'
     case 'nonHostPartner':
       return !host && partnerAccount && Boolean(user.first_payment_date) ? 'allowed' : 'home'
     case 'permission': {

@@ -1,13 +1,13 @@
-import { useAuthStore } from '../../store/auth'
-import { OWNER_SUMMARY_ALLOWED_EMAILS } from '../../config/ownerSummary'
+import { usePermissions } from './usePermissions'
+import { OWNER_SUMMARY_PERMISSION } from '../../config/ownerSummary'
 
 /**
- * True for whoever may open Business Insights: for now only the logins in
- * OWNER_SUMMARY_ALLOWED_EMAILS, whatever their role. This decides what the
- * menu and the route offer; the API does not check the email for now.
+ * True for whoever may open Business Insights: a login holding "view business
+ * insights", a developer-only permission (fch-api gives it to the Developer
+ * role alone and checks it again). This decides what the menu and the route offer.
  */
 export function useCanViewOwnerSummary(): boolean {
-    const email = useAuthStore((state) => (state.user as { email?: unknown } | null)?.email)
+    const { hasPermission } = usePermissions()
 
-    return OWNER_SUMMARY_ALLOWED_EMAILS.includes(String(email ?? '').trim().toLowerCase())
+    return hasPermission(OWNER_SUMMARY_PERMISSION.VIEW)
 }

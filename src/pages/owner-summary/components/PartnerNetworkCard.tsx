@@ -1,5 +1,4 @@
 import type { OwnerAttention, OwnerPartners, OwnerSummaryKpis } from '../../../modules/owner-summary';
-import { TRIAL_ENDING_DAYS } from '../../../config/ownerSummary';
 import { percent } from './format';
 
 interface PartnerNetworkCardProps {
@@ -29,7 +28,7 @@ export default function PartnerNetworkCard({ network, active, trialsEnding }: Pa
                     <div className="os-progress"><div style={{ width: `${percent(active.current, active.total)}%` }}></div></div>
                 </div>
                 <div className="os-line os-line--muted"><span>New this period</span><strong>{network.new}</strong></div>
-                <div className="os-line os-line--muted"><span>On free trial</span><strong>{network.on_trial} · {trialsEnding.partners} end within {TRIAL_ENDING_DAYS} days</strong></div>
+                <div className="os-line os-line--muted"><span>On free trial</span><strong>{network.on_trial} · {trialsEnding.partners} end this period</strong></div>
                 <div className="os-line os-line--muted"><span>Suspended</span><strong style={network.suspended > 0 ? { color: 'var(--os-red)' } : undefined}>{network.suspended}</strong></div>
             </div>
         </div>

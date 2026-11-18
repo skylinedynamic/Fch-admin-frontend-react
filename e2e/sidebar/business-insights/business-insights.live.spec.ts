@@ -1,9 +1,9 @@
 import { test, expect, openFromSidebar, pageHeading, sidebarLink } from '../../support/live/fixtures'
 import { INSIGHTS_AUTH_STATE_PATH, INSIGHTS_EMAIL, INSIGHTS_PASSWORD } from '../../support/live/env'
 
-// Business Insights is offered to one login for now (developer@fch.com). The
-// usual live host is another account, so the panel neither offers nor opens it.
-// (The API does not check the email for now.)
+// Business Insights is offered to the Developer role alone (the developer-only
+// "view business insights" permission). The usual live host is not a Developer,
+// so the panel neither offers nor opens it.
 test.describe('Sidebar › Business Insights (live, another account)', () => {
   test('is not offered and the route sends it home', async ({ page }) => {
     await page.goto('/')
