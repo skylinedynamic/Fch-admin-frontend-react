@@ -43,6 +43,9 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
       toast.success('Calendly connected')
       refreshStatus()
       onSynced()
+    } else if (result === 'in_use') {
+      // That Calendly account is connected in FCH already (another partner or a borrower).
+      toast.error('This Calendly account is already connected in FCH (to another partner or a borrower). Disconnect it there first, or use a different Calendly account.')
     } else {
       toast.error('Calendly could not be connected')
     }
@@ -165,6 +168,9 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
                 </>
               ) : status.needs_reconnect ? 'Reconnect Calendly' : 'Connect Calendly'}
             </button>
+            <p className="text-muted fs-11 mt-2 mb-0">
+              Calendly signs in with the account open in this browser. To connect a different Calendly account, log out at calendly.com first.
+            </p>
           </>
         )}
 

@@ -63,6 +63,89 @@ describe('AppointmentModal - who may change an appointment (BUG-102)', () => {
     expect(screen.queryByRole('button', { name: /cancel appointment/i })).not.toBeInTheDocument()
   })
 
+  // Editing a Calendly meeting shows it stays synced - its new title or time goes to Calendly.
+  it('editing a Calendly meeting shows "Sync with Calendly" ticked and locked', async () => {
+    const user = userEvent.setup()
+    await open(CLIENT_ID, appointment({ is_calendly: true }))
+
+    await user.click(screen.getByRole('button', { name: /edit/i }))
+
+    const tick = await screen.findByLabelText('Sync with Calendly')
+    expect(tick).toBeChecked()
+    expect(tick).toBeDisabled()
+    expect(screen.getByText(/a new title or time is changed there too/i)).toBeInTheDocument()
+  })
+
+  // Editing a Calendly meeting is checked against Calendly live, as booking one is.
+  it('editing a Calendly meeting to a time Calendly does not offer shows the overlap and keeps Save disabled', async () => {
+    const user = userEvent.setup()
+    const times = { bodies: [] as any[] }
+    await open(CLIENT_ID, appointment({ is_calendly: true }), ALL, () => {
+      api('get', '/common/calendly/event-types', { status: true, data: [{ uri: 'https://api.calendly.com/event_types/ET1', name: '30 Minute Meeting', duration: 30 }] })
+      server.use(http.post('*/common/calendly/available-times', async ({ request }) => {
+        times.bodies.push(await request.json())
+        // Calendly's open times that day: 10:00 only (09:00 is this meeting's own).
+        return HttpResponse.json({ status: true, data: [{ start_time: '2999-10-28T10:00:00Z', local_time: '2999-10-28 10:00:00', label: '10:00 AM' }] })
+      }))
+    })
+
+    await user.click(screen.getByRole('button', { name: /edit/i }))
+    await screen.findByText(/calendly books 30 min/i)
+
+    // Its own time: no overlap, and the edited meeting is left out of the FCH check.
+    await waitFor(() => expect(times.bodies.length).toBeGreaterThan(0))
+    expect(times.bodies[times.bodies.length - 1]).toMatchObject({ except_appointment_id: 1 })
+    expect(document.querySelector('.calendly-overlap')).not.toBeInTheDocument()
+
+    // Another time Calendly does not offer: the overlap, and Save locked.
+    const startDropdown = document.querySelector('.time-slot-container .p-dropdown') as HTMLElement
+    await user.click(startDropdown)
+    const elevenThirty = await waitFor(() => {
+      const item = Array.from(startDropdown.querySelectorAll('.p-dropdown-item')).find((el) => el.textContent?.trim() === '11:30 AM')
+      if (!item) throw new Error('no 11:30 AM')
+      return item as HTMLElement
+    })
+    await user.click(elevenThirty)
+
+    const alert = await waitFor(() => {
+      const found = document.querySelector('.calendly-overlap') as HTMLElement | null
+      if (!found) throw new Error('no overlap alert')
+      return found
+    })
+    expect(alert).toHaveTextContent('Calendly Overlap')
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled()
+
+    // Picking an open time clears it.
+    await user.click(within(alert).getByRole('button', { name: '10:00 AM' }))
+    await waitFor(() => expect(document.querySelector('.calendly-overlap')).not.toBeInTheDocument())
+  })
+
+  // Defect: after opening a meeting you were invited to, Create New hid "Appointment With"
+  // (the last meeting's details made you its invitee), so nobody could be picked.
+  it('Create New after opening a meeting you were invited to still asks who the meeting is with', async () => {
+    const ref = createRef<ModalHandle & { create: (date?: string) => void }>()
+    signIn({ id: PARTNER_ID, is_host: 0, permissions: [...ALL, 'create appointments'] })
+    allowBackgroundCalls()
+    api('get', '/common/appointments/1', { status: true, data: appointment() })
+    renderWithProviders(<AppointmentModal ref={ref as never} onSuccess={vi.fn()} />)
+    await act(() => ref.current!.show(1))
+    await screen.findByText('QA-TEST Run1 WL client booking')
+
+    act(() => ref.current!.create('2999-06-15'))
+
+    expect(await screen.findByText(/^Appointment With/)).toBeInTheDocument()
+  })
+
+  it('editing an FCH-only meeting shows no "Sync with Calendly"', async () => {
+    const user = userEvent.setup()
+    await open(CLIENT_ID)
+
+    await user.click(screen.getByRole('button', { name: /edit/i }))
+    await screen.findByPlaceholderText(/enter appointment title/i)
+
+    expect(screen.queryByLabelText('Sync with Calendly')).not.toBeInTheDocument()
+  })
+
   it('the person it was booked with can reschedule, confirm or cancel it', async () => {
     await open(PARTNER_ID)
 
@@ -543,6 +626,7 @@ describe('AppointmentModal - booking in Calendly from Add Appointment', () => {
     const { user } = await add({})
     api('get', '/common/calendly/event-types', { status: true, data: [{ ...EVENT_TYPE, name: 'Long call', duration: 60 }] })
 
+    await pickJane(user)
     await user.click(await screen.findByLabelText(/sync with calendly/i))
 
     expect(await screen.findByText('Calendly books 60 min (Long call).')).toBeInTheDocument()
@@ -567,15 +651,24 @@ describe('AppointmentModal - booking in Calendly from Add Appointment', () => {
     expect(book!.bodies[0]).toMatchObject({ assigned_for: JANE.id })
   })
 
-  it('without picking who it is with, says so instead of booking', async () => {
-    const { user, book } = await add({})
+  // First who it is with, then Calendly: nothing is checked or shown before the person is chosen.
+  it('cannot be ticked, and checks nothing in Calendly, until who it is with is chosen', async () => {
+    const { user, times, book } = await add({})
 
-    await user.type(screen.getByPlaceholderText(/enter appointment title/i), 'Funding review')
-    await user.click(await screen.findByLabelText(/sync with calendly/i))
-    await screen.findByText(/calendly books 30 min/i)
-    await user.click(screen.getByRole('button', { name: /confirm appointment/i }))
+    const tick = await screen.findByLabelText(/sync with calendly/i)
+    expect(tick).toBeDisabled()
+    expect(screen.getByText(/choose who the meeting is with \("appointment with"\) first/i)).toBeInTheDocument()
+    expect(document.querySelector('.calendly-overlap')).not.toBeInTheDocument()
+    expect(times!.calls).toBe(0)
 
-    expect(await screen.findByText('Choose who the meeting is with')).toBeInTheDocument()
+    await pickJane(user)
+    expect(tick).not.toBeDisabled()
+    await user.click(tick)
+
+    await waitFor(() => expect(times!.calls).toBeGreaterThan(0))
+    expect(times!.bodies[0]).toMatchObject({ assigned_for: JANE.id })
+    // 9:00 AM is open for Jane: said plainly.
+    expect(await screen.findByText('Available in Calendly')).toBeInTheDocument()
     expect(book!.calls).toBe(0)
   })
 
@@ -671,6 +764,7 @@ describe('AppointmentModal - booking in Calendly from Add Appointment', () => {
     const { user } = await add({})
     api('get', '/common/calendly/event-types', { status: true, data: [] })
 
+    await pickJane(user)
     await user.click(await screen.findByLabelText(/sync with calendly/i))
 
     expect(await screen.findByText(/no event type switched on/i)).toBeInTheDocument()

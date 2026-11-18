@@ -80,6 +80,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         assigned_for: '',
         entity_type: 'partner',
     });
+    // A refused date/time is about the one picked then: a new date or time clears it.
+    useEffect(() => {
+        setFormErrors(p => (p.appointment_date ? Object.fromEntries(Object.entries(p).filter(([key]) => key !== 'appointment_date')) : p));
+    }, [formData.date, formData.timeStart]);
+    // "Appointment with is required": answered once someone is chosen.
+    useEffect(() => {
+        if (formData.assigned_for) {
+            setFormErrors(p => (p.assigned_for ? Object.fromEntries(Object.entries(p).filter(([key]) => key !== 'assigned_for')) : p));
+        }
+    }, [formData.assigned_for]);
 
     // Display Data
     const [displayData, setDisplayData] = useState({
@@ -104,7 +114,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     // cancels it.
     const canUpdate = hasPermission('update appointments');
     const isScheduler = currentUser?.id == displayData.scheduledById;
-    const isInvitee = !isScheduler && !!displayData.assignedForUserId && currentUser?.id == displayData.assignedForUserId;
+    // A new appointment has no invitee yet: the last one opened (still in displayData) must not
+    // hide "Appointment With" - that left Create New with no one to pick and Calendly locked.
+    const isInvitee = !isNewEvent && !isScheduler && !!displayData.assignedForUserId && currentUser?.id == displayData.assignedForUserId;
     const isOpenStatus = displayData.status === APPOINTMENT_STATUS.PENDING || displayData.status === APPOINTMENT_STATUS.CONFIRMED;
     const canConfirm = isInvitee && canUpdate && !displayData.isPast && displayData.status === APPOINTMENT_STATUS.PENDING;
     const canCancel = isInvitee && canUpdate && !displayData.isPast && isOpenStatus;
@@ -119,12 +131,17 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     // Your own Calendly (your partner's, or a borrower's own), when connected.
     const canBookInCalendly = isNewEvent && Boolean(calendlyStatus?.connected && calendlyStatus?.can_book);
     const [bookInCalendly, setBookInCalendly] = useState(false);
+    // The appointment being edited is a Calendly meeting: its new title or time changes it in Calendly too.
+    const [editingCalendlyMeeting, setEditingCalendlyMeeting] = useState(false);
     const inCalendly = canBookInCalendly && bookInCalendly && !viewMode;
+    // Calendly applies to this form: a new meeting booked there, or a Calendly meeting being
+    // edited (its new title or time is changed there) - both get the live Calendly checks.
+    const calendlySynced = inCalendly || (!isNewEvent && editingCalendlyMeeting && !viewMode);
     // Which of the event type's places (Zoom, phone call, in person, ...), and where -
     // for a phone call the number to call - when that place asks the invitee.
     const [calendlyLocationKind, setCalendlyLocationKind] = useState('');
     const [calendlyLocation, setCalendlyLocation] = useState('');
-    const { data: calendlyEventTypes = [], isLoading: loadingEventTypes } = useCalendlyEventTypes(inCalendly);
+    const { data: calendlyEventTypes = [], isLoading: loadingEventTypes } = useCalendlyEventTypes(calendlySynced);
     // The Calendly account's active event type - it sets the meeting's length and place.
     const calendlyEventType = calendlyEventTypes[0];
     const calendlyMinutes = calendlyEventType?.duration || 30;
@@ -146,12 +163,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     // Live overlap check while synced: Calendly's open times that day (already
     // without the person's FCH meetings) - the picked start must be one of them.
-    const calendlyTimesPayload = inCalendly && calendlyEventType && formData.date
+    // Checked only once the person is chosen ("Appointment With"): their FCH meetings count too.
+    const calendlyTimesPayload = calendlySynced && calendlyEventType && formData.date && calendlyAttendee
         ? {
             event_type_uri: calendlyEventType.uri,
             date: formData.date,
             timezone: formData.location,
             ...(calendlyAttendee ? { assigned_for: Number(calendlyAttendee) } : {}),
+            // Editing: the meeting's own time does not count as taken in FCH.
+            ...(!isNewEvent && selectedEventId ? { except_appointment_id: Number(selectedEventId) } : {}),
         }
         : null;
     const {
@@ -161,7 +181,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     } = useCalendlyAvailableTimes(calendlyTimesPayload);
     const calendlyPickedLocal = formData.date && formData.timeStart ? `${formData.date} ${formData.timeStart}:00` : '';
     const calendlyChecked = Boolean(calendlyTimesPayload) && !checkingCalendly && !calendlyTimesError;
-    const calendlyOverlap = calendlyChecked && Boolean(calendlyPickedLocal)
+    // An edited meeting kept at its own time is not an overlap (Calendly lists it as taken - by itself).
+    const keepsOwnTime = !isNewEvent && originalData?.date === formData.date && originalData?.timeStart === formData.timeStart;
+    const calendlyOverlap = calendlyChecked && Boolean(calendlyPickedLocal) && !keepsOwnTime
         && !calendlyOpenTimes.some(slot => slot.local_time === calendlyPickedLocal);
     const calendlyCheckError = calendlyTimesError
         ? calendlyTimesError?.response?.data?.message || 'Calendly availability could not be checked'
@@ -178,10 +200,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         && formData.timeStart >= calendlyHours.from && formData.timeStart < calendlyHours.to);
     // No open time that day: the next day (within a week) that has some, to pick from instead.
     const [calendlyNextOpen, setCalendlyNextOpen] = useState(null);
+    const [findingNextOpen, setFindingNextOpen] = useState(false);
     useEffect(() => {
         setCalendlyNextOpen(null);
+        setFindingNextOpen(false);
         if (!calendlyChecked || calendlyOpenTimes.length > 0 || !calendlyTimesPayload) return;
         let active = true;
+        setFindingNextOpen(true);
         (async () => {
             const [y, m, d] = formData.date.split('-').map(Number);
             for (let i = 1; i <= 7 && active; i++) {
@@ -191,12 +216,14 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     const slots = await fetchCalendlyAvailableTimes({ ...calendlyTimesPayload, date });
                     if (active && slots.length) {
                         setCalendlyNextOpen({ date, slots });
+                        setFindingNextOpen(false);
                         return;
                     }
                 } catch {
-                    return;
+                    break;
                 }
             }
+            if (active) setFindingNextOpen(false);
         })();
         return () => { active = false; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,10 +236,10 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const timeLabel = (value) => TIME_SLOTS.find(slot => slot.value === value)?.label || tConvert(value);
     // Calendly sets the meeting's length (its event type's): the end follows the start.
     useEffect(() => {
-        if (inCalendly && formData.timeStart) {
+        if (calendlySynced && formData.timeStart) {
             setFormData(p => ({ ...p, timeEnd: timeAfter(p.timeStart, calendlyMinutes) }));
         }
-    }, [inCalendly, formData.timeStart, calendlyMinutes]);
+    }, [calendlySynced, formData.timeStart, calendlyMinutes]);
 
     // Start times still ahead on the chosen day (BUG-078); an appointment being
     // edited keeps its own time in the list.
@@ -246,7 +273,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     useEffect(() => {
         const check = async () => {
             // Calendly's open times already leave out both people's FCH meetings.
-            if (!formData.date || !(formData.assigned_for || formData.entity_id) || viewMode || inCalendly) {
+            if (!formData.date || !(formData.assigned_for || formData.entity_id) || viewMode) {
                 setAvailabilityConflicts(null);
                 setConflictError(null);
                 return;
@@ -426,6 +453,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setConflictError(null);
             setIsMeetingWithChecked(false);
             setBookInCalendly(false);
+            setEditingCalendlyMeeting(false);
             setCalendlyLocation('');
             setAskCalendlyPhone(false);
             // The browser's own day, at 09:00 or the next time still ahead (BUG-078).
@@ -454,6 +482,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         try {
             setLoadingDetails(true);
             const apt = await fetchAppointmentById(id);
+            setEditingCalendlyMeeting(Boolean(apt.is_calendly));
             const dateStr = apt.appointment_date ? apt.appointment_date.replace(' ', 'T') : '';
             const start = dateStr ? new Date(dateStr) : new Date();
             const duration = apt.duration_minutes || 30;
@@ -1151,7 +1180,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             appendTo="self"
                                                             readOnlyInput
                                                         />
-                                                        {formErrors.appointment_date && <div className="text-danger mt-1" style={{ fontSize: '10px' }}>{formErrors.appointment_date}</div>}
                                                     </div>
                                                 </div>
                                                 {/* Synced with Calendly too: the same date and start; Calendly's event type sets the length. */}
@@ -1166,7 +1194,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             }}
                                                             className="flex-grow-1" placeholder="Start" appendTo="self" />
                                                         <span className="text-muted fw-bold">to</span>
-                                                        {inCalendly ? (
+                                                        {calendlySynced ? (
                                                             // Calendly sets the length: the end is shown, not picked.
                                                             <input type="text" readOnly aria-label="End"
                                                                 className="form-control flex-grow-1 calendly-end-time"
@@ -1181,18 +1209,28 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                                 className={`flex-grow-1 ${formErrors.duration_minutes ? 'p-invalid' : ''}`} placeholder="End" appendTo="self" />
                                                         )}
                                                     </div>
-                                                    {inCalendly && !timeSlotError && calendlyEventType && (
+                                                    {calendlySynced && !timeSlotError && calendlyEventType && (
                                                         <div className="text-muted fs-11 mt-1">Calendly books {calendlyMinutes} min ({calendlyEventType.name}).</div>
                                                     )}
                                                     {timeSlotError && <div className="text-danger fs-11 mt-1">{timeSlotError}</div>}
                                                 </div>
+                                                {/* The date/time refused (e.g. a time Calendly does not offer): full width under
+                                                    the date and time - a Calendly reason with its open times is long. */}
+                                                {formErrors.appointment_date && (
+                                                    <div className="col-12 px-2 mb-3 appointment-date-error">
+                                                        <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-start mb-0 py-2 fs-12" role="alert">
+                                                            <i className="ri-error-warning-fill me-2 fs-16 text-danger"></i>
+                                                            <span className="text-danger">{[].concat(formErrors.appointment_date)[0]}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
                                         {/* Availability Alert - Animated Collapse */}
                                         <div className="col-12 px-2 overflow-hidden"
-                                            style={{ transition: 'all 0.4s ease', maxHeight: !inCalendly && isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: !inCalendly && isConflictVisible ? 1 : 0, marginBottom: !inCalendly && isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
-                                            {!inCalendly && (availabilityConflicts || lastConflictingAttempt) && (
+                                            style={{ transition: 'all 0.4s ease', maxHeight: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: isConflictVisible ? 1 : 0, marginBottom: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
+                                            {(availabilityConflicts || lastConflictingAttempt) && (
                                                 <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 position-relative" role="alert">
                                                     <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
                                                     <div className="flex-grow-1 pe-4">
@@ -1223,7 +1261,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         </div>
 
                                         {/* Synced with Calendly: the picked time overlaps (not open in Calendly, or taken in FCH). */}
-                                        {inCalendly && calendlyOverlap && (
+                                        {calendlySynced && calendlyOverlap && (
                                             <div className="col-12 px-2 mb-3 calendly-overlap">
                                                 <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-start mb-0 py-2" role="alert">
                                                     <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
@@ -1238,7 +1276,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                                 ? <>is <span className="fw-bold">already booked</span> - another meeting (in Calendly or FCH) is at that time.</>
                                                                 : calendlyHours
                                                                     ? <>is <span className="fw-bold">outside Calendly&apos;s hours</span> that day (<span className="fw-bold">{tConvert(calendlyHours.from)} - {tConvert(calendlyHours.to)}</span>).</>
-                                                                    : <>has <span className="fw-bold">no open time in Calendly</span> - Calendly&apos;s hours are over or it is closed that day.</>}
+                                                                    : formData.date === localDateString()
+                                                                        ? <>has <span className="fw-bold">no open time in Calendly</span> - Calendly isn&apos;t taking bookings for the rest of today: it needs more notice before a meeting (its &quot;minimum notice&quot; setting), or its hours are over.</>
+                                                                        : <>has <span className="fw-bold">no open time in Calendly</span> - Calendly is closed that day (no available hours).</>}
                                                         </span>
                                                         {calendlyOpenTimes.length > 0 && (
                                                             <div className="mt-2">
@@ -1252,6 +1292,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                                     ))}
                                                                 </div>
                                                             </div>
+                                                        )}
+                                                        {calendlyOpenTimes.length === 0 && findingNextOpen && !calendlyNextOpen && (
+                                                            <span className="fs-12 text-muted d-block mt-2">
+                                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                                Looking for the next open day in Calendly…
+                                                            </span>
+                                                        )}
+                                                        {calendlyOpenTimes.length === 0 && !findingNextOpen && !calendlyNextOpen && (
+                                                            <span className="fs-12 text-muted d-block mt-2">No open day in Calendly in the next 7 days - check its availability in Calendly.</span>
                                                         )}
                                                         {calendlyOpenTimes.length === 0 && calendlyNextOpen && (
                                                             <div className="mt-2 calendly-next-open">
@@ -1270,19 +1319,30 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 </div>
                                             </div>
                                         )}
-                                        {inCalendly && calendlyCheckError && (
+                                        {/* Checked for the person chosen, and open: say so plainly before Confirm. */}
+                                        {calendlySynced && calendlyChecked && !calendlyOverlap && calendlyPickedLocal && (
+                                            <div className="col-12 px-2 mb-3 calendly-available">
+                                                <div className="alert alert-success-subtle border border-success-subtle d-flex align-items-center mb-0 py-2 fs-12" role="status">
+                                                    <i className="ri-checkbox-circle-fill me-2 fs-16 text-success"></i>
+                                                    <span>
+                                                        <strong className="text-success">Available in Calendly</strong> - {tConvert(formData.timeStart)} - {tConvert(formData.timeEnd)} on {formData.date} is open{keepsOwnTime ? ' (this meeting\'s own time)' : ''}.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {calendlySynced && calendlyCheckError && (
                                             <div className="col-12 px-2 mb-3">
                                                 <div className="text-danger fs-12" role="alert">{calendlyCheckError}</div>
                                             </div>
                                         )}
-                                        {inCalendly && checkingCalendly && (
+                                        {calendlySynced && checkingCalendly && (
                                             <div className="col-12 px-2 mb-3">
                                                 <Skeleton width="100%" height="40px" className="rounded-2" />
                                             </div>
                                         )}
 
                                         {/* Skeleton Loader for Availability Check */}
-                                        {isCheckingAvailability && !inCalendly && (
+                                        {isCheckingAvailability && (
                                             <div className="col-12 px-2 mt-2">
                                                 <Skeleton width="100%" height="40px" className="rounded-2" />
                                             </div>
@@ -1311,6 +1371,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         type="checkbox"
                                                         id="book-in-calendly-toggle"
                                                         checked={bookInCalendly}
+                                                        // First who it is with, then Calendly: their free times are what is checked.
+                                                        disabled={!calendlyAttendee}
                                                         onChange={(e) => setBookInCalendly(e.target.checked)}
                                                     />
                                                     <label className="form-check-label ms-1" htmlFor="book-in-calendly-toggle">
@@ -1318,7 +1380,24 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                     </label>
                                                 </div>
                                                 <div className="text-muted fs-11 mt-1">
-                                                    Also booked in Calendly at this date and time; Calendly sends both people the invitation.
+                                                    {calendlyAttendee
+                                                        ? 'Also booked in Calendly at this date and time; Calendly sends both people the invitation.'
+                                                        : 'Choose who the meeting is with ("Appointment With") first - then Calendly is checked for that person.'}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Editing a Calendly meeting: it stays synced - a new title or time is changed in Calendly too. */}
+                                        {!isNewEvent && editingCalendlyMeeting && (
+                                            <div className="col-12 mb-3 calendly-synced">
+                                                <div className="form-check">
+                                                    <input className="form-check-input" type="checkbox" id="synced-with-calendly" checked disabled readOnly />
+                                                    <label className="form-check-label ms-1" htmlFor="synced-with-calendly">
+                                                        Sync with Calendly
+                                                    </label>
+                                                </div>
+                                                <div className="text-muted fs-11 mt-1">
+                                                    This meeting is in Calendly: a new title or time is changed there too, and Calendly sends both people the update. Deleting it cancels it in Calendly.
                                                 </div>
                                             </div>
                                         )}
@@ -1369,8 +1448,10 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         {((isNewEvent && hasPermission('create appointments')) || (!isNewEvent && hasPermission('update appointments'))) && (
                                             <button type="submit" className="btn btn-primary"
                                                 disabled={isSubmitting || (inCalendly
-                                                    ? (loadingEventTypes || !calendlyEventType || checkingCalendly || calendlyOverlap || (calendlyAsksLocation && !calendlyLocation.trim()))
-                                                    : (isCheckingAvailability || isConflictVisible))}>
+                                                    ? (loadingEventTypes || !calendlyEventType || checkingCalendly || calendlyOverlap || isCheckingAvailability || isConflictVisible || (calendlyAsksLocation && !calendlyLocation.trim()))
+                                                    : (isCheckingAvailability || isConflictVisible
+                                                        // Editing a Calendly meeting: not while Calendly is asked, nor at a time it is not open.
+                                                        || (calendlySynced && (checkingCalendly || calendlyOverlap))))}>
                                                 {isSubmitting ? (
                                                     <>
                                                         <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>

@@ -82,6 +82,14 @@ describe('CalendlyConnectCard', () => {
     expect(onSynced).toHaveBeenCalled()
   })
 
+  it('says the Calendly account is already connected in FCH when Calendly sends back in_use', async () => {
+    api('get', STATUS, status({ can_manage: true }))
+
+    renderWithProviders(<CalendlyConnectCard onSynced={vi.fn()} />, { route: '/appointments?calendly=in_use' })
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('already connected in FCH')))
+  })
+
   it('the account disconnects here after asking', async () => {
     const user = userEvent.setup()
     api('get', STATUS, status({ connected: true, can_manage: true, can_sync: true, name: 'FCH Team' }))
