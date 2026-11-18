@@ -2,7 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 
-export default function ConfirmationModal({ show, onHide, onConfirm, loading, title, message, confirmText = 'Confirm', cancelText = 'Close', variant = 'primary' }) {
+// iconNode (optional): a custom icon (e.g. a logo with a badge) in place of the animated
+// one - for actions the animation does not fit.
+export default function ConfirmationModal({ show, onHide, onConfirm, loading, title, message, confirmText = 'Confirm', cancelText = 'Close', variant = 'primary', iconNode }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
 
@@ -103,12 +105,16 @@ export default function ConfirmationModal({ show, onHide, onConfirm, loading, ti
             <div className="modal-dialog modal-dialog-centered">
                 <div className="modal-content">
                     <div className="modal-body p-5 text-center">
-                        <lord-icon
-                            src={variant === 'danger' ? "https://cdn.lordicon.com/gsqxdxog.json" : "https://cdn.lordicon.com/tdrtiskw.json"}
-                            trigger="loop"
-                            colors={`primary:${variant === 'danger' ? '#405189' : '#f7b84b'},secondary:${variant === 'danger' ? '#f06548' : '#405189'}`}
-                            style={{ width: '90px', height: '90px' }}
-                        ></lord-icon>
+                        {iconNode ? (
+                            <div className="mx-auto">{iconNode}</div>
+                        ) : (
+                            <lord-icon
+                                src={variant === 'danger' ? "https://cdn.lordicon.com/gsqxdxog.json" : "https://cdn.lordicon.com/tdrtiskw.json"}
+                                trigger="loop"
+                                colors={`primary:${variant === 'danger' ? '#405189' : '#f7b84b'},secondary:${variant === 'danger' ? '#f06548' : '#405189'}`}
+                                style={{ width: '90px', height: '90px' }}
+                            ></lord-icon>
+                        )}
                         <div className="mt-4 text-center">
                             <h4>{title || 'Confirm Action'}</h4>
                             <p className="text-muted fs-15 mb-4">

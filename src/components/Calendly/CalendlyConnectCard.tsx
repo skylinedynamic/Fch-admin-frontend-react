@@ -200,6 +200,14 @@ export default function CalendlyConnectCard({ onSynced, redirect = (url) => wind
           message="Calendly stops syncing and booking for your team and your clients. Meetings already brought in stay on the calendar. Your app keys stay saved in Settings."
           confirmText="Yes, disconnect"
           variant="danger"
+          iconNode={
+            // Calendly's logo: the integration being disconnected.
+            <div className="avatar-lg d-inline-block" aria-hidden="true">
+              <span className="avatar-title bg-light rounded-circle">
+                <img src={calendlyLogo} alt="" style={{ width: 44, height: 44 }} />
+              </span>
+            </div>
+          }
         />
       )}
     </div>

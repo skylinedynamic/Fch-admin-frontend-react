@@ -100,6 +100,9 @@ describe('CalendlyConnectCard', () => {
     await user.click(await screen.findByRole('button', { name: /^disconnect$/i }))
     expect(remove.calls).toBe(0)
     const dialog = (await screen.findByText('Disconnect Calendly?')).closest('.modal') as HTMLElement
+    // Its icon: Calendly's logo - not the animated bin.
+    expect(dialog.querySelector('img')).not.toBeNull()
+    expect(dialog.querySelector('lord-icon')).toBeNull()
     await user.click(within(dialog).getByRole('button', { name: /yes, disconnect/i }))
     await waitFor(() => expect(remove.calls).toBe(1))
   })
