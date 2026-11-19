@@ -219,7 +219,8 @@ test.describe('Client profile - Credit Profile', () => {
     await expect(page.getByText('Credit profile saved successfully!')).toBeVisible()
   })
 
-  test('uploading a PDF parses it and saves the result', async ({ page }) => {
+  // Since af1534a0 a parsed PDF is not saved on its own: it is reviewed, then Save Credit Profile saves it.
+  test('uploading a PDF parses it, and Save Credit Profile saves the result', async ({ page }) => {
     const api = await openTab(page, 'Credit Profile', [{ method: 'GET', match: `${B}/get-credit-profile/1`, body: ok(null) }])
     api.add({
       method: 'POST', match: `${B}/parse-credit-profile`,
@@ -230,9 +231,12 @@ test.describe('Client profile - Credit Profile', () => {
     await page.locator('input[type="file"][accept="application/pdf"]').first().setInputFiles({ name: 'report.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 fake') })
 
     await expectCall(api, 'POST', `${B}/parse-credit-profile`)
+    await expect(page.getByText('PDF read. Review the details, then click Save Credit Profile.')).toBeVisible()
+    expect(api.find('POST', `${B}/save-credit-profile`)).toHaveLength(0)
+
+    await page.getByRole('button', { name: /save credit profile/i }).click()
     const save = await expectCall(api, 'POST', `${B}/save-credit-profile`)
     expect(save.json).toMatchObject({ pdf_url: 'docs/report.pdf', document_id: 9 })
-    await expect(page.getByText('PDF uploaded and credit profile parsed successfully!')).toBeVisible()
   })
 
   test('a file that is not a PDF is refused before upload', async ({ page }) => {

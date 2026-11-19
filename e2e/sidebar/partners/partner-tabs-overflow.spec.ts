@@ -15,7 +15,17 @@ const PARTNER = {
 async function openPartner(page: Page, width: number) {
   await page.setViewportSize({ width, height: 900 })
   await seedSession(page, { id: 1, is_host: 1, partner_id: 1, entity_type: 'Partner', permissions: ['view partners', 'update partners'] })
-  await mockApi(page, [{ method: 'GET', match: `/admin/partners-details/${PARTNER.id}`, body: ok(PARTNER) }])
+  await mockApi(page, [
+    { method: 'GET', match: `/admin/partners-details/${PARTNER.id}`, body: ok(PARTNER) },
+    // The Mail Notification fields come from the API, one per type.
+    {
+      method: 'GET', match: `/admin/partners/${PARTNER.id}/mail-notification`,
+      body: ok([
+        { type: 'leads', label: 'Lead Notification Recipient', help: 'Gets the new lead email.', email: null },
+        { type: 'clients', label: 'Client Notification Recipient', help: 'Gets the new client email.', email: null },
+      ]),
+    },
+  ])
   await page.goto(`/partners/${PARTNER.id}`)
   const tabs = page.getByRole('tablist', { name: 'Partner sections' })
   await expect(tabs).toBeVisible()

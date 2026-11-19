@@ -48,6 +48,7 @@
 - `src/pages/partners/components/PartnerMailNotificationTab.tsx`: new tab, loads and saves the recipients.
 - `src/modules/partner/{services,queries,types}.ts`, `src/lib/query/queryKeys.ts`: mail notification API.
 - `e2e/support/helpers.ts`: `openProfileTab`, `profileTabNames`, `moreTabsButton`; the specs listed above use them.
+- `e2e/sidebar/clients/client-profile-tabs.spec.ts`: Credit Profile upload test matches the review-then-save flow.
 - `src/pages/partners/PartnerProfile.jsx`: `OverflowTabs`, Mail Notification tab, no tab icons, Update hidden on the tab.
 - `src/pages/clients/ClientDetails.tsx`: `OverflowTabs`, no tab icons.
 - `assets/css/custom.css`: `.overflow-tabs*`, `.partner-mail-notification__intro`.
@@ -67,7 +68,13 @@
   - More lists the rest and opens one;
   - Escape closes More;
   - tabs show a pointer;
-  - the Mail Notification fields appear.
+  - the Mail Notification fields appear (from a mocked `GET mail-notification`).
+- E2E: `e2e/sidebar/partners`, `e2e/sidebar/clients` and `e2e/agreement-required.spec.ts` (241 tests, `--workers=2`):
+  - 238 passed and 3 failed.
+  - Two were fixed and rerun green:
+    - the overflow spec had no `mail-notification` mock;
+    - `client-profile-tabs` › Credit Profile upload expected the automatic save that `af1534a0` (Oct 30) removed, and now clicks Save Credit Profile.
+  - The third is E2E-016, which was already failing.
 
 ## Open items
 - There is no permission gating on the tab or its API yet (as decided).
