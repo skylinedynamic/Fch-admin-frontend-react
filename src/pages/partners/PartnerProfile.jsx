@@ -6,7 +6,7 @@ import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import OverflowTabs from '../../components/Common/OverflowTabs';
 import PartnerMailNotificationTab from './components/PartnerMailNotificationTab';
-import { PARTNER_MAIL_NOTIFICATION_TAB } from '../../config/partnerMailNotification';
+import { PARTNER_MAIL_NOTIFICATION_TAB, PARTNER_MAIL_NOTIFICATION_FORM_ID } from '../../config/partnerMailNotification';
 import { createPartner, updatePartner, getPartner, getPartnerStatusAgent, updatePartnerStatusAgent, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
@@ -497,6 +497,7 @@ export default function PartnerProfile() {
     const canEditCommission = canViewCommission && hasPermission(COMMISSION_MANAGE_PERMISSION);
     // The tab reports whether its rate changed / is saving, for the header's Save button.
     const [commissionForm, setCommissionForm] = useState({ dirty: false, saving: false });
+    const [mailNotificationForm, setMailNotificationForm] = useState({ dirty: false, saving: false });
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
@@ -850,6 +851,27 @@ export default function PartnerProfile() {
                         )
                     )}
 
+                    {/* Mail Notification tab: submits its form (PartnerMailNotificationTab) */}
+                    {activeTab === PARTNER_MAIL_NOTIFICATION_TAB && id && (
+                        <button
+                            type="submit"
+                            form={PARTNER_MAIL_NOTIFICATION_FORM_ID}
+                            className="btn btn-primary w-lg waves-effect"
+                            disabled={!mailNotificationForm.dirty || mailNotificationForm.saving}
+                        >
+                            {mailNotificationForm.saving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-save-3-line align-middle me-1"></i> Save Mail Notification
+                                </>
+                            )}
+                        </button>
+                    )}
+
                     {/* Commissions tab: submits its form (PartnerCommissionTab) */}
                     {activeTab === PARTNER_COMMISSION_TAB && canEditCommission && (
                         <button
@@ -944,7 +966,12 @@ export default function PartnerProfile() {
                                         }}
                                     />
                                 ) : activeTab === PARTNER_MAIL_NOTIFICATION_TAB && id ? (
-                                    <PartnerMailNotificationTab key={id} />
+                                    <PartnerMailNotificationTab
+                                        key={id}
+                                        partnerId={id}
+                                        partnerEmail={formData.email}
+                                        onStateChange={setMailNotificationForm}
+                                    />
                                 ) : activeTab === PARTNER_COMMISSION_TAB && canViewCommission ? (
                                     <PartnerCommissionTab
                                         partnerId={id}

@@ -1,8 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
 import { REFRESH_ACTIVITIES_EVENT } from '../../config/appConfig'
-import { createPartner, deletePartner, fetchPartnerById, fetchPartnerOptions, updatePartner, updatePartnerCommission, fetchSubscriptionStats } from './services'
-import type { Partner, PartnerCommissionPayload, SubscriptionStats } from './types'
+import {
+  createPartner,
+  deletePartner,
+  fetchPartnerById,
+  fetchPartnerMailNotification,
+  fetchPartnerOptions,
+  updatePartner,
+  updatePartnerCommission,
+  updatePartnerMailNotification,
+  fetchSubscriptionStats,
+} from './services'
+import type { Partner, PartnerCommissionPayload, PartnerMailNotificationRecipients, SubscriptionStats } from './types'
 
 /** Every partner for the host's filter dropdowns, loaded once and shared. */
 export const usePartnerOptions = (enabled = true) => {
@@ -44,6 +54,28 @@ export const useUpdatePartner = () => {
 }
 
 /** Partner profile › Commissions: saves the partner's Funding commission tiers. */
+/** Partner profile › Mail Notification: where each type of this partner's notification emails goes. */
+export const usePartnerMailNotification = (id: string | number | null | undefined) =>
+  useQuery({
+    queryKey: queryKeys.partner.mailNotification(id ?? ''),
+    queryFn: () => fetchPartnerMailNotification(id as string | number),
+    enabled: !!id,
+  })
+
+/** Save the recipients; the list the API answers with replaces the cached one. */
+export const useUpdatePartnerMailNotification = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, recipients }: { id: string | number; recipients: PartnerMailNotificationRecipients }) =>
+      updatePartnerMailNotification(id, recipients),
+    onSuccess: (res, { id }) => {
+      if (Array.isArray(res?.data)) qc.setQueryData(queryKeys.partner.mailNotification(id), res.data)
+      // The API logged "Mail notification updated": show it in the activity sidebar now.
+      window.dispatchEvent(new Event(REFRESH_ACTIVITIES_EVENT))
+    },
+  })
+}
+
 export const useUpdatePartnerCommission = () => {
   const qc = useQueryClient()
   return useMutation({

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, ok, failure, seedSession, expectCall, confirmDelete, cancelDelete, type ApiMock } from '../../support/helpers'
+import { mockApi, ok, failure, seedSession, expectCall, confirmDelete, cancelDelete, type ApiMock, openProfileTab, profileTabNames } from '../../support/helpers'
 
 /**
  * The tabs of a client (borrower) profile beyond "Client Info":
@@ -26,7 +26,7 @@ async function openTab(page: Page, tab: string, handlers: Parameters<typeof mock
   ])
   await page.goto('/clients/1')
   await expect(page.locator('#first_name')).toHaveValue('Johnathan')
-  await page.locator('.nav-link', { hasText: new RegExp(`^\\s*${tab}\\s*$`) }).first().click()
+  await openProfileTab(page, tab)
   return api
 }
 
@@ -132,7 +132,7 @@ test.describe('Client profile - Documents', () => {
     await mockApi(page, [{ method: 'GET', match: new RegExp(`${B}/1$`), body: ok(CLIENT) }, ...handlers])
     await page.goto('/clients/1')
     await expect(page.locator('#first_name')).toHaveValue('Johnathan')
-    await page.locator('.nav-link', { hasText: /^\s*Documents\s*$/ }).first().click()
+    await openProfileTab(page, 'Documents')
     const menu = await docMenu(page)
     await expect(menu.getByText('Download')).toBeVisible()
     await expect(menu.getByText('Delete')).toHaveCount(0)
@@ -196,7 +196,7 @@ test.describe('Client profile - Task List (credit builder)', () => {
     await mockApi(page, [{ method: 'GET', match: new RegExp(`${B}/1$`), body: ok(CLIENT) }])
     await page.goto('/clients/1')
     await expect(page.locator('#first_name')).toHaveValue('Johnathan')
-    await expect(page.locator('.nav-link', { hasText: /^\s*Task List\s*$/ })).toHaveCount(0)
+    expect(await profileTabNames(page)).not.toContain('Task List')
   })
 })
 

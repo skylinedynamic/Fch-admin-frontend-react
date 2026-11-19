@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, ok, seedSession } from '../../support/helpers'
+import { mockApi, ok, seedSession, openProfileTab } from '../../support/helpers'
 
 /**
  * Clients › a client › Agreement: before the client signs, the host previews
@@ -26,7 +26,7 @@ async function openAgreementTab(page: Page) {
   ])
   await page.goto('/clients/1')
   await expect(page.locator('#first_name')).toHaveValue('Johnathan')
-  await page.locator('.nav-link', { hasText: /^\s*Agreement\s*$/ }).first().click()
+  await openProfileTab(page, 'Agreement')
 }
 
 test.describe('Client profile - previewing the unsigned agreement', () => {

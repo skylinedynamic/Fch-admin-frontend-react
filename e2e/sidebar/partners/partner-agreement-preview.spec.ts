@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, ok, seedSession } from '../../support/helpers'
+import { mockApi, ok, seedSession, openProfileTab } from '../../support/helpers'
 
 /**
  * Partners › a partner › Agreement: before the partner signs, the host previews
@@ -27,7 +27,7 @@ async function openAgreementTab(page: Page, preview: { status: number; body: unk
     { method: 'GET', match: `/common/agreement-sign/preview/${PARTNER.user_id}`, status: preview.status, body: preview.body },
   ])
   await page.goto(`/partners/${PARTNER.id}`)
-  await page.getByRole('tab', { name: 'Agreement' }).click()
+  await openProfileTab(page, 'Agreement')
   await expect(page.getByText('Agreement signing')).toBeVisible()
 }
 

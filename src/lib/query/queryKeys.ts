@@ -5,6 +5,7 @@ export const queryKeys = {
     list: () => [...queryKeys.partner.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.partner.all, 'detail', id] as const,
     options: () => [...queryKeys.partner.all, 'options'] as const,
+    mailNotification: (id: string | number) => [...queryKeys.partner.all, 'mail-notification', String(id)] as const,
   },
   borrower: {
     all: ['borrower'] as const,
