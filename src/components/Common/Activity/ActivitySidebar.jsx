@@ -24,6 +24,7 @@ import {
 } from '../../../config/appConfig';
 
 import { getFileIconConfig } from '../../../utils/fileIconConfig';
+import ActivityEntryDetails, { entryDetails, isEmailEntry, isEventEntry } from './ActivityEntryDetails';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
@@ -368,7 +369,6 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
     };
 
     const getSubtitle = (activity) => {
-        const logType = (activity.log_type_raw || activity.log_type || '').toLowerCase();
         const isEdited = !!activity.is_edited;
         // An entry keeps its own date when edited (BUG-020); the edit time goes in the tooltip.
         const dateToUse = activity.activity_date || activity.created_at;
@@ -378,25 +378,15 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
             ? `Edited: ${formatRelativeDate(editedAt)} (${editedAt})`
             : 'Edited';
         
-        if (logType === 'email' || logType === 'email sent') {
-            const emails = Array.isArray(activity.to_emails)
-                ? activity.to_emails.join(', ')
-                : (activity.to_emails || 'N/A');
-            return (
-                <span>
-                    To: {emails} • Subject: {activity.subject || 'No Subject'} • {formattedDate}
-                    {isEdited && (
-                        <span className="ms-1 text-muted fst-italic fw-normal" title={editedTooltip} style={{ cursor: 'help' }}>
-                            (Edited)
-                        </span>
-                    )}
-                </span>
-            );
-        }
+        // An email or a logged event: the row says only who created it and
+        // when; its recipients, subject, date and assignee are in its body.
+        const shownDate = (isEmailEntry(activity) || isEventEntry(activity))
+            ? formatRelativeDate(activity.created_at)
+            : formattedDate;
 
         return (
             <span>
-                {formattedDate}
+                {shownDate}
                 {isEdited && (
                     <span className="ms-1 text-muted fst-italic fw-normal" title={editedTooltip} style={{ cursor: 'help' }}>
                         (Edited)
@@ -528,8 +518,22 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
             );
         }
 
-        // 3. ENTITY AVATAR PRIORITY: Show the Partner or Borrower's image/avatar for everything else (Appointments, Invoices, Updates, etc.)
-        // This ensures consistent branding on the timeline.
+        // 3. WHO DID IT: the image of the person who acted (host logo for the
+        // host's admins, the partner's logo for its login, a staff member's photo).
+        // partner_image/borrower_image are the record's, the same on every entry,
+        // so a partner's page showed the partner's logo on the host's entries too.
+        if (activity.causer && activity.causer_image) {
+            return (
+                <img
+                    src={activity.causer_image}
+                    alt={activity.causer_name || 'User'}
+                    className="avatar-xs rounded-circle material-shadow"
+                    style={{ objectFit: 'cover' }}
+                />
+            );
+        }
+
+        // 4. No one did it (System): the record's image.
         if (partnerImg) {
             return <img src={partnerImg} alt="Partner" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
         }
@@ -649,7 +653,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
                                             const hasAttachments = Array.isArray(activity.attachments) && activity.attachments.length > 0;
                                             const hasFieldChanges = !!activity.field_changes && Object.keys(activity.field_changes).length > 0;
                                             const hasSignatures = !!activity.signatures && !!(activity.signatures.previous || activity.signatures.new);
-                                            const isCollapsible = hasDescription || hasAttachments || hasFieldChanges || hasSignatures;
+                                            const hasEntryDetails = entryDetails(activity, formatRelativeDate).length > 0;
+                                            // A reminder's status (Pending, Dismissed...) is shown in the body, not on the row.
+                                            const hasReminderStatus = Boolean((activity.is_owner || activity.can_edit) && activity.reminder_status);
+                                            const isCollapsible = hasDescription || hasAttachments || hasFieldChanges || hasSignatures || hasEntryDetails || hasReminderStatus;
                                             // Every entry starts collapsed, so a long history stays a
                                             // short list. An entry that holds signatures or a list of
                                             // changed fields says so with a link on its row (below), so
@@ -678,29 +685,32 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
                                                                 </div>
 
                                                                 {/* Content */}
-                                                                <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-13 mb-0 text-dark d-flex align-items-center flex-wrap gap-2">
-                                                                        <span>{getTitle(activity)}</span>
-                                                                        {Boolean(activity.is_owner || activity.can_edit) && getReminderStatusBadge(activity.reminder_status)}
+                                                                {/* Two lines: the title, then who / when / visibility / status. */}
+                                                                <div className="flex-grow-1 ms-3 activity-entry-text">
+                                                                    <h6
+                                                                        className="fs-13 mb-0 text-dark activity-entry-title"
+                                                                        title={typeof getTitle(activity) === 'string' ? getTitle(activity) : undefined}
+                                                                    >
+                                                                        {getTitle(activity)}
+                                                                    </h6>
+                                                                    <div className="fs-10 text-muted activity-entry-meta" style={{ fontWeight: '500' }}>
+                                                                        <span>by {activity.causer_name || activity.creator?.name || 'System'}</span>
+                                                                        <span className="mx-1"> • </span>
+                                                                        <i className="ri-time-line align-middle me-1"></i>
+                                                                        {getSubtitle(activity)}
                                                                         {/* The visibility tag belongs to activities a person created and
                                                                             chose a level for. System entries (client created, invoice
                                                                             created ...) never had one chosen, so they show none. */}
                                                                         {Boolean(activity.is_manual && (activity.is_owner || activity.can_edit)) && activity.visibility && VISIBILITY_BADGE_STYLES[activity.visibility] && (
                                                                             <span
-                                                                                className={`badge d-inline-flex align-items-center gap-1 text-nowrap ${VISIBILITY_BADGE_STYLES[activity.visibility].className}`}
-                                                                                style={{ fontSize: '10px', padding: '2px 6px' }}
+                                                                                className={`badge d-inline-flex align-items-center gap-1 text-nowrap ms-2 ${VISIBILITY_BADGE_STYLES[activity.visibility].className}`}
+                                                                                style={{ fontSize: '9px', padding: '1px 5px', lineHeight: '1.2' }}
                                                                                 title={`Visibility: ${VISIBILITY_BADGE_STYLES[activity.visibility].label}`}
                                                                             >
                                                                                 <i className={VISIBILITY_BADGE_STYLES[activity.visibility].icon}></i>
                                                                                 <span>{VISIBILITY_BADGE_STYLES[activity.visibility].label}</span>
                                                                             </span>
                                                                         )}
-                                                                    </h6>
-                                                                    <div className="fs-10 text-muted" style={{ fontWeight: '500' }}>
-                                                                        by {activity.causer_name || activity.creator?.name || 'System'}
-                                                                        <span className="mx-1"> • </span>
-                                                                        <i className="ri-time-line align-middle me-1"></i>
-                                                                        {getSubtitle(activity)}
                                                                         {detailsLabel && (
                                                                             <>
                                                                                 <span className="mx-1"> • </span>
@@ -764,6 +774,15 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
                                                         >
                                                             <div style={{ overflow: 'hidden' }}>
                                                                 <div className="accordion-body ms-2 ps-5 py-2">
+                                                                    {hasEntryDetails && (
+                                                                        <ActivityEntryDetails activity={activity} formatDate={formatRelativeDate} />
+                                                                    )}
+                                                                    {hasReminderStatus && (
+                                                                        <div className="activity-entry-reminder fs-12 mb-2 d-flex align-items-center gap-2">
+                                                                            <span className="text-muted fw-medium">Reminder</span>
+                                                                            {getReminderStatusBadge(activity.reminder_status)}
+                                                                        </div>
+                                                                    )}
                                                                     {hasDescription && (
                                                                         <div
                                                                             className="text-muted mb-2 fs-13"
@@ -961,17 +980,17 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, taskO
                    the row was hovered, which read as disabled or blurred. */
                 .activity-item-actions {
                     display: flex;
-                    gap: 6px;
+                    gap: 4px;
                 }
                 .activity-action-btn {
-                    width: 28px;
-                    height: 28px;
+                    width: 22px;
+                    height: 22px;
                     padding: 0;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    border-radius: 6px;
-                    font-size: 14px;
+                    border-radius: 4px;
+                    font-size: 12px;
                     line-height: 1;
                     transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
                 }

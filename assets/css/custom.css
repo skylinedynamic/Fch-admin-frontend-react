@@ -9680,3 +9680,35 @@ File: Custom Css File
   margin-bottom: 20px;
   color: var(--vz-secondary-color, #878a99);
 }
+
+/* Activity sidebar: an opened email or event entry - label, then value. */
+.activity-entry-details {
+  display: grid;
+  gap: 2px;
+}
+.activity-entry-details__row {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px;
+}
+.activity-entry-details dt {
+  font-weight: 500;
+}
+
+/* Activity sidebar entry: line 1 the title, line 2 who / when / visibility /
+   status - each kept on one line, cut with an ellipsis when too long. */
+.activity-entry-text {
+  min-width: 0;
+}
+.activity-entry-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.activity-entry-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
+}
