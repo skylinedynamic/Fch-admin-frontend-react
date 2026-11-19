@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { queryKeys } from '../../lib/query'
 import { useCalendlyStatus } from '../../modules/calendly/queries'
-import { connectCalendly, disconnectCalendly, syncCalendly, syncCalendlyDirected } from '../../modules/calendly/services'
+import { connectCalendly, disconnectCalendly, syncCalendlyDirected } from '../../modules/calendly/services'
 import type { CalendlySyncDates, CalendlySyncDirection } from '../../modules/calendly/types'
 import { settingsPath } from '../../config/settingsSections'
 import ConfirmationModal from '../Common/Modals/ConfirmationModal'
@@ -102,18 +102,8 @@ export default function CalendlyConnectCard({ onSynced, getSyncDates, redirect =
     onError: (error) => toast.error(errorMessage(error, 'Calendly sync failed')),
   })
 
-  // Opening (or reloading) the page brings in meetings booked or missed in
-  // Calendly since the last sync - once, quietly, and only when connected.
-  const autoSynced = useRef(false)
-  const autoSync = useMutation({
-    mutationFn: () => syncCalendly(),
-    onSuccess: () => {
-      refreshStatus()
-      onSynced()
-    },
-    // A failure shows on the card (e.g. Expired) once the status is asked again.
-    onError: () => refreshStatus(),
-  })
+  // No sync by itself - not on opening the page, nor on coming back from connecting:
+  // an appointment is made from a Calendly meeting only when someone presses Sync now.
 
   const connected = Boolean(status?.connected)
   const configured = status?.configured !== false
@@ -122,13 +112,6 @@ export default function CalendlyConnectCard({ onSynced, getSyncDates, redirect =
   // The account and its staff.
   const canSync = Boolean(status?.can_sync)
   const connecting = connect.isPending || redirecting
-
-  useEffect(() => {
-    if (connected && canSync && !autoSynced.current) {
-      autoSynced.current = true
-      autoSync.mutate()
-    }
-  }, [connected, canSync, autoSync])
 
   if (!status || (!canManage && !connected)) {
     return null
@@ -196,7 +179,7 @@ export default function CalendlyConnectCard({ onSynced, getSyncDates, redirect =
           <div className="d-flex gap-2">
             {canSync && (
               <button type="button" className="btn btn-soft-secondary btn-sm flex-grow-1" disabled={sync.isPending} onClick={openSync}>
-                {sync.isPending || autoSync.isPending ? 'Syncing…' : 'Sync now'}
+                {sync.isPending ? 'Syncing…' : 'Sync now'}
               </button>
             )}
             {canManage && (

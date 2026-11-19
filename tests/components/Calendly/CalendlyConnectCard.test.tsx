@@ -141,13 +141,14 @@ describe('CalendlyConnectCard', () => {
       />,
     )
 
-    // The automatic sync on opening the page goes first.
-    await waitFor(() => expect(sync.calls).toBe(1))
+    // Nothing is synced on opening the page.
+    await screen.findByRole('button', { name: /sync now/i })
+    expect(sync.calls).toBe(0)
 
     // Sync now asks which way first: one of pull, push, two-way - nothing synced yet.
     await user.click(await screen.findByRole('button', { name: /sync now/i }))
     const dialog = await screen.findByRole('dialog', { name: /sync with calendly/i })
-    expect(sync.calls).toBe(1)
+    expect(sync.calls).toBe(0)
     expect(within(dialog).getByText('Nov 1 – Nov 30, 2026')).toBeInTheDocument()
     expect(within(dialog).getByText('Month view')).toBeInTheDocument()
     expect(within(dialog).getByRole('radio', { name: /pull from calendly/i })).toBeChecked()
@@ -158,8 +159,8 @@ describe('CalendlyConnectCard', () => {
     expect(within(dialog).getByRole('radio', { name: /pull from calendly/i })).not.toBeChecked()
     await user.click(within(dialog).getByRole('button', { name: /^sync$/i }))
 
-    await waitFor(() => expect(sync.calls).toBe(2))
-    expect(sync.bodies[1]).toMatchObject({ direction: 'push', from: '2026-11-01', to: '2026-11-30' })
+    await waitFor(() => expect(sync.calls).toBe(1))
+    expect(sync.bodies[0]).toMatchObject({ direction: 'push', from: '2026-11-01', to: '2026-11-30' })
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Calendly synced: 3 sent to Calendly'))
     expect(onSynced).toHaveBeenCalled()
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /sync with calendly/i })).not.toBeInTheDocument())
@@ -198,20 +199,30 @@ describe('CalendlyConnectCard', () => {
     expect(await screen.findByText(/webhooks are not active/i)).toBeInTheDocument()
   })
 
-  // Opening the Appointments page brings in Calendly meetings booked or missed
-  // since the last sync - no need to press Sync now.
-  it('syncs a connected Calendly on its own when the page opens, once and quietly, then reloads the calendar', async () => {
+  // Nothing syncs by itself - not on opening the page, nor on coming back from connecting:
+  // an appointment is made from a Calendly meeting only when someone presses Sync now.
+  it('does not sync on its own when the page opens, even when connected', async () => {
     const onSynced = vi.fn()
     api('get', STATUS, status({ connected: true, can_sync: true, name: 'FCH Team' }))
     const sync = api('post', '/common/calendly/sync', { status: true, data: { synced: 2 } })
 
     renderWithProviders(<CalendlyConnectCard onSynced={onSynced} />)
 
-    await waitFor(() => expect(sync.calls).toBe(1))
-    await waitFor(() => expect(onSynced).toHaveBeenCalled())
+    await screen.findByRole('button', { name: /sync now/i })
     await new Promise((resolve) => setTimeout(resolve, 50))
-    expect(sync.calls).toBe(1)
-    expect(toast.success).not.toHaveBeenCalled()
+    expect(sync.calls).toBe(0)
+    expect(onSynced).not.toHaveBeenCalled()
+  })
+
+  it('does not sync when coming back from connecting Calendly - connecting makes no appointments', async () => {
+    api('get', STATUS, status({ connected: true, can_sync: true, can_manage: true, name: 'FCH Team' }))
+    const sync = api('post', '/common/calendly/sync', { status: true, data: { synced: 2 } })
+
+    renderWithProviders(<CalendlyConnectCard onSynced={vi.fn()} />, { route: '/appointments?calendly=connected' })
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Calendly connected'))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(sync.calls).toBe(0)
   })
 
   it('does not sync on its own when Calendly is not connected', async () => {
@@ -236,14 +247,4 @@ describe('CalendlyConnectCard', () => {
     expect(sync.calls).toBe(0)
   })
 
-  it('a failed automatic sync shows no error toast', async () => {
-    api('get', STATUS, status({ connected: true, can_sync: true, name: 'FCH Team' }))
-    const sync = api('post', '/common/calendly/sync', { status: false, message: 'Calendly is not responding right now.' }, 503)
-
-    renderWithProviders(<CalendlyConnectCard onSynced={vi.fn()} />)
-
-    await waitFor(() => expect(sync.calls).toBe(1))
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    expect(toast.error).not.toHaveBeenCalled()
-  })
 })
