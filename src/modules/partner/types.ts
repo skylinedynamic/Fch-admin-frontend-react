@@ -49,6 +49,27 @@ export interface PartnerCommissionPayload {
   tiers: PartnerCommissionTier[];
 }
 
+/**
+ * Partner profile › Mail Notification: one notification type (fch-api
+ * PartnerNotificationRecipient::TYPES - leads, clients, more later) and the
+ * address its emails go to; null sends them to the partner's own email.
+ */
+export interface PartnerNotificationRecipient {
+  type: string;
+  label: string;
+  help: string;
+  email: string | null;
+}
+
+/** Type => address to save; null (or empty) goes back to the partner's own email. */
+export type PartnerMailNotificationRecipients = Record<string, string | null>;
+
+export interface PartnerMailNotificationResponse {
+  status: boolean;
+  message?: string;
+  data: PartnerNotificationRecipient[];
+}
+
 /** The partner's tiers, and how many of its clients' funding applications are funded. */
 export interface PartnerCommission {
   id: number;

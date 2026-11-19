@@ -4,6 +4,9 @@ import "../../../assets/css/dropdown-validation.css";
 import PageHeader from '../common/PageHeader';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
+import OverflowTabs from '../../components/Common/OverflowTabs';
+import PartnerMailNotificationTab from './components/PartnerMailNotificationTab';
+import { PARTNER_MAIL_NOTIFICATION_TAB, PARTNER_MAIL_NOTIFICATION_FORM_ID } from '../../config/partnerMailNotification';
 import { createPartner, updatePartner, getPartner, getPartnerStatusAgent, updatePartnerStatusAgent, allUsers, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans, buildPartnerFormDataPayload, mapPartnerBackendErrors, defaultInstallmentMonths } from '../../modules/partner';
 import { locationData } from '../../modules/location';
 import { getCountryPhoneInfo } from '../../config/locations';
@@ -494,6 +497,7 @@ export default function PartnerProfile() {
     const canEditCommission = canViewCommission && hasPermission(COMMISSION_MANAGE_PERMISSION);
     // The tab reports whether its rate changed / is saving, for the header's Save button.
     const [commissionForm, setCommissionForm] = useState({ dirty: false, saving: false });
+    const [mailNotificationForm, setMailNotificationForm] = useState({ dirty: false, saving: false });
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
@@ -791,6 +795,25 @@ export default function PartnerProfile() {
         }
     };
 
+    // The profile's tabs, in order. Those that need a saved partner are shown, but disabled, while creating one.
+    const partnerTabs = [
+        { key: 'personalDetails', label: 'Partner information' },
+        { key: 'statusAgent', label: 'Status & Agent', disabled: !id },
+        { key: 'documents', label: 'Documents', disabled: !id },
+        { key: 'clientList', label: 'Client List', disabled: !id },
+        { key: 'subscription', label: 'Subscription', disabled: !id },
+        ...(formData.partner_type == PARTNER_TYPES.WHITE_LABEL && Number(formData.is_host) == 0
+            ? [{ key: 'tenantConfig', label: 'Tenant Config', disabled: !id }]
+            : []),
+        // The host also uses it before signing, to excuse this partner.
+        ...((formData.has_sign || (Number(authUser?.is_host) == 1 && id)) && Number(formData.is_host) == 0
+            ? [{ key: 'agreement', label: 'Agreement' }]
+            : []),
+        ...(canConfigure && Number(formData.is_host) == 0 ? [{ key: PARTNER_CONFIGURATION_TAB, label: 'Configuration' }] : []),
+        ...(canViewCommission ? [{ key: PARTNER_COMMISSION_TAB, label: 'Commissions' }] : []),
+        { key: PARTNER_MAIL_NOTIFICATION_TAB, label: 'Mail Notification', disabled: !id },
+    ];
+
     // Say so rather than show an empty form with Update, as for clients, leads and employees.
     if (partnerNotFound) {
         return <ErrorPage status={404} title="Partner Not Found" message="The partner you are looking for does not exist or you do not have permission to view it." />;
@@ -811,7 +834,7 @@ export default function PartnerProfile() {
                     </Link>
 
                     {/* Generic Partner Save Button */}
-                    {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig', PARTNER_CONFIGURATION_TAB, PARTNER_COMMISSION_TAB].includes(activeTab) && (
+                    {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig', PARTNER_CONFIGURATION_TAB, PARTNER_COMMISSION_TAB, PARTNER_MAIL_NOTIFICATION_TAB].includes(activeTab) && (
                         ((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
                             <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
                                 {isSaving ? (
@@ -826,6 +849,27 @@ export default function PartnerProfile() {
                                 )}
                             </button>
                         )
+                    )}
+
+                    {/* Mail Notification tab: submits its form (PartnerMailNotificationTab) */}
+                    {activeTab === PARTNER_MAIL_NOTIFICATION_TAB && id && (
+                        <button
+                            type="submit"
+                            form={PARTNER_MAIL_NOTIFICATION_FORM_ID}
+                            className="btn btn-primary w-lg waves-effect"
+                            disabled={!mailNotificationForm.dirty || mailNotificationForm.saving}
+                        >
+                            {mailNotificationForm.saving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-save-3-line align-middle me-1"></i> Save Mail Notification
+                                </>
+                            )}
+                        </button>
                     )}
 
                     {/* Commissions tab: submits its form (PartnerCommissionTab) */}
@@ -897,102 +941,13 @@ export default function PartnerProfile() {
                     <div className={id ? "col-xxl-8" : "col-12"}>
                         <div className="card">
                             <div className="card-header">
-                                <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
-                                    <li className="nav-item">
-                                        <a className={`nav-link ${activeTab === 'personalDetails' ? 'active' : ''}`} onClick={() => setActiveTab('personalDetails')} role="tab" style={{ cursor: 'pointer' }}>
-                                            <i className="fas fa-home"></i> Partner information
-                                        </a>
-                                    </li>
-                                    <li className="nav-item">
-                                        <a
-                                            className={`nav-link ${activeTab === 'statusAgent' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
-                                            onClick={() => id && setActiveTab('statusAgent')}
-                                            role="tab"
-                                            style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
-                                        >
-                                            <i className="far fa-user"></i> Status &amp; Agent
-                                        </a>
-                                    </li>
-                                    <li className="nav-item">
-                                        <a
-                                            className={`nav-link ${activeTab === 'documents' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
-                                            onClick={() => id && setActiveTab('documents')}
-                                            role="tab"
-                                            style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
-                                        >
-                                            <i className="far fa-envelope"></i> Documents
-                                        </a>
-                                    </li>
-                                    <li className="nav-item">
-                                        <a
-                                            className={`nav-link ${activeTab === 'clientList' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
-                                            onClick={() => id && setActiveTab('clientList')}
-                                            role="tab"
-                                            style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
-                                        >
-                                            <i className="far fa-list-alt"></i> Client List
-                                        </a>
-                                    </li>
-                                    <li className="nav-item">
-                                        <a
-                                            className={`nav-link ${activeTab === 'subscription' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
-                                            onClick={() => id && setActiveTab('subscription')}
-                                            role="tab"
-                                            style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
-                                        >
-                                            <i className="far fa-list-alt"></i> Subscription
-                                        </a>
-                                    </li>
-                                    {formData.partner_type == PARTNER_TYPES.WHITE_LABEL && Number(formData.is_host) == 0 && (
-                                        <li className="nav-item">
-                                            <a
-                                                className={`nav-link ${activeTab === 'tenantConfig' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
-                                                onClick={() => id && setActiveTab('tenantConfig')}
-                                                role="tab"
-                                                style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
-                                            >
-                                                Tenant Config
-                                            </a>
-                                        </li>
-                                    )}
-                                    {/* The host also uses it before signing, to excuse this partner. */}
-                                    {(formData.has_sign || (Number(authUser?.is_host) == 1 && id)) && Number(formData.is_host) == 0 && (
-                                        <li className="nav-item">
-                                            <a
-                                                className={`nav-link ${activeTab === 'agreement' ? 'active' : ''}`}
-                                                onClick={() => setActiveTab('agreement')}
-                                                role="tab"
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                Agreement
-                                            </a>
-                                        </li>
-                                    )}
-                                    {canConfigure && Number(formData.is_host) == 0 && (
-                                        <li className="nav-item">
-                                            <a
-                                                className={`nav-link ${activeTab === PARTNER_CONFIGURATION_TAB ? 'active' : ''}`}
-                                                onClick={() => setActiveTab(PARTNER_CONFIGURATION_TAB)}
-                                                role="tab"
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                Configuration
-                                            </a>
-                                        </li>
-                                    )}
-                                    {canViewCommission && (
-                                        <li className="nav-item">
-                                            <a
-                                                className={`nav-link ${activeTab === PARTNER_COMMISSION_TAB ? 'active' : ''}`}
-                                                onClick={() => setActiveTab(PARTNER_COMMISSION_TAB)}
-                                                role="tab"
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                Commissions
-                                            </a>
-                                        </li>
-                                    )}
-                                </ul>
+                                {/* One line; the tabs that do not fit go into More. */}
+                                <OverflowTabs
+                                    tabs={partnerTabs}
+                                    activeKey={activeTab}
+                                    onSelect={setActiveTab}
+                                    ariaLabel="Partner sections"
+                                />
                             </div>
                             <div className="card-body p-4">
                                 {activeTab === PARTNER_CONFIGURATION_TAB && canConfigure && Number(formData.is_host) == 0 ? (
@@ -1009,6 +964,13 @@ export default function PartnerProfile() {
                                             phone_number: formData.phone_number,
                                             status: formData.status,
                                         }}
+                                    />
+                                ) : activeTab === PARTNER_MAIL_NOTIFICATION_TAB && id ? (
+                                    <PartnerMailNotificationTab
+                                        key={id}
+                                        partnerId={id}
+                                        partnerEmail={formData.email}
+                                        onStateChange={setMailNotificationForm}
                                     />
                                 ) : activeTab === PARTNER_COMMISSION_TAB && canViewCommission ? (
                                     <PartnerCommissionTab

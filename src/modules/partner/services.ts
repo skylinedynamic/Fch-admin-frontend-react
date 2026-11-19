@@ -1,5 +1,14 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Partner, PartnerCommissionPayload, PartnerCommissionResponse, PartnerOption, TenantConfig } from './types';
+import type {
+  Partner,
+  PartnerCommissionPayload,
+  PartnerCommissionResponse,
+  PartnerMailNotificationRecipients,
+  PartnerMailNotificationResponse,
+  PartnerNotificationRecipient,
+  PartnerOption,
+  TenantConfig,
+} from './types';
 
 /** The Partners table: paginated, filtered and sorted. */
 export const fetchPartners = async (payload: any = {}) => {
@@ -46,6 +55,21 @@ export const updatePartnerCommission = async (
   payload: PartnerCommissionPayload
 ): Promise<PartnerCommissionResponse> => {
   const { data } = await apiClient.put(`/admin/partners/${id}/commission`, payload);
+  return data;
+};
+
+/** Partner profile › Mail Notification: every notification type with where its emails go. */
+export const fetchPartnerMailNotification = async (id: string | number): Promise<PartnerNotificationRecipient[]> => {
+  const { data } = await apiClient.get(`/admin/partners/${id}/mail-notification`);
+  return Array.isArray(data?.data) ? data.data : [];
+};
+
+/** Saves where the partner's notification emails go; returns the full list. */
+export const updatePartnerMailNotification = async (
+  id: string | number,
+  recipients: PartnerMailNotificationRecipients
+): Promise<PartnerMailNotificationResponse> => {
+  const { data } = await apiClient.put(`/admin/partners/${id}/mail-notification`, { recipients });
   return data;
 };
 

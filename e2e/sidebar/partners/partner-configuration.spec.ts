@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, ok, seedSession, expectCall, type ApiMock } from '../../support/helpers'
+import { mockApi, ok, seedSession, expectCall, type ApiMock, openProfileTab, profileTabNames } from '../../support/helpers'
 
 /**
  * Partner profile › Configuration: the host edits a partner's Email, SMS,
@@ -50,12 +50,11 @@ async function openProfile(page: Page, permissions = PERMS, tab = 'statusAgent')
   return api
 }
 
-const configurationTab = (page: Page) => page.locator('.card-header-tabs .nav-link', { hasText: /^\s*Configuration\s*$/ })
 
 test.describe('Partner profile - Configuration', () => {
   test('a host with the permission sees the tab and the partner\'s sections', async ({ page }) => {
     await openProfile(page)
-    await configurationTab(page).click()
+    await openProfileTab(page, 'Configuration')
 
     for (const section of ['Email Configuration', 'SMS Configuration', 'Branding', 'Agreement', 'Payment Integration']) {
       await expect(page.getByRole('tab', { name: section })).toBeVisible()
@@ -70,7 +69,7 @@ test.describe('Partner profile - Configuration', () => {
 
   test('the partner\'s SMS settings are read and saved with its partner_id', async ({ page }) => {
     const api = await openProfile(page)
-    await configurationTab(page).click()
+    await openProfileTab(page, 'Configuration')
     await page.getByRole('tab', { name: 'SMS Configuration' }).click()
 
     await expect(page.getByLabel(/from number/i)).toHaveValue('+15005550006')
@@ -104,7 +103,7 @@ test.describe('Partner profile - Configuration', () => {
       }] : []),
     })
 
-    await configurationTab(page).click()
+    await openProfileTab(page, 'Configuration')
     await page.getByRole('tab', { name: 'SMS Configuration' }).click()
     await expect(page.getByLabel(/from number/i)).toHaveValue('+15005550006')
     await expect(page.getByText('Configuration updated')).toHaveCount(0)
@@ -125,7 +124,7 @@ test.describe('Partner profile - Configuration', () => {
 
   test('the partner\'s branding is loaded for it', async ({ page }) => {
     const api = await openProfile(page)
-    await configurationTab(page).click()
+    await openProfileTab(page, 'Configuration')
     await page.getByRole('tab', { name: 'Branding' }).click()
 
     await expect.poll(() => api.find('POST', /\/common\/app-configurations$/).at(-1)?.json).toMatchObject({
@@ -135,7 +134,7 @@ test.describe('Partner profile - Configuration', () => {
 
   test('the partner\'s borrower agreement is switched and saved with its partner_id', async ({ page }) => {
     const api = await openProfile(page)
-    await configurationTab(page).click()
+    await openProfileTab(page, 'Configuration')
     await page.getByRole('tab', { name: /^Agreement/ }).click()
 
     await expect(page.getByText('Borrower Agreement Paper')).toBeVisible()
@@ -170,7 +169,7 @@ test.describe('Partner profile - Configuration', () => {
 
   test('the partner profile\'s own Save button is not shown on this tab', async ({ page }) => {
     await openProfile(page)
-    await configurationTab(page).click()
+    await openProfileTab(page, 'Configuration')
 
     await expect(page.locator('.page-actions, .page-title-box').getByRole('button', { name: /^save/i })).toHaveCount(0)
   })
@@ -179,6 +178,6 @@ test.describe('Partner profile - Configuration', () => {
     await openProfile(page, ['view partners', 'update partners'])
 
     await expect(page.getByText('Acme Funding').first()).toBeVisible()
-    await expect(configurationTab(page)).toHaveCount(0)
+    expect(await profileTabNames(page)).not.toContain('Configuration')
   })
 })

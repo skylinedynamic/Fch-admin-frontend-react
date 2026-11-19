@@ -210,3 +210,42 @@ export async function pickPrime(page: Page, dropdown: Locator, optionName: strin
   await dropdown.click()
   await page.locator('.p-dropdown-panel').getByRole('option', { name: optionName }).first().click()
 }
+
+/** The More button of a one-line tab bar (OverflowTabs) - its label counts the tabs in it. */
+export const moreTabsButton = (page: Page) => page.getByRole('button', { name: /^More \(\d+ more tabs?\)$/ })
+
+/**
+ * Opens a profile tab (partner profile, client details) by name: on the tab
+ * line, or - when the line is too narrow for it - from the More dropdown.
+ * Retried until it is open, since the tabs can change as the record loads.
+ */
+export async function openProfileTab(page: Page, name: string | RegExp) {
+  await expect(async () => {
+    const tab = page.getByRole('tab', { name, exact: typeof name === 'string' })
+    if (await tab.isVisible()) {
+      await tab.click({ timeout: 2000 })
+    } else {
+      const menu = page.getByRole('menu', { name: 'More tabs' })
+      if (!(await menu.isVisible())) await moreTabsButton(page).click({ timeout: 2000 })
+      await menu.getByRole('menuitem', { name, exact: typeof name === 'string' }).click({ timeout: 2000 })
+    }
+    await expect(page.getByRole('tab', { name, exact: typeof name === 'string', selected: true })).toBeVisible({ timeout: 2000 })
+  }).toPass({ timeout: 15_000 })
+}
+
+/**
+ * Every profile tab's name - on the line and in More (opened, then closed
+ * again) - so a check that a tab is missing cannot pass just because it is in More.
+ */
+export async function profileTabNames(page: Page): Promise<string[]> {
+  await expect(page.getByRole('tab').first()).toBeVisible()
+  const names = (await page.getByRole('tab').allInnerTexts()).map((t) => t.trim())
+  const more = moreTabsButton(page)
+  if (await more.isVisible()) {
+    await more.click()
+    const menu = page.getByRole('menu', { name: 'More tabs' })
+    names.push(...(await menu.getByRole('menuitem').allInnerTexts()).map((t) => t.trim()))
+    await page.keyboard.press('Escape')
+  }
+  return names
+}

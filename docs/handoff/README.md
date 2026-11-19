@@ -10,6 +10,13 @@ Several features or tasks on the same date means several files with the same dat
 
 ## Index
 
+### 2026-11-19
+
+| File | Title |
+|---|---|
+| [2026-11-19-partner-mail-notification-tab-and-one-line-tabs.md](2026-11-19-partner-mail-notification-tab-and-one-line-tabs.md) | Partner Mail Notification tab; partner and client tabs on one line with More |
+| [2026-11-19-agreement-preview-as-partner-or-borrower.md](2026-11-19-agreement-preview-as-partner-or-borrower.md) | Agreement Builder: Preview as Partner / Borrower; Agreement tab › Preview Agreement before signing |
+
 ### 2026-11-18
 
 | File | Title |

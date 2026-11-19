@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from '@playwright/test'
+import { openProfileTab } from './support/helpers'
 
 // The host excuses one partner from the partner agreement (or requires it
 // again) from that partner's Agreement tab, while signing stays on for
@@ -79,7 +80,7 @@ test.describe('Excusing one partner from the agreement', () => {
     const saved = await routeRequirement(page, current)
 
     await page.goto(`/partners/${PARTNER.id}`)
-    await page.getByRole('tab', { name: 'Agreement' }).click()
+    await openProfileTab(page, 'Agreement')
     await expect(requirementSwitch(page)).toBeEnabled()
     await expect(requirementSwitch(page)).toBeChecked()
     await expect(page.getByText('This partner is asked to sign the partner agreement.')).toBeVisible()
@@ -98,7 +99,7 @@ test.describe('Excusing one partner from the agreement', () => {
     const saved = await routeRequirement(page, current)
 
     await page.goto(`/partners/${PARTNER.id}`)
-    await page.getByRole('tab', { name: 'Agreement' }).click()
+    await openProfileTab(page, 'Agreement')
     await expect(requirementSwitch(page)).toBeEnabled()
     await expect(requirementSwitch(page)).not.toBeChecked()
 
@@ -116,7 +117,7 @@ test.describe('Excusing one partner from the agreement', () => {
     await routeRequirement(page, current, 'global')
 
     await page.goto(`/partners/${PARTNER.id}`)
-    await page.getByRole('tab', { name: 'Agreement' }).click()
+    await openProfileTab(page, 'Agreement')
 
     await expect(page.getByText('Agreement signing is turned off in Settings › Agreement.')).toBeVisible()
     await expect(requirementSwitch(page)).toBeDisabled()
@@ -129,7 +130,7 @@ test.describe('Excusing one partner from the agreement', () => {
     const saved = await routeRequirement(page, current, 'template')
 
     await page.goto(`/partners/${PARTNER.id}`)
-    await page.getByRole('tab', { name: 'Agreement' }).click()
+    await openProfileTab(page, 'Agreement')
 
     await expect(page.getByText('The partner agreement is turned off in Settings › Agreement.')).toBeVisible()
     await expect(page.getByText('Agreement off')).toBeVisible()

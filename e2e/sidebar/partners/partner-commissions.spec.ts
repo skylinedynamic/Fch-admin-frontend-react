@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockApi, ok, failure, seedSession, expectCall } from '../../support/helpers'
+import { mockApi, ok, failure, seedSession, expectCall, openProfileTab, profileTabNames } from '../../support/helpers'
 
 /**
  * Partner profile › Commissions: the host sets a partner's Funding commission
@@ -36,7 +36,7 @@ test.describe('Partner profile - Commissions tab', () => {
       },
     ])
     await page.goto('/partners/5')
-    await page.getByRole('tab', { name: 'Commissions' }).click()
+    await openProfileTab(page, 'Commissions')
 
     await expect(page.getByLabel('Tier 1 commission (%)')).toHaveValue('20')
     // The first tier always starts at 0.
@@ -80,7 +80,7 @@ test.describe('Partner profile - Commissions tab', () => {
       },
     ])
     await page.goto('/partners/5')
-    await page.getByRole('tab', { name: 'Commissions' }).click()
+    await openProfileTab(page, 'Commissions')
 
     await expect(page.getByRole('button', { name: 'Tier 1 commission type' })).toHaveText('Percentage')
     await page.getByLabel('Tier 1 to').fill('10')
@@ -117,7 +117,7 @@ test.describe('Partner profile - Commissions tab', () => {
       },
     ])
     await page.goto('/partners/5')
-    await page.getByRole('tab', { name: 'Commissions' }).click()
+    await openProfileTab(page, 'Commissions')
 
     await page.getByLabel('Tier 1 to').fill('10')
     await page.getByRole('button', { name: /add tier/i }).click()
@@ -133,7 +133,7 @@ test.describe('Partner profile - Commissions tab', () => {
     await seedSession(page, { permissions: ['view partners', 'update partners', 'view commission'] })
     await mockApi(page, [{ method: 'GET', match: '/admin/partners-details/5', body: ok(PARTNER) }])
     await page.goto('/partners/5')
-    await page.getByRole('tab', { name: 'Commissions' }).click()
+    await openProfileTab(page, 'Commissions')
 
     await expect(page.getByLabel('Tier 1 commission (%)')).toBeDisabled()
     await expect(page.getByRole('button', { name: 'Tier 1 commission type' })).toBeDisabled()
@@ -146,7 +146,8 @@ test.describe('Partner profile - Commissions tab', () => {
     await mockApi(page, [{ method: 'GET', match: '/admin/partners-details/5', body: ok(PARTNER) }])
     await page.goto('/partners/5')
 
-    await expect(page.getByRole('tab', { name: 'Status & Agent' })).toBeVisible()
-    await expect(page.getByRole('tab', { name: 'Commissions' })).toHaveCount(0)
+    const tabs = await profileTabNames(page)
+    expect(tabs).toContain('Status & Agent')
+    expect(tabs).not.toContain('Commissions')
   })
 })
