@@ -4,6 +4,10 @@ import { clearStrayModalBackdrops } from '../../../utils/modalBackdrop';
 
 // iconNode (optional): a custom icon (e.g. a logo with a badge) in place of the animated
 // one - for actions the animation does not fit.
+/**
+ * @param {{ show: any, onHide: any, onConfirm: any, loading: any, title: any, message: any,
+ *   confirmText?: string, cancelText?: string, variant?: string, iconNode?: import('react').ReactNode }} props
+ */
 export default function ConfirmationModal({ show, onHide, onConfirm, loading, title, message, confirmText = 'Confirm', cancelText = 'Close', variant = 'primary', iconNode }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);

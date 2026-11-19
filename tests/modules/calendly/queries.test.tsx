@@ -82,7 +82,7 @@ describe('calendly queries', () => {
       return HttpResponse.json({ status: false, message: 'Expired' }, { status: 422 })
     }))
 
-    for (const payload of [null, { event_type_uri: '', date: '2026-11-20' }, { event_type_uri: 'u1', date: '' }]) {
+    for (const payload of [null, { event_type_uri: '', date: '2026-11-20', timezone: 'UTC' }, { event_type_uri: 'u1', date: '', timezone: 'UTC' }]) {
       const { result } = renderHook(() => calendly.useCalendlyAvailableTimes(payload), { wrapper })
       expect(result.current.fetchStatus).toBe('idle')
     }
@@ -97,7 +97,7 @@ describe('calendly queries', () => {
     server.use(http.post('*/common/calendly/available-times', () =>
       HttpResponse.json({ status: true, data: [{ start_time: '2026-11-20T15:00:00Z', label: '3:00 PM' }] })))
 
-    const { result } = renderHook(() => calendly.useCalendlyAvailableTimes({ event_type_uri: 'u1', date: '2026-11-20' }), { wrapper })
+    const { result } = renderHook(() => calendly.useCalendlyAvailableTimes({ event_type_uri: 'u1', date: '2026-11-20', timezone: 'UTC' }), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual([{ start_time: '2026-11-20T15:00:00Z', label: '3:00 PM' }])
