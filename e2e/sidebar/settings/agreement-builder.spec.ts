@@ -783,3 +783,87 @@ test.describe('Settings - Agreement Builder', () => {
     await expect(page.locator('.ab4-doc .ab4-merge-chip')).toHaveCount(0)
   })
 })
+
+/**
+ * Preview › Preview as Partner / Preview as Borrower: the live preview filled
+ * with one real signer's details. The button names who signs the agreement
+ * being edited; its list comes from /preview-signers and the one picked fills
+ * the preview from /preview-values. The API is mocked; nothing is written.
+ */
+test.describe('Settings - Agreement Builder › Preview as a signer', () => {
+  const SIGNERS = {
+    partner: [{ user_id: 77, name: 'Ada Partner', email: 'ada@acme.test', business_name: 'Acme Lending', enrollment_type: 'One Time Payment', has_sign: true }],
+    borrower: [
+      { user_id: 81, name: 'Cleo Client', email: 'cleo@client.test', business_name: 'Cleo Co', partner_name: 'Bass Walsh Plc', enrollment_type: 'Installment', has_sign: false },
+      { user_id: 82, name: 'Dan Doe', email: 'dan@doe.test', business_name: '', enrollment_type: null, has_sign: false },
+    ],
+  }
+
+  /** Answers the signer list and the values; returns what the values requests asked for. */
+  async function routePreviewAs(page: Page) {
+    const asked: Record<string, unknown>[] = []
+    await page.route('**/common/agreement-templates/preview-signers**', async (route) => {
+      const url = new URL(route.request().url())
+      const type = url.searchParams.get('type') as 'partner' | 'borrower'
+      const search = (url.searchParams.get('search') ?? '').toLowerCase()
+      await route.fulfill({ json: ok(SIGNERS[type].filter((s) => !search || s.name.toLowerCase().includes(search))) })
+    })
+    await page.route('**/common/agreement-templates/preview-values', async (route) => {
+      const body = (route.request().postDataJSON() ?? {}) as Record<string, unknown>
+      asked.push(body)
+      const signer = [...SIGNERS.partner, ...SIGNERS.borrower].find((s) => s.user_id === body.signer_user_id)
+      await route.fulfill({ json: ok({ 'owner.company_name': 'Four Corner Holdings, LLC', ...(signer ? { 'signer.name': signer.name } : {}) }) })
+    })
+    return asked
+  }
+
+  // The built-in partner starter has no signer fields: a saved agreement with one.
+  const savedWithSignerName = JSON.stringify({ blocks: [{ id: 'saved-1', type: 'text', content: 'Dear {{signer.name}},' }], pagePad: 80, docBg: '#ffffff' })
+
+  test('previews the partner agreement as the partner picked, and back to the examples', async ({ page }) => {
+    // After openBuilder: its catch-all API mock would otherwise answer first.
+    await openBuilder(page, 'partner', savedWithSignerName)
+    const asked = await routePreviewAs(page)
+    await page.locator('.ab4-toolbar').getByRole('button', { name: 'Preview' }).click()
+    const preview = page.frameLocator('iframe[title="Preview"]')
+    await expect(preview.locator('.ab4-merge-sample', { hasText: 'Jane Doe' })).toBeVisible()
+
+    await page.locator('.ab4-preview-bar').getByRole('button', { name: 'Preview as Partner' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Preview as Partner' })
+    const ada = dialog.getByRole('button', { name: /Ada Partner/ })
+    await expect(ada.getByText('One Time Payment')).toBeVisible()
+    await expect(ada.getByText('Signed', { exact: true })).toBeVisible()
+    await ada.click()
+
+    await expect(dialog).toHaveCount(0)
+    await expect(preview.locator('.ab4-merge-sample', { hasText: 'Ada Partner' })).toBeVisible()
+    await expect(page.locator('.ab4-preview-bar').getByText('Previewing as Ada Partner')).toBeVisible()
+    expect(asked).toContainEqual({ signer_user_id: 77, type: 'partner' })
+
+    await page.getByRole('button', { name: 'Stop previewing as Ada Partner' }).click()
+    await expect(preview.locator('.ab4-merge-sample', { hasText: 'Jane Doe' })).toBeVisible()
+  })
+
+  test('finds a client by search and previews the borrower agreement as them', async ({ page }) => {
+    await openBuilder(page, 'borrower')
+    const asked = await routePreviewAs(page)
+    await page.locator('.ab4-toolbar').getByRole('button', { name: 'Preview' }).click()
+
+    await page.locator('.ab4-preview-bar').getByRole('button', { name: 'Preview as Borrower' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Preview as Borrower' })
+    await expect(dialog.getByRole('button', { name: /Dan Doe/ })).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /Dan Doe/ }).getByText('No enrollment')).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /Cleo Client/ }).getByText('Not signed')).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /Cleo Client/ }).getByText(/Client of Bass Walsh Plc/)).toBeVisible()
+    // The borrower agreement lists clients only: no partners, no tabs.
+    await expect(dialog.getByRole('button', { name: /Ada Partner/ })).toHaveCount(0)
+    await expect(dialog.getByRole('tab')).toHaveCount(0)
+    await dialog.getByRole('searchbox', { name: 'Search clients' }).fill('cleo')
+    await expect(dialog.getByRole('button', { name: /Dan Doe/ })).toHaveCount(0)
+    await dialog.getByRole('button', { name: /Cleo Client/ }).click()
+
+    await expect(page.frameLocator('iframe[title="Preview"]').locator('.ab4-merge-sample', { hasText: 'Cleo Client' }).first()).toBeVisible()
+    expect(asked).toContainEqual({ signer_user_id: 81, type: 'borrower' })
+  })
+
+})

@@ -9499,6 +9499,45 @@ File: Custom Css File
   }
 }
 
+/* Not signed yet: Preview Agreement (the agreement they would sign, filled for them). */
+.agr-preview {
+  --agr-primary: var(--brand-primary, var(--vz-primary, #405189));
+  --agr-primary-rgb: var(--brand-primary-rgb, var(--vz-primary-rgb, 64, 81, 137));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  border: 1px solid var(--vz-border-color, #e9ebec);
+  border-radius: 4px;
+  background: var(--vz-secondary-bg, #fff);
+}
+
+.agr-req__status > div:not(.agr-req__status-icon) {
+  flex: 1;
+  min-width: 0;
+}
+
+.agr-preview__btn {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 576px) {
+  .agr-preview,
+  .agr-req__status {
+    flex-wrap: wrap;
+  }
+
+  .agr-preview {
+    padding: 14px 16px;
+  }
+
+  .agr-preview__btn {
+    margin-left: 50px;
+  }
+}
+
 /* Signing is off in Settings › Agreement: the switch is locked. */
 .agr-req__status--locked {
   --agr-warning-rgb: var(--vz-warning-rgb, 247, 184, 75);

@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { fireEvent, renderWithProviders, screen, waitFor, within } from '../../../../test-utils'
 import { server } from '../../../../mocks/server'
@@ -987,5 +987,225 @@ describe('AgreementBuilder editing a saved template', () => {
     expect(within(picker()).queryByLabelText('Template name')).not.toBeInTheDocument()
     // Escape only ends the rename: the Templates dialog stays open.
     expect(within(picker()).getByRole('button', { name: /^Our short form/ })).toBeInTheDocument()
+  })
+})
+
+/**
+ * Preview › Preview as Partner / Preview as Borrower: the preview is shown as
+ * one real signer would see it. The button names who signs the agreement being
+ * edited; its modal lists them (fch-api AgreementPreviewSigners) and the one
+ * picked fills the preview with their details.
+ */
+describe('AgreementBuilder preview as a signer', () => {
+  const ADA = { user_id: 77, name: 'Ada Partner', email: 'ada@acme.test', business_name: 'Acme Lending', enrollment_type: 'One Time Payment' as string | null, has_sign: true }
+  const CLEO = { user_id: 81, name: 'Cleo Client', email: 'cleo@client.test', business_name: 'Cleo Co', enrollment_type: 'Installment' as string | null, has_sign: false }
+
+  // The host's team, who may list every partner and client (a partner sees only its own clients).
+  beforeEach(() => useAuthStore.setState({ user: { id: 1, partner_id: 1, entity_id: 1, is_host: 1 } } as never))
+  afterEach(() => useAuthStore.setState({ user: null } as never))
+
+  /** What each list and values request asked for. */
+  let signersAsked: URL[] = []
+  let valuesAsked: Record<string, unknown>[] = []
+
+  /** `signers` answers both lists unless the Clients list (`type=borrower`) is given its own. */
+  const routeSigners = (signers: (typeof ADA & { partner_name?: string })[], clients = signers) => {
+    signersAsked = []
+    valuesAsked = []
+    server.use(
+      http.get('*/common/agreement-templates/preview-signers', ({ request }) => {
+        const url = new URL(request.url)
+        signersAsked.push(url)
+        const search = (url.searchParams.get('search') ?? '').toLowerCase()
+        const list = url.searchParams.get('type') === 'borrower' ? clients : signers
+        return HttpResponse.json({ status: true, data: list.filter((s) => !search || s.name.toLowerCase().includes(search)) })
+      }),
+      http.post('*/common/agreement-templates/preview-values', async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>
+        valuesAsked.push(body)
+        const signer = [...signers, ...clients].find((s) => s.user_id === body.signer_user_id)
+        return HttpResponse.json({
+          status: true,
+          data: { 'owner.company_name': 'Four Corner Holdings, LLC', ...(signer ? { 'signer.name': signer.name, 'signer.email': signer.email } : {}) },
+        })
+      }),
+    )
+  }
+
+  /**
+   * The partner agreement as saved with a {{signer.name}} field - its built-in
+   * starter has none (the partner types their details into its fields).
+   */
+  const openSavedPartnerAgreement = async () => {
+    const SAVED = { id: 8, template_json: JSON.stringify({ blocks: [{ id: 'saved-1', type: 'text', content: 'Dear {{signer.name}}' }], pagePad: 80, docBg: '#ffffff' }) }
+    server.use(
+      http.post('*/common/agreement-templates/show', () => HttpResponse.json({ status: true, data: SAVED })),
+      http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [] })),
+      http.post('*/common/agreement-templates/merge-fields', () => HttpResponse.json({ status: true, data: [] })),
+    )
+    renderWithProviders(<AgreementBuilder />)
+    fireEvent.click(screen.getByRole('button', { name: 'Edit partner agreement' }))
+    await screen.findByText('Save Agreement')
+  }
+
+  const openPreview = () => fireEvent.click(toolbar().getByRole('button', { name: 'Preview' }))
+  const previewBar = () => within(document.querySelector('.ab4-preview-bar') as HTMLElement)
+  const srcdoc = () => screen.getByTitle('Preview').getAttribute('srcdoc') ?? ''
+
+  it('previews the partner agreement as the partner picked', async () => {
+    routeSigners([ADA])
+    await openSavedPartnerAgreement()
+    openPreview()
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Partner' }))
+    const dialog = within(await screen.findByRole('dialog', { name: 'Preview as Partner' }))
+    fireEvent.click(await dialog.findByRole('button', { name: /Ada Partner/ }))
+
+    await waitFor(() => expect(srcdoc()).toContain('title="{{signer.name}}">Ada Partner</span>'))
+    expect(valuesAsked).toContainEqual({ signer_user_id: 77, type: 'partner' })
+    expect(signersAsked[0].searchParams.get('type')).toBe('partner')
+    expect(screen.queryByRole('dialog', { name: 'Preview as Partner' })).not.toBeInTheDocument()
+    expect(previewBar().getByText('Previewing as Ada Partner')).toBeInTheDocument()
+  })
+
+  it('previews the borrower agreement as the client picked, found by search', async () => {
+    routeSigners([CLEO, { ...CLEO, user_id: 82, name: 'Dan Doe' }])
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    openPreview()
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Borrower' }))
+    const dialog = within(await screen.findByRole('dialog', { name: 'Preview as Borrower' }))
+    await dialog.findByRole('button', { name: /Dan Doe/ })
+    fireEvent.change(dialog.getByRole('searchbox', { name: 'Search clients' }), { target: { value: 'cleo' } })
+
+    await waitFor(() => expect(dialog.queryByRole('button', { name: /Dan Doe/ })).not.toBeInTheDocument())
+    fireEvent.click(dialog.getByRole('button', { name: /Cleo Client/ }))
+
+    await waitFor(() => expect(srcdoc()).toContain('title="{{signer.name}}">Cleo Client</span>'))
+    expect(valuesAsked).toContainEqual({ signer_user_id: 81, type: 'borrower' })
+    expect(signersAsked[signersAsked.length - 1].searchParams.get('type')).toBe('borrower')
+    expect(signersAsked[signersAsked.length - 1].searchParams.get('search')).toBe('cleo')
+  })
+
+  it('goes back to the example details when the signer is cleared', async () => {
+    routeSigners([ADA])
+    await openSavedPartnerAgreement()
+    openPreview()
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Partner' }))
+    fireEvent.click(await within(await screen.findByRole('dialog', { name: 'Preview as Partner' })).findByRole('button', { name: /Ada Partner/ }))
+    await waitFor(() => expect(srcdoc()).toContain('>Ada Partner</span>'))
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Stop previewing as Ada Partner' }))
+
+    await waitFor(() => expect(srcdoc()).toContain('title="{{signer.name}}">Jane Doe</span>'))
+    expect(previewBar().queryByText('Previewing as Ada Partner')).not.toBeInTheDocument()
+  })
+
+  it('lists only partners for the partner agreement - no clients, no tabs', async () => {
+    routeSigners([ADA], [CLEO])
+    await openBuilder()
+    openPreview()
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Partner' }))
+    const dialog = within(await screen.findByRole('dialog', { name: 'Preview as Partner' }))
+
+    await dialog.findByRole('button', { name: /Ada Partner/ })
+    expect(dialog.queryByRole('button', { name: /Cleo Client/ })).not.toBeInTheDocument()
+    expect(dialog.queryByRole('tab')).not.toBeInTheDocument()
+    expect(dialog.getByRole('searchbox', { name: 'Search partners' })).toBeInTheDocument()
+    expect(signersAsked.every((url) => url.searchParams.get('type') === 'partner')).toBe(true)
+  })
+
+  it("lists only clients for the borrower agreement, each with their partner", async () => {
+    routeSigners([ADA], [{ ...CLEO, partner_name: 'Bass Walsh Plc' }])
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    openPreview()
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Borrower' }))
+    const dialog = within(await screen.findByRole('dialog', { name: 'Preview as Borrower' }))
+
+    const cleo = within(await dialog.findByRole('button', { name: /Cleo Client/ }))
+    expect(cleo.getByText(/Client of Bass Walsh Plc/)).toBeInTheDocument()
+    expect(dialog.queryByRole('button', { name: /Ada Partner/ })).not.toBeInTheDocument()
+    expect(dialog.queryByRole('tab')).not.toBeInTheDocument()
+    expect(signersAsked.every((url) => url.searchParams.get('type') === 'borrower')).toBe(true)
+  })
+
+  it("previews a client with their own partner's company details", async () => {
+    routeSigners([ADA], [{ ...CLEO, partner_name: 'Bass Walsh Plc' }])
+    // The API answers a client's values with their own partner as owner (fch-api AgreementPreviewSigners::ownerFor).
+    server.use(
+      http.post('*/common/agreement-templates/preview-values', async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>
+        valuesAsked.push(body)
+        return HttpResponse.json({
+          status: true,
+          data: body.signer_user_id
+            ? { 'owner.company_name': 'Bass Walsh Plc', 'signer.name': 'Cleo Client' }
+            : { 'owner.company_name': 'Four Corner Holdings, LLC' },
+        })
+      }),
+    )
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    openPreview()
+    await waitFor(() => expect(srcdoc()).toContain('title="{{owner.company_name}}">Four Corner Holdings, LLC</span>'))
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Borrower' }))
+    fireEvent.click(await within(await screen.findByRole('dialog', { name: 'Preview as Borrower' })).findByRole('button', { name: /Cleo Client/ }))
+
+    await waitFor(() => expect(srcdoc()).toContain('title="{{owner.company_name}}">Bass Walsh Plc</span>'))
+    expect(srcdoc()).not.toContain('>Four Corner Holdings, LLC</span>')
+  })
+
+  it("shows each signer's enrollment type and whether they signed", async () => {
+    routeSigners([ADA, { ...CLEO, user_id: 90, name: 'Nell None', enrollment_type: null }])
+    await openBuilder()
+    openPreview()
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Partner' }))
+    const dialog = within(await screen.findByRole('dialog', { name: 'Preview as Partner' }))
+    const ada = within(await dialog.findByRole('button', { name: /Ada Partner/ }))
+    const nell = within(dialog.getByRole('button', { name: /Nell None/ }))
+
+    expect(ada.getByText('One Time Payment')).toBeInTheDocument()
+    expect(ada.getByText('Signed')).toBeInTheDocument()
+    expect(nell.getByText('No enrollment')).toBeInTheDocument()
+    expect(nell.getByText('Not signed')).toBeInTheDocument()
+  })
+
+  it('says so when nobody signs the agreement yet', async () => {
+    routeSigners([])
+    await openBuilder(<AgreementBuilder />, 'borrower')
+    openPreview()
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Borrower' }))
+
+    const dialog = within(await screen.findByRole('dialog', { name: 'Preview as Borrower' }))
+    expect(await dialog.findByText('No clients found.')).toBeInTheDocument()
+  })
+
+  it('closes the list without changing the preview', async () => {
+    routeSigners([ADA])
+    await openBuilder()
+    openPreview()
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Partner' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Preview as Partner' })
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Preview as Partner' })).not.toBeInTheDocument()
+    expect(valuesAsked.some((b) => 'signer_user_id' in b)).toBe(false)
+  })
+
+  it("lists the configured partner's clients from Partner profile › Configuration", async () => {
+    routeSigners([CLEO])
+    await openBuilder(<ConfigPartnerProvider partner={{ id: 42, company_name: 'Acme Lending' }}><AgreementBuilder /></ConfigPartnerProvider>, 'borrower')
+    openPreview()
+
+    fireEvent.click(previewBar().getByRole('button', { name: 'Preview as Borrower' }))
+    fireEvent.click(await within(await screen.findByRole('dialog', { name: 'Preview as Borrower' })).findByRole('button', { name: /Cleo Client/ }))
+
+    await waitFor(() => expect(valuesAsked).toContainEqual({ partner_id: 42, signer_user_id: 81, type: 'borrower' }))
+    expect(signersAsked[0].searchParams.get('partner_id')).toBe('42')
   })
 })

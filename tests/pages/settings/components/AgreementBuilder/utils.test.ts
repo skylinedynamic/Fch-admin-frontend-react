@@ -306,5 +306,32 @@ describe('merge fields in the preview', () => {
 
       expect(withMergeSamples(doc('<p>{{signer.name}}</p>'), {}, [plain])).toContain('&lt;b&gt;Jane&lt;/b&gt;')
     })
+
+    // Preview as Partner: the chosen partner's own commission tiers, not the example.
+    it("shows the chosen signer's own table in place of the example", () => {
+      const real = { 'signer.commission_table': '<table class="ab-commission-table"><tbody><tr><td>0</td><td>5</td><td>$900</td></tr></tbody></table>' }
+      const html = withMergeSamples(doc('<p>{{signer.commission_table}}</p>'), real, [commission])
+
+      expect(html).toContain('<td>$900</td>')
+      expect(html).not.toContain('<td>$1,500</td>')
+    })
+
+    it("drops anything that could run script from the signer's own table", () => {
+      const real = { 'signer.commission_table': '<table><tbody><tr><td onclick="alert(1)">y</td></tr></tbody></table><script>alert(1)</script>' }
+      const html = withMergeSamples(doc('<p>{{signer.commission_table}}</p>'), real, [commission])
+
+      expect(html).toContain('<td>y</td>')
+      expect(html).not.toContain('onclick')
+      expect(html).not.toContain('<script>alert')
+    })
+  })
+
+  describe('previewed as one signer (Preview as Partner / Borrower)', () => {
+    it("shows the signer's real details in place of the examples", () => {
+      const html = withMergeSamples(page, { 'signer.name': 'Cleo Client', 'owner.company_name': 'Acme Lending' })
+
+      expect(html).toContain('title="{{signer.name}}">Cleo Client</span>')
+      expect(html).toContain('title="{{owner.company_name}}">Acme Lending</span>')
+    })
   })
 })

@@ -59,6 +59,45 @@ export interface AgreementRequirementStatus extends AgreementRequirement {
   locked_reason: string | null
 }
 
+/** The two agreements a builder edits: the host's partner agreement and each partner's borrower agreement. */
+export const AGREEMENT_SLUG = {
+  PARTNER: 'partner',
+  BORROWER: 'borrower',
+} as const
+
+/**
+ * Agreement Builder › Preview as Partner / Borrower: someone who signs the
+ * agreement being edited (fch-api AgreementPreviewSigners), listed to pick one.
+ */
+export interface AgreementPreviewSigner {
+  user_id: number
+  name: string
+  email: string
+  business_name: string
+  /** A client's partner (the host's team lists every partner's clients). */
+  partner_name?: string
+  /** From their latest enrollment, e.g. "Installment" / "One Time Payment"; null with none. */
+  enrollment_type: string | null
+  /** Whether they have signed this agreement already. */
+  has_sign: boolean
+}
+
+/** The signer the builder's preview is shown as, and the agreement type they sign. */
+export interface AgreementPreviewSignerRef {
+  userId: number
+  type: AgreementSlug
+}
+
+/**
+ * GET /agreement-sign/preview/:userId - the active agreement a partner / client
+ * would sign, filled with their details (their Agreement tab › Preview).
+ */
+export interface AgreementSignerPreview {
+  template_id: number
+  slug: AgreementSlug
+  template_html: string
+}
+
 /** Merge field => the value signing fills it with, e.g. { 'owner.company_name': 'Acme Lending' }. */
 export type AgreementPreviewValues = Record<string, string>
 
