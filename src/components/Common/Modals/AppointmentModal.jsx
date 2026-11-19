@@ -1273,7 +1273,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         <span className="fs-12 text-muted d-block mt-1">
                                                             Your selected <span className="fw-bold">{tConvert(formData.timeStart)} - {tConvert(formData.timeEnd)}</span> on <span className="fw-bold">{formData.date}</span>{' '}
                                                             {calendlyOverlapBooked
-                                                                ? <>is <span className="fw-bold">already booked</span> - another meeting (in Calendly or FCH) is at that time.</>
+                                                                ? <>is <span className="fw-bold">already booked</span> - another meeting (in Calendly or here) is at that time.</>
                                                                 : calendlyHours
                                                                     ? <>is <span className="fw-bold">outside Calendly&apos;s hours</span> that day (<span className="fw-bold">{tConvert(calendlyHours.from)} - {tConvert(calendlyHours.to)}</span>).</>
                                                                     : formData.date === localDateString()
@@ -1337,14 +1337,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         )}
                                         {calendlySynced && checkingCalendly && (
                                             <div className="col-12 px-2 mb-3">
-                                                <Skeleton width="100%" height="40px" className="rounded-2" />
+                                                <div className="alert alert-light border d-flex align-items-center mb-0 py-2 fs-12" role="status" aria-live="polite">
+                                                    <span className="spinner-border spinner-border-sm text-primary me-2 flex-shrink-0" style={{ width: 16, height: 16 }} aria-hidden="true"></span>
+                                                    <span className="text-muted">Checking Calendly availability…</span>
+                                                </div>
                                             </div>
                                         )}
 
                                         {/* Skeleton Loader for Availability Check */}
                                         {isCheckingAvailability && (
                                             <div className="col-12 px-2 mt-2">
-                                                <Skeleton width="100%" height="40px" className="rounded-2" />
+                                                <div className="alert alert-light border d-flex align-items-center mb-0 py-2 fs-12" role="status" aria-live="polite">
+                                                    <span className="spinner-border spinner-border-sm text-primary me-2 flex-shrink-0" style={{ width: 16, height: 16 }} aria-hidden="true"></span>
+                                                    <span className="text-muted">Checking availability…</span>
+                                                </div>
                                             </div>
                                         )}
 

@@ -49,7 +49,7 @@ export default function CalendlyConnectCard({ onSynced, getSyncDates, redirect =
       onSynced()
     } else if (result === 'in_use') {
       // That Calendly account is connected in FCH already (another partner or a borrower).
-      toast.error('This Calendly account is already connected in FCH (to another partner or a borrower). Disconnect it there first, or use a different Calendly account.')
+      toast.error('This Calendly account is already connected in the portal (to another partner or a borrower). Disconnect it there first, or use a different Calendly account.')
     } else {
       toast.error('Calendly could not be connected')
     }

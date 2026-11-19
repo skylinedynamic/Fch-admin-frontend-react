@@ -239,7 +239,7 @@ export default function CalendlySettings() {
                 'webhook_signing_key',
                 'Webhook Signing Key',
                 Boolean(settings.has_webhook_signing_key),
-                'Calendly signs its webhooks with it. Leave it empty and FCH makes one when connecting. Stored encrypted.',
+                'Calendly signs its webhooks with it. Leave it empty and one is made when connecting. Stored encrypted.',
               )}
 
               <div className="bg-light rounded-3 p-3 mb-3 fs-13">
