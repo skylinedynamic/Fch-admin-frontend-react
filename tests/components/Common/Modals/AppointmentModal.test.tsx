@@ -112,7 +112,9 @@ describe('AppointmentModal - who may change an appointment (BUG-102)', () => {
       if (!found) throw new Error('no overlap alert')
       return found
     })
-    expect(alert).toHaveTextContent('Calendly Overlap')
+    // No red "overlap" warning: a plain list of the open times to pick from.
+    expect(alert).toHaveTextContent('Pick an open time')
+    expect(alert).not.toHaveTextContent('NOT AVAILABLE')
     expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled()
 
     // Picking an open time clears it.
@@ -559,7 +561,9 @@ describe('AppointmentModal - booking in Calendly from Add Appointment', () => {
       if (!found) throw new Error('no overlap alert')
       return found
     })
-    expect(alert).toHaveTextContent('Calendly Overlap')
+    // No red "overlap" warning: a plain list of the open times to pick from.
+    expect(alert).toHaveTextContent('Pick an open time')
+    expect(alert).not.toHaveTextContent('NOT AVAILABLE')
     // Calendly is open 10:00 - 10:30 that day: 9:00 is outside its hours.
     expect(alert).toHaveTextContent("9:00 AM - 9:30 AM on 2999-06-15 is outside Calendly's hours that day (10:00 AM - 10:30 AM)")
     expect(within(alert).getByRole('button', { name: '10:00 AM' })).toBeInTheDocument()
@@ -667,8 +671,12 @@ describe('AppointmentModal - booking in Calendly from Add Appointment', () => {
 
     await waitFor(() => expect(times!.calls).toBeGreaterThan(0))
     expect(times!.bodies[0]).toMatchObject({ assigned_for: JANE.id })
-    // 9:00 AM is open for Jane: said plainly.
-    expect(await screen.findByText('Available in Calendly')).toBeInTheDocument()
+    // 9:00 AM is open for Jane: nothing to show - no "available" box, no loading box,
+    // and Confirm becomes possible.
+    await waitFor(() => expect(screen.getByRole('button', { name: /confirm appointment/i })).not.toBeDisabled())
+    expect(screen.queryByText(/available in calendly/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/checking calendly availability/i)).not.toBeInTheDocument()
+    expect(document.querySelector('.calendly-overlap')).not.toBeInTheDocument()
     expect(book!.calls).toBe(0)
   })
 

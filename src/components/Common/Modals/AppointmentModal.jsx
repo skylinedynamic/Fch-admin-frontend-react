@@ -201,6 +201,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     // No open time that day: the next day (within a week) that has some, to pick from instead.
     const [calendlyNextOpen, setCalendlyNextOpen] = useState(null);
     const [findingNextOpen, setFindingNextOpen] = useState(false);
+    // Still looking for the next open day (the day picked has none): one loading state
+    // until the answer is complete - not a result box with a second spinner inside.
+    const searchingNextOpen = calendlyOpenTimes.length === 0 && findingNextOpen && !calendlyNextOpen;
     useEffect(() => {
         setCalendlyNextOpen(null);
         setFindingNextOpen(false);
@@ -1229,8 +1232,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                         {/* Availability Alert - Animated Collapse */}
                                         <div className="col-12 px-2 overflow-hidden"
-                                            style={{ transition: 'all 0.4s ease', maxHeight: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: isConflictVisible ? 1 : 0, marginBottom: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
-                                            {(availabilityConflicts || lastConflictingAttempt) && (
+                                            style={{ transition: 'all 0.4s ease', maxHeight: !calendlySynced && isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: !calendlySynced && isConflictVisible ? 1 : 0, marginBottom: !calendlySynced && isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
+                                            {!calendlySynced && (availabilityConflicts || lastConflictingAttempt) && (
                                                 <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 position-relative" role="alert">
                                                     <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
                                                     <div className="flex-grow-1 pe-4">
@@ -1261,17 +1264,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         </div>
 
                                         {/* Synced with Calendly: the picked time overlaps (not open in Calendly, or taken in FCH). */}
-                                        {calendlySynced && calendlyOverlap && (
+                                        {/* While Calendly is checked (a new date or person): one skeleton, where the answer appears. */}
+                                        {calendlySynced && (checkingCalendly || (calendlyOverlap && searchingNextOpen)) && (
+                                            <div className="col-12 px-2 mb-3" aria-busy="true" aria-label="Checking Calendly availability">
+                                                <Skeleton width="100%" height="56px" className="rounded-2" />
+                                            </div>
+                                        )}
+                                        {calendlySynced && calendlyOverlap && !searchingNextOpen && (
                                             <div className="col-12 px-2 mb-3 calendly-overlap">
-                                                <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-start mb-0 py-2" role="alert">
-                                                    <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
+                                                <div className="alert alert-light border d-flex align-items-start mb-0 py-2" role="status">
+                                                    <i className="ri-time-line me-2 fs-18 text-primary"></i>
                                                     <div className="flex-grow-1">
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <strong className="text-danger fs-13 text-uppercase">Calendly Overlap</strong>
-                                                            <span className="badge bg-danger text-white fs-10 px-2 py-1">NOT AVAILABLE</span>
-                                                        </div>
+                                                        <strong className="fs-13 text-dark">Pick an open time</strong>
                                                         <span className="fs-12 text-muted d-block mt-1">
-                                                            Your selected <span className="fw-bold">{tConvert(formData.timeStart)} - {tConvert(formData.timeEnd)}</span> on <span className="fw-bold">{formData.date}</span>{' '}
+                                                            <span className="fw-bold">{tConvert(formData.timeStart)} - {tConvert(formData.timeEnd)}</span> on <span className="fw-bold">{formData.date}</span>{' '}
                                                             {calendlyOverlapBooked
                                                                 ? <>is <span className="fw-bold">already booked</span> - another meeting (in Calendly or here) is at that time.</>
                                                                 : calendlyHours
@@ -1282,7 +1288,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         </span>
                                                         {calendlyOpenTimes.length > 0 && (
                                                             <div className="mt-2">
-                                                                <span className="fs-12 text-muted d-block mb-1">Open times on {formData.date}:</span>
+                                                                <span className="fs-12 text-muted d-block mb-1">Open start times on {formData.date} ({calendlyMinutes} min each):</span>
                                                                 <div className="d-flex flex-wrap gap-1">
                                                                     {calendlyOpenTimes.map(slot => (
                                                                         <button key={slot.start_time} type="button" className="btn btn-sm btn-outline-primary py-0 px-2 fs-11"
@@ -1292,12 +1298,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                        )}
-                                                        {calendlyOpenTimes.length === 0 && findingNextOpen && !calendlyNextOpen && (
-                                                            <span className="fs-12 text-muted d-block mt-2">
-                                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                                Looking for the next open day in Calendly…
-                                                            </span>
                                                         )}
                                                         {calendlyOpenTimes.length === 0 && !findingNextOpen && !calendlyNextOpen && (
                                                             <span className="fs-12 text-muted d-block mt-2">No open day in Calendly in the next 7 days - check its availability in Calendly.</span>
@@ -1319,33 +1319,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 </div>
                                             </div>
                                         )}
-                                        {/* Checked for the person chosen, and open: say so plainly before Confirm. */}
-                                        {calendlySynced && calendlyChecked && !calendlyOverlap && calendlyPickedLocal && (
-                                            <div className="col-12 px-2 mb-3 calendly-available">
-                                                <div className="alert alert-success-subtle border border-success-subtle d-flex align-items-center mb-0 py-2 fs-12" role="status">
-                                                    <i className="ri-checkbox-circle-fill me-2 fs-16 text-success"></i>
-                                                    <span>
-                                                        <strong className="text-success">Available in Calendly</strong> - {tConvert(formData.timeStart)} - {tConvert(formData.timeEnd)} on {formData.date} is open{keepsOwnTime ? ' (this meeting\'s own time)' : ''}.
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
                                         {calendlySynced && calendlyCheckError && (
                                             <div className="col-12 px-2 mb-3">
                                                 <div className="text-danger fs-12" role="alert">{calendlyCheckError}</div>
                                             </div>
                                         )}
-                                        {calendlySynced && checkingCalendly && (
-                                            <div className="col-12 px-2 mb-3">
-                                                <div className="alert alert-light border d-flex align-items-center mb-0 py-2 fs-12" role="status" aria-live="polite">
-                                                    <span className="spinner-border spinner-border-sm text-primary me-2 flex-shrink-0" style={{ width: 16, height: 16 }} aria-hidden="true"></span>
-                                                    <span className="text-muted">Checking Calendly availability…</span>
-                                                </div>
-                                            </div>
-                                        )}
-
                                         {/* Skeleton Loader for Availability Check */}
-                                        {isCheckingAvailability && (
+                                        {isCheckingAvailability && !calendlySynced && (
                                             <div className="col-12 px-2 mt-2">
                                                 <div className="alert alert-light border d-flex align-items-center mb-0 py-2 fs-12" role="status" aria-live="polite">
                                                     <span className="spinner-border spinner-border-sm text-primary me-2 flex-shrink-0" style={{ width: 16, height: 16 }} aria-hidden="true"></span>
