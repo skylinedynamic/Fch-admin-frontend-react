@@ -27,6 +27,21 @@ async function openProfile(page: Page, tab: string, handlers: Parameters<typeof 
   return api
 }
 
+/**
+ * Every profile tab - on the line, and under More when the line is too narrow
+ * for them all (More is opened to list them).
+ */
+async function allTabs(page: Page) {
+  const line = page.getByRole('tablist', { name: 'Partner sections' })
+  await expect(line.getByRole('tab').first()).toBeVisible()
+  const more = page.getByRole('button', { name: /^More \(\d+ more tabs?\)$/ })
+  if (await more.count()) {
+    await more.click()
+    await expect(page.getByRole('menu', { name: 'More tabs' })).toBeVisible()
+  }
+  return line.getByRole('tab').or(page.getByRole('menu', { name: 'More tabs' }).getByRole('menuitem'))
+}
+
 test.describe('Partner profile - header', () => {
   test('loads the partner and shows the stats strip', async ({ page }) => {
     const api = await openProfile(page, 'statusAgent')
@@ -45,13 +60,14 @@ test.describe('Partner profile - header', () => {
 
   test('a white-label partner gets the Tenant Config tab', async ({ page }) => {
     await openProfile(page, 'statusAgent')
-    await expect(page.locator('.nav-link', { hasText: 'Tenant Config' })).toBeVisible()
+    await expect((await allTabs(page)).filter({ hasText: 'Tenant Config' })).toHaveCount(1)
   })
 
   test('a certified partner gets no Tenant Config tab', async ({ page }) => {
     await openProfile(page, 'statusAgent', [], { ...PARTNER, partner_type: 'Certified Partner (CP)' })
-    await expect(page.locator('.nav-link', { hasText: 'Status' })).toBeVisible()
-    await expect(page.locator('.nav-link', { hasText: 'Tenant Config' })).toHaveCount(0)
+    const tabs = await allTabs(page)
+    await expect(tabs.filter({ hasText: 'Status' })).toHaveCount(1)
+    await expect(tabs.filter({ hasText: 'Tenant Config' })).toHaveCount(0)
   })
 })
 

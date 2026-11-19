@@ -30,6 +30,7 @@ import { scrollToFirstError } from '../../utils/formUtils';
 import { Navigate } from 'react-router-dom';
 import ErrorPage from '../Utility/ErrorPage';
 import { useAuthStore } from '../../store/auth/authStore';
+import OverflowTabs, { type OverflowTab } from '../../components/Common/OverflowTabs';
 import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
 // @ts-ignore
 import LeadPaymentModal from '../leads/components/LeadPaymentModal';
@@ -360,6 +361,21 @@ export default function ClientDetails() {
         }
     };
 
+    // The client's tabs, in order. Those that need a saved client are shown, but disabled, while creating one.
+    const clientTabs: OverflowTab[] = [
+        { key: ENROLLMENT_TABS.PERSONAL, label: 'Client Info' },
+        { key: ENROLLMENT_TABS.FINANCIALS, label: 'Business Financials', disabled: !id },
+        { key: ENROLLMENT_TABS.DOCUMENTS, label: 'Documents', disabled: !id },
+        ...(isHost ? [{ key: ENROLLMENT_TABS.TASK_LIST, label: 'Task List', disabled: !id }] : []),
+        { key: ENROLLMENT_TABS.CREDIT_PROFILE, label: 'Credit Profile', disabled: !id },
+        { key: ENROLLMENT_TABS.CAPITAL_ACCESS, label: 'Capital Access', disabled: !id },
+        { key: ENROLLMENT_TABS.FUNDING_REQUESTS, label: 'Funding Sequence', disabled: !id },
+        { key: ENROLLMENT_TABS.FUNDING_REQUEST_LIST, label: 'Funding Requests', disabled: !id },
+        { key: ENROLLMENT_TABS.FUNDING_APPLICATIONS, label: 'Funding Applications', disabled: !id },
+        // The host also uses it before signing, to excuse this client.
+        ...((formData.has_sign || (isHost && id)) ? [{ key: ENROLLMENT_TABS.AGREEMENT, label: 'Agreement' }] : []),
+    ];
+
     // Another partner's client (or a deleted one): the API answers 404/403 -
     // say so rather than show an empty profile (BUG-030).
     const clientStatus = (clientError as { response?: { status?: number } } | null)?.response?.status;
@@ -472,126 +488,13 @@ export default function ClientDetails() {
                     <div className={id && activeTab !== ENROLLMENT_TABS.CREDIT_PROFILE ? "col-xxl-8" : "col-12"}>
                         <div className="card">
                             <div className="card-header">
-                                <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.PERSONAL ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.PERSONAL)}
-                                            type="button"
-                                            role="tab"
-                                        >
-                                            Client Info
-                                        </button>
-                                    </li>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.FINANCIALS ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.FINANCIALS)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            Business Financials
-                                        </button>
-                                    </li>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.DOCUMENTS ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.DOCUMENTS)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            Documents
-                                        </button>
-                                    </li>
-
-                                    {isHost && (
-                                        <li className="nav-item">
-                                            <button
-                                                className={`nav-link ${activeTab === ENROLLMENT_TABS.TASK_LIST ? 'active' : ''}`}
-                                                onClick={() => handleTabChange(ENROLLMENT_TABS.TASK_LIST)}
-                                                type="button"
-                                                role="tab"
-                                                disabled={!id}
-                                            >
-                                                Task List
-                                            </button>
-                                        </li>
-                                    )}
-
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.CREDIT_PROFILE ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.CREDIT_PROFILE)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            Credit Profile
-                                        </button>
-                                    </li>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.CAPITAL_ACCESS ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.CAPITAL_ACCESS)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            Capital Access
-                                        </button>
-                                    </li>
-
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.FUNDING_REQUESTS ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.FUNDING_REQUESTS)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            <i className="fas fa-hand-holding-usd"></i> Funding Sequence
-                                        </button>
-                                    </li>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.FUNDING_REQUEST_LIST ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.FUNDING_REQUEST_LIST)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            Funding Requests
-                                        </button>
-                                    </li>
-
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.FUNDING_APPLICATIONS ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.FUNDING_APPLICATIONS)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            Funding Applications
-                                        </button>
-                                    </li>
-
-                                    {/* The host also uses it before signing, to excuse this client. */}
-                                    {(formData.has_sign || (isHost && id)) && (
-                                        <li className="nav-item">
-                                            <button
-                                                className={`nav-link ${activeTab === ENROLLMENT_TABS.AGREEMENT ? 'active' : ''}`}
-                                                onClick={() => handleTabChange(ENROLLMENT_TABS.AGREEMENT)}
-                                                type="button"
-                                                role="tab"
-                                            >
-                                                Agreement
-                                            </button>
-                                        </li>
-                                    )}
-                                </ul>
+                                {/* One line; the tabs that do not fit go into More. */}
+                                <OverflowTabs
+                                    tabs={clientTabs}
+                                    activeKey={activeTab}
+                                    onSelect={handleTabChange}
+                                    ariaLabel="Client sections"
+                                />
 
                             </div>
                             <div className="card-body p-4">

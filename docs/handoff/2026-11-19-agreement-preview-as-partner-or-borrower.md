@@ -60,7 +60,7 @@
   - `AgreementTab.test.tsx` (+7): opens the preview, placed in the status row, shown for a client's own partner, close, not offered when off, signed or without a login.
   - Existing tab tests get a default 404 preview handler.
 - CSS: `tests/assets/css/agreementPreviewAsSigner.test.ts` (new, 9).
-- Affected Vitest files (`tests/modules/agreement`, `tests/pages/settings/components/AgreementBuilder`, `AgreementTab.test.tsx`, `tests/assets/css`): **364 passed** (32 files). `npm run typecheck`: clean.
+- Affected Vitest files (`tests/modules/agreement`, `tests/pages/settings/components/AgreementBuilder`, `AgreementTab.test.tsx`, `tests/assets/css`): **364 passed** (32 files). Full suite: **467 files, 3,598 passed, 2 expected fail**. `npm run typecheck`: clean.
 - E2E (after `npm run build`):
   - `agreement-builder.spec.ts` (+2 Preview as signer specs);
   - `e2e/sidebar/partners/partner-agreement-preview.spec.ts` (new, 2);
