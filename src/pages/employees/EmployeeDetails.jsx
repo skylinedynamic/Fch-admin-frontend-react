@@ -682,7 +682,15 @@ export default function EmployeeDetails() {
             if (value) {
               formData.append('country_code', value);
             }
-          } else if (value !== '') {
+          } else if (value === '') {
+            // On edit a cleared field is sent cleared: left out, the API kept
+            // the old value and said the update worked, and a cleared Email
+            // never met its "required" (R3-BUG-071). A new employee only sends
+            // what was filled in, as before.
+            if (id) {
+              formData.append(key, '');
+            }
+          } else {
             // Never an object's string form, e.g. job status "[object Object]" (R2 BUG-029).
             const sent = formDataValue(value);
             if (sent !== null) {
