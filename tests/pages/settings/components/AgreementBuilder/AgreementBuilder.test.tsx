@@ -24,10 +24,14 @@ vi.mock('../../../../../src/pages/settings/components/AgreementBuilder/Agreement
 let mergeFieldsAskedFor: string[] = []
 let planFields: Record<string, unknown>[] = []
 
-const openBuilder = async (ui: ReactElement = <AgreementBuilder />, type: 'partner' | 'borrower' = 'partner') => {
+const openBuilder = async (
+  ui: ReactElement = <AgreementBuilder />,
+  type: 'partner' | 'borrower' = 'partner',
+  show: () => Response = () => HttpResponse.json({ status: true, data: null }),
+) => {
   mergeFieldsAskedFor = []
   server.use(
-    http.post('*/common/agreement-templates/show', () => HttpResponse.json({ status: true, data: null })),
+    http.post('*/common/agreement-templates/show', show),
     // Templates lists the partner's saved templates beside the built-in ones: none here.
     http.get('*/common/agreement-templates/saved', () => HttpResponse.json({ status: true, data: [] })),
     http.post('*/common/agreement-templates/merge-fields', async ({ request }) => {
@@ -141,6 +145,15 @@ describe('AgreementBuilder starting templates', () => {
 
     expect(await screen.findByText('MASTER PARTNER AGREEMENT')).toBeInTheDocument()
     expect(screen.getByText('SECTION 23 — SIGNATURE AUTHORITY')).toBeInTheDocument()
+  })
+
+  // R3-BUG-077: the API answers 404 for a template not made yet.
+  it('starts from the master agreement when the API says there is no template yet (404)', async () => {
+    await openBuilder(<AgreementBuilder />, 'partner', () =>
+      HttpResponse.json({ status: false, message: 'Agreement template not found' }, { status: 404 }),
+    )
+
+    expect(await screen.findByText('MASTER PARTNER AGREEMENT')).toBeInTheDocument()
   })
 
   it('starts a new borrower agreement from the client enrollment agreement', async () => {

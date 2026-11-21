@@ -36,8 +36,13 @@ export const useAgreement = (slug: AgreementSlug, enabled = true) => {
     queryFn: () => fetchAgreement(slug, partnerId),
     enabled: !!slug && enabled,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    // No template yet answers 404 - a normal state (the editor opens on the
+    // default layout), so it is not retried like a failure (R3-BUG-077).
+    retry: (failureCount, error) => !isNotFound(error) && failureCount < 1,
   })
 }
+
+const isNotFound = (error: unknown) => (error as { response?: { status?: number } })?.response?.status === 404
 
 /**
  * Hook to fetch all agreement templates for a list.
