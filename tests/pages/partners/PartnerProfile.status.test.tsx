@@ -47,7 +47,7 @@ describe('Partner profile › Status & Agent', () => {
       status: true, message: 'ok', data: { id: 86, status: 'Suspended', assign_to: null, agent: null },
     })
     const user = userEvent.setup()
-    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86' })
+    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86?tab=statusAgent' })
 
     await waitFor(() => expect(statusDropdown().querySelector('.p-dropdown-label')).toHaveTextContent('Suspended'))
 
@@ -74,7 +74,7 @@ describe('Partner profile › Status & Agent', () => {
       status: true, message: 'ok', data: { id: 86, status: option, assign_to: 7, agent: { id: 7, email: 'agent@example.test', phone_number: null } },
     })
     const user = userEvent.setup()
-    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86' })
+    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86?tab=statusAgent' })
 
     await waitFor(() => expect(statusDropdown().querySelector('.p-dropdown-label')).toHaveTextContent('Suspended'), { timeout: 5000 })
     await user.click(statusDropdown())
@@ -127,7 +127,7 @@ describe('Partner profile › Status & Agent - a late load does not undo the pic
     }))
     const saved = saveHandler()
     const user = userEvent.setup()
-    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86' })
+    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86?tab=statusAgent' })
 
     await waitFor(() => expect(statusDropdown().querySelector('.p-dropdown-label')).toHaveTextContent('Suspended'), { timeout: 5000 })
     await pick(user, 'Active')
@@ -156,7 +156,7 @@ describe('Partner profile › Status & Agent - a late load does not undo the pic
     })
     const saved = saveHandler()
     const user = userEvent.setup()
-    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86' })
+    renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86?tab=statusAgent' })
 
     await waitFor(() => expect(statusDropdown().querySelector('.p-dropdown-label')).toHaveTextContent('Suspended'), { timeout: 5000 })
     await pick(user, 'Active')

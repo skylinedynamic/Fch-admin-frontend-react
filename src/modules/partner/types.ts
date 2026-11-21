@@ -16,6 +16,26 @@ export interface SubscriptionStats {
   revenue_this_month: number;
 }
 
+/**
+ * A partner's subscription as fch-api PartnerDetailsResource sends it
+ * (`subscriptions[]`); amounts come formatted. A partner has one - it is saved
+ * with updateOrCreate on the partner.
+ */
+export interface PartnerSubscription {
+  id: number;
+  partner_type: string | null;
+  enrollment_type: string | null;
+  /** Installment: the balance left after the down payment. */
+  total_subscription_amount: string | null;
+  /** The whole enrollment. */
+  payable_amount: string | null;
+  monthly_platform_fee: string | null;
+  subscription_start_date: string | null;
+  /** Paid through. */
+  subscription_end_date: string | null;
+  status: string | null;
+}
+
 export interface TenantConfig {
   active_custom_url: boolean;
   partner_domain: string;

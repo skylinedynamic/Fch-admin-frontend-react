@@ -57,8 +57,9 @@ export default function PartnerProfile() {
         if (searchParams.get('tab')) return searchParams.get('tab');
         // Priority 2: Navigation state (from Link or navigate)
         if (location.state && location.state.activeTab) return location.state.activeTab;
-        // Priority 3: Default based on whether it's a new partner or existing
-        return id ? 'statusAgent' : 'personalDetails';
+        // Priority 3: the first tab, Partner information - for a new partner and
+        // an existing one alike, so a reload (which keeps no tab) starts there.
+        return 'personalDetails';
     };
 
     const [activeTab, setActiveTab] = useState(getInitialTab());
@@ -213,11 +214,8 @@ export default function PartnerProfile() {
         } else if (location.state?.activeTab) {
             // Priority 2: Navigation state (from Link)
             setActiveTab(location.state.activeTab);
-        } else if (id) {
-            // Priority 3: If there's an ID but no explicit tab, default to statusAgent
-            setActiveTab('statusAgent');
         } else {
-            // Priority 4: New partner creation, default to personalDetails
+            // Priority 3: the first tab, Partner information (see getInitialTab).
             setActiveTab('personalDetails');
         }
     }, [searchParams, location.state, id]);

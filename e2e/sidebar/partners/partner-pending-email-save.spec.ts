@@ -22,7 +22,7 @@ describePendingEmail({
     // Update reloads the signed-in user; it must keep its permissions.
     { method: 'GET', match: '/common/refresh-user', body: ok({ ...HOST_USER, permissions: PERMISSIONS }) },
   ],
-  // The page opens on Status & Agent; the email is on Partner information.
+  // The email is on Partner information, the tab the page opens on.
   open: async (page) => { await page.getByText('Partner information', { exact: true }).click() },
   // Update moves on to the next tab.
   reopenAfterSave: true,

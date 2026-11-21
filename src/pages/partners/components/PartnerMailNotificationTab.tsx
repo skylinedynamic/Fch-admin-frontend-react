@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { toast } from 'react-toastify'
+import PartnerMailNotificationLoader from '../../../components/Loader/PartnerMailNotificationLoader'
 import { PARTNER_MAIL_NOTIFICATION_FORM_ID } from '../../../config/partnerMailNotification'
 import { usePartnerMailNotification, useUpdatePartnerMailNotification } from '../../../modules/partner/queries'
 import type { PartnerNotificationRecipient } from '../../../modules/partner/types'
@@ -36,7 +37,8 @@ const fieldErrorsFrom = (error: unknown): FieldErrors | null => {
 
 /**
  * Partner profile › Mail Notification: one email field per notification type
- * (from the API - Lead / Client Notification Recipient, more later). Empty
+ * (from the API, in its order - Lead / Client Notification Recipient, with
+ * the Partner Notification Recipient first on the host's own profile). Empty
  * sends that type's emails to the partner's own address. Saved by the page
  * header's Save button (form id PARTNER_MAIL_NOTIFICATION_FORM_ID); a refused
  * address is shown under its field.
@@ -75,12 +77,7 @@ export default function PartnerMailNotificationTab({ partnerId, partnerEmail, on
   }
 
   if (isPending) {
-    return (
-      <p className="text-muted mb-0">
-        <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
-        Loading mail notification recipients…
-      </p>
-    )
+    return <PartnerMailNotificationLoader />
   }
 
   if (isError) {
@@ -100,7 +97,7 @@ export default function PartnerMailNotificationTab({ partnerId, partnerEmail, on
           const id = `partner-notification-${t.type}`
           const error = errors[t.type]
           return (
-            <div key={t.type} className="col-lg-6">
+            <div key={t.type} className="col-12">
               <label htmlFor={id} className="form-label">
                 {t.label}
               </label>

@@ -4,7 +4,7 @@ import StatusAgentSection from './StatusAgentSection';
 import DocumentsSection from './DocumentsSection';
 import ClientListSection from './ClientListSection';
 import SubscriptionSection from './SubscriptionSection';
-import SubscriptionListSection from './SubscriptionListSection';
+import SubscriptionDetailsSection from './SubscriptionDetailsSection';
 import AgreementTab from './AgreementTab';
 import { AGREEMENT_SIGNER } from '../../../modules/agreement';
 import TenantConfigSection from './TenantConfigSection';
@@ -104,13 +104,13 @@ export default function PartnerForm({
                 </div>
             )}
 
-            {/* Subscription List Tab */}
+            {/* Subscription Tab: the partner's one subscription */}
             {activeTab === 'subscription' && (
                 <div className="tab-pane active show">
                     {loading ? (
                         <FormLoader count={8} />
                     ) : (
-                        <SubscriptionListSection subscriptions={formData.subscriptions || []} />
+                        <SubscriptionDetailsSection subscriptions={formData.subscriptions || []} />
                     )}
                 </div>
             )}

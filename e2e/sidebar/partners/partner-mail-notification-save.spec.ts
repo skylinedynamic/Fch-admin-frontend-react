@@ -29,6 +29,13 @@ async function openTab(page: Page, saved = list(null, null)) {
   return api
 }
 
+const HOST = { ...PARTNER, id: 1, company_name: 'Four Corner Funding', email: 'host@fch.test', is_host: true }
+
+const hostList = (partners: string | null) => [
+  { type: 'partners', label: 'Partner Notification Recipient', help: "Gets the email sent when the host's staff add a partner.", email: partners },
+  ...list(null, null),
+]
+
 const saveButton = (page: Page) => page.getByRole('button', { name: 'Save Mail Notification' })
 
 test.describe('Partner profile - Mail Notification', () => {
@@ -69,5 +76,26 @@ test.describe('Partner profile - Mail Notification', () => {
 
     await expect(page.getByText('The Lead Notification Recipient field must be a valid email address.')).toBeVisible()
     await expect(page.locator('.Toastify__toast')).toHaveCount(0)
+  })
+
+  test("the host's own profile lists the Partner Notification Recipient first and saves it", async ({ page }) => {
+    await page.setViewportSize({ width: 2400, height: 900 })
+    await seedSession(page, { id: 1, is_host: 1, partner_id: 1, entity_type: 'Partner', permissions: ['view partners', 'update partners'] })
+    const api = await mockApi(page, [
+      { method: 'GET', match: `/admin/partners-details/${HOST.id}`, body: ok(HOST) },
+      { method: 'GET', match: `/admin/partners/${HOST.id}/mail-notification`, body: ok(hostList(null)) },
+    ])
+    await page.goto(`/partners/${HOST.id}?tab=mailNotification`)
+
+    const fields = page.locator('form#partner-mail-notification-form input[type="email"]')
+    await expect(fields).toHaveCount(3)
+    await expect(fields.first()).toHaveAttribute('name', 'partners')
+
+    api.add({ method: 'PUT', match: `/admin/partners/${HOST.id}/mail-notification`, body: ok(hostList('partners@fch.test'), 'Mail notification recipients updated successfully.') })
+    await page.getByLabel('Partner Notification Recipient').fill('partners@fch.test')
+    await saveButton(page).click()
+
+    const call = await expectCall(api, 'PUT', `/admin/partners/${HOST.id}/mail-notification`)
+    expect(call.json).toEqual({ recipients: { partners: 'partners@fch.test', leads: null, clients: null } })
   })
 })
