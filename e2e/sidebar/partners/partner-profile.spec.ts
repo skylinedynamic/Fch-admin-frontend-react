@@ -380,10 +380,11 @@ test.describe('Partner profile - Tenant Config', () => {
     await expect(page.locator('#active_custom_url')).toBeChecked()
   })
 
-  test('Update posts the edited domains', async ({ page }) => {
+  test('Save Tenant Configuration posts the edited domains', async ({ page }) => {
     const api = await openProfile(page, 'tenantConfig', handlers)
     api.add({ method: 'POST', match: '/admin/partners/tenant-config/5', body: ok({ ...CONFIG, partner_domain: 'crm.acme.test' }) })
     await expect(page.locator('input[name="partner_domain"]')).toHaveValue('portal.acme.test')
+    await expect(update(page)).toHaveText('Save Tenant Configuration')
     await page.locator('input[name="partner_domain"]').fill('crm.acme.test')
     await update(page).click()
     const call = await expectCall(api, 'POST', '/admin/partners/tenant-config/5')
@@ -421,7 +422,7 @@ test.describe('Partner profile - Tenant Config', () => {
     await expect(page.getByText('Failed to fetch tenant configuration').first()).toBeVisible()
   })
 
-  test('Update is not offered without the update permission', async ({ page }) => {
+  test('Save Tenant Configuration is not offered without the update permission', async ({ page }) => {
     await seedSession(page, { permissions: ['view partners'] })
     await mockApi(page, [{ method: 'GET', match: '/admin/partners-details/5', body: ok(PARTNER) }, ...handlers])
     await page.goto('/partners/5?tab=tenantConfig')

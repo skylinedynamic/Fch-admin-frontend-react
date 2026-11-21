@@ -915,17 +915,17 @@ export default function PartnerProfile() {
                         </button>
                     )}
 
-                    {/* Specific Tenant Config Save Button */}
+                    {/* Tenant Config tab: submits its form (TenantConfigSection) */}
                     {activeTab === 'tenantConfig' && id && hasPermission('update partners') && (
                         <button type="submit" form="tenant-config-form" className="btn btn-primary w-lg waves-effect" disabled={isSaving}>
                             {isSaving ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                    Updating...
+                                    Saving...
                                 </>
                             ) : (
                                 <>
-                                    <i className="ri-save-3-line align-middle me-1"></i> Update
+                                    <i className="ri-save-3-line align-middle me-1"></i> Save Tenant Configuration
                                 </>
                             )}
                         </button>
