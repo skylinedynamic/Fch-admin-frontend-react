@@ -84,6 +84,43 @@ test.describe('Partner profile - Configuration', () => {
     })
   })
 
+  test('Email Configuration is saved from Save Configuration in the page header, beside Back', async ({ page }) => {
+    const api = await openProfile(page)
+    api.add({
+      method: 'GET',
+      match: '/common/mail-configurations',
+      body: ok({
+        configurations: [{
+          id: 11, provider: 'smtp', provider_label: 'SMTP', from_address: 'mail@acme.test', bcc_emails: null,
+          smtp_host: 'smtp.acme.test', is_default: true, is_verified: false, verified_at: null, verified_to: null, updated_at: null,
+        }],
+        providers: [{ value: 'smtp', label: 'SMTP', fields: [{ key: 'smtp_host', label: 'SMTP Host', type: 'text', required: true, secret: false, options: [] }] }],
+        uses_own_configuration: false, can_manage_fallback: false, fallback: { is_configured: true, is_verified: true },
+      }),
+    })
+    api.add({ method: 'POST', match: /\/common\/mail-configurations$/, body: ok(null, 'Configuration saved.') })
+    await openProfileTab(page, 'Configuration')
+
+    const card = page.getByRole('region', { name: 'Email configuration' })
+    await expect(card.getByLabel(/smtp host/i)).toHaveValue('smtp.acme.test')
+    // The only Save Configuration is the header's, in the same row as Back.
+    await expect(card.getByRole('button', { name: /save configuration/i })).toHaveCount(0)
+    const header = page.getByRole('link', { name: /back/i }).locator('..')
+    const save = header.getByRole('button', { name: /save configuration/i })
+    await expect(save).toBeVisible()
+
+    await card.getByLabel(/smtp host/i).fill('smtp2.acme.test')
+    await save.click()
+
+    await expect.poll(() => api.find('POST', /\/common\/mail-configurations$/).at(-1)?.json).toMatchObject({
+      partner_id: 5, provider: 'smtp', smtp_host: 'smtp2.acme.test',
+    })
+
+    // Another section takes it away again.
+    await page.getByRole('tab', { name: 'SMS Configuration' }).click()
+    await expect(header.getByRole('button', { name: /save configuration/i })).toHaveCount(0)
+  })
+
   test('a save shows up in the partner\'s activity, with what changed, without a reload', async ({ page }) => {
     const api = await openProfile(page)
     // The API logs the change on the partner; the list has it only after the save.

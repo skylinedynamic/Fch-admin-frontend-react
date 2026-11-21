@@ -22,7 +22,7 @@ import { Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { refreshUserData } from '../../lib/auth/auth';
 import { ENROLLMENT_TYPE_INSTALLMENT } from '../../config/subscriptionConfig';
-import { PARTNER_CONFIGURATION_TAB, canManagePartnerConfiguration } from '../../config/partnerConfiguration';
+import { PARTNER_CONFIGURATION_TAB, PARTNER_MAIL_CONFIGURATION_FORM_ID, canManagePartnerConfiguration } from '../../config/partnerConfiguration';
 import { useAuthStore } from '../../store/auth/authStore';
 import PartnerConfigurationSection from './components/PartnerConfigurationSection';
 import PartnerCommissionTab from './components/PartnerCommissionTab';
@@ -496,6 +496,8 @@ export default function PartnerProfile() {
     // The tab reports whether its rate changed / is saving, for the header's Save button.
     const [commissionForm, setCommissionForm] = useState({ dirty: false, saving: false });
     const [mailNotificationForm, setMailNotificationForm] = useState({ dirty: false, saving: false });
+    // Configuration › Email Configuration's save state; null while that section is not open.
+    const [mailConfigurationForm, setMailConfigurationForm] = useState(null);
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
@@ -849,6 +851,28 @@ export default function PartnerProfile() {
                         )
                     )}
 
+                    {/* Configuration tab › Email Configuration: submits its form (MailConfigurationCard) */}
+                    {activeTab === PARTNER_CONFIGURATION_TAB && mailConfigurationForm && (
+                        <button
+                            type="submit"
+                            form={PARTNER_MAIL_CONFIGURATION_FORM_ID}
+                            className="btn btn-primary w-lg waves-effect"
+                            disabled={!mailConfigurationForm.canSave}
+                            title={!mailConfigurationForm.canSave && !mailConfigurationForm.saving ? 'These settings are verified. Change a setting to save it.' : undefined}
+                        >
+                            {mailConfigurationForm.saving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-save-3-line align-middle me-1"></i> Save Configuration
+                                </>
+                            )}
+                        </button>
+                    )}
+
                     {/* Mail Notification tab: submits its form (PartnerMailNotificationTab) */}
                     {activeTab === PARTNER_MAIL_NOTIFICATION_TAB && id && (
                         <button
@@ -952,6 +976,7 @@ export default function PartnerProfile() {
                                     // Keyed by partner, so another partner's settings never carry over.
                                     <PartnerConfigurationSection
                                         key={id}
+                                        onMailSaveStateChange={setMailConfigurationForm}
                                         partner={{
                                             id: Number(id),
                                             company_name: formData.company_name,

@@ -36,7 +36,18 @@ interface MailConfigurationCardProps {
     makeDefault?: (configuration: MailConfiguration) => Promise<unknown>;
     /** Opens Test Mail; the button shows only when given. */
     onTestMail?: () => void;
+    /** The form's id, for a Save button placed outside the card (`form` attribute). */
+    formId?: string;
+    /**
+     * Given when the page renders Save Configuration itself (e.g. in its header):
+     * the card then leaves out its own Save button and reports whether saving is
+     * possible - and `null` once it is gone.
+     */
+    onSaveStateChange?: (state: MailSaveState | null) => void;
 }
+
+/** What a Save Configuration button outside the card needs to know. */
+export type MailSaveState = { canSave: boolean; saving: boolean };
 
 /**
  * Email Configuration: pick a provider from the dropdown, fill in its
@@ -58,6 +69,8 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
     verify,
     makeDefault,
     onTestMail,
+    formId = `${idPrefix}-form`,
+    onSaveStateChange,
 }) => {
     const initial = configurations.find((c) => c.is_default)?.provider ?? configurations[0]?.provider ?? providers[0]?.value ?? '';
     const [selected, setSelected] = useState(initial);
@@ -83,6 +96,23 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
         setErrors({});
     }, [selected, configuration?.id, configuration?.updated_at, configuration?.is_verified]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Saving changed settings throws away their verification (the API checks
+    // the settings against those the code went through).
+    const formChanged = isMailFormChanged(form, savedForm);
+    const needsReverifying = Boolean(configuration?.is_verified) && formChanged;
+    // Verified settings, unchanged, have nothing to save: Save Configuration
+    // comes on once something is changed (a field edited, a secret typed).
+    const nothingToSave = Boolean(configuration?.is_verified) && !formChanged;
+    const canSave = Boolean(provider) && !saving && !nothingToSave;
+
+    // Keep an outside Save button in step with the form.
+    useEffect(() => {
+        onSaveStateChange?.(provider ? { canSave, saving } : null);
+    }, [onSaveStateChange, Boolean(provider), canSave, saving]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // And take it away with the card.
+    useEffect(() => () => onSaveStateChange?.(null), [onSaveStateChange]);
+
     if (!provider) {
         return null;
     }
@@ -98,15 +128,7 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
         provider.fields.filter((f) => f.secret).map((f) => [f.key, Boolean(configuration?.[`has_${f.key}`])])
     );
 
-    // Saving changed settings throws away their verification (the API checks
-    // the settings against those the code went through).
-    const formChanged = isMailFormChanged(form, savedForm);
-    const needsReverifying = Boolean(configuration?.is_verified) && formChanged;
-    // Verified settings, unchanged, have nothing to save: Save Configuration
-    // comes on once something is changed (a field edited, a secret typed).
-    const nothingToSave = Boolean(configuration?.is_verified) && !formChanged;
-
-    const update = (field: string, value: string) => {
+    const update =(field: string, value: string) => {
         setForm((current) => ({ ...current, [field]: value }));
         if (errors[field]) {
             const { [field]: _removed, ...rest } = errors;
@@ -175,7 +197,7 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
                         </div>
                     </div>
 
-                    <form onSubmit={handleSave} noValidate>
+                    <form id={formId} onSubmit={handleSave} noValidate>
                         <div className="mb-4 bg-primary-subtle rounded-3 p-3">
                             <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
                                 <div>
@@ -248,6 +270,7 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
                             onChange={update}
                         />
 
+                        {(onTestMail || !onSaveStateChange) && (
                         <div className="row mt-5 pt-3 border-top">
                             <div className="col-12">
                                 <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
@@ -261,6 +284,7 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
                                             <span>Test Mail</span>
                                         </button>
                                     )}
+                                    {!onSaveStateChange && (
                                     <button
                                         type="submit"
                                         className="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center justify-content-center flex-nowrap text-nowrap gap-2 shadow-sm w-100 w-sm-auto"
@@ -271,9 +295,11 @@ const MailConfigurationCard: React.FC<MailConfigurationCardProps> = ({
                                         <i className="ri-save-2-line fs-18"></i>
                                         <span>{saving ? 'Saving Configuration ...' : 'Save Configuration'}</span>
                                     </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
+                        )}
                     </form>
 
                     {configuration && !configuration.is_verified && (

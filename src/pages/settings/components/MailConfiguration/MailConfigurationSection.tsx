@@ -8,7 +8,7 @@ import {
     useVerifyMailConfiguration,
 } from '../../../../modules/settings/queries';
 import FallbackMailCard from './FallbackMailCard';
-import MailConfigurationCard from './MailConfigurationCard';
+import MailConfigurationCard, { type MailSaveState } from './MailConfigurationCard';
 import { MailDeliveryStatus, MailUnverifiedAlert, scrollToFirst } from './MailStatusNotices';
 
 /**
@@ -20,9 +20,13 @@ import { MailDeliveryStatus, MailUnverifiedAlert, scrollToFirst } from './MailSt
 interface MailConfigurationSectionProps {
     /** Opens Test Mail - offered once mail goes out under the partner's own settings. */
     onTestMail?: () => void;
+    /** The mail form's id, for a Save button the page renders itself. */
+    formId?: string;
+    /** Given when the page renders Save Configuration itself (see MailConfigurationCard). */
+    onSaveStateChange?: (state: MailSaveState | null) => void;
 }
 
-const MailConfigurationSection: React.FC<MailConfigurationSectionProps> = ({ onTestMail }) => {
+const MailConfigurationSection: React.FC<MailConfigurationSectionProps> = ({ onTestMail, formId, onSaveStateChange }) => {
     const { data, isLoading, isError } = useMailConfigurations();
     const save = useSaveMailConfiguration();
     const makeDefault = useMakeDefaultMailConfiguration();
@@ -90,6 +94,8 @@ const MailConfigurationSection: React.FC<MailConfigurationSectionProps> = ({ onT
                 verify={(configuration, code) => verify.mutateAsync({ id: configuration.id, code })}
                 makeDefault={(configuration) => makeDefault.mutateAsync(configuration.id)}
                 onTestMail={state.uses_own_configuration ? onTestMail : undefined}
+                formId={formId}
+                onSaveStateChange={onSaveStateChange}
             />
 
             {state.can_manage_fallback && (
