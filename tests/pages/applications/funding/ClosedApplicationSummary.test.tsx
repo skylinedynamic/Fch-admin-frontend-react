@@ -56,6 +56,19 @@ describe('ClosedApplicationSummary - host', () => {
   })
 })
 
+describe('ClosedApplicationSummary - host staff the API sends no commission (R3-BUG-076)', () => {
+  // Host staff who do not manage commissions get no money fields at all.
+  const { total_commission, admin_commission, partner_commission, total_commission_amount, admin_commission_amount, partner_commission_amount, ...noMoney } = closed as Record<string, unknown>
+
+  it('shows requested and funded, and says nothing of a commission', () => {
+    renderWithProviders(<ClosedApplicationSummary app={noMoney as never} viewer="host" partnerApplication requestedAmount={120000} />)
+
+    expect(screen.getByText('Total Funded Amount').nextElementSibling).toHaveTextContent('$100,000.00')
+    expect(screen.queryByText('No commission was set for this application.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Success Fee|Admin Commission/)).not.toBeInTheDocument()
+  })
+})
+
 describe('ClosedApplicationSummary - partner', () => {
   it('shows requested, funded and their own commission - no host figures', () => {
     renderWithProviders(<ClosedApplicationSummary app={closed} viewer="partner" partnerApplication={false} requestedAmount={120000} />)

@@ -28,7 +28,7 @@ import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar
 import { useAuthStore } from '../../../store/auth/authStore';
 import { LastStatusNote, StatusNoteVisibility } from './components/StatusNoteVisibility';
 import { usePermissions } from '../../../lib/auth/usePermissions';
-import { COMMISSION_MANAGE_PERMISSION, COMMISSION_VIEW_PERMISSION, partnerCommissionPath } from '../../../config/partnerCommission';
+import { COMMISSION_MANAGE_PERMISSION, COMMISSION_VIEW_PERMISSION, partnerCommissionPath, sendsWholeCommission } from '../../../config/partnerCommission';
 
 type StepType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -1139,6 +1139,8 @@ export default function FundingApplicationDetails() {
                 isCommissionSet={isCommissionSet}
                 requestedAmount={requestedAmountValue}
                 canEditCommission={canEditClosingCommission}
+                // Only a viewer the API sends the whole commission sees it here (R3-BUG-076).
+                showsCommission={canEditClosingCommission || sendsWholeCommission(app)}
                 // Not set: a link to Partner profile › Commissions, for whoever may set it.
                 setPartnerCommissionHref={canEditClosingCommission && app.partner_id ? partnerCommissionPath(app.partner_id) : null}
                 commissionErrors={closingCommissionErrors}

@@ -315,6 +315,21 @@ describe('FundedAmountModal', () => {
     expect(onConfirm).toHaveBeenCalledWith('25000', null)
   })
 
+  // R3-BUG-076: a partner, or host staff who do not manage commissions, gets no
+  // commission money from the API - the modal asks the funded amount only.
+  it('leaves the commission out for a viewer the API sends none', async () => {
+    const onConfirm = vi.fn()
+    renderWithProviders(<FundedAmountModal {...base} onConfirm={onConfirm} showsCommission={false} />)
+
+    expect(screen.queryByText('Commission Details')).not.toBeInTheDocument()
+    expect(screen.queryByText('No commission is set for this application.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Admin Commission|Success Fee/)).not.toBeInTheDocument()
+    expect(row('Total Funded Amount')).toHaveTextContent('$25,000.00')
+
+    await userEvent.click(confirm())
+    expect(onConfirm).toHaveBeenCalledWith('25000', null)
+  })
+
   it('says so when someone who cannot set it sees no commission', () => {
     renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} />)
 

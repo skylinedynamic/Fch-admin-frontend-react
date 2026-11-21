@@ -45,6 +45,12 @@ interface FundedAmountModalProps {
     isCommissionSet?: boolean;
     /** The commission can be set here (permission "update commission"); else it is only shown. */
     canEditCommission?: boolean;
+    /**
+     * The viewer is sent the whole commission (see sendsWholeCommission). False
+     * for a partner or host staff who do not manage commissions: the API sends
+     * them none, so the modal asks the funded amount only (R3-BUG-076).
+     */
+    showsCommission?: boolean;
     /** Errors from saving the commission (same API as the Commission Details card). */
     commissionErrors?: { total_commission?: string; admin_commission?: string; partner_commission?: string };
 }
@@ -79,6 +85,7 @@ export default function FundedAmountModal({
     requestedAmount = 0,
     showPartnerCommission = false,
     canEditCommission = false,
+    showsCommission = true,
     commissionErrors = {},
 }: FundedAmountModalProps) {
     const [amount, setAmount] = useState(initialAmount);
@@ -194,7 +201,7 @@ export default function FundedAmountModal({
             setError('Please enter a valid funded amount');
             return;
         }
-        onConfirm(amount, canEditCommission && hasCommission ? { successFee, adminRate, partnerRate } : null);
+        onConfirm(amount, showsCommission && canEditCommission && hasCommission ? { successFee, adminRate, partnerRate } : null);
     };
 
     const handleClose = () => {
@@ -310,6 +317,7 @@ export default function FundedAmountModal({
                             )}
                         </div>
 
+                        {showsCommission && (<>
                         <hr className="fam-divider" />
 
                         {/* The partner's own commission tiers, set or not */}
@@ -357,6 +365,7 @@ export default function FundedAmountModal({
                                 <p className="fam-hint mt-0">No commission is set for this application.</p>
                             )}
                         </div>
+                        </>)}
 
                         {/* Summary - the same calculation as the Commission Details card */}
                         <div className="fam-summary">
@@ -369,8 +378,8 @@ export default function FundedAmountModal({
                             {summaryRow('Total Requested Amount', formatCurrency(requestedAmount))}
                             {summaryRow('Total Funded Amount', formatCurrency(parsedAmount), 'fam-row--funded')}
                             {/* No success fee, no commission lines. */}
-                            {hasCommission && summaryRow(<>Success Fee<span className="fam-chip">{feeRate}%</span></>, formatCurrency(successFeeAmt))}
-                            {!hasCommission ? null : showPartnerCommission ? (
+                            {showsCommission && hasCommission && summaryRow(<>Success Fee<span className="fam-chip">{feeRate}%</span></>, formatCurrency(successFeeAmt))}
+                            {!showsCommission || !hasCommission ? null : showPartnerCommission ? (
                                 <>
                                     {flatAmount !== null ? (
                                         <>

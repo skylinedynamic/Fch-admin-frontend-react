@@ -1,5 +1,5 @@
 import React from 'react';
-import { PARTNER_COMMISSION_TYPE } from '../../../../config/partnerCommission';
+import { PARTNER_COMMISSION_TYPE, sendsWholeCommission } from '../../../../config/partnerCommission';
 import type { FundingApplicationDetails } from '../../../../modules/application/types';
 
 type Props = {
@@ -53,6 +53,7 @@ export default function ClosedApplicationSummary({ app, viewer, partnerApplicati
     const funded = amount(app.total_funded_amount);
     const successFeeRate = amount(app.total_commission);
     const hasCommission = successFeeRate > 0;
+    const commissionSent = sendsWholeCommission(app);
     const date = fundedOn((app as FundingApplicationDetails & { funded_date?: string | null }).funded_date);
 
     const header = (title: string, icon: string) => (
@@ -154,7 +155,9 @@ export default function ClosedApplicationSummary({ app, viewer, partnerApplicati
             <div className="card-body p-4">
                 {amountTiles}
 
-                {hasCommission ? (
+                {/* Host staff who do not manage commissions get no commission
+                    money from the API (R3-BUG-076): nothing to say about one. */}
+                {!commissionSent ? null : hasCommission ? (
                     <div className="mt-3 overflow-hidden" style={innerBox}>
                         {rows.map((row, index) => (
                             <div

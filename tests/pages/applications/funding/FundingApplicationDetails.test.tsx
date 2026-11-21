@@ -663,17 +663,21 @@ describe('FundingApplicationDetails — closing with a commission', () => {
       expect(within(panel).getByRole('link', { name: /set partner commissions/i })).toHaveAttribute('href', '/partners/7?tab=commissions')
     })
 
-    it('has no link without the "update commission" permission', async () => {
-      detail.application = { ...unset }
+    it('has no link, nor any commission, without the "update commission" permission', async () => {
+      // As the API sends it to host staff who do not manage commissions
+      // (R3-BUG-076): no commission money and no partner tiers.
+      const { partner_default_commission, partner_commission_setup, ...asSent } = unset as Record<string, unknown>
+      detail.application = { ...asSent }
       useAuthStore.setState({ user: { ...hostWithRights, permissions: ['update funding application', 'view commission'] } as never })
       renderWithProviders(<FundingApplicationDetails />)
 
       await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
       await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
 
-      const panel = await screen.findByRole('region', { name: 'Partner Commission' })
-      expect(within(panel).getByText('Not set')).toBeInTheDocument()
-      expect(within(panel).queryByRole('link', { name: /set partner commissions/i })).not.toBeInTheDocument()
+      expect(await screen.findByLabelText(/funded amount/i)).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'Partner Commission' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: /set partner commissions/i })).not.toBeInTheDocument()
+      expect(screen.queryByText('Commission Details')).not.toBeInTheDocument()
     })
   })
 
