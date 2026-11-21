@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, ok, failure, seedSession, expectCall, confirmDelete, cancelDelete, type ApiMock } from '../../support/helpers'
+import { mockApi, ok, failure, seedSession, expectCall, confirmDelete, cancelDelete, type ApiMock, openProfileTab, profileTabNames } from '../../support/helpers'
 
 /**
  * The tabs of a client (borrower) profile beyond "Client Info":
@@ -26,7 +26,7 @@ async function openTab(page: Page, tab: string, handlers: Parameters<typeof mock
   ])
   await page.goto('/clients/1')
   await expect(page.locator('#first_name')).toHaveValue('Johnathan')
-  await page.locator('.nav-link', { hasText: new RegExp(`^\\s*${tab}\\s*$`) }).first().click()
+  await openProfileTab(page, tab)
   return api
 }
 
@@ -132,7 +132,7 @@ test.describe('Client profile - Documents', () => {
     await mockApi(page, [{ method: 'GET', match: new RegExp(`${B}/1$`), body: ok(CLIENT) }, ...handlers])
     await page.goto('/clients/1')
     await expect(page.locator('#first_name')).toHaveValue('Johnathan')
-    await page.locator('.nav-link', { hasText: /^\s*Documents\s*$/ }).first().click()
+    await openProfileTab(page, 'Documents')
     const menu = await docMenu(page)
     await expect(menu.getByText('Download')).toBeVisible()
     await expect(menu.getByText('Delete')).toHaveCount(0)
@@ -196,7 +196,7 @@ test.describe('Client profile - Task List (credit builder)', () => {
     await mockApi(page, [{ method: 'GET', match: new RegExp(`${B}/1$`), body: ok(CLIENT) }])
     await page.goto('/clients/1')
     await expect(page.locator('#first_name')).toHaveValue('Johnathan')
-    await expect(page.locator('.nav-link', { hasText: /^\s*Task List\s*$/ })).toHaveCount(0)
+    expect(await profileTabNames(page)).not.toContain('Task List')
   })
 })
 
@@ -219,7 +219,8 @@ test.describe('Client profile - Credit Profile', () => {
     await expect(page.getByText('Credit profile saved successfully!')).toBeVisible()
   })
 
-  test('uploading a PDF parses it and saves the result', async ({ page }) => {
+  // Since af1534a0 a parsed PDF is not saved on its own: it is reviewed, then Save Credit Profile saves it.
+  test('uploading a PDF parses it, and Save Credit Profile saves the result', async ({ page }) => {
     const api = await openTab(page, 'Credit Profile', [{ method: 'GET', match: `${B}/get-credit-profile/1`, body: ok(null) }])
     api.add({
       method: 'POST', match: `${B}/parse-credit-profile`,
@@ -230,9 +231,12 @@ test.describe('Client profile - Credit Profile', () => {
     await page.locator('input[type="file"][accept="application/pdf"]').first().setInputFiles({ name: 'report.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 fake') })
 
     await expectCall(api, 'POST', `${B}/parse-credit-profile`)
+    await expect(page.getByText('PDF read. Review the details, then click Save Credit Profile.')).toBeVisible()
+    expect(api.find('POST', `${B}/save-credit-profile`)).toHaveLength(0)
+
+    await page.getByRole('button', { name: /save credit profile/i }).click()
     const save = await expectCall(api, 'POST', `${B}/save-credit-profile`)
     expect(save.json).toMatchObject({ pdf_url: 'docs/report.pdf', document_id: 9 })
-    await expect(page.getByText('PDF uploaded and credit profile parsed successfully!')).toBeVisible()
   })
 
   test('a file that is not a PDF is refused before upload', async ({ page }) => {

@@ -27,6 +27,21 @@ async function openProfile(page: Page, tab: string, handlers: Parameters<typeof 
   return api
 }
 
+/**
+ * Every profile tab - on the line, and under More when the line is too narrow
+ * for them all (More is opened to list them).
+ */
+async function allTabs(page: Page) {
+  const line = page.getByRole('tablist', { name: 'Partner sections' })
+  await expect(line.getByRole('tab').first()).toBeVisible()
+  const more = page.getByRole('button', { name: /^More \(\d+ more tabs?\)$/ })
+  if (await more.count()) {
+    await more.click()
+    await expect(page.getByRole('menu', { name: 'More tabs' })).toBeVisible()
+  }
+  return line.getByRole('tab').or(page.getByRole('menu', { name: 'More tabs' }).getByRole('menuitem'))
+}
+
 test.describe('Partner profile - header', () => {
   test('loads the partner and shows the stats strip', async ({ page }) => {
     const api = await openProfile(page, 'statusAgent')
@@ -45,13 +60,14 @@ test.describe('Partner profile - header', () => {
 
   test('a white-label partner gets the Tenant Config tab', async ({ page }) => {
     await openProfile(page, 'statusAgent')
-    await expect(page.locator('.nav-link', { hasText: 'Tenant Config' })).toBeVisible()
+    await expect((await allTabs(page)).filter({ hasText: 'Tenant Config' })).toHaveCount(1)
   })
 
   test('a certified partner gets no Tenant Config tab', async ({ page }) => {
     await openProfile(page, 'statusAgent', [], { ...PARTNER, partner_type: 'Certified Partner (CP)' })
-    await expect(page.locator('.nav-link', { hasText: 'Status' })).toBeVisible()
-    await expect(page.locator('.nav-link', { hasText: 'Tenant Config' })).toHaveCount(0)
+    const tabs = await allTabs(page)
+    await expect(tabs.filter({ hasText: 'Status' })).toHaveCount(1)
+    await expect(tabs.filter({ hasText: 'Tenant Config' })).toHaveCount(0)
   })
 })
 
@@ -364,10 +380,11 @@ test.describe('Partner profile - Tenant Config', () => {
     await expect(page.locator('#active_custom_url')).toBeChecked()
   })
 
-  test('Update posts the edited domains', async ({ page }) => {
+  test('Save Tenant Configuration posts the edited domains', async ({ page }) => {
     const api = await openProfile(page, 'tenantConfig', handlers)
     api.add({ method: 'POST', match: '/admin/partners/tenant-config/5', body: ok({ ...CONFIG, partner_domain: 'crm.acme.test' }) })
     await expect(page.locator('input[name="partner_domain"]')).toHaveValue('portal.acme.test')
+    await expect(update(page)).toHaveText('Save Tenant Configuration')
     await page.locator('input[name="partner_domain"]').fill('crm.acme.test')
     await update(page).click()
     const call = await expectCall(api, 'POST', '/admin/partners/tenant-config/5')
@@ -405,7 +422,7 @@ test.describe('Partner profile - Tenant Config', () => {
     await expect(page.getByText('Failed to fetch tenant configuration').first()).toBeVisible()
   })
 
-  test('Update is not offered without the update permission', async ({ page }) => {
+  test('Save Tenant Configuration is not offered without the update permission', async ({ page }) => {
     await seedSession(page, { permissions: ['view partners'] })
     await mockApi(page, [{ method: 'GET', match: '/admin/partners-details/5', body: ok(PARTNER) }, ...handlers])
     await page.goto('/partners/5?tab=tenantConfig')

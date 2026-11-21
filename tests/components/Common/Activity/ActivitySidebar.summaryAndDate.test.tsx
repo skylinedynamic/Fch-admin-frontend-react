@@ -62,13 +62,16 @@ describe('ActivitySidebar - a New Event shows its Summary and its own date', () 
     expect(screen.queryByText('Activity Created')).not.toBeInTheDocument()
   })
 
-  it('keeps the activity date after an edit and marks it (Edited)', async () => {
+  // The row shows when the entry was created; the activity's own date is in its body.
+  it('keeps its created time after an edit, marks it (Edited), and keeps the activity date in the body', async () => {
     serve([newEvent({ is_edited: true, edited_at: today('16:24:00'), updated_at: today('16:24:00') })])
     renderWithProviders(<ActivitySidebar {...props} />)
 
     const row = (await screen.findByText('Call: QA-TEST Run1 note')).closest('.accordion-button') as HTMLElement
-    expect(row).toHaveTextContent('Today at 05:20 PM')
+    expect(row).toHaveTextContent('Today at 05:00 PM')
     expect(row).toHaveTextContent('(Edited)')
     expect(row).not.toHaveTextContent('04:24 PM')
+    const body = row.closest('.accordion-item')!.querySelector('.accordion-body') as HTMLElement
+    expect(body).toHaveTextContent('Today at 05:20 PM')
   })
 })

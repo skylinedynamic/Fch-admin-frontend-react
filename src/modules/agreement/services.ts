@@ -5,6 +5,9 @@ import {
   AgreementSlug,
   AgreementSignCheck,
   AgreementPreviewValues,
+  AgreementPreviewSigner,
+  AgreementPreviewSignerRef,
+  AgreementSignerPreview,
   AgreementPlanField,
   AgreementRequirement,
   AgreementRequirementStatus,
@@ -161,10 +164,40 @@ export async function fetchAgreementRequirement(userId: number): Promise<ApiResp
  * The template owner's company details and today's date, for the builder's
  * preview of the {{owner.*}} merge fields - what signing fills them with
  * (fch-api AgreementMergeFields::ownerValues). Keyed by merge field.
+ * With a signer (Preview as Partner / Borrower), everything signing fills for
+ * them too: their details, and the Plan & Fee, commission and enrollment values.
  */
-export async function fetchAgreementPreviewValues(partnerId?: number): Promise<AgreementPreviewValues> {
-  const res = await apiClient.post('/common/agreement-templates/preview-values', forPartner(partnerId))
+export async function fetchAgreementPreviewValues(
+  partnerId?: number,
+  signer?: AgreementPreviewSignerRef | null
+): Promise<AgreementPreviewValues> {
+  const res = await apiClient.post('/common/agreement-templates/preview-values', {
+    ...forPartner(partnerId),
+    ...(signer ? { signer_user_id: signer.userId, type: signer.type } : {}),
+  })
   return res.data?.data ?? {}
+}
+
+/**
+ * Preview as Partner / Borrower: who signs the agreement type - the host's
+ * partners, or the owner's clients - optionally searched by name or email.
+ */
+export async function fetchAgreementPreviewSigners(
+  type: AgreementSlug,
+  search = '',
+  partnerId?: number
+): Promise<AgreementPreviewSigner[]> {
+  const term = search.trim()
+  const res = await apiClient.get('/common/agreement-templates/preview-signers', {
+    params: { type, ...(term ? { search: term } : {}), ...forPartner(partnerId) },
+  })
+  return Array.isArray(res.data?.data) ? res.data.data : []
+}
+
+/** A partner's / client's Agreement tab › Preview: the active agreement they would sign, filled for them. */
+export async function fetchAgreementSignerPreview(userId: number): Promise<AgreementSignerPreview> {
+  const res = await apiClient.get(`/common/agreement-sign/preview/${userId}`)
+  return res.data?.data
 }
 
 /**

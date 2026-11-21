@@ -8,6 +8,8 @@ import {
   fetchAgreements,
   toggleAgreementStatus,
   fetchAgreementPreviewValues,
+  fetchAgreementPreviewSigners,
+  fetchAgreementSignerPreview,
   setAgreementRequired,
   fetchAgreementRequirement,
   fetchAgreementMergeFields,
@@ -17,7 +19,7 @@ import {
   deleteSavedAgreementTemplate,
   updateSavedAgreementTemplate,
 } from './services'
-import type { AgreementSlug, AgreementRequirementStatus, ApiResponse, SaveAgreementAsTemplatePayload, UpdateSavedAgreementTemplatePayload } from './types'
+import type { AgreementSlug, AgreementPreviewSignerRef, AgreementRequirementStatus, ApiResponse, SaveAgreementAsTemplatePayload, UpdateSavedAgreementTemplatePayload } from './types'
 
 /**
  * The cache key an agreement query is held under: the user's own templates,
@@ -111,16 +113,48 @@ export const useSetAgreementRequired = () => {
   })
 }
 
-/** The template owner's real details for the builder's preview of the merge fields. */
-export const useAgreementPreviewValues = (enabled = true) => {
+/**
+ * The template owner's real details for the builder's preview of the merge
+ * fields - and, previewed as one signer, everything signing fills for them.
+ */
+export const useAgreementPreviewValues = (enabled = true, signer?: AgreementPreviewSignerRef | null) => {
   const partnerId = useConfigPartnerId()
   return useQuery({
-    queryKey: forPartnerKey(queryKeys.agreement.previewValues(), partnerId),
-    queryFn: () => fetchAgreementPreviewValues(partnerId),
+    queryKey: forPartnerKey(queryKeys.agreement.previewValues(signer), partnerId),
+    queryFn: () => fetchAgreementPreviewValues(partnerId, signer),
     enabled,
     staleTime: 1000 * 60 * 5,
   })
 }
+
+/**
+ * Preview as Partner / Borrower: the partners (`partner`) or clients (`borrower`)
+ * the user may preview as, fetched while the list is open.
+ */
+export const useAgreementPreviewSigners = (type: AgreementSlug | null, search: string, enabled = true) => {
+  const partnerId = useConfigPartnerId()
+  const term = search.trim()
+  const queryKey = forPartnerKey(queryKeys.agreement.previewSigners(type ?? '', term), partnerId)
+  return useQuery({
+    queryKey,
+    queryFn: () => fetchAgreementPreviewSigners(type as AgreementSlug, term, partnerId),
+    enabled: enabled && !!type,
+    // The last list stays shown while a new search of the same list loads - never another tab's.
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === queryKey[2] ? previous : undefined),
+  })
+}
+
+/**
+ * A partner's / client's Agreement tab: the active agreement they would sign,
+ * filled for them. None (404) while that agreement is off, so no retry.
+ */
+export const useAgreementSignerPreview = (userId: number | null | undefined, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.agreement.signerPreview(userId ?? 0),
+    queryFn: () => fetchAgreementSignerPreview(userId as number),
+    enabled: enabled && !!userId,
+    retry: false,
+  })
 
 /** The Plan & Fee dynamic values the builder offers for this agreement type. */
 export const useAgreementMergeFields = (type: AgreementSlug | null, enabled = true) =>

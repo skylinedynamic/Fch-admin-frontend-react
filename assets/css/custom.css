@@ -9499,6 +9499,45 @@ File: Custom Css File
   }
 }
 
+/* Not signed yet: Preview Agreement (the agreement they would sign, filled for them). */
+.agr-preview {
+  --agr-primary: var(--brand-primary, var(--vz-primary, #405189));
+  --agr-primary-rgb: var(--brand-primary-rgb, var(--vz-primary-rgb, 64, 81, 137));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  border: 1px solid var(--vz-border-color, #e9ebec);
+  border-radius: 4px;
+  background: var(--vz-secondary-bg, #fff);
+}
+
+.agr-req__status > div:not(.agr-req__status-icon) {
+  flex: 1;
+  min-width: 0;
+}
+
+.agr-preview__btn {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 576px) {
+  .agr-preview,
+  .agr-req__status {
+    flex-wrap: wrap;
+  }
+
+  .agr-preview {
+    padding: 14px 16px;
+  }
+
+  .agr-preview__btn {
+    margin-left: 50px;
+  }
+}
+
 /* Signing is off in Settings › Agreement: the switch is locked. */
 .agr-req__status--locked {
   --agr-warning-rgb: var(--vz-warning-rgb, 247, 184, 75);
@@ -9510,4 +9549,166 @@ File: Custom Css File
   color: rgb(var(--agr-warning-rgb));
   background: rgba(var(--agr-warning-rgb), .2);
   filter: brightness(.85);
+}
+
+
+/* ── OverflowTabs: a page's tabs on one line; the rest go into "More". ── */
+.overflow-tabs {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.overflow-tabs__list {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.overflow-tabs__list .nav-link {
+  white-space: nowrap;
+}
+
+/* A tab shows it can be clicked; one that needs the record saved first, that it cannot. */
+.overflow-tabs__list .nav-link {
+  cursor: pointer;
+}
+
+.overflow-tabs__list .nav-link.disabled,
+.overflow-tabs__list .nav-link:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+  pointer-events: auto;
+}
+
+/* Every tab is laid out once to be measured, before the page paints: never seen. */
+.overflow-tabs--measuring .overflow-tabs__more {
+  visibility: hidden;
+}
+
+.overflow-tabs__more {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.overflow-tabs__more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vz-body-color, #212529);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.overflow-tabs__more-btn:hover,
+.overflow-tabs__more-btn[aria-expanded="true"] {
+  background: rgba(var(--vz-primary-rgb, 64, 81, 137), .08);
+}
+
+/* The open tab is in More (only while the line is being worked out). */
+.overflow-tabs__more-btn.active {
+  color: var(--vz-primary, #405189);
+}
+
+.overflow-tabs__count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgba(var(--vz-primary-rgb, 64, 81, 137), .12);
+  color: var(--vz-primary, #405189);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.overflow-tabs__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1050;
+  min-width: 200px;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--vz-border-color, #e9ebec);
+  border-radius: 4px;
+  background: var(--vz-secondary-bg, #fff);
+  box-shadow: 0 8px 24px -8px rgba(15, 23, 42, .25);
+}
+
+.overflow-tabs__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vz-body-color, #212529);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.overflow-tabs__item:hover:not(:disabled),
+.overflow-tabs__item:focus-visible {
+  background: rgba(var(--vz-primary-rgb, 64, 81, 137), .08);
+  color: var(--vz-primary, #405189);
+}
+
+.overflow-tabs__item:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* ── Partner profile › Mail Notification ── */
+.partner-mail-notification__intro {
+  margin-bottom: 20px;
+  color: var(--vz-secondary-color, #878a99);
+}
+
+/* Activity sidebar: an opened email or event entry - label, then value. */
+.activity-entry-details {
+  display: grid;
+  gap: 2px;
+}
+.activity-entry-details__row {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px;
+}
+.activity-entry-details dt {
+  font-weight: 500;
+}
+
+/* Activity sidebar entry: line 1 the title, line 2 who / when / visibility /
+   status - each kept on one line, cut with an ellipsis when too long. */
+.activity-entry-text {
+  min-width: 0;
+}
+.activity-entry-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.activity-entry-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
 }

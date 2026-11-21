@@ -23,6 +23,12 @@ export const PARTNER_CONFIGURATION_PERMISSION = 'manage partner configuration';
 /** The partner profile tab id. */
 export const PARTNER_CONFIGURATION_TAB = 'configuration';
 
+/**
+ * The Email Configuration section's form, submitted by the page header's Save
+ * Configuration button (beside Back, like the other tabs' save buttons).
+ */
+export const PARTNER_MAIL_CONFIGURATION_FORM_ID = 'partner-mail-configuration-form';
+
 export type PartnerConfigurationSectionId = 'email_configuration' | typeof SMS_CONFIGURATION_SECTION | 'branding' | 'agreement' | 'payment' | 'calendly';
 
 export type PartnerConfigurationSection = { id: PartnerConfigurationSectionId; label: string; description: string };

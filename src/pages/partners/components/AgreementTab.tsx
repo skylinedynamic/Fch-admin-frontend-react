@@ -1,6 +1,14 @@
+import { useState } from 'react'
 import { toast } from 'react-toastify'
-import { AGREEMENT_SIGNER, useAgreementRequirement, useSetAgreementRequired, type AgreementSigner } from '../../../modules/agreement'
+import {
+  AGREEMENT_SIGNER,
+  useAgreementRequirement,
+  useAgreementSignerPreview,
+  useSetAgreementRequired,
+  type AgreementSigner,
+} from '../../../modules/agreement'
 import AgreementSection from './AgreementSection'
+import AgreementPreviewDialog from './AgreementPreviewDialog'
 
 /** The partner's / client's details this tab reads (PartnerDetailsResource / BorrowerDetailsResource). */
 export interface AgreementTabFormData {
@@ -22,9 +30,9 @@ interface AgreementTabProps {
   onRequiredChange?: (required: boolean) => void
 }
 
-const COPY: Record<AgreementSigner, { label: string; agreement: string; others: string }> = {
-  [AGREEMENT_SIGNER.PARTNER]: { label: 'partner', agreement: 'partner agreement', others: 'Other partners' },
-  [AGREEMENT_SIGNER.CLIENT]: { label: 'client', agreement: 'borrower agreement', others: "The partner's other clients" },
+const COPY: Record<AgreementSigner, { label: string; agreement: string; others: string; previewTitle: string }> = {
+  [AGREEMENT_SIGNER.PARTNER]: { label: 'partner', agreement: 'partner agreement', others: 'Other partners', previewTitle: 'Partner agreement preview' },
+  [AGREEMENT_SIGNER.CLIENT]: { label: 'client', agreement: 'borrower agreement', others: "The partner's other clients", previewTitle: 'Borrower agreement preview' },
 }
 
 /**
@@ -43,7 +51,17 @@ export default function AgreementTab({ signer, isHost, formData, partnerId, clie
   // client would sign, are both on in Settings › Agreement - the API says which.
   const { data: statusRes, isLoading } = useAgreementRequirement(userId, showControl)
   const status = statusRes?.data
+  // Before they sign: the active agreement they would sign, filled for them. None while it is off.
+  const { data: preview } = useAgreementSignerPreview(userId, !signed)
+  const [previewing, setPreviewing] = useState(false)
   const loading = !!userId && isLoading
+  const canPreview = !signed && !!preview?.template_html
+  const previewButton = (
+    <button type="button" className="btn btn-sm btn-soft-primary agr-preview__btn" onClick={() => setPreviewing(true)}>
+      <i className="ri-eye-line me-1" aria-hidden="true" />
+      Preview Agreement
+    </button>
+  )
   const locked = !!status && !status.can_change
   const globallyOff = locked && !status.signing_enabled
   const required = !locked && (status?.agreement_required ?? formData.agreement_required) !== false
@@ -150,6 +168,7 @@ export default function AgreementTab({ signer, isHost, formData, partnerId, clie
                       They will be asked to sign the {copy.agreement} the next time they use the portal.
                     </p>
                   </div>
+                  {canPreview && previewButton}
                 </>
               ) : (
                 <>
@@ -160,11 +179,35 @@ export default function AgreementTab({ signer, isHost, formData, partnerId, clie
                     <p className="agr-req__status-title">No signature needed</p>
                     <p className="agr-req__status-text">Turn signing back on at any time to ask them again.</p>
                   </div>
+                  {canPreview && previewButton}
                 </>
               )}
             </div>
           )}
         </div>
+      )}
+
+      {/* Without the host's switch (a partner viewing its own client), the preview stands alone. */}
+      {canPreview && !showControl && (
+        <div className="agr-preview">
+          <div className="agr-req__status-icon agr-req__status-icon--on" aria-hidden="true">
+            <i className="ri-file-text-line" />
+          </div>
+          <div className="flex-grow-1 min-w-0">
+            <p className="agr-req__status-title">Not signed yet</p>
+            <p className="agr-req__status-text">See the {copy.agreement} as this {copy.label} will see it, filled with their details.</p>
+          </div>
+          {previewButton}
+        </div>
+      )}
+
+      {previewing && preview?.template_html && (
+        <AgreementPreviewDialog
+          title={copy.previewTitle}
+          subtitle={`As this ${copy.label} will see it. Read only - nothing is signed or sent.`}
+          html={preview.template_html}
+          onClose={() => setPreviewing(false)}
+        />
       )}
 
       {signed && <AgreementSection partnerId={partnerId} clientId={clientId} formData={formData} onRefresh={onRefresh} />}

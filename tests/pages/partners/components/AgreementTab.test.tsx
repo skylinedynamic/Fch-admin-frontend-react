@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
-import { renderWithProviders, screen, waitFor } from '../../../test-utils'
+import { renderWithProviders, screen, waitFor, within } from '../../../test-utils'
 import { server } from '../../../mocks/server'
 import AgreementTab from '../../../../src/pages/partners/components/AgreementTab'
 
@@ -34,8 +34,18 @@ const requirementStatus = (overrides: Record<string, unknown> = {}) =>
     })
   )
 
+// GET /preview/:userId - the active agreement they would sign, filled with their
+// details (fch-api AgreementSignController::preview); 404 when there is none.
+const NO_PREVIEW = http.get('*/common/agreement-sign/preview/:userId', () =>
+  HttpResponse.json({ status: false, message: 'There is no active agreement for this partner or client to preview.' }, { status: 404 })
+)
+const signerPreview = (html: string, slug = 'partner') =>
+  http.get('*/common/agreement-sign/preview/:userId', () =>
+    HttpResponse.json({ status: true, message: 'ok', data: { template_id: 8, slug, template_html: html } })
+  )
+
 beforeEach(() => {
-  server.use(requirementStatus())
+  server.use(requirementStatus(), NO_PREVIEW)
 })
 
 afterEach(() => {
@@ -185,5 +195,86 @@ describe('AgreementTab - locked by Settings › Agreement', () => {
     renderWithProviders(<AgreementTab signer="client" isHost formData={{ user_id: 12, has_sign: false, agreement_required: true }} />)
 
     expect(requirementSwitch()).toBeDisabled()
+  })
+})
+
+/**
+ * Before they sign, the Agreement tab previews the active agreement this
+ * partner / client would sign, filled with their details.
+ */
+describe('AgreementTab - previewing the agreement they would sign', () => {
+  const previewButton = () => screen.queryByRole('button', { name: 'Preview Agreement' })
+
+  it("opens the partner's unsigned agreement, filled with their details", async () => {
+    server.use(signerPreview('<p>Dear Ada Partner</p>'))
+    renderWithProviders(<AgreementTab signer="partner" isHost formData={{ user_id: 7, has_sign: false }} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Preview Agreement' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Partner agreement preview' })
+    const frame = within(dialog).getByTitle('Partner agreement preview')
+    expect(frame.getAttribute('srcdoc')).toContain('Dear Ada Partner')
+    // Its own pagination script runs, but walled off from the app (no allow-same-origin).
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts')
+  })
+
+  it("sits in the host's Awaiting signature row, not in a box of its own", async () => {
+    server.use(signerPreview('<p>Dear Ada Partner</p>'))
+    renderWithProviders(<AgreementTab signer="partner" isHost formData={{ user_id: 7, has_sign: false }} />)
+
+    const button = await screen.findByRole('button', { name: 'Preview Agreement' })
+
+    expect(button.closest('.agr-req__status')).not.toBeNull()
+    expect(screen.getByText('Awaiting signature')).toBeInTheDocument()
+    expect(document.querySelector('.agr-preview')).toBeNull()
+  })
+
+  it("is offered to a client's own partner too, not only the host", async () => {
+    server.use(signerPreview('<p>Dear Cleo</p>', 'borrower'))
+    renderWithProviders(<AgreementTab signer="client" isHost={false} formData={{ user_id: 12, has_sign: false }} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Preview Agreement' }))
+
+    expect(within(screen.getByRole('dialog', { name: 'Borrower agreement preview' })).getByTitle('Borrower agreement preview').getAttribute('srcdoc')).toContain('Dear Cleo')
+  })
+
+  it('closes the preview', async () => {
+    server.use(signerPreview('<p>Dear Ada Partner</p>'))
+    renderWithProviders(<AgreementTab signer="partner" isHost formData={{ user_id: 7, has_sign: false }} />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Preview Agreement' }))
+
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Partner agreement preview' })).getByRole('button', { name: 'Close' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Partner agreement preview' })).not.toBeInTheDocument()
+  })
+
+  it('is not offered while their agreement is off', async () => {
+    let asked = false
+    server.use(http.get('*/common/agreement-sign/preview/:userId', () => {
+      asked = true
+      return HttpResponse.json({ status: false, message: 'none' }, { status: 404 })
+    }))
+    renderWithProviders(<AgreementTab signer="partner" isHost formData={{ user_id: 7, has_sign: false }} />)
+
+    await waitFor(() => expect(asked).toBe(true))
+    expect(previewButton()).not.toBeInTheDocument()
+  })
+
+  it('is not offered once signed - the signed agreement is shown instead', () => {
+    let asked = false
+    server.use(http.get('*/common/agreement-sign/preview/:userId', () => {
+      asked = true
+      return HttpResponse.json({ status: true, data: { template_id: 8, slug: 'partner', template_html: '<p>x</p>' } })
+    }))
+    renderWithProviders(<AgreementTab signer="partner" isHost formData={{ user_id: 7, has_sign: true }} />)
+
+    expect(previewButton()).not.toBeInTheDocument()
+    expect(asked).toBe(false)
+  })
+
+  it('is not offered to someone with no login yet', () => {
+    renderWithProviders(<AgreementTab signer="client" isHost formData={{ user_id: null, has_sign: false }} />)
+
+    expect(previewButton()).not.toBeInTheDocument()
   })
 })

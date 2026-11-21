@@ -32,6 +32,8 @@ import { FILE_MANAGER_FOLDERS } from '../../../../modules/filemanager/config';
 import { useBuilderHistory } from './useBuilderHistory';
 import { ConfirmDialog } from './ConfirmDialog';
 import { StarterTemplatesDialog } from './StarterTemplatesDialog';
+import { PreviewAsSignerDialog, previewSignerLabel } from './PreviewAsSignerDialog';
+import type { AgreementPreviewSigner } from '../../../../modules/agreement';
 import { SaveAsTemplateDialog } from './SaveAsTemplateDialog';
 import { defaultTemplateFor } from './starterTemplates';
 import { MergeFieldsHint } from './MergeFieldsHint';
@@ -51,6 +53,9 @@ const AgreementBuilder: React.FC = () => {
     const [blocks, setBlocks] = useState<AgreementBlock[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [view, setView] = useState<'editor' | 'preview'>('editor');
+    // Preview as Partner / Borrower: the signer the preview is shown as (none: example details).
+    const [previewSigner, setPreviewSigner] = useState<AgreementPreviewSigner | null>(null);
+    const [pickingSigner, setPickingSigner] = useState(false);
 
     const [saved, setSaved] = useState<boolean>(false);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -265,11 +270,17 @@ const AgreementBuilder: React.FC = () => {
         registerMergeFieldLabels(all);
         return all;
     }, [planFields]);
-    const { data: previewValues } = useAgreementPreviewValues(view === 'preview');
+    const signerRef = useMemo(
+        () => (previewSigner && editingType ? { userId: previewSigner.user_id, type: editingType } : null),
+        [previewSigner, editingType]
+    );
+    const { data: previewValues } = useAgreementPreviewValues(view === 'preview', signerRef);
     const previewHtml = useMemo(() => withAppCalendar(withMergeSamples(html, previewValues, mergeFields)), [html, previewValues, mergeFields]);
 
     const handleEdit = (type: 'partner' | 'borrower') => {
         setEditingType(type);
+        // A partner is no signer of the borrower agreement, nor a client of the partner one.
+        setPreviewSigner(null);
         setBlocks(type === 'partner' ? partnerBlocks : borrowerBlocks);
         setOpenCount((c) => c + 1);
         setScreen('builder');
@@ -381,6 +392,14 @@ const AgreementBuilder: React.FC = () => {
                 </div>
             </div>
 
+            {pickingSigner && editingType && (
+                <PreviewAsSignerDialog
+                    type={editingType}
+                    selectedUserId={previewSigner?.user_id}
+                    onClose={() => setPickingSigner(false)}
+                    onPick={(signer) => { setPreviewSigner(signer); setPickingSigner(false); }}
+                />
+            )}
             {pickingTemplate && (
                 <StarterTemplatesDialog
                     audience={editingType ?? 'partner'}
@@ -529,6 +548,27 @@ const AgreementBuilder: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="d-flex align-items-center gap-3">
+                                    {previewSigner && (
+                                        <span className="ab4-preview-as">
+                                            <i className="ri-user-line" aria-hidden="true" />
+                                            <span>Previewing as {previewSigner.name}</span>
+                                            <button
+                                                type="button"
+                                                className="ab4-preview-as__clear"
+                                                aria-label={`Stop previewing as ${previewSigner.name}`}
+                                                title="Back to example details"
+                                                onClick={() => setPreviewSigner(null)}
+                                            >
+                                                <i className="ri-close-line" aria-hidden="true" />
+                                            </button>
+                                        </span>
+                                    )}
+                                    {editingType && (
+                                        <button type="button" className="btn btn-sm btn-soft-primary ab4-preview-as-btn" onClick={() => setPickingSigner(true)}>
+                                            <i className="ri-user-search-line me-1" aria-hidden="true" />
+                                            Preview as {previewSignerLabel(editingType)}
+                                        </button>
+                                    )}
                                     <div className="text-muted fs-12">
                                         {blocks.length} {blocks.length === 1 ? 'Block' : 'Blocks'}
                                     </div>

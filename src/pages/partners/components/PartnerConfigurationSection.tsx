@@ -3,11 +3,13 @@ import { ConfigPartnerProvider, type ConfigPartner } from '../../../modules/sett
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import {
     partnerConfigurationSections,
+    PARTNER_MAIL_CONFIGURATION_FORM_ID,
     type PartnerConfigurationSectionId,
 } from '../../../config/partnerConfiguration';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 import { SMS_CONFIGURATION_SECTION } from '../../../config/smsConfiguration';
 import MailConfigurationSection from '../../settings/components/MailConfiguration/MailConfigurationSection';
+import type { MailSaveState } from '../../settings/components/MailConfiguration/MailConfigurationCard';
 import SmsConfigurationForm from '../../settings/components/SmsConfiguration/SmsConfigurationForm';
 import BrandingForm from '../../settings/components/BrandingForm';
 import PaymentMethodConfig from '../../settings/components/PaymentMethodConfig/PaymentMethodConfig';
@@ -18,6 +20,14 @@ import '../../../../assets/css/settings-redesign.css';
 
 type Props = {
     partner: ConfigPartner;
+};
+
+type SectionProps = Props & {
+    /**
+     * Email Configuration's Save button lives in the page header (beside Back):
+     * told whether it can save, and `null` while Email Configuration is not open.
+     */
+    onMailSaveStateChange?: (state: MailSaveState | null) => void;
 };
 
 const initialsOf = (name: string) =>
@@ -71,7 +81,7 @@ function PartnerSummary({ partner }: Props): React.JSX.Element {
  * Agreement and Payment settings screens, as the partner sees them under Settings, editing
  * that partner's settings rather than the signed-in host's (ConfigPartnerProvider).
  */
-export default function PartnerConfigurationSection({ partner }: Props): React.JSX.Element {
+export default function PartnerConfigurationSection({ partner, onMailSaveStateChange }: SectionProps): React.JSX.Element {
     const { hasPermission } = usePermissions();
     // The host account itself (its own can_manage) configures partners' Calendly.
     const { data: calendlyStatus } = useCalendlyStatus();
@@ -133,7 +143,10 @@ export default function PartnerConfigurationSection({ partner }: Props): React.J
                         </div>
                         <div className="partner-config__panel-body">
                             {current.id === 'email_configuration' ? (
-                                <MailConfigurationSection />
+                                <MailConfigurationSection
+                                    formId={PARTNER_MAIL_CONFIGURATION_FORM_ID}
+                                    onSaveStateChange={onMailSaveStateChange}
+                                />
                             ) : current.id === SMS_CONFIGURATION_SECTION ? (
                                 <SmsConfigurationForm />
                             ) : current.id === 'branding' ? (

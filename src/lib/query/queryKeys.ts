@@ -5,6 +5,7 @@ export const queryKeys = {
     list: () => [...queryKeys.partner.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.partner.all, 'detail', id] as const,
     options: () => [...queryKeys.partner.all, 'options'] as const,
+    mailNotification: (id: string | number) => [...queryKeys.partner.all, 'mail-notification', String(id)] as const,
   },
   borrower: {
     all: ['borrower'] as const,
@@ -75,7 +76,12 @@ export const queryKeys = {
   agreement: {
     all: ['agreement'] as const,
     detail: (slug: string) => [...queryKeys.agreement.all, 'detail', slug] as const,
-    previewValues: () => [...queryKeys.agreement.all, 'preview-values'] as const,
+    previewValues: (signer?: { userId: number; type: string } | null): readonly unknown[] =>
+      signer
+        ? [...queryKeys.agreement.all, 'preview-values', signer.type, signer.userId]
+        : [...queryKeys.agreement.all, 'preview-values'],
+    previewSigners: (type: string, search: string) => [...queryKeys.agreement.all, 'preview-signers', type, search] as const,
+    signerPreview: (userId: number) => [...queryKeys.agreement.all, 'signer-preview', userId] as const,
     mergeFields: (type: string) => [...queryKeys.agreement.all, 'merge-fields', type] as const,
     requirement: (userId: number) => [...queryKeys.agreement.all, 'requirement', userId] as const,
     savedTemplates: (slug: string) => [...queryKeys.agreement.all, 'saved-templates', slug] as const,

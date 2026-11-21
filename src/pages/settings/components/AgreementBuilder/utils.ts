@@ -714,7 +714,8 @@ export const withMergeSamples = (
   const samples = new Map(fields.map((f) => [f.key, real[f.key]?.trim() ? escapeHtml(real[f.key].trim()) : escapeHtml(f.sample)]));
   // An html value (the partner's commission table) is markup from the API:
   // shown as it is (no field marking around it), with anything that could run script removed.
-  const htmlKeys = new Map(fields.filter((f) => f.html).map((f) => [f.key, sanitizeHtml(f.sample)]));
+  // Previewed as one signer, their own table (from `real`) takes the example's place.
+  const htmlKeys = new Map(fields.filter((f) => f.html).map((f) => [f.key, sanitizeHtml(real[f.key]?.trim() ? real[f.key] : f.sample)]));
   const filled = html.replace(/\{\{\s*([a-z0-9_.]+)\s*\}\}/g, (token, key: string) => {
     if (htmlKeys.has(key)) return `<div class="ab4-merge-sample-block" title="{{${key}}}">${htmlKeys.get(key)}</div>`;
     return samples.has(key) ? `<span class="ab4-merge-sample" title="{{${key}}}">${samples.get(key)}</span>` : token;

@@ -16,6 +16,26 @@ export interface SubscriptionStats {
   revenue_this_month: number;
 }
 
+/**
+ * A partner's subscription as fch-api PartnerDetailsResource sends it
+ * (`subscriptions[]`); amounts come formatted. A partner has one - it is saved
+ * with updateOrCreate on the partner.
+ */
+export interface PartnerSubscription {
+  id: number;
+  partner_type: string | null;
+  enrollment_type: string | null;
+  /** Installment: the balance left after the down payment. */
+  total_subscription_amount: string | null;
+  /** The whole enrollment. */
+  payable_amount: string | null;
+  monthly_platform_fee: string | null;
+  subscription_start_date: string | null;
+  /** Paid through. */
+  subscription_end_date: string | null;
+  status: string | null;
+}
+
 export interface TenantConfig {
   active_custom_url: boolean;
   partner_domain: string;
@@ -47,6 +67,27 @@ export interface PartnerCommissionTier {
 /** PUT /admin/partners/{id}/commission: the partner's Funding tiers (at least one), each with its type. */
 export interface PartnerCommissionPayload {
   tiers: PartnerCommissionTier[];
+}
+
+/**
+ * Partner profile › Mail Notification: one notification type (fch-api
+ * PartnerNotificationRecipient::TYPES - leads, clients, more later) and the
+ * address its emails go to; null sends them to the partner's own email.
+ */
+export interface PartnerNotificationRecipient {
+  type: string;
+  label: string;
+  help: string;
+  email: string | null;
+}
+
+/** Type => address to save; null (or empty) goes back to the partner's own email. */
+export type PartnerMailNotificationRecipients = Record<string, string | null>;
+
+export interface PartnerMailNotificationResponse {
+  status: boolean;
+  message?: string;
+  data: PartnerNotificationRecipient[];
 }
 
 /** The partner's tiers, and how many of its clients' funding applications are funded. */

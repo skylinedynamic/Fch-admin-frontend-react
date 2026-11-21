@@ -59,7 +59,7 @@ describe('PartnerProfile - a pending email change', () => {
     )
   })
 
-  // The page opens on Status & Agent; the email is on Partner information.
+  // The email is on Partner information, the tab the page opens on.
   const mount = async () => {
     renderPage(<PartnerProfile />, { path: '/partners/:id', route: '/partners/86' })
     await userEvent.click(await screen.findByText('Partner information'))
