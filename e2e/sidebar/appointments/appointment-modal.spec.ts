@@ -33,15 +33,21 @@ async function openCreate(page: Page, user: Record<string, unknown> = HOST_PARTN
 }
 
 const dialog = (page: Page) => page.locator('.modal.show')
-const users = (page: Page) => dialog(page).locator('.p-dropdown', { hasText: /Select Users|Jane Borrower|Sam Employee/ })
+// Calendly v2: the attendee picker (a native select of the people one may book with).
+const people = (page: Page) => dialog(page).getByRole('combobox', { name: 'Add people' })
+/** Searches the attendee box and picks the person (Calendly v2 search, like New Mail's To). */
+const addPerson = async (page: Page, name: string) => {
+  await people(page).fill(name)
+  await dialog(page).getByRole('option', { name }).click()
+}
 
 test.describe('Appointment dialog - who can be booked', () => {
   test('a host loads the users it may book, without partners by default', async ({ page }) => {
     const api = await openCreate(page)
     const call = await expectCall(api, 'POST', SELECTABLE)
     expect(call.json).toEqual({ meeting_with: 0 })
-    await users(page).click()
-    await expect(page.locator('.p-dropdown-item', { hasText: 'Jane Borrower' })).toBeVisible()
+    await people(page).click()
+    await expect(dialog(page).getByRole('option', { name: 'Jane Borrower' })).toBeVisible()
   })
 
   test('ticking "Meeting with partner" reloads the list with partners', async ({ page }) => {
@@ -69,10 +75,10 @@ test.describe('Appointment dialog - saving', () => {
     const api = await openCreate(page)
     api.add({ method: 'POST', match: /\/common\/appointments$/, body: ok({ id: 1 }, 'Appointment created successfully') })
     await dialog(page).getByPlaceholder(/Enter ap/).fill('Loan review call')
-    await pickPrime(page, users(page), 'Jane Borrower')
+    await addPerson(page, 'Jane Borrower')
     await dialog(page).getByRole('button', { name: 'Confirm Appointment' }).click()
     const call = await expectCall(api, 'POST', /\/common\/appointments$/)
-    expect(call.json).toMatchObject({ subject: 'Loan review call', assigned_for: 301, entity_id: 31, entity_type: 'borrower', duration_minutes: 30, meeting_with: 0 })
+    expect(call.json).toMatchObject({ subject: 'Loan review call', attendees: [{ user_id: 301, name: 'Jane Borrower' }], duration_minutes: 30, meeting_with: 0 })
     expect(call.json.appointment_date).toBe('2026-10-26 09:00:00')
     await expect(page.getByText('Appointment created successfully')).toBeVisible()
   })
@@ -105,7 +111,7 @@ test.describe('Appointment dialog - time and time zone', () => {
 
     api.add({ method: 'POST', match: /\/common\/appointments$/, body: ok({ id: 1 }, 'Appointment created successfully') })
     await dialog(page).getByPlaceholder(/Enter ap/).fill('Loan review call')
-    await pickPrime(page, users(page), 'Jane Borrower')
+    await addPerson(page, 'Jane Borrower')
     await dialog(page).getByRole('button', { name: 'Confirm Appointment' }).click()
     const call = await expectCall(api, 'POST', /\/common\/appointments$/)
     expect(call.json).toMatchObject({ timezone: 'Asia/Dhaka', appointment_date: '2026-10-26 09:00:00' })
@@ -125,7 +131,7 @@ test.describe('Appointment dialog - time and time zone', () => {
     const api = await openCreate(page)
     api.add({ method: 'POST', match: /\/common\/appointments$/, status: 422, body: failure('Invalid', { appointment_date: 'Jane Borrower already has an appointment from 9:00 AM to 9:30 AM. Choose another time.' }) })
     await dialog(page).getByPlaceholder(/Enter ap/).fill('Loan review call')
-    await pickPrime(page, users(page), 'Jane Borrower')
+    await addPerson(page, 'Jane Borrower')
     await dialog(page).getByRole('button', { name: 'Confirm Appointment' }).click()
     await expect(dialog(page).getByText('Jane Borrower already has an appointment from 9:00 AM to 9:30 AM. Choose another time.')).toBeVisible()
   })
@@ -140,7 +146,7 @@ test.describe('Appointment dialog - ending after midnight (R2 BUG-024)', () => {
     const api = await openCreate(page)
     api.add({ method: 'POST', match: /\/common\/appointments$/, body: ok({ id: 1 }, 'Appointment created successfully') })
     await dialog(page).getByPlaceholder(/Enter ap/).fill('Late call')
-    await pickPrime(page, users(page), 'Jane Borrower')
+    await addPerson(page, 'Jane Borrower')
     await pickPrime(page, timeSlots(page).first(), '11:30 PM')
     await expect(timeSlots(page).nth(1).locator('.p-dropdown-label')).toHaveText('12:00 AM (next day)')
 

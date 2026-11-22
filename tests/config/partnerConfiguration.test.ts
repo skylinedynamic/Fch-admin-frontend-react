@@ -44,11 +44,10 @@ describe('partnerConfigurationSections', () => {
     expect(partnerConfigurationSections({ partner_type: 'Certified Partner' }, everything).map((s) => s.id)).toEqual(['agreement', 'payment'])
   })
 
-  // Every partner keeps its own Calendly app keys; the host account itself configures them.
-  it('adds Calendly for every partner type when the viewer is the host account', () => {
-    expect(partnerConfigurationSections({ partner_type: 'Certified Partner' }, everything, true).map((s) => s.id)).toEqual(['agreement', 'payment', 'calendly'])
-    expect(partnerConfigurationSections({ partner_type: PARTNER_TYPES.WHITE_LABEL }, everything, true).map((s) => s.id)).toContain('calendly')
-    expect(partnerConfigurationSections({ partner_type: 'Certified Partner' }, everything, false).map((s) => s.id)).not.toContain('calendly')
+  // Calendly v2: partners no longer keep Calendly app keys - the host sets FCH's one app in Settings.
+  it('has no Calendly section for any partner', () => {
+    expect(partnerConfigurationSections({ partner_type: 'Certified Partner' }, everything).map((s) => s.id)).not.toContain('calendly')
+    expect(partnerConfigurationSections({ partner_type: PARTNER_TYPES.WHITE_LABEL }, everything).map((s) => s.id)).not.toContain('calendly')
   })
 
   it('offers Agreement only with the agreement settings permission', () => {

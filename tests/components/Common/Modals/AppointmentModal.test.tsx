@@ -216,8 +216,8 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
     })
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: /edit/i }))
-    // The attendee picker's own label: who it is with.
-    await waitFor(() => expect(Array.from(document.querySelectorAll('.p-dropdown-label'), (el) => el.textContent)).toContain('QA-TEST Wanda Client One (Client)'))
+    // The attendee picker lists who it is with (Calendly v2: one row per person).
+    await screen.findByText(/QA-TEST Wanda Client One/)
     return { ...opened, user }
   }
 
@@ -236,10 +236,11 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
    * Save is clicked makes "Save before the check answered" certain.
    */
   it('checks for a conflict before saving, and saves nothing when there is one', async () => {
+    // Calendly v2: only the creator's own clash stops a save.
     const check = availability({
       available: false,
-      scheduler_conflicts: [{ id: 99, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }],
-      assignee_conflicts: [],
+      creator_conflicts: [{ id: 99, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }],
+      attendee_conflicts: [],
     }, { held: true })
     const { update, user } = await edit(check)
 
@@ -276,22 +277,24 @@ describe('AppointmentModal - a partner editing the appointment it booked with it
 
     await waitFor(() => expect(update.calls).toBe(1))
     expect(bodies.length).toBeGreaterThan(0)
+    // Calendly v2: the client goes as an attendee, by user id - never the record id.
     bodies.forEach((body) => {
-      expect(body.assigned_for).toBe(CLIENT_ID)
+      expect((body.attendees as Array<{ user_id?: number }>)[0].user_id).toBe(CLIENT_ID)
       expect(body).not.toHaveProperty('entity_id')
     })
-    expect(update.bodies[0]).toMatchObject({ assigned_for: CLIENT_ID })
+    expect((update.bodies[0].attendees as Array<{ user_id?: number }>)[0].user_id).toBe(CLIENT_ID)
   })
 
   it('without a conflict, saves once with the client and says only that it was updated', async () => {
     // The only appointment at that time is this one.
-    const check = availability({ available: false, scheduler_conflicts: [{ id: 1, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }], assignee_conflicts: [] })
+    const check = availability({ available: false, creator_conflicts: [{ id: 1, date: '2999-10-28', start_time: '09:00', end_time: '09:30', duration_minutes: 30 }], attendee_conflicts: [] })
     const { update, user, onSuccess } = await edit(check)
 
     await user.click(screen.getByRole('button', { name: /save changes/i }))
 
     await waitFor(() => expect(update.calls).toBe(1))
-    expect(update.bodies[0]).toMatchObject({ assigned_for: CLIENT_ID, entity_id: 9, meeting_with_host: 0 })
+    expect(update.bodies[0]).toMatchObject({ meeting_with_host: 0 })
+    expect((update.bodies[0].attendees as Array<{ user_id?: number }>)[0].user_id).toBe(CLIENT_ID)
     await waitFor(() => expect(onSuccess).toHaveBeenCalled())
     expect(toast.success).toHaveBeenCalledTimes(1)
     expect(toast.error).not.toHaveBeenCalled()

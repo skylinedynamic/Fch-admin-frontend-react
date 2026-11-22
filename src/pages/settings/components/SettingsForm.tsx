@@ -11,8 +11,8 @@ import BrandingForm from './BrandingForm';
 import CreditProfileConfigForm from './CreditProfileConfigForm';
 import ScoreCalculationConfigForm from './ScoreCalculationConfigForm';
 import OpenAiConfigForm from './OpenAiConfigForm';
-import CalendlySettings from './CalendlySettings';
-import { useCalendlyStatus } from '../../../modules/calendly/queries';
+import CalendlyConfigurationForm from './CalendlyConfigurationForm';
+import { CALENDLY_CONFIGURATION_PERMISSION, CALENDLY_CONFIGURATION_SECTION } from '../../../config/calendlyConfiguration';
 import PaymentMethodConfig from './PaymentMethodConfig/PaymentMethodConfig';
 import MailConfigurationSection from './MailConfiguration/MailConfigurationSection';
 import { useMailConfigurations } from '../../../modules/settings/queries';
@@ -63,7 +63,6 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         )
     );
     const { data: mailData, isLoading: mailLoading } = useMailConfigurations(canEmail && canTestMail);
-    const { data: calendlyStatus } = useCalendlyStatus();
     const showTestMail = canTestMail && Boolean(mailData?.data?.uses_own_configuration);
 
     if (canEmail) {
@@ -112,11 +111,10 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         sections.push({ id: 'openai', label: 'OpenAI Configuration', icon: 'ri-sparkling-2-line' });
     }
 
-    // Calendly - the host, WLP or certified partner account itself (the API's
-    // can_manage); never its staff or users. Shown before any keys are saved
-    // too: this is where its Client ID, Client Secret and signing key go.
-    if (calendlyStatus?.can_manage) {
-        sections.push({ id: 'calendly', label: 'Calendly', icon: 'ri-calendar-event-line' });
+    // Calendly Configuration - FCH's one Calendly app (Calendly v2): the host
+    // only, with its permission. Everyone then connects their own Calendly.
+    if (hasPermission(CALENDLY_CONFIGURATION_PERMISSION) && user && (user.is_host == 1 || user.is_host == true)) {
+        sections.push({ id: CALENDLY_CONFIGURATION_SECTION, label: 'Calendly Configuration', icon: 'ri-calendar-event-line' });
     }
 
     // Auto-select first available section if the active one isn't available.
@@ -217,8 +215,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <ScoreCalculationConfigForm />
                 ) : activeSection === 'openai' ? (
                     <OpenAiConfigForm />
-                ) : activeSection === 'calendly' ? (
-                    <CalendlySettings />
+                ) : activeSection === CALENDLY_CONFIGURATION_SECTION ? (
+                    <CalendlyConfigurationForm />
                 ) : activeSection === 'email_configuration' ? (
                     <MailConfigurationSection onTestMail={canTestMail ? () => setActiveSection('test_mail') : undefined} />
                 ) : activeSection === SMS_CONFIGURATION_SECTION ? (

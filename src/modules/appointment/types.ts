@@ -24,10 +24,61 @@ export interface Appointment {
   scheduled_by: UserInfo
   assigned_for: UserInfo
   microsoft_event_id: string | null
+  /** Everyone it is with (Calendly v2); the creator is scheduled_by. */
+  attendees?: AppointmentAttendee[]
+  /** Booked in, or brought in from, Calendly: its time is changed there (reschedule_url). */
+  is_calendly?: boolean
+  join_url?: string | null
+  reschedule_url?: string | null
+  /** Booked in Calendly over its owner's FCH appointment. */
+  had_conflict?: boolean
+  /** Only on the create/update response: attendees who already had something then. */
+  attendee_conflicts?: AttendeeConflict[]
   created_at: string
   updated_at: string
   meeting_with?: number
   meeting_with_host?: number
+}
+
+/** At most this many people on an appointment - Calendly's 1 invitee + 10 guests (fch-api MAX_ATTENDEES). */
+export const MAX_ATTENDEES = 11
+
+export const ATTENDEE_TYPES = {
+  USER: 'user',
+  EXTERNAL: 'external',
+} as const
+export type AttendeeType = (typeof ATTENDEE_TYPES)[keyof typeof ATTENDEE_TYPES]
+
+/** One person as the forms send them: a platform user, or an outside email. */
+export interface AttendeeInput {
+  user_id?: number
+  email?: string
+  name?: string
+}
+
+export interface AppointmentAttendee {
+  id: number
+  user_id: number | null
+  name: string | null
+  email: string
+  type: AttendeeType
+  status: string
+  had_conflict: boolean
+}
+
+/** A clash as the API reports it, in the viewer's zone. */
+export interface AppointmentClash {
+  id: number
+  date: string
+  start_time: string
+  end_time: string
+  duration_minutes: number
+}
+
+export interface AttendeeConflict {
+  user_id: number
+  name: string | null
+  conflicts: AppointmentClash[]
 }
 
 export interface FetchAppointmentsResponse {
@@ -43,7 +94,14 @@ export interface CreateAppointmentPayload {
   timezone: string
   duration_minutes: number
   meeting_type: string
-  assigned_for: number
+  /** Calendly v2: everyone it is with. The older single assigned_for still works. */
+  attendees?: AttendeeInput[]
+  assigned_for?: number
+  /** Book it in Calendly too (the API decides whose). */
+  sync_with_calendly?: boolean
+  calendly_event_type_uri?: string | null
+  calendly_location_kind?: string | null
+  calendly_location?: string | null
   entity_type?: string | null
   entity_id?: number | null
   location?: string
@@ -83,6 +141,11 @@ export interface CheckAvailabilityPayload {
   entity_id?: number
   appointment_date: string
   id?: string | number
+  /** Calendly v2: with these, the answer splits the creator's clash from each attendee's. */
+  attendees?: AttendeeInput[]
+  duration_minutes?: number
+  timezone?: string
+  exclude_appointment_id?: number | string
 }
 
 export interface CheckAvailabilityResponse {
@@ -92,6 +155,11 @@ export interface CheckAvailabilityResponse {
     available: boolean
     assignee_conflicts?: any[]
     scheduler_conflicts?: any[]
+    /** The creator's own clashes - they stop the appointment. */
+    creator_conflicts?: AppointmentClash[]
+    /** Each attendee's clashes - a warning only. */
+    attendee_conflicts?: AttendeeConflict[]
+    can_create?: boolean
   }
 }
 

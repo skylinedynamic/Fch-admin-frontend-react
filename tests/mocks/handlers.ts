@@ -18,4 +18,14 @@ export const handlers: HttpHandler[] = [
   // Clients, Commissions, Verification Center and Change Requests screens.
   // Default it to empty; partner-filter tests override it with server.use().
   http.post('*/common/get-all-partners', () => HttpResponse.json({ status: true, data: [] })),
+
+  // Calendly v2 defaults: the host has not set up the Calendly app, nobody can
+  // host a booking, no open times. Calendly tests override these with server.use().
+  http.get('*/common/calendly/connection', () =>
+    HttpResponse.json({ status: true, data: { app_configured: false, connected: false, needs_reconnect: false } })
+  ),
+  http.post('*/common/calendly/booking-options', () =>
+    HttpResponse.json({ status: true, data: { mode: 'none', host: null, event_types: [] } })
+  ),
+  http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [] })),
 ]

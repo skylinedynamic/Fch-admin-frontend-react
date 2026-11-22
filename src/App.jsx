@@ -108,6 +108,7 @@ import "../assets/css/summernote-fixes.css";
 // Icon Libraries
 import 'remixicon/fonts/remixicon.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import { SETTINGS_ACCESS_PERMISSIONS } from './config/settingsSections';
 
 
 // Icon Libraries
@@ -275,7 +276,7 @@ export default function App() {
               </Route>
             </Route>
             {/* Settings Route */}
-            <Route element={<PermissionRoute permission={["update payment settings", "update partner agreement settings", "update borrower agreement settings", "update email configuration settings", "update sms configuration settings", "update branding settings", "update domain configuration settings", "update microbilt settings"]} />}>
+            <Route element={<PermissionRoute permission={SETTINGS_ACCESS_PERMISSIONS} />}>
               <Route path="settings" element={<Settings />} />
               <Route path="settings/:section" element={<Settings />} />
             </Route>

@@ -10,6 +10,7 @@ import { NOTIFICATIONS_ROUTE } from "../../config/notifications";
 import { OWNER_SUMMARY_ROUTE, OWNER_SUMMARY_TITLE } from "../../config/ownerSummary";
 import { useCanViewOwnerSummary } from "../../lib/auth/useCanViewOwnerSummary";
 import { useUnreadNotificationCount, formatUnreadCount } from "../../modules/notifications";
+import { SETTINGS_ACCESS_PERMISSIONS } from '../../config/settingsSections';
 
 // Menu item configuration with required permissions
 const menuItems = [
@@ -283,7 +284,7 @@ const menuItems = [
     to: "/settings",
     icon: "ri-file-settings-fill",
     label: "Settings",
-    permission: ["update payment settings", "update partner agreement settings", "update borrower agreement settings", "update email configuration settings", "update sms configuration settings", "update branding settings", "update domain configuration settings", "update microbilt settings"],
+    permission: SETTINGS_ACCESS_PERMISSIONS,
     isHostOnly: false,
   },
 ];

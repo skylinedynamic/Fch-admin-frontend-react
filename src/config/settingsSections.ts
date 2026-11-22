@@ -1,4 +1,5 @@
 import { SMS_CONFIGURATION_SECTION } from './smsConfiguration';
+import { CALENDLY_CONFIGURATION_PERMISSION, CALENDLY_CONFIGURATION_SECTION } from './calendlyConfiguration';
 
 /**
  * Settings sections and the path each one lives at (/settings/<slug>), so a
@@ -6,6 +7,19 @@ import { SMS_CONFIGURATION_SECTION } from './smsConfiguration';
  * guard, a bookmark. The ids are the ones SettingsForm builds its menu from.
  */
 export const SETTINGS_BASE_PATH = '/settings';
+
+/** Any one of these opens Settings (the route and the sidebar link); each section then checks its own. */
+export const SETTINGS_ACCESS_PERMISSIONS: string[] = [
+    'update payment settings',
+    'update partner agreement settings',
+    'update borrower agreement settings',
+    'update email configuration settings',
+    'update sms configuration settings',
+    'update branding settings',
+    'update domain configuration settings',
+    'update microbilt settings',
+    CALENDLY_CONFIGURATION_PERMISSION,
+];
 
 /** Each slug is the menu label, so the path reads like the menu. */
 const SECTIONS: Record<string, { slug: string; title: string }> = {
@@ -20,7 +34,7 @@ const SECTIONS: Record<string, { slug: string; title: string }> = {
     credit_profile: { slug: 'credit-profile', title: 'Credit Profile' },
     score_calculation: { slug: 'score-calculation', title: 'Score Calculation' },
     openai: { slug: 'openai-configuration', title: 'OpenAI Configuration' },
-    calendly: { slug: 'calendly', title: 'Calendly' },
+    [CALENDLY_CONFIGURATION_SECTION]: { slug: 'calendly-configuration', title: 'Calendly Configuration' },
 };
 
 /** The path a section lives at. */

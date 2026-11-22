@@ -15,7 +15,13 @@ const WANDA = { permissions: ['view appointments', 'create appointments'], is_ho
 test.use({ timezoneId: 'UTC' })
 
 const dialog = (page: Page) => page.locator('.modal.show')
-const users = (page: Page) => dialog(page).locator('.p-dropdown', { hasText: /Select Users|QA-TEST ONB WFree/ })
+// Calendly v2: the attendee picker (a native select of the people one may book with).
+const people = (page: Page) => dialog(page).getByRole('combobox', { name: 'Add people' })
+/** Searches the attendee box and picks the person (Calendly v2 search, like New Mail's To). */
+const addPerson = async (page: Page, name: string) => {
+  await people(page).fill(name)
+  await dialog(page).getByRole('option', { name }).click()
+}
 
 async function openCreate(page: Page, availability: unknown): Promise<ApiMock> {
   await page.clock.setFixedTime(new Date('2026-10-31T06:00:00Z'))
@@ -36,23 +42,41 @@ test.describe('Appointment dialog › live availability check (R2 BUG-073)', () 
     const api = await openCreate(page, { available: true })
     await expectCall(api, 'POST', SELECTABLE)
 
-    await pickPrime(page, users(page), 'QA-TEST ONB WFree')
+    await addPerson(page, 'QA-TEST ONB WFree')
 
     const check = await expectCall(api, 'POST', CHECK)
-    expect(check.json.assigned_for).toBe(321)
-    expect(check.json.assigned_for).not.toBe(178)
+    // Calendly v2: the client goes as an attendee, by user id - never the record id.
+    expect(check.json.attendees[0].user_id).toBe(321)
+    expect(check.json.attendees[0].user_id).not.toBe(178)
   })
 
-  test("warns about the client's clash before Confirm, and Confirm is held back", async ({ page }) => {
+  // Calendly v2: an attendee's clash is a warning beside them; Confirm stays possible.
+  test("warns about the client's clash beside them, and Confirm stays possible", async ({ page }) => {
     const api = await openCreate(page, {
       available: false,
-      scheduler_conflicts: [],
-      // The whole day, so it overlaps whatever slot the dialog starts on.
-      assignee_conflicts: [{ id: 52, date: '2026-10-31', start_time: '00:00', end_time: '23:59', duration_minutes: 1439 }],
+      creator_conflicts: [],
+      can_create: true,
+      attendee_conflicts: [{ user_id: 321, name: 'QA-TEST ONB WFree', conflicts: [{ id: 52, date: '2026-10-31', start_time: '00:00', end_time: '23:59', duration_minutes: 1439 }] }],
     })
     await expectCall(api, 'POST', SELECTABLE)
 
-    await pickPrime(page, users(page), 'QA-TEST ONB WFree')
+    await addPerson(page, 'QA-TEST ONB WFree')
+    await expectCall(api, 'POST', CHECK)
+
+    await expect(dialog(page).getByText(/already has an appointment 00:00.23:59/i)).toBeVisible()
+    await expect(dialog(page).getByRole('button', { name: 'Confirm Appointment' })).toBeEnabled()
+  })
+
+  test("the creator's own clash holds Confirm back", async ({ page }) => {
+    const api = await openCreate(page, {
+      available: false,
+      creator_conflicts: [{ id: 53, date: '2026-10-31', start_time: '00:00', end_time: '23:59', duration_minutes: 1439 }],
+      attendee_conflicts: [],
+      can_create: false,
+    })
+    await expectCall(api, 'POST', SELECTABLE)
+
+    await addPerson(page, 'QA-TEST ONB WFree')
     await expectCall(api, 'POST', CHECK)
 
     await expect(dialog(page).getByText('Scheduling Conflict')).toBeVisible()

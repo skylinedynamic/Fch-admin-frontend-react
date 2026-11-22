@@ -10,7 +10,6 @@ import { Skeleton } from 'primereact/skeleton';
 
 // API Services
 import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
-import { availabilityCheckPayload } from '../../../modules/appointment/availability';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useSummernote } from '../../../hooks/useSummernote';
@@ -24,9 +23,18 @@ import { browserTimeZone, defaultStart, endSlotsAfter, endWithinDay, localDateSt
 // Styles
 import "../../../../assets/css/appointment-modal.css";
 import { sanitizeHtml } from '../../../utils/sanitizeHtml';
+import AttendeePicker from '../../Appointment/AttendeePicker';
+import CalendlyBookingFields, { EMPTY_CALENDLY_BOOKING } from '../../Appointment/CalendlyBookingFields';
+import AddToCalendly from '../../Appointment/AddToCalendly';
 
 // The API fields the form shows a refusal beside; any other shows under the time slot (R2 BUG-024).
-const FORM_ERROR_FIELDS = ['subject', 'meeting_type', 'assigned_for', 'appointment_date', 'duration_minutes', 'timezone'];
+const FORM_ERROR_FIELDS = ['subject', 'meeting_type', 'assigned_for', 'appointment_date', 'duration_minutes', 'timezone', 'attendees', 'sync_with_calendly', 'calendly_event_type_uri', 'calendly_location'];
+// Each attendee's refusal shows beside that person (attendees.0.email ...).
+const isShownErrorField = (field) => FORM_ERROR_FIELDS.includes(field) || field.startsWith('attendees.');
+
+/** The API's attendee rows as the form sends them back (Calendly v2). */
+const toAttendeeInputs = (attendees = []) =>
+    attendees.map(a => (a.user_id ? { user_id: a.user_id, ...(a.name ? { name: a.name } : {}) } : { email: a.email, ...(a.name ? { name: a.name } : {}) }));
 
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
@@ -49,7 +57,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [formErrors, setFormErrors] = useState({});
 
     // Under the time slot: the duration's refusal, else one on a field the form has no place for (R2 BUG-024).
-    const unshownErrorField = Object.keys(formErrors).find(field => !FORM_ERROR_FIELDS.includes(field));
+    const unshownErrorField = Object.keys(formErrors).find(field => !isShownErrorField(field));
     const timeSlotError = formErrors.duration_minutes || (unshownErrorField ? [].concat(formErrors[unshownErrorField])[0] : null);
 
     const currentUser = useAuthStore((state) => state.user);
@@ -93,14 +101,37 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         assignedForUserId: '',
         status: '',
         isPast: false,
+        // Calendly v2: everyone on it, and whether Calendly holds it.
+        attendees: [],
+        isCalendly: false,
+        joinUrl: null,
+        rescheduleUrl: null,
     });
+
+    // Calendly v2: who it is with (users or outside emails), their clashes
+    // (a warning), and "Sync with Calendly".
+    const [attendees, setAttendees] = useState([]);
+    const [attendeeConflicts, setAttendeeConflicts] = useState([]);
+    const [calendlyBooking, setCalendlyBooking] = useState(EMPTY_CALENDLY_BOOKING);
+    // A new answer about the people clears the API's refusal about them.
+    useEffect(() => {
+        setFormErrors(p => {
+            const kept = Object.fromEntries(Object.entries(p).filter(([field]) => !field.startsWith('attendees')));
+            return Object.keys(kept).length === Object.keys(p).length ? p : kept;
+        });
+    }, [attendees]);
 
     // The two people on a meeting may change it (BUG-102): whoever booked it
     // edits or deletes it; whoever it was booked with reschedules, confirms or
     // cancels it.
     const canUpdate = hasPermission('update appointments');
     const isScheduler = currentUser?.id == displayData.scheduledById;
-    const isInvitee = !isScheduler && !!displayData.assignedForUserId && currentUser?.id == displayData.assignedForUserId;
+    const isInvitee = !isScheduler && (
+        (!!displayData.assignedForUserId && currentUser?.id == displayData.assignedForUserId)
+        || displayData.attendees.some(a => a.user_id && a.user_id == currentUser?.id)
+    );
+    // Calendly owns a Calendly meeting's time and people: they are changed there.
+    const editingCalendlyMeeting = !isNewEvent && displayData.isCalendly;
     const isOpenStatus = displayData.status === APPOINTMENT_STATUS.PENDING || displayData.status === APPOINTMENT_STATUS.CONFIRMED;
     const canConfirm = isInvitee && canUpdate && !displayData.isPast && displayData.status === APPOINTMENT_STATUS.PENDING;
     const canCancel = isInvitee && canUpdate && !displayData.isPast && isOpenStatus;
@@ -138,8 +169,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     // Check Availability
     useEffect(() => {
         const check = async () => {
-            if (!formData.date || !(formData.assigned_for || formData.entity_id) || viewMode) {
+            if (!formData.date || attendees.length === 0 || viewMode) {
                 setAvailabilityConflicts(null);
+                setAttendeeConflicts([]);
                 setConflictError(null);
                 return;
             }
@@ -155,23 +187,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 }
 
                 setAvailabilityConflicts(null);
-                // The attendee by user id, as Save sends it - not the record id (R2 BUG-073).
-                const response = await checkAvailability(availabilityCheckPayload({
-                    date: formData.date,
-                    timeStart: formData.timeStart,
-                    assignedFor: formData.assigned_for,
-                    entityType: formData.entity_type,
-                    entityId: formData.entity_id,
-                    appointmentId: isNewEvent ? undefined : selectedEventId
-                }));
+                const response = await checkAvailability(availabilityRequest());
 
-                if (response.data && response.data.available === false) {
+                // Each attendee's clash is a warning beside them; only the creator's stops it.
+                setAttendeeConflicts(response.data?.attendee_conflicts || []);
+                const creatorConflicts = response.data?.creator_conflicts || [];
+
+                if (creatorConflicts.length > 0) {
                     setAvailabilityConflicts(response.data);
 
-                    const allConflicts = [
-                        ...(response.data.assignee_conflicts || []),
-                        ...(response.data.scheduler_conflicts || [])
-                    ];
+                    const allConflicts = [...creatorConflicts];
 
                     const matchingConflict = allConflicts.find(c => {
                         const cStart = c.start_time || "";
@@ -221,7 +246,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [formData.date, formData.timeStart, formData.timeEnd, formData.assigned_for, formData.entity_id, formData.entity_type, viewMode, originalData]);
+    }, [formData.date, formData.timeStart, formData.timeEnd, JSON.stringify(attendees), viewMode, originalData]);
+
+    /** Calendly v2: the people and the exact time, so the answer splits the creator's clash from each attendee's. */
+    const availabilityRequest = () => ({
+        attendees,
+        appointment_date: `${formData.date} ${formData.timeStart}:00`,
+        duration_minutes: minutesBetween(formData.timeStart, formData.timeEnd),
+        timezone: formData.location,
+        ...(isNewEvent ? {} : { exclude_appointment_id: selectedEventId }),
+    });
 
     // Helper functions (tConvert, formatDate, etc.) should be here or imported
     const tConvert = (timeStr) => {
@@ -250,10 +284,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     const isSlotBlocked = (timeValue, isEnd = false) => {
         if (!availabilityConflicts) return false;
-        const allConflicts = [
-            ...(availabilityConflicts.assignee_conflicts || []),
-            ...(availabilityConflicts.scheduler_conflicts || [])
-        ];
+        // Only the creator's own clashes block a time (Calendly v2).
+        const allConflicts = [...(availabilityConflicts.creator_conflicts || [])];
         return allConflicts.some(c => {
             const cStart = (c.start_time || "").substring(0, 5);
             const cEnd = (c.end_time || "").substring(0, 5);
@@ -317,6 +349,10 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setLastConflictingAttempt(null);
             setConflictError(null);
             setIsMeetingWithChecked(false);
+            setAttendees([]);
+            setAttendeeConflicts([]);
+            setCalendlyBooking(EMPTY_CALENDLY_BOOKING);
+            setDisplayData(p => ({ ...p, attendees: [], isCalendly: false, joinUrl: null, rescheduleUrl: null, scheduledById: '', assignedForUserId: '' }));
             // The browser's own day, at 09:00 or the next time still ahead (BUG-078).
             const start = defaultStart(TIME_SLOTS, dateStr || localDateString());
             setFormData({
@@ -367,7 +403,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 assignedForUserId: apt.assigned_for?.id,
                 status: apt.status || '',
                 isPast: start < new Date(),
+                attendees: apt.attendees || [],
+                isCalendly: Boolean(apt.is_calendly),
+                joinUrl: apt.join_url || null,
+                rescheduleUrl: apt.reschedule_url || null,
             });
+            setAttendees(apt.attendees?.length
+                ? toAttendeeInputs(apt.attendees)
+                : (apt.assigned_for?.id ? [{ user_id: apt.assigned_for.id, name: apt.assigned_for.name }] : []));
+            setAttendeeConflicts([]);
+            setCalendlyBooking(EMPTY_CALENDLY_BOOKING);
 
             const h_full = start.getHours().toString().padStart(2, '0');
             const m_full = start.getMinutes().toString().padStart(2, '0');
@@ -419,14 +464,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     const rawType = apt.assigned_for.entity_type || '';
                     const formattedType = rawType.toLowerCase();
                     setAssignedForType(formattedType);
-
-                    console.log('[AppointmentModal] Setting assigned_for:', {
-                        entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
-                        assigned_for: apt.assigned_for.id,
-                        entity_type: formattedType,
-                        raw_assigned_for: apt.assigned_for,
-                        loaded_users: response.data
-                    });
 
                     setFormData(p => ({
                         ...p,
@@ -496,27 +533,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         // check runs 500ms after a change, so a quick Save went out before it
         // answered and the conflict showed beside "updated successfully" (BUG-100).
         let conflicts = availabilityConflicts;
-        if (formData.assigned_for || formData.entity_id) {
+        if (attendees.length > 0 && !editingCalendlyMeeting) {
             try {
-                const response = await checkAvailability(availabilityCheckPayload({
-                    date: formData.date,
-                    timeStart: formData.timeStart,
-                    assignedFor: formData.assigned_for,
-                    entityType: formData.entity_type,
-                    entityId: formData.entity_id,
-                    appointmentId: isNewEvent ? undefined : selectedEventId
-                }));
-                conflicts = response.data && response.data.available === false ? response.data : null;
+                const response = await checkAvailability(availabilityRequest());
+                setAttendeeConflicts(response.data?.attendee_conflicts || []);
+                conflicts = (response.data?.creator_conflicts || []).length > 0 ? response.data : null;
                 setAvailabilityConflicts(conflicts);
             } catch (error) {
                 // The server takes the booking either way; go on with what is known.
             }
         }
-        if (conflicts && conflicts.available === false) {
-            const allConflicts = [
-                ...(conflicts.assignee_conflicts || []),
-                ...(conflicts.scheduler_conflicts || [])
-            ];
+        if (conflicts && (conflicts.creator_conflicts || []).length > 0) {
+            const allConflicts = [...(conflicts.creator_conflicts || [])];
             const matchingConflict = allConflicts.find(c => {
                 const cStart = c.start_time || "";
                 const cEnd = c.end_time || "";
@@ -545,18 +573,29 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             timezone: formData.location,
             duration_minutes: durationMinutes,
             meeting_type: formData.category,
-            entity_type: assignedForType || null,
-            entity_id: assignedForType ? (formData.entity_id ? parseInt(formData.entity_id) : null) : null,
-            assigned_for: formData.assigned_for ? parseInt(formData.assigned_for) : null,
-            [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
+            [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0,
+            attendees,
+            ...(isNewEvent && calendlyBooking.sync ? {
+                sync_with_calendly: true,
+                calendly_event_type_uri: calendlyBooking.eventTypeUri,
+                calendly_location_kind: calendlyBooking.locationKind || null,
+                calendly_location: calendlyBooking.location || null,
+            } : {}),
         };
 
         // The invitee only moves the meeting: who it is with stays as booked.
         if (isInvitee) {
-            delete payload.entity_type;
-            delete payload.entity_id;
+            delete payload.attendees;
             delete payload[isHost ? 'meeting_with' : 'meeting_with_host'];
             payload.assigned_for = displayData.assignedForUserId;
+        }
+        // Calendly owns a Calendly meeting's people and time (changed with Reschedule).
+        if (editingCalendlyMeeting) {
+            delete payload.attendees;
+            delete payload.appointment_date;
+            delete payload.duration_minutes;
+            delete payload.timezone;
+            if (displayData.assignedForUserId) payload.assigned_for = displayData.assignedForUserId;
         }
 
         try {
@@ -673,21 +712,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         dialogsInBody: true
     }, !viewMode); // Pass !viewMode as the enabled state
 
-    const assignedOptions = selectableUsers.map(u => ({
-        label: u.name,
-        value: u.id, // User ID is unique and should be used as the value for selection
-        entity_id: u.entity_id,
-        entity_type: u.entity_type
-    }));
-
-    // Debug logging
-    if (assignedOptions.length > 0 && formData.assigned_for) {
-        console.log('[AppointmentModal] Dropdown state:', {
-            formData_assigned_for: formData.assigned_for,
-            assignedOptions,
-            match: assignedOptions.find(opt => opt.value === formData.assigned_for)
-        });
-    }
+    const attendeeOptions = selectableUsers.map(u => ({ label: u.name, user_id: Number(u.id) }));
 
     return (
         <>
@@ -849,7 +874,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 </p>
 
                                                 <h5 className="mb-0 fs-16 fw-bold">
-                                                    {displayData.assignedForType ? (
+                                                    {displayData.attendees.length > 1 ? (
+                                                        <span className="text-dark">{displayData.attendees.map(a => a.name || a.email).join(', ')}</span>
+                                                    ) : displayData.attendees.length === 1 && !displayData.attendees[0].user_id ? (
+                                                        <span className="text-dark">{displayData.attendees[0].name || displayData.attendees[0].email}</span>
+                                                    ) : displayData.assignedForType ? (
                                                         <a
                                                             href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
                                                             className="text-primary text-decoration-none hover-primary"
@@ -863,6 +892,28 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                             </div>
                                         </div>
+
+                                        {displayData.isCalendly && (
+                                            <div className="mt-3 d-flex align-items-center gap-3 fs-13">
+                                                <span className="badge bg-primary-subtle text-primary">Calendly</span>
+                                                {displayData.joinUrl && (
+                                                    <a href={displayData.joinUrl} target="_blank" rel="noopener noreferrer"><i className="ri-vidicon-line me-1"></i>Join</a>
+                                                )}
+                                                {displayData.rescheduleUrl && !displayData.isPast && displayData.status !== APPOINTMENT_STATUS.CANCELLED && (
+                                                    <a href={displayData.rescheduleUrl} target="_blank" rel="noopener noreferrer"><i className="ri-calendar-schedule-line me-1"></i>Reschedule</a>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {!displayData.isCalendly && isScheduler && !displayData.isPast && isOpenStatus && selectedEventId && (
+                                            <div className="mt-3">
+                                                <AddToCalendly
+                                                    appointmentId={selectedEventId}
+                                                    attendees={toAttendeeInputs(displayData.attendees)}
+                                                    onAdded={() => { fetchDetails(selectedEventId); if (onSuccess) onSuccess(); }}
+                                                />
+                                            </div>
+                                        )}
 
                                         <div className="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
                                             {(hasPermission('delete appointments') && isScheduler) && (
@@ -930,30 +981,33 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 )}
                                             </div>
 
-                                            <div className="position-relative" style={{ minHeight: '38px' }}>
-                                                {loadingAssignedFor ? (
-                                                    <Skeleton width="100%" height="38px" className="rounded-2" />
-                                                ) : (
-                                                    <Dropdown value={formData.assigned_for} options={assignedOptions}
-                                                        onChange={(e) => {
-                                                            const selected = assignedOptions.find(opt => opt.value === e.value);
-                                                            const newType = selected?.entity_type?.toLowerCase() || '';
-                                                            setAssignedForType(newType);
-                                                            setFormData(p => ({
-                                                                ...p,
-                                                                entity_id: selected?.entity_id || e.value,
-                                                                assigned_for: e.value,
-                                                                entity_type: newType
-                                                            }));
-                                                        }}
-                                                        placeholder="Select Users"
-                                                        className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
-                                                        appendTo="self"
-                                                        filter
-                                                        filterPlaceholder="Search users..." />
-                                                )}
-                                                {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
-                                            </div>
+                                            <AttendeePicker
+                                                options={attendeeOptions}
+                                                value={attendees}
+                                                onChange={setAttendees}
+                                                conflicts={attendeeConflicts}
+                                                errors={formErrors}
+                                                loading={loadingAssignedFor}
+                                                disabled={editingCalendlyMeeting}
+                                            />
+                                            {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
+                                            {editingCalendlyMeeting && (
+                                                <div className="text-muted fs-11 mt-1">This meeting is in Calendly: its people and time are changed there (Reschedule).</div>
+                                            )}
+                                            {isNewEvent && attendees.length > 0 && (
+                                                <div className="mt-2">
+                                                    <CalendlyBookingFields
+                                                        attendees={attendees}
+                                                        date={formData.date}
+                                                        timezone={formData.location}
+                                                        value={calendlyBooking}
+                                                        onChange={setCalendlyBooking}
+                                                        onPickTime={(time, minutes) => setFormData(p => ({ ...p, timeStart: time, timeEnd: timeAfter(time, minutes) }))}
+                                                        selectedTime={formData.timeStart}
+                                                        errors={formErrors}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                         )}
 

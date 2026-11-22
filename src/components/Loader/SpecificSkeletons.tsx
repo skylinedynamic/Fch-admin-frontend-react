@@ -134,6 +134,52 @@ export const MicroBiltConfigSkeleton: React.FC = () => {
 };
 
 /**
+ * Settings > Calendly Configuration: info banner, redirect URI + scopes,
+ * Client ID, Client Secret and Save.
+ */
+export const CalendlyConfigSkeleton: React.FC = () => {
+    return (
+        <div className="animate__animated animate__fadeIn">
+            <div className="d-flex align-items-center bg-info-subtle rounded-3 p-3 mb-4">
+                <div className="skeleton-line rounded sk-w-160 sk-h-40 me-4"></div>
+                <div className="flex-grow-1">
+                    <div className="skeleton-line mb-2 sk-w-200 sk-h-16"></div>
+                    <div className="skeleton-line mb-1 sk-w-450 sk-h-12"></div>
+                    <div className="skeleton-line sk-w-280 sk-h-12"></div>
+                </div>
+            </div>
+
+            <div className="row g-4">
+                <div className="col-md-7">
+                    <div className="skeleton-line mb-2 sk-w-200 sk-h-12"></div>
+                    <div className="skeleton-line rounded w-100 sk-h-38"></div>
+                </div>
+                <div className="col-md-5">
+                    <div className="skeleton-line mb-2 sk-w-200 sk-h-12"></div>
+                    <div className="d-flex flex-wrap gap-1">
+                        {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton-line rounded sk-w-100 sk-h-20"></div>)}
+                    </div>
+                </div>
+                <div className="col-12">
+                    <div className="skeleton-line mb-2 sk-w-100 sk-h-12"></div>
+                    <div className="skeleton-line rounded w-100 sk-h-38"></div>
+                </div>
+                <div className="col-12">
+                    <div className="skeleton-line mb-2 sk-w-100 sk-h-12"></div>
+                    <div className="skeleton-line rounded w-100 sk-h-38"></div>
+                </div>
+            </div>
+
+            <div className="col-12 mt-5 pt-3 border-top">
+                <div className="d-flex justify-content-end">
+                    <div className="skeleton-line rounded sk-w-180 sk-h-40"></div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+/**
  * Custom skeleton loader for the Email Configuration Form
  */
 export const OpenAiConfigSkeleton: React.FC = () => {

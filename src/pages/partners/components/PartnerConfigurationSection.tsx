@@ -14,8 +14,6 @@ import SmsConfigurationForm from '../../settings/components/SmsConfiguration/Sms
 import BrandingForm from '../../settings/components/BrandingForm';
 import PaymentMethodConfig from '../../settings/components/PaymentMethodConfig/PaymentMethodConfig';
 import AgreementBuilder from '../../settings/components/AgreementBuilder';
-import CalendlySettings from '../../settings/components/CalendlySettings';
-import { useCalendlyStatus } from '../../../modules/calendly/queries';
 import '../../../../assets/css/settings-redesign.css';
 
 type Props = {
@@ -83,9 +81,7 @@ function PartnerSummary({ partner }: Props): React.JSX.Element {
  */
 export default function PartnerConfigurationSection({ partner, onMailSaveStateChange }: SectionProps): React.JSX.Element {
     const { hasPermission } = usePermissions();
-    // The host account itself (its own can_manage) configures partners' Calendly.
-    const { data: calendlyStatus } = useCalendlyStatus();
-    const sections = partnerConfigurationSections(partner, hasPermission, Boolean(calendlyStatus?.can_manage));
+    const sections = partnerConfigurationSections(partner, hasPermission);
     const [active, setActive] = useState<PartnerConfigurationSectionId | undefined>(sections[0]?.id);
     const current = sections.find((section) => section.id === active) ?? sections[0];
     const partnerName = partner.company_name || partner.full_name || 'this partner';
@@ -153,8 +149,6 @@ export default function PartnerConfigurationSection({ partner, onMailSaveStateCh
                                 <BrandingForm />
                             ) : current.id === 'agreement' ? (
                                 <AgreementBuilder />
-                            ) : current.id === 'calendly' ? (
-                                <CalendlySettings />
                             ) : (
                                 <PaymentMethodConfig />
                             )}
