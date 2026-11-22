@@ -24,15 +24,6 @@ export interface Appointment {
   scheduled_by: UserInfo
   assigned_for: UserInfo
   microsoft_event_id: string | null
-  /** Booked in FCH, or a meeting on the company Calendly account. */
-  source?: 'fch' | 'calendly' | string
-  is_calendly?: boolean
-  join_url?: string | null
-  cancel_url?: string | null
-  reschedule_url?: string | null
-  /** Who booked it in Calendly, when they are not an FCH user. */
-  invitee_name?: string | null
-  invitee_email?: string | null
   created_at: string
   updated_at: string
   meeting_with?: number
