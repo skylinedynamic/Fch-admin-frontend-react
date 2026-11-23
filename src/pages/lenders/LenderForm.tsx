@@ -14,6 +14,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import { LENDER_STATUS } from '../../config/statusOptions';
 import { SUBMISSION_METHODS } from '../../config/lender';
 import { useSummernote } from '../../hooks/useSummernote';
+import { OTHERS } from '../../config/appConfig';
 import LenderProductCategoryModal from './components/LenderProductCategoryModal';
 import '../../../assets/css/lenders.css';
 
@@ -52,6 +53,8 @@ export default function LenderForm() {
         country: '',
         state: '',
         city: '',
+        // City > Others: the name typed instead (as on a client's profile); sent as city.
+        other_city: '',
         address: ''
     };
 
@@ -96,9 +99,16 @@ export default function LenderForm() {
             const fetchLender = async () => {
                 try {
                     const res = await getLender(id!);
+                    const lender = res.data || {};
+                    // A city the state's list does not have was typed under
+                    // Others: open with Others picked and the name typed, as a
+                    // client's profile does.
+                    const typedCity = lender.city && lender.state
+                        && !cityOptions(lender.country, lender.state).some((c) => c.value === lender.city);
                     setFormData({
                         ...initialFormState,
-                        ...res.data
+                        ...lender,
+                        ...(typedCity ? { city: OTHERS, other_city: lender.city } : {})
                     });
                 } catch (error) {
                     toast.error('Failed to load lender details');
@@ -131,6 +141,12 @@ export default function LenderForm() {
             const payload: any = { ...formData };
             // Made by the system and never changed: not sent back.
             delete payload.lender_code;
+            // City > Others goes as city "Others" with the typed name in
+            // other_city: the API requires the name then and saves it as the
+            // city, as for a client's profile. Any other city sends no name.
+            if (payload.city !== OTHERS) {
+                delete payload.other_city;
+            }
             Object.keys(payload).forEach(key => {
                 if (payload[key] === '') {
                     payload[key] = null;
@@ -192,12 +208,20 @@ export default function LenderForm() {
 
     // Country / State / City: a new country clears state and city, a new state clears city.
     const changeLocation = (field: 'country' | 'state' | 'city', value: string | null) => {
-        const cleared = field === 'country' ? { state: '', city: '' } : field === 'state' ? { city: '' } : {};
+        // A city other than Others drops the typed name, as on a client's profile.
+        const cleared = field === 'country' ? { state: '', city: '', other_city: '' }
+            : field === 'state' ? { city: '', other_city: '' }
+            : value !== OTHERS ? { other_city: '' } : {};
         setFormData((prev: any) => ({ ...prev, [field]: value ?? '', ...cleared }));
-        if (errors[field]) {
-            setErrors((prev: any) => ({ ...prev, [field]: null }));
+        if (errors[field] || errors.other_city) {
+            setErrors((prev: any) => ({ ...prev, [field]: null, other_city: null }));
         }
     };
+
+    /** The state's cities, then Others (once a state is picked), as on a client's profile. */
+    const lenderCityOptions = (): NameOption[] => (formData.state
+        ? [...cityOptions(formData.country, formData.state), { label: OTHERS, value: OTHERS }]
+        : []);
 
     // Two rows of two: Country | State, then City | Address. A state needs its
     // country, a city its state: until then the select looks like the others
@@ -370,7 +394,27 @@ export default function LenderForm() {
                                         <div className="row">
                                             {renderLocationSelect('country', 'Country', 'Select country', countryOptions())}
                                             {renderLocationSelect('state', 'State', 'Select state', stateOptions(formData.country), 'Select a country first')}
-                                            {renderLocationSelect('city', 'City', 'Select city', cityOptions(formData.country, formData.state), 'Select a state first')}
+                                            {renderLocationSelect('city', 'City', 'Select city', lenderCityOptions(), 'Select a state first')}
+                                            {formData.city === OTHERS && (
+                                                <div className="mb-4 col-md-6">
+                                                    <label htmlFor="lender_other_city" className="form-label text-dark fw-medium mb-2">Other City <span className="text-danger">*</span></label>
+                                                    <input
+                                                        id="lender_other_city"
+                                                        type="text"
+                                                        name="other_city"
+                                                        maxLength={255}
+                                                        className={`form-control rounded-3 py-2 ${errors.other_city ? 'is-invalid' : ''}`}
+                                                        value={formData.other_city || ''}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value;
+                                                            setFormData((prev: any) => ({ ...prev, other_city: value }));
+                                                            if (errors.other_city) setErrors((prev: any) => ({ ...prev, other_city: null }));
+                                                        }}
+                                                        placeholder="Enter city name"
+                                                    />
+                                                    {errors.other_city && <div className="invalid-feedback">{errors.other_city}</div>}
+                                                </div>
+                                            )}
                                             <div className="mb-4 col-md-6">
                                                 <label htmlFor="lender_address" className="form-label text-dark fw-medium mb-2">Address</label>
                                                 <input

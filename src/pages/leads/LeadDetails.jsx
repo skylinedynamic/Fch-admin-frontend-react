@@ -27,6 +27,7 @@ import { formatPhoneNumber, formatZipCode, formatBusinessEIN, displayEIN } from 
 import { formatSSN, maskSSN, maskEIN, isMaskedValue } from '../../utils/borrowerFormatters';
 import RevealableInput from '../../components/Common/RevealableInput';
 import { useSummernote } from '../../hooks/useSummernote';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import { Calendar } from 'primereact/calendar';
 
 import { parseDate as parseDateHelper, normalizeDate } from '../../utils/formatters';
@@ -496,7 +497,11 @@ export default function LeadDetails() {
                         ssn: isMaskedValue(data.ssn) ? data.ssn : (data.ssn ? formatSSN(data.ssn) : ''),
                         business_ein: isMaskedValue(data.business_ein) ? data.business_ein : displayEIN(data.business_ein),
                         other_city: otherCityValue,
-                        business_start_date: data.business_start_date ? normalizeDate(data.business_start_date) : ''
+                        business_start_date: data.business_start_date ? normalizeDate(data.business_start_date) : '',
+                        // The editor shows this as live HTML: nothing that can run
+                        // reaches it, even from a lead saved before the API cleaned
+                        // the notes (R2 BUG-089).
+                        requirement_details: sanitizeHtml(data.requirement_details)
                     }));
                 }
             } catch (err) {

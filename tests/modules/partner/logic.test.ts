@@ -133,3 +133,28 @@ describe('partnerPortalBaseHost', () => {
     expect(partnerPortalBaseHost(websiteUrl, 'portal.test')).toBe('portal.test')
   })
 })
+
+/**
+ * Defect (R2 BUG-088, R2-OP-PART-15): two tabs on partner 93; tab B, not
+ * reloaded, saved its whole stale form and put back the phone tab A had
+ * changed - 200, no warning. Like the client form, an edit now sends the
+ * version it loaded (partner_info_version) as expected_version; the API refuses
+ * a save from an older copy (409) and the form shows its message.
+ */
+describe('buildPartnerFormDataPayload - the version the form loaded', () => {
+  const loaded = { full_name: 'Pat', company_name: 'QA-TEST R2R2 Partner A', phone_number: '(813) 555-0111', partner_info_version: 'abc123' }
+
+  it('sends it as expected_version on an edit, and never as partner_info_version', () => {
+    const payload = buildPartnerFormDataPayload(loaded, 93)
+
+    expect(payload.get('expected_version')).toBe('abc123')
+    expect(payload.has('partner_info_version')).toBe(false)
+  })
+
+  it('sends none when adding a partner', () => {
+    const payload = buildPartnerFormDataPayload({ full_name: 'Pat', partner_info_version: 'abc123' })
+
+    expect(payload.has('expected_version')).toBe(false)
+    expect(payload.has('partner_info_version')).toBe(false)
+  })
+})

@@ -10,6 +10,13 @@ import { usePermissions } from '../../lib/auth/usePermissions'
 import { ENTITY_TYPE_PARTNER } from '../../config/appConfig'
 import NotificationBell from './NotificationBell'
 
+/**
+ * Below this width the layout is the mobile one - responsive.css (max-width:
+ * 991.98px) takes the page's left margin away and Sidebar.jsx treats it as
+ * mobile - so the sidebar is off-canvas behind the menu button (R2 BUG-096).
+ */
+const MOBILE_LAYOUT_MAX_WIDTH = 992
+
 export default function Header() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -114,7 +121,9 @@ export default function Header() {
   // ─── Sidebar toggle ───────────────────────────────────────────────────────
   const toggleSidebar = () => {
     const w = window.innerWidth
-    if (w < 768) {
+    // Below 992 px the layout is the mobile one (the page is not shifted):
+    // the sidebar is off-canvas and this button opens it (R2 BUG-096).
+    if (w < MOBILE_LAYOUT_MAX_WIDTH) {
       document.body.classList.toggle('vertical-sidebar-enable')
       return
     }
@@ -129,7 +138,7 @@ export default function Header() {
 
   useEffect(() => {
     const onResize = () => {
-      if (window.innerWidth >= 768) {
+      if (window.innerWidth >= MOBILE_LAYOUT_MAX_WIDTH) {
         document.body.classList.remove('vertical-sidebar-enable')
       }
     }

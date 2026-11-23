@@ -6,6 +6,7 @@ import type { PartnerCommissionSetup } from '../../../modules/application/types'
 import PartnerCommissionPanel from './PartnerCommissionPanel';
 import { flatCommissionRate, tierForPosition } from '../../../modules/partner/tiers';
 import { PARTNER_COMMISSION_MAX, PARTNER_COMMISSION_TYPE } from '../../../config/partnerCommission';
+import { SUCCESS_FEE_MIN, successFeeError } from '../../../utils/successFee';
 
 /** The rates as typed (percent strings), as the Commission Details card holds them. */
 export type CommissionRates = {
@@ -51,8 +52,7 @@ interface FundedAmountModalProps {
 
 const toRate = (value?: number) => (value ? String(value) : '');
 
-// The Success Fee the API accepts: 1-100%, to the hundredth (R2 BUG-036).
-const SUCCESS_FEE_MIN = 1;
+// The Success Fee the API accepts: 1-100%, to the hundredth (R2 BUG-036, R2 BUG-079).
 const SUCCESS_FEE_STEP = 0.01;
 
 /**
@@ -175,7 +175,11 @@ export default function FundedAmountModal({
     }, [show]);
 
     const parsedAmount = parseFloat(amount || '0') || 0;
-    const feeRate = parseFloat(successFee || '0') || 0;
+    // Why the typed Success Fee can't be saved ('' when it can, or when empty).
+    // A refused fee counts as none in the summary: it never shows an amount
+    // that would not be saved (R2 BUG-079).
+    const feeError = successFeeError(successFee);
+    const feeRate = feeError ? 0 : parseFloat(successFee || '0') || 0;
     const adminShare = showPartnerCommission ? parseFloat(adminRate || '0') || 0 : 100;
     const partnerShare = showPartnerCommission ? parseFloat(partnerRate || '0') || 0 : 0;
     const successFeeAmt = parsedAmount * (feeRate / 100);
@@ -194,6 +198,8 @@ export default function FundedAmountModal({
             setError('Please enter a valid funded amount');
             return;
         }
+        // The reason is already under the field; nothing is saved until it is fixed.
+        if (canEditCommission && feeError) return;
         onConfirm(amount, canEditCommission && hasCommission ? { successFee, adminRate, partnerRate } : null);
     };
 
@@ -223,13 +229,12 @@ export default function FundedAmountModal({
                 step={step}
                 disabled={loading || locked}
                 title={locked ? (hasCommission ? "Set by the partner's commission - it can't be changed here." : 'Set the success fee first.') : undefined}
+                // Kept as typed: a value out of range used to be dropped without a
+                // word (101 became 10, -1 left it empty). The Success Fee says why
+                // it can't be used instead (R2 BUG-079); the split rates are read-only.
                 onChange={(e) => {
-                    const val = e.target.value;
-                    const num = parseFloat(val);
-                    if (val === '' || (!isNaN(num) && num >= 0 && num <= 100)) {
-                        onChange(val);
-                        setRateError('');
-                    }
+                    onChange(e.target.value);
+                    setRateError('');
                 }}
             />
             <span className="input-group-text bg-light text-muted">%</span>
@@ -244,7 +249,7 @@ export default function FundedAmountModal({
         </div>
     );
 
-    const hasError = rateError || commissionErrors.total_commission || commissionErrors.admin_commission || commissionErrors.partner_commission;
+    const hasError = feeError || rateError || commissionErrors.total_commission || commissionErrors.admin_commission || commissionErrors.partner_commission;
 
     return (
         <div className="modal fade flip fam-modal" ref={modalRef} tabIndex={-1} aria-hidden="true" aria-labelledby="funded-amount-title">
@@ -326,7 +331,7 @@ export default function FundedAmountModal({
                                 <>
                                     <div className="fam-inline">
                                         <label htmlFor="closing-success-fee" className="fam-label">Success Fee (%)</label>
-                                        <div className="fam-input">{percentInput(successFee, changeSuccessFee, 'closing-success-fee', !!commissionErrors.total_commission, false, SUCCESS_FEE_MIN, SUCCESS_FEE_STEP)}</div>
+                                        <div className="fam-input">{percentInput(successFee, changeSuccessFee, 'closing-success-fee', !!feeError || !!commissionErrors.total_commission, false, SUCCESS_FEE_MIN, SUCCESS_FEE_STEP)}</div>
                                     </div>
                                     {/* A flat tier has no % split to show: the summary gives it in $. */}
                                     {showPartnerCommission && flatAmount === null && (

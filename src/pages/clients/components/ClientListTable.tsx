@@ -93,8 +93,8 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         status: appliedStatus || '',
         is_free_trail: appliedFreePlan || '',
         // '' is the working list (archived hidden), '1' archived only, 'all' both.
-        // A search overrides this server-side so an archived client is always
-        // findable by name, company or email.
+        // The search applies within it: an archived client is found under
+        // Archived Only or All Records (R2 BUG-086).
         archived: appliedArchived || '',
         filters: appliedFilters,
         page,

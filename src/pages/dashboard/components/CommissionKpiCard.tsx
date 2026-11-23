@@ -13,6 +13,9 @@ const money = (value: number) => formatCurrency(value, '$', 1, 0);
 function describe(commission: DashboardCommission) {
     switch (commission.viewer) {
         case COMMISSION_VIEWER.HOST_OWNER:
+            // The host's figure is its Host Share - the same number, under the
+            // same name, as on the Commissions page (R2 BUG-094).
+            return { title: 'Host Share', value: money(commission.earned_amount), linkText: 'View all commissions' };
         case COMMISSION_VIEWER.PARTNER_OWNER:
             return { title: 'Commission Earned', value: money(commission.earned_amount), linkText: 'View all commissions' };
         case COMMISSION_VIEWER.HOST_STAFF:

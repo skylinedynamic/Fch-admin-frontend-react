@@ -6,7 +6,7 @@ import { Calendar } from 'primereact/calendar';
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
 import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
-import { partnerPortalBaseHost } from '../../../modules/partner/logic';
+import { partnerPortalBaseHost, suggestedSubdomain } from '../../../modules/partner/logic';
 import { formatPhoneNumber, formatZipCode, formatBusinessEIN, displayEIN } from '../../../utils/formatters';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
@@ -47,7 +47,7 @@ export default function PartnerInformationSection({
     // Auto-sync partner_domain from company_name in create mode when user hasn't manually edited it
     useEffect(() => {
         if (!partnerId && !domainManuallyEditedRef.current && formData.company_name) {
-            const autoDomain = formData.company_name.toLowerCase().replace(/[^a-z]/g, '');
+            const autoDomain = suggestedSubdomain(formData.company_name);
             handleInputChange({ target: { name: 'partner_domain', value: autoDomain } });
         }
     }, [formData.company_name]);
@@ -266,7 +266,7 @@ export default function PartnerInformationSection({
                                         </>
                                     ) : (
                                         <>
-                                            {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}.
+                                            {suggestedSubdomain(formData.company_name)}.
                                             {portalBaseHost}
                                         </>
                                     )}
@@ -329,7 +329,7 @@ export default function PartnerInformationSection({
                                 placeholder={formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Enter custom subdomain" : ""}
                                 value={domainManuallyEditedRef.current
                                     ? (formData.partner_domain || '')
-                                    : (formData.company_name ? formData.company_name.toLowerCase().replace(/[^a-z]/g, '') : '')
+                                    : suggestedSubdomain(formData.company_name)
                                 }
                                 onChange={(e) => {
                                     domainManuallyEditedRef.current = true;

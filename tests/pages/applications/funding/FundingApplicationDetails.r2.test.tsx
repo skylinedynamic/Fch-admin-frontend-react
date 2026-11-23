@@ -85,7 +85,9 @@ describe('FundingApplicationDetails - QA round 2', () => {
 
   // R2 BUG-036: 0 was refused with nothing on screen. The commission is now set
   // in the Closed (Completed) modal: its Success Fee takes the API's 1-100%, and
-  // a refusal is shown under it and the application is not closed.
+  // a refusal is shown under it and the application is not closed. Since R2
+  // BUG-079 the modal refuses a fee outside 1-100% (or with a third decimal)
+  // itself, so nothing is sent to the API for it.
   it('shows a refused Success Fee in the Closed modal and does not close', async () => {
     mocks.application = {
       ...application,
@@ -115,8 +117,10 @@ describe('FundingApplicationDetails - QA round 2', () => {
     await userEvent.type(fee, '0.5')
     await userEvent.click(screen.getByRole('button', { name: 'Confirm & Update', hidden: true }))
 
-    expect(await screen.findByText('The success fee commission must be at least 1.')).toBeInTheDocument()
+    expect(await screen.findByText('Success fee must be between 1% and 100%.')).toBeInTheDocument()
+    expect(fee).toHaveClass('is-invalid')
     expect(toast.error).not.toHaveBeenCalled()
+    expect(mocks.saveCommission).not.toHaveBeenCalled()
     expect(mocks.updateStatus).not.toHaveBeenCalled()
   })
 })

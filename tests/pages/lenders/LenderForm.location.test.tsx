@@ -95,7 +95,7 @@ describe('Lender form › location', () => {
     await user.keyboard('{Escape}')
     await pick(user, 'lender_state', 'Texas')
 
-    expect(await optionsOf(user, 'lender_city')).toEqual(['Austin', 'Dallas'])
+    expect(await optionsOf(user, 'lender_city')).toEqual(['Austin', 'Dallas', 'Others'])
     await user.keyboard('{Escape}')
     await pick(user, 'lender_city', 'Austin')
 
@@ -131,7 +131,7 @@ describe('Lender form › location', () => {
     await pick(user, 'lender_state', 'Ohio')
 
     expect(shown('lender_city')).toBe('Select city')
-    expect(await optionsOf(user, 'lender_city')).toEqual(['Columbus'])
+    expect(await optionsOf(user, 'lender_city')).toEqual(['Columbus', 'Others'])
   })
 
   it("shows a lender's saved location when editing", async () => {
@@ -215,5 +215,74 @@ describe('Lender form › location', () => {
     await user.click(dropdown('lender_state'))
     await waitFor(() => expect(dropdown('lender_state').querySelector('.p-dropdown-empty-message')).toHaveTextContent('Select a country first'))
     expect(itemsOf('lender_state')).toHaveLength(0)
+  })
+  /**
+   * 2026-11-23: City > Others, as on a client's profile - a city the list does
+   * not have is typed in "Other City" (required) and saved as the city; a
+   * lender whose city is not in the list opens with Others and the name typed.
+   */
+  it('offers Others after the cities, and saves the city typed in Other City', async () => {
+    allowBackgroundCalls()
+    api('get', '/admin/lenders/7', { status: true, data: { ...KABBAGE, country: 'United States', state: 'Texas', city: 'Austin' } })
+    const update = api('put', '/admin/lenders/7', { status: true, data: KABBAGE })
+    const user = mount('/lenders/7')
+    await screen.findByDisplayValue('Kabbage Inc.')
+    await waitFor(() => expect(shown('lender_city')).toBe('Austin'))
+    expect(screen.queryByLabelText(/Other City/)).not.toBeInTheDocument()
+
+    await pick(user, 'lender_city', 'Others')
+    const other = screen.getByLabelText(/Other City/)
+    expect(other).toHaveAttribute('placeholder', 'Enter city name')
+    await user.type(other, 'Round Top Village')
+    await user.click(screen.getByRole('button', { name: /update/i }))
+
+    expect(await screen.findByText('Lenders list')).toBeInTheDocument()
+    // The API checks the name and saves it as the city (as for a client).
+    expect(update.bodies[0]).toMatchObject({ country: 'United States', state: 'Texas', city: 'Others', other_city: 'Round Top Village' })
+  })
+
+  it("shows the API's refusal under Other City when Others has no name", async () => {
+    allowBackgroundCalls()
+    api('get', '/admin/lenders/7', { status: true, data: { ...KABBAGE, country: 'United States', state: 'Texas', city: 'Austin' } })
+    const update = api('put', '/admin/lenders/7', { status: false, message: 'Invalid', errors: { other_city: ['Other City is required.'] } }, 422)
+    const user = mount('/lenders/7')
+    await screen.findByDisplayValue('Kabbage Inc.')
+    await waitFor(() => expect(shown('lender_city')).toBe('Austin'))
+
+    await pick(user, 'lender_city', 'Others')
+    await user.click(screen.getByRole('button', { name: /update/i }))
+
+    expect(await screen.findByText('Other City is required.')).toBeInTheDocument()
+    expect(screen.getByLabelText(/Other City/)).toHaveClass('is-invalid')
+    expect(update.bodies[0]).toMatchObject({ city: 'Others', other_city: null })
+
+    // Typing the name clears the message.
+    await user.type(screen.getByLabelText(/Other City/), 'Shiner')
+    expect(screen.queryByText('Other City is required.')).not.toBeInTheDocument()
+  })
+
+  it('sends no Other City for a city from the list', async () => {
+    allowBackgroundCalls()
+    api('get', '/admin/lenders/7', { status: true, data: { ...KABBAGE, country: 'United States', state: 'Texas', city: 'Austin' } })
+    const update = api('put', '/admin/lenders/7', { status: true, data: KABBAGE })
+    const user = mount('/lenders/7')
+    await screen.findByDisplayValue('Kabbage Inc.')
+    await waitFor(() => expect(shown('lender_city')).toBe('Austin'))
+
+    await user.click(screen.getByRole('button', { name: /update/i }))
+
+    expect(await screen.findByText('Lenders list')).toBeInTheDocument()
+    expect(update.bodies[0]).toMatchObject({ city: 'Austin' })
+    expect(update.bodies[0]).not.toHaveProperty('other_city')
+  })
+
+  it('opens a lender whose city is not in the list with Others and the name typed', async () => {
+    allowBackgroundCalls()
+    api('get', '/admin/lenders/7', { status: true, data: { ...KABBAGE, country: 'United States', state: 'Texas', city: 'Round Top Village' } })
+    mount('/lenders/7')
+    await screen.findByDisplayValue('Kabbage Inc.')
+
+    await waitFor(() => expect(shown('lender_city')).toBe('Others'))
+    expect(screen.getByLabelText(/Other City/)).toHaveValue('Round Top Village')
   })
 })
