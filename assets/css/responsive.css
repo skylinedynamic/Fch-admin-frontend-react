@@ -3031,3 +3031,18 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         max-width: 100% !important;
     }
 }
+
+/* From 768 to 991 px the page is not shifted (the mobile layout above), but
+   the theme hides the sidebar only below 768 px, so the full sidebar covered
+   the page's left 250 px and the menu button (R2 BUG-096, 200% zoom). Here
+   too it is off-canvas until the menu button opens it, over the overlay that
+   closes it (Layout.jsx). */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    [data-layout=vertical] .app-menu {
+        margin-left: -100%;
+    }
+
+    .vertical-sidebar-enable .vertical-overlay {
+        display: block;
+    }
+}
