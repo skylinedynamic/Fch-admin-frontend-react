@@ -288,12 +288,18 @@ describe('FundedAmountModal', () => {
     expect(onConfirm).toHaveBeenCalledWith('25000', { successFee: '10', adminRate: '100', partnerRate: '0' })
   })
 
-  it('ignores a rate above 100', async () => {
+  /**
+   * Defect (R2 BUG-079): 101 became 10 (the third digit was dropped) and -1
+   * left the field empty, with no message either time. The value stays as
+   * typed and the reason is shown under the field.
+   */
+  it('keeps a rate above 100 as typed and says why it cannot be used', async () => {
     renderWithProviders(<FundedAmountModal {...base} onConfirm={vi.fn()} canEditCommission />)
 
     await userEvent.type(screen.getByLabelText('Success Fee (%)'), '150')
 
-    expect(screen.getByLabelText('Success Fee (%)')).toHaveValue(15)
+    expect(screen.getByLabelText('Success Fee (%)')).toHaveValue(150)
+    expect(screen.getByText('Success fee must be between 1% and 100%.')).toBeInTheDocument()
   })
 
   it('shows the errors the commission API sent back', () => {
@@ -552,5 +558,83 @@ describe("FundedAmountModal - the split from the partner's tier", () => {
     expect(screen.getByLabelText('Partner Commission Rate')).toBeDisabled()
     expect(screen.getByLabelText('Partner Commission Rate')).toHaveValue(0)
     expect(screen.getByLabelText('Admin Commission Rate')).toHaveValue(100)
+  })
+})
+
+/**
+ * Defect (R2 BUG-079, OP-FAPP-07): app 134, funded $12,000. Success Fee 101
+ * became 10 and -1 left the field empty, silently. 12.345 was accepted: the
+ * summary showed $1,481.40, the admin confirmed it, and the API stored
+ * 12.35% / $1,482.00 - the application then locked on an amount nobody saw.
+ * The fee is 1-100% to the hundredth; anything else is refused under the field
+ * and blocks Confirm, and the summary only ever shows an amount that will be
+ * saved.
+ */
+describe('FundedAmountModal - Success Fee 1-100% to the hundredth (R2 BUG-079)', () => {
+  const closing = { ...base, initialAmount: '12000', requestedAmount: 12000 }
+  const fee = () => screen.getByLabelText('Success Fee (%)')
+
+  it.each([
+    ['101', 'Success fee must be between 1% and 100%.'],
+    ['-1', 'Success fee must be between 1% and 100%.'],
+    ['0', 'Success fee must be between 1% and 100%.'],
+    ['12.345', 'Success fee can have at most 2 decimal places.'],
+  ])('refuses %s with the reason under the field, and Confirm saves nothing', async (typed, message) => {
+    const onConfirm = vi.fn()
+    renderWithProviders(<FundedAmountModal {...closing} onConfirm={onConfirm} canEditCommission />)
+
+    await userEvent.type(fee(), typed)
+
+    expect(fee()).toHaveValue(Number(typed))
+    expect(fee()).toHaveClass('is-invalid')
+    expect(screen.getByText(message)).toBeInTheDocument()
+
+    await userEvent.click(confirm())
+    expect(onConfirm).not.toHaveBeenCalled()
+  })
+
+  it('never shows an amount for a refused fee: no $1,481.40 for 12.345', async () => {
+    renderWithProviders(<FundedAmountModal {...closing} onConfirm={vi.fn()} canEditCommission />)
+
+    await userEvent.type(fee(), '12.345')
+
+    expect(screen.queryByText('$1,481.40')).not.toBeInTheDocument()
+    expect(screen.queryByText('Admin Commission', { selector: '[data-row] > span' })).not.toBeInTheDocument()
+  })
+
+  it('shows and sends 12.35% as the $1,482.00 the API saves', async () => {
+    const onConfirm = vi.fn()
+    renderWithProviders(<FundedAmountModal {...closing} onConfirm={onConfirm} canEditCommission />)
+
+    await userEvent.type(fee(), '12.35')
+
+    expect(screen.queryByText(/Success fee (must|can)/)).not.toBeInTheDocument()
+    expect(row('Success Fee')).toHaveTextContent('12.35%')
+    expect(row('Success Fee')).toHaveTextContent('$1,482.00')
+    expect(row('Admin Commission')).toHaveTextContent('$1,482.00')
+
+    await userEvent.click(confirm())
+    expect(onConfirm).toHaveBeenCalledWith('12000', { successFee: '12.35', adminRate: '', partnerRate: '' })
+  })
+
+  it('clears the message once the fee is corrected', async () => {
+    renderWithProviders(<FundedAmountModal {...closing} onConfirm={vi.fn()} canEditCommission />)
+
+    await userEvent.type(fee(), '101')
+    expect(screen.getByText('Success fee must be between 1% and 100%.')).toBeInTheDocument()
+
+    await userEvent.clear(fee())
+    await userEvent.type(fee(), '10')
+    expect(screen.queryByText('Success fee must be between 1% and 100%.')).not.toBeInTheDocument()
+    expect(fee()).not.toHaveClass('is-invalid')
+  })
+
+  it('still closes with no commission when the fee is left empty', async () => {
+    const onConfirm = vi.fn()
+    renderWithProviders(<FundedAmountModal {...closing} onConfirm={onConfirm} canEditCommission />)
+
+    await userEvent.click(confirm())
+
+    expect(onConfirm).toHaveBeenCalledWith('12000', null)
   })
 })
