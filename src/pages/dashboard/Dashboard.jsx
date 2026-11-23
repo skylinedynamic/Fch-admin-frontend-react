@@ -13,6 +13,13 @@ import '../../../assets/css/reminder.css';
 /** Recent Funding Applications: how wide a long list of funding types may grow. */
 const FUNDING_TYPE_MAX_WIDTH = 260;
 
+/**
+ * Latest Leads: the contact person's cell fills what Type and Status leave and
+ * no more (max-width 0 + width 100% - a table cell's ellipsis), so a long name
+ * never pushes them out of the widget (R2 BUG-093).
+ */
+const LEAD_NAME_CELL_STYLE = { maxWidth: 0, width: '100%' };
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { isRestricted } = usePermissions();
@@ -493,7 +500,11 @@ export default function Dashboard() {
                               {dashboardData?.latest_leads?.length > 0 ? (
                                 dashboardData.latest_leads.map((lead) => (
                                   <tr key={lead.id} className="cursor-pointer" onClick={() => navigate(`/leads/${lead.id}`)}>
-                                    <td>{lead.contact_person}</td>
+                                    {/* The name takes only the room Type and Status leave: one line,
+                                        cut with an ellipsis, full on hover (R2 BUG-093). */}
+                                    <td className="text-truncate" style={LEAD_NAME_CELL_STYLE} title={lead.contact_person}>
+                                      {lead.contact_person}
+                                    </td>
                                     <td>{lead.lead_type}</td>
                                     <td className="text-end">
                                       <span className="badge bg-primary-subtle text-primary p-2 text-uppercase">

@@ -173,3 +173,47 @@ describe('Dashboard', () => {
     expect(screen.queryByText(RESTRICTED)).not.toBeInTheDocument()
   })
 })
+
+/**
+ * Defect (R2 BUG-093, R2-OP-DASH-03): lead 244's Contact Person was 150
+ * characters. In the Latest Leads widget (392 px) the cell grew to 1,168 px -
+ * no-wrap, clipped with no ellipsis or title - and Type and Status moved about
+ * 1,170 px right, reachable only by scrolling the widget sideways. The name is
+ * kept to one short line with an ellipsis and the full name on hover; Type and
+ * Status stay in their row.
+ */
+describe('Dashboard: Latest Leads', () => {
+  const LONG_NAME = 'QA-TEST R2R2 DASH03 LongContactName' + 'Y'.repeat(115)
+
+  const latestLeadsTable = async () => {
+    const heading = await screen.findByText('Latest Leads')
+    return heading.closest('.card')!.querySelector('table') as HTMLTableElement
+  }
+
+  it('shortens a long contact person with an ellipsis and the full name on hover, keeping Type and Status', async () => {
+    signIn({ first_name: 'Hosta' })
+    useAuthStore.setState({ userSubscription: null } as never)
+    allowBackgroundCalls()
+    api('get', '/common/dashboard', {
+      status: true,
+      data: { latest_leads: [{ id: 244, contact_person: LONG_NAME, lead_type: 'Borrower', status: 'New Lead' }] },
+    })
+    renderPage(<Dashboard />, { path: '/' })
+
+    await screen.findByText(LONG_NAME)
+    const cells = (await latestLeadsTable()).querySelectorAll('tbody tr td')
+    const name = cells[0] as HTMLElement
+
+    expect(LONG_NAME).toHaveLength(150)
+    expect(name).toHaveClass('text-truncate')
+    expect(name).toHaveTextContent(LONG_NAME)
+    expect(name).toHaveAttribute('title', LONG_NAME)
+    // The name column takes only the room Type and Status leave (max-width 0 +
+    // width 100%: the table-cell ellipsis), so it never pushes them out - at
+    // QA's 392 px widget too (measured in Chromium with the app's CSS).
+    expect(name.style.maxWidth).toBe('0px')
+    expect(name.style.width).toBe('100%')
+    expect(cells[1]).toHaveTextContent('Borrower')
+    expect(cells[2]).toHaveTextContent('New Lead')
+  })
+})
