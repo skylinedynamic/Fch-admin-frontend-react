@@ -73,6 +73,27 @@ describe('Appointments', () => {
     expect(toast.error).not.toHaveBeenCalled()
   })
 
+  // Same panel as the borrower portal (client-fch): heading and empty-state card.
+  it('shows the borrower-portal style heading and empty state', async () => {
+    mount(['view appointments', 'create appointments'], { status: true, data: [] })
+
+    expect(await screen.findByText('No Upcoming Events')).toBeInTheDocument()
+    expect(screen.getByText('There is no schedule found')).toBeInTheDocument()
+    expect(screen.getByText('Use the button above to book your next session.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Upcoming Appointment' })).toBeInTheDocument()
+    expect(screen.getByText("Don't miss scheduled appointments")).toBeInTheDocument()
+    expect(screen.queryByText('No upcoming appointments')).not.toBeInTheDocument()
+    // The theme's .border-dashed removes the border here; this class draws the borrower portal's dashed box.
+    expect(screen.getByText('No Upcoming Events').closest('.appointment-empty-card')).not.toBeNull()
+  })
+
+  it('does not point to the create button when the user cannot create', async () => {
+    mount(['view appointments'], { status: true, data: [] })
+
+    expect(await screen.findByText('No Upcoming Events')).toBeInTheDocument()
+    expect(screen.queryByText('Use the button above to book your next session.')).not.toBeInTheDocument()
+  })
+
   it('opening the create button does not throw', async () => {
     const user = userEvent.setup()
     const { container, list } = mount(['view appointments', 'create appointments'])
@@ -117,7 +138,7 @@ describe('Appointments', () => {
   it('says so when nothing is coming up', async () => {
     mount(['view appointments'], { status: true, data: [{ ...APPOINTMENT, appointment_date: '2020-03-11 15:00:00' }] })
 
-    expect(await screen.findByText(/no upcoming appointments/i)).toBeInTheDocument()
+    expect(await screen.findByText('No Upcoming Events')).toBeInTheDocument()
   })
 })
 

@@ -72,15 +72,45 @@ describe('AppointmentModal - who may change an appointment (BUG-102)', () => {
     expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument()
   })
 
-  it('Confirm sets the status to confirmed, keeping who it is with', async () => {
+  // Confirm has its own endpoint (it was a PUT with the status): only the person it was
+  // booked with may confirm, and the others get "Appointment Confirmed", not "Updated".
+  it('Confirm posts to the confirm endpoint, says so, and does not edit the appointment', async () => {
     const user = userEvent.setup()
-    const { update, onSuccess } = await open(PARTNER_ID)
+    const confirm = { calls: 0 }
+    const { update, onSuccess } = await open(PARTNER_ID, appointment(), ALL, () => {
+      server.use(http.post('*/common/appointments/1/confirm', () => {
+        confirm.calls += 1
+        return HttpResponse.json({ status: true, message: 'Appointment confirmed.', data: { id: 1, status: 'confirmed' } })
+      }))
+    })
 
     await user.click(screen.getByRole('button', { name: /^\W*confirm$/i }))
 
-    await waitFor(() => expect(update.calls).toBe(1))
-    expect(update.bodies[0]).toEqual({ assigned_for: PARTNER_ID, status: 'confirmed' })
+    await waitFor(() => expect(confirm.calls).toBe(1))
+    expect(update.calls).toBe(0)
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Appointment confirmed.'))
     await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+  })
+
+  it("Confirm shows the API's reason when it is refused, and keeps the appointment open", async () => {
+    const user = userEvent.setup()
+    const { onSuccess } = await open(PARTNER_ID, appointment(), ALL, () => {
+      server.use(http.post('*/common/appointments/1/confirm', () =>
+        HttpResponse.json({ status: false, message: 'Only the person an appointment was booked with can confirm it, while it is pending and still ahead.' }, { status: 422 })))
+    })
+
+    await user.click(screen.getByRole('button', { name: /^\W*confirm$/i }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Only the person an appointment was booked with can confirm it, while it is pending and still ahead.'))
+    expect(onSuccess).not.toHaveBeenCalled()
+  })
+
+  it('the organiser sees a confirmed appointment as Confirmed, with nothing to confirm', async () => {
+    await open(CLIENT_ID, appointment({ status: 'confirmed' }))
+
+    const hero = screen.getByText('QA-TEST Run1 WL client booking').closest('.apt-hero') as HTMLElement
+    expect(within(hero).getByText('Confirmed')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^\W*confirm$/i })).not.toBeInTheDocument()
   })
 
   it('Cancel appointment asks first, then sets the status to cancelled', async () => {
@@ -363,5 +393,33 @@ describe('AppointmentModal - an appointment that ends after midnight (R2 BUG-024
     const reason = await screen.findByText('The status is not valid.')
     expect(reason.previousElementSibling).toHaveClass('time-slot-container')
     expect(toast.error).not.toHaveBeenCalled()
+  })
+})
+
+// 2026-11-23 redesign: the details show the status and type at a glance, and the form is in sections.
+describe('AppointmentModal - layout', () => {
+  it('shows the status and the meeting type beside the title', async () => {
+    await open(CLIENT_ID)
+
+    const hero = screen.getByText('QA-TEST Run1 WL client booking').closest('.apt-hero') as HTMLElement
+    expect(hero).not.toBeNull()
+    expect(within(hero).getByText('Pending')).toBeInTheDocument()
+    expect(within(hero).getByText('Business Review')).toBeInTheDocument()
+  })
+
+  it('shows a pending appointment that has passed as expired', async () => {
+    await open(CLIENT_ID, appointment({ appointment_date: '2020-10-28 09:00:00' }))
+
+    const hero = screen.getByText('QA-TEST Run1 WL client booking').closest('.apt-hero') as HTMLElement
+    expect(within(hero).getByText('Expired')).toBeInTheDocument()
+  })
+
+  it('splits the form into Meeting, People, Schedule and Notes sections', async () => {
+    await open(CLIENT_ID)
+    await userEvent.setup().click(screen.getByRole('button', { name: /edit/i }))
+
+    for (const name of ['Meeting', 'People', 'Schedule', 'Notes']) {
+      expect(screen.getByRole('heading', { name })).toBeInTheDocument()
+    }
   })
 })

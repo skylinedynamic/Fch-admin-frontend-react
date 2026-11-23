@@ -1,11 +1,23 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
-import { fetchAppointmentById, createAppointment, deleteAppointment, checkAvailability } from '../../../src/modules/appointment/services'
+import { fetchAppointmentById, createAppointment, deleteAppointment, checkAvailability, confirmAppointment } from '../../../src/modules/appointment/services'
 
 afterEach(() => server.resetHandlers())
 
 describe('appointment services', () => {
+  it('confirmAppointment POSTs to the id-scoped confirm route and returns the reply', async () => {
+    let calledPath = ''
+    server.use(
+      http.post('*/common/appointments/:id/confirm', ({ request }) => {
+        calledPath = new URL(request.url).pathname
+        return HttpResponse.json({ status: true, message: 'Appointment confirmed.', data: { id: 7, status: 'confirmed' } })
+      })
+    )
+    await expect(confirmAppointment(7)).resolves.toMatchObject({ status: true, message: 'Appointment confirmed.' })
+    expect(calledPath).toMatch(/\/common\/appointments\/7\/confirm$/)
+  })
+
   it('fetchAppointmentById unwraps the data object', async () => {
     server.use(http.get('*/common/appointments/7', () => HttpResponse.json({ status: true, data: { id: 7, subject: 'Consult' } })))
     await expect(fetchAppointmentById(7)).resolves.toEqual({ id: 7, subject: 'Consult' })

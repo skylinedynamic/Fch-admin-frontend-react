@@ -9712,3 +9712,12 @@ File: Custom Css File
   white-space: nowrap;
   overflow: hidden;
 }
+
+/* Appointments: empty "No Upcoming Events" card, same as the borrower portal (client-fch).
+   The theme's .border-dashed removes the border here, so this class draws the dashed box. */
+.appointment-empty-card {
+  border: 1px dashed #d1d5db !important;
+  border-radius: 0.375rem !important;
+  background-color: #f8f9fa !important;
+  box-shadow: none;
+}

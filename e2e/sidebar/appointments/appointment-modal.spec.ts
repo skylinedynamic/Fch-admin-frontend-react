@@ -188,6 +188,7 @@ test.describe('Appointment dialog - the person it was booked with', () => {
   }
   const PERMISSIONS = ['view appointments', 'update appointments', 'delete appointments']
   const DETAIL = /\/common\/appointments\/1$/
+  const CONFIRM = /\/common\/appointments\/1\/confirm$/
 
   async function openBooking(page: Page, userId: number, booking: Record<string, unknown> = BOOKING): Promise<ApiMock> {
     await page.clock.setFixedTime(MORNING)
@@ -196,6 +197,7 @@ test.describe('Appointment dialog - the person it was booked with', () => {
       { method: 'POST', match: '/common/appointments/fetch-all', body: ok([booking]) },
       { method: 'GET', match: DETAIL, body: ok(booking) },
       { method: 'PUT', match: DETAIL, body: ok(booking, 'Appointment updated successfully') },
+      { method: 'POST', match: CONFIRM, body: ok({ ...booking, status: 'confirmed' }, 'Appointment confirmed.') },
       { method: 'POST', match: SELECTABLE, body: ok([]) },
     ])
     await page.goto('/appointments')
@@ -212,12 +214,11 @@ test.describe('Appointment dialog - the person it was booked with', () => {
     await expect(dialog(page).getByRole('button', { name: /Delete/ })).toHaveCount(0)
   })
 
-  test('Confirm sets the status to confirmed', async ({ page }) => {
+  test('Confirm posts to the confirm endpoint and says so', async ({ page }) => {
     const api = await openBooking(page, WANDA.id)
     await dialog(page).getByRole('button', { name: /^\W*Confirm$/ }).click()
-    const call = await expectCall(api, 'PUT', DETAIL)
-    expect(call.json).toEqual({ assigned_for: WANDA.id, status: 'confirmed' })
-    await expect(page.getByText('Appointment updated successfully')).toBeVisible()
+    await expectCall(api, 'POST', CONFIRM)
+    await expect(page.getByText('Appointment confirmed.')).toBeVisible()
   })
 
   test('Cancel Appointment asks first, then sets the status to cancelled', async ({ page }) => {

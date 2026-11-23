@@ -64,6 +64,8 @@ export const APPOINTMENT_STATUS = {
     CONFIRMED: "confirmed",
     CANCELLED: "cancelled",
     COMPLETED: "completed",
+    /** Display only: a pending meeting whose time has passed. The API never stores or accepts it. */
+    EXPIRED: "expired",
 } as const;
 
 export const APPOINTMENT_STATUS_CONFIG = {

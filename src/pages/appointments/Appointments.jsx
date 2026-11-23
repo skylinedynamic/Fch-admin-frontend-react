@@ -232,8 +232,10 @@ export default function Appointments() {
                                 getSyncDates={() => calendarRange(calendarRef.current?.getApi?.())}
                             />
                             <div>
-                                <h5 className="mb-1">All Appointments</h5>
-                                <p className="text-muted">Don't miss scheduled appointments</p>
+                                <div className="mb-3 px-1">
+                                    <h4 className="fs-18 mb-1" style={{ color: '#313a46' }}>Upcoming Appointment</h4>
+                                    <p className="text-muted fs-13">Don't miss scheduled appointments</p>
+                                </div>
                                 <div className="pe-2 me-n1 mb-3 upcoming-event-list-scroll" data-simplebar>
                                     <div id="upcoming-event-list">
                                         {loading && (
@@ -262,9 +264,17 @@ export default function Appointments() {
                                             </>
                                         )}
                                         {!loading && upcomingEvents.length === 0 && (
-                                            <div className="text-center text-muted fs-13 py-4 border border-dashed rounded">
-                                                <i className="ri-calendar-check-line fs-22 d-block mb-1"></i>
-                                                No upcoming appointments
+                                            <div className="card appointment-empty-card bg-light bg-opacity-25 mb-4">
+                                                <div className="card-body text-center py-4">
+                                                    <div className="avatar-md bg-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm border border-light">
+                                                        <i className="ri-calendar-event-line fs-24 text-muted opacity-50"></i>
+                                                    </div>
+                                                    <h6 className="fw-semibold text-dark mb-1 d-none d-md-block">No Upcoming Events</h6>
+                                                    <h6 className="fw-semibold text-dark mb-1 d-block d-md-none fs-15">There is no schedule found</h6>
+                                                    {hasPermission('create appointments') && (
+                                                        <p className="text-muted fs-12 mb-0">Use the button above to book your next session.</p>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                         {!loading && upcomingEvents.map(evt => {

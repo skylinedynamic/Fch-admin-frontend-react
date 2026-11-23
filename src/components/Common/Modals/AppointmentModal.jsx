@@ -9,7 +9,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 
 // API Services
-import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
+import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers, confirmAppointment } from '../../../modules/appointment/services';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useSummernote } from '../../../hooks/useSummernote';
@@ -18,6 +18,7 @@ import ConfirmationModal from './ConfirmationModal';
 
 // Config
 import { APPOINTMENT_STATUS, APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from '../../../config';
+import { APPOINTMENT_STATUS_CONFIG } from '../../../config/appointmentTypeOptions';
 import { browserTimeZone, defaultStart, endSlotsAfter, endWithinDay, localDateString, minutesBetween, startSlotsFrom, timeAfter, timeZoneLabel } from '../../../utils/appointmentTime';
 
 // Styles
@@ -146,6 +147,10 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const isOpenStatus = displayData.status === APPOINTMENT_STATUS.PENDING || displayData.status === APPOINTMENT_STATUS.CONFIRMED;
     const canConfirm = isInvitee && canUpdate && !displayData.isPast && displayData.status === APPOINTMENT_STATUS.PENDING;
     const canCancel = isInvitee && canUpdate && !displayData.isPast && isOpenStatus;
+    // As in the appointments list: a pending meeting whose time has passed reads as expired.
+    const statusConfig = APPOINTMENT_STATUS_CONFIG[
+        displayData.status === APPOINTMENT_STATUS.PENDING && displayData.isPast ? APPOINTMENT_STATUS.EXPIRED : displayData.status
+    ];
 
     const [originalData, setOriginalData] = useState(null);
 
@@ -674,6 +679,24 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }
     };
 
+    // Its own endpoint: only the person it was booked with may confirm, and the
+    // others are told "Appointment Confirmed" (a PUT with the status said "Updated").
+    const handleConfirm = async () => {
+        try {
+            setIsUpdatingStatus(true);
+            const response = await confirmAppointment(selectedEventId);
+            toast.success(response?.message || "Appointment confirmed.");
+            if (modalInstance) modalInstance.hide();
+            if (onSuccess) onSuccess();
+        } catch (error) {
+            if (error.response?.status !== 403) {
+                toast.error(error.response?.data?.message || "Failed to confirm the appointment");
+            }
+        } finally {
+            setIsUpdatingStatus(false);
+        }
+    };
+
     const confirmCancel = () => {
         if (!selectedEventId) return;
         if (modalInstance) modalInstance.hide();
@@ -732,14 +755,24 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             <div className="modal fade appointment-modal-theme" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
                 <div className="modal-dialog modal-dialog-centered modal-lg appointment-modal-dialog">
                     <div className="modal-content border-0 shadow-lg">
-                        <div className="modal-header p-3 bg-info-subtle">
-                            <h5 className="modal-title">
-                                {viewMode ? "Appointment Details" : (isNewEvent ? "Add Appointment" : "Edit Appointment")}
-                            </h5>
+                        <div className="modal-header apt-modal-header">
+                            <div className="d-flex align-items-center gap-3 min-w-0">
+                                <div className="apt-modal-icon flex-shrink-0">
+                                    <i className={viewMode ? "ri-calendar-event-line" : (isNewEvent ? "ri-calendar-schedule-line" : "ri-edit-2-line")}></i>
+                                </div>
+                                <div className="min-w-0">
+                                    <h5 className="modal-title mb-0">
+                                        {viewMode ? "Appointment Details" : (isNewEvent ? "Add Appointment" : "Edit Appointment")}
+                                    </h5>
+                                    <p className="apt-modal-subtitle mb-0">
+                                        {viewMode ? "Everything about this meeting in one place" : (isNewEvent ? "Choose who, when and what it is about" : "Change the details and save")}
+                                    </p>
+                                </div>
+                            </div>
                             <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
 
-                        <div className="modal-body p-4" style={{ backgroundColor: '#fdfdfd' }}>
+                        <div className="modal-body apt-modal-body">
                             {/* Details View */}
                             {viewMode ? (
                                 loadingDetails ? (
@@ -781,16 +814,23 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="event-details position-relative">
-                                        <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
+                                    <div className="event-details">
+                                        <div className="apt-hero d-flex align-items-start justify-content-between gap-3 mb-4">
+                                            <div className="min-w-0">
+                                                <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                                    {statusConfig && (
+                                                        <span className={`badge apt-pill ${statusConfig.badgeClass}`}>{statusConfig.label}</span>
+                                                    )}
+                                                    {displayData.category && (
+                                                        <span className="badge apt-pill apt-pill-type"><i className="ri-price-tag-3-line me-1"></i>{displayData.category}</span>
+                                                    )}
+                                                </div>
+                                                <h4 className="apt-hero-title mb-0">{displayData.title || "No Title"}</h4>
+                                            </div>
                                             {(canUpdate && (isScheduler || isInvitee)) && (
                                                 <button
-                                                    className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
+                                                    className="btn btn-sm btn-soft-primary flex-shrink-0"
                                                     onClick={() => setViewMode(false)}
-                                                    style={{
-                                                        fontWeight: "600",
-                                                        transition: "all 0.2s ease"
-                                                    }}
                                                 >
                                                     {isInvitee ? (
                                                         <><i className="ri-calendar-schedule-line fs-14 me-1"></i> Reschedule</>
@@ -801,17 +841,17 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             )}
                                         </div>
 
-                                        <div className="mb-4">
-                                            <div className="d-flex align-items-center justify-content-between mb-1">
-                                                <label className="text-muted fs-11 text-uppercase fw-bold mb-0 letter-spacing-1">Appointment Title</label>
-                                            </div>
-                                            <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
+                                        <div className="apt-info-grid mb-4">
+                                            <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} />
+                                            <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} />
+                                            <DetailItem icon="ri-global-line" label="Time Zone" value={displayData.location} />
+                                            <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} />
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
-                                            <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
-                                                <div className="text-dark fs-14" style={{ lineHeight: "1.7", letterSpacing: "0.2px" }}>
+                                            <label className="apt-label d-block mb-2">Description</label>
+                                            <div className="apt-description">
+                                                <div className="text-dark fs-14" style={{ lineHeight: "1.7" }}>
                                                     {(() => {
                                                         const description = displayData.description || "No Description";
                                                         // Extract text and properly decode common entities for the preview
@@ -862,31 +902,22 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             </div>
                                         </div>
 
-                                        <div className="row g-4 mb-2">
-                                            <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} className="detail-item-col" />
-                                            <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} className="detail-item-col" />
-                                            <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} className="detail-item-col" />
-                                            <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} className="detail-item-col" />
-                                        </div>
-
-                                        <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                        <div className="apt-with-card d-flex align-items-center">
                                             <div className="flex-shrink-0 me-3">
-                                                <div className="avatar-md">
-                                                    {displayData.assignedForAvatar ? (
-                                                        <img src={displayData.assignedForAvatar} alt="" className="rounded-circle img-thumbnail avatar-title" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
-                                                    ) : (
-                                                        <div className="avatar-title rounded-circle bg-primary text-white">
-                                                            <i className="ri-user-follow-line fs-24"></i>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                {displayData.assignedForAvatar ? (
+                                                    <img src={displayData.assignedForAvatar} alt="" className="apt-with-avatar" />
+                                                ) : (
+                                                    <div className="apt-with-avatar apt-with-avatar-icon">
+                                                        <i className="ri-user-follow-line"></i>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className="flex-grow-1 d-flex align-items-center gap-2">
-                                                <p className="text-primary-emphasis mb-0 fs-12 uppercase-label">
-                                                    Appointment With:
+                                            <div className="flex-grow-1 min-w-0">
+                                                <p className="apt-label mb-1">
+                                                    Appointment With
                                                 </p>
 
-                                                <h5 className="mb-0 fs-16 fw-bold">
+                                                <h5 className="mb-0 fs-15 fw-semibold text-break">
                                                     {displayData.attendees.length > 1 ? (
                                                         <span className="text-dark">{displayData.attendees.map(a => a.name || a.email).join(', ')}</span>
                                                     ) : displayData.attendees.length === 1 && !displayData.attendees[0].user_id ? (
@@ -934,19 +965,19 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             </div>
                                         )}
 
-                                        <div className="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                                        <div className="apt-modal-actions d-flex flex-wrap justify-content-end gap-2">
                                             {(hasPermission('delete appointments') && isScheduler) && (
-                                                <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
+                                                <button className="btn btn-soft-danger" onClick={confirmDelete} disabled={isDeleting}>
                                                     <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
                                                 </button>
                                             )}
                                             {canCancel && (
-                                                <button className="btn btn-soft-danger fw-medium" onClick={confirmCancel} disabled={isUpdatingStatus}>
+                                                <button className="btn btn-soft-danger" onClick={confirmCancel} disabled={isUpdatingStatus}>
                                                     <i className="ri-close-circle-line me-1"></i> Cancel Appointment
                                                 </button>
                                             )}
                                             {canConfirm && (
-                                                <button className="btn btn-success fw-medium" onClick={() => updateStatus(APPOINTMENT_STATUS.CONFIRMED)} disabled={isUpdatingStatus}>
+                                                <button className="btn btn-success" onClick={handleConfirm} disabled={isUpdatingStatus}>
                                                     <i className="ri-check-line me-1"></i> Confirm
                                                 </button>
                                             )}
@@ -956,9 +987,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                             ) : (
                                 /* Form View */
                                 <form onSubmit={handleSubmit}>
-
+                                    <FormSection icon="ri-file-text-line" title="Meeting">
                                     <div className="row">
-
                                         <div className="col-md-8 mb-3">
                                             <label className="form-label">Appointment Title <span className="text-danger">*</span></label>
                                             <input type="text" className={`form-control ${formErrors.subject ? "is-invalid" : ""}`}
@@ -975,9 +1005,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             {formErrors.meeting_type && <div className="text-danger fs-11 mt-1">{formErrors.meeting_type}</div>}
                                         </div>
 
-                                        {/* The invitee cannot change who the meeting is with (BUG-102). */}
-                                        {!isInvitee && (
-                                        <div className="col-12 mb-3">
+                                    </div>
+                                    </FormSection>
+
+                                    {/* The invitee cannot change who the meeting is with (BUG-102). */}
+                                    {!isInvitee && (
+                                    <FormSection icon="ri-group-line" title="People">
+                                        <div className="mb-1">
                                             <div className="d-flex align-items-center justify-content-between mb-2 mt-1">
                                                 <label className="form-label mb-0">
                                                     {isHost ? "Appointment With" : "Appointment With"} <span className="text-danger">*</span>
@@ -1028,11 +1062,12 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 </div>
                                             )}
                                         </div>
-                                        )}
+                                    </FormSection>
+                                    )}
 
-                                        <div className="col-12 position-relative px-0 mb-2" style={{ minHeight: '38px' }}>
-                                            <div className="row mx-0">
-                                                <div className="col-md-6 col-12 mb-3 px-2">
+                                    <FormSection icon="ri-calendar-2-line" title="Schedule">
+                                    <div className="row">
+                                                <div className="col-md-6 col-12 mb-3">
                                                     <label className="form-label fs-13 fw-semibold">Event Date <span className="text-danger">*</span></label>
                                                     <div className="custom-datepicker">
                                                         <Calendar
@@ -1061,7 +1096,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         {formErrors.appointment_date && <div className="text-danger mt-1" style={{ fontSize: '10px' }}>{formErrors.appointment_date}</div>}
                                                     </div>
                                                 </div>
-                                                <div className="col-md-6 col-12 mb-3 px-2">
+                                                <div className="col-md-6 col-12 mb-3">
                                                     <label className="form-label fs-13 fw-semibold">Time Slot <span className="text-danger">*</span></label>
                                                     <div className="d-flex align-items-center gap-2 time-slot-container">
                                                         <Dropdown value={formData.timeStart} options={startOptions}
@@ -1087,11 +1122,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
-                                        </div>
 
                                         {/* Availability Alert - Animated Collapse */}
-                                        <div className="col-12 px-2 overflow-hidden"
+                                        <div className="col-12 overflow-hidden"
                                             style={{ transition: 'all 0.4s ease', maxHeight: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: isConflictVisible ? 1 : 0, marginBottom: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
                                             {(availabilityConflicts || lastConflictingAttempt) && (
                                                 <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 position-relative" role="alert">
@@ -1133,14 +1166,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             <div className="text-muted fs-11 mt-1">Times are booked and shown in your time zone.</div>
                                             {formErrors.timezone && <div className="text-danger fs-11 mt-1">{formErrors.timezone}</div>}
                                         </div>
-
-                                        <div className="col-12 mb-3">
-                                            <label className="form-label fs-13 fw-semibold">Description</label>
-                                            <div ref={descriptionRef}></div>
-                                        </div>
                                     </div>
+                                    </FormSection>
 
-                                    <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
+                                    <FormSection icon="ri-sticky-note-line" title="Notes">
+                                        <label className="form-label fs-13 fw-semibold">Description</label>
+                                        <div ref={descriptionRef}></div>
+                                    </FormSection>
+
+                                    <div className="apt-modal-actions hstack gap-2 justify-content-end">
                                         <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
                                         {((isNewEvent && hasPermission('create appointments')) || (!isNewEvent && hasPermission('update appointments'))) && (
                                             <button type="submit" className="btn btn-primary"
@@ -1187,22 +1221,24 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     );
 });
 
-const DetailItem = ({ icon, label, value, className }) => (
-    <div className={`col-md-6 ${className || ''}`}>
-        <div className="d-flex align-items-center">
-            <div className="flex-shrink-0 me-3">
-                <div className="avatar-xs">
-                    <div className="avatar-title rounded-circle bg-light text-primary">
-                        <i className={`${icon} fs-16`}></i>
-                    </div>
-                </div>
-            </div>
-            <div className="flex-grow-1">
-                <p className="text-muted mb-0 fs-12 uppercase-label">{label}</p>
-                <h6 className="mb-0 fs-14 fw-bold text-dark">{value}</h6>
-            </div>
+const DetailItem = ({ icon, label, value }) => (
+    <div className="apt-info-item d-flex align-items-center">
+        <div className="apt-info-icon flex-shrink-0 me-3">
+            <i className={icon}></i>
+        </div>
+        <div className="flex-grow-1 min-w-0">
+            <p className="apt-label mb-1">{label}</p>
+            <h6 className="mb-0 fs-14 fw-semibold text-dark text-break">{value}</h6>
         </div>
     </div>
+);
+
+/** Section heading inside the form. */
+const FormSection = ({ icon, title, children }) => (
+    <section className="apt-section">
+        <h6 className="apt-section-title"><i className={`${icon} me-2`}></i>{title}</h6>
+        {children}
+    </section>
 );
 
 export default AppointmentModal;

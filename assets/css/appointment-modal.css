@@ -8,17 +8,6 @@
     font-weight: 700;
 }
 
-.appointment-modal-theme .btn-soft-danger {
-    background-color: rgba(240, 101, 72, .1);
-    color: #f06548;
-    border: none;
-}
-
-.appointment-modal-theme .btn-soft-danger:hover {
-    background-color: #f06548;
-    color: #fff;
-}
-
 .appointment-modal-theme .alert-danger-subtle {
     background-color: #fef4f2;
     border-color: #fbd9d0;
@@ -278,5 +267,215 @@
 @media (min-width: 992px) {
     .modal-dialog.appointment-modal-dialog {
         max-width: 960px;
+    }
+}
+
+/* ---------- 2026-11-23 redesign ---------- */
+.appointment-modal-theme .modal-content {
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.appointment-modal-theme .apt-modal-header {
+    padding: 1.1rem 1.5rem;
+    background: linear-gradient(135deg, rgba(var(--vz-primary-rgb), .10), rgba(var(--vz-primary-rgb), .03));
+    border-bottom: 1px solid rgba(var(--vz-primary-rgb), .12);
+}
+
+.appointment-modal-theme .apt-modal-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--vz-primary);
+    color: #fff;
+    font-size: 20px;
+    box-shadow: 0 6px 14px rgba(var(--vz-primary-rgb), .25);
+}
+
+.appointment-modal-theme .apt-modal-header .modal-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #212529;
+}
+
+.appointment-modal-theme .apt-modal-subtitle {
+    font-size: 12.5px;
+    color: #878a99;
+}
+
+.appointment-modal-theme .apt-modal-body {
+    padding: 1.5rem;
+    background: #f8f9fb;
+}
+
+.appointment-modal-theme .min-w-0 {
+    min-width: 0;
+}
+
+/* Small uppercase caption used across the dialog. */
+.appointment-modal-theme .apt-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: #878a99;
+}
+
+/* Form sections */
+.appointment-modal-theme .apt-section {
+    background: #fff;
+    border: 1px solid #eceef3;
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem .35rem;
+    margin-bottom: 1rem;
+}
+
+.appointment-modal-theme .apt-section-title {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #343a40;
+    padding-bottom: .65rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px dashed #e4e7ee;
+}
+
+.appointment-modal-theme .apt-section-title i {
+    color: var(--vz-primary);
+    font-size: 16px;
+}
+
+.appointment-modal-theme .apt-section .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: .4rem;
+}
+
+.appointment-modal-theme .apt-section .form-control:focus {
+    border-color: rgba(var(--vz-primary-rgb), .5);
+    box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), .12);
+}
+
+.appointment-modal-theme .apt-section .form-control[readonly] {
+    background-color: #f8f9fb;
+}
+
+.appointment-modal-theme .apt-section .note-editor {
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+/* Footer actions */
+.appointment-modal-theme .apt-modal-actions {
+    margin: 1.25rem -1.5rem -1.5rem;
+    padding: 1rem 1.5rem;
+    background: #fff;
+    border-top: 1px solid #eceef3;
+}
+
+/* Details view */
+.appointment-modal-theme .apt-hero {
+    background: #fff;
+    border: 1px solid #eceef3;
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem;
+}
+
+.appointment-modal-theme .apt-hero-title {
+    font-size: 19px;
+    font-weight: 700;
+    color: #212529;
+    word-break: break-word;
+}
+
+.appointment-modal-theme .apt-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: .35em .75em;
+}
+
+.appointment-modal-theme .apt-pill-type {
+    background: rgba(var(--vz-primary-rgb), .1);
+    color: var(--vz-primary);
+}
+
+.appointment-modal-theme .apt-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+}
+
+.appointment-modal-theme .apt-info-item {
+    background: #fff;
+    border: 1px solid #eceef3;
+    border-radius: 4px;
+    padding: .8rem 1rem;
+}
+
+.appointment-modal-theme .apt-info-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--vz-primary-rgb), .1);
+    color: var(--vz-primary);
+    font-size: 17px;
+}
+
+.appointment-modal-theme .apt-description {
+    background: #fff;
+    border: 1px solid #eceef3;
+    border-radius: 4px;
+    padding: .9rem 1rem;
+}
+
+.appointment-modal-theme .apt-with-card {
+    background: #fff;
+    border: 1px solid #eceef3;
+    border-left: 4px solid var(--vz-primary);
+    border-radius: 4px;
+    padding: .9rem 1rem;
+}
+
+.appointment-modal-theme .apt-with-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.appointment-modal-theme .apt-with-avatar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--vz-primary-rgb), .12);
+    color: var(--vz-primary);
+    font-size: 22px;
+}
+
+@media (max-width: 575.98px) {
+    .appointment-modal-theme .apt-info-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .appointment-modal-theme .apt-modal-body {
+        padding: 1rem;
+    }
+
+    .appointment-modal-theme .apt-section {
+        padding: 1rem 1rem .25rem;
+    }
+
+    .appointment-modal-theme .apt-modal-actions {
+        margin: 1rem -1rem -1rem;
+        padding: .85rem 1rem;
     }
 }

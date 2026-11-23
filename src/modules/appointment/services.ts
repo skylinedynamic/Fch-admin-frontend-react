@@ -30,6 +30,12 @@ export const updateAppointment = async (id: string | number, payload: Partial<Cr
   return data
 }
 
+/** The person it was booked with says yes to a pending appointment. */
+export const confirmAppointment = async (id: string | number): Promise<{ status: boolean, message: string }> => {
+  const { data } = await apiClient.post(`/common/appointments/${id}/confirm`)
+  return data
+}
+
 export const deleteAppointment = async (id: string | number): Promise<{ status: boolean, message: string }> => {
   const { data } = await apiClient.delete(`/common/appointments/${id}`)
   return data
