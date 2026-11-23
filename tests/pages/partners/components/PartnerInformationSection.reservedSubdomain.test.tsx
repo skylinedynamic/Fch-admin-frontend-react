@@ -23,6 +23,7 @@ const renderSection = (formData: Record<string, unknown>, handleInputChange = vi
       countries={[]}
       states={[]}
       cities={[]}
+      partnerId={undefined}
     />
   )
   return { ...view, handleInputChange }
