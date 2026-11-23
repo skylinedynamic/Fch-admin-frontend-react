@@ -12,13 +12,15 @@ const show = (commission: DashboardCommission | undefined, isLoading = false) =>
   )
 
 describe('CommissionKpiCard', () => {
-  // One figure only - what was earned (funded deals, paid out or not). The
-  // paid/unpaid breakdown lives on the Commissions page.
-  it('shows the host owner what was earned, paid out or not', () => {
-    show({ viewer: 'host_owner', earned_amount: 22500, paid_amount: 16000, pending_amount: 2000, unpaid_amount: 6500, paid_to_staff: 2000 })
+  // One figure only; the paid/unpaid breakdown lives on the Commissions page.
+  // Defect (R2 BUG-094): the host owner's "Commission Earned" matched no card
+  // on the Commissions page. It is now its Host Share, named as that page names it.
+  it("shows the host owner its Host Share, as the Commissions page names it", () => {
+    show({ viewer: 'host_owner', earned_amount: 24500, paid_amount: 16000, pending_amount: 2000, unpaid_amount: 6500, paid_to_staff: 2000 })
 
-    expect(screen.getByText('Commission Earned')).toBeInTheDocument()
-    expect(screen.getByText('$22,500')).toBeInTheDocument()
+    expect(screen.getByText('Host Share')).toBeInTheDocument()
+    expect(screen.queryByText('Commission Earned')).not.toBeInTheDocument()
+    expect(screen.getByText('$24,500')).toBeInTheDocument()
     expect(screen.queryByText(/Pending|Unpaid|Paid to staff/)).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View all commissions' })).toHaveAttribute('href', '/commissions')
   })

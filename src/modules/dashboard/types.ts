@@ -10,7 +10,8 @@ export interface DashboardCounts {
 /**
  * The dashboard's commission card, in the viewer's terms (see modules/commission/viewer).
  * earned_amount is commission on funded deals, paid out or not (paid + unpaid;
- * for host staff, paid + expected).
+ * for host staff, paid + expected). For the host owner it is the Host Share -
+ * every row, Draft included - as on the Commissions page (R2 BUG-094).
  */
 export type DashboardCommission =
     | { viewer: 'host_owner'; earned_amount: number; paid_amount: number; pending_amount: number; unpaid_amount: number; paid_to_staff: number }
