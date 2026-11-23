@@ -8,8 +8,9 @@ import { CalendlyConfigSkeleton } from '../../../components/Loader/SpecificSkele
 type ApiError = { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }
 
 /**
- * Settings > Calendly Configuration (Calendly v2): FCH's one Calendly OAuth
- * app - host only. The Client Secret is write-only: a saved one shows as
+ * Settings > Calendly Configuration (Calendly v2): the signed-in user's
+ * partner's own Calendly OAuth app - every partner, the host included, has its
+ * own; the API picks the partner from the user. The Client Secret is write-only: a saved one shows as
  * dots (never its value), and saving the dots - or nothing - keeps it. Everyone then connects their own
  * Calendly from their Appointments page.
  */
@@ -56,7 +57,7 @@ export default function CalendlyConfigurationForm() {
         </div>
         <div className="flex-grow-1">
           <h5 className="card-title mb-0 fs-15">Calendly Configuration</h5>
-          <p className="text-muted mb-0 fs-13">FCH's one Calendly app, used by everyone who connects their Calendly</p>
+          <p className="text-muted mb-0 fs-13">Your Calendly app - your staff and clients connect their Calendly through it</p>
         </div>
         {settings && (
           <span className={`badge ${settings.configured ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}`}>
@@ -75,9 +76,9 @@ export default function CalendlyConfigurationForm() {
           <div className="flex-grow-1">
             <h6 className="mb-1 text-dark fw-semibold fs-14">Appointment scheduling</h6>
             <p className="text-muted mb-0 fs-13">
-              Create one app at developer.calendly.com with a neutral name (for example "Appointment Calendar Sync")
-              and enter its keys here. Staff, partners and clients then connect their own Calendly accounts from
-              their Appointments page.
+              Create your own app at developer.calendly.com - its name is what people see when they connect - and
+              enter its keys here. Your staff and clients connect their own Calendly through it from their
+              Appointments page.
             </p>
           </div>
         </div>

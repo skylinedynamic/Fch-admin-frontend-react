@@ -113,7 +113,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
 
     // Calendly Configuration - FCH's one Calendly app (Calendly v2): the host
     // only, with its permission. Everyone then connects their own Calendly.
-    if (hasPermission(CALENDLY_CONFIGURATION_PERMISSION) && user && (user.is_host == 1 || user.is_host == true)) {
+    // Each partner's own Calendly app: whoever in a partner holds the permission, staff included.
+    if (hasPermission(CALENDLY_CONFIGURATION_PERMISSION)) {
         sections.push({ id: CALENDLY_CONFIGURATION_SECTION, label: 'Calendly Configuration', icon: 'ri-calendar-event-line' });
     }
 

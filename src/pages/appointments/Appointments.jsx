@@ -86,7 +86,7 @@ export default function Appointments() {
                         allDay: false,
                         // A Calendly meeting's time is moved with its Reschedule link, not by dragging.
                         ...(apt.is_calendly ? { editable: false } : {}),
-                        className: `fc-custom-event ${colorClass}${apt.is_calendly ? ' apt-calendly' : ''}`,
+                        className: `fc-custom-event ${colorClass}${apt.is_calendly ? ' apt-calendly' : ''}${apt.had_conflict ? ' apt-conflict' : ''}`,
                         description: apt.description,
                         location: apt.timezone,
                         extendedProps: {
@@ -99,6 +99,8 @@ export default function Appointments() {
                             meeting_type: apt.meeting_type,
                             assigned_for: apt.assigned_for,
                             is_calendly: Boolean(apt.is_calendly),
+                            // Booked (in Calendly) at a time its organiser already had another appointment.
+                            had_conflict: Boolean(apt.had_conflict),
                             join_url: apt.join_url,
                             reschedule_url: apt.reschedule_url
                         }
@@ -126,9 +128,11 @@ export default function Appointments() {
         return `${h}:${m} ${ampm}`;
     };
 
-    // Update upcoming events list (From Today or recent past)
+    // The list: meetings that have not ended yet (coming up, or in progress) - an ended one is on the calendar only.
     useEffect(() => {
+        const now = new Date();
         const sorted = [...events]
+            .filter((e) => new Date(e.end ?? e.start) >= now)
             .sort((a, b) => new Date(a.start) - new Date(b.start));
 
         setUpcomingEvents(sorted);
@@ -257,6 +261,12 @@ export default function Appointments() {
                                                 ))}
                                             </>
                                         )}
+                                        {!loading && upcomingEvents.length === 0 && (
+                                            <div className="text-center text-muted fs-13 py-4 border border-dashed rounded">
+                                                <i className="ri-calendar-check-line fs-22 d-block mb-1"></i>
+                                                No upcoming appointments
+                                            </div>
+                                        )}
                                         {!loading && upcomingEvents.map(evt => {
                                             const s = new Date(evt.start);
                                             const e = evt.end ? new Date(evt.end) : null;
@@ -319,6 +329,11 @@ export default function Appointments() {
                                                                 <span className="badge bg-primary-subtle text-primary ms-2 align-middle" style={{ fontSize: '10px' }}>Calendly</span>
                                                             )}
                                                         </h6>
+                                                        {evt.extendedProps?.had_conflict && (
+                                                            <div className="mb-2">
+                                                                <span className="badge bg-warning-subtle text-warning fs-11 fw-medium"><i className="ri-error-warning-line me-1 align-bottom"></i>Booked over another appointment</span>
+                                                            </div>
+                                                        )}
                                                         {evt.extendedProps?.is_calendly && (evt.extendedProps?.join_url || evt.extendedProps?.reschedule_url) && (
                                                             <div className="d-flex gap-3 mb-2 fs-12" onClick={(e) => e.stopPropagation()}>
                                                                 {evt.extendedProps?.join_url && (

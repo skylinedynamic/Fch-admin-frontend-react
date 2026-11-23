@@ -33,6 +33,7 @@ export const queryKeys = {
     connection: () => [...queryKeys.calendly.all, 'connection'] as const,
     bookingOptions: (attendees: object) => [...queryKeys.calendly.all, 'booking-options', attendees] as const,
     availableTimes: (payload: object) => [...queryKeys.calendly.all, 'available-times', payload] as const,
+    syncPreview: (dates: object) => [...queryKeys.calendly.all, 'sync-preview', dates] as const,
   },
   contact: {
     all: ['contact'] as const,

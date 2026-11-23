@@ -6,14 +6,15 @@ import {
   useCalendlyConnection,
   useConnectCalendly,
   useDisconnectCalendly,
-  useSyncCalendly,
 } from '../../modules/calendly/queries'
-import { CALENDLY_RETURN_PARAM, CALENDLY_RETURN_RESULTS, type CalendlySyncDates } from '../../modules/calendly/types'
+import CalendlySyncModal from './CalendlySyncModal'
+import { CALENDLY_RETURN_PARAM, CALENDLY_RETURN_RESULTS,
+  CALENDLY_RETURN_TOAST_ID, type CalendlySyncDates, CALENDLY_SYNC_DIRECTIONS, type CalendlySyncDirection } from '../../modules/calendly/types'
 import calendlyWordmark from '../../../assets/images/logo/calendly.png'
 import '../../../assets/css/calendly-appointments.css'
 
 interface Props {
-  /** The dates the calendar shows - what Sync now brings in. */
+  /** The dates the calendar shows - what Pull and Push look at. */
   getSyncDates: () => CalendlySyncDates
   onSynced: () => void
   /** Sends the browser to Calendly's sign-in (replaced in tests). */
@@ -29,14 +30,21 @@ const apiMessage = (error: unknown, fallback: string): string =>
 
 /**
  * The user's own Calendly on the Appointments page (Calendly v2): Connect,
- * Reconnect, Sync now and Disconnect. Hidden until the host has set up FCH's
+ * Reconnect, Pull from / Push to Calendly and Disconnect. Hidden until the host has set up FCH's
  * Calendly app.
  */
+/** "Awlad Hossain" -> "AH"; an email gives its first letter. */
+const initialsOf = (name: string): string =>
+  (name.includes('@') ? name.slice(0, 1).toUpperCase() : name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]!.toUpperCase()).join('')) || '?'
+
 export default function CalendlyConnectionCard({ getSyncDates, onSynced, redirect = (url) => window.location.assign(url) }: Props) {
   const { data: status } = useCalendlyConnection()
   const connect = useConnectCalendly()
   const disconnect = useDisconnectCalendly()
-  const sync = useSyncCalendly()
+  // Which way and the dates the calendar showed when Pull or Push was pressed; set while that modal is open.
+  const [sync, setSync] = useState<{ direction: CalendlySyncDirection; dates: CalendlySyncDates } | null>(null)
+  // Open or not, apart from which way: a closing modal keeps its direction while it fades out.
+  const [syncOpen, setSyncOpen] = useState(false)
   const [askDisconnect, setAskDisconnect] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -44,9 +52,11 @@ export default function CalendlyConnectionCard({ getSyncDates, onSynced, redirec
   useEffect(() => {
     const result = searchParams.get(CALENDLY_RETURN_PARAM)
     if (!result) return
-    if (result === CALENDLY_RETURN_RESULTS.CONNECTED) toast.success('Calendly connected')
-    else if (result === CALENDLY_RETURN_RESULTS.IN_USE) toast.error('That Calendly account is already connected by someone else. Sign in to Calendly with your own account.')
-    else toast.error('Calendly could not be connected. Try again.')
+    // One id: React's StrictMode runs this twice in development, and the toast must still show once.
+    const once = { toastId: CALENDLY_RETURN_TOAST_ID }
+    if (result === CALENDLY_RETURN_RESULTS.CONNECTED) toast.success('Calendly connected', once)
+    else if (result === CALENDLY_RETURN_RESULTS.IN_USE) toast.error('That Calendly account is already connected by someone else. Sign in to Calendly with your own account.', once)
+    else toast.error('Calendly could not be connected. Try again.', once)
     const next = new URLSearchParams(searchParams)
     next.delete(CALENDLY_RETURN_PARAM)
     setSearchParams(next, { replace: true })
@@ -60,14 +70,11 @@ export default function CalendlyConnectionCard({ getSyncDates, onSynced, redirec
       onError: (error) => toast.error(apiMessage(error, 'Calendly could not be connected')),
     })
 
-  const runSync = () =>
-    sync.mutate(getSyncDates(), {
-      onSuccess: (result) => {
-        toast.success(`Calendly synced: ${result.created} added, ${result.updated} updated, ${result.cancelled} cancelled`)
-        onSynced()
-      },
-      onError: (error) => toast.error(apiMessage(error, 'Calendly could not be synced')),
-    })
+  // Pull from Calendly / Push to Calendly: each opens its own list for the dates shown.
+  const openSync = (direction: CalendlySyncDirection) => {
+    setSync({ direction, dates: getSyncDates() })
+    setSyncOpen(true)
+  }
 
   const confirmDisconnect = () =>
     disconnect.mutate(undefined, {
@@ -90,39 +97,41 @@ export default function CalendlyConnectionCard({ getSyncDates, onSynced, redirec
           </span>
         </div>
         {status.connected && (status.name || status.email) && (
-          <div className="cc-account min-w-0">
-            {status.name && <div className="cc-name text-truncate">{status.name}</div>}
-            {status.email && <div className="cc-email text-truncate" title={status.email}>{status.email}</div>}
+          <div className="cc-account">
+            <span className="cc-avatar" aria-hidden="true">{initialsOf(status.name || status.email || '')}</span>
+            <div className="min-w-0">
+              {status.name && <div className="cc-name text-truncate">{status.name}</div>}
+              {status.email && <div className="cc-email text-truncate" title={status.email}>{status.email}</div>}
+            </div>
           </div>
         )}
 
         {status.connected ? (
           <>
-            <div className="d-flex gap-2">
-              <button type="button" className="btn btn-soft-primary btn-sm flex-grow-1" onClick={runSync} disabled={sync.isPending}>
-                <i className={`ri-refresh-line align-middle me-1 ${sync.isPending ? 'cc-spin' : ''}`} aria-hidden="true"></i>
-                {sync.isPending ? 'Syncing…' : 'Sync now'}
+            <div className="cc-sync-row">
+              <button type="button" className="btn btn-sm cc-sync-btn" onClick={() => openSync(CALENDLY_SYNC_DIRECTIONS.PULL)}>
+                <i className="ri-download-2-line align-middle me-1" aria-hidden="true"></i>
+                Pull from Calendly
               </button>
-              <button
-                type="button"
-                className="btn btn-soft-danger btn-sm cc-icon-btn"
-                aria-label="Disconnect"
-                title="Disconnect"
-                onClick={() => setAskDisconnect(true)}
-              >
-                <i className="ri-link-unlink-m fs-15" aria-hidden="true"></i>
+              <button type="button" className="btn btn-sm cc-sync-btn" onClick={() => openSync(CALENDLY_SYNC_DIRECTIONS.PUSH)}>
+                <i className="ri-upload-2-line align-middle me-1" aria-hidden="true"></i>
+                Push to Calendly
               </button>
             </div>
-            {(status.last_synced_at || status.scheduling_url) && (
-              <div className="cc-meta">
-                <span className="text-truncate">{status.last_synced_at ? `Last synced ${syncedAt(status.last_synced_at)}` : 'Not synced yet'}</span>
+            {/* Last synced, Open in Calendly, and Disconnect - out of the way of the two main buttons. */}
+            <div className="cc-meta">
+              <span className="text-truncate">{status.last_synced_at ? `Last synced ${syncedAt(status.last_synced_at)}` : 'Not synced yet'}</span>
+              <span className="d-inline-flex align-items-center gap-3">
                 {status.scheduling_url && (
                   <a href={status.scheduling_url} target="_blank" rel="noopener noreferrer" aria-label="Open Calendly" title="Open Calendly">
                     Open<i className="ri-external-link-line align-middle ms-1" aria-hidden="true"></i>
                   </a>
                 )}
-              </div>
-            )}
+                <button type="button" className="cc-disconnect" aria-label="Disconnect" title="Disconnect" onClick={() => setAskDisconnect(true)}>
+                  <i className="ri-link-unlink-m align-middle me-1" aria-hidden="true"></i>Disconnect
+                </button>
+              </span>
+            </div>
           </>
         ) : (
           <>
@@ -138,6 +147,14 @@ export default function CalendlyConnectionCard({ getSyncDates, onSynced, redirec
           </>
         )}
       </div>
+
+      <CalendlySyncModal
+        show={syncOpen}
+        direction={sync?.direction ?? CALENDLY_SYNC_DIRECTIONS.PULL}
+        dates={sync?.dates ?? { from: '', to: '' }}
+        onClose={() => setSyncOpen(false)}
+        onSynced={onSynced}
+      />
 
       <ConfirmationModal
         show={askDisconnect}

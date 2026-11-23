@@ -273,3 +273,10 @@
         margin-bottom: 1rem;
     }
 }
+
+/* Wider than modal-lg (800px), narrower than modal-xl: Title and Type fit on one line. */
+@media (min-width: 992px) {
+    .modal-dialog.appointment-modal-dialog {
+        max-width: 960px;
+    }
+}

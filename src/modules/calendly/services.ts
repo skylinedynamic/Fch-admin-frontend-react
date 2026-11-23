@@ -2,15 +2,27 @@ import { apiClient } from '../../lib/http/apiClient'
 import type { Appointment, AttendeeInput } from '../appointment/types'
 import type {
   AddToCalendlyPayload,
+  CalendlyCallbackQuery,
   CalendlyAvailableTimesPayload,
   CalendlyBookingOptions,
   CalendlyConnectionStatus,
   CalendlySettings,
   SaveCalendlySettingsPayload,
   CalendlySlot,
+  CalendlySyncApplyResult,
   CalendlySyncDates,
-  CalendlySyncResult,
+  CalendlySyncPreview,
+  CalendlySyncSelection,
 } from './types'
+
+/**
+ * Hands Calendly's answer to the API (no sign-in needed: the one-time state
+ * says who asked) and returns where to send the browser next.
+ */
+export const completeCalendlyConnection = async (query: CalendlyCallbackQuery): Promise<string> => {
+  const { data } = await apiClient.post('/calendly/callback', query)
+  return data.data.url
+}
 
 /** The signed-in user's own Calendly. */
 export const fetchCalendlyConnection = async (): Promise<CalendlyConnectionStatus> => {
@@ -29,12 +41,17 @@ export const disconnectCalendly = async (): Promise<void> => {
   await apiClient.delete('/common/calendly/connection')
 }
 
-/** Sync now: brings their Calendly meetings in the dates into FCH. */
-export const syncCalendly = async (dates: CalendlySyncDates): Promise<CalendlySyncResult> => {
-  const { data } = await apiClient.post('/common/calendly/sync', {
-    ...dates,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  })
+const browserZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+
+/** Sync now, first step: what would come in from Calendly and could go out, in the dates shown. Changes nothing. */
+export const fetchCalendlySyncPreview = async (dates: CalendlySyncDates): Promise<CalendlySyncPreview> => {
+  const { data } = await apiClient.post('/common/calendly/sync/preview', { ...dates, timezone: browserZone() })
+  return data.data
+}
+
+/** Sync now, second step: only what was ticked. */
+export const applyCalendlySync = async (dates: CalendlySyncDates, selection: CalendlySyncSelection): Promise<CalendlySyncApplyResult> => {
+  const { data } = await apiClient.post('/common/calendly/sync', { ...dates, timezone: browserZone(), ...selection })
   return data.data
 }
 

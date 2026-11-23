@@ -167,6 +167,12 @@ describe('AppointmentModal - who may change an appointment (BUG-102)', () => {
     expect(body).not.toHaveProperty('entity_id')
     expect(body).not.toHaveProperty('meeting_with_host')
   })
+
+  it('says when the appointment was booked over another one', async () => {
+    await open(CLIENT_ID, appointment({ is_calendly: true, had_conflict: true }))
+
+    expect(screen.getByText(/booked at a time .* already had another appointment/i)).toBeInTheDocument()
+  })
 })
 
 /**

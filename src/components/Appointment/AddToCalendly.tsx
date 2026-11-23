@@ -4,6 +4,7 @@ import type { AttendeeInput } from '../../modules/appointment/types'
 import { useAddToCalendly, useCalendlyBookingOptions } from '../../modules/calendly/queries'
 import { CALENDLY_BOOKING_MODES, CALENDLY_LOCATION_KINDS } from '../../modules/calendly/types'
 import { askedLocation } from './CalendlyBookingFields'
+import EventTypeDropdown from './EventTypeDropdown'
 
 interface Props {
   appointmentId: number | string
@@ -50,9 +51,7 @@ export default function AddToCalendly({ appointmentId, attendees, onAdded }: Pro
   return (
     <div className="add-to-calendly border rounded p-2 d-flex flex-column gap-2">
       {options.event_types.length > 1 && (
-        <select aria-label="Calendly event type" className="form-select form-select-sm" value={eventType.uri} onChange={(e) => setEventTypeUri(e.target.value)}>
-          {options.event_types.map((t) => <option key={t.uri} value={t.uri}>{t.name} ({t.duration} min)</option>)}
-        </select>
+        <EventTypeDropdown eventTypes={options.event_types} value={eventType.uri} onChange={setEventTypeUri} />
       )}
       {asked && (
         <input

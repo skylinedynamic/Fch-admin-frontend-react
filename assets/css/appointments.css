@@ -183,3 +183,7 @@
 .appointments-page .cursor-pointer {
     cursor: pointer !important;
 }
+/* Calendly v2: an appointment booked over another one - a warning stripe on the calendar. */
+.fc-event.apt-conflict {
+    box-shadow: inset 3px 0 0 var(--vz-warning) !important;
+}

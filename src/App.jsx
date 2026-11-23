@@ -109,6 +109,8 @@ import "../assets/css/summernote-fixes.css";
 import 'remixicon/fonts/remixicon.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { SETTINGS_ACCESS_PERMISSIONS } from './config/settingsSections';
+import CalendlyCallback from './pages/calendly/CalendlyCallback';
+import { CALENDLY_CALLBACK_ROUTE } from './modules/calendly/types';
 
 
 // Icon Libraries
@@ -180,6 +182,8 @@ export default function App() {
         </Route>
         {/* The links in the email-change emails: they open signed in or not. */}
         <Route path="email-change/:action/:user/:hash" element={<EmailChangeLinkPage />} />
+        {/* Calendly v2: Calendly sends people back here - signed in or not (clients have no partner-portal login). */}
+        <Route path={CALENDLY_CALLBACK_ROUTE} element={<CalendlyCallback />} />
         <Route element={<ProtectedRoute />}>
           <Route path="partners/download-agreement/:userId" element={<DownloadAgreement />} />
           <Route path="borrowers/download-agreement/:userId" element={<DownloadAgreement />} />

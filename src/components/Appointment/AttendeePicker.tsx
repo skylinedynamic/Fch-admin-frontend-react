@@ -1,6 +1,6 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import '../../../assets/css/calendly-appointments.css'
-import { MAX_ATTENDEES, type AttendeeConflict, type AttendeeInput } from '../../modules/appointment/types'
+import { ATTENDEE_EMAIL_INVALID, ATTENDEE_EMAIL_PATTERN, MAX_ATTENDEES, type AttendeeConflict, type AttendeeInput } from '../../modules/appointment/types'
 
 export interface AttendeeOption {
   label: string
@@ -41,6 +41,18 @@ export default function AttendeePicker({ options, value, onChange, conflicts = [
   const [active, setActive] = useState(0)
   const [emailError, setEmailError] = useState<string | null>(null)
   const listId = useId()
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  // Closed by a click outside, Tab or Escape - not by blur: a modal opening
+  // moves focus to itself, which would shut the list under the user's click.
+  useEffect(() => {
+    if (!open) return
+    const onOutside = (e: MouseEvent) => {
+      if (!boxRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [open])
 
   const full = value.length >= MAX_ATTENDEES
   const pickedIds = new Set(value.map((a) => a.user_id).filter(Boolean))
@@ -61,10 +73,12 @@ export default function AttendeePicker({ options, value, onChange, conflicts = [
   ]
   const activeIndex = Math.min(active, Math.max(items.length - 1, 0))
 
+  // After someone is added: an empty box, the list closed (typing opens it again).
   const reset = () => {
     setQuery('')
     setActive(0)
     setEmailError(null)
+    setOpen(false)
   }
 
   const addUser = (option: AttendeeOption) => {
@@ -75,6 +89,11 @@ export default function AttendeePicker({ options, value, onChange, conflicts = [
 
   const addEmail = (address: string) => {
     if (!address || full) return
+    if (!ATTENDEE_EMAIL_PATTERN.test(address)) {
+      setEmailError(ATTENDEE_EMAIL_INVALID)
+      setOpen(false) // so the message under the box is not hidden behind the list
+      return
+    }
     if (value.some((a) => a.email?.toLowerCase() === address)) {
       setEmailError('This person is already on the appointment.')
       return
@@ -87,7 +106,7 @@ export default function AttendeePicker({ options, value, onChange, conflicts = [
     const item = items[index]
     if (item?.kind === 'user') addUser(item.option)
     else if (item?.kind === 'email') addEmail(item.email)
-    // Nobody matches and no @: still try it as an email, so the API can say why not.
+    // Nobody matches and no @: still try it as an email, so the person hears why it is not one.
     else if (typed) addEmail(typed.toLowerCase())
   }
 
@@ -102,7 +121,7 @@ export default function AttendeePicker({ options, value, onChange, conflicts = [
     } else if (e.key === 'Enter') {
       e.preventDefault()
       choose(activeIndex)
-    } else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape' || e.key === 'Tab') {
       setOpen(false)
     }
   }
@@ -149,11 +168,15 @@ export default function AttendeePicker({ options, value, onChange, conflicts = [
       )}
 
       {!disabled && !full && (
-        <div className="attendee-search">
+        <div className="attendee-search" ref={boxRef}>
           <i className="ri-search-line attendee-search-icon" aria-hidden="true"></i>
           <input
             id="attendee-search"
-            type="text"
+            // A search field: Chrome ignores autocomplete=off on what it takes for an
+            // email box and offers saved addresses over our own list.
+            type="search"
+            name="attendee-search"
+            spellCheck={false}
             role="combobox"
             aria-label="Add people"
             aria-autocomplete="list"
@@ -165,7 +188,6 @@ export default function AttendeePicker({ options, value, onChange, conflicts = [
             value={query}
             autoComplete="off"
             onFocus={() => setOpen(true)}
-            onBlur={() => setOpen(false)}
             onChange={(e) => { setQuery(e.target.value); setActive(0); setOpen(true); setEmailError(null) }}
             onKeyDown={onKeyDown}
           />

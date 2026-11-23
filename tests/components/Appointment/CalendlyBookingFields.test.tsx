@@ -37,6 +37,17 @@ function Harness({ attendees = [{ user_id: 1 }], onPickTime = vi.fn(), errors = 
 
 afterEach(() => server.resetHandlers())
 
+/** As the form's other PrimeReact dropdowns: open it, click the panel item. */
+async function pickEventType(container: ParentNode, option: string) {
+  await userEvent.click(container.querySelector('.calendly-event-type-dropdown') as HTMLElement)
+  const item = await waitFor(() => {
+    const found = Array.from(document.body.querySelectorAll('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent?.trim().startsWith(option))
+    if (!found) throw new Error(`no "${option}" option`)
+    return found as HTMLElement
+  })
+  await userEvent.click(item)
+}
+
 describe('CalendlyBookingFields (Calendly v2)', () => {
   it('shows nothing when nobody who could host it is connected', async () => {
     options(CALENDLY_BOOKING_MODES.NONE, [], null)
@@ -119,5 +130,148 @@ describe('CalendlyBookingFields (Calendly v2)', () => {
     expect(await screen.findByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: '09:00' })).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('Zoom')).toBeInTheDocument()
+  })
+
+  it('picks the event type from a dropdown when there are several', async () => {
+    options(CALENDLY_BOOKING_MODES.OWN, [zoom, phone])
+    server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [] })))
+    const spy = vi.fn()
+    const { container } = renderWithProviders(<Harness spy={spy} />)
+
+    await waitFor(() => expect(container.querySelector('.calendly-event-type-dropdown .p-dropdown-label')?.textContent).toBe('30 Minute Meeting (30 min)'))
+    await pickEventType(container, 'Phone call')
+
+    await waitFor(() => expect(spy).toHaveBeenLastCalledWith(expect.objectContaining({ eventTypeUri: 'ET2', locationKind: 'outbound_call' })))
+  })
+
+  it('names a single event type - no dropdown', async () => {
+    options(CALENDLY_BOOKING_MODES.OWN)
+    server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [] })))
+    const { container } = renderWithProviders(<Harness />)
+
+    expect(await screen.findByText('30 Minute Meeting')).toBeInTheDocument()
+    expect(container.querySelector('.calendly-event-type-dropdown')).toBeNull()
+  })
+
+  it('tells the form whether its start time is an open time in Calendly, and the event type length', async () => {
+    options(CALENDLY_BOOKING_MODES.OWN)
+    server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [
+      { start_time: '2026-11-27T10:00:00Z', local_time: '10:00' },
+    ] })))
+    const onCalendlyFit = vi.fn()
+    const { rerender } = renderWithProviders(
+      <CalendlyBookingFields attendees={[{ user_id: 1 }]} date="2026-11-27" timezone="UTC" selectedTime="09:00"
+        value={{ ...EMPTY_CALENDLY_BOOKING, sync: true, eventTypeUri: 'ET1', locationKind: 'zoom_conference' }}
+        onChange={vi.fn()} onPickTime={vi.fn()} onCalendlyFit={onCalendlyFit} />
+    )
+
+    await waitFor(() => expect(onCalendlyFit).toHaveBeenLastCalledWith({ minutes: 30, open: false }))
+
+    rerender(
+      <CalendlyBookingFields attendees={[{ user_id: 1 }]} date="2026-11-27" timezone="UTC" selectedTime="10:00"
+        value={{ ...EMPTY_CALENDLY_BOOKING, sync: true, eventTypeUri: 'ET1', locationKind: 'zoom_conference' }}
+        onChange={vi.fn()} onPickTime={vi.fn()} onCalendlyFit={onCalendlyFit} />
+    )
+    await waitFor(() => expect(onCalendlyFit).toHaveBeenLastCalledWith({ minutes: 30, open: true }))
+  })
+
+  it('tells the form nothing applies once Sync with Calendly is off', async () => {
+    options(CALENDLY_BOOKING_MODES.OWN)
+    server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [] })))
+    const onCalendlyFit = vi.fn()
+    renderWithProviders(
+      <CalendlyBookingFields attendees={[{ user_id: 1 }]} date="2026-11-27" timezone="UTC" selectedTime="09:00"
+        value={{ ...EMPTY_CALENDLY_BOOKING, sync: false, eventTypeUri: 'ET1' }}
+        onChange={vi.fn()} onPickTime={vi.fn()} onCalendlyFit={onCalendlyFit} />
+    )
+
+    await waitFor(() => expect(onCalendlyFit).toHaveBeenCalled())
+    expect(onCalendlyFit).toHaveBeenLastCalledWith({ minutes: null, open: null })
+  })
+
+  it('offers to use the appointment title and length in Calendly - off by default, ticking it turns it on', async () => {
+    options(CALENDLY_BOOKING_MODES.OWN)
+    server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [] })))
+    const spy = vi.fn()
+    renderWithProviders(<Harness spy={spy} />)
+
+    const box = await screen.findByRole('checkbox', { name: /use this appointment's title in calendly/i })
+    expect(box).not.toBeChecked()
+    await userEvent.click(box)
+
+    expect(spy).toHaveBeenLastCalledWith(expect.objectContaining({ sync: true, useTitle: true }))
+    expect(box).toBeChecked()
+  })
+
+  it('with the title ticked, the length is the form\'s own: no event type length, no open-time check', async () => {
+    options(CALENDLY_BOOKING_MODES.OWN)
+    server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [
+      { start_time: '2026-11-27T10:00:00Z', local_time: '10:00' },
+    ] })))
+    const onCalendlyFit = vi.fn()
+    renderWithProviders(
+      <CalendlyBookingFields attendees={[{ user_id: 1 }]} date="2026-11-27" timezone="UTC" selectedTime="09:00"
+        value={{ ...EMPTY_CALENDLY_BOOKING, sync: true, useTitle: true, eventTypeUri: 'ET1', locationKind: 'zoom_conference' }}
+        onChange={vi.fn()} onPickTime={vi.fn()} onCalendlyFit={onCalendlyFit} />
+    )
+
+    expect(await screen.findByText(/one-time meeting with this title/i)).toBeInTheDocument()
+    await waitFor(() => expect(onCalendlyFit).toHaveBeenCalled())
+    expect(onCalendlyFit).toHaveBeenLastCalledWith({ minutes: null, open: null })
+    expect(screen.queryByText('Open times in Calendly')).not.toBeInTheDocument()
+    expect(screen.queryByText('30 min')).not.toBeInTheDocument()
+  })
+
+  it('shows the API\'s refusal of the title under the box', async () => {
+    options(CALENDLY_BOOKING_MODES.OWN)
+    server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [] })))
+    renderWithProviders(
+      <CalendlyBookingFields attendees={[{ user_id: 1 }]} date="2026-11-27" timezone="UTC"
+        value={{ ...EMPTY_CALENDLY_BOOKING, sync: true, useTitle: true, eventTypeUri: 'ET1' }}
+        errors={{ calendly_use_title: ['Disconnect and connect Calendly again.'] }}
+        onChange={vi.fn()} onPickTime={vi.fn()} />
+    )
+
+    expect(await screen.findByText('Disconnect and connect Calendly again.')).toBeInTheDocument()
+  })
+
+  it('shows a Calendly refusal at the bottom of the section, after everything in it', async () => {
+    options(CALENDLY_BOOKING_MODES.OWN)
+    server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [] })))
+    renderWithProviders(
+      <CalendlyBookingFields attendees={[{ user_id: 1 }]} date="2026-11-27" timezone="UTC"
+        value={{ ...EMPTY_CALENDLY_BOOKING, sync: true, eventTypeUri: 'ET1' }}
+        errors={{ sync_with_calendly: ["Calendly's booking limit for this account has been reached."] }}
+        onChange={vi.fn()} onPickTime={vi.fn()} />
+    )
+
+    const error = await screen.findByText("Calendly's booking limit for this account has been reached.")
+    const box = await screen.findByRole('checkbox', { name: /use this appointment's title in calendly/i })
+    expect(box.compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(error.closest('.calendly-booking-fields')?.lastElementChild).toBe(error)
+  })
+
+  it('with the title ticked, hides the event type and its place - a short note instead', async () => {
+    const meet = { uri: 'ET9', name: 'Strategy session', duration: 45, locations: [{ kind: 'zoom_conference' }], asks_location: false }
+    for (const eventTypes of [[zoom], [zoom, meet]]) {
+      options(CALENDLY_BOOKING_MODES.OWN, eventTypes)
+      server.use(http.post('*/common/calendly/available-times', () => HttpResponse.json({ status: true, data: [] })))
+      const { container, unmount } = renderWithProviders(
+        <CalendlyBookingFields attendees={[{ user_id: 1 }]} date="2026-11-27" timezone="UTC"
+          value={{ ...EMPTY_CALENDLY_BOOKING, sync: true, useTitle: true, eventTypeUri: 'ET1', locationKind: 'zoom_conference' }}
+          onChange={vi.fn()} onPickTime={vi.fn()} />
+      )
+
+      expect(await screen.findByRole('checkbox', { name: /use this appointment's title in calendly/i })).toBeChecked()
+      expect(screen.queryByText('30 Minute Meeting')).not.toBeInTheDocument()
+      expect(screen.queryByText(/calendly event type/i)).not.toBeInTheDocument()
+      expect(container.querySelector('.calendly-event-type-dropdown')).toBeNull()
+      // No place either - just a short note on a warning background, naming no app.
+      expect(screen.queryByText(/zoom/i)).not.toBeInTheDocument()
+      const note = screen.getByRole('note')
+      expect(note).toHaveClass('bg-warning-subtle')
+      expect(note).toHaveTextContent('Calendly creates a one-time meeting with this title and the whole time slot.')
+      unmount()
+    }
   })
 })

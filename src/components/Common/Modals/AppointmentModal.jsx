@@ -28,7 +28,7 @@ import CalendlyBookingFields, { EMPTY_CALENDLY_BOOKING } from '../../Appointment
 import AddToCalendly from '../../Appointment/AddToCalendly';
 
 // The API fields the form shows a refusal beside; any other shows under the time slot (R2 BUG-024).
-const FORM_ERROR_FIELDS = ['subject', 'meeting_type', 'assigned_for', 'appointment_date', 'duration_minutes', 'timezone', 'attendees', 'sync_with_calendly', 'calendly_event_type_uri', 'calendly_location'];
+const FORM_ERROR_FIELDS = ['subject', 'meeting_type', 'assigned_for', 'appointment_date', 'duration_minutes', 'timezone', 'attendees', 'sync_with_calendly', 'calendly_event_type_uri', 'calendly_location', 'calendly_use_title'];
 // Each attendee's refusal shows beside that person (attendees.0.email ...).
 const isShownErrorField = (field) => FORM_ERROR_FIELDS.includes(field) || field.startsWith('attendees.');
 
@@ -104,6 +104,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         // Calendly v2: everyone on it, and whether Calendly holds it.
         attendees: [],
         isCalendly: false,
+        hadConflict: false,
         joinUrl: null,
         rescheduleUrl: null,
     });
@@ -113,6 +114,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [attendees, setAttendees] = useState([]);
     const [attendeeConflicts, setAttendeeConflicts] = useState([]);
     const [calendlyBooking, setCalendlyBooking] = useState(EMPTY_CALENDLY_BOOKING);
+    // Calendly v2: the event type's length and whether the start is an open time there (CalendlyBookingFields says).
+    const [calendlyFit, setCalendlyFit] = useState({ minutes: null, open: null });
+
+    // While it is synced to Calendly, the end follows the event type's length - Calendly books that long.
+    useEffect(() => {
+        if (!calendlyFit.minutes || !formData.timeStart) return;
+        const end = timeAfter(formData.timeStart, calendlyFit.minutes);
+        if (end !== formData.timeEnd) setFormData(p => ({ ...p, timeEnd: end }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [calendlyFit.minutes, formData.timeStart]);
     // A new answer about the people clears the API's refusal about them.
     useEffect(() => {
         setFormErrors(p => {
@@ -405,6 +416,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 isPast: start < new Date(),
                 attendees: apt.attendees || [],
                 isCalendly: Boolean(apt.is_calendly),
+                hadConflict: Boolean(apt.had_conflict),
                 joinUrl: apt.join_url || null,
                 rescheduleUrl: apt.reschedule_url || null,
             });
@@ -578,6 +590,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             ...(isNewEvent && calendlyBooking.sync ? {
                 sync_with_calendly: true,
                 calendly_event_type_uri: calendlyBooking.eventTypeUri,
+                calendly_use_title: calendlyBooking.useTitle,
                 calendly_location_kind: calendlyBooking.locationKind || null,
                 calendly_location: calendlyBooking.location || null,
             } : {}),
@@ -717,7 +730,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     return (
         <>
             <div className="modal fade appointment-modal-theme" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
-                <div className="modal-dialog modal-dialog-centered modal-lg">
+                <div className="modal-dialog modal-dialog-centered modal-lg appointment-modal-dialog">
                     <div className="modal-content border-0 shadow-lg">
                         <div className="modal-header p-3 bg-info-subtle">
                             <h5 className="modal-title">
@@ -905,6 +918,12 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             </div>
                                         )}
 
+                                        {displayData.hadConflict && (
+                                            <div className="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mt-3 mb-0 fs-13" role="note">
+                                                <i className="ri-error-warning-line fs-16"></i>
+                                                <span>This meeting was booked at a time you already had another appointment. Check your calendar for the overlap.</span>
+                                            </div>
+                                        )}
                                         {!displayData.isCalendly && isScheduler && !displayData.isPast && isOpenStatus && selectedEventId && (
                                             <div className="mt-3">
                                                 <AddToCalendly
@@ -940,14 +959,14 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                     <div className="row">
 
-                                        <div className="col-12 mb-3">
+                                        <div className="col-md-8 mb-3">
                                             <label className="form-label">Appointment Title <span className="text-danger">*</span></label>
                                             <input type="text" className={`form-control ${formErrors.subject ? "is-invalid" : ""}`}
                                                 value={formData.subject} onChange={(e) => setFormData(p => ({ ...p, subject: e.target.value }))} placeholder="Enter appointment title" />
                                             {formErrors.subject && <div className="invalid-feedback">{formErrors.subject}</div>}
                                         </div>
 
-                                        <div className="col-12 mb-3">
+                                        <div className="col-md-4 mb-3">
                                             <label className="form-label">Type <span className="text-danger">*</span></label>
                                             <Dropdown value={formData.category} options={APPOINTMENT_TYPE_OPTIONS}
                                                 onChange={(e) => setFormData(p => ({ ...p, category: e.value }))}
@@ -1002,7 +1021,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         timezone={formData.location}
                                                         value={calendlyBooking}
                                                         onChange={setCalendlyBooking}
-                                                        onPickTime={(time, minutes) => setFormData(p => ({ ...p, timeStart: time, timeEnd: timeAfter(time, minutes) }))}
+                                                        onPickTime={(time, minutes) => setFormData(p => ({ ...p, timeStart: time, timeEnd: timeAfter(time, minutes) }))} onCalendlyFit={setCalendlyFit}
                                                         selectedTime={formData.timeStart}
                                                         errors={formErrors}
                                                     />
@@ -1061,6 +1080,12 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             className={`flex-grow-1 ${formErrors.duration_minutes ? 'p-invalid' : ''}`} placeholder="End" appendTo="self" />
                                                     </div>
                                                     {timeSlotError && <div className="text-danger fs-11 mt-1">{timeSlotError}</div>}
+                                                    {isNewEvent && calendlyBooking.sync && calendlyFit.open === false && (
+                                                        <div className="text-warning fs-11 mt-1 d-flex align-items-start gap-1">
+                                                            <i className="ri-error-warning-line"></i>
+                                                            <span>Not an open time in your Calendly - Calendly will refuse it. Pick one of the open times above.</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1098,12 +1123,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             )}
                                         </div>
 
-                                        {/* Skeleton Loader for Availability Check */}
-                                        {isCheckingAvailability && (
-                                            <div className="col-12 px-2 mt-2">
-                                                <Skeleton width="100%" height="40px" className="rounded-2" />
-                                            </div>
-                                        )}
+                                        {/* The clash check runs quietly - no loading placeholder; only a clash shows (above). */}
 
                                         <div className="col-12 mb-3">
                                             <label className="form-label fs-13 fw-semibold" htmlFor="appointment-time-zone">Time Zone</label>

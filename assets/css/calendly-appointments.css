@@ -265,6 +265,12 @@
 }
 
 .calendly-booking-fields .cb-slot {
+    /* The time in the middle of the button, whatever the portal's own button padding and line height. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
     height: 34px;
     border: 1px solid rgba(var(--vz-primary-rgb), 0.35);
     border-radius: 4px;
@@ -315,65 +321,118 @@
 }
 
 /* ── Connect card (Appointments sidebar) ───────────────────── */
+/* Same frame as the theme's other cards on the page (no extra border). */
+.calendly-connection-card .card-body {
+    padding: 1.125rem 1rem 1rem;
+}
+
 .calendly-connection-card .cc-wordmark {
     height: 22px;
     width: auto;
 }
 
-.calendly-connection-card .cc-account {
-    padding: 0.625rem 0.75rem;
-    border-radius: 4px;
-    background: var(--vz-light);
-}
-
-.calendly-connection-card {
-    border: 1px solid var(--vz-border-color);
-    border-radius: 4px;
-    box-shadow: none;
-}
-
-.calendly-connection-card .cc-name {
-    font-size: 13.5px;
-    font-weight: 600;
-    color: var(--vz-body-color);
-    line-height: 1.3;
-}
-
-.calendly-connection-card .cc-email {
-    font-size: 12px;
-    color: var(--vz-secondary-color);
-    line-height: 1.3;
-}
-
+/* Status: a soft pill with a dot. */
 .calendly-connection-card .cc-status {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    font-size: 11.5px;
-    font-weight: 500;
+    padding: 0.15rem 0.55rem 0.15rem 0.45rem;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
     color: var(--vz-secondary-color);
+    background: var(--vz-light);
 }
 
 .calendly-connection-card .cc-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--vz-secondary-color);
 }
 
-.calendly-connection-card .cc-status.is-connected { color: var(--vz-success); }
-.calendly-connection-card .cc-status.is-connected .cc-dot {
-    background: var(--vz-success);
-    box-shadow: 0 0 0 3px rgba(var(--vz-success-rgb), 0.18);
+.calendly-connection-card .cc-status.is-connected {
+    color: var(--vz-success);
+    background: rgba(var(--vz-success-rgb), 0.1);
 }
 
-.calendly-connection-card .cc-status.is-expired { color: var(--vz-warning); }
+.calendly-connection-card .cc-status.is-connected .cc-dot { background: var(--vz-success); }
+
+.calendly-connection-card .cc-status.is-expired {
+    color: var(--vz-warning);
+    background: rgba(var(--vz-warning-rgb), 0.12);
+}
+
 .calendly-connection-card .cc-status.is-expired .cc-dot { background: var(--vz-warning); }
+
+/* The account: a white panel with a Calendly-blue avatar. */
+.calendly-connection-card {
+    --cc-accent: #006bff;
+    --cc-accent-rgb: 0, 107, 255;
+}
+
+.calendly-connection-card .cc-account {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.8rem;
+    border-radius: 4px;
+    border: 1px solid rgba(var(--cc-accent-rgb), 0.16);
+    background: linear-gradient(135deg, rgba(var(--cc-accent-rgb), 0.07), rgba(var(--cc-accent-rgb), 0.015));
+}
+
+.calendly-connection-card .cc-avatar {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #fff;
+    background: linear-gradient(135deg, #006bff, #4d9bff);
+    box-shadow: 0 2px 6px rgba(var(--cc-accent-rgb), 0.3);
+}
+
+.calendly-connection-card .cc-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vz-heading-color, var(--vz-body-color));
+    line-height: 1.35;
+    text-transform: capitalize;
+}
+
+.calendly-connection-card .cc-email {
+    margin-top: 0.1rem;
+    font-size: 12px;
+    color: var(--vz-secondary-color);
+    line-height: 1.35;
+}
 
 .calendly-connection-card .cc-text {
     font-size: 12.5px;
+    line-height: 1.5;
     color: var(--vz-secondary-color);
     margin: 0;
+}
+
+.calendly-connection-card .btn {
+    height: 34px;
+    border-radius: 4px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendly-connection-card .cc-icon-btn {
+    width: 34px;
+    flex: 0 0 34px;
+    padding: 0;
 }
 
 .calendly-connection-card .cc-meta {
@@ -381,7 +440,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    padding-top: 0.75rem;
+    padding-top: 0.7rem;
     border-top: 1px dashed var(--vz-border-color);
     font-size: 11.5px;
     color: var(--vz-secondary-color);
@@ -389,20 +448,12 @@
 
 .calendly-connection-card .cc-meta a {
     color: var(--vz-primary);
+    font-weight: 500;
     white-space: nowrap;
 }
 
-.calendly-connection-card .btn {
-    border-radius: 4px;
-}
-
-.calendly-connection-card .cc-icon-btn {
-    width: 34px;
-    flex: 0 0 34px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.calendly-connection-card .cc-meta a:hover {
+    text-decoration: underline;
 }
 
 .calendly-connection-card .cc-spin {
@@ -412,4 +463,654 @@
 
 @keyframes cc-spin {
     to { transform: rotate(360deg); }
+}
+
+/* ── Calendly callback page (/calendly/callback) ───────────── */
+.calendly-callback {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background:
+        radial-gradient(1200px 500px at 50% -10%, rgba(var(--vz-primary-rgb), 0.08), transparent 60%),
+        var(--vz-body-bg);
+}
+
+.calendly-callback .cbk-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 32px 24px;
+    text-align: center;
+    background: var(--vz-secondary-bg);
+    border: 1px solid var(--vz-border-color);
+    border-radius: 4px;
+    box-shadow: 0 12px 40px rgba(30, 32, 37, 0.08);
+    animation: cbk-rise 0.35s ease-out both;
+}
+
+.calendly-callback .cbk-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.calendly-callback .cbk-node {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--vz-primary);
+    background: rgba(var(--vz-primary-rgb), 0.1);
+    box-shadow: 0 0 0 6px rgba(var(--vz-primary-rgb), 0.04);
+}
+
+.calendly-callback .cbk-node.is-calendly {
+    background: var(--vz-secondary-bg);
+    border: 1px solid var(--vz-border-color);
+}
+
+.calendly-callback .cbk-path {
+    width: 64px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.calendly-callback .cbk-path span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--vz-primary);
+    opacity: 0.2;
+    animation: cbk-travel 1.2s ease-in-out infinite;
+}
+
+.calendly-callback .cbk-path span:nth-child(2) { animation-delay: 0.2s; }
+.calendly-callback .cbk-path span:nth-child(3) { animation-delay: 0.4s; }
+
+.calendly-callback .cbk-broken {
+    margin: 0 auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--vz-danger);
+    background: rgba(var(--vz-danger-rgb), 0.12);
+}
+
+.calendly-callback .is-failed .cbk-node {
+    filter: grayscale(0.6);
+    opacity: 0.7;
+}
+
+.calendly-callback .cbk-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--vz-heading-color, var(--vz-body-color));
+    margin: 0 0 6px;
+}
+
+.calendly-callback .cbk-text {
+    font-size: 13.5px;
+    color: var(--vz-secondary-color);
+    margin: 0 auto 24px;
+    max-width: 300px;
+}
+
+.calendly-callback .cbk-progress {
+    height: 3px;
+    border-radius: 3px;
+    background: rgba(var(--vz-primary-rgb), 0.12);
+    overflow: hidden;
+    margin: 0 auto 28px;
+    max-width: 240px;
+}
+
+.calendly-callback .cbk-progress span {
+    display: block;
+    width: 40%;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--vz-primary);
+    animation: cbk-slide 1.4s ease-in-out infinite;
+}
+
+.calendly-callback .cbk-btn {
+    border-radius: 4px;
+    margin-bottom: 28px;
+}
+
+.calendly-callback .cbk-foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-top: 16px;
+    border-top: 1px solid var(--vz-border-color);
+    font-size: 11.5px;
+    color: var(--vz-secondary-color);
+}
+
+.calendly-callback .cbk-foot img {
+    height: 15px;
+    width: auto;
+}
+
+@keyframes cbk-travel {
+    0%, 100% { opacity: 0.2; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cbk-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+}
+
+@keyframes cbk-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .calendly-callback .cbk-card,
+    .calendly-callback .cbk-path span,
+    .calendly-callback .cbk-progress span { animation: none; }
+    .calendly-callback .cbk-path span { opacity: 0.6; }
+}
+
+/* The attendee search box is type=search (keeps Chrome's autofill away): hide the browser's own clear button. */
+.attendee-picker .attendee-search input[type='search']::-webkit-search-cancel-button,
+.attendee-picker .attendee-search input[type='search']::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Several event types: the dropdown at its natural width, the place beside it. */
+.calendly-booking-fields .cb-type-row {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.calendly-booking-fields .cb-type-select {
+    flex: 0 1 320px;
+    min-width: 220px;
+}
+
+/* The place chip as tall as the dropdown beside it. */
+.calendly-booking-fields .cb-type-row .cb-chip {
+    padding: 0 0.75rem;
+    font-size: 13px;
+}
+
+/* "Use the title and length in Calendly" */
+.calendly-booking-fields .cb-own-title .form-check { display: flex; align-items: center; gap: 0.5rem; padding-left: 0; }
+.calendly-booking-fields .cb-own-title .form-check-input { margin: 0; float: none; }
+.calendly-booking-fields .cb-own-title-label { font-size: 0.8125rem; font-weight: 600; }
+.calendly-booking-fields .cb-own-title .cb-sub { margin-top: 0.125rem; padding-left: 1.5rem; }
+
+/* Calendly's refusal, at the foot of the section */
+.calendly-booking-fields .cb-error { padding: 0.5rem 1rem 0.75rem; border-top: 1px solid var(--bs-border-color-translucent); }
+.calendly-booking-fields .cb-own-note { display: flex; align-items: flex-start; gap: 0.375rem; margin-top: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.75rem; line-height: 1.4; }
+.calendly-booking-fields .cb-own-note i { font-size: 0.875rem; line-height: 1.2; }
+
+
+/* Pull from / Push to Calendly: side by side in the narrow card */
+.calendly-connection-card .cc-sync-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+/* A narrow card (a small sidebar): the buttons drop their icons so the words fit. */
+.calendly-connection-card .card-body { container-type: inline-size; }
+
+@container (max-width: 300px) {
+    .calendly-connection-card .cc-sync-btn i { display: none; }
+    .calendly-connection-card .cc-sync-btn { font-size: 11.5px; padding-left: 0.25rem; padding-right: 0.25rem; }
+}
+
+.calendly-connection-card .cc-disconnect {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--vz-danger);
+}
+
+.calendly-connection-card .cc-disconnect:hover { text-decoration: underline; }
+
+.calendly-connection-card .cc-sync-btn {
+    min-width: 0;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--cc-accent);
+    background: rgba(var(--cc-accent-rgb), 0.08);
+    border: 1px solid rgba(var(--cc-accent-rgb), 0.18);
+    transition: all 0.15s ease;
+}
+
+.calendly-connection-card .cc-sync-btn:hover,
+.calendly-connection-card .cc-sync-btn:focus-visible {
+    color: #fff;
+    background: var(--cc-accent);
+    border-color: var(--cc-accent);
+}
+
+/* ── Pull from / Push to Calendly modal ─────────────────────── */
+/* The theme's primary colour as the accent. */
+.calendly-sync-modal {
+    --cs-accent: var(--vz-primary, var(--bs-primary));
+    --cs-accent-rgb: var(--vz-primary-rgb, var(--bs-primary-rgb));
+    --cs-border: var(--vz-border-color, var(--bs-border-color, #e9ebec));
+    --cs-muted: var(--vz-secondary-color, var(--bs-secondary-color, #878a99));
+    --cs-heading: var(--vz-heading-color, var(--bs-emphasis-color, #212529));
+}
+
+.calendly-sync-modal .modal-content {
+    border: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18);
+}
+
+/* Header: an icon tile, the title, the dates shown. */
+.calendly-sync-modal .cs-header {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1.125rem 1.25rem;
+    background: linear-gradient(135deg, rgba(var(--cs-accent-rgb), 0.08), rgba(var(--cs-accent-rgb), 0.02));
+    border-bottom: 1px solid var(--cs-border);
+}
+
+.calendly-sync-modal .cs-header-icon {
+    position: relative;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(var(--cs-accent-rgb), 0.18);
+}
+
+.calendly-sync-modal .cs-header-icon i {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #fff;
+    background: var(--cs-accent);
+    border: 2px solid #fff;
+}
+
+.calendly-sync-modal .cs-title-main {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--cs-heading);
+}
+
+.calendly-sync-modal .cs-header-sub {
+    margin-top: 0.125rem;
+    font-size: 12.5px;
+    color: var(--cs-muted);
+}
+
+.calendly-sync-modal .cs-range {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.3rem 0.625rem;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--cs-heading);
+    background: #fff;
+    border: 1px solid var(--cs-border);
+}
+
+.calendly-sync-modal .cs-range i { color: var(--cs-accent); }
+
+.calendly-sync-modal .cs-header .btn-close { flex: 0 0 auto; margin-left: 0.25rem; }
+
+.calendly-sync-modal .cs-body {
+    padding: 1.25rem;
+    max-height: 62vh;
+    overflow-y: auto;
+}
+
+.calendly-sync-modal .cs-skeleton {
+    height: 64px;
+    border-radius: 4px;
+}
+
+/* Push: the event type everything is booked on. */
+.calendly-sync-modal .cs-settings {
+    padding: 0.875rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    background: rgba(var(--cs-accent-rgb), 0.04);
+    border: 1px solid rgba(var(--cs-accent-rgb), 0.14);
+}
+
+.calendly-sync-modal .cs-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--cs-muted);
+}
+
+.calendly-sync-modal .cs-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 37.5px;
+    padding: 0 0.875rem;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--cs-heading);
+    background: #fff;
+    border: 1px solid var(--cs-border);
+}
+
+.calendly-sync-modal .cs-type i { color: var(--cs-accent); font-size: 15px; }
+
+.calendly-sync-modal .cs-type-length {
+    padding: 0.05rem 0.45rem;
+    border-radius: 4px;
+    font-size: 11.5px;
+    color: var(--cs-accent);
+    background: rgba(var(--cs-accent-rgb), 0.1);
+}
+
+.calendly-sync-modal .cs-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+    margin-top: 0.75rem;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--cs-muted);
+}
+
+.calendly-sync-modal .cs-hint i { color: var(--cs-accent); font-size: 13px; line-height: 1.2; }
+
+/* Above the list: how many, and Select all. */
+.calendly-sync-modal .cs-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.625rem;
+}
+
+.calendly-sync-modal .cs-count { font-size: 12.5px; color: var(--cs-muted); }
+.calendly-sync-modal .cs-count strong { color: var(--cs-heading); font-weight: 600; }
+
+.calendly-sync-modal .cs-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding-left: 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--cs-heading);
+    cursor: pointer;
+}
+
+.calendly-sync-modal .form-check-input { float: none; margin: 0; cursor: pointer; }
+
+.calendly-sync-modal .form-check-input:checked {
+    background-color: var(--cs-accent);
+    border-color: var(--cs-accent);
+}
+
+/* The list: one card per meeting. */
+.calendly-sync-modal .cs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.calendly-sync-modal .cs-row {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.75rem 0.875rem;
+    border-radius: 4px;
+    border: 1px solid var(--cs-border);
+    background: #fff;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.calendly-sync-modal .cs-row:hover { box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06); }
+
+.calendly-sync-modal .cs-row.is-picked {
+    border-color: rgba(var(--cs-accent-rgb), 0.45);
+    background: rgba(var(--cs-accent-rgb), 0.03);
+}
+
+.calendly-sync-modal .cs-row.is-disabled {
+    background: var(--vz-light, #f8f9fa);
+    box-shadow: none;
+}
+
+.calendly-sync-modal .cs-row.is-disabled .cs-date,
+.calendly-sync-modal .cs-row.is-disabled .cs-title,
+.calendly-sync-modal .cs-row.is-disabled .cs-meta { opacity: 0.55; }
+
+/* A small calendar page: month over day. */
+.calendly-sync-modal .cs-date {
+    flex: 0 0 46px;
+    width: 46px;
+    border-radius: 4px;
+    overflow: hidden;
+    text-align: center;
+    border: 1px solid var(--cs-border);
+    background: #fff;
+}
+
+.calendly-sync-modal .cs-date-month {
+    display: block;
+    padding: 0.1rem 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--cs-accent);
+}
+
+.calendly-sync-modal .cs-date-day {
+    display: block;
+    padding: 0.15rem 0 0.2rem;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--cs-heading);
+}
+
+.calendly-sync-modal .cs-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--cs-heading);
+}
+
+.calendly-sync-modal .cs-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.875rem;
+    margin-top: 0.2rem;
+    font-size: 12px;
+    color: var(--cs-muted);
+}
+
+.calendly-sync-modal .cs-meta i { margin-right: 0.25rem; font-size: 13px; vertical-align: -1px; }
+.calendly-sync-modal .cs-was { color: var(--vz-warning, #f7b84b); }
+
+.calendly-sync-modal .cs-reason {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.3rem;
+    font-size: 11.5px;
+    color: var(--vz-warning, #f7b84b);
+}
+
+.calendly-sync-modal .cs-badge {
+    flex: 0 0 auto;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* A meeting's own "Use this title in Calendly": a small pill that lights up. */
+.calendly-sync-modal .cs-use-title {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--cs-muted);
+    border: 1px dashed var(--cs-border);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.calendly-sync-modal .cs-use-title.is-on {
+    color: var(--cs-accent);
+    border-style: solid;
+    border-color: rgba(var(--cs-accent-rgb), 0.35);
+    background: rgba(var(--cs-accent-rgb), 0.07);
+}
+
+.calendly-sync-modal .cs-use-title:has(input:disabled) { opacity: 0.5; cursor: default; }
+
+.calendly-sync-modal .cs-outcome {
+    flex: 0 0 auto;
+    max-width: 45%;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 500;
+}
+
+.calendly-sync-modal .cs-outcome.is-done { color: var(--vz-success, #0ab39c); background: rgba(var(--vz-success-rgb, 10, 179, 156), 0.1); }
+.calendly-sync-modal .cs-outcome.is-failed { color: var(--vz-danger, #f06548); background: rgba(var(--vz-danger-rgb, 240, 101, 72), 0.1); }
+
+/* Nothing to do. */
+.calendly-sync-modal .cs-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--cs-muted);
+}
+
+.calendly-sync-modal .cs-empty-icon {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 0.75rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--cs-accent);
+    background: rgba(var(--cs-accent-rgb), 0.08);
+}
+
+.calendly-sync-modal .cs-empty-title {
+    margin-bottom: 0.25rem;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--cs-heading);
+}
+
+/* Footer: what will happen, then the buttons. */
+.calendly-sync-modal .cs-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid var(--cs-border);
+    background: var(--vz-light, #f8f9fa);
+}
+
+.calendly-sync-modal .cs-footer-note { font-size: 12.5px; color: var(--cs-muted); }
+
+.calendly-sync-modal .cs-btn {
+    height: 37.5px;
+    padding: 0 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+}
+
+.calendly-sync-modal .cs-btn-secondary {
+    color: var(--cs-heading);
+    background: #fff;
+    border: 1px solid var(--cs-border);
+}
+
+.calendly-sync-modal .cs-btn-secondary:hover,
+.calendly-sync-modal .cs-btn-secondary:focus {
+    color: var(--cs-accent);
+    background: #fff;
+    border-color: rgba(var(--cs-accent-rgb), 0.4);
+}
+
+.calendly-sync-modal .cs-btn-primary {
+    color: #fff;
+    background: var(--cs-accent);
+    border-color: var(--cs-accent);
+}
+
+.calendly-sync-modal .cs-btn-primary:hover,
+.calendly-sync-modal .cs-btn-primary:focus { color: #fff; background: var(--cs-accent); border-color: var(--cs-accent); filter: brightness(0.9); }
+.calendly-sync-modal .cs-btn-primary:disabled { color: #fff; background: var(--cs-accent); border-color: var(--cs-accent); opacity: 0.45; }
+
+@media (max-width: 575.98px) {
+    .calendly-sync-modal .cs-header { flex-wrap: wrap; }
+    .calendly-sync-modal .cs-range { order: 3; }
+    .calendly-sync-modal .cs-row { flex-wrap: wrap; }
+    .calendly-sync-modal .cs-footer { flex-direction: column; align-items: stretch; }
 }

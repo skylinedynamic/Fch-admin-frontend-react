@@ -82,6 +82,43 @@ describe('Appointments', () => {
 
     expect(toast.warn).not.toHaveBeenCalled()
   })
+
+  it('marks an appointment that was booked over another one', async () => {
+    // One far ahead for the upcoming list, one today so the calendar's current month shows it.
+    const today = new Date()
+    const todayAt = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 12:00:00`
+    const { container } = mount(['view appointments'], { status: true, data: [
+      { ...APPOINTMENT, is_calendly: true, had_conflict: true },
+      { ...APPOINTMENT, id: 2, subject: 'Overlapping today', appointment_date: todayAt, had_conflict: true },
+    ] })
+
+    expect((await screen.findAllByText('Booked over another appointment')).length).toBeGreaterThan(0)
+    await waitFor(() => expect(container.querySelector('.fc-event.apt-conflict, .apt-conflict')).not.toBeNull())
+  })
+
+  it('does not mark an appointment that was not', async () => {
+    mount(['view appointments'], { status: true, data: [{ ...APPOINTMENT, had_conflict: false }] })
+
+    await screen.findAllByText('Intro call with Acme')
+    expect(screen.queryByText('Booked over another appointment')).not.toBeInTheDocument()
+  })
+
+  it('leaves meetings that have already ended out of the list', async () => {
+    mount(['view appointments'], { status: true, data: [
+      APPOINTMENT,
+      { ...APPOINTMENT, id: 3, subject: 'Long gone meeting', appointment_date: '2020-03-11 15:00:00', status: 'pending' },
+    ] })
+
+    expect((await screen.findAllByText('Intro call with Acme')).length).toBeGreaterThan(0)
+    expect(screen.queryByText('Long gone meeting')).not.toBeInTheDocument()
+    expect(screen.queryByText('Expired')).not.toBeInTheDocument()
+  })
+
+  it('says so when nothing is coming up', async () => {
+    mount(['view appointments'], { status: true, data: [{ ...APPOINTMENT, appointment_date: '2020-03-11 15:00:00' }] })
+
+    expect(await screen.findByText(/no upcoming appointments/i)).toBeInTheDocument()
+  })
 })
 
 // BUG-004 (QA round 2): an upcoming appointment's description is stored HTML;

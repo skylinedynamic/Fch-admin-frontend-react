@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
 import type { AttendeeInput } from '../appointment/types'
 import {
+  completeCalendlyConnection,
   addAppointmentToCalendly,
   connectCalendly,
   disconnectCalendly,
@@ -10,15 +11,19 @@ import {
   fetchCalendlyConnection,
   fetchCalendlySettings,
   saveCalendlySettings,
-  syncCalendly,
+  applyCalendlySync,
+  fetchCalendlySyncPreview,
 } from './services'
-import type { AddToCalendlyPayload, CalendlyAvailableTimesPayload, CalendlySyncDates, SaveCalendlySettingsPayload } from './types'
+import type { AddToCalendlyPayload, CalendlyAvailableTimesPayload, CalendlySyncDates, CalendlySyncSelection, SaveCalendlySettingsPayload } from './types'
 
 export const useCalendlyConnection = () =>
   useQuery({
     queryKey: queryKeys.calendly.connection(),
     queryFn: fetchCalendlyConnection,
   })
+
+export const useCompleteCalendlyConnection = () =>
+  useMutation({ mutationFn: completeCalendlyConnection })
 
 export const useConnectCalendly = () =>
   useMutation({ mutationFn: connectCalendly })
@@ -31,10 +36,21 @@ export const useDisconnectCalendly = () => {
   })
 }
 
-export const useSyncCalendly = () => {
+/** What Sync would do for these dates - asked afresh each time the modal opens. */
+export const useCalendlySyncPreview = (dates: CalendlySyncDates | null) =>
+  useQuery({
+    queryKey: queryKeys.calendly.syncPreview(dates ?? {}),
+    queryFn: () => fetchCalendlySyncPreview(dates!),
+    enabled: !!dates,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  })
+
+export const useApplyCalendlySync = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (dates: CalendlySyncDates) => syncCalendly(dates),
+    mutationFn: ({ dates, selection }: { dates: CalendlySyncDates; selection: CalendlySyncSelection }) => applyCalendlySync(dates, selection),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.calendly.connection() })
       qc.invalidateQueries({ queryKey: queryKeys.appointment.list() })

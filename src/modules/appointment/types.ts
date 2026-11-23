@@ -175,3 +175,10 @@ export interface FetchSelectableUsersResponse {
   message: string
   data: SelectableUser[]
 }
+
+/**
+ * What an outside attendee's email must look like before it is added (name@domain.tld,
+ * no spaces) - a quick check as it is typed; the API still checks it on save.
+ */
+export const ATTENDEE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+export const ATTENDEE_EMAIL_INVALID = 'Enter a valid email address.'

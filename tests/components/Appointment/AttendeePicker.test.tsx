@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import AttendeePicker from '../../../src/components/Appointment/AttendeePicker'
 import { MAX_ATTENDEES, type AttendeeConflict, type AttendeeInput } from '../../../src/modules/appointment/types'
 
@@ -55,6 +55,29 @@ describe('AttendeePicker (Calendly v2: several people, users or outside emails)'
     expect(screen.queryByRole('option', { name: /sam staff/i })).not.toBeInTheDocument()
     await userEvent.keyboard('{Enter}')
     expect(onChange).toHaveBeenLastCalledWith([{ user_id: 2, name: 'Pat Partner' }])
+  })
+
+  it('keeps the list open when focus is moved away by code, and closes it on a click outside', async () => {
+    render(<><Harness /><button type="button">outside</button></>)
+    const box = screen.getByRole('combobox', { name: /add people/i })
+
+    await userEvent.type(box, 'sam')
+    // A modal opening moves focus to itself; the list must survive that.
+    act(() => { box.blur() })
+    expect(screen.getByRole('option', { name: /sam staff/i })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'outside' }))
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it("is a search box the browser does not fill with its saved addresses", () => {
+    render(<Harness />)
+    const box = screen.getByRole('combobox', { name: /add people/i })
+
+    // Chrome ignores autocomplete=off on a field it takes for an email; it leaves search fields alone.
+    expect(box).toHaveAttribute('type', 'search')
+    expect(box).toHaveAttribute('autocomplete', 'off')
+    expect(box).toHaveAttribute('name', 'attendee-search')
   })
 
   it('offers to invite a typed email that matches nobody', async () => {
@@ -117,5 +140,38 @@ describe('AttendeePicker (Calendly v2: several people, users or outside emails)'
     expect(screen.getByText('Borrower')).toBeInTheDocument()
     expect(screen.getByText(/invited by email/i)).toBeInTheDocument()
     expect(screen.getByText(`2 of ${MAX_ATTENDEES}`)).toBeInTheDocument()
+  })
+
+  it('checks a typed email on Enter, and does not add one that is not an email address', async () => {
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    const box = screen.getByRole('combobox', { name: /add people/i })
+
+    for (const bad of ['nope', 'guest@', 'guest@example', 'gu est@example.com']) {
+      await userEvent.clear(box)
+      await userEvent.type(box, `${bad}{Enter}`)
+      expect(screen.getByText('Enter a valid email address.')).toBeInTheDocument()
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument() // the message is not hidden behind the list
+    }
+    expect(onChange).not.toHaveBeenCalled()
+
+    await userEvent.clear(box)
+    await userEvent.type(box, 'guest@example.com{Enter}')
+    expect(onChange).toHaveBeenLastCalledWith([{ email: 'guest@example.com' }])
+    expect(screen.queryByText('Enter a valid email address.')).not.toBeInTheDocument()
+  })
+
+  it('closes the list once someone is picked; typing opens it again', async () => {
+    render(<Harness />)
+    const box = screen.getByRole('combobox', { name: /add people/i })
+
+    await userEvent.click(box)
+    await userEvent.click(screen.getByRole('option', { name: /sam staff/i }))
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+
+    await userEvent.type(box, 'pat')
+    expect(screen.getByRole('option', { name: /pat partner/i })).toBeInTheDocument()
+    await userEvent.keyboard('{Enter}')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
 })

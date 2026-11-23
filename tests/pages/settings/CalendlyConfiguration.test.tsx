@@ -11,10 +11,10 @@ import { CALENDLY_CONFIGURATION_PERMISSION, CALENDLY_CONFIGURATION_SECTION } fro
 
 vi.mock('react-toastify', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
-function signInWith(permissions: string[], isHost: number) {
+function signInWith(permissions: string[], isHost: number, entityType = 'Partner') {
   useAuthStore.setState({
     token: 't',
-    user: { id: 1, name: 'Pat', permissions, partner_id: 2, is_host: isHost },
+    user: { id: 1, name: 'Pat', permissions, partner_id: 2, is_host: isHost, entity_type: entityType },
     userSubscription: null,
   } as never)
 }
@@ -30,7 +30,7 @@ const unset = {
 
 afterEach(() => server.resetHandlers())
 
-describe('Settings menu - Calendly Configuration (host only)', () => {
+describe("Settings menu - Calendly Configuration (each partner's own app)", () => {
   const renderMenu = () => {
     server.use(http.get('*/common/mail-configurations', () => HttpResponse.json({ status: true, data: { configurations: [], uses_own_configuration: false } })))
     settings(unset)
@@ -44,13 +44,24 @@ describe('Settings menu - Calendly Configuration (host only)', () => {
     expect(screen.getByRole('button', { name: 'Calendly Configuration' })).toBeInTheDocument()
   })
 
-  it('is hidden without the permission, and for any other partner', () => {
+  it('is listed for any other partner with the permission, and for a partner staff member given it', () => {
+    signInWith([CALENDLY_CONFIGURATION_PERMISSION], 0)
+    const { unmount } = renderMenu()
+    expect(screen.getByRole('button', { name: 'Calendly Configuration' })).toBeInTheDocument()
+    unmount()
+
+    signInWith([CALENDLY_CONFIGURATION_PERMISSION], 0, 'Employee')
+    renderMenu()
+    expect(screen.getByRole('button', { name: 'Calendly Configuration' })).toBeInTheDocument()
+  })
+
+  it('is hidden without the permission', () => {
     signInWith([], 1)
     const { unmount } = renderMenu()
     expect(screen.queryByRole('button', { name: 'Calendly Configuration' })).not.toBeInTheDocument()
     unmount()
 
-    signInWith([CALENDLY_CONFIGURATION_PERMISSION], 0)
+    signInWith([], 0, 'Employee')
     renderMenu()
     expect(screen.queryByRole('button', { name: 'Calendly Configuration' })).not.toBeInTheDocument()
   })
@@ -64,6 +75,7 @@ describe('CalendlyConfigurationForm', () => {
     expect(await screen.findByText('https://api.example.test/api/v1/calendly/callback')).toBeInTheDocument()
     expect(screen.getByText('scheduled_events:write')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Calendly' })).toBeInTheDocument()
+    expect(screen.getByText(/your staff and clients connect their own calendly through it/i)).toBeInTheDocument()
   })
 
   it('saves the Client ID and Secret', async () => {

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import EventTypeDropdown from './EventTypeDropdown'
 import calendlyLogo from '../../../assets/images/integrations/calendly.svg'
 import '../../../assets/css/calendly-appointments.css'
 import type { AttendeeInput } from '../../modules/appointment/types'
@@ -13,12 +14,20 @@ import {
 
 export interface CalendlyBookingValue {
   sync: boolean
+  /** Booked under the appointment's own title and length (the API makes a one-off event type). */
+  useTitle: boolean
   eventTypeUri: string
   locationKind: string
   location: string
 }
 
-export const EMPTY_CALENDLY_BOOKING: CalendlyBookingValue = { sync: false, eventTypeUri: '', locationKind: '', location: '' }
+export const EMPTY_CALENDLY_BOOKING: CalendlyBookingValue = { sync: false, useTitle: false, eventTypeUri: '', locationKind: '', location: '' }
+
+/** What the form needs from Calendly: the event type's length, and whether the start is an open time (null: not known / not syncing). */
+export interface CalendlyFit {
+  minutes: number | null
+  open: boolean | null
+}
 
 interface Props {
   attendees: AttendeeInput[]
@@ -31,6 +40,8 @@ interface Props {
   /** The start time the form is set to (HH:mm) - that open time shows as picked. */
   selectedTime?: string
   errors?: Record<string, string | string[]>
+  /** Told the event type's length and whether the start time is open in Calendly. */
+  onCalendlyFit?: (fit: CalendlyFit) => void
 }
 
 const first = (message?: string | string[]): string | undefined => (Array.isArray(message) ? message[0] : message)
@@ -45,7 +56,7 @@ export const askedLocation = (type: CalendlyEventType | undefined, kind: string)
  * "Sync with Calendly" in Add Appointment (Calendly v2). The API says whose
  * Calendly it would go into; ticked by default whenever someone can host it.
  */
-export default function CalendlyBookingFields({ attendees, date, timezone, value, onChange, onPickTime, selectedTime, errors = {} }: Props) {
+export default function CalendlyBookingFields({ attendees, date, timezone, value, onChange, onPickTime, selectedTime, errors = {}, onCalendlyFit }: Props) {
   const { data: options } = useCalendlyBookingOptions(attendees, true)
   const mode = options?.mode ?? CALENDLY_BOOKING_MODES.NONE
   const eventTypes = options?.event_types ?? []
@@ -65,9 +76,24 @@ export default function CalendlyBookingFields({ attendees, date, timezone, value
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options])
 
+  // With the title, Calendly opens exactly the form's time: the event type's open times do not apply.
+  const ownLength = value.sync && value.useTitle
   const times = useCalendlyAvailableTimes(
-    value.sync && eventType && date ? { attendees, event_type_uri: eventType.uri, date, timezone } : null
+    value.sync && !ownLength && eventType && date ? { attendees, event_type_uri: eventType.uri, date, timezone } : null
   )
+
+
+  // Tell the form the event type's length (its end time follows it) and
+  // whether its start is one of Calendly's open times - null when not syncing.
+  const fitMinutes = options && mode !== CALENDLY_BOOKING_MODES.NONE && value.sync && !ownLength && eventType ? eventType.duration : null
+  const fitOpen = fitMinutes !== null && times.isSuccess && selectedTime
+    ? times.data.some((slot) => slot.local_time === selectedTime)
+    : null
+  useEffect(() => {
+    onCalendlyFit?.({ minutes: fitMinutes, open: fitOpen })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitMinutes, fitOpen])
+  useEffect(() => () => onCalendlyFit?.({ minutes: null, open: null }), [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!options || mode === CALENDLY_BOOKING_MODES.NONE) return null
 
@@ -99,34 +125,34 @@ export default function CalendlyBookingFields({ attendees, date, timezone, value
           />
         </div>
       </div>
-      {first(errors.sync_with_calendly) && <div className="text-danger fs-11 px-3 pb-2">{first(errors.sync_with_calendly)}</div>}
 
       {value.sync && (
         <div className="cb-body">
-          {eventTypes.length > 1 ? (
+          {ownLength ? null : eventTypes.length > 1 ? (
             <div>
               <label htmlFor="calendly-event-type" className="cb-label d-block">Calendly event type</label>
-              <select
-                id="calendly-event-type"
-                className="form-select"
-                value={eventType?.uri ?? ''}
-                onChange={(e) => {
-                  const next = eventTypes.find((t) => t.uri === e.target.value)
-                  onChange({ ...value, eventTypeUri: e.target.value, locationKind: next?.locations[0]?.kind ?? '', location: '' })
-                }}
-              >
-                {eventTypes.map((t) => <option key={t.uri} value={t.uri}>{t.name} ({t.duration} min)</option>)}
-              </select>
-              {placeDisplay && (
-                <div className="cb-chips mt-2">
-                  <span className="cb-chip"><i className={placeDisplay.icon} aria-hidden="true"></i>{placeDisplay.label}</span>
+              {/* The dropdown and the place side by side, not full width. */}
+              <div className="cb-type-row">
+                <div className="cb-type-select">
+                  <EventTypeDropdown
+                    inputId="calendly-event-type"
+                    eventTypes={eventTypes}
+                    value={eventType?.uri ?? ''}
+                    onChange={(uri) => {
+                      const next = eventTypes.find((t) => t.uri === uri)
+                      onChange({ ...value, eventTypeUri: uri, locationKind: next?.locations[0]?.kind ?? '', location: '' })
+                    }}
+                  />
                 </div>
-              )}
+                {placeDisplay && (
+                  <span className="cb-chip"><i className={placeDisplay.icon} aria-hidden="true"></i>{placeDisplay.label}</span>
+                )}
+              </div>
             </div>
           ) : eventType ? (
             <div className="cb-chips" aria-label="Calendly event type">
               <span className="cb-chip"><i className="ri-calendar-event-line" aria-hidden="true"></i><strong className="fw-semibold">{eventType.name}</strong></span>
-              <span className="cb-chip"><i className="ri-time-line" aria-hidden="true"></i>{eventType.duration} min</span>
+              {!ownLength && <span className="cb-chip"><i className="ri-time-line" aria-hidden="true"></i>{eventType.duration} min</span>}
               {placeDisplay && <span className="cb-chip"><i className={placeDisplay.icon} aria-hidden="true"></i>{placeDisplay.label}</span>}
             </div>
           ) : (
@@ -135,6 +161,34 @@ export default function CalendlyBookingFields({ attendees, date, timezone, value
           {first(errors.calendly_event_type_uri) && <div className="text-danger fs-11">{first(errors.calendly_event_type_uri)}</div>}
 
           {eventType && (
+            <div className="cb-own-title">
+              <div className="form-check mb-0">
+                <input
+                  id="calendly-use-title"
+                  type="checkbox"
+                  className="form-check-input"
+                  aria-describedby="calendly-use-title-help"
+                  checked={value.useTitle}
+                  onChange={(e) => onChange({ ...value, useTitle: e.target.checked })}
+                />
+                <label htmlFor="calendly-use-title" className="form-check-label cb-own-title-label">Use this appointment's title in Calendly</label>
+              </div>
+              {value.useTitle ? (
+                // The event type and its place are hidden: this says what Calendly books instead.
+                <div id="calendly-use-title-help" role="note" className="cb-own-note bg-warning-subtle text-warning-emphasis">
+                  <i className="ri-information-line" aria-hidden="true"></i>
+                  <span>Calendly creates a one-time meeting with this title and the whole time slot.</span>
+                </div>
+              ) : (
+                <div id="calendly-use-title-help" className="cb-sub">
+                  Calendly will name it "{eventType.name}" and book {eventType.duration} min.
+                </div>
+              )}
+              {first(errors.calendly_use_title) && <div className="text-danger fs-11 mt-1">{first(errors.calendly_use_title)}</div>}
+            </div>
+          )}
+
+          {eventType && !ownLength && (
             <div>
               <div className="cb-label">Open times in Calendly</div>
               {times.isLoading && (
@@ -193,6 +247,8 @@ export default function CalendlyBookingFields({ attendees, date, timezone, value
           )}
         </div>
       )}
+      {/* Calendly's refusal (booking limit, nobody to host it): under everything above. */}
+      {first(errors.sync_with_calendly) && <div className="cb-error text-danger fs-11">{first(errors.sync_with_calendly)}</div>}
     </div>
   )
 }

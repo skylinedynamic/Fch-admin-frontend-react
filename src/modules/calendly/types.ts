@@ -37,8 +37,20 @@ export const CALENDLY_LOCATION_DISPLAY: Record<string, { label: string; icon: st
   custom: { label: 'Custom location', icon: 'ri-map-pin-line' },
 }
 
+/** Calendly's OAuth answer as it reached the portal's /calendly/callback page. */
+export interface CalendlyCallbackQuery {
+  code?: string
+  state?: string
+  error?: string
+}
+
+/** The portal page Calendly sends people back to (fch-api CalendlyAppConfig::CALLBACK_PATH). */
+export const CALENDLY_CALLBACK_ROUTE = '/calendly/callback'
+
 /** The ?calendly= result the API sends the browser back with after signing in. */
 export const CALENDLY_RETURN_PARAM = 'calendly'
+/** One id for the "how connecting went" toast, so it is shown once however often it is asked for. */
+export const CALENDLY_RETURN_TOAST_ID = 'calendly-return'
 export const CALENDLY_RETURN_RESULTS = {
   CONNECTED: 'connected',
   ERROR: 'error',
@@ -86,15 +98,68 @@ export interface CalendlyAvailableTimesPayload {
   timezone: string
 }
 
+/** Which way the Sync modal works: bring meetings in from Calendly, or send appointments to it. */
+export const CALENDLY_SYNC_DIRECTIONS = { PULL: 'pull', PUSH: 'push' } as const
+export type CalendlySyncDirection = (typeof CALENDLY_SYNC_DIRECTIONS)[keyof typeof CALENDLY_SYNC_DIRECTIONS]
+
 export interface CalendlySyncDates {
   from: string
   to: string
 }
 
-export interface CalendlySyncResult {
-  created: number
-  updated: number
-  cancelled: number
+/** What a Calendly meeting would do to the portal (fch-api CalendlySyncReviewService::ACTION_*). */
+export const CALENDLY_PULL_ACTIONS = {
+  NEW: 'new',
+  CHANGED: 'changed',
+  CANCELLED: 'cancelled',
+} as const
+export type CalendlyPullAction = (typeof CALENDLY_PULL_ACTIONS)[keyof typeof CALENDLY_PULL_ACTIONS]
+
+/** A Calendly meeting Sync could bring in. Times are UTC ISO strings. */
+export interface CalendlyPullItem {
+  uri: string
+  action: CalendlyPullAction
+  title: string | null
+  start_time: string
+  end_time: string
+  people: string[]
+  appointment_id: number | null
+  /** The portal's time before the change (changed / cancelled). */
+  previous_start_time: string | null
+}
+
+/** One of the user's own appointments Sync could add to Calendly. */
+export interface CalendlyPushItem {
+  appointment_id: number
+  title: string | null
+  start_time: string
+  end_time: string
+  people: string[]
+  pushable: boolean
+  /** Why it cannot go to Calendly (a past time, nobody on it...). */
+  reason: string | null
+}
+
+export interface CalendlySyncPreview {
+  pull: CalendlyPullItem[]
+  push: CalendlyPushItem[]
+  event_types: CalendlyEventType[]
+}
+
+/** What was ticked in the Sync modal. */
+export interface CalendlySyncSelection {
+  pull: string[]
+  push: number[]
+  /** Of `push`, the ones booked under their own title and length. */
+  push_use_title?: number[]
+  calendly_event_type_uri?: string | null
+  calendly_location_kind?: string | null
+  calendly_location?: string | null
+}
+
+export interface CalendlySyncApplyResult {
+  pull: { uri: string; result: 'created' | 'updated' | 'cancelled' | 'unchanged' | 'failed'; message?: string }[]
+  push: { appointment_id: number; ok: boolean; message?: string }[]
 }
 
 export interface AddToCalendlyPayload {
