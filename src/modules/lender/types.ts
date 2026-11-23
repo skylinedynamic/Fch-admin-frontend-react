@@ -16,6 +16,8 @@ export interface Lender {
     country?: string | null;
     state?: string | null;
     city?: string | null;
+    /** City > Others on the form: the name typed, sent to the API with city "Others". */
+    other_city?: string | null;
     address?: string | null;
     submission_method?: string;
     submission_email?: string;
