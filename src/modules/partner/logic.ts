@@ -114,6 +114,8 @@ export const buildPartnerFormDataPayload = (
         'pending_email', 'login_user_id', 'signin_email',
         // Saved by the Commissions tab's own endpoint.
         'commission', 'commission_tiers', 'funded_deal_count',
+        // Sent as expected_version below, on an edit only.
+        'partner_info_version',
     ];
 
     // Append top-level (non-enrollment) fields
@@ -172,6 +174,13 @@ export const buildPartnerFormDataPayload = (
         }
     });
 
+    // The version this form loaded: the API refuses a save from an older copy
+    // (409) instead of putting back what another admin changed meanwhile, as
+    // the client form does (R2 BUG-088).
+    if (id && formData.partner_info_version) {
+        formDataToSend.append('expected_version', String(formData.partner_info_version));
+    }
+
     // Append enrollment sub-object
     const shouldSendEnrollment = !id || isConvertingFromFreeTrial;
 
@@ -218,3 +227,23 @@ export const partnerPortalBaseHost = (
     websiteUrl: string | undefined = import.meta.env.VITE_WEBSITE_URL,
     currentHost: string = window.location.host
 ): string => websiteUrl?.trim().replace(/^https?:\/\//, '').split('/')[0] || currentHost;
+
+/**
+ * Subdomains the platform keeps for itself - the API's
+ * Partner::RESTRICTED_DOMAINS; keep the two the same.
+ */
+export const RESERVED_SUBDOMAINS = [
+    'localhost', 'test', 'staging', 'production', 'partner', 'borrower', 'admin', 'auth',
+    'notifications', 'common', 'filemanager', '2fa', 'api', 'website', 'client',
+];
+
+/**
+ * The subdomain Add Partner suggests from the company name: its letters, in
+ * lower case ("Four Doors 24" -> "fourdoors"). A reserved word gets "-portal"
+ * ("Partner 1" -> "partner-portal"): it was suggested as is, and Save was
+ * refused with "The selected partner domain is invalid." (R2 BUG-087).
+ */
+export const suggestedSubdomain = (companyName: string | null | undefined): string => {
+    const letters = (companyName || '').toLowerCase().replace(/[^a-z]/g, '');
+    return RESERVED_SUBDOMAINS.includes(letters) ? `${letters}-portal` : letters;
+};
