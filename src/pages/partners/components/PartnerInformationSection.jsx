@@ -18,6 +18,7 @@ import { ENROLLMENT_TYPE_ONE_TIME, ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_
 import PendingEmailNotice from '../../../components/Account/PendingEmailNotice';
 import { defaultInstallmentMonths } from '../../../modules/partner';
 import { FILE_MANAGER_CONFIG } from '../../../modules/filemanager/config';
+import { InstallmentError } from '../../../components/Common/Payment/InstallmentError';
 
 
 export default function PartnerInformationSection({
@@ -732,6 +733,7 @@ export default function PartnerInformationSection({
                                     appendTo="self"
                                 />
                                 {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
+                                <InstallmentError errors={errors} />
                             </div>
                         </div>
                     )}

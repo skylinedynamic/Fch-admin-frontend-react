@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { screen, waitFor } from '../../test-utils'
-import { allowBackgroundCalls, api, renderPage, signIn } from '../pageHarness'
+import { allowBackgroundCalls, api, invalid, renderPage, signIn } from '../pageHarness'
 
 vi.mock('react-toastify', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-toastify')>()
@@ -73,6 +73,20 @@ describe('Partner create › installment default months', () => {
 
     await waitFor(() => expect(duration()).toBe('6 Months'))
     expect(monthly()).toBe('$916.12')
+  })
+
+  // R3-BUG-057: the API refused the months with a 422 and the page showed
+  // nothing - the form just stayed. The reason now shows on the form.
+  it('shows the API refusing the installment months, instead of nothing', async () => {
+    const message = 'The enrollment.months field must not be greater than 36.'
+    await chooseInstallment(36)
+    // After chooseInstallment: its catch-all would otherwise answer first.
+    const create = api('post', '/admin/partners', invalid({ 'enrollment.months': message }), 422)
+
+    await userEvent.setup().click(screen.getByRole('button', { name: /^save/i }))
+
+    expect(await screen.findByText(message)).toBeInTheDocument()
+    expect(create.calls).toBe(1)
   })
 
   // The calculator opens with the card's months, not a fixed 12.
