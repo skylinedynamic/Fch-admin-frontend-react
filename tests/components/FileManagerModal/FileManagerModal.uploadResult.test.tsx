@@ -67,6 +67,50 @@ describe('file manager upload window result', () => {
     expect(toast.error).not.toHaveBeenCalled()
   })
 
+  /**
+   * R3-BUG-063: a small picture with a 6 MB one. The browser refused the big
+   * one before sending it (toast), sent only the small one - and the window
+   * said "Files Uploaded Successfully". A file refused in the browser counts
+   * as not uploaded, the same as one the API refuses.
+   */
+  it('counts a file the browser refuses for its size as not uploaded', async () => {
+    answers = ['accept']
+    const big = new File([new Uint8Array(6 * 1024 * 1024)], 'qa-r3-sec08-6mb.jpg', { type: 'image/jpeg' })
+    await uploadFiles(png('qa-r3-sec08-small.png'), big)
+
+    expect(await screen.findByText('1 of 2 files uploaded')).toBeInTheDocument()
+    expect(screen.queryByText('Files Uploaded Successfully')).not.toBeInTheDocument()
+    expect(toast.error).toHaveBeenCalledWith('File "qa-r3-sec08-6mb.jpg" exceeds 5MB limit.')
+  })
+
+  it('counts a file the browser refuses for its type as not uploaded', async () => {
+    answers = ['accept']
+    await uploadFiles(png('photo.png'), new File(['x'], 'tool.exe', { type: 'application/octet-stream' }))
+
+    expect(await screen.findByText('1 of 2 files uploaded')).toBeInTheDocument()
+    expect(screen.queryByText('Files Uploaded Successfully')).not.toBeInTheDocument()
+  })
+
+  it('does not carry a refused file into the next upload\'s count', async () => {
+    answers = ['accept', 'accept']
+    const big = new File([new Uint8Array(6 * 1024 * 1024)], 'big.jpg', { type: 'image/jpeg' })
+    const user = userEvent.setup()
+    renderWithProviders(<FileManagerModal isOpen toggle={() => {}} section="Profile" entityType="partners" entityId={7} />)
+    await user.click(await screen.findByRole('button', { name: /upload/i }))
+    const input = () => document.querySelector('.fm-modal input[type="file"]') as HTMLInputElement
+
+    // Only the refused file: nothing is sent, the window stays on the picker.
+    await user.upload(input(), big)
+    await user.click(screen.getByRole('button', { name: 'Upload (1)' }))
+    await waitFor(() => expect(toast.error).toHaveBeenCalled())
+    await user.click(screen.getByRole('button', { name: '×' }))
+
+    // Then one good file: all of it went in.
+    await user.upload(input(), png('photo.png'))
+    await user.click(screen.getByRole('button', { name: 'Upload (1)' }))
+    expect(await screen.findByText('Files Uploaded Successfully')).toBeInTheDocument()
+  })
+
   it('says how many went in when only some are added', async () => {
     answers = ['accept', 'refuse']
     await uploadFiles(png('photo.png'), png('qa-fake.png'))

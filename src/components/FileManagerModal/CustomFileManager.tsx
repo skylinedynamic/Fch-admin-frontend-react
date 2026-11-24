@@ -80,6 +80,9 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
   const [uploadQueue, setUploadQueue] = useState<File[]>([])
   const [currentCollision, setCurrentCollision] = useState<{ file: File; resolve: (action: 'replace' | 'keep' | 'cancel') => void } | null>(null)
   const isProcessingQueue = React.useRef(false) // Ref to track queue processing status without triggering re-renders
+  // Files of the batch being uploaded that the browser refused (size, type)
+  // before sending: they count as not uploaded (R3-BUG-063).
+  const refusedBeforeUpload = React.useRef(0)
 
   // Progress State
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
@@ -226,6 +229,8 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
     isProcessingQueue.current = false
     setUploadProgress(null)
     setCurrentUploadingFile(null)
+    const refused = refusedBeforeUpload.current
+    refusedBeforeUpload.current = 0
 
     // Every file refused (or the duplicates cancelled): no success screen - back
     // to the picker, the reason already shown (BUG-014 retest).
@@ -237,7 +242,7 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
 
     // The list refreshes after the last file; if that one was refused, refresh here.
     if (lastRefused) onRefresh()
-    setUploadResult({ uploaded, total: attempted })
+    setUploadResult({ uploaded, total: attempted + refused })
     setUploadComplete(true)
     if (typeof onChanged === 'function') onChanged()
   }, [files, currentPath, onUploadFile, onChanged, onRefresh])
@@ -273,10 +278,12 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
       validFiles.push(file)
     })
 
+    // Nothing left to send: the toasts said why, and the count starts afresh.
     if (validFiles.length > 0) {
+      refusedBeforeUpload.current += newFiles.length - validFiles.length
       setUploadQueue(prev => [...prev, ...validFiles])
     }
-  }, [])
+  }, [entityType])
 
   const handleRename = useCallback(async (newName: string) => {
     if (selectedItem) {
