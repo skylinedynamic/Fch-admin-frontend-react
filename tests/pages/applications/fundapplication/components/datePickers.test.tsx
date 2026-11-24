@@ -38,7 +38,7 @@ const owner: OwnerInfo = {
 }
 
 const financial: FinancialInfo = {
-  id: null, monthlyRevenue: '', annualRevenue: '', bankName: '', checkingStartDate: '2020-01-01',
+  id: null, monthlyRevenue: '', annualRevenue: '', averageMonthlyDeposits: '', bankName: '', checkingStartDate: '2020-01-01',
   personalCreditScore: '', businessCreditScore: '', existingDebt: false, debtBalance: '',
 }
 

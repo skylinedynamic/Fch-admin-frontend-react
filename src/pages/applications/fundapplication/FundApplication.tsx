@@ -195,6 +195,7 @@ export default function FundApplication() {
   const [financial, setFinancial] = useState<FinancialInfo>({
     monthlyRevenue: '',
     annualRevenue: '',
+    averageMonthlyDeposits: '',
     bankName: '',
     checkingStartDate: '',
     personalCreditScore: '',

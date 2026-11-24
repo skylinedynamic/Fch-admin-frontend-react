@@ -472,6 +472,7 @@ export default function FundingApplicationDetails() {
         <div className="row">
             <DetailRow label="Monthly Revenue" value={app.monthly_revenue || '-'} />
             <DetailRow label="Annual Revenue" value={app.annual_revenue || '-'} />
+            <DetailRow label="Average Monthly Deposits" value={app.average_monthly_deposits || '-'} />
             <DetailRow label="Business Bank Name" value={app.business_bank_name} />
             <DetailRow label="Business Checking Start Date" value={app.business_checking_start_date} />
             <DetailRow label="Self-Reported Personal Credit Score" value={app.self_reported_personal_credit_score} />

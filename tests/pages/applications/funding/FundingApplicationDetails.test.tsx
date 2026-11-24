@@ -229,6 +229,33 @@ describe('FundingApplicationDetails — Funding Request tab', () => {
   })
 })
 
+describe('FundingApplicationDetails — Financial Information: Average Monthly Deposits (ticket 512)', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+  })
+
+  const openFinancialInformationTab = () => {
+    renderWithProviders(<FundingApplicationDetails />)
+    screen.getAllByText('Financial Information')[0].closest('button, a, li, .list-group-item')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  }
+
+  it('shows the saved amount, apart from Monthly Revenue', async () => {
+    detail.application = { ...editable, monthly_revenue: '$42,000.00', average_monthly_deposits: '$15,000.00' }
+    openFinancialInformationTab()
+
+    const deposits = await screen.findByText('Average Monthly Deposits')
+    expect(deposits.nextElementSibling).toHaveTextContent('$15,000.00')
+    expect(screen.getByText('$42,000.00')).toBeInTheDocument()
+  })
+
+  it('shows a dash when there is none', async () => {
+    detail.application = { ...editable, average_monthly_deposits: null }
+    openFinancialInformationTab()
+
+    expect((await screen.findByText('Average Monthly Deposits')).nextElementSibling).toHaveTextContent('-')
+  })
+})
+
 describe('FundingApplicationDetails - activity log Want to Assign', () => {
   beforeEach(() => {
     useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })

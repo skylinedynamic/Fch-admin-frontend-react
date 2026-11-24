@@ -58,6 +58,7 @@ export default function FinancialInformationStep({
       funding_request_id: fundingRequestId || null,
       monthly_revenue: unformatCurrency(financial.monthlyRevenue),
       annual_revenue: unformatCurrency(financial.annualRevenue),
+      average_monthly_deposits: unformatCurrency(financial.averageMonthlyDeposits),
       business_bank_name: financial.bankName,
       business_checking_start_date: formatForApi(financial.checkingStartDate),
       self_reported_personal_credit_score: financial.personalCreditScore,
@@ -109,6 +110,7 @@ export default function FinancialInformationStep({
         id: apiData.id || null,
         monthlyRevenue: apiData.monthly_revenue ? formatCurrency(apiData.monthly_revenue) : financial.monthlyRevenue,
         annualRevenue: apiData.annual_revenue ? formatCurrency(apiData.annual_revenue) : financial.annualRevenue,
+        averageMonthlyDeposits: apiData.average_monthly_deposits ? formatCurrency(apiData.average_monthly_deposits) : financial.averageMonthlyDeposits,
         bankName: apiData.business_bank_name || financial.bankName,
         checkingStartDate: formatForApi(apiData.business_checking_start_date) || financial.checkingStartDate,
         personalCreditScore: apiData.self_reported_personal_credit_score || financial.personalCreditScore,
@@ -186,6 +188,19 @@ export default function FinancialInformationStep({
           onChange={(e) => setFinancial({ ...financial, annualRevenue: formatCurrency(e.target.value) })}
         />
         {hasError('annual_revenue') && <div className="invalid-feedback">{getFieldError('annual_revenue')}</div>}
+      </div>
+      <div className="col-md-6">
+        <label className="form-label" htmlFor="average_monthly_deposits">Average Monthly Deposits</label>
+        <input
+          id="average_monthly_deposits"
+          type="text"
+          inputMode="decimal"
+          className={`form-control ${hasError('average_monthly_deposits') ? 'is-invalid' : ''}`}
+          placeholder="Enter average monthly deposits"
+          value={financial.averageMonthlyDeposits}
+          onChange={(e) => setFinancial({ ...financial, averageMonthlyDeposits: formatCurrency(e.target.value) })}
+        />
+        {hasError('average_monthly_deposits') && <div className="invalid-feedback">{getFieldError('average_monthly_deposits')}</div>}
       </div>
 
       <div className="col-md-6">

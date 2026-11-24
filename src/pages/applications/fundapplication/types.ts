@@ -65,6 +65,8 @@ export type FinancialInfo = {
   id?: number | null
   monthlyRevenue: string
   annualRevenue: string
+  // Ticket 512: a dollar amount, kept apart from Monthly Revenue.
+  averageMonthlyDeposits: string
   bankName: string
   checkingStartDate: string
   personalCreditScore: string

@@ -434,6 +434,7 @@ export interface FundingApplicationDetails {
     has_co_borrower: boolean;
     monthly_revenue: string;
     annual_revenue: string;
+    average_monthly_deposits: string | null;
     business_bank_name: string;
     business_checking_start_date: string;
     self_reported_personal_credit_score: string;

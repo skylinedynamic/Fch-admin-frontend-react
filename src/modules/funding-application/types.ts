@@ -80,6 +80,7 @@ export interface FinancialInfoData {
   id: number | null
   monthly_revenue: string | null
   annual_revenue: string | null
+  average_monthly_deposits: string | null
   business_bank_name: string | null
   business_checking_start_date: string | null
   self_reported_personal_credit_score: string | null
