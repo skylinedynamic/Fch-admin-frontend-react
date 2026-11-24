@@ -12,6 +12,15 @@ export const fetchCreditProfileRequestDetails = async (id: number | string): Pro
 };
 
 /**
+ * The request's full SSN. The details carry it masked; this is the deliberate
+ * reveal, which the server logs on the client's activity (R2 BUG-092).
+ */
+export const revealCreditProfileRequestSsn = async (id: number | string): Promise<string | null> => {
+    const response = await apiClient.post(`/admin/credit-profile-requests/${id}/reveal`);
+    return response.data?.data?.ssn ?? null;
+};
+
+/**
  * One authorisation as the PDF sent to iSoftPull.
  *
  * Returned as a blob rather than a link because the endpoint is authenticated -

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
@@ -18,7 +18,8 @@ const request = {
   city: 'Austin',
   state: 'Texas',
   zip: '78701',
-  ssn: '123456789',
+  // Masked, as the API sends it; the full number only from .../reveal (R2 BUG-092).
+  ssn: '***-**-6789',
   // Ready to display, as the API sends it - see CreditProfileRequestResource.
   date_of_birth: 'December 16, 1992',
   phone: '5125550100',
@@ -159,5 +160,78 @@ describe('Credit profile request details', () => {
     expect(document.querySelector('a[href="mailto:null"], a[href="tel:null"], a[href="mailto:"], a[href="tel:"]')).toBeNull()
     // What the profile did hold still shows.
     expect(await field('City')).toHaveTextContent('Austin')
+  })
+})
+
+/**
+ * R2 BUG-092 (retest 24-Nov-26): the details API sent the full SSN and
+ * "Reveal" only unmasked it in the browser. The API now sends it masked; the
+ * full number comes only from POST .../reveal, which Reveal calls (and the
+ * server logs). Copy gives the full number only once it has been revealed.
+ */
+describe('Credit profile request details - SSN reveal', () => {
+  const FULL = '123456789'
+
+  const serveReveal = (onReveal: () => void = () => {}) =>
+    server.use(
+      http.post('*/admin/credit-profile-requests/7/reveal', () => {
+        onReveal()
+        return HttpResponse.json({ status: true, message: 'ok', data: { id: 7, ssn: FULL } })
+      }),
+    )
+
+  afterEach(() => {
+    server.resetHandlers()
+    useAuthStore.setState({ user: null })
+    vi.restoreAllMocks()
+  })
+
+  it('shows the masked SSN and asks the server for nothing until Reveal is pressed', async () => {
+    let reveals = 0
+    serveRequest()
+    serveReveal(() => reveals++)
+    renderDetails()
+
+    expect(await screen.findByText('***-**-6789')).toBeInTheDocument()
+    expect(screen.queryByText('123-45-6789')).not.toBeInTheDocument()
+    expect(reveals).toBe(0)
+  })
+
+  it('Reveal fetches the full SSN from the server and Hide masks it again', async () => {
+    let reveals = 0
+    const user = userEvent.setup()
+    serveRequest()
+    serveReveal(() => reveals++)
+    renderDetails()
+
+    await user.click(await screen.findByRole('button', { name: /reveal/i }))
+
+    expect(await screen.findByText('123-45-6789')).toBeInTheDocument()
+    expect(reveals).toBe(1)
+
+    await user.click(screen.getByRole('button', { name: /hide/i }))
+    expect(screen.getByText('***-**-6789')).toBeInTheDocument()
+
+    // Shown again without a second request.
+    await user.click(screen.getByRole('button', { name: /reveal/i }))
+    expect(await screen.findByText('123-45-6789')).toBeInTheDocument()
+    expect(reveals).toBe(1)
+  })
+
+  it('copies the full SSN only after it has been revealed', async () => {
+    const user = userEvent.setup()
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText')
+    serveRequest()
+    serveReveal()
+    renderDetails()
+
+    await screen.findByText('***-**-6789')
+    expect(screen.queryByRole('button', { name: /copy social security number/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /reveal/i }))
+    await screen.findByText('123-45-6789')
+    await user.click(screen.getByRole('button', { name: /copy social security number/i }))
+
+    expect(writeText).toHaveBeenCalledWith(FULL)
   })
 })
