@@ -75,6 +75,35 @@ test.describe('Funding application › Audit Trail', () => {
     await expect.poll(() => api.find('GET', TRAIL).some((call) => call.path.includes('event=downloaded'))).toBe(true)
   })
 
+  // R3-BUG-051: no way to read the trail oldest first.
+  test('sorting oldest first asks the API for that order at once', async ({ page }) => {
+    const api = await openTrail(page)
+    await expect(page.locator('tr.audit-event-row')).toHaveCount(2)
+    expect(api.find('GET', TRAIL)[0].path).toContain('sort_dir=desc')
+
+    await page.locator('.audit-sort-filter').click()
+    await page.locator('.p-dropdown-panel').getByRole('option', { name: 'Oldest first' }).click()
+
+    await expect.poll(() => api.find('GET', TRAIL).some((call) => call.path.includes('sort_dir=asc'))).toBe(true)
+  })
+
+  // R3-BUG-051: a search that found nothing said "No audit events recorded yet".
+  test('a search that finds nothing says so, not that nothing was recorded', async ({ page }) => {
+    const api = await openTrail(page)
+    await expect(page.locator('tr.audit-event-row')).toHaveCount(2)
+    api.add({
+      method: 'GET',
+      match: /\/audit-trail\?.*search=/,
+      body: { ...trail(), data: [], pagination: { total: 0, per_page: 25, current_page: 1, last_page: 1 } },
+    })
+
+    await page.getByRole('textbox', { name: 'Search the audit trail' }).fill('Nothing like this')
+    await page.getByRole('button', { name: 'Filters' }).click()
+
+    await expect(page.getByText('No audit events match your search or filter.')).toBeVisible()
+    await expect(page.getByText('No audit events recorded yet')).toHaveCount(0)
+  })
+
   test('exports the trail as CSV', async ({ page }) => {
     const api = await openTrail(page)
     api.add({ method: 'GET', match: /\/audit-trail\/export/, body: 'Date (UTC),Event\n' })

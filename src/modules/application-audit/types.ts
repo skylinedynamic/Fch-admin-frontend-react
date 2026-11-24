@@ -1,4 +1,4 @@
-import type { AuditEventType } from '../../config/auditConfig'
+import type { AuditEventType, AuditSortDirection } from '../../config/auditConfig'
 
 /** One field of a change: before and after, as the API recorded them (SSNs masked). */
 export interface AuditChange {
@@ -44,5 +44,5 @@ export interface AuditTrailParams {
   per_page?: number
   event?: AuditEventType | ''
   search?: string
-  sort_dir?: 'asc' | 'desc'
+  sort_dir?: AuditSortDirection
 }

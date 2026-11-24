@@ -271,6 +271,59 @@ describe('Funding application audit trail', () => {
     expect(await screen.findByText(/no audit events/i)).toBeInTheDocument()
   })
 
+  // R3-BUG-051: there was no way to read the trail oldest first.
+  it('sorts oldest or newest first, at once, and exports in the same order', async () => {
+    const asked: (string | null)[] = []
+    let exported: string | null = null
+    vi.spyOn(fileDownload, 'downloadBlob').mockImplementation(() => {})
+    server.use(
+      http.get(TRAIL, ({ request }) => {
+        asked.push(new URL(request.url).searchParams.get('sort_dir'))
+        return respond()
+      }),
+      http.get(`${TRAIL}/export`, ({ request }) => {
+        exported = new URL(request.url).search
+        return new HttpResponse('Date (UTC)\n', { headers: { 'Content-Type': 'text/csv' } })
+      })
+    )
+    const user = userEvent.setup()
+
+    render()
+    await rows()
+    expect(asked[0]).toBe('desc')
+
+    await user.click(document.querySelector('.audit-sort-filter') as HTMLElement)
+    await user.click(
+      Array.from(document.body.querySelectorAll<HTMLElement>('.p-dropdown-panel .p-dropdown-item')).find((el) => el.textContent === 'Oldest first')!
+    )
+    await waitFor(() => expect(asked[asked.length - 1]).toBe('asc'))
+
+    await user.click(screen.getByRole('button', { name: /^actions$/i }))
+    await user.click(screen.getByRole('button', { name: /export csv/i }))
+    await waitFor(() => expect(exported).not.toBeNull())
+    expect(new URLSearchParams(exported!).get('sort_dir')).toBe('asc')
+  })
+
+  // R3-BUG-051: a search that found nothing said "No audit events recorded yet".
+  it('says nothing matches, not that nothing was recorded, when a search finds nothing', async () => {
+    server.use(
+      http.get(TRAIL, ({ request }) =>
+        new URL(request.url).searchParams.get('search')
+          ? respond({ data: [], pagination: { total: 0, per_page: 25, current_page: 1, last_page: 1 } })
+          : respond()
+      )
+    )
+    const user = userEvent.setup()
+
+    render()
+    await rows()
+    await user.type(screen.getByRole('textbox', { name: /search the audit trail/i }), 'Nothing like this')
+    await user.click(screen.getByRole('button', { name: /filters/i }))
+
+    expect(await screen.findByText('No audit events match your search or filter.')).toBeInTheDocument()
+    expect(screen.queryByText(/recorded yet/i)).not.toBeInTheDocument()
+  })
+
   it('says so when the application is not one the user may review', async () => {
     server.use(http.get(TRAIL, () => HttpResponse.json({ status: false, message: 'Funding application not found.' }, { status: 404 })))
 
