@@ -40,3 +40,24 @@ describe('DocumentUploadStep - the borrower folder it opens', () => {
     expect(screen.getByTestId('file-manager')).toHaveAttribute('data-entity-type', 'borrowers')
   })
 })
+
+describe('DocumentUploadStep - reading the funding request', () => {
+  // R3-BUG-053: mounted before the page knew any id, the step asked for the
+  // funding request with no id at all - a 404 "Funding request information not found".
+  it('does not ask for the funding request before it has an id', async () => {
+    const queries: string[] = []
+    server.use(
+      http.get('*/common/funding-application/funding-request', ({ request }) => {
+        queries.push(new URL(request.url).search)
+        return HttpResponse.json({ status: true, data: { id: 5, borrower_id: 57, funding_request_id: 3 } })
+      })
+    )
+
+    renderWithProviders(
+      <DocumentUploadStep onNext={() => {}} onBack={() => {}} loading={false} fundingRequestId={null} fundingApplicationId={null} />
+    )
+
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(queries).toEqual([])
+  })
+})

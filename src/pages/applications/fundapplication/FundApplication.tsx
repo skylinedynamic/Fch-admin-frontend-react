@@ -661,7 +661,10 @@ export default function FundApplication() {
           <DocumentUploadStep
             fundingSequenceId={fundingSequenceId}
             fundingRequestId={fundingRequestId || id}
-            fundingApplicationId={fundingApplicationId}
+            // The URL's application id when there is one, as the other steps
+            // get: the id the first answer brings arrives later and re-read
+            // the funding request (R3-BUG-053).
+            fundingApplicationId={applicationId ?? fundingApplicationId}
             {...commonStepProps}
             onRegisterSave={isActive ? registerSave : undefined}
           />

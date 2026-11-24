@@ -58,4 +58,46 @@ describe('FundApplication - opening an application', () => {
       expect(calls[step] ?? 0, step).toBeLessThanOrEqual(1)
     }
   }, 25000)
+
+  // R3-BUG-053: the edit page (opened by application id) asked for the
+  // funding request three times - by id, once with no id at all (404 "Funding
+  // request information not found"), and by id again. The Documents step read
+  // it by the id the first answer brings instead of the URL's.
+  it('the edit page reads the funding request once, by application id, never without an id', async () => {
+    const fundingRequestCalls: string[] = []
+    const ok = (data: unknown) => () => HttpResponse.json({ status: true, message: '', data })
+    server.use(
+      http.get('*/common/funding-application/funding-request', ({ request }) => {
+        const query = new URL(request.url).search
+        fundingRequestCalls.push(query)
+        return query
+          ? HttpResponse.json({ status: true, message: '', data: { id: 113, funding_request_id: 18, status: 'Draft' } })
+          : HttpResponse.json({ status: false, message: 'Funding request information not found' }, { status: 404 })
+      }),
+      http.get('*/common/funding-application/business-info', ok(null)),
+      http.get('*/common/funding-application/ownership-info', ok(null)),
+      http.get('*/common/funding-application/financial-info', ok(null)),
+      http.get('*/common/funding-application/disclosures-and-consent', ok(null)),
+      http.get('*/common/funding-application/federal-compliance-disclosures', ok(null)),
+      http.get('*/common/funding-application/documents/*', ok([])),
+      http.get('*/common/funding-sequencings/grouped', ok([])),
+      http.get('*/common/doc-types', ok([])),
+    )
+
+    render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter initialEntries={['/intake-review/funding-application/113/edit']}>
+          <Routes>
+            <Route path="/intake-review/funding-application/:applicationId/edit" element={<FundApplication />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+
+    await screen.findAllByText(/Business Information/, {}, { timeout: 10000 })
+    await waitFor(() => expect(fundingRequestCalls.length).toBeGreaterThan(0), { timeout: 10000 })
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    expect(fundingRequestCalls).toEqual(['?funding_application_id=113'])
+  }, 25000)
 })

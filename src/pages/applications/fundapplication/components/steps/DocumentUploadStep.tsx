@@ -52,7 +52,12 @@ export default function DocumentUploadStep({
   const queryClient = useQueryClient()
 
   // Fetch funding request to get ID
-  const { data: fundingData } = useFundingRequest(initialRequestId, { fundingApplicationId: initialAppId })
+  // Only once there is an id to read it by: with none, the read asks for no
+  // application at all and is refused (404, R3-BUG-053).
+  const { data: fundingData } = useFundingRequest(initialRequestId, {
+    enabled: !!(initialRequestId || initialAppId),
+    fundingApplicationId: initialAppId,
+  })
   
   const effectiveAppIdRaw = initialAppId || initialRequestId || fundingData?.id || null
   const effectiveAppId = effectiveAppIdRaw !== null && effectiveAppIdRaw !== undefined ? Number(effectiveAppIdRaw) : null
