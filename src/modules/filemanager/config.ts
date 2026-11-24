@@ -6,7 +6,8 @@ export const FILE_MANAGER_CONFIG = {
   MAX_NAME_LENGTH: 20,
   ALLOWED_EXTENSIONS: [
     // Images
-    // No SVG: it can carry a script, and the API refuses it (BUG-015).
+    // No SVG here: it can carry a script, so a document may not be one
+    // (BUG-015). A public folder (a logo) adds it: allowedExtensionsFor().
     'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'tiff', 'tif', 'ico', 'avif',
 
     // Documents
@@ -39,3 +40,33 @@ export const FILE_MANAGER_FOLDERS = {
   PARTNER_DOCUMENTS: 'partner-documents',
   PARTNERS: 'partners',
 } as const
+
+/**
+ * Folders the API keeps private (fch-api config/files.php private_folders):
+ * documents, never served without signing in. Every other folder is public -
+ * logos and branding - and takes an SVG, which the API strips of its scripts
+ * (UploadFileRequest: SafeUpload::image). Keep in step with that list.
+ */
+export const PRIVATE_FILE_MANAGER_FOLDERS: readonly string[] = [
+  'audit',
+  'borrowers',
+  'credit-reports',
+  'funding-application',
+  FILE_MANAGER_FOLDERS.PARTNER_DOCUMENTS,
+  'embed_forms',
+  'attachments',
+  'agreement-images',
+  'resources',
+]
+
+const SVG_EXTENSION = 'svg'
+
+/**
+ * What may be uploaded into this folder (the file manager's entity_type):
+ * the usual types, plus SVG into a public folder - an SVG logo (R3-BUG-064).
+ * An unknown folder gets no SVG.
+ */
+export const allowedExtensionsFor = (folder?: string | null): string[] =>
+  folder && !PRIVATE_FILE_MANAGER_FOLDERS.includes(folder)
+    ? [...FILE_MANAGER_CONFIG.ALLOWED_EXTENSIONS, SVG_EXTENSION]
+    : FILE_MANAGER_CONFIG.ALLOWED_EXTENSIONS

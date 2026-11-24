@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FILE_MANAGER_CONFIG, maxUploadSizeFor } from '../../../src/modules/filemanager/config'
+import { FILE_MANAGER_CONFIG, FILE_MANAGER_FOLDERS, allowedExtensionsFor, maxUploadSizeFor } from '../../../src/modules/filemanager/config'
 
 /**
  * BUG-015 (QA round 2): an SVG can carry a <script> that runs when the file is
@@ -15,6 +15,39 @@ describe('file manager upload types', () => {
   it('still offers documents and ordinary images, but not HTML', () => {
     expect(FILE_MANAGER_CONFIG.ALLOWED_EXTENSIONS).toEqual(expect.arrayContaining(['pdf', 'jpg', 'png', 'docx', 'xlsx']))
     expect(FILE_MANAGER_CONFIG.ALLOWED_EXTENSIONS).not.toContain('html')
+  })
+})
+
+/**
+ * R3-BUG-064: Branding says a logo may be "PNG, JPG, SVG or WebP", and the API
+ * takes an SVG into a public folder (logos, branding - partners/...) after
+ * stripping its scripts (UploadFileRequest: SafeUpload::image). The file
+ * manager refused every SVG in the browser, so a logo could not be one. It
+ * now follows the API: SVG into a public folder, never into a private
+ * (documents) folder.
+ */
+describe('file manager upload types per folder', () => {
+  it('takes an SVG into a public folder such as a partner\'s branding', () => {
+    expect(allowedExtensionsFor(FILE_MANAGER_FOLDERS.PARTNERS)).toContain('svg')
+    expect(allowedExtensionsFor('site-settings')).toContain('svg')
+  })
+
+  it('refuses an SVG into a private (documents) folder', () => {
+    for (const folder of [FILE_MANAGER_FOLDERS.PARTNER_DOCUMENTS, 'borrowers', 'resources', 'funding-application', 'attachments']) {
+      expect(allowedExtensionsFor(folder)).not.toContain('svg')
+    }
+  })
+
+  it('refuses an SVG when the folder is not known', () => {
+    expect(allowedExtensionsFor(undefined)).not.toContain('svg')
+    expect(allowedExtensionsFor('')).not.toContain('svg')
+  })
+
+  it('takes the ordinary types into any folder, and never HTML', () => {
+    for (const folder of [FILE_MANAGER_FOLDERS.PARTNERS, FILE_MANAGER_FOLDERS.PARTNER_DOCUMENTS, undefined]) {
+      expect(allowedExtensionsFor(folder)).toEqual(expect.arrayContaining(['pdf', 'jpg', 'png', 'docx']))
+      expect(allowedExtensionsFor(folder)).not.toContain('html')
+    }
   })
 })
 

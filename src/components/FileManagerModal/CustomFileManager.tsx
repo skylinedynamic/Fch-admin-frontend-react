@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import type { FileSystemItem } from '../../modules/filemanager/types'
-import { FILE_MANAGER_CONFIG, maxUploadSizeFor } from '../../modules/filemanager/config'
+import { allowedExtensionsFor, maxUploadSizeFor } from '../../modules/filemanager/config'
 import { FolderTree } from './FolderTree'
 import { Breadcrumb } from './Breadcrumb'
 import { FileGrid } from './FileGrid'
@@ -41,6 +41,8 @@ interface CustomFileManagerProps {
   onCancelSelection?: () => void
   onChanged?: () => void
   rootLabel?: string
+  /** The folder it opens (entity_type): decides whether an SVG may go in (R3-BUG-064). */
+  entityType?: string
 }
 
 export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
@@ -60,7 +62,8 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
   onSelectFiles,
   onCancelSelection,
   onChanged,
-  rootLabel
+  rootLabel,
+  entityType
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [selectedItems, setSelectedItems] = useState<string[]>([])
@@ -262,7 +265,7 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
 
       // Validate Extension
       const extension = file.name.split('.').pop()?.toLowerCase()
-      if (!extension || !FILE_MANAGER_CONFIG.ALLOWED_EXTENSIONS.includes(extension)) {
+      if (!extension || !allowedExtensionsFor(entityType).includes(extension)) {
         toast.error(`File type "${extension}" not allowed for "${file.name}".`)
         return
       }

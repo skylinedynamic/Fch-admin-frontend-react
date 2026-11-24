@@ -40,6 +40,35 @@ test.describe('Pre-qualification applications', () => {
     await expect(page.getByText('No applications found')).toBeVisible()
   })
 
+  // R3-BUG-054: a failed list request said "No applications found".
+  test('a failed list request says the applications could not be loaded', async ({ page }) => {
+    await seedSession(page, { permissions: ['view pre qualification'] })
+    await mockApi(page, [{ method: 'POST', match: LIST, status: 500, body: failure('Failed to retrieve pre-qualification application.') }])
+    await page.goto('/intake-review/pre-qualification')
+    await expect(page.getByText('Could not load the applications. Please try again.')).toBeVisible()
+    await expect(page.getByText('No applications found')).toHaveCount(0)
+  })
+
+  // R3-BUG-054: Requested Amount and Date have column filters.
+  test('the Requested Amount column filter sends a number', async ({ page }) => {
+    const api = await openList(page)
+    await page.locator('th', { hasText: 'Requested Amount' }).locator('.p-column-filter-menu-button').click()
+    await page.getByPlaceholder('Search amount').pressSequentially('80000')
+    await page.locator('.p-column-filter-buttonbar button').last().click()
+    await expect.poll(() => api.find('POST', LIST).at(-1)?.json?.filters?.requested_amount?.constraints?.[0]?.value).toBe(80000)
+  })
+
+  test('the Date column filter sends the picked local day', async ({ page }) => {
+    const api = await openList(page)
+    await page.locator('th', { hasText: /^Date/ }).locator('.p-column-filter-menu-button').click()
+    await page.getByPlaceholder('Select date', { exact: true }).click()
+    await page.locator('.p-datepicker-calendar td:not(.p-datepicker-other-month) span', { hasText: /^15$/ }).first().click()
+    await page.locator('.p-column-filter-buttonbar button').last().click()
+    const now = new Date()
+    const day15 = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-15`
+    await expect.poll(() => api.find('POST', LIST).at(-1)?.json?.filters?.date?.constraints?.[0]).toEqual({ value: day15, matchMode: 'dateIs' })
+  })
+
   test('clicking a row opens the application', async ({ page }) => {
     await openList(page)
     await page.getByText('Prequal Co').click()
