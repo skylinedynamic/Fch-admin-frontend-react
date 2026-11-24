@@ -165,6 +165,7 @@ export default function FundApplication() {
     incorporationState: '',
     zip: '',
     industryType: '',
+    industryTypeNote: '',
     entityType: '',
     yearsInBusiness: '',
     employees: '',

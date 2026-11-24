@@ -37,6 +37,11 @@ export const industryTypes: OptionType[] = [
   { label: 'Other', value: 'Other' }
 ]
 
+/** Industry Type "Other" asks the applicant to specify the industry (ticket 509). */
+export const INDUSTRY_TYPE_OTHER = 'Other'
+export const INDUSTRY_TYPE_NOTE_MAX = 255
+export const INDUSTRY_TYPE_NOTE_REQUIRED = 'Please specify the industry when Industry Type is Other.'
+
 
 export const yearsInBusinessOptions: OptionType[] = [
   { label: 'Under 6 months', value: 'Under 6 months' },

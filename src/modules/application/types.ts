@@ -417,6 +417,8 @@ export interface FundingApplicationDetails {
     business_state: string;
     business_postal_code: string;
     industry_type: string;
+    /** "Specify Industry" - set when industry_type is Other. */
+    industry_type_note?: string | null;
     entity_type: string;
     years_in_business: string;
     number_of_employees: string;

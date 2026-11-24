@@ -951,3 +951,25 @@ describe('FundingApplicationDetails — Go to Client', () => {
     expect(goToClient()).not.toBeInTheDocument()
   })
 })
+
+/** Ticket 509: the industry specified for Other is shown under Industry Type. */
+describe('FundingApplicationDetails - Specify Industry', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+  })
+
+  it('shows the specified industry for Other', () => {
+    detail.application = { ...editable, industry_type: 'Other', industry_type_note: 'Telecommunications Infrastructure' }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(screen.getByText('Specify Industry')).toBeInTheDocument()
+    expect(screen.getByText('Telecommunications Infrastructure')).toBeInTheDocument()
+  })
+
+  it('shows no Specify Industry row for any other industry', () => {
+    detail.application = { ...editable, industry_type: 'Manufacturing', industry_type_note: null }
+    renderWithProviders(<FundingApplicationDetails />)
+
+    expect(screen.queryByText('Specify Industry')).not.toBeInTheDocument()
+  })
+})

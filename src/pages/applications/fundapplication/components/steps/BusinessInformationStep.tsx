@@ -3,7 +3,14 @@ import type { PersonalInfo, BusinessDetails } from '../../types'
 import StepNavigation from '../shared/StepNavigation'
 import FormSkeleton from '../../../../../components/Loader/FormSkeleton'
 import CustomDropdown from '../../../../../components/Common/CustomDropdown'
-import { entityTypes, industryTypes, yearsInBusinessOptions } from '../../../../../data/profile'
+import {
+  entityTypes,
+  industryTypes,
+  yearsInBusinessOptions,
+  INDUSTRY_TYPE_OTHER,
+  INDUSTRY_TYPE_NOTE_MAX,
+  INDUSTRY_TYPE_NOTE_REQUIRED,
+} from '../../../../../data/profile'
 import { countries as countriesData } from '../../../../../modules/location'
 import { useBusinessInfo, useSaveBusinessInfo } from '../../../../../modules/funding-application/queries'
 import { isEditConfirmationCancelled } from '../../../../../modules/funding-application/editConfirmation'
@@ -53,6 +60,13 @@ export default function BusinessInformationStep({
   const handleSave = useCallback(async (): Promise<boolean> => {
     setValidationErrors({})
 
+    const isOtherIndustry = business.industryType === INDUSTRY_TYPE_OTHER
+    const industryTypeNote = (business.industryTypeNote || '').trim()
+    if (isOtherIndustry && !industryTypeNote) {
+      setValidationErrors({ industry_type_note: INDUSTRY_TYPE_NOTE_REQUIRED })
+      return false
+    }
+
     const countryCode = getCountryCodeFromDisplay(personal.phoneCountry)
     const selectedCountry = countriesData.find((c) => c.code === countryCode)
 
@@ -69,6 +83,8 @@ export default function BusinessInformationStep({
       business_state: business.state,
       business_postal_code: business.zip,
       industry_type: business.industryType,
+      // Only kept for Other; any other industry clears it.
+      industry_type_note: isOtherIndustry ? industryTypeNote : null,
       entity_type: business.entityType,
       years_in_business: business.yearsInBusiness,
       number_of_employees: business.employees ? parseInt(business.employees.toString().replace(/,/g, ''), 10) : null,
@@ -144,6 +160,7 @@ export default function BusinessInformationStep({
         incorporationState: apiData.business_state || prev.incorporationState,
         zip: apiData.business_postal_code || prev.zip,
         industryType: apiData.industry_type || prev.industryType,
+        industryTypeNote: apiData.industry_type_note || prev.industryTypeNote || '',
         entityType: apiData.entity_type || prev.entityType,
         yearsInBusiness: apiData.years_in_business || prev.yearsInBusiness,
         employees: apiData.number_of_employees || prev.employees,
@@ -439,6 +456,28 @@ export default function BusinessInformationStep({
         />
         {hasError('industry_type') && <div className="invalid-feedback d-block">{getFieldError('industry_type')}</div>}
       </div>
+
+      {business.industryType === INDUSTRY_TYPE_OTHER && (
+        <div className="col-md-6">
+          <label className="form-label" htmlFor="industry_type_note">
+            Specify Industry <span className="text-danger">*</span>
+          </label>
+          <input
+            id="industry_type_note"
+            type="text"
+            className={`form-control ${hasError('industry_type_note') ? 'is-invalid' : ''}`}
+            placeholder="Enter the industry"
+            maxLength={INDUSTRY_TYPE_NOTE_MAX}
+            value={business.industryTypeNote || ''}
+            onChange={(e) => setBusiness((prev) => ({ ...prev, industryTypeNote: e.target.value }))}
+            required
+          />
+          {hasError('industry_type_note') && (
+            <div className="invalid-feedback">{getFieldError('industry_type_note')}</div>
+          )}
+        </div>
+      )}
+
       <div className="col-md-6">
         <label className="form-label">
           Entity Type <span className="text-danger">*</span>

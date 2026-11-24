@@ -14,6 +14,8 @@ export type BusinessDetails = {
   incorporationState: string
   zip: string
   industryType: string
+  /** "Specify Industry" - required when industryType is Other. */
+  industryTypeNote: string
   entityType: string
   yearsInBusiness: string
   employees: string

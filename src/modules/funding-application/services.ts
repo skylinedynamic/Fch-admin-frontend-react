@@ -15,6 +15,7 @@ export type BusinessInfoPayload = {
   business_state: string | null
   business_postal_code: string | null
   industry_type: string | null
+  industry_type_note: string | null
   entity_type: string | null
   years_in_business: string | null
   number_of_employees: number | null

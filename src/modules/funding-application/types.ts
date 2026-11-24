@@ -17,6 +17,7 @@ export interface BusinessInfoData {
   business_website: string | null
   entity_type: string | null
   industry_type: string | null
+  industry_type_note?: string | null
   years_in_business: string | null
   number_of_employees: string | null
   funding_sequence_id?: number | null

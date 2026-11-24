@@ -405,6 +405,7 @@ export default function FundingApplicationDetails() {
             <DetailRow label="State of Incorporation" value={app.business_state} />
             <DetailRow label="Zip Code" value={app.business_postal_code} />
             <DetailRow label="Industry Type" value={app.industry_type} />
+            {app.industry_type_note && <DetailRow label="Specify Industry" value={app.industry_type_note} />}
             <DetailRow label="Entity Type" value={app.entity_type} />
             <DetailRow label="Time in Business" value={app.years_in_business} />
             <DetailRow label="Number of Employees" value={app.number_of_employees} />
