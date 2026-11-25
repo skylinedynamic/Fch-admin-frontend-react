@@ -84,6 +84,19 @@ export const AUDIT_EXPORT_OPTIONS: { value: AuditExportFormat; label: string; ic
   { value: AUDIT_EXPORT_FORMAT.PDF, label: 'Export PDF', icon: 'ri-file-pdf-2-line', mimeType: 'application/pdf' },
 ]
 
+/** The trail's order: the API's `sort_dir` (R3-BUG-051). Newest first by default. */
+export const AUDIT_SORT = {
+  NEWEST: 'desc',
+  OLDEST: 'asc',
+} as const
+
+export type AuditSortDirection = (typeof AUDIT_SORT)[keyof typeof AUDIT_SORT]
+
+export const AUDIT_SORT_OPTIONS: { value: AuditSortDirection; label: string }[] = [
+  { value: AUDIT_SORT.NEWEST, label: 'Newest first' },
+  { value: AUDIT_SORT.OLDEST, label: 'Oldest first' },
+]
+
 /** Every word the Audit Trail page shows, in one place. */
 export const AUDIT_TEXT = {
   TITLE: 'Audit Trail',
@@ -107,6 +120,8 @@ export const AUDIT_TEXT = {
   DOWNLOAD_FILE: 'Download file',
   CHANGED_TO: 'to',
   EMPTY: 'No audit events recorded yet',
+  NO_MATCH: 'No audit events match your search or filter.',
+  SORT_LABEL: 'Sort',
   INTEGRITY_VALID: (checked: number) => `Integrity verified (${checked})`,
   INTEGRITY_BROKEN: (eventId: number | null) => `Integrity check failed at event #${eventId}`,
   INTEGRITY_VALID_HINT: 'Every event is as it was recorded.',

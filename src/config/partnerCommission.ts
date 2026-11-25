@@ -26,6 +26,15 @@ export const PARTNER_COMMISSION_MIN = 0;
 export const PARTNER_COMMISSION_MAX = 99;
 
 
+/**
+ * Whether the API sent a funding application's whole commission (success fee
+ * and both shares). fch-api CommissionViewer::shares() sends it to the host
+ * owner and host staff who manage commissions only; a partner gets its own
+ * share, other staff none (R3-BUG-076). Null (not set yet) still counts as sent.
+ */
+export const sendsWholeCommission = (app: { total_commission?: unknown } | null | undefined): boolean =>
+    !!app && 'total_commission' in app;
+
 /** The tab's form, submitted by the page header's Save Commission button. */
 export const PARTNER_COMMISSION_FORM_ID = 'partner-commission-form';
 

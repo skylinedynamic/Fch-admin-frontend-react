@@ -471,4 +471,21 @@ test.describe('Partner create - installment default months', () => {
     await expect(card).toContainText('6 Months')
     await expect(page.getByText('Monthly Installment Amount:').locator('..').locator('..')).toContainText('$916.12')
   })
+
+  // R3-BUG-057: Save answered 422 on enrollment.months and the page showed nothing.
+  test('a Save the API refuses for its installment months says why', async ({ page }) => {
+    await chooseInstallment(page, 36)
+    await calculator(page).locator('.idm-close-btn').click()
+    const message = 'The enrollment.months field must not be greater than 36.'
+    await page.route(/\/admin\/partners$/, (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({ status: 422, json: failure(message, { 'enrollment.months': message }) })
+        : route.fallback()
+    )
+
+    // The button's name starts with its icon's glyph.
+    await page.getByRole('button', { name: /\bsave$/i }).click()
+
+    await expect(page.getByRole('alert').filter({ hasText: message })).toBeVisible()
+  })
 })

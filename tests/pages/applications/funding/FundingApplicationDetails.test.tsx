@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, renderWithProviders, screen, waitFor, within } from '../../../test-utils'
 import { toast } from 'react-toastify'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
+import { server } from '../../../mocks/server'
 import FundingApplicationDetails from '../../../../src/pages/applications/funding/FundingApplicationDetails'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import { FUNDING_APPLICATION_STATUS } from '../../../../src/config/borrower'
@@ -160,10 +162,24 @@ describe('FundingApplicationDetails — Edit Funding Application', () => {
  * Ownership Information: the owner's and each co-borrower's SSN were written
  * 3-3-3 (325-555-555) by a formatter of the page's own. They show the way every
  * SSN does: masked ***-**-5555, written 325-55-5555 on the eye button.
+ *
+ * R3-BUG-044: the details carry each SSN masked; the eye asks the API for the
+ * full number (POST .../funding-application/{id}/reveal, logged there).
  */
 describe('FundingApplicationDetails — Ownership Information SSN', () => {
+  const reveals: Record<string, unknown>[] = []
+
   beforeEach(() => {
+    reveals.length = 0
     useAuthStore.setState({ user: { id: 1, is_host: true, partner_id: 1, permissions: [] } as never })
+    server.use(
+      http.post('*/common/request-application/funding-application/80/reveal', async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>
+        reveals.push(body)
+        const value = body.field === 'co_borrower_ssn' ? '234567890' : '325555555'
+        return HttpResponse.json({ status: true, data: { field: body.field, value } })
+      })
+    )
   })
 
   const openOwnershipTab = () => {
@@ -171,30 +187,32 @@ describe('FundingApplicationDetails — Ownership Information SSN', () => {
     screen.getAllByText('Ownership Information')[0].closest('button, a, li, .list-group-item')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
   }
 
-  it('shows the owner SSN masked, and written XXX-XX-XXXX on the eye button', async () => {
+  it('shows the owner SSN masked, and asks the API for it in full on the eye button', async () => {
     const user = userEvent.setup()
-    detail.application = { ...editable, ssn: '325555555' }
+    detail.application = { ...editable, ssn: '***-**-5555' }
     openOwnershipTab()
 
     expect(await screen.findByText('***-**-5555')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Show SSN' }))
-    expect(screen.getByText('325-55-5555')).toBeInTheDocument()
+    expect(await screen.findByText('325-55-5555')).toBeInTheDocument()
     expect(screen.queryByText('325-555-555')).not.toBeInTheDocument()
+    expect(reveals).toEqual([{ field: 'ssn' }])
   })
 
-  it('shows a co-borrower SSN the same way, and each of its rows once', async () => {
+  it('reveals a co-borrower SSN by its id, and shows each of its rows once', async () => {
     const user = userEvent.setup()
     detail.application = {
       ...editable,
       ssn: null,
       has_co_borrower: true,
-      co_borrowers: [{ id: 1, first_name: 'Cora', last_name: 'Co', ssn: '234567890', home_phone: '(555) 234-5678', date_of_birth: '1985-05-05' }],
+      co_borrowers: [{ id: 1, first_name: 'Cora', last_name: 'Co', ssn: '***-**-7890', home_phone: '(555) 234-5678', date_of_birth: '1985-05-05' }],
     }
     openOwnershipTab()
 
     expect(await screen.findByText('***-**-7890')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Show SSN' }))
-    expect(screen.getByText('234-56-7890')).toBeInTheDocument()
+    expect(await screen.findByText('234-56-7890')).toBeInTheDocument()
+    expect(reveals).toEqual([{ field: 'co_borrower_ssn', co_borrower_id: 1 }])
     expect(screen.getAllByText('Home Phone')).toHaveLength(1)
     expect(screen.getAllByText('Date of Birth')).toHaveLength(2) // the owner's and the co-borrower's
   })
@@ -663,17 +681,21 @@ describe('FundingApplicationDetails — closing with a commission', () => {
       expect(within(panel).getByRole('link', { name: /set partner commissions/i })).toHaveAttribute('href', '/partners/7?tab=commissions')
     })
 
-    it('has no link without the "update commission" permission', async () => {
-      detail.application = { ...unset }
+    it('has no link, nor any commission, without the "update commission" permission', async () => {
+      // As the API sends it to host staff who do not manage commissions
+      // (R3-BUG-076): no commission money and no partner tiers.
+      const { partner_default_commission, partner_commission_setup, ...asSent } = unset as Record<string, unknown>
+      detail.application = { ...asSent }
       useAuthStore.setState({ user: { ...hostWithRights, permissions: ['update funding application', 'view commission'] } as never })
       renderWithProviders(<FundingApplicationDetails />)
 
       await pickStatus(FUNDING_APPLICATION_STATUS.CLOSED)
       await userEvent.click(screen.getByRole('button', { name: 'Update Status' }))
 
-      const panel = await screen.findByRole('region', { name: 'Partner Commission' })
-      expect(within(panel).getByText('Not set')).toBeInTheDocument()
-      expect(within(panel).queryByRole('link', { name: /set partner commissions/i })).not.toBeInTheDocument()
+      expect(await screen.findByLabelText(/funded amount/i)).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'Partner Commission' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: /set partner commissions/i })).not.toBeInTheDocument()
+      expect(screen.queryByText('Commission Details')).not.toBeInTheDocument()
     })
   })
 

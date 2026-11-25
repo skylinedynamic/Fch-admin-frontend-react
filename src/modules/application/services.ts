@@ -6,7 +6,8 @@ import {
   FundingApplication,
   PreQualificationApplicationDetails,
   FundingApplicationDetails,
-  ApplicationStatistics
+  ApplicationStatistics,
+  FundingApplicationRevealRequest,
 } from './types';
 
 export const getPreQualificationApplications = async (payload: any = {}): Promise<PaginatedApiResponse<PreQualificationApplication>> => {
@@ -159,4 +160,13 @@ export const downloadFundingZip = async (id: string | number, password?: string)
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
+};
+
+/** A masked SSN of the application in full; the API logs who asked (R3-BUG-044). Null when none is on file. */
+export const revealFundingApplicationField = async ({ id, field, coBorrowerId }: FundingApplicationRevealRequest): Promise<string | null> => {
+  const { data } = await apiClient.post(`/common/request-application/funding-application/${id}/reveal`, {
+    field,
+    ...(coBorrowerId !== undefined ? { co_borrower_id: coBorrowerId } : {}),
+  });
+  return data?.data?.value ?? null;
 };

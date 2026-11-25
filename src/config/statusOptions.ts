@@ -18,6 +18,12 @@ export const USER_STATUS: StatusOption[] = [
     { label: 'Inactive', value: 'inactive' },
 ];
 
+/**
+ * Shown on your own user record, where role and status are locked: the API
+ * refuses a change to your own (R3-BUG-030).
+ */
+export const USER_SELF_GUARD_TEXT = "You can't change your own role or account status. Ask another administrator.";
+
 export const PAYMENT_STATUS_OPTIONS: StatusOption[] = [
     { label: 'Paid', value: 'Paid' },
     { label: 'Pending', value: 'Pending' },

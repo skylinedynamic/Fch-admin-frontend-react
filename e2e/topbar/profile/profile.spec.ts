@@ -24,6 +24,24 @@ test.describe('My profile', () => {
     await expect(page.getByPlaceholder('Enter your phone number')).toHaveValue('(555) 123-4567')
   })
 
+  // R3-BUG-063: a small picture with a 6 MB one - the big one is refused before
+  // it is sent, and the window said "Files Uploaded Successfully" anyway.
+  test('a picture upload with one file over 5 MB reports 1 of 2 uploaded', async ({ page }) => {
+    const api = await open(page)
+    await page.locator('.btn.btn-primary.rounded-circle.position-absolute').click()
+    await page.locator('.fm-toolbar-btn', { hasText: 'Upload' }).click()
+    await page.locator('.fm-modal input[type="file"]').setInputFiles([
+      { name: 'qa-r3-sec08-small.jpg', mimeType: 'image/jpeg', buffer: Buffer.alloc(4 * 1024) },
+      { name: 'qa-r3-sec08-6mb.jpg', mimeType: 'image/jpeg', buffer: Buffer.alloc(6 * 1024 * 1024) },
+    ])
+    await page.getByRole('button', { name: 'Upload (2)' }).click()
+
+    await expect(page.getByText('File "qa-r3-sec08-6mb.jpg" exceeds 5MB limit.')).toBeVisible()
+    await expect(page.getByText('1 of 2 files uploaded')).toBeVisible()
+    await expect(page.getByText('Files Uploaded Successfully')).toHaveCount(0)
+    expect(api.find('POST', /\/filemanager\/upload$/)).toHaveLength(1)
+  })
+
   test('first and last name are required', async ({ page }) => {
     const api = await open(page)
     await page.getByPlaceholder('Enter your first name').fill('')

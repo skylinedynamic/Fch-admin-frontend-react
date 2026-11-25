@@ -44,10 +44,12 @@ test.describe('Upcoming billing', () => {
     expect(api.find('POST', LIST)[0].json).toMatchObject({ sort_field: 'upcoming_billing_date', sort_order: 'asc' })
   })
 
-  for (const [title, field] of [['Amount', 'upcoming_billing_amount'], ['Outstanding', 'outstanding_amount']]) {
+  // "Outstanding" is now "Amount Due" (R3-BUG-019).
+  for (const [title, field] of [['Amount', 'upcoming_billing_amount'], ['Amount Due', 'outstanding_amount']]) {
     test(`${title} sorts ascending, then descending (BUG-012)`, async ({ page }) => {
       const api = await openList(page)
-      const header = page.getByRole('columnheader', { name: new RegExp(`^${title}`) })
+      // The title itself: "Amount" must not also match "Amount Due".
+      const header = page.getByRole('columnheader').filter({ has: page.locator('.p-column-title', { hasText: new RegExp(`^${title}$`) }) })
       const lastSort = () => {
         const body = api.find('POST', LIST).at(-1)?.json ?? {}
         return { field: body.sort_field, order: body.sort_order }

@@ -18,10 +18,22 @@ import { PreQualificationApplication as PreQualificationApplicationType, Applica
 import { PRE_QUALIFICATION_STATUS_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 import { useFundingTypes } from '../../../modules/funding-application/queries';
 import { fundingTypeOptionsFrom } from '../../../data/profile';
+import { toApiColumnFilters } from '../../../utils/columnFilters';
+import { AmountFilterInput, DateFilterInput } from './components/ColumnFilterInputs';
 import '../../../../assets/css/underwriting-result.css';
 
+/** The column filters, empty: one per filterable column (R3-BUG-054 adds amount and date). */
+const emptyColumnFilters = () => ({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+    status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    funding_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    requested_amount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] },
+});
 
-
+const LIST_LOAD_ERROR = 'Could not load the applications. Please try again.';
 
 export default function PreQualificationApplication() {
     const navigate = useNavigate();
@@ -76,13 +88,14 @@ export default function PreQualificationApplication() {
         funding_type: appliedFilters.funding_type,
         start_date: toLocalYmd(appliedFilters.date_range?.[0]),
         end_date: toLocalYmd(appliedFilters.date_range?.[1]),
-        filters: appliedFilters.filters,
+        filters: toApiColumnFilters(appliedFilters.filters),
         sort_field: sortField,
         sort_order: sortOrder,
     };
 
-    const { data: apiResponse, isLoading, isFetching } = usePreQualificationApplications(queryParams);
-    const leads = apiResponse?.data || [];
+    const { data: apiResponse, isLoading, isFetching, isError } = usePreQualificationApplications(queryParams);
+    // A failed request is not an empty list: say so instead of "No applications found".
+    const leads = isError ? [] : apiResponse?.data || [];
     const totalRecords = apiResponse?.meta?.total || 0;
     const loading = isLoading || isFetching;
 
@@ -100,13 +113,7 @@ export default function PreQualificationApplication() {
 
     // Initialize filters
     const initFilters = () => {
-        const initial = {
-            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-            funding_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
-        };
+        const initial = emptyColumnFilters();
         setFilters(initial);
         setAppliedFilters(prev => ({ ...prev, filters: initial }));
     };
@@ -163,13 +170,7 @@ export default function PreQualificationApplication() {
         }));
 
         // Re-call initFilters to reset state properly
-        const initial = {
-            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-            funding_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
-        };
+        const initial = emptyColumnFilters();
         setFilters(initial);
         setAppliedFilters({
             search: '',
@@ -372,13 +373,13 @@ export default function PreQualificationApplication() {
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
-                                            emptyMessage="No applications found"
+                                            emptyMessage={isError ? LIST_LOAD_ERROR : 'No applications found'}
                                         >
                                             <Column className="uw-col-min-160" header="Name" field="full_name" sortable filter filterPlaceholder="Search name" />
                                             <Column className="uw-col-min-180" field="business_name" header="Business Name" sortable filter filterPlaceholder="Search business" />
                                             <Column className="uw-col-min-150" field="funding_type" header="Funding Type" sortable filter filterPlaceholder="Search type" />
-                                            <Column className="uw-col-min-160" header="Requested Amount" field="requested_amount" body={(rowData: PreQualificationApplicationType) => rowData.requested_amount} sortable />
-                                            <Column className="uw-col-min-120" field="date" header="Date" body={(rowData: PreQualificationApplicationType) => rowData.date || '-'} sortable />
+                                            <Column className="uw-col-min-160" header="Requested Amount" field="requested_amount" body={(rowData: PreQualificationApplicationType) => rowData.requested_amount} sortable filter dataType="numeric" filterElement={AmountFilterInput} />
+                                            <Column className="uw-col-min-120" field="date" header="Date" body={(rowData: PreQualificationApplicationType) => rowData.date || '-'} sortable filter dataType="date" filterElement={DateFilterInput} />
                                             <Column className="uw-col-min-140" field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search status" />
                                         </DataTable>
                                     </div>

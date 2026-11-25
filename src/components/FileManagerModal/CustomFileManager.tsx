@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import type { FileSystemItem } from '../../modules/filemanager/types'
-import { FILE_MANAGER_CONFIG, maxUploadSizeFor } from '../../modules/filemanager/config'
+import { allowedExtensionsFor, maxUploadSizeFor } from '../../modules/filemanager/config'
 import { FolderTree } from './FolderTree'
 import { Breadcrumb } from './Breadcrumb'
 import { FileGrid } from './FileGrid'
@@ -41,6 +41,8 @@ interface CustomFileManagerProps {
   onCancelSelection?: () => void
   onChanged?: () => void
   rootLabel?: string
+  /** The folder it opens (entity_type): decides whether an SVG may go in (R3-BUG-064). */
+  entityType?: string
 }
 
 export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
@@ -60,7 +62,8 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
   onSelectFiles,
   onCancelSelection,
   onChanged,
-  rootLabel
+  rootLabel,
+  entityType
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [selectedItems, setSelectedItems] = useState<string[]>([])
@@ -77,6 +80,9 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
   const [uploadQueue, setUploadQueue] = useState<File[]>([])
   const [currentCollision, setCurrentCollision] = useState<{ file: File; resolve: (action: 'replace' | 'keep' | 'cancel') => void } | null>(null)
   const isProcessingQueue = React.useRef(false) // Ref to track queue processing status without triggering re-renders
+  // Files of the batch being uploaded that the browser refused (size, type)
+  // before sending: they count as not uploaded (R3-BUG-063).
+  const refusedBeforeUpload = React.useRef(0)
 
   // Progress State
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
@@ -223,6 +229,8 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
     isProcessingQueue.current = false
     setUploadProgress(null)
     setCurrentUploadingFile(null)
+    const refused = refusedBeforeUpload.current
+    refusedBeforeUpload.current = 0
 
     // Every file refused (or the duplicates cancelled): no success screen - back
     // to the picker, the reason already shown (BUG-014 retest).
@@ -234,7 +242,7 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
 
     // The list refreshes after the last file; if that one was refused, refresh here.
     if (lastRefused) onRefresh()
-    setUploadResult({ uploaded, total: attempted })
+    setUploadResult({ uploaded, total: attempted + refused })
     setUploadComplete(true)
     if (typeof onChanged === 'function') onChanged()
   }, [files, currentPath, onUploadFile, onChanged, onRefresh])
@@ -262,7 +270,7 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
 
       // Validate Extension
       const extension = file.name.split('.').pop()?.toLowerCase()
-      if (!extension || !FILE_MANAGER_CONFIG.ALLOWED_EXTENSIONS.includes(extension)) {
+      if (!extension || !allowedExtensionsFor(entityType).includes(extension)) {
         toast.error(`File type "${extension}" not allowed for "${file.name}".`)
         return
       }
@@ -270,10 +278,12 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
       validFiles.push(file)
     })
 
+    // Nothing left to send: the toasts said why, and the count starts afresh.
     if (validFiles.length > 0) {
+      refusedBeforeUpload.current += newFiles.length - validFiles.length
       setUploadQueue(prev => [...prev, ...validFiles])
     }
-  }, [])
+  }, [entityType])
 
   const handleRename = useCallback(async (newName: string) => {
     if (selectedItem) {

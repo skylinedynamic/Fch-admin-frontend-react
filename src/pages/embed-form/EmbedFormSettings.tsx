@@ -237,7 +237,7 @@ export default function EmbedFormSettings() {
                                     <CardHeader
                                         icon="ri-settings-3-line"
                                         title="Form Configuration"
-                                        subtitle="Configure the title, notifications, and security for your embedded form"
+                                        subtitle="Configure the title, status, and allowed domains for your embedded form"
                                     />
 
                                     <div className="card-body p-4">

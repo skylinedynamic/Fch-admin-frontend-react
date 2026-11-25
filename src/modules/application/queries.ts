@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query/queryKeys';
 import { GPT_STATUS } from './types';
-import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, runAiPreQualification, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus, assignLenderToFundingRequest, assignLenderToFundingApplication } from './services';
+import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, runAiPreQualification, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus, assignLenderToFundingRequest, assignLenderToFundingApplication, revealFundingApplicationField } from './services';
 
 export const usePreQualificationApplications = (params: any = {}) => {
   return useQuery({
@@ -159,3 +159,7 @@ export const useAssignLenderToFundingRequest = () => {
     },
   });
 };
+
+/** Reveals one masked SSN of a funding application (R3-BUG-044). Not cached: each reveal is asked for, and logged. */
+export const useRevealFundingApplicationField = () =>
+  useMutation({ mutationFn: revealFundingApplicationField });

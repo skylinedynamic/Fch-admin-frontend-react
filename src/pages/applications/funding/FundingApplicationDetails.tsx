@@ -10,7 +10,8 @@ import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS, FUNDING_APPLICATION_STATUS_NOTE_MAX } from '../../../config/borrower';
 import { PARTNER_EDITOR_TYPES } from '../../../config/partnerTypeOptions';
-import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission, useAssignLenderToFundingApplication } from '../../../modules/application/queries';
+import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission, useAssignLenderToFundingApplication, useRevealFundingApplicationField } from '../../../modules/application/queries';
+import { FUNDING_APPLICATION_REVEAL_FIELD } from '../../../modules/application/types';
 import LenderInformationCard, { type MatchedLender } from '../../../components/Common/Lender/LenderInformationCard';
 import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip, downloadFundingApplicationDocument } from '../../../modules/application/services';
 import { handleFileDownload } from '../../../utils/fileDownload';
@@ -28,7 +29,7 @@ import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar
 import { useAuthStore } from '../../../store/auth/authStore';
 import { LastStatusNote, StatusNoteVisibility } from './components/StatusNoteVisibility';
 import { usePermissions } from '../../../lib/auth/usePermissions';
-import { COMMISSION_MANAGE_PERMISSION, COMMISSION_VIEW_PERMISSION, partnerCommissionPath } from '../../../config/partnerCommission';
+import { COMMISSION_MANAGE_PERMISSION, COMMISSION_VIEW_PERMISSION, partnerCommissionPath, sendsWholeCommission } from '../../../config/partnerCommission';
 
 type StepType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -70,6 +71,13 @@ export default function FundingApplicationDetails() {
 
     // Lender Information (host only)
     const assignLenderMutation = useAssignLenderToFundingApplication();
+    // The SSNs arrive masked; the eye asks for one in full, logged (R3-BUG-044).
+    const revealMutation = useRevealFundingApplicationField();
+    const revealSsn = (applicationId: number | string, coBorrowerId?: number) => () => revealMutation.mutateAsync({
+        id: applicationId,
+        field: coBorrowerId === undefined ? FUNDING_APPLICATION_REVEAL_FIELD.SSN : FUNDING_APPLICATION_REVEAL_FIELD.CO_BORROWER_SSN,
+        coBorrowerId,
+    });
     const lenderCardRef = useRef<HTMLDivElement>(null);
     const [highlightLenders, setHighlightLenders] = useState(false);
     const [showMissingLenderModal, setShowMissingLenderModal] = useState(false);
@@ -416,7 +424,7 @@ export default function FundingApplicationDetails() {
             <DetailRow label="First Name" value={app.first_name} />
             <DetailRow label="Last Name" value={app.last_name} />
             <DetailRow label="Date of Birth" value={app.date_of_birth} />
-            <DetailRow label="Social Security Number (SSN)" value={<SsnValue value={app.ssn} />} />
+            <DetailRow label="Social Security Number (SSN)" value={<SsnValue value={app.ssn} onReveal={revealSsn(app.id)} />} />
             <DetailRow label="Citizenship Status" value={app.citizenship_status} />
             <DetailRow label="Street Address" value={app.street_address} />
             <DetailRow label="State" value={app.state} />
@@ -446,7 +454,7 @@ export default function FundingApplicationDetails() {
                                     <DetailRow label="Mobile Phone" value={borrower.mobile_phone} />
                                     <DetailRow label="Home Phone" value={borrower.home_phone} />
                                     <DetailRow label="Date of Birth" value={borrower.date_of_birth ? formatApiDate(borrower.date_of_birth) : '-'} />
-                                    <DetailRow label="SSN" value={<SsnValue value={borrower.ssn} />} />
+                                    <DetailRow label="SSN" value={<SsnValue value={borrower.ssn} onReveal={revealSsn(app.id, borrower.id)} />} />
 
                                     <div className="col-12"><hr className="my-2" /></div>
                                     <h6 className="mb-3 fs-13 text-muted text-uppercase fw-semibold">Address</h6>
@@ -1139,6 +1147,8 @@ export default function FundingApplicationDetails() {
                 isCommissionSet={isCommissionSet}
                 requestedAmount={requestedAmountValue}
                 canEditCommission={canEditClosingCommission}
+                // Only a viewer the API sends the whole commission sees it here (R3-BUG-076).
+                showsCommission={canEditClosingCommission || sendsWholeCommission(app)}
                 // Not set: a link to Partner profile › Commissions, for whoever may set it.
                 setPartnerCommissionHref={canEditClosingCommission && app.partner_id ? partnerCommissionPath(app.partner_id) : null}
                 commissionErrors={closingCommissionErrors}

@@ -44,4 +44,17 @@ describe('Add Client - required errors in one round', () => {
     expect(screen.getByText('Enrollment plan is required')).toBeInTheDocument()
     expect(create.calls).toBe(1)
   })
+
+  // R3-BUG-057: an installment the API refuses (months over the plan's
+  // "Installment Upto") was mapped to installment_months, which nothing showed.
+  it('shows the API refusing the installment months', async () => {
+    const user = userEvent.setup()
+    const message = 'The enrollment.months field must not be greater than 24.'
+    api('post', '/common/borrowers', invalid({ 'enrollment.months': message }), 422)
+    renderPage(<ClientDetails />, { path: '/clients/create' })
+
+    await user.click(await screen.findByRole('button', { name: /^save/i }))
+
+    expect(await screen.findByText(message)).toBeInTheDocument()
+  })
 })

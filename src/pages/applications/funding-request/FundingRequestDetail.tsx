@@ -9,7 +9,7 @@ import { handleFileDownload, downloadFromUrl } from '../../../utils/fileDownload
 import { downloadBorrowerDocument } from '../../../modules/client/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
-import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS, REJECT_REASON_MAX_LENGTH, REJECT_NOTE_PREVIEW_LENGTH } from '../../../config/funding';
+import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS, REJECT_REASON_MAX_LENGTH, REJECT_NOTE_PREVIEW_LENGTH, FUNDING_REQUEST_PERMISSION, FUNDING_REQUEST_NO_UPDATE_PERMISSION } from '../../../config/funding';
 import { FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 import { Dropdown } from 'primereact/dropdown';
@@ -32,6 +32,11 @@ export default function FundingRequestDetail() {
 
     const currentUser = useAuthStore((state: any) => state.user);
     const isHost = currentUser?.is_host == 1;
+    // Review Actions and assigning a lender need "update funding request" -
+    // read from the stored user, which is refreshed when a role changes, so a
+    // removed permission takes effect on the next refresh (R3-BUG-039).
+    const canUpdate = isHost && Array.isArray(currentUser?.permissions)
+        && currentUser.permissions.includes(FUNDING_REQUEST_PERMISSION.UPDATE);
 
     const [rejectReason, setRejectReason] = useState('');
     // A long note is folded in the confirmation; it opens folded each time.
@@ -254,8 +259,10 @@ export default function FundingRequestDetail() {
                                     highlightFirstRow={showAssignIndicator}
                                     // As on the application page: past its editable statuses the
                                     // lender is fixed (SCRUM-434 S434-BUG-03) - just that lender.
-                                    canAssign={review.can_assign_lender !== false}
-                                    assignDisabledReason={`The lender can't be changed now that the funding application is "${review.funding_application?.status ?? ''}".`}
+                                    canAssign={canUpdate && review.can_assign_lender !== false}
+                                    assignDisabledReason={!canUpdate
+                                        ? FUNDING_REQUEST_NO_UPDATE_PERMISSION
+                                        : `The lender can't be changed now that the funding application is "${review.funding_application?.status ?? ''}".`}
                                     onlyAssigned={review.can_assign_lender === false && assignedLenderIds.length > 0}
                                 />
                             )}
@@ -463,7 +470,7 @@ export default function FundingRequestDetail() {
                         {/* Right sticky column — pure CSS sticky */}
                         <div className="col-lg-4" style={{ position: 'sticky', top: '133px', height: 'calc(100vh - 133px)', zIndex: 10 }}>
                             <div className="d-flex flex-column gap-3 fr-style-30509dca" style={{ height: '100%', paddingBottom: '20px' }}>
-                                {isHost && (
+                                {canUpdate && (
                                     <div className="card shadow-sm border-0 mb-0 rounded-3 flex-shrink-0">
                                         <div className="card-header bg-white border-0 pt-4 pb-0">
                                             <div className="d-flex align-items-center">

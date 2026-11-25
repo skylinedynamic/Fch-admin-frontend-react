@@ -515,3 +515,21 @@ export interface PartnerCommissionSetup {
     deal_position: number;
     funded_deal_count: number;
 }
+
+/**
+ * A funding application's SSNs that the details carry masked and the eye
+ * reveals in full, logged on the API (R3-BUG-044).
+ */
+export const FUNDING_APPLICATION_REVEAL_FIELD = {
+    SSN: 'ssn',
+    CO_BORROWER_SSN: 'co_borrower_ssn',
+} as const;
+
+export type FundingApplicationRevealField = (typeof FUNDING_APPLICATION_REVEAL_FIELD)[keyof typeof FUNDING_APPLICATION_REVEAL_FIELD];
+
+export interface FundingApplicationRevealRequest {
+    id: string | number;
+    field: FundingApplicationRevealField;
+    /** Which co-borrower, for FUNDING_APPLICATION_REVEAL_FIELD.CO_BORROWER_SSN. */
+    coBorrowerId?: number;
+}

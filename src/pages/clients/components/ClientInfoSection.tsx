@@ -37,6 +37,7 @@ import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import { Link } from 'react-router-dom';
 import InstallmentDetailsModal from '../../../components/Common/Payment/InstallmentDetailsModal';
+import { InstallmentError } from '../../../components/Common/Payment/InstallmentError';
 
 
 interface ClientInfoSectionProps {
@@ -1509,6 +1510,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                         appendTo="self"
                                     />
                                     {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
+                                    <InstallmentError errors={errors} />
                                 </div>
                             </div>
                         )}

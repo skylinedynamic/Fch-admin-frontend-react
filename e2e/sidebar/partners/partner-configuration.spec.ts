@@ -169,6 +169,23 @@ test.describe('Partner profile - Configuration', () => {
     })
   })
 
+  // R3-BUG-064: Branding says a logo may be an SVG; the logo picker refused it in the browser.
+  test('an SVG logo is uploaded into the partner\'s folder from the logo picker', async ({ page }) => {
+    const api = await openProfile(page)
+    await configurationTab(page).click()
+    await page.getByRole('tab', { name: 'Branding' }).click()
+
+    await page.getByRole('button', { name: 'Choose' }).first().click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Upload', exact: true }).click()
+    await page.locator('.fm-modal input[type="file"]').setInputFiles({
+      name: 'qa-r3rt-ui-logo.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'),
+    })
+    await page.getByRole('button', { name: 'Upload (1)' }).click()
+
+    await expect.poll(() => api.find('POST', /\/filemanager\/upload$/).length).toBe(1)
+    await expect(page.getByText('File type "svg" not allowed', { exact: false })).toHaveCount(0)
+  })
+
   test('the partner\'s borrower agreement is switched and saved with its partner_id', async ({ page }) => {
     const api = await openProfile(page)
     await openProfileTab(page, 'Configuration')

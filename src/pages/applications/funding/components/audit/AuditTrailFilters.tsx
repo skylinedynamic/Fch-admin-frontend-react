@@ -1,12 +1,15 @@
 import React from 'react'
 import { Dropdown } from 'primereact/dropdown'
-import { AUDIT_EVENT_OPTIONS, type AuditEventType, AUDIT_TEXT } from '../../../../../config/auditConfig'
+import { AUDIT_EVENT_OPTIONS, AUDIT_SORT_OPTIONS, type AuditEventType, type AuditSortDirection, AUDIT_TEXT } from '../../../../../config/auditConfig'
 
 interface Props {
   search: string
   event: AuditEventType | ''
   onSearchChange: (search: string) => void
   onEventChange: (event: AuditEventType | '') => void
+  sort: AuditSortDirection
+  /** Applied at once, unlike the filters (R3-BUG-051). */
+  onSortChange: (sort: AuditSortDirection) => void
   onApply: () => void
   onClear: () => void
 }
@@ -14,7 +17,7 @@ interface Props {
 const EVENT_OPTIONS = [{ label: AUDIT_TEXT.ALL_EVENTS, value: '' }, ...AUDIT_EVENT_OPTIONS]
 
 /** The list's filter row, as on the other Intake & Review lists: applied with Filters, reset with Clear. */
-const AuditTrailFilters: React.FC<Props> = ({ search, event, onSearchChange, onEventChange, onApply, onClear }) => (
+const AuditTrailFilters: React.FC<Props> = ({ search, event, onSearchChange, onEventChange, sort, onSortChange, onApply, onClear }) => (
   <form
     className="table-filter"
     onSubmit={(e) => {
@@ -46,6 +49,17 @@ const AuditTrailFilters: React.FC<Props> = ({ search, event, onSearchChange, onE
           placeholder={AUDIT_TEXT.ALL_EVENTS}
           className="w-100 employee-filter-dropdown audit-event-filter"
           ariaLabel={AUDIT_TEXT.EVENT_LABEL}
+        />
+      </div>
+      <div className="col-lg-2 col-md-6 col-12">
+        <Dropdown
+          value={sort}
+          options={AUDIT_SORT_OPTIONS}
+          optionLabel="label"
+          optionValue="value"
+          onChange={(e) => onSortChange(e.value)}
+          className="w-100 employee-filter-dropdown audit-sort-filter"
+          ariaLabel={AUDIT_TEXT.SORT_LABEL}
         />
       </div>
       <div className="col-lg-3 col-md-6 col-12 ms-lg-auto">

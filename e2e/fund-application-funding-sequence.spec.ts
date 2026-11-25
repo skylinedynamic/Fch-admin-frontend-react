@@ -56,9 +56,12 @@ const SEQUENCES: Record<string, { id: number; name: string }[]> = {
   'Line of Credit': [{ id: 5, name: 'Business Lines of Credit' }, { id: 19, name: 'Fast Credit Lines' }],
 }
 
-async function openStep(page: Page, application: Record<string, unknown>) {
+// Opens the edit page with every backend call answered. `reads` records the
+// query string of each funding request GET.
+async function openEditPage(page: Page, application: Record<string, unknown>) {
   const sent: { body: Record<string, unknown> | null } = { body: null }
   const askedFor: string[] = []
+  const reads: string[] = []
 
   await page.addInitScript(
     ([user]) => {
@@ -85,10 +88,20 @@ async function openStep(page: Page, application: Record<string, unknown>) {
       sent.body = route.request().postDataJSON()
       return ok(route, { ...application, ...sent.body })
     }
+    const query = new URL(route.request().url()).search
+    reads.push(query)
+    // What the API answers a read that names no application.
+    if (!query) return route.fulfill({ status: 404, json: { status: false, message: 'Funding request information not found' } })
     return ok(route, application)
   })
 
   await page.goto(`/intake-review/funding-application/${application.id}/edit`)
+
+  return { sent, askedFor, reads }
+}
+
+async function openStep(page: Page, application: Record<string, unknown>) {
+  const { sent, askedFor } = await openEditPage(page, application)
   await page.locator('.sidebar-step-btn', { hasText: 'Funding Request' }).filter({ visible: true }).first().click()
   await expect(page.getByText(/Step 4 of \d+: Funding Request/).filter({ visible: true }).first()).toBeVisible()
 
@@ -169,5 +182,19 @@ test.describe('Edit funding application › Step 4 › Funding Sequence', () => 
     await expect(field(page, 'Funding Sequence').locator('input')).toHaveValue('Term Loans')
     await expect(field(page, 'Funding Sequence').locator('button.form-select')).toHaveCount(0)
     expect(askedFor).toEqual([])
+  })
+})
+
+// R3-BUG-053: opening the edit page read the funding request three times - by
+// application id, once with no id at all (404), and by application id again.
+test.describe('Edit funding application › loading the page', () => {
+  test('reads the funding request once, by application id, never without an id', async ({ page }) => {
+    const { reads } = await openEditPage(page, EMBED_APPLICATION)
+
+    await expect(page.getByText(/Step 1 of \d+: Business Information/).filter({ visible: true }).first()).toBeVisible()
+    // Time for the late re-read the bug made.
+    await page.waitForTimeout(1500)
+
+    expect(reads).toEqual([`?funding_application_id=${EMBED_APPLICATION.id}`])
   })
 })

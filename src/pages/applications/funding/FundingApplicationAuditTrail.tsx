@@ -6,7 +6,7 @@ import { Column } from 'primereact/column'
 import { DataTable } from 'primereact/datatable'
 import PageHeader from '../../common/PageHeader'
 import TableLoader from '../../../components/Loader/TableLoader'
-import { AUDIT_PAGE_SIZES, AUDIT_TEXT, type AuditEventType, type AuditExportFormat } from '../../../config/auditConfig'
+import { AUDIT_PAGE_SIZES, AUDIT_SORT, AUDIT_TEXT, type AuditEventType, type AuditExportFormat, type AuditSortDirection } from '../../../config/auditConfig'
 import {
   useDownloadAuditEventFile,
   useExportFundingApplicationAuditTrail,
@@ -34,8 +34,10 @@ const FundingApplicationAuditTrail: React.FC = () => {
   const [searchText, setSearchText] = useState('')
   const [selectedEvent, setSelectedEvent] = useState<AuditEventType | ''>('')
   const [applied, setApplied] = useState<{ search: string; event: AuditEventType | '' }>({ search: '', event: '' })
+  const [sortDir, setSortDir] = useState<AuditSortDirection>(AUDIT_SORT.NEWEST)
+  const isFiltered = !!applied.search || !!applied.event
 
-  const { data, isLoading, isFetching, error } = useFundingApplicationAuditTrail(id, { page, per_page: perPage, ...applied })
+  const { data, isLoading, isFetching, error } = useFundingApplicationAuditTrail(id, { page, per_page: perPage, ...applied, sort_dir: sortDir })
   const exportTrail = useExportFundingApplicationAuditTrail(id)
   const downloadFile = useDownloadAuditEventFile(id)
 
@@ -59,6 +61,11 @@ const FundingApplicationAuditTrail: React.FC = () => {
     setPage(1)
   }
 
+  const changeSort = (next: AuditSortDirection) => {
+    setSortDir(next)
+    setPage(1)
+  }
+
   const onDownloadFile = (row: AuditEvent) =>
     downloadFile.mutate(
       { eventId: row.id, fallbackName: String(row.context?.name ?? `audit-file-${row.id}`) },
@@ -67,7 +74,7 @@ const FundingApplicationAuditTrail: React.FC = () => {
 
   const onExport = (format: AuditExportFormat) =>
     exportTrail.mutate(
-      { params: applied, format },
+      { params: { ...applied, sort_dir: sortDir }, format },
       { onError: (e) => toast.error(apiMessage(e, AUDIT_TEXT.ERROR_EXPORT)) }
     )
 
@@ -111,6 +118,8 @@ const FundingApplicationAuditTrail: React.FC = () => {
                   event={selectedEvent}
                   onSearchChange={setSearchText}
                   onEventChange={setSelectedEvent}
+                  sort={sortDir}
+                  onSortChange={changeSort}
                   onApply={applyFilters}
                   onClear={clearFilters}
                 />
@@ -140,7 +149,7 @@ const FundingApplicationAuditTrail: React.FC = () => {
                       rowClassName={() => 'audit-event-row'}
                       responsiveLayout="scroll"
                       className="p-datatable-sm"
-                      emptyMessage={AUDIT_TEXT.EMPTY}
+                      emptyMessage={isFiltered ? AUDIT_TEXT.NO_MATCH : AUDIT_TEXT.EMPTY}
                     >
                       <Column header={AUDIT_TEXT.COLUMN_DATE} body={WhenCell} style={{ minWidth: '170px' }} />
                       <Column header={AUDIT_TEXT.COLUMN_EVENT} body={EventCell} style={{ minWidth: '190px' }} />

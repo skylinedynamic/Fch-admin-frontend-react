@@ -19,7 +19,7 @@ import PendingEmailNotice from '../../components/Account/PendingEmailNotice';
 import FormLoader from '../../components/Loader/FormLoader';
 import ErrorPage from '../Utility/ErrorPage';
 import { formatPhoneNumber } from '../../utils/formatters';
-import { USER_STATUS } from '../../config/statusOptions';
+import { USER_STATUS, USER_SELF_GUARD_TEXT } from '../../config/statusOptions';
 import { SEAT_INVOICE_WAITING } from '../../config/limitOptions';
 import { scrollToFirstError } from '../../utils/formUtils';
 import { emailFieldValue } from '../../modules/account';
@@ -50,6 +50,9 @@ export default function UserDetails() {
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('update users');
   const canSave = isCreate ? hasPermission('create users') : canUpdate;
+  // Your own record: role and status are locked - the API refuses changing
+  // your own, so the team can't lock itself out of Users (R3-BUG-030).
+  const isSelf = !isCreate && authUser?.id != null && String(authUser.id) === String(id);
 
   const employeesQuery = useAvailableEmployeesForUser(isCreate);
   const createUser = useCreateUser();
@@ -469,6 +472,7 @@ export default function UserDetails() {
                                 onChange={(e) => handleChange({ target: { name: 'role_id', value: e.value } })}
                                 placeholder="Select Role"
                                 className={`w-100 ${errors.role_id ? 'p-invalid' : ''}`}
+                                disabled={isSelf}
                               />
                               {errors.role_id && <div className="invalid-feedback d-block">{errors.role_id}</div>}
                             </div>
@@ -527,8 +531,10 @@ export default function UserDetails() {
                                 onChange={(e) => handleChange({ target: { name: 'status', value: e.value } })}
                                 placeholder="Select Status"
                                 className={`w-100 ${errors.status ? 'p-invalid' : ''}`}
+                                disabled={isSelf}
                               />
                               {errors.status && <div className="invalid-feedback d-block">{errors.status}</div>}
+                              {isSelf && <div className="form-text">{USER_SELF_GUARD_TEXT}</div>}
                             </div>
                           </div>
 

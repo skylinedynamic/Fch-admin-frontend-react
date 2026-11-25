@@ -1,12 +1,14 @@
 import React from 'react';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
-import { INVOICE_STATUS_OPTIONS, INVOICE_OWNERSHIP_OPTIONS, INVOICE_HOST_OWNERSHIP_OPTIONS, INVOICE_TYPE_OPTIONS } from '../../../config/invoiceConfig';
+import { invoiceStatusFilterOptions, INVOICE_OWNERSHIP_OPTIONS, INVOICE_HOST_OWNERSHIP_OPTIONS, INVOICE_TYPE_OPTIONS } from '../../../config/invoiceConfig';
 import FilterLoader from '../../../components/Loader/FilterLoader';
 
 export default function InvoiceFilters({ 
     searchText, setSearchText,
     selectedStatus, setSelectedStatus,
+    // From the invoice list's response (status_options), R3-BUG-078.
+    statusOptions = [],
     selectedMine, setSelectedMine,
     selectedPayee, setSelectedPayee,
     selectedCycle, setSelectedCycle,
@@ -87,7 +89,7 @@ export default function InvoiceFilters({
             <div className="col-xxl-2 col-sm-6">
                 <Dropdown 
                     value={selectedStatus}
-                    options={INVOICE_STATUS_OPTIONS} 
+                    options={invoiceStatusFilterOptions(statusOptions)} 
                     optionLabel="label"
                     optionValue="value"
                     placeholder="All Status" 

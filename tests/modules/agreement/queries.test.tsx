@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { server } from '../../mocks/server'
 import { createTestQueryClient } from '../../test-utils'
 import { useAgreement, useAgreements, useSaveAgreement, useToggleAgreementStatus, useSetAgreementRequired, useAgreementRequirement } from '../../../src/modules/agreement/queries'
@@ -36,6 +36,40 @@ describe('useAgreement', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data?.data?.slug).toBe('partner')
+  })
+
+  // R3-BUG-077: a partner with no template yet answers 404 - asked once, not
+  // retried as the app's default (retry: 1) does for a failure.
+  const appDefaults = () => new QueryClient({ defaultOptions: { queries: { retry: 1, retryDelay: 0 } } })
+
+  it('asks once when the template is not made yet (404)', async () => {
+    let calls = 0
+    server.use(
+      http.post('*/common/agreement-templates/show', () => {
+        calls++
+        return HttpResponse.json({ status: false, message: 'Agreement template not found' }, { status: 404 })
+      })
+    )
+    const { wrapper } = wrap(appDefaults())
+    const { result } = renderHook(() => useAgreement('borrower'), { wrapper })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(calls).toBe(1)
+  })
+
+  it('still retries a real failure', async () => {
+    let calls = 0
+    server.use(
+      http.post('*/common/agreement-templates/show', () => {
+        calls++
+        return HttpResponse.json({ status: false, message: 'Server Error' }, { status: 500 })
+      })
+    )
+    const { wrapper } = wrap(appDefaults())
+    const { result } = renderHook(() => useAgreement('borrower'), { wrapper })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(calls).toBe(2)
   })
 })
 

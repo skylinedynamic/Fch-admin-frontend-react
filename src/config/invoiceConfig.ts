@@ -11,17 +11,20 @@ export const STATUS_EXPIRED = 'Expired';
 export const STATUS_PROCESSING = 'Processing';
 export const STATUS_ALL = 'All Status';
 
-export const INVOICE_STATUS_OPTIONS = [
+/** One of the invoice list's Status filter options, as the API sends them. */
+export interface InvoiceStatusOption {
+    label: string;
+    value: string;
+}
+
+/**
+ * The Status filter's options: "All Status", then the statuses the API sends as
+ * `status_options` (fch-api Invoice::STATUSES) - the one list for every portal,
+ * none kept here (R3-BUG-078, after BUG-021).
+ */
+export const invoiceStatusFilterOptions = (options: InvoiceStatusOption[] = []): { label: string; value: string | null }[] => [
     { label: STATUS_ALL, value: null },
-    { label: STATUS_PAID, value: STATUS_PAID },
-    { label: STATUS_UNPAID, value: STATUS_UNPAID },
-    { label: STATUS_PENDING, value: STATUS_PENDING },
-    { label: STATUS_PROCESSING, value: STATUS_PROCESSING },
-    { label: STATUS_SUCCESS, value: STATUS_SUCCESS },
-    { label: STATUS_FAILED, value: STATUS_FAILED },
-    { label: STATUS_DISPUTED, value: STATUS_DISPUTED },
-    { label: STATUS_EXPIRED, value: STATUS_EXPIRED },
-    { label: STATUS_CANCELED, value: STATUS_CANCELED }
+    ...options,
 ];
 
 // Invoice types as the API stores them (fch-api Invoice::INVOICE_TYPES).

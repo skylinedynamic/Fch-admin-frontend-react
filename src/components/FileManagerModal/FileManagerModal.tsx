@@ -91,6 +91,7 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
           onCancelSelection={toggle}
           onChanged={onChanged}
           rootLabel={rootLabel}
+          entityType={entityType}
         />
       </ModalBody>
     </Modal>

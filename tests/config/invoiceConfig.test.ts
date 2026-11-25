@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
     INVOICE_STATUS_COLORS,
-    INVOICE_STATUS_OPTIONS,
+    STATUS_ALL,
     STATUS_CANCELED,
     STATUS_EXPIRED,
+    invoiceStatusFilterOptions,
 } from '../../src/config/invoiceConfig'
 
 /**
@@ -14,22 +15,18 @@ import {
  * stores "Canceled". The options must be the statuses fch-api's Invoice model
  * stores.
  */
+// R3-BUG-078: the options themselves now come from the API (status_options,
+// fch-api Invoice::STATUSES); the portal adds "All Status" and keeps no list.
 describe('invoice status options', () => {
-    const values = INVOICE_STATUS_OPTIONS.map((option) => option.value)
+    it('are "All Status" and then what the API sends', () => {
+        const fromApi = [{ label: 'Paid', value: 'Paid' }, { label: STATUS_EXPIRED, value: STATUS_EXPIRED }]
 
-    it('does not offer Overdue', () => {
-        expect(values).not.toContain('Overdue')
-    })
-
-    it('offers Expired', () => {
-        expect(STATUS_EXPIRED).toBe('Expired')
-        expect(values).toContain(STATUS_EXPIRED)
+        expect(invoiceStatusFilterOptions(fromApi)).toEqual([{ label: STATUS_ALL, value: null }, ...fromApi])
+        expect(invoiceStatusFilterOptions()).toEqual([{ label: STATUS_ALL, value: null }])
     })
 
     it('spells Canceled the way the API stores it', () => {
         expect(STATUS_CANCELED).toBe('Canceled')
-        expect(values).toContain(STATUS_CANCELED)
-        expect(values).not.toContain('Cancelled')
     })
 
     it('gives Expired and Canceled a badge colour', () => {
