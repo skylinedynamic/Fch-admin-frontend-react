@@ -34,7 +34,8 @@ describeListPage(
 )
 
 // BUG-012: the list loads by upcoming billing date (soonest first), and Amount
-// and Outstanding sort too - by the API, on the figures each row shows.
+// and Amount Due (was "Outstanding", R3-BUG-019) sort too - by the API, on the
+// figures each row shows.
 describe('Upcoming billing - sorting', () => {
   const open = async () => {
     signIn({ permissions: ['view subscriptions'] })
@@ -54,7 +55,7 @@ describe('Upcoming billing - sorting', () => {
 
   it.each([
     ['Amount', 'upcoming_billing_amount'],
-    ['Outstanding', 'outstanding_amount'],
+    ['Amount Due', 'outstanding_amount'],
   ])('%s sorts ascending, then descending', async (title, field) => {
     const user = userEvent.setup()
     const list = await open()
@@ -92,5 +93,29 @@ describe('Upcoming billing - borrower fee row', () => {
 
     await user.click(screen.getByText('Wanda Wells'))
     expect(await screen.findByTestId('landing')).toHaveTextContent('navigated:/invoices/55')
+  })
+})
+
+/**
+ * R3-BUG-019: "Outstanding" was read as what is left on an installment plan,
+ * but it is only the invoices raised and still unpaid (the plan's later
+ * installments are not invoiced yet). The column and the card now say
+ * "Amount Due", and the column says what it counts.
+ */
+describe('Upcoming billing - Amount Due', () => {
+  it('names the column and the card Amount Due, and says what it counts', async () => {
+    signIn({ permissions: ['view subscriptions'] })
+    allowBackgroundCalls()
+    api('post', '/common/billing/fetch-upcoming', paginated([
+      { id: 1, subscription_id: 1101, subscriber_name: 'Acme Funding', upcoming_billing_type: 'Installment', upcoming_billing_amount: '699.70', upcoming_billing_date: '2026-04-01', outstanding_amount: '699.70', enrollment_type: 'Installment', status: 'Active' },
+    ]))
+    renderPage(<Billing />, { path: '/billing' })
+    await screen.findByText('Acme Funding')
+
+    const due = screen.getAllByRole('columnheader').find((th) => th.textContent?.trim().startsWith('Amount Due'))
+    expect(due).toBeTruthy()
+    expect(due!.querySelector('[title]')).toHaveAttribute('title', 'Unpaid invoices raised so far. Installments not billed yet are not included.')
+    expect(screen.getAllByText('Amount Due').length).toBeGreaterThanOrEqual(2) // the column and the card
+    expect(screen.queryByText('Outstanding')).not.toBeInTheDocument()
   })
 })

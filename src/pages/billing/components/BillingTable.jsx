@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BILLING_AMOUNT_DUE_HINT, BILLING_AMOUNT_DUE_LABEL } from '../../../config/billingOptions';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { SUBSCRIPTION_STATUS_COLORS } from '../../../config/subscriptionConfig';
@@ -160,7 +161,7 @@ export default function BillingTable({
                 <Column field="upcoming_billing_type" header="Billing Type" body={typeBodyTemplate} sortable filter filterPlaceholder="Search by type" style={{ minWidth: '150px' }} />
                 <Column field="upcoming_billing_amount" header="Amount" body={amountBodyTemplate} sortable filter filterPlaceholder="Search by amount" style={{ minWidth: '130px' }} />
                 <Column field="upcoming_billing_date" header="Upcoming Billing Date" body={dateBodyTemplate} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '200px' }} />
-                <Column field="outstanding_amount" header="Outstanding" body={outstandingBodyTemplate} sortable style={{ minWidth: '130px' }} />
+                <Column field="outstanding_amount" header={<span title={BILLING_AMOUNT_DUE_HINT}>{BILLING_AMOUNT_DUE_LABEL}</span>} body={outstandingBodyTemplate} sortable style={{ minWidth: '130px' }} />
                 <Column field="enrollment_type" header="Enrollment Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '180px' }} />
                 <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '120px' }} />
             </DataTable>

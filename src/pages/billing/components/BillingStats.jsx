@@ -1,4 +1,5 @@
 import React from 'react';
+import { BILLING_AMOUNT_DUE_LABEL } from '../../../config/billingOptions';
 import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 
@@ -31,14 +32,15 @@ export default function BillingStats({ summary, loading }) {
             colorVariant: 'success'
         },
         {
-            // Everything already invoiced and still unpaid.
-            title: 'Outstanding',
+            // Everything already invoiced and still unpaid - not what is left
+            // on an installment plan, hence "Amount Due" (R3-BUG-019).
+            title: BILLING_AMOUNT_DUE_LABEL,
             value: money(summary?.outstanding_total),
             icon: 'ri-money-dollar-circle-line',
             colorVariant: 'info'
         },
         {
-            // The subset of Outstanding that nothing will collect, because the
+            // The subset of Amount Due that nothing will collect, because the
             // subscriber is not Active. This is the number that was invisible.
             title: 'Not Collectable (Paused)',
             value: money(summary?.paused_outstanding_total),
