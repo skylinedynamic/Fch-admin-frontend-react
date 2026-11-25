@@ -30,6 +30,15 @@ test.describe('Embed form settings', () => {
     await expect(page.locator('input[readonly]').first()).toHaveValue(CONFIG.direct_url)
   })
 
+  // R3-BUG-043: the subtitle offered "notifications" after that setting was removed.
+  test('the card subtitle names what it holds, and no notifications', async ({ page }) => {
+    await open(page)
+    // The card only: the topbar has a notifications bell of its own.
+    const card = page.locator('.ef-card', { hasText: 'Form Configuration' }).first()
+    await expect(card.getByText('Configure the title, status, and allowed domains for your embedded form')).toBeVisible()
+    await expect(card.getByText(/notification/i)).toHaveCount(0)
+  })
+
   test('saving sends the title, status and domains', async ({ page }) => {
     const api = await open(page)
     api.add({ method: 'PUT', match: `${EF}/config`, body: ok(CONFIG, 'Embed form configuration saved successfully.') })
