@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PageHeader from '../../common/PageHeader';
-import { useCreditProfileRequestDetails } from '../../../modules/credit-profile-request';
+import { toast } from 'react-toastify';
+import { revealCreditProfileRequestSsn, useCreditProfileRequestDetails } from '../../../modules/credit-profile-request';
 import CreditProfileRequestDetailsLoader from '../../../components/Loader/CreditProfileRequestDetailsLoader';
 import { formatSSN } from '../../../utils/formatters';
 import CreditAuthorizationPanel from './components/CreditAuthorizationPanel';
@@ -13,7 +14,32 @@ export default function CreditProfileRequestDetails() {
     const { id } = useParams();
     const { data: apiResponse, isLoading, error } = useCreditProfileRequestDetails(id || '');
     const [showFullSSN, setShowFullSSN] = useState(false);
+    // The API sends the SSN masked; the full number is fetched once, on Reveal,
+    // and the server logs that (R2 BUG-092).
+    const [fullSsn, setFullSsn] = useState<string | null>(null);
+    const [revealing, setRevealing] = useState(false);
     const { hasPermission } = usePermissions();
+
+    const toggleSsn = async () => {
+        if (showFullSSN) {
+            setShowFullSSN(false);
+            return;
+        }
+        if (fullSsn) {
+            setShowFullSSN(true);
+            return;
+        }
+        setRevealing(true);
+        try {
+            const ssn = await revealCreditProfileRequestSsn(id || '');
+            setFullSsn(ssn);
+            setShowFullSSN(Boolean(ssn));
+        } catch {
+            toast.error('Could not reveal the SSN. Please try again.');
+        } finally {
+            setRevealing(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -110,14 +136,18 @@ export default function CreditProfileRequestDetails() {
                                 <CprField
                                     label="Social Security Number"
                                     icon="ri-lock-line"
-                                    copyValue={request.ssn}
+                                    // Copy only once revealed: the full number, never the mask.
+                                    copyValue={fullSsn}
                                     value={request.ssn && (
                                         <>
-                                            <span className="font-monospace">{formatSSN(request.ssn, showFullSSN)}</span>
+                                            <span className="font-monospace">
+                                                {showFullSSN && fullSsn ? formatSSN(fullSsn, true) : formatSSN(request.ssn, false)}
+                                            </span>
                                             <button
                                                 type="button"
                                                 className="btn btn-sm btn-reveal-ssn ms-2 py-0 px-2 fs-12"
-                                                onClick={() => setShowFullSSN(s => !s)}
+                                                onClick={toggleSsn}
+                                                disabled={revealing}
                                             >
                                                 <i className={`${showFullSSN ? 'ri-eye-off-line' : 'ri-eye-line'} align-middle me-1`}></i>
                                                 {showFullSSN ? 'Hide' : 'Reveal'}
