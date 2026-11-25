@@ -66,6 +66,18 @@ export const REJECT_REASON_MAX_LENGTH = 10000;
 /** A rejection note longer than this is folded in the confirmation, behind See more. */
 export const REJECT_NOTE_PREVIEW_LENGTH = 300;
 
+/**
+ * The funding request permissions the page checks (fch-api App\Enums\Permission).
+ * UPDATE gates Review Actions and assigning a lender (R3-BUG-039).
+ */
+export const FUNDING_REQUEST_PERMISSION = {
+    VIEW: 'view funding request',
+    UPDATE: 'update funding request',
+} as const;
+
+/** Why Assign is off for a viewer without FUNDING_REQUEST_PERMISSION.UPDATE. */
+export const FUNDING_REQUEST_NO_UPDATE_PERMISSION = "You don't have permission to change this funding request.";
+
 export const FUNDING_REVIEW_STATUS = {
     PENDING: 'Pending',
     IN_PROGRESS: 'In Progress',

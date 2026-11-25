@@ -7,7 +7,7 @@ import { fireEvent, renderWithProviders, screen, waitFor, within } from '../../.
 import { toast } from 'react-toastify'
 import { useAuthStore } from '../../../../src/store/auth/authStore'
 import FundingRequestDetail from '../../../../src/pages/applications/funding-request/FundingRequestDetail'
-import { FUNDING_REVIEW_STATUS } from '../../../../src/config/funding'
+import { FUNDING_REVIEW_STATUS, FUNDING_REQUEST_PERMISSION, FUNDING_REQUEST_NO_UPDATE_PERMISSION } from '../../../../src/config/funding'
 import { FUNDING_APPLICATION_STATUS } from '../../../../src/config/borrower'
 import { PARTNER_TYPES } from '../../../../src/config/partnerTypeOptions'
 
@@ -47,7 +47,7 @@ function renderPage() {
 
 describe('Funding Request Details: action buttons', () => {
   beforeEach(() => {
-    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [] } } as never)
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [FUNDING_REQUEST_PERMISSION.UPDATE] } } as never)
     server.use(
       http.get('*/common/funding-request/:id', () => HttpResponse.json({ status: true, message: 'ok', data: review }))
     )
@@ -309,7 +309,7 @@ describe('Funding Request Details: Edit Funding Application', () => {
 
 describe('Funding Request Details: activity log Want to Assign', () => {
   beforeEach(() => {
-    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [] } } as never)
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [FUNDING_REQUEST_PERMISSION.UPDATE] } } as never)
     sidebar.props = null
   })
 
@@ -353,7 +353,7 @@ describe('Funding Request Details: assigning a lender', () => {
   }
 
   beforeEach(() => {
-    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [] } } as never)
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [FUNDING_REQUEST_PERMISSION.UPDATE] } } as never)
     server.use(
       http.get('*/common/funding-request/:id', () =>
         HttpResponse.json({ status: true, message: 'ok', data: { ...review, matched_lenders: [lender] } })
@@ -466,7 +466,7 @@ describe('Funding Request Details: lenders shown with their legal name', () => {
   })
 
   beforeEach(() => {
-    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [] } } as never)
+    useAuthStore.setState({ token: 't', user: { id: 1, name: 'Host Admin', is_host: 1, permissions: [FUNDING_REQUEST_PERMISSION.UPDATE] } } as never)
     server.use(
       http.get('*/common/funding-request/:id', () =>
         HttpResponse.json({ status: true, message: 'ok', data: { ...review, matched_lenders: [lender(5, 'Kabbage Inc.'), lender(6, 'Kabbage Funding LLC')] } })
@@ -504,5 +504,56 @@ describe('Funding Request Details: lenders shown with their legal name', () => {
 
     await waitFor(() => expect(screen.queryByText('Kabbage - Kabbage Funding LLC')).not.toBeInTheDocument())
     expect(screen.getAllByText('Kabbage - Kabbage Inc.').length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * R3-BUG-039: a host staff member whose role lost "update funding request"
+ * still had Review Actions (Status + Confirm) after a refresh - the page showed
+ * them to anyone on the host's team. The refreshed permissions now decide:
+ * without the permission there is no Review Actions and no lender to assign.
+ */
+describe('Funding Request Details: Review Actions follow the update permission', () => {
+  const lender = {
+    id: 9, name: 'Fundbox', display_name: 'Fundbox - Fundbox Inc.', lender_code: 'LND-1009', product_category: 'Term Loan',
+    score: 100, score_text: 'Excellent Match', score_hex: '#16a34a', matches_fraction: '4/4', checks: {}, requirements: {},
+  }
+
+  const asHostStaff = (permissions: string[]) => {
+    useAuthStore.setState({ token: 't', user: { id: 2, name: 'Host Staff', is_host: 1, permissions } } as never)
+    server.use(
+      http.get('*/common/funding-request/:id', () =>
+        HttpResponse.json({ status: true, message: 'ok', data: { ...review, matched_lenders: [lender] } })
+      )
+    )
+  }
+
+  afterEach(() => server.resetHandlers())
+
+  it('hides Review Actions and the Assign buttons without the permission', async () => {
+    asHostStaff([FUNDING_REQUEST_PERMISSION.VIEW])
+    renderPage()
+
+    expect(await screen.findByRole('link', { name: /go to client/i })).toBeInTheDocument()
+    expect(await screen.findByText('Fundbox - Fundbox Inc.')).toBeInTheDocument()
+    expect(screen.queryByText('Review Actions')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^confirm/i })).not.toBeInTheDocument()
+    // The lenders are still listed; Assign is off, and says why.
+    for (const assign of screen.getAllByRole('button', { name: /^assign$/i })) {
+      expect(assign).toBeDisabled()
+    }
+    expect(screen.getAllByText(FUNDING_REQUEST_NO_UPDATE_PERMISSION).length).toBeGreaterThan(0)
+  })
+
+  it('shows Review Actions and lets a lender be assigned with it', async () => {
+    asHostStaff([FUNDING_REQUEST_PERMISSION.VIEW, FUNDING_REQUEST_PERMISSION.UPDATE])
+    renderPage()
+
+    expect(await screen.findByText('Review Actions')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^confirm/i })).toBeInTheDocument()
+    expect(await screen.findByText('Fundbox - Fundbox Inc.')).toBeInTheDocument()
+    const assigns = screen.getAllByRole('button', { name: /^assign$/i })
+    expect(assigns.length).toBeGreaterThan(0)
+    expect(assigns[0]).toBeEnabled()
   })
 })

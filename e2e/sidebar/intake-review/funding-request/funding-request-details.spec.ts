@@ -123,6 +123,21 @@ test.describe('Funding request details', () => {
     await expect(page.getByRole('heading', { name: 'Review Actions' })).toHaveCount(0)
   })
 
+  // R3-BUG-039: the host's staff had Review Actions without "update funding request".
+  test("a host staff member without the update permission sees no review actions and can't assign", async ({ page }) => {
+    const lender = {
+      id: 9, name: 'Fundbox', display_name: 'Fundbox - Fundbox Inc.', lender_code: 'LND-1009', product_category: 'Term Loan',
+      score: 100, score_text: 'Excellent Match', score_hex: '#16a34a', matches_fraction: '4/4', checks: {}, requirements: {},
+    }
+    await open(page, ok(review({ matched_lenders: [lender] })), { permissions: ['view funding request'] })
+
+    await expect(page.getByRole('heading', { name: 'Jane Doe' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review Actions' })).toHaveCount(0)
+    await expect(page.getByText('Fundbox - Fundbox Inc.').first()).toBeVisible()
+    // The name starts with the icon font's glyph.
+    await expect(page.getByRole('button', { name: /\bAssign$/ }).first()).toBeDisabled()
+  })
+
   test('a failed load goes back to the list', async ({ page }) => {
     await open(page, failure('Not found'))
     await expect(page).toHaveURL(/\/intake-review\/funding-request$/)
