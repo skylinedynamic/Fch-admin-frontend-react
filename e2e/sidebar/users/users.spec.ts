@@ -363,3 +363,21 @@ test.describe('User details - paying for a bought seat', () => {
     expect(api.find('GET', /\/common\/invoices\/88$/)).toHaveLength(0)
   })
 })
+
+// R3-BUG-030: on your own record the role and status are locked; the API
+// refuses changing your own, so the team can't lock itself out of Users.
+test.describe('User details - your own record', () => {
+  test("role and status can't be changed on your own record, and it says why", async ({ page }) => {
+    await seedSession(page, { id: 11, permissions: ['view users', 'update users'] })
+    await mockApi(page, [
+      { method: 'POST', match: '/common/roles/fetch-roles', body: ok(ROLES) },
+      { method: 'GET', match: /\/common\/users\/11$/, body: ok({ id: 11, name: 'Alice Admin', email: 'alice@example.test', phone_number: '5551112222', role_id: 1, status: 'active' }) },
+    ])
+    await page.goto('/user-details/11')
+
+    await expect(page.getByPlaceholder('Enter full name').or(page.locator('input[name="name"]')).first()).toHaveValue('Alice Admin')
+    await expect(page.locator('#role_id').locator('xpath=ancestor::div[contains(@class,"p-dropdown")][1]')).toHaveClass(/p-disabled/)
+    await expect(page.locator('#status').locator('xpath=ancestor::div[contains(@class,"p-dropdown")][1]')).toHaveClass(/p-disabled/)
+    await expect(page.getByText("You can't change your own role or account status. Ask another administrator.")).toBeVisible()
+  })
+})
