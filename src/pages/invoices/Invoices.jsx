@@ -18,6 +18,8 @@ export default function Invoices() {
     const [invoices, setInvoices] = useState([]);
     const [stats, setStats] = useState(null);
     const [statsLoading, setStatsLoading] = useState(true);
+    // The Status filter's options, as the API sends them (R3-BUG-078).
+    const [statusOptions, setStatusOptions] = useState([]);
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -123,6 +125,9 @@ export default function Invoices() {
                 if (response.stats) {
                     setStats(response.stats);
                 }
+                if (Array.isArray(response.status_options)) {
+                    setStatusOptions(response.status_options);
+                }
             } else {
                 toast.error(response.message || 'Failed to fetch invoices');
             }
@@ -213,6 +218,7 @@ export default function Invoices() {
                                         <InvoiceFilters
                                             searchText={searchText} setSearchText={setSearchText}
                                             selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
+                                            statusOptions={statusOptions}
                                             selectedMine={selectedMine} setSelectedMine={setSelectedMine}
                                             selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
                                             selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
@@ -237,6 +243,7 @@ export default function Invoices() {
                                             sortField={sortField}
                                             sortOrder={sortOrder}
                                             onRefresh={loadData}
+                                            statusOptions={statusOptions}
                                         />
                                     </div>
                                 </div>

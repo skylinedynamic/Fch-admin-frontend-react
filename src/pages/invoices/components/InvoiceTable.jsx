@@ -4,7 +4,7 @@ import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import TableLoader from '../../../components/Loader/TableLoader';
-import { INVOICE_STATUS_COLORS, INVOICE_STATUS_OPTIONS, STATUS_PAID, STATUS_PROCESSING } from '../../../config/invoiceConfig';
+import { INVOICE_STATUS_COLORS, STATUS_PAID, STATUS_PROCESSING } from '../../../config/invoiceConfig';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import InvoicePaymentModal from './InvoicePaymentModal';
 import InvoicePreviewModal from './InvoicePreviewModal';
@@ -24,7 +24,9 @@ export default function InvoiceTable({
     filters,
     sortField,
     sortOrder,
-    onRefresh // Add onRefresh prop to reload data after payment
+    onRefresh, // Add onRefresh prop to reload data after payment
+    // From the invoice list's response (status_options), R3-BUG-078.
+    statusOptions = []
 }) {
     const user = useAuthStore((state) => state.user);
     // Pay Now only for a partner user holding "Pay Invoice" - the API refuses anyone else (BUG-202).
@@ -55,7 +57,7 @@ export default function InvoiceTable({
         return (
             <Dropdown
                 value={options.value}
-                options={INVOICE_STATUS_OPTIONS}
+                options={statusOptions}
                 onChange={(e) => options.filterApplyCallback(e.value)}
                 optionLabel="label"
                 optionValue="value"

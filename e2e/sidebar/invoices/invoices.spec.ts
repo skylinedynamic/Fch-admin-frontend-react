@@ -12,11 +12,13 @@ const INVOICES = [
   { id: 1002, created_at: '2026-03-02', invoice_id: 'INV-1002', customer_name: 'Johnathan Smithfield', payment_amount: '$1,200.00', displayable_payment_amount: '$1,200.00', type: 'Enrollment', status: 'Paid', payment_id: 902 },
 ]
 const I_LIST = '/common/invoices/fetch-invoices'
+// What the list API sends as status_options: fch-api Invoice::STATUSES (R3-BUG-078).
+const STATUS_OPTIONS = ['Paid', 'Unpaid', 'Processing', 'Expired'].map((status) => ({ label: status, value: status }))
 
 test.describe('Invoices list', () => {
   async function openList(page: Page): Promise<ApiMock> {
     await seedSession(page, { permissions: ['view invoices', 'view payments'] })
-    const api = await mockApi(page, [{ method: 'POST', match: I_LIST, body: paginated(INVOICES) }])
+    const api = await mockApi(page, [{ method: 'POST', match: I_LIST, body: { ...paginated(INVOICES), status_options: STATUS_OPTIONS } }])
     await page.goto('/invoices')
     await expect(page.getByText('INV-1001')).toBeVisible()
     return api
@@ -84,14 +86,13 @@ test.describe('Invoices list', () => {
   })
 
   // BUG-021 round 2: no invoice is ever Overdue (an unpaid one locks the
-  // profile instead); older invoices are Expired, and the API spells Canceled.
+  // profile instead); older invoices are Expired. R3-BUG-078: the options are
+  // exactly the API's status_options, the list the client portal uses too.
   test('the status filter offers the statuses invoices have and sends the one picked', async ({ page }) => {
     const api = await openList(page)
     await page.locator('.employee-filter-dropdown', { hasText: 'All Status' }).click()
     const panel = page.locator('.p-dropdown-panel')
-    await expect(panel.getByRole('option', { name: 'Expired', exact: true })).toBeVisible()
-    await expect(panel.getByRole('option', { name: 'Canceled', exact: true })).toBeVisible()
-    await expect(panel.getByRole('option', { name: 'Overdue', exact: true })).toHaveCount(0)
+    await expect(panel.getByRole('option')).toHaveText(['All Status', 'Paid', 'Unpaid', 'Processing', 'Expired'])
     await panel.getByRole('option', { name: 'Expired', exact: true }).click()
     await page.locator('button', { hasText: 'Filters' }).click()
     await expect.poll(() => api.find('POST', I_LIST).at(-1)?.json.status).toBe('Expired')
