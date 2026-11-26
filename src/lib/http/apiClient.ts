@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios'
 import { toast } from 'react-toastify'
-import { getToken, clearAuth } from '../auth'
+import { getToken, clearAuth, markPasswordChangeRequired } from '../auth'
 import { MAINTENANCE_HTTP_STATUS } from '../../config/maintenance'
+import { FORCE_PASSWORD_ROUTE, PASSWORD_CHANGE_REQUIRED_CODE } from '../../config/passwordChange'
 import { isMaintenanceResponse, reloadForMaintenance } from './maintenance'
 
 export const apiClient: AxiosInstance = axios.create({
@@ -98,6 +99,13 @@ apiClient.interceptors.response.use(
         if (current !== '/login') {
           window.location.assign('/login')
         }
+      }
+    } else if (status === 403 && (error.response?.data as { code?: string } | undefined)?.code === PASSWORD_CHANGE_REQUIRED_CODE) {
+      // Signed in with an issued password: the server holds every call until
+      // they choose their own. Straight to the Set password screen, no toast.
+      markPasswordChangeRequired()
+      if (typeof window !== 'undefined' && window.location.pathname !== FORCE_PASSWORD_ROUTE) {
+        window.location.assign(FORCE_PASSWORD_ROUTE)
       }
     } else if (status === 403) {
       // Forbidden: keep auth, show informative toast, do not redirect

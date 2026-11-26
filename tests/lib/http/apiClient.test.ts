@@ -4,6 +4,7 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
 vi.mock('../../../src/lib/auth', () => ({
   getToken: vi.fn(() => ''),
   clearAuth: vi.fn(),
+  markPasswordChangeRequired: vi.fn(),
 }))
 vi.mock('../../../src/lib/auth/authApi', () => ({
   getUserDetails: vi.fn(() => Promise.resolve({ status: true, data: { user: {} } })),
@@ -15,7 +16,8 @@ vi.mock('react-toastify', () => ({
 import { getToken } from '../../../src/lib/auth'
 import { getUserDetails } from '../../../src/lib/auth/authApi'
 import { toast } from 'react-toastify'
-import { clearAuth } from '../../../src/lib/auth'
+import { clearAuth, markPasswordChangeRequired } from '../../../src/lib/auth'
+import { FORCE_PASSWORD_ROUTE, PASSWORD_CHANGE_REQUIRED_CODE } from '../../../src/config/passwordChange'
 import { apiClient } from '../../../src/lib/http/apiClient'
 
 // axios exposes registered interceptors via this internal `handlers` array;
@@ -175,6 +177,30 @@ describe('apiClient response interceptor — error path', () => {
 
     expect(clearAuth).not.toHaveBeenCalled()
     expect(toast.error).toHaveBeenCalledWith('Not allowed', { toastId: 'forbidden-error' })
+  })
+
+  // The server holds a login signed in with an issued password until its
+  // owner chooses their own: no toast, straight to the Set password screen.
+  it('on 403 password_change_required: marks the user and goes to the Set password screen, without a toast', async () => {
+    window.location.pathname = '/clients'
+    const error = makeError({ response: { status: 403, data: { message: 'Please set a new password to continue.', code: PASSWORD_CHANGE_REQUIRED_CODE } } as any })
+
+    await expect(responseInterceptor.rejected(error)).rejects.toBe(error)
+
+    expect(markPasswordChangeRequired).toHaveBeenCalled()
+    expect(window.location.assign).toHaveBeenCalledWith(FORCE_PASSWORD_ROUTE)
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(clearAuth).not.toHaveBeenCalled()
+  })
+
+  it('on 403 password_change_required while already on the Set password screen: does not reload it', async () => {
+    window.location.pathname = FORCE_PASSWORD_ROUTE
+    const error = makeError({ response: { status: 403, data: { code: PASSWORD_CHANGE_REQUIRED_CODE } } as any })
+
+    await expect(responseInterceptor.rejected(error)).rejects.toBe(error)
+
+    expect(window.location.assign).not.toHaveBeenCalled()
+    expect(toast.error).not.toHaveBeenCalled()
   })
 
   it('on 403: falls back to a generic message when the server sends none', async () => {

@@ -7,6 +7,7 @@ import { logout } from '../../../src/lib/auth/authApi'
 vi.mock('../../../src/lib/auth/authApi', () => ({ logout: vi.fn(() => Promise.resolve({ status: true })) }))
 
 import ProtectedRoute from '../../../src/lib/auth/ProtectedRoute'
+import { FORCE_PASSWORD_ROUTE } from '../../../src/config/passwordChange'
 
 const reset = () => useAuthStore.setState({ token: undefined, user: null, userSubscription: null, rememberMe: true })
 
@@ -18,6 +19,7 @@ const renderAt = (path: string) =>
           <Route path={path} element={<div>Protected Content</div>} />
         </Route>
         <Route path="/login" element={<div>Login Page</div>} />
+        <Route path={FORCE_PASSWORD_ROUTE} element={<div>Set Password Page</div>} />
       </Routes>
     </MemoryRouter>
   )
@@ -99,5 +101,12 @@ describe('ProtectedRoute', () => {
 
       await waitFor(() => expect(logout).toHaveBeenCalled())
     })
+  })
+
+  // Signed in with an issued password: nothing else until they choose their own.
+  it('sends a user who must change their password to the Set password screen', () => {
+    useAuthStore.setState({ token: 'abc', user: { id: 1, must_change_password: true } })
+    renderAt('/clients')
+    expect(screen.getByText('Set Password Page')).toBeInTheDocument()
   })
 })

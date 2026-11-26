@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/auth'
 import { clearAuth } from './auth'
 import { logout } from './authApi'
 import { parseDateOnly, startOfToday } from '../../utils/helper'
+import { FORCE_PASSWORD_ROUTE } from '../../config/passwordChange'
 
 /**
  * Whether the free trial's end date ("2026-06-30") has passed. The end date is
@@ -21,6 +22,7 @@ export default function ProtectedRoute() {
   const location = useLocation()
   const navigate = useNavigate()
   const token = useAuthStore((state) => state.token)
+  const mustChangePassword = useAuthStore((state) => !!state.user?.must_change_password)
   const userSubscription = useAuthStore((state) => state.userSubscription)
 
   const isFreeTrial = !!userSubscription?.is_free_trail
@@ -46,6 +48,11 @@ export default function ProtectedRoute() {
 
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />
+  }
+
+  // Signed in with an issued password: nothing else until they choose their own.
+  if (mustChangePassword) {
+    return <Navigate to={FORCE_PASSWORD_ROUTE} replace />
   }
 
   if (isFreeTrial && isTrialExpired) {

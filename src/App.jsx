@@ -14,7 +14,9 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
-import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute, OwnerSummaryRoute } from './lib/auth';
+import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute, NonHostPartnerRoute, OwnerSummaryRoute, ForcePasswordRoute } from './lib/auth';
+import SetPassword from './pages/set-password/SetPassword';
+import { FORCE_PASSWORD_ROUTE } from './config/passwordChange';
 import { useAuthStore } from './store/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -179,6 +181,10 @@ export default function App() {
         </Route>
         {/* The links in the email-change emails: they open signed in or not. */}
         <Route path="email-change/:action/:user/:hash" element={<EmailChangeLinkPage />} />
+        {/* Signed in with an issued password: this screen alone until they choose their own. */}
+        <Route element={<ForcePasswordRoute />}>
+          <Route path={FORCE_PASSWORD_ROUTE} element={<SetPassword />} />
+        </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="partners/download-agreement/:userId" element={<DownloadAgreement />} />
           <Route path="borrowers/download-agreement/:userId" element={<DownloadAgreement />} />

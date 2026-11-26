@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '../../../src/store/auth/authStore'
-import { setAuth, clearAuth, isAuthenticated, checkSession, getToken, getUser } from '../../../src/lib/auth/auth'
+import { setAuth, clearAuth, isAuthenticated, checkSession, getToken, getUser, markPasswordChangeRequired, markPasswordChanged } from '../../../src/lib/auth/auth'
 
 const { disconnectEcho } = vi.hoisted(() => ({ disconnectEcho: vi.fn() }))
 vi.mock('../../../src/lib/realtime/echo', () => ({ disconnectEcho, getEcho: () => null }))
@@ -98,6 +98,32 @@ describe('auth', () => {
     it('is a no-op when there is no token', () => {
       checkSession()
       expect(getToken()).toBe('')
+    })
+  })
+
+  describe('the forced password change', () => {
+    it('marks the signed-in user as having to change their password, keeping the rest of the session', () => {
+      useAuthStore.setState({ token: 'abc', user: { id: 7, name: 'Ada' }, rememberMe: false })
+
+      markPasswordChangeRequired()
+
+      expect(useAuthStore.getState().user).toEqual({ id: 7, name: 'Ada', must_change_password: true })
+      expect(useAuthStore.getState().token).toBe('abc')
+      expect(useAuthStore.getState().rememberMe).toBe(false)
+    })
+
+    it('clears the mark once they chose their own', () => {
+      useAuthStore.setState({ token: 'abc', user: { id: 7, must_change_password: true } })
+
+      markPasswordChanged()
+
+      expect(useAuthStore.getState().user).toEqual({ id: 7, must_change_password: false })
+    })
+
+    it('does nothing when no one is signed in', () => {
+      markPasswordChangeRequired()
+
+      expect(useAuthStore.getState().user).toBeNull()
     })
   })
 })

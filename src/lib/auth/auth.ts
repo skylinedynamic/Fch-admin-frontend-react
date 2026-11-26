@@ -86,6 +86,23 @@ export function isAuthenticated(): boolean {
   return !!getToken()
 }
 
+/** Sets the forced-password-change mark on the signed-in user, keeping the rest of the session. */
+function setMustChangePassword(value: boolean): void {
+  const { token, user, rememberMe } = getAuthState()
+  if (!user) return
+  setAuthState({ token, user: { ...user, must_change_password: value }, rememberMe })
+}
+
+/** The server holds this login until its owner chooses their own password. */
+export function markPasswordChangeRequired(): void {
+  setMustChangePassword(true)
+}
+
+/** They chose their own password: the portal opens up again. */
+export function markPasswordChanged(): void {
+  setMustChangePassword(false)
+}
+
 export function checkSession(): void {
   const { token } = getAuthState()
   const sessionActive = getCookie(COOKIE_NAME)
