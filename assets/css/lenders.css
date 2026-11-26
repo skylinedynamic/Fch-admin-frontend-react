@@ -64,3 +64,66 @@
 .taxonomy-field.lender-categories-field .p-multiselect {
     border-color: #ced4da;
 }
+
+/* Edit Lender > Underwriting Logic grid. The pinned Funding Type and Action
+   columns (position: sticky) take the row's colour, so on hover or on a
+   refused row the whole row reads as one - a fixed white left them as
+   islands. */
+.underwriting-grid > tbody > tr > td {
+    background-color: #fff;
+    transition: background-color .15s ease-in-out;
+}
+.underwriting-grid > tbody > tr:hover > td {
+    background-color: #f8f9fb;
+}
+.underwriting-grid > tbody > tr.table-danger > td {
+    background-color: #fdf1ef;
+}
+.underwriting-grid > thead > tr > th {
+    background-color: #f3f6f9;
+    white-space: nowrap;
+}
+
+/* Its Funding Types filter: the picked types as the same chips as Funding
+   Type on Lender Details (.taxonomy-field), on one line, then "+N more". */
+.underwriting-filter .p-multiselect {
+    background-color: #fff;
+    border-color: #ced4da;
+    min-height: 40px;
+}
+.underwriting-filter .p-multiselect .p-multiselect-label {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow: hidden;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+.underwriting-filter .p-multiselect .p-multiselect-token {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 !important;
+}
+.underwriting-filter .p-multiselect .p-multiselect-token .p-multiselect-token-icon {
+    cursor: pointer;
+}
+.underwriting-filter .p-multiselect .p-multiselect-label.p-placeholder,
+.underwriting-filter .p-multiselect .p-multiselect-label .text-muted {
+    color: #6c757d;
+    font-size: .875rem;
+}
+.underwriting-filter__more {
+    font-size: 12px;
+    padding: 5px 10px;
+    cursor: default;
+    flex-shrink: 0;
+}
+
+/* The pinned Action column gets a little room, so the last scrolled input
+   meets its divider instead of touching the delete button. */
+.underwriting-grid > tbody > tr > td:last-child,
+.underwriting-grid > thead > tr > th:last-child {
+    padding-left: 14px;
+    padding-right: 14px;
+}

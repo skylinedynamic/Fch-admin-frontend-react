@@ -6,7 +6,7 @@ test.describe('Sidebar › Lenders (live)', () => {
     menu: 'Lenders',
     url: /\/lenders$/,
     heading: 'Lenders',
-    columns: ['Lender Name', 'Legal Name', 'Product Categories', 'Status'],
+    columns: ['Lender Name', 'Legal Name', 'Funding Type', 'Status'],
     search: 'Search lenders...',
     detail: { url: /\/lenders\/\d+$/, heading: 'Edit Lender' },
   })

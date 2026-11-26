@@ -163,7 +163,8 @@ test.describe('Funding sequence create', () => {
     await expect(page).toHaveURL(/\/funding\/create/)
   })
 
-  test('a new sequence is posted and its underwriting tab opens', async ({ page }) => {
+  // Underwriting Logic is set on Edit Lender now: a new sequence goes back to the list.
+  test('a new sequence is posted and the list opens', async ({ page }) => {
     const api = await openCreate(page)
     api.add({ method: 'POST', match: CREATE, body: ok({ id: 300 }) })
     await page.locator('input[name="name"]').fill('Equipment Financing')
@@ -174,7 +175,7 @@ test.describe('Funding sequence create', () => {
     const call = await expectCall(api, 'POST', CREATE)
     expect(JSON.stringify(call.json)).toContain('Equipment Financing')
     await expect(page.getByText('Funding sequence created successfully!')).toBeVisible()
-    await expect(page).toHaveURL(/\/funding\/300\?tab=visibility/)
+    await expect(page).toHaveURL(/\/funding$/)
   })
 
   test('negative amounts cannot be typed', async ({ page }) => {

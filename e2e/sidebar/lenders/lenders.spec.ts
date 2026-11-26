@@ -156,7 +156,8 @@ test.describe('Lender create', () => {
     expect(call.json).toMatchObject({ name: 'Third Bank', legal_name: 'Third Bank NA', contact_name: 'Tia Third' })
     expect(call.json.contact_email).toBeNull()
     await expect(page.getByText('Lender created successfully')).toBeVisible()
-    await expect(page).toHaveURL(/\/lenders$/)
+    // A new lender opens on its Underwriting Logic, to set its rules next.
+    await expect(page).toHaveURL(/\/lenders\/70\?tab=underwriting$/)
   })
 
   test('a general failure is toasted', async ({ page }) => {
@@ -217,7 +218,7 @@ test.describe('Lender product categories', () => {
     const api = await mockApi(page, handlers())
     await page.goto('/lenders/create')
     await page.getByRole('button', { name: 'Add New' }).click()
-    const dialog = page.getByRole('dialog', { name: 'Manage Product Categories' })
+    const dialog = page.getByRole('dialog', { name: 'Manage Funding Types' })
     await expect(dialog).toBeVisible()
     return { api, dialog }
   }
@@ -235,7 +236,7 @@ test.describe('Lender product categories', () => {
     await dialog.getByRole('button', { name: /add/i }).click()
     const call = await expectCall(api, 'POST', CATS)
     expect(call.json).toEqual({ name: 'Equipment' })
-    await expect(page.getByText('Product category added successfully')).toBeVisible()
+    await expect(page.getByText('Funding type added successfully')).toBeVisible()
     await expect(dialog.locator('#categoryName')).toHaveValue('')
   })
 
@@ -254,7 +255,7 @@ test.describe('Lender product categories', () => {
     await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
     await confirmDelete(page)
     await expectCall(api, 'DELETE', '/admin/lenders/product-categories/1')
-    await expect(page.getByText('Product category deleted successfully')).toBeVisible()
+    await expect(page.getByText('Funding type deleted successfully')).toBeVisible()
   })
 
   /**
@@ -273,11 +274,11 @@ test.describe('Lender product categories', () => {
     ])
     await page.goto('/lenders/create')
     await page.getByRole('button', { name: 'Add New' }).click()
-    const dialog = page.getByRole('dialog', { name: 'Manage Product Categories' })
+    const dialog = page.getByRole('dialog', { name: 'Manage Funding Types' })
     await expect(dialog).toBeVisible()
 
     await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
-    const blocked = page.locator('.modal.show').filter({ hasText: 'Product Category Cannot Be Deleted' })
+    const blocked = page.locator('.modal.show').filter({ hasText: 'Funding Type Cannot Be Deleted' })
     await expect(blocked).toBeVisible()
     await expect(blocked).toContainText('"Term Loans" is used by 12 funding sequences and cannot be deleted.')
     await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toHaveCount(0)
@@ -310,11 +311,11 @@ test.describe('Lender product categories', () => {
     await confirmDelete(page)
 
     await expectCall(api, 'DELETE', '/admin/lenders/product-categories/1')
-    const blocked = page.locator('.modal.show').filter({ hasText: 'Product Category Cannot Be Deleted' })
+    const blocked = page.locator('.modal.show').filter({ hasText: 'Funding Type Cannot Be Deleted' })
     await expect(blocked).toBeVisible()
     await expect(blocked).toContainText('"Term Loans" is used by 2 funding sequences and cannot be deleted.')
     await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toHaveCount(0)
-    await expect(page.getByText('Product category deleted successfully')).toHaveCount(0)
+    await expect(page.getByText('Funding type deleted successfully')).toHaveCount(0)
     await expect(dialog.getByText('Term Loans')).toBeVisible()
     // Above the categories dialog, however high PrimeReact has taken it.
     const z = await page.evaluate(() => ({
@@ -387,8 +388,8 @@ test.describe('Lender product categories', () => {
     const call = await expectCall(api, 'PUT', '/admin/lenders/product-categories/1')
     expect(call.json).toMatchObject({ name: 'Term Loans Plus' })
     // BUG-049: a rename says updated, never added.
-    await expect(page.getByText('Product category updated successfully')).toBeVisible()
-    await expect(page.getByText('Product category added successfully')).toHaveCount(0)
+    await expect(page.getByText('Funding type updated successfully')).toBeVisible()
+    await expect(page.getByText('Funding type added successfully')).toHaveCount(0)
     expect(api.find('POST', CATS)).toHaveLength(0)
   })
 
@@ -402,7 +403,7 @@ test.describe('Lender product categories', () => {
     await editor.fill('Lines of Credit')
     await editor.press('Enter')
     await expect(dialog.getByText('This category name already exists.')).toBeVisible()
-    await expect(page.getByText('Product category updated successfully')).toHaveCount(0)
+    await expect(page.getByText('Funding type updated successfully')).toHaveCount(0)
   })
 
   test('Close dismisses the dialog', async ({ page }) => {

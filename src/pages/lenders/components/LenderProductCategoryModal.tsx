@@ -25,14 +25,14 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
         setLoading(true);
         try {
             await createLenderProductCategory({ name: name.trim() });
-            toast.success('Product category added successfully');
+            toast.success('Funding type added successfully');
             setName('');
             onSuccess();
         } catch (error: any) {
             if (error?.response?.status === 422) {
-                setNameError(error.response.data?.errors?.name || error.response.data?.message || 'Failed to save product category');
+                setNameError(error.response.data?.errors?.name || error.response.data?.message || 'Failed to save funding type');
             } else {
-                toast.error(error?.response?.data?.message || 'Failed to save product category');
+                toast.error(error?.response?.data?.message || 'Failed to save funding type');
             }
         } finally {
             setLoading(false);
@@ -56,7 +56,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
         setDeletingId(itemToDelete);
         try {
             await deleteLenderProductCategory(itemToDelete);
-            toast.success('Product category deleted successfully');
+            toast.success('Funding type deleted successfully');
             setShowDeleteModal(false);
             onSuccess();
         } catch (error: any) {
@@ -66,7 +66,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                 setShowDeleteModal(false);
                 setBlocked(refused);
             } else {
-                toast.error(error?.response?.data?.message || 'Failed to delete product category');
+                toast.error(error?.response?.data?.message || 'Failed to delete funding type');
             }
         } finally {
             setDeletingId(null);
@@ -89,15 +89,15 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
         setEditingLoading(true);
         try {
             await updateLenderProductCategory(id, { name: editName.trim() });
-            toast.success('Product category updated successfully');
+            toast.success('Funding type updated successfully');
             setEditingItem(null);
             setEditName('');
             onSuccess();
         } catch (error: any) {
             if (error?.response?.status === 422) {
-                setEditNameError(error.response.data?.errors?.name || error.response.data?.message || 'Failed to update product category');
+                setEditNameError(error.response.data?.errors?.name || error.response.data?.message || 'Failed to update funding type');
             } else {
-                toast.error(error?.response?.data?.message || 'Failed to update product category');
+                toast.error(error?.response?.data?.message || 'Failed to update funding type');
             }
         } finally {
             setEditingLoading(false);
@@ -116,7 +116,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
     return (
         <>
             <Dialog
-                header="Manage Product Categories"
+                header="Manage Funding Types"
                 visible={visible}
                 style={{ width: '32vw' }}
                 baseZIndex={1000}
@@ -126,7 +126,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                 <div className="p-fluid">
                     {/* Add New */}
                     <div className="field mb-3">
-                        <label htmlFor="categoryName" className="form-label fw-semibold">New Category Name</label>
+                        <label htmlFor="categoryName" className="form-label fw-semibold">New Funding Type Name</label>
                         <div>
                             <div className="p-inputgroup flex-1">
                                 <InputText
@@ -160,7 +160,7 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                     {categories.length > 0 && (
                         <>
                             <hr className="my-3" />
-                            <label className="form-label fw-semibold mb-2">Existing Categories</label>
+                            <label className="form-label fw-semibold mb-2">Existing Funding Types</label>
                             <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
                                 {/* Newest first, so one just added is at the top, not out of
                                     sight at the bottom. A copy: the given list (sort order,
@@ -251,12 +251,12 @@ export default function LenderProductCategoryModal({ visible, onHide, onSuccess,
                 onClose={() => setShowDeleteModal(false)}
                 onConfirm={confirmDelete}
                 loading={deletingId !== null}
-                text="Are you sure you want to delete this product category?"
+                text="Are you sure you want to delete this funding type?"
             />
 
             <DeleteBlockedModal
                 show={blocked !== null}
-                title="Product Category Cannot Be Deleted"
+                title="Funding Type Cannot Be Deleted"
                 message={blocked ? inUseMessage(blocked, 'Remove it from their Underwriting Logic first.') : ''}
                 onClose={() => setBlocked(null)}
             />

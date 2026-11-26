@@ -41,12 +41,12 @@ const cases = [
     updated: 'Funding group updated successfully',
   },
   {
-    title: 'Manage Product Categories',
+    title: 'Manage Funding Types',
     render: () => <LenderProductCategoryModal visible onHide={vi.fn()} onSuccess={vi.fn()} categories={items} />,
     create: api.createLenderProductCategory,
     update: api.updateLenderProductCategory,
-    added: 'Product category added successfully',
-    updated: 'Product category updated successfully',
+    added: 'Funding type added successfully',
+    updated: 'Funding type updated successfully',
   },
 ]
 
@@ -95,7 +95,7 @@ describe.each(cases)('$title', (c) => {
  * Categories" (the list is in sort order), out of sight below the scroll.
  * The newest is shown first.
  */
-describe('Manage Product Categories - Existing Categories order', () => {
+describe('Manage Funding Types - Existing Funding Types order', () => {
   it('lists the newest category first', async () => {
     const inSortOrder = [
       { id: 1, name: 'Business Line of Credit' },

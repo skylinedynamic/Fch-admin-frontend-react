@@ -1,3 +1,5 @@
+import type { UnderwritingRule } from './underwritingLogic';
+
 export interface Lender {
     id?: number;
     /** Lender Code ("LND-4821"): made by the API when the lender is created; read-only. */
@@ -24,6 +26,8 @@ export interface Lender {
     status?: string;
     internal_notes?: string;
     last_verified_date?: string;
+    /** Edit Lender > Underwriting Logic: one rule per funding type (sent and returned with the lender). */
+    underwriting_logic?: UnderwritingRule[];
 }
 
 /** A lender that already has the name or legal name being typed. */

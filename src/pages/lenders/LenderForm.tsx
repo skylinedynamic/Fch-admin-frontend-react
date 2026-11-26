@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getLender, createLender, updateLender, getLenderProductCategories, checkLenderDuplicates } from '../../modules/lender/services';
+import { getLender, createLender, updateLender, getLenderProductCategories, checkLenderDuplicates, deleteLenderUnderwritingRule } from '../../modules/lender/services';
 import { Lender, LenderDuplicates } from '../../modules/lender/types';
 import { lenderOptionLabel } from '../../modules/lender/displayName';
 import { cityOptions, countryOptions, stateOptions, type NameOption } from '../../modules/location/options';
@@ -15,11 +15,44 @@ import { LENDER_STATUS } from '../../config/statusOptions';
 import { SUBMISSION_METHODS } from '../../config/lender';
 import { useSummernote } from '../../hooks/useSummernote';
 import LenderProductCategoryModal from './components/LenderProductCategoryModal';
+import LenderUnderwritingLogic from './components/LenderUnderwritingLogic';
+import { locationData } from '../../modules/location';
+import {
+    fundingTypeOptions,
+    blankRule,
+    configuredRows,
+    configuredTypeIds,
+    remapUnderwritingErrors,
+    rowsForFundingTypes,
+    lenderSaveMessage,
+    ruleFromApi,
+    underwritingErrorIndexes,
+    underwritingPayload,
+    type UnderwritingRule,
+} from '../../modules/lender/underwritingLogic';
 import '../../../assets/css/lenders.css';
+
+/**
+ * The lender's own fields as sent: empty text as null, without the system-made
+ * Lender Code or the Underwriting Logic (sent apart).
+ */
+const lenderDetailsPayload = (form: Record<string, any>) => {
+    const payload: Record<string, any> = { ...form };
+    delete payload.lender_code;
+    delete payload.underwriting_logic;
+    Object.keys(payload).forEach((key) => {
+        if (payload[key] === '') payload[key] = null;
+    });
+    return payload;
+};
+
+// Rules store a state by code or name; the selects use names.
+const stateName = (state: string) => locationData.USA?.states?.[state]?.name ?? state;
 
 export default function LenderForm() {
     const navigate = useNavigate();
     const { id } = useParams();
+    const [searchParams] = useSearchParams();
     const isEditMode = !!id;
 
     const [loading, setLoading] = useState(false);
@@ -58,6 +91,30 @@ export default function LenderForm() {
     const [formData, setFormData] = useState<Lender>(initialFormState);
     const [errors, setErrors] = useState<any>({});
 
+    // The lender and rules as loaded (Edit), to tell what an Update changed.
+    const saved = useRef<{ details: string; rules: Record<string, unknown>[] }>({ details: '', rules: [] });
+    // Which row each rule sent with Update is (only rows filled in are sent).
+    const sentRowIndexes = useRef<number[]>([]);
+
+    // Edit Lender only: Lender Details | Underwriting Logic (one rule per funding type).
+    const [activeTab, setActiveTab] = useState<'details' | 'underwriting'>('details');
+    // One row per funding type of the lender, configured or not.
+    const [rules, setRules] = useState<UnderwritingRule[]>([]);
+    // Underwriting Logic's Funding Types: the rows shown - those with logic to
+    // start with; picking another shows its empty row. Hiding never deletes.
+    const [underwritingFilter, setUnderwritingFilter] = useState<number[]>([]);
+
+    // The rows follow the lender's Funding Types: a new one gets an empty row,
+    // one taken off loses its row (its rule is removed on Update).
+    useEffect(() => {
+        setRules((prev) => rowsForFundingTypes(prev, formData.product_categories));
+        setUnderwritingFilter((prev) => {
+            const ids = new Set((formData.product_categories || []).map(Number));
+            const kept = prev.filter((id) => ids.has(id));
+            return kept.length === prev.length ? prev : kept;
+        });
+    }, [formData.product_categories]);
+
     // Lenders that already have the name / legal name typed: a warning, not an
     // error - names may repeat; the Lender Code tells lenders apart.
     const [duplicates, setDuplicates] = useState<LenderDuplicates>({ name: [], legal_name: [] });
@@ -90,26 +147,72 @@ export default function LenderForm() {
 
     const { editorRef: internalNotesRef } = useSummernote('internal_notes', formData.internal_notes, handleChange);
 
+    /** Loads the lender and its Underwriting Logic (one row per funding type). */
+    const loadLender = async () => {
+        try {
+            const res = await getLender(id!);
+            const { underwriting_logic: loadedRules, ...lender } = res.data || {};
+            const loadedForm = { ...initialFormState, ...lender };
+            const loadedRows = rowsForFundingTypes(
+                (loadedRules || []).map((rule: any) => ruleFromApi(rule, stateName)),
+                loadedForm.product_categories
+            );
+            setFormData(loadedForm);
+            setRules(loadedRows);
+            setUnderwritingFilter(configuredTypeIds(loadedRows));
+            // What was loaded, so the toast after Update can say what changed.
+            saved.current = { details: JSON.stringify(lenderDetailsPayload(loadedForm)), rules: underwritingPayload(configuredRows(loadedRows).rows) };
+        } catch (error) {
+            toast.error('Failed to load lender details');
+            navigate('/lenders');
+        } finally {
+            setInitialLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchCategories();
         if (isEditMode) {
-            const fetchLender = async () => {
-                try {
-                    const res = await getLender(id!);
-                    setFormData({
-                        ...initialFormState,
-                        ...res.data
-                    });
-                } catch (error) {
-                    toast.error('Failed to load lender details');
-                    navigate('/lenders');
-                } finally {
-                    setInitialLoading(false);
-                }
-            };
-            fetchLender();
+            // From Add Lender's Save the same form stays mounted with the new id:
+            // show the loader and the tab asked for (?tab=underwriting).
+            setInitialLoading(true);
+            setErrors({});
+            setUnderwritingFilter([]);
+            setActiveTab(searchParams.get('tab') === 'underwriting' ? 'underwriting' : 'details');
+            loadLender();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, isEditMode, navigate]);
+
+    /**
+     * A row's delete, after its confirmation: a saved rule is soft-deleted at
+     * once (DELETE .../underwriting-logic/{fundingType}); the row stays, empty.
+     */
+    const deleteUnderwritingRow = async (row: number) => {
+        const rule = rules[row];
+        if (!rule) return;
+        const typeId = rule.lender_product_category_id;
+        const name = categoriesList.find((c) => Number(c.id) === Number(typeId))?.name ?? 'this funding type';
+        if (rule.id) {
+            try {
+                await deleteLenderUnderwritingRule(id!, typeId);
+            } catch (error: any) {
+                toast.error(error?.response?.data?.message || 'Failed to remove the underwriting logic');
+                throw error;
+            }
+            saved.current = {
+                ...saved.current,
+                rules: saved.current.rules.filter((r) => Number(r.lender_product_category_id) !== Number(typeId)),
+            };
+        }
+        setRules((prev) => prev.map((r) => (Number(r.lender_product_category_id) === Number(typeId) ? blankRule(Number(typeId)) : r)));
+        // Deleted: its row leaves the grid (pick the funding type again for an empty one).
+        setUnderwritingFilter((prev) => prev.filter((t) => t !== Number(typeId)));
+        setErrors((prev: any) => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`underwriting_logic.${row}.`))));
+        toast.success(rule.id
+            ? `Underwriting logic for "${name}" removed successfully`
+            : `Underwriting logic for "${name}" cleared`);
+    };
 
     const fetchCategories = async () => {
         try {
@@ -127,35 +230,64 @@ export default function LenderForm() {
 
         setLoading(true);
         try {
-            // Clean up empty strings to undefined to not fail numeric validation
-            const payload: any = { ...formData };
-            // Made by the system and never changed: not sent back.
-            delete payload.lender_code;
-            Object.keys(payload).forEach(key => {
-                if (payload[key] === '') {
-                    payload[key] = null;
-                }
-            });
+            const payload: any = lenderDetailsPayload(formData);
+            // Underwriting Logic is saved with the lender: every row filled in
+            // (whatever the filter shows); an empty row has none.
+            sentRowIndexes.current = configuredRows(rules, underwritingFilter).indexes;
+            const rulesSent = underwritingPayload(configuredRows(rules, underwritingFilter).rows);
+            if (isEditMode) {
+                payload.underwriting_logic = rulesSent;
+            }
 
+            let createdId: number | string | undefined;
             if (isEditMode) {
                 await updateLender(id!, payload);
-                toast.success('Lender updated successfully');
             } else {
-                await createLender(payload);
-                toast.success('Lender created successfully');
+                const created = await createLender(payload);
+                createdId = created?.data?.id;
             }
-            navigate('/lenders');
+            // Says what was saved: the lender, its Underwriting Logic, or both.
+            toast.success(lenderSaveMessage({
+                isEdit: isEditMode,
+                detailsChanged: JSON.stringify(lenderDetailsPayload(formData)) !== saved.current.details,
+                rulesBefore: saved.current.rules,
+                rulesAfter: rulesSent,
+                fromUnderwriting: activeTab === 'underwriting',
+            }));
+            if (!isEditMode) {
+                // A new lender opens on its Underwriting Logic, to set its rules next.
+                navigate(createdId ? `/lenders/${createdId}?tab=underwriting` : '/lenders');
+            } else if (activeTab === 'underwriting') {
+                // Saved from Underwriting Logic: stay; the reload shows every
+                // funding type with logic. The rows stay on screen meanwhile.
+                setErrors({});
+                await loadLender();
+            } else {
+                navigate('/lenders');
+            }
         } catch (error: any) {
             console.error(error);
             if (error.response?.status === 422) {
                 const backendErrors = error.response.data.errors || {};
-                const mappedErrors: Record<string, string> = {};
+                const flatErrors: Record<string, string> = {};
                 Object.keys(backendErrors).forEach(key => {
-                    mappedErrors[key] = Array.isArray(backendErrors[key])
+                    flatErrors[key] = Array.isArray(backendErrors[key])
                         ? backendErrors[key][0]
                         : backendErrors[key];
                 });
+                // underwriting_logic.N is the Nth rule sent: shown on its row.
+                const mappedErrors = remapUnderwritingErrors(flatErrors, sentRowIndexes.current);
                 setErrors(mappedErrors);
+                // A refused row is never hidden by the filter.
+                const refusedTypes = underwritingErrorIndexes(mappedErrors).map((row) => Number(rules[row]?.lender_product_category_id));
+                if (refusedTypes.length > 0) {
+                    setUnderwritingFilter((prev) => Array.from(new Set([...prev, ...refusedTypes])));
+                }
+                // Show the tab the refusal is on.
+                const onUnderwriting = underwritingErrorIndexes(mappedErrors).length > 0;
+                const onDetails = Object.keys(mappedErrors).some((key) => !key.startsWith('underwriting_logic'));
+                if (onDetails) setActiveTab('details');
+                else if (onUnderwriting) setActiveTab('underwriting');
             } else {
                 toast.error(error.response?.data?.message || 'Failed to save lender');
             }
@@ -295,7 +427,50 @@ export default function LenderForm() {
                                     <FormLoader count={6} />
                                 ) : (
                                     <form onSubmit={handleSubmit}>
+                                        {isEditMode && (
+                                            <ul className="nav nav-tabs-custom mb-4 border-bottom" role="tablist">
+                                                {([
+                                                    ['details', 'Lender Details'],
+                                                    ['underwriting', 'Underwriting Logic'],
+                                                ] as const).map(([tab, label]) => {
+                                                    const hasError = tab === 'underwriting'
+                                                        ? underwritingErrorIndexes(errors).length > 0
+                                                        : Object.keys(errors).some((key) => errors[key] && !key.startsWith('underwriting_logic'));
+                                                    return (
+                                                        <li className="nav-item" key={tab} role="presentation">
+                                                            <button
+                                                                type="button"
+                                                                role="tab"
+                                                                aria-selected={activeTab === tab}
+                                                                className={`nav-link fw-semibold fs-15 pb-3 ${activeTab === tab ? 'active text-primary border-primary border-bottom border-3' : 'text-muted border-transparent'}`}
+                                                                onClick={() => setActiveTab(tab)}
+                                                                style={{ backgroundColor: 'transparent', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}
+                                                            >
+                                                                {label}
+                                                                {hasError && <i className="ri-error-warning-fill text-danger ms-1" aria-label="has errors"></i>}
+                                                            </button>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
 
+                                        {isEditMode && activeTab === 'underwriting' && (
+                                            <div role="tabpanel" aria-label="Underwriting Logic">
+                                                <LenderUnderwritingLogic
+                                                    fundingTypes={fundingTypeOptions(formData.product_categories, categoriesList)}
+                                                    rules={rules}
+                                                    onChange={setRules}
+                                                    errors={errors}
+                                                    filter={underwritingFilter}
+                                                    onFilterChange={setUnderwritingFilter}
+                                                    onDeleteRule={deleteUnderwritingRow}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Kept mounted while Underwriting Logic shows, so the notes editor keeps its text. */}
+                                        <div className={activeTab === 'details' ? '' : 'd-none'}>
                                         <h5 className="mb-3 border-bottom pb-2">Basic Information</h5>
                                         <div className="row">
                                             {renderInput('name', 'Lender Name', 'text', 'Enter lender name', 'col-md-6', true)}
@@ -303,32 +478,33 @@ export default function LenderForm() {
 
                                             <div className="mb-4 col-md-4 taxonomy-field lender-categories-field">
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <label className="form-label text-dark fw-medium mb-0">Product Categories <span className="text-danger">*</span></label>
+                                                    <label htmlFor="product_categories" className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
                                                     <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowCategoryModal(true)}>Add New</button>
                                                 </div>
                                                 <MultiSelect
                                                     inputId="product_categories"
                                                     value={formData.product_categories || []}
-                                                    options={categoriesList.map(cat => ({ label: cat.name, value: cat.id }))}
+                                                    // Newest first: a funding type just added with Add New is at the top.
+                                                    options={[...categoriesList].sort((a, b) => Number(b.id) - Number(a.id)).map(cat => ({ label: cat.name, value: cat.id }))}
                                                     disabled={categoriesLoading}
                                                     onChange={(e) => handleChange({ target: { name: 'product_categories', value: e.value } } as any)}
                                                     optionLabel="label"
                                                     optionValue="value"
-                                                    placeholder="Select product categories"
+                                                    placeholder="Select funding types"
                                                     className={`w-100 rounded-3 ${errors.product_categories ? 'p-invalid' : ''}`}
                                                     panelClassName="taxonomy-field-panel"
                                                     appendTo="self"
                                                     filter
-                                                    filterPlaceholder="Search categories"
+                                                    filterPlaceholder="Search funding types"
                                                     display="chip"
                                                     showSelectAll={false}
                                                     removeIcon="ri-close-line"
                                                     maxSelectedLabels={20}
-                                                    emptyFilterMessage="No matching category - use Add New to create it"
+                                                    emptyFilterMessage="No matching funding type - use Add New to create it"
                                                 />
                                                 {errors.product_categories
                                                     ? <div className="invalid-feedback d-block">{errors.product_categories}</div>
-                                                    : <div className="taxonomy-field__hint">Pick one or more categories, or create a new one with Add New.</div>}
+                                                    : <div className="taxonomy-field__hint">Pick one or more funding types, or create a new one with Add New.</div>}
                                             </div>
 
                                             <div className="mb-4 col-md-4">
@@ -535,6 +711,7 @@ export default function LenderForm() {
                                                 </div>
                                                 {errors.internal_notes && <div className="invalid-feedback d-block">{errors.internal_notes}</div>}
                                             </div>
+                                        </div>
                                         </div>
                                     </form>
                                 )}

@@ -1,6 +1,7 @@
 /**
- * Rules for a funding sequence's Underwriting Logic grid (a lender's
- * visibility rules), kept out of the component so they can be tested alone.
+ * Rules for Underwriting Logic (Edit Lender > Underwriting Logic; it was a
+ * funding sequence grid until 2026-11-26), kept out of the component so they
+ * can be tested alone.
  */
 
 import { lenderDisplayName, lenderOptionLabel, lenderOptionParts } from '../lender/displayName'
