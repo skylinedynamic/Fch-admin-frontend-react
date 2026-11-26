@@ -7,7 +7,6 @@ import {
   createFundingSequencing,
   updateFundingSequencingStatus,
   getFundingGroups,
-  getFundingTypes,
   fetchBorrowerFunding,
 } from '../../../src/modules/funding/services'
 
@@ -55,12 +54,10 @@ describe('funding services', () => {
     expect(receivedBody).toEqual({ status: 'Inactive' })
   })
 
-  it('getFundingGroups and getFundingTypes GET their respective lists', async () => {
+  it('getFundingGroups GETs its list', async () => {
     server.use(http.get('*/admin/funding-groups', () => HttpResponse.json({ status: true, data: [] })))
     await expect(getFundingGroups()).resolves.toEqual({ status: true, data: [] })
 
-    server.use(http.get('*/admin/funding-types', () => HttpResponse.json({ status: true, data: [] })))
-    await expect(getFundingTypes()).resolves.toEqual({ status: true, data: [] })
   })
 
   it('fetchBorrowerFunding GETs the grouped sequencing list with query params', async () => {

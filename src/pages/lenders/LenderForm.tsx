@@ -21,7 +21,6 @@ import {
     fundingTypeOptions,
     blankRule,
     configuredRows,
-    configuredTypeIds,
     remapUnderwritingErrors,
     rowsForFundingTypes,
     lenderSaveMessage,
@@ -100,18 +99,24 @@ export default function LenderForm() {
     const [activeTab, setActiveTab] = useState<'details' | 'underwriting'>('details');
     // One row per funding type of the lender, configured or not.
     const [rules, setRules] = useState<UnderwritingRule[]>([]);
-    // Underwriting Logic's Funding Types: the rows shown - those with logic to
-    // start with; picking another shows its empty row. Hiding never deletes.
+    // Underwriting Logic's Funding Types: the rows shown -
+    // start with every funding type of the lender. Hiding never deletes.
     const [underwritingFilter, setUnderwritingFilter] = useState<number[]>([]);
 
-    // The rows follow the lender's Funding Types: a new one gets an empty row,
-    // one taken off loses its row (its rule is removed on Update).
+    // The rows follow the lender's Funding Types: a new one gets an empty row
+    // and is shown at once; one taken off loses its row (its rule is removed
+    // on Update). Every funding type is shown by default.
+    const shownTypesFor = useRef<number[]>([]);
     useEffect(() => {
+        const ids = (formData.product_categories || []).map(Number);
+        const before = new Set(shownTypesFor.current);
+        shownTypesFor.current = ids;
         setRules((prev) => rowsForFundingTypes(prev, formData.product_categories));
         setUnderwritingFilter((prev) => {
-            const ids = new Set((formData.product_categories || []).map(Number));
-            const kept = prev.filter((id) => ids.has(id));
-            return kept.length === prev.length ? prev : kept;
+            const current = new Set(ids);
+            const kept = prev.filter((id) => current.has(id));
+            const added = ids.filter((id) => !before.has(id) && !kept.includes(id));
+            return kept.length === prev.length && added.length === 0 ? prev : [...kept, ...added];
         });
     }, [formData.product_categories]);
 
@@ -159,7 +164,7 @@ export default function LenderForm() {
             );
             setFormData(loadedForm);
             setRules(loadedRows);
-            setUnderwritingFilter(configuredTypeIds(loadedRows));
+            setUnderwritingFilter((loadedForm.product_categories || []).map(Number));
             // What was loaded, so the toast after Update can say what changed.
             saved.current = { details: JSON.stringify(lenderDetailsPayload(loadedForm)), rules: underwritingPayload(configuredRows(loadedRows).rows) };
         } catch (error) {
@@ -193,25 +198,41 @@ export default function LenderForm() {
         if (!rule) return;
         const typeId = rule.lender_product_category_id;
         const name = categoriesList.find((c) => Number(c.id) === Number(typeId))?.name ?? 'this funding type';
-        if (rule.id) {
-            try {
-                await deleteLenderUnderwritingRule(id!, typeId);
-            } catch (error: any) {
-                toast.error(error?.response?.data?.message || 'Failed to remove the underwriting logic');
+        // Saved at once: the rule is soft-deleted and the funding type taken
+        // off the lender (DELETE .../underwriting-logic/{fundingType}).
+        let savedTypes: number[] | null = null;
+        try {
+            const res = await deleteLenderUnderwritingRule(id!, typeId);
+            savedTypes = (res?.data?.product_categories ?? []).map(Number);
+        } catch (error: any) {
+            // 404: picked on Lender Details but not saved yet - only taken off the form.
+            if (error?.response?.status !== 404) {
+                toast.error(error?.response?.data?.message || 'Failed to remove the funding type');
                 throw error;
             }
+        }
+
+        // The form follows: the funding type leaves Lender Details' Funding
+        // Type (its row and Funding Types pick go with it); other unsaved
+        // edits stay.
+        setFormData((prev: any) => ({
+            ...prev,
+            product_categories: (prev.product_categories || []).filter((t: any) => Number(t) !== Number(typeId)),
+        }));
+        setRules((prev) => prev.map((r) => (Number(r.lender_product_category_id) === Number(typeId) ? blankRule(Number(typeId)) : r)));
+        setUnderwritingFilter((prev) => prev.filter((t) => t !== Number(typeId)));
+        // Rows move up once one goes: the old row numbers' errors no longer fit.
+        setErrors((prev: any) => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith('underwriting_logic.'))));
+
+        // What is saved now, so the next Update's toast compares against it.
+        if (savedTypes) {
+            const details = saved.current.details ? JSON.parse(saved.current.details) : {};
             saved.current = {
-                ...saved.current,
+                details: JSON.stringify({ ...details, product_categories: savedTypes }),
                 rules: saved.current.rules.filter((r) => Number(r.lender_product_category_id) !== Number(typeId)),
             };
         }
-        setRules((prev) => prev.map((r) => (Number(r.lender_product_category_id) === Number(typeId) ? blankRule(Number(typeId)) : r)));
-        // Deleted: its row leaves the grid (pick the funding type again for an empty one).
-        setUnderwritingFilter((prev) => prev.filter((t) => t !== Number(typeId)));
-        setErrors((prev: any) => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`underwriting_logic.${row}.`))));
-        toast.success(rule.id
-            ? `Underwriting logic for "${name}" removed successfully`
-            : `Underwriting logic for "${name}" cleared`);
+        toast.success(`Funding type "${name}" and its underwriting logic removed successfully`);
     };
 
     const fetchCategories = async () => {
@@ -233,8 +254,8 @@ export default function LenderForm() {
             const payload: any = lenderDetailsPayload(formData);
             // Underwriting Logic is saved with the lender: every row filled in
             // (whatever the filter shows); an empty row has none.
-            sentRowIndexes.current = configuredRows(rules, underwritingFilter).indexes;
-            const rulesSent = underwritingPayload(configuredRows(rules, underwritingFilter).rows);
+            sentRowIndexes.current = configuredRows(rules).indexes;
+            const rulesSent = underwritingPayload(configuredRows(rules).rows);
             if (isEditMode) {
                 payload.underwriting_logic = rulesSent;
             }

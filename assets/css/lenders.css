@@ -127,3 +127,9 @@
     padding-left: 14px;
     padding-right: 14px;
 }
+
+/* Underwriting Logic's two sections (filter bar, grid) and its empty states:
+   4px corners. */
+.underwriting-section {
+    border-radius: 4px !important;
+}

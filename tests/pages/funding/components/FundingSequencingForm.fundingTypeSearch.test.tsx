@@ -21,7 +21,7 @@ const TYPES = [
 describe('Funding Sequence › Funding Type', () => {
   it('has a search box that narrows the funding types', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: TYPES })
+    api('get', '/admin/funding-types', { status: true, data: TYPES })
     const user = userEvent.setup()
     renderWithProviders(
       <Routes>

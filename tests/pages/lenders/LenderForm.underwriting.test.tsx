@@ -72,7 +72,7 @@ const pickFundingType = async (user: ReturnType<typeof userEvent.setup>, panel: 
 describe('Edit Lender › Funding Type', () => {
   it('labels the lender\'s product categories "Funding Type"', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     mount()
 
@@ -87,7 +87,7 @@ describe('Add/Edit Lender › Funding Type list order', () => {
   // the bottom: newest first.
   it('lists the newest funding type first', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: [...CATEGORIES, { id: 9, name: 'Sajib Product', status: 'Active' }] })
+    api('get', '/admin/funding-types', { status: true, data: [...CATEGORIES, { id: 9, name: 'Sajib Product', status: 'Active' }] })
     const user = mount('/lenders/create')
 
     await screen.findByPlaceholderText('Enter lender name')
@@ -110,7 +110,7 @@ describe('Add/Edit Lender › Funding Type list order', () => {
 describe('Edit Lender › Underwriting Logic', () => {
   it('shows one row per saved rule, named by funding type, in the lender\'s order', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     const user = mount()
 
@@ -125,7 +125,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('saves the rules with the lender on Update', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     const update = api('put', '/admin/lenders/31', { status: true, data: LENDER })
     const user = mount()
@@ -147,7 +147,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('drops the rule of a funding type taken off the lender', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     const update = api('put', '/admin/lenders/31', { status: true, data: LENDER })
     const user = mount()
@@ -176,7 +176,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('says "Lender updated" when only the lender\'s details changed', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     api('post', '/admin/lenders/check-duplicates', { status: true, data: { name: [], legal_name: [] } })
     const update = api('put', '/admin/lenders/31', { status: true, data: LENDER })
@@ -190,30 +190,54 @@ describe('Edit Lender › Underwriting Logic', () => {
     expect(toast.success).toHaveBeenLastCalledWith('Lender updated successfully')
   })
 
-  it('shows only funding types with logic; picking another shows its empty row, and only rows filled in are saved', async () => {
+  it('shows every funding type of the lender by default, and saves only the rows filled in', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     const load = api('get', '/admin/lenders/31', { status: true, data: { ...LENDER, underwriting_logic: [RULE(2, 680)] } })
     const update = api('put', '/admin/lenders/31', { status: true, data: LENDER })
     const user = mount()
 
     const panel = await openUnderwriting(user)
+    // Both of the lender's funding types, the one without logic as "Not set".
     expect(within(panel).getByTestId('underwriting-row-2')).toBeInTheDocument()
-    expect(within(panel).queryByTestId('underwriting-row-1')).not.toBeInTheDocument()
-
-    await pickFundingType(user, panel, 'Term Loan')
     const row = within(panel).getByTestId('underwriting-row-1')
     expect(within(row).getByText('Not set')).toBeInTheDocument()
     expect(within(row).getByLabelText('Term Loan min_fico')).toHaveValue(null)
 
-    await user.type(within(row).getByLabelText('Term Loan min_fico'), '650')
+    // Left empty: not sent (no logic yet), so Update is not refused for it.
     await user.click(screen.getByRole('button', { name: /update/i }))
-
     await waitFor(() => expect(update.bodies).toHaveLength(1))
-    expect((update.bodies[0] as any).underwriting_logic.map((r: any) => r.lender_product_category_id)).toEqual([2, 1])
-    // Saved from Underwriting Logic: stays on the tab and loads the lender again.
+    expect((update.bodies[0] as any).underwriting_logic.map((r: any) => r.lender_product_category_id)).toEqual([2])
     await waitFor(() => expect(load.calls).toBe(2))
+
+    // Filled in: sent.
+    const reloaded = screen.getByRole('tabpanel', { name: 'Underwriting Logic' })
+    await user.type(within(reloaded).getByLabelText('Term Loan min_fico'), '650')
+    await user.click(screen.getByRole('button', { name: /update/i }))
+    await waitFor(() => expect(update.bodies).toHaveLength(2))
+    expect((update.bodies[1] as any).underwriting_logic.map((r: any) => r.lender_product_category_id)).toEqual([2, 1])
     expect(screen.getByRole('tab', { name: /underwriting logic/i })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('shows a funding type added on Lender Details at once', async () => {
+    allowBackgroundCalls()
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
+    api('get', '/admin/lenders/31', { status: true, data: LENDER })
+    const user = mount()
+
+    await screen.findByDisplayValue('QA-TEST R3 Temp Lender LLC')
+    // Lender Details: add "Equipment Financing" to Funding Type.
+    await user.click(document.querySelector('.lender-categories-field .p-multiselect') as Element)
+    await user.click(await waitFor(() => {
+      const found = Array.from(document.querySelectorAll('.lender-categories-field .p-multiselect-item')).find((el) => el.textContent?.includes('Equipment Financing'))
+      if (!found) throw new Error('no Equipment Financing option')
+      return found
+    }))
+    await user.keyboard('{Escape}')
+
+    const panel = await openUnderwriting(user)
+    const row = within(panel).getByTestId('underwriting-row-3')
+    expect(within(row).getByText('Not set')).toBeInTheDocument()
   })
 
   /**
@@ -222,7 +246,7 @@ describe('Edit Lender › Underwriting Logic', () => {
    */
   it('keeps the rows on screen while Update saves, and after', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     // The reload after the save is held open, to look at the page while it runs.
     let loads = 0
     let finishReload: () => void = () => {}
@@ -254,12 +278,11 @@ describe('Edit Lender › Underwriting Logic', () => {
     expect(within(after).getByTestId('underwriting-row-2')).toBeInTheDocument()
   })
 
-  it('sends a picked funding type left empty, and shows its required messages on its row', async () => {
+  it('sends a row filled in only in part, and shows its required messages on its row', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: { ...LENDER, underwriting_logic: [RULE(2, 680)] } })
     const update = api('put', '/admin/lenders/31', { status: false, message: 'Invalid', errors: {
-      'underwriting_logic.1.min_fico': ['Min FICO is required.'],
       'underwriting_logic.1.min_tib_months': ['Min Time In Business is required.'],
       'underwriting_logic.1.min_monthly_revenue': ['Min Monthly Revenue is required.'],
       'underwriting_logic.1.min_monthly_deposits': ['Min Monthly Deposits is required.'],
@@ -267,24 +290,23 @@ describe('Edit Lender › Underwriting Logic', () => {
     const user = mount()
 
     const panel = await openUnderwriting(user)
-    await pickFundingType(user, panel, 'Term Loan')
+    await user.type(within(panel).getByLabelText('Term Loan min_fico'), '650')
     await user.click(screen.getByRole('button', { name: /update/i }))
 
     await waitFor(() => expect(update.bodies).toHaveLength(1))
     expect((update.bodies[0] as any).underwriting_logic.map((r: any) => r.lender_product_category_id)).toEqual([2, 1])
 
     const row = await within(panel).findByTestId('underwriting-row-1')
-    for (const message of ['Min FICO is required.', 'Min Time In Business is required.', 'Min Monthly Revenue is required.', 'Min Monthly Deposits is required.']) {
+    for (const message of ['Min Time In Business is required.', 'Min Monthly Revenue is required.', 'Min Monthly Deposits is required.']) {
       expect(await within(row).findByText(message)).toBeInTheDocument()
     }
-    expect(within(row).getByLabelText('Term Loan min_fico')).toHaveClass('is-invalid')
     // The saved row has no errors.
     expect(within(within(panel).getByTestId('underwriting-row-2')).queryByText(/is required/)).not.toBeInTheDocument()
   })
 
   it('hides a funding type taken out of Funding Types without deleting it', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     const update = api('put', '/admin/lenders/31', { status: true, data: LENDER })
     const remove = api('delete', '/admin/lenders/31/underwriting-logic/1', { status: true, data: LENDER })
@@ -305,7 +327,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('shows two funding types in Funding Types, then "+N more"', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: { ...LENDER, product_categories: [1, 2, 3], underwriting_logic: [RULE(1, 640), RULE(2, 680), RULE(3, 700)] } })
     const user = mount()
 
@@ -313,35 +335,65 @@ describe('Edit Lender › Underwriting Logic', () => {
     expect(await within(panel).findByTestId('underwriting-filter-more')).toHaveTextContent('+1 more')
   })
 
-  it('asks before deleting a rule, then soft-deletes it and takes its row away', async () => {
+  it('asks before deleting, then removes the funding type from the lender with its logic', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
-    const remove = api('delete', '/admin/lenders/31/underwriting-logic/1', { status: true, data: { ...LENDER, underwriting_logic: [RULE(2, 680)] } })
+    const remove = api('delete', '/admin/lenders/31/underwriting-logic/1', { status: true, data: { ...LENDER, product_categories: [2], underwriting_logic: [RULE(2, 680)] } })
+    const update = api('put', '/admin/lenders/31', { status: true, data: LENDER })
     const user = mount()
 
     const panel = await openUnderwriting(user)
     await user.click(within(panel).getByRole('button', { name: 'Remove Term Loan' }))
 
-    // Nothing is deleted until it is confirmed.
-    expect(await screen.findByText('Delete underwriting logic?')).toBeInTheDocument()
+    // Nothing is removed until it is confirmed.
+    expect(await screen.findByText('Remove this funding type?')).toBeInTheDocument()
+    expect(screen.getByText(/will be removed from this lender's Funding Types now, with its underwriting logic/)).toBeInTheDocument()
     expect(remove.calls).toBe(0)
     await user.click(screen.getByRole('button', { name: 'Yes, Delete It' }))
 
     await waitFor(() => expect(remove.calls).toBe(1))
-    expect(toast.success).toHaveBeenLastCalledWith('Underwriting logic for "Term Loan" removed successfully')
+    expect(toast.success).toHaveBeenLastCalledWith('Funding type "Term Loan" and its underwriting logic removed successfully')
     await waitFor(() => expect(within(panel).queryByTestId('underwriting-row-1')).not.toBeInTheDocument())
 
-    // Picked again: an empty row to fill in.
-    await pickFundingType(user, panel, 'Term Loan')
-    const row = within(panel).getByTestId('underwriting-row-1')
-    expect(within(row).getByText('Not set')).toBeInTheDocument()
-    expect(within(row).getByLabelText('Term Loan min_fico')).toHaveValue(null)
+    // Term Loan is no longer one of the lender's Funding Types, here or on Lender Details.
+    await user.click(panel.querySelector('.underwriting-filter .p-multiselect') as Element)
+    await waitFor(() => expect(document.querySelectorAll('.p-multiselect-item').length).toBeGreaterThan(0))
+    expect(Array.from(document.querySelectorAll('.p-multiselect-item')).map((el) => el.textContent?.trim())).toEqual(['Business Line of Credit'])
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('tab', { name: /lender details/i }))
+    await waitFor(() => {
+      const chips = Array.from(document.querySelectorAll('.lender-categories-field .p-multiselect-token')).map((el) => el.textContent?.trim())
+      expect(chips).toEqual(['Business Line of Credit'])
+    })
+
+    // A later Update sends it without Term Loan.
+    await user.click(screen.getByRole('button', { name: /update/i }))
+    await waitFor(() => expect(update.bodies).toHaveLength(1))
+    expect((update.bodies[0] as any).product_categories).toEqual([2])
+    expect((update.bodies[0] as any).underwriting_logic.map((r: any) => r.lender_product_category_id)).toEqual([2])
+  })
+
+  it('says why when the lender\'s only funding type cannot be removed', async () => {
+    allowBackgroundCalls()
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
+    api('get', '/admin/lenders/31', { status: true, data: { ...LENDER, product_categories: [1], underwriting_logic: [RULE(1, 640)] } })
+    api('delete', '/admin/lenders/31/underwriting-logic/1', { status: false, message: "This is the lender's only funding type, so it cannot be removed. Add another funding type on Lender Details first." }, 422)
+    const user = mount()
+
+    const panel = await openUnderwriting(user)
+    await user.click(within(panel).getByRole('button', { name: 'Remove Term Loan' }))
+    await screen.findByText('Remove this funding type?')
+    await user.click(screen.getByRole('button', { name: 'Yes, Delete It' }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith("This is the lender's only funding type, so it cannot be removed. Add another funding type on Lender Details first."))
+    expect(within(panel).getByTestId('underwriting-row-1')).toBeInTheDocument()
+    expect(within(panel).getByLabelText('Term Loan min_fico')).toHaveValue(640)
   })
 
   it('says "Underwriting logic updated" for an Update on the Underwriting Logic tab', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     const update = api('put', '/admin/lenders/31', { status: true, data: LENDER })
     const user = mount()
@@ -353,39 +405,36 @@ describe('Edit Lender › Underwriting Logic', () => {
     expect(toast.success).toHaveBeenLastCalledWith('Underwriting logic updated successfully')
   })
 
-  it('has delete on a row not yet saved too, asking first, and only clears it', async () => {
+  it('removes a funding type with no saved logic from the lender too, asking first', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: { ...LENDER, underwriting_logic: [RULE(2, 680)] } })
-    const remove = api('delete', '/admin/lenders/31/underwriting-logic/1', { status: true, data: LENDER })
+    const remove = api('delete', '/admin/lenders/31/underwriting-logic/1', { status: true, data: { ...LENDER, product_categories: [2], underwriting_logic: [RULE(2, 680)] } })
     const user = mount()
 
     const panel = await openUnderwriting(user)
-    await pickFundingType(user, panel, 'Term Loan')
     const unsaved = within(panel).getByRole('button', { name: 'Remove Term Loan' })
     expect(unsaved).toBeEnabled()
 
-    await user.type(within(panel).getByLabelText('Term Loan min_fico'), '650')
     await user.click(unsaved)
-    expect(await screen.findByText(/has no saved underwriting logic/)).toBeInTheDocument()
+    await screen.findByText('Remove this funding type?')
     await user.click(screen.getByRole('button', { name: 'Yes, Delete It' }))
 
-    // Nothing was saved for it: the row goes, no API delete.
+    await waitFor(() => expect(remove.calls).toBe(1))
     await waitFor(() => expect(within(panel).queryByTestId('underwriting-row-1')).not.toBeInTheDocument())
-    expect(remove.calls).toBe(0)
-    expect(toast.success).toHaveBeenLastCalledWith('Underwriting logic for "Term Loan" cleared')
+    expect(toast.success).toHaveBeenLastCalledWith('Funding type "Term Loan" and its underwriting logic removed successfully')
   })
 
-  it('keeps the rule when the delete is cancelled', async () => {
+  it('keeps the funding type and its rule when the delete is cancelled', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     const remove = api('delete', '/admin/lenders/31/underwriting-logic/1', { status: true, data: LENDER })
     const user = mount()
 
     const panel = await openUnderwriting(user)
     await user.click(within(panel).getByRole('button', { name: 'Remove Term Loan' }))
-    await screen.findByText('Delete underwriting logic?')
+    await screen.findByText('Remove this funding type?')
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(remove.calls).toBe(0)
@@ -394,7 +443,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('opens the tab with the error when the API refuses a rule', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: LENDER })
     api('put', '/admin/lenders/31', { status: false, message: 'Invalid', errors: {
       'underwriting_logic.1.min_fico': ['The FICO score must be a whole number from 300 to 850.'],
@@ -412,7 +461,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('says to pick a funding type first when the lender has none', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('get', '/admin/lenders/31', { status: true, data: { ...LENDER, product_categories: [], underwriting_logic: [] } })
     const user = mount()
 
@@ -422,7 +471,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('opens a new lender on its Underwriting Logic tab after Save', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('post', '/admin/lenders/check-duplicates', { status: true, data: { name: [], legal_name: [] } })
     const create = api('post', '/admin/lenders', { status: true, data: { ...LENDER, underwriting_logic: undefined } }, 201)
     api('get', '/admin/lenders/31', { status: true, data: { ...LENDER, underwriting_logic: [] } })
@@ -440,7 +489,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('goes back to the list when the API gives no id for the new lender', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     api('post', '/admin/lenders/check-duplicates', { status: true, data: { name: [], legal_name: [] } })
     api('post', '/admin/lenders', { status: true, data: null }, 201)
     const user = mount('/lenders/create')
@@ -453,7 +502,7 @@ describe('Edit Lender › Underwriting Logic', () => {
 
   it('is not on Add Lender', async () => {
     allowBackgroundCalls()
-    api('get', '/admin/lenders/product-categories', { status: true, data: CATEGORIES })
+    api('get', '/admin/funding-types', { status: true, data: CATEGORIES })
     mount('/lenders/create')
 
     await screen.findByPlaceholderText('Enter lender name')

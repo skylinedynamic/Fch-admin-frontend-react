@@ -179,7 +179,7 @@ export default function LenderUnderwritingLogic({ fundingTypes, rules, onChange,
 
     if (fundingTypes.length === 0) {
         return (
-            <div className="text-center py-5 border border-dashed rounded-3 bg-light" data-testid="underwriting-no-funding-types">
+            <div className="text-center py-5 border border-dashed underwriting-section bg-light" data-testid="underwriting-no-funding-types">
                 <i className="ri-shield-check-line fs-1 text-muted d-block mb-2"></i>
                 <h6 className="fw-semibold text-dark mb-1">No funding types yet</h6>
                 <p className="text-muted fs-13 mb-0">Pick this lender's Funding Type on Lender Details first - each one can then have its underwriting logic here.</p>
@@ -190,7 +190,7 @@ export default function LenderUnderwritingLogic({ fundingTypes, rules, onChange,
     return (
         <div className="lender-underwriting">
             {/* ── Section 1: filter ───────────────────────────────────────── */}
-            <div className="border rounded-3 bg-light-subtle px-3 py-3 mb-3" data-testid="underwriting-filter-bar">
+            <div className="border underwriting-section bg-light-subtle px-3 py-3 mb-3" data-testid="underwriting-filter-bar">
                 <div className="d-flex flex-wrap align-items-center gap-3">
                     <label htmlFor="underwriting_funding_types" className="form-label text-dark fw-semibold mb-0 text-nowrap">
                         <i className="ri-filter-3-line me-1 text-primary"></i> Funding Types
@@ -222,19 +222,19 @@ export default function LenderUnderwritingLogic({ fundingTypes, rules, onChange,
                     </div>
                 </div>
                 <div className="text-muted fs-12 mt-2">
-                    Pick a funding type to add or edit its underwriting logic - it is used by every funding sequence of that funding type. Taking a type out here only hides it; delete its logic with the row's delete button.
+                    Every funding type of this lender is shown - its logic is used by every funding sequence of that funding type. An empty row has no logic yet. Taking a type out here only hides it; the row's delete removes the funding type from the lender, with its logic.
                 </div>
             </div>
 
             {/* ── Section 2: grid ─────────────────────────────────────────── */}
             {shown.length === 0 ? (
-                <div className="text-center py-5 border border-dashed rounded-3" data-testid="underwriting-empty">
+                <div className="text-center py-5 border border-dashed underwriting-section" data-testid="underwriting-empty">
                     <i className="ri-shield-check-line fs-1 text-muted d-block mb-2"></i>
                     <h6 className="fw-semibold text-dark mb-1">No underwriting logic shown</h6>
                     <p className="text-muted fs-13 mb-0">Select a funding type above to add or edit its underwriting logic.</p>
                 </div>
             ) : (
-                <div className="border rounded-3 table-responsive custom-scrollbar-wrapper">
+                <div className="border underwriting-section table-responsive custom-scrollbar-wrapper">
                     <table className="table align-middle mb-0 underwriting-grid" style={{ minWidth: 'max-content' }}>
                         <thead className="table-light text-muted fs-12 text-uppercase" style={{ letterSpacing: '0.03em' }}>
                             <tr>
@@ -305,12 +305,10 @@ export default function LenderUnderwritingLogic({ fundingTypes, rules, onChange,
             <DeleteConfirmationModal
                 show={confirmRow !== null}
                 loading={deleting}
-                title="Delete underwriting logic?"
+                title="Remove this funding type?"
                 text={confirmRow === null || !rules[confirmRow]
                     ? ''
-                    : rules[confirmRow].id
-                        ? `The underwriting logic for "${nameOf(rules[confirmRow].lender_product_category_id)}" will be deleted now. Funding sequences of this funding type will no longer show this lender. The funding type stays on the lender.`
-                        : `"${nameOf(rules[confirmRow].lender_product_category_id)}" has no saved underwriting logic. Its row will be cleared.`}
+                    : `"${nameOf(rules[confirmRow].lender_product_category_id)}" will be removed from this lender's Funding Types now, with its underwriting logic. Funding sequences of this funding type will no longer show this lender.`}
                 onConfirm={confirmDelete}
                 onClose={() => setConfirmRow(null)}
             />

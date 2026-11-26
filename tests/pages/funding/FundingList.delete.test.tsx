@@ -83,7 +83,7 @@ beforeEach(() => {
   server.use(
     http.post('*/common/funding-sequencings/fetch', () => HttpResponse.json({ status: true, data: sequences, meta: { total: 3 } })),
     http.get('*/admin/funding-groups', () => HttpResponse.json({ status: true, data: [] })),
-    http.get('*/admin/lenders/product-categories', () => HttpResponse.json({ status: true, data: [] })),
+    http.get('*/admin/funding-types', () => HttpResponse.json({ status: true, data: [] })),
     http.delete('*/admin/funding-sequencings/:id', () => { singleDeletes++; return HttpResponse.json({ status: true }) }),
     http.post('*/admin/funding-sequencings/multiple-delete', async ({ request }) => {
       deleteBodies.push(await request.json())

@@ -81,7 +81,7 @@ beforeEach(() => {
   useAuthStore.setState({ user: { id: 1, is_host: 1, permissions: ['view lenders', 'delete lenders', 'update lenders'] } } as never)
   server.use(
     http.get('*/admin/lenders', () => HttpResponse.json({ status: true, data: lenders, meta: { total: 3 } })),
-    http.get('*/admin/lenders/product-categories', () => HttpResponse.json({ status: true, data: [] })),
+    http.get('*/admin/funding-types', () => HttpResponse.json({ status: true, data: [] })),
     http.delete('*/admin/lenders/:id', () => { singleDeletes++; return HttpResponse.json({ status: true }) }),
     http.post('*/admin/lenders/multiple-delete', async ({ request }) => {
       deleteBodies.push(await request.json())

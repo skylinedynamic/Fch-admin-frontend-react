@@ -75,26 +75,6 @@ export const deleteFundingGroup = async (id: number | string) => {
     return data;
 };
 
-export const getFundingTypes = async () => {
-    const { data } = await apiClient.get('/admin/funding-types');
-    return data;
-};
-
-export const createFundingType = async (payload: { name: string }) => {
-    const { data } = await apiClient.post('/admin/funding-types', payload);
-    return data;
-};
-
-export const updateFundingType = async (id: number | string, payload: { name: string }) => {
-    const { data } = await apiClient.put(`/admin/funding-types/${id}`, payload);
-    return data;
-};
-
-export const deleteFundingType = async (id: number | string) => {
-    const { data } = await apiClient.delete(`/admin/funding-types/${id}`);
-    return data;
-};
-
 
 
 // fetchBorrowerFunding: Gets funding sequences for the partner-assisted wizard

@@ -65,24 +65,24 @@ export const checkLendersDeletable = async (ids: Array<number | string>): Promis
     return data?.data ?? [];
 };
 
-// Lender Product Categories
+// Funding Types (the table was lender_product_categories until 2026-11-26)
 export const getLenderProductCategories = async () => {
-    const { data } = await apiClient.get('/admin/lenders/product-categories');
+    const { data } = await apiClient.get('/admin/funding-types');
     return data;
 };
 
 export const createLenderProductCategory = async (payload: { name: string; status?: string; sort_order?: number }) => {
-    const { data } = await apiClient.post('/admin/lenders/product-categories', payload);
+    const { data } = await apiClient.post('/admin/funding-types', payload);
     return data;
 };
 
 export const updateLenderProductCategory = async (id: number | string, payload: { name: string; status?: string; sort_order?: number }) => {
-    const { data } = await apiClient.put(`/admin/lenders/product-categories/${id}`, payload);
+    const { data } = await apiClient.put(`/admin/funding-types/${id}`, payload);
     return data;
 };
 
 export const deleteLenderProductCategory = async (id: number | string) => {
-    const { data } = await apiClient.delete(`/admin/lenders/product-categories/${id}`);
+    const { data } = await apiClient.delete(`/admin/funding-types/${id}`);
     return data;
 };
 

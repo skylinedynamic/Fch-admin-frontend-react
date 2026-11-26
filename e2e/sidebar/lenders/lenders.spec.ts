@@ -16,7 +16,7 @@ const LENDER_PERMISSIONS = ['view lenders', 'create lenders', 'update lenders', 
 function handlers() {
   return [
     { method: 'GET', match: /\/admin\/lenders(\?|$)/, body: paginated(LENDERS) },
-    { method: 'GET', match: '/admin/lenders/product-categories', body: ok(CATEGORIES) },
+    { method: 'GET', match: '/admin/funding-types', body: ok(CATEGORIES) },
   ]
 }
 
@@ -210,7 +210,7 @@ test.describe('Lender edit', () => {
 })
 
 test.describe('Lender product categories', () => {
-  const CATS = '/admin/lenders/product-categories'
+  const CATS = '/admin/funding-types'
 
   async function openModal(page: Page) {
     // Add Lender is behind these permissions; without them the page never opened.
@@ -254,7 +254,7 @@ test.describe('Lender product categories', () => {
     // The newest is listed first, so pick the row by name.
     await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
     await confirmDelete(page)
-    await expectCall(api, 'DELETE', '/admin/lenders/product-categories/1')
+    await expectCall(api, 'DELETE', '/admin/funding-types/1')
     await expect(page.getByText('Funding type deleted successfully')).toBeVisible()
   })
 
@@ -268,7 +268,7 @@ test.describe('Lender product categories', () => {
     const api = await mockApi(page, [
       { method: 'GET', match: /\/admin\/lenders(\?|$)/, body: paginated(LENDERS) },
       {
-        method: 'GET', match: '/admin/lenders/product-categories',
+        method: 'GET', match: '/admin/funding-types',
         body: ok([{ id: 1, name: 'Term Loans', funding_sequences_count: 12 }, { id: 2, name: 'Lines of Credit', funding_sequences_count: 0 }]),
       },
     ])
@@ -284,7 +284,7 @@ test.describe('Lender product categories', () => {
     await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toHaveCount(0)
     await blocked.getByRole('button', { name: 'Close' }).last().click()
     await expect(page.locator('.modal.show')).toHaveCount(0)
-    expect(api.find('DELETE', '/admin/lenders/product-categories')).toHaveLength(0)
+    expect(api.find('DELETE', '/admin/funding-types')).toHaveLength(0)
 
     await dialog.locator('.border.bg-light', { hasText: 'Lines of Credit' }).getByTitle('Delete').click()
     await expect(page.locator('.modal.show').filter({ hasText: 'Are you sure?' })).toBeVisible()
@@ -310,7 +310,7 @@ test.describe('Lender product categories', () => {
     await dialog.locator('.border.bg-light', { hasText: 'Term Loans' }).getByTitle('Delete').click()
     await confirmDelete(page)
 
-    await expectCall(api, 'DELETE', '/admin/lenders/product-categories/1')
+    await expectCall(api, 'DELETE', '/admin/funding-types/1')
     const blocked = page.locator('.modal.show').filter({ hasText: 'Funding Type Cannot Be Deleted' })
     await expect(blocked).toBeVisible()
     await expect(blocked).toContainText('"Term Loans" is used by 2 funding sequences and cannot be deleted.')
@@ -385,7 +385,7 @@ test.describe('Lender product categories', () => {
     const editor = dialog.locator('.bg-light input').first()
     await editor.fill('Term Loans Plus')
     await editor.press('Enter')
-    const call = await expectCall(api, 'PUT', '/admin/lenders/product-categories/1')
+    const call = await expectCall(api, 'PUT', '/admin/funding-types/1')
     expect(call.json).toMatchObject({ name: 'Term Loans Plus' })
     // BUG-049: a rename says updated, never added.
     await expect(page.getByText('Funding type updated successfully')).toBeVisible()
