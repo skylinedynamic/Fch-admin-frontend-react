@@ -261,7 +261,7 @@ export default function LendersList() {
                                             <Column field="lender_code" header="Lender Code" sortable style={{ minWidth: '120px' }} body={(rowData) => rowData.lender_code || '-'} className="text-nowrap" />
                                             <Column field="name" header="Lender Name" sortable style={{ minWidth: '180px' }} className="fw-medium text-dark" />
                                             <Column field="legal_name" header="Legal Name" sortable style={{ minWidth: '150px' }} />
-                                            <Column field="product_categories" header="Funding Type" style={{ minWidth: '150px' }} body={(rowData) => {
+                                            <Column field="product_categories" header="Product Categories" style={{ minWidth: '150px' }} body={(rowData) => {
                                                 let catIds = rowData.product_categories || [];
                                                 if (typeof catIds === 'string') {
                                                     try { catIds = JSON.parse(catIds); } catch (e) { catIds = []; }

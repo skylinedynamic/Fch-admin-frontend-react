@@ -119,13 +119,6 @@ function RedirectToLoanApplication() {
   return <Navigate to={`/embed-form/loan-applications/${id}`} replace />;
 }
 
-// Underwriting Logic moved from Funding Sequence to Edit Lender (2026-11-26):
-// an old /funding/visibility-rules/:id link opens the sequence itself.
-function RedirectToFundingSequence() {
-  const { id } = useParams();
-  return <Navigate to={`/funding/${id}`} replace />;
-}
-
 export default function App() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
@@ -326,8 +319,7 @@ export default function App() {
               <Route element={<PermissionRoute permission="view funding" />}>
                 <Route path="funding" element={<FundingList />} />
                 <Route path="funding/:id" element={<FundingSequencingForm />} />
-                {/* Underwriting Logic moved to Edit Lender: an old link opens the sequence. */}
-                <Route path="funding/visibility-rules/:id/*" element={<RedirectToFundingSequence />} />
+                <Route path="funding/visibility-rules/:id/*" element={<FundingSequencingForm />} />
                 <Route element={<PermissionRoute permission="create funding" />}>
                   <Route path="funding/create" element={<FundingSequencingForm />} />
                 </Route>

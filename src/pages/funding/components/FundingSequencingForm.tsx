@@ -1,20 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
 import PageHeader from '../../common/PageHeader';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
 import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { STATUS_ACTIVE } from '../../../config/statusOptions';
-import { createFundingSequencing, updateFundingSequencingDisplay, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
-import { getLenderProductCategories } from '../../../modules/lender/services';
+import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, updateFundingSequencingSingleLenderVisibility, updateFundingSequencingSingleCategoryVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
+import { getAllLenders, getLenderProductCategories } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS, DEFAULT_READINESS_FACTORS } from '../../../config/funding';
+import { industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../modules/location';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { fetchBorrowerDocumentTypes } from '../../../modules/client/services';
 import FundingGroupModal from './FundingGroupModal';
 import FundingTypeModal from './FundingTypeModal';
+import LenderVisibilityGrid from './LenderVisibilityGrid';
 import UsesField from './UsesField';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import '../../../../assets/css/funding.css';
@@ -30,20 +32,75 @@ const mapStateCodeToName = (stateArray: any[]) => {
     return stateArray.map(st => (typeof st === 'string' && states[st]) ? states[st].name : st);
 };
 
+const buildStateOptions = () =>
+    Object.values(usStates()).map(state => ({
+        label: state.name,
+        value: state.name
+    }));
+
 
 
 export default function FundingSequencingForm() {
+    const stateOptions = React.useMemo(buildStateOptions, []);
     const { hasPermission } = usePermissions();
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditMode = !!id;
 
-    // Underwriting Logic moved to Edit Lender (2026-11-26): a sequence uses
-    // every lender's rule for its Funding Type, so it has only its display settings.
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const isVisibilityRoute = location.pathname.includes('/visibility-rules') || queryParams.get('tab') === 'visibility';
+    const [activeTab, setActiveTab] = useState(isVisibilityRoute ? 'visibility' : 'display');
+
+    const lenderMatch = location.pathname.match(/\/lender\/(\d+)/);
+    const categoryMatch = location.pathname.match(/\/category\/(\w+)/);
+
+    const urlLenderId = lenderMatch ? lenderMatch[1] : null;
+    const activeLenderId = urlLenderId ? parseInt(urlLenderId, 10) : null;
+
+    const urlCategoryId = categoryMatch ? categoryMatch[1] : null;
+    const activeCategoryId = urlCategoryId === 'general' ? 'general' : (urlCategoryId ? parseInt(urlCategoryId, 10) : null);
+
+    const setActiveLenderIdAndCategory = (newLenderId: number | null, newCategoryId: string | number | null = null) => {
+        if (newLenderId === null) {
+            navigate(`/funding/visibility-rules/${id}`);
+        } else {
+            const catPath = newCategoryId !== null ? `/category/${newCategoryId}` : '';
+            navigate(`/funding/visibility-rules/${id}/lender/${newLenderId}${catPath}`);
+        }
+    };
+
+    const isMasterList = activeTab === 'visibility' && activeLenderId === null;
+
+    // Visibility list page: track selection from the grid to render page-header Actions button
+    const [visibilitySelectionCount, setVisibilitySelectionCount] = React.useState(0);
+    const [showVisibilityBulkDelete, setShowVisibilityBulkDelete] = React.useState(false);
+
+    useEffect(() => {
+        if (isVisibilityRoute) {
+            setActiveTab('visibility');
+        } else {
+            setActiveTab('display');
+        }
+    }, [location.pathname, location.search, isVisibilityRoute]);
+
+    const handleTabClick = (tabId: string) => {
+        if (!isEditMode) return;
+
+        if (tabId === 'visibility') {
+            navigate(`/funding/visibility-rules/${id}`);
+            setActiveTab('visibility');
+        } else {
+            navigate(`/funding/${id}`);
+            setActiveTab('display');
+        }
+    };
+
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
     const [groups, setGroups] = useState<any[]>([]);
     const [types, setTypes] = useState<any[]>([]);
+    const [lendersList, setLendersList] = useState<any[]>([]);
     const [productCategories, setProductCategories] = useState<any[]>([]);
     const [errors, setErrors] = useState<any>({});
     const [allowedDocumentOptions, setAllowedDocumentOptions] = useState<{ label: string, value: string }[]>([]);
@@ -89,7 +146,8 @@ export default function FundingSequencingForm() {
         uses: [] as any[],
         readiness_factors: (id ? [] : DEFAULT_READINESS_FACTORS) as any[],
         missing_documents: [] as any[],
-        allowed_documents: (id ? [] : [3, 2]) as any[]
+        allowed_documents: (id ? [] : [3, 2]) as any[],
+        lender_visibilities: [] as any[]
     });
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
         setFormData(prev => {
@@ -188,6 +246,15 @@ export default function FundingSequencingForm() {
             }
         };
 
+        const loadLenders = async () => {
+            try {
+                const res = await getAllLenders();
+                setLendersList(res.data || res);
+            } catch (error) {
+                console.error('Failed to load lenders', error);
+            }
+        };
+
         const loadProductCategories = async () => {
             try {
                 const res = await getLenderProductCategories();
@@ -200,6 +267,7 @@ export default function FundingSequencingForm() {
         loadGroups();
         loadTypes();
         loadDocTypes();
+        loadLenders();
         loadProductCategories();
 
         if (isEditMode) {
@@ -255,6 +323,13 @@ export default function FundingSequencingForm() {
                         readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors.map((f: any) => typeof f === 'object' ? f.label : f) : [],
                         missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : [],
                         allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : (Array.isArray(data.lenders?.[0]?.allowed_documents) ? data.lenders[0].allowed_documents : []),
+                        lender_visibilities: Array.isArray(data.lender_visibilities) && data.lender_visibilities.length > 0
+                            ? data.lender_visibilities.map((v: any) => ({
+                                ...v,
+                                allowed_states: mapStateCodeToName(v.allowed_states),
+                                restricted_states: mapStateCodeToName(v.restricted_states)
+                            }))
+                            : []
                     });
                 } catch (err) {
                     toast.error('Failed to load funding details');
@@ -300,7 +375,7 @@ export default function FundingSequencingForm() {
             cleanData.readiness_factors = cleanData.readiness_factors.filter((item: any) => typeof item === 'string' && item.trim() !== '');
         }
 
-        const payload = {
+        const unifiedPayload = {
             name: cleanData.name.trim(),
             subtitle: cleanData.subtitle.trim(),
             funding_group_id: cleanData.funding_group_id,
@@ -324,27 +399,165 @@ export default function FundingSequencingForm() {
             allowed_documents: cleanData.allowed_documents,
             manual_review_allowed: cleanData.manual_review_allowed,
             exception_allowed: cleanData.exception_allowed,
+            lender_visibilities: Array.isArray(cleanData.lender_visibilities)
+                ? cleanData.lender_visibilities
+                    .filter((v: any) => v.lender_id !== null && v.lender_id !== '')
+                    .map((v: any) => ({
+                        lender_id: v.lender_id,
+                        lender_product_category_id: v.lender_product_category_id !== '' && v.lender_product_category_id !== undefined ? v.lender_product_category_id : null,
+                        min_fico: v.min_fico !== '' && v.min_fico !== undefined ? v.min_fico : null,
+                        min_business_credit_score: v.min_business_credit_score !== '' && v.min_business_credit_score !== undefined ? v.min_business_credit_score : null,
+                        min_tib_months: v.min_tib_months !== '' && v.min_tib_months !== undefined ? v.min_tib_months : null,
+                        min_monthly_revenue: v.min_monthly_revenue !== '' && v.min_monthly_revenue !== undefined ? v.min_monthly_revenue : null,
+                        min_monthly_deposits: v.min_monthly_deposits !== '' && v.min_monthly_deposits !== undefined ? v.min_monthly_deposits : null,
+                        min_average_daily_balance: v.min_average_daily_balance !== '' && v.min_average_daily_balance !== undefined ? v.min_average_daily_balance : null,
+                        min_deposit_count: v.min_deposit_count !== '' && v.min_deposit_count !== undefined ? v.min_deposit_count : null,
+                        max_nsf_count: v.max_nsf_count !== '' && v.max_nsf_count !== undefined ? v.max_nsf_count : null,
+                        max_negative_days: v.max_negative_days !== '' && v.max_negative_days !== undefined ? v.max_negative_days : null,
+                        min_dscr: v.min_dscr !== '' && v.min_dscr !== undefined ? v.min_dscr : null,
+                        allowed_states: v.allowed_states || [],
+                        restricted_states: v.restricted_states || [],
+                        allowed_industries: v.allowed_industries || [],
+                        restricted_industries: v.restricted_industries || [],
+                    }))
+                : []
         };
         try {
             if (isEditMode && id) {
-                await updateFundingSequencingDisplay(id, payload);
-                toast.success('Display settings updated successfully!');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (activeTab === 'display') {
+                    await updateFundingSequencingDisplay(id, unifiedPayload);
+                    toast.success('Display settings updated successfully!');
+                    setActiveTab('visibility');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else if (id && activeTab === 'visibility') {
+                    if (location.pathname.includes('/configuration') && !activeLenderId) {
+                        toast.error('Please select a lender before updating');
+                        return;
+                    }
+
+                    if (activeLenderId && activeCategoryId !== null) {
+                        // Save ONLY the active category's visibility rule
+                        const singleCategoryPayload = {
+                            ...unifiedPayload,
+                            lender_visibilities: unifiedPayload.lender_visibilities.filter((v: any) => {
+                                if (String(v.lender_id) !== String(activeLenderId)) return false;
+                                const vCatId = v.lender_product_category_id;
+                                if (activeCategoryId === 'general') {
+                                    return vCatId === null || vCatId === '';
+                                } else {
+                                    return String(vCatId) === String(activeCategoryId);
+                                }
+                            })
+                        };
+                        await updateFundingSequencingSingleCategoryVisibility(id, activeLenderId, activeCategoryId, singleCategoryPayload);
+                    } else if (activeLenderId) {
+                        // Save ONLY the active lender's visibility rules
+                        const singleLenderPayload = {
+                            ...unifiedPayload,
+                            lender_visibilities: unifiedPayload.lender_visibilities.filter((v: any) => String(v.lender_id) === String(activeLenderId))
+                        };
+                        await updateFundingSequencingSingleLenderVisibility(id, activeLenderId, singleLenderPayload);
+                    } else {
+                        // Update all visibilities (usually just deletion/ordering from master list)
+                        await updateFundingSequencingVisibility(id, unifiedPayload);
+                    }
+
+                    toast.success('Underwriting logic updated successfully');
+                    navigate(`/funding/visibility-rules/${id}`);
+                }
             } else {
-                await createFundingSequencing(payload);
+                const response = await createFundingSequencing(unifiedPayload);
                 toast.success('Funding sequence created successfully!');
-                navigate('/funding');
+                const newId = response?.data?.id || response?.id;
+                if (newId && activeTab === 'display') {
+                    navigate(`/funding/${newId}?tab=visibility`);
+                } else {
+                    navigate('/funding');
+                }
             }
         } catch (err: any) {
             console.error(err);
             if (err.response?.status === 422) {
                 // Clone the object to ensure React triggers a state update
                 const mappedErrors = { ...(err.response?.data?.errors || {}) };
+
+                // Map all lenders.0.* errors to their base keys (if any still exist)
                 Object.keys(mappedErrors).forEach(key => {
                     if (Array.isArray(mappedErrors[key])) {
                         mappedErrors[key] = mappedErrors[key][0];
                     }
+                    if (key.startsWith('lenders.0.')) {
+                        const baseKey = key.replace('lenders.0.', '');
+                        mappedErrors[baseKey] = mappedErrors[key];
+                    }
                 });
+
+                // Switch to the correct tab based on where the error occurred
+                const visibilityKeys = ['lender_visibilities'];
+                const hasVisibilityError = Object.keys(mappedErrors).some(key => key.startsWith('lender_visibilities'));
+                const displayKeys = ['name', 'subtitle', 'funding_group_id', 'funding_type_id', 'lender_id', 'min_amount', 'max_amount', 'terms', 'icon', 'icon_color', 'sort_order', 'readiness_factors', 'allowed_documents'];
+                const hasDisplayError = Object.keys(mappedErrors).some(key => displayKeys.includes(key));
+
+                if (activeLenderId !== null && hasVisibilityError) {
+                    // Build a list of original visibilities indices that were sent to the backend.
+                    // We must iterate the UNFILTERED array so that `i` equals the same index
+                    // used by renderError in LenderVisibilityGrid's visibilities.map().
+                    const sentPayloadIndices: number[] = [];
+                    (cleanData.lender_visibilities as any[]).forEach((v: any, i: number) => {
+                        // Skip rows with no lender assigned (they are excluded from the sent payload)
+                        if (v.lender_id === null || v.lender_id === '') return;
+                        // Only include rows for the currently-active lender
+                        if (String(v.lender_id) !== String(activeLenderId)) return;
+                        // Apply category filter if a specific category is active
+                        if (activeCategoryId !== null) {
+                            const vCatId = v.lender_product_category_id;
+                            if (activeCategoryId === 'general') {
+                                if (vCatId !== null && vCatId !== '') return;
+                            } else {
+                                if (String(vCatId) !== String(activeCategoryId)) return;
+                            }
+                        }
+                        sentPayloadIndices.push(i); // `i` matches visibilities.map index used by renderError
+                    });
+
+                    const newMappedErrors: any = {};
+                    Object.keys(mappedErrors).forEach(key => {
+                        const match = key.match(/^lender_visibilities\.(\d+)\.(.*)$/);
+                        if (match) {
+                            const backendIndex = parseInt(match[1], 10);
+                            const globalIndex = sentPayloadIndices[backendIndex];
+                            if (globalIndex !== undefined) {
+                                newMappedErrors[`lender_visibilities.${globalIndex}.${match[2]}`] = mappedErrors[key];
+                                delete mappedErrors[key]; // Remove the old key
+                            }
+                        }
+                    });
+
+                    // Merge the remapped errors back into mappedErrors
+                    Object.assign(mappedErrors, newMappedErrors);
+                }
+
+                if (hasVisibilityError) {
+                    if (!hasDisplayError && activeTab === 'display') {
+                        setActiveTab('visibility');
+                    }
+
+                    if (!activeLenderId) {
+                        const firstErrorKey = Object.keys(mappedErrors).find(key => key.startsWith('lender_visibilities.'));
+                        if (firstErrorKey) {
+                            const parts = firstErrorKey.split('.');
+                            const index = parseInt(parts[1], 10);
+                            if (!isNaN(index) && unifiedPayload.lender_visibilities[index]) {
+                                const errorLenderId = unifiedPayload.lender_visibilities[index].lender_id;
+                                if (errorLenderId) {
+                                    navigate(`/funding/visibility-rules/${id}/lender/${errorLenderId}`);
+                                }
+                            }
+                        }
+                    }
+                } else if (hasDisplayError && activeTab === 'visibility') {
+                    setActiveTab('display');
+                }
                 setErrors(mappedErrors);
                 setTimeout(() => scrollToFirstError(mappedErrors), 100);
             } else {
@@ -425,9 +638,10 @@ export default function FundingSequencingForm() {
                         { label: isEditMode ? 'Edit' : 'Add' }
                     ]} 
                 >
+                    {!(activeTab === 'visibility' && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
                         <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                             <Link
-                                to="/funding"
+                                to={activeTab === 'visibility' && activeLenderId !== null ? `/funding/visibility-rules/${id}` : '/funding'}
                                 className="btn btn-outline-secondary w-lg waves-effect"
                             >
                                 <i className="ri-arrow-left-line align-middle me-1"></i> Back
@@ -450,6 +664,34 @@ export default function FundingSequencingForm() {
                                 )}
                             </button>
                         </div>
+                    ) : (
+                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            {visibilitySelectionCount > 0 ? (
+                                <div className="btn-group">
+                                    <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                    <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span className="visually-hidden">Toggle dropdown</span>
+                                    </button>
+                                    <ul className="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button type="button" className="dropdown-item text-danger" onClick={() => setShowVisibilityBulkDelete(true)}>
+                                                <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="btn btn-primary waves-effect"
+                                    style={{ whiteSpace: 'nowrap' }}
+                                    onClick={() => navigate(`/funding/visibility-rules/${id}/configuration`)}
+                                >
+                                    <i className="ri-add-line align-middle me-1"></i> Add Underwriting Logic
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </PageHeader>
 
                 {initialLoading ? (
@@ -469,10 +711,23 @@ export default function FundingSequencingForm() {
                                             <li className="nav-item">
                                                 <button
                                                     type="button"
-                                                    className="nav-link fw-semibold fs-15 pb-3 active text-primary border-primary border-bottom border-3"
+                                                    className={`nav-link fw-semibold fs-15 pb-3 ${activeTab === 'display' ? 'active text-primary border-primary border-bottom border-3' : 'text-muted border-transparent'}`}
+                                                    onClick={() => handleTabClick('display')}
                                                     style={{ backgroundColor: 'transparent', transition: 'all 0.2s', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}
                                                 >
                                                     Display
+                                                </button>
+                                            </li>
+                                            <li className="nav-item">
+                                                <button
+                                                    type="button"
+                                                    className={`nav-link fw-semibold fs-15 pb-3 ${activeTab === 'visibility' ? 'active text-primary border-primary border-bottom border-3' : 'text-muted border-transparent'} ${!isEditMode ? 'opacity-50' : ''}`}
+                                                    onClick={() => handleTabClick('visibility')}
+                                                    style={{ cursor: !isEditMode ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', transition: 'all 0.2s', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}
+                                                    title={!isEditMode ? "Please save the sequence first to unlock underwriting logic" : ""}
+                                                >
+                                                    {!isEditMode && <i className="ri-lock-line align-middle me-1"></i>}
+                                                    Underwriting Logic
                                                 </button>
                                             </li>
                                         </ul>
@@ -480,7 +735,7 @@ export default function FundingSequencingForm() {
                                     <div className="card-body pt-1">
                                         <div className="tab-content text-muted">
                                             {/* ── Display Tab ─────────────────────────────────────────────────── */}
-                                            <div className="tab-pane active" id="display">
+                                            <div className={`tab-pane ${activeTab === 'display' ? 'active' : ''}`} id="display">
                                                 {/* <div className="row g-5 mb-4">
                                                     <div className="col-lg-6">
                                                         <h6 className="fw-bold fs-14 mb-1 text-uppercase" style={{ letterSpacing: '0.05em', color: '#0f172a' }}>IDENTITY</h6>
@@ -550,21 +805,15 @@ export default function FundingSequencingForm() {
                                                     <div className="col-lg-6 col-md-6 col-12">
                                                         <div className="mb-2">
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <label htmlFor="funding_type_id" className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
+                                                                <label className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
                                                             </div>
                                                             <Dropdown
-                                                                inputId="funding_type_id"
                                                                 value={formData.funding_type_id}
                                                                 options={productCategories}
                                                                 onChange={(e) => handleInputChange({ target: { name: 'funding_type_id', value: e.value } })}
                                                                 optionLabel="name"
                                                                 optionValue="id"
                                                                 placeholder="Select type"
-                                                                // A long list: searchable.
-                                                                filter
-                                                                filterBy="name"
-                                                                filterPlaceholder="Search funding types"
-                                                                emptyFilterMessage="No matching funding type"
                                                                 className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_type_id ? 'p-invalid border-danger' : ''}`}
                                                             />
                                                             {(errors as any).funding_type_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_type_id}</small>}
@@ -824,6 +1073,26 @@ export default function FundingSequencingForm() {
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                            {/* ── Underwriting Logic Tab ────────────────────────────────────────── */}
+                                            <div className={`tab-pane ${activeTab === 'visibility' ? 'active' : ''}`} id="visibility" style={{ marginTop: '-1rem' }}>
+                                                <LenderVisibilityGrid
+                                                    visibilities={formData.lender_visibilities}
+                                                    lenders={lendersList}
+                                                    errors={errors}
+                                                    setVisibilities={(newVisibilities: any[]) => {
+                                                        setFormData(prev => ({ ...prev, lender_visibilities: newVisibilities }));
+                                                    }}
+                                                    setErrors={setErrors}
+                                                    stateOptions={stateOptions}
+                                                    industryTypes={industryTypes}
+                                                    productCategories={productCategories}
+                                                    onSelectionChange={setVisibilitySelectionCount}
+                                                    onBulkDelete={() => setShowVisibilityBulkDelete(true)}
+                                                    externalBulkDelete={showVisibilityBulkDelete}
+                                                    onExternalBulkDeleteHandled={() => setShowVisibilityBulkDelete(false)}
+                                                />
                                             </div>
                                         </div>
                                     </div>

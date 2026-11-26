@@ -6,6 +6,7 @@ import {
   getFundingSequencing,
   createFundingSequencing,
   updateFundingSequencingStatus,
+  deleteFundingSequencingVisibilities,
   getFundingGroups,
   getFundingTypes,
   fetchBorrowerFunding,
@@ -53,6 +54,18 @@ describe('funding services', () => {
     )
     await updateFundingSequencingStatus(3, 'Inactive')
     expect(receivedBody).toEqual({ status: 'Inactive' })
+  })
+
+  it('deleteFundingSequencingVisibilities DELETEs with a request body payload', async () => {
+    let receivedBody: unknown = null
+    server.use(
+      http.delete('*/admin/funding-sequencings/3/visibilities', async ({ request }) => {
+        receivedBody = await request.json()
+        return HttpResponse.json({ status: true })
+      })
+    )
+    await deleteFundingSequencingVisibilities(3, { lender_ids: [1, 2] } as any)
+    expect(receivedBody).toEqual({ lender_ids: [1, 2] })
   })
 
   it('getFundingGroups and getFundingTypes GET their respective lists', async () => {

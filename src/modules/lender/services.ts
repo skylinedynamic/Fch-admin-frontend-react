@@ -85,9 +85,3 @@ export const deleteLenderProductCategory = async (id: number | string) => {
     const { data } = await apiClient.delete(`/admin/lenders/product-categories/${id}`);
     return data;
 };
-
-/** Edit Lender > Underwriting Logic: soft-delete one funding type's rule (after the confirmation). */
-export const deleteLenderUnderwritingRule = async (lenderId: number | string, fundingTypeId: number | string) => {
-    const { data } = await apiClient.delete(`/admin/lenders/${lenderId}/underwriting-logic/${fundingTypeId}`);
-    return data;
-};

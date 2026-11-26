@@ -8,6 +8,7 @@ import { processInvoicePayment, initiateSubscriptionPayment } from '../../src/mo
 import { processPayment } from '../../src/modules/leads/services'
 import { purchaseUserSeats } from '../../src/modules/user/services'
 import { fetchAllClients } from '../../src/modules/client/services'
+import { updateFundingSequencingVisibility } from '../../src/modules/funding/services'
 import { attachFiles } from '../../src/modules/filemanager/services'
 import { fetchClients } from '../../src/modules/client/services'
 import { getTierTask } from '../../src/modules/tiers/services'
@@ -26,6 +27,7 @@ import { fetchPartnerStats } from '../../src/modules/partner/services'
  *   processPayment (leads)         - LeadPaymentModal is rendered but never opened
  *   purchaseUserSeats              - seats are bought by paying the seat invoice
  *   fetchAllClients                - the client list uses fetch-all-borrowers
+ *   updateFundingSequencingVisibility - its branch is behind a hidden button
  *   attachFiles                    - file selection posts to each entity's own endpoint
  *   fetchClients                   - useClients calls fetchAllBorrowers instead
  *   getTierTask                    - the tier task form edits the row it was given
@@ -103,6 +105,13 @@ describe('unreachable service functions', () => {
     const seen = capture('get', '/common/borrowers/all', { status: true, data: [{ id: 1 }] })
     await expect(fetchAllClients()).resolves.toEqual({ status: true, data: [{ id: 1 }] })
     expect(seen).toHaveLength(1)
+  })
+
+  it('updateFundingSequencingVisibility PUTs every rule of the sequence', async () => {
+    const seen = capture('put', '/admin/funding-sequencings/201/visibility')
+    await updateFundingSequencingVisibility(201, { lender_visibilities: [] } as never)
+    expect(seen[0].method).toBe('PUT')
+    expect(seen[0].body).toEqual({ lender_visibilities: [] })
   })
 
   it('attachFiles posts the files and the document type', async () => {
