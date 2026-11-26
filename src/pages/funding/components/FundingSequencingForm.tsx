@@ -6,7 +6,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { STATUS_ACTIVE } from '../../../config/statusOptions';
-import { createFundingSequencing, updateFundingSequencingDisplay, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
+import { createFundingSequencing, updateFundingSequencingDisplay, getFundingSequencing, getFundingGroups } from '../../../modules/funding/services';
 import { getLenderProductCategories } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS, DEFAULT_READINESS_FACTORS } from '../../../config/funding';
@@ -14,7 +14,6 @@ import { locationData } from '../../../modules/location';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { fetchBorrowerDocumentTypes } from '../../../modules/client/services';
 import FundingGroupModal from './FundingGroupModal';
-import FundingTypeModal from './FundingTypeModal';
 import UsesField from './UsesField';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import '../../../../assets/css/funding.css';
@@ -43,12 +42,10 @@ export default function FundingSequencingForm() {
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
     const [groups, setGroups] = useState<any[]>([]);
-    const [types, setTypes] = useState<any[]>([]);
     const [productCategories, setProductCategories] = useState<any[]>([]);
     const [errors, setErrors] = useState<any>({});
     const [allowedDocumentOptions, setAllowedDocumentOptions] = useState<{ label: string, value: string }[]>([]);
     const [showGroupModal, setShowGroupModal] = useState(false);
-    const [showTypeModal, setShowTypeModal] = useState(false);
 
     const [showIconDropdown, setShowIconDropdown] = useState(false);
     const [iconSearch, setIconSearch] = useState('');
@@ -138,15 +135,6 @@ export default function FundingSequencingForm() {
         }
     };
 
-    const refreshTypes = async () => {
-        try {
-            const res = await getFundingTypes();
-            setTypes(res.data || []);
-        } catch (err) {
-            console.error('Failed to refresh types', err);
-        }
-    };
-
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowIconDropdown(false);
@@ -162,17 +150,6 @@ export default function FundingSequencingForm() {
                 setGroups(res.data || []);
             } catch (error) {
                 console.error('Failed to load groups', error);
-            }
-        };
-
-        const loadTypes = async () => {
-            try {
-                const res = await getFundingTypes();
-                if (res?.data) {
-                    setTypes(res.data);
-                }
-            } catch (error) {
-                console.error('Failed to load types', error);
             }
         };
 
@@ -198,7 +175,6 @@ export default function FundingSequencingForm() {
         };
 
         loadGroups();
-        loadTypes();
         loadDocTypes();
         loadProductCategories();
 
@@ -839,14 +815,6 @@ export default function FundingSequencingForm() {
                     onHide={() => setShowGroupModal(false)}
                     onSuccess={() => { refreshGroups(); }}
                     groups={groups}
-                />
-
-                {/* Funding Type Modal */}
-                <FundingTypeModal
-                    visible={showTypeModal}
-                    onHide={() => setShowTypeModal(false)}
-                    onSuccess={() => { refreshTypes(); }}
-                    types={types}
                 />
             </div>
         </div>
